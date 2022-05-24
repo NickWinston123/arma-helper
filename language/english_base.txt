@@ -793,6 +793,7 @@ max_clients_same_ip_soft_help        Maximum number of network clients to accept
 max_clients_same_ip_hard_help        Maximum number of network clients to accept from the same IP; more logins will be ignored
 max_players_same_ip_help  maximum number of players from the same IP (note that each client can legally host up to four players)
 url_help                HTTP URI associated with a server
+block_chat_flags_help   Disable sending chat / menu flag indicators.
 
 # settings compatibility
 

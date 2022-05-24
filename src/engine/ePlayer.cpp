@@ -5336,6 +5336,8 @@ public:
     }
 };
 
+static bool se_BlockChatFlags = false;
+static tConfItem<bool> se_BlockChatFlagsConf("BLOCK_CHAT_FLAGS", se_BlockChatFlags);
 
 void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
 {
@@ -5344,7 +5346,11 @@ void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
         ePlayerNetID *p = se_PlayerNetIDs[i];
         if (p->Owner()==sn_myNetID && p->pID >= 0)
         {
-            p->SetChatting( flag, cs );
+            if (!se_BlockChatFlags) {
+                p->SetChatting( flag, cs );
+            } else {
+                p->SetChatting( flag, false );
+            }
         }
     }
 }

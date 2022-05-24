@@ -59,13 +59,13 @@ static REAL se_visibilitySidewaysSkew = .5; // extra forward component of the si
 static bool se_visibilityLowerWall = true; // flag indicating whether walls should be lowerd when they block the view
 static bool se_visibilityLowerWallSmart = false; // same specially for the smart camera
 
-static tSettingItem<REAL> se_viscs("CAMERA_VISIBILITY_RECOVERY_SPEED", se_hitCacheSpeed );
-static tSettingItem<REAL> se_viswd("CAMERA_VISIBILITY_WALL_DISTANCE", se_visibilityWallDistance );
-static tSettingItem<REAL> se_viss("CAMERA_VISIBILITY_CLIP_SPEED", se_visibilitySpeed );
-static tSettingItem<REAL> se_vise("CAMERA_VISIBILITY_EXTENSION", se_visibilityExtension );
-static tSettingItem<REAL> se_vissk("CAMERA_VISIBILITY_SIDESKEW", se_visibilitySidewaysSkew );
-static tSettingItem<bool> se_vislw("CAMERA_VISIBILITY_LOWER_WALL", se_visibilityLowerWall );
-static tSettingItem<bool> se_vislws("CAMERA_VISIBILITY_LOWER_WALL_SMART", se_visibilityLowerWallSmart );
+static tConfItem<REAL> se_viscs("CAMERA_VISIBILITY_RECOVERY_SPEED", se_hitCacheSpeed );
+static tConfItem<REAL> se_viswd("CAMERA_VISIBILITY_WALL_DISTANCE", se_visibilityWallDistance );
+static tConfItem<REAL> se_viss("CAMERA_VISIBILITY_CLIP_SPEED", se_visibilitySpeed );
+static tConfItem<REAL> se_vise("CAMERA_VISIBILITY_EXTENSION", se_visibilityExtension );
+static tConfItem<REAL> se_vissk("CAMERA_VISIBILITY_SIDESKEW", se_visibilitySidewaysSkew );
+static tConfItem<bool> se_vislw("CAMERA_VISIBILITY_LOWER_WALL", se_visibilityLowerWall );
+static tConfItem<bool> se_vislws("CAMERA_VISIBILITY_LOWER_WALL_SMART", se_visibilityLowerWallSmart );
 
 //static bool se_customGlance = true; // use the custom camera settings for glancing in the smart camera
 //static tSettingItem<bool> se_cg("CAMERA_SMART_GLANCE_CUSTOM", se_customGlance );
@@ -234,17 +234,17 @@ static REAL s_startFollowX = -30, s_startFollowY = -30, s_startFollowZ = 80;
 static REAL s_startSmartX = 10, s_startSmartY = 30, s_startSmartZ = 2;
 static REAL s_startFreeX =  10, s_startFreeY = -70, s_startFreeZ = 100;
 
-static tSettingItem<REAL> s_foX("CAMERA_FOLLOW_START_X", s_startFollowX);
-static tSettingItem<REAL> s_smX("CAMERA_SMART_START_X", s_startSmartX);
-static tSettingItem<REAL> s_frX("CAMERA_FREE_START_X", s_startFreeX);
+static tConfItem<REAL> s_foX("CAMERA_FOLLOW_START_X", s_startFollowX);
+static tConfItem<REAL> s_smX("CAMERA_SMART_START_X", s_startSmartX);
+static tConfItem<REAL> s_frX("CAMERA_FREE_START_X", s_startFreeX);
 
-static tSettingItem<REAL> s_foY("CAMERA_FOLLOW_START_Y", s_startFollowY);
-static tSettingItem<REAL> s_smY("CAMERA_SMART_START_Y", s_startSmartY);
-static tSettingItem<REAL> s_frY("CAMERA_FREE_START_Y", s_startFreeY);
+static tConfItem<REAL> s_foY("CAMERA_FOLLOW_START_Y", s_startFollowY);
+static tConfItem<REAL> s_smY("CAMERA_SMART_START_Y", s_startSmartY);
+static tConfItem<REAL> s_frY("CAMERA_FREE_START_Y", s_startFreeY);
 
-static tSettingItem<REAL> s_foZ("CAMERA_FOLLOW_START_Z", s_startFollowZ);
-static tSettingItem<REAL> s_smZ("CAMERA_SMART_START_Z", s_startSmartZ);
-static tSettingItem<REAL> s_frZ("CAMERA_FREE_START_Z", s_startFreeZ);
+static tConfItem<REAL> s_foZ("CAMERA_FOLLOW_START_Z", s_startFollowZ);
+static tConfItem<REAL> s_smZ("CAMERA_SMART_START_Z", s_startSmartZ);
+static tConfItem<REAL> s_frZ("CAMERA_FREE_START_Z", s_startFreeZ);
 
 // custom camera displacement
 static REAL s_customBack = 30, s_customRise = 20, s_customBackSpeed = 0, s_customRiseSpeed = 0 , s_customPitch = -.7, s_customZoom = 0.5, s_customTurnSpeed=40, s_customTurnSpeed180 = 2;
@@ -253,20 +253,20 @@ static REAL s_serverCustomBack = 30, s_serverCustomRise = 20, s_serverCustomBack
 static REAL s_serverGlanceBack = 30, s_serverGlanceRise = 20, s_serverGlanceBackSpeed = 0, s_serverGlanceRiseSpeed = 0, s_serverGlancePitch = -.7;
 
 
-static tSettingItem<REAL> s_iBack("CAMERA_CUSTOM_BACK", s_customBack);
-static tSettingItem<REAL> s_iRise("CAMERA_CUSTOM_RISE", s_customRise);
-static tSettingItem<REAL> s_iBackSpeed("CAMERA_CUSTOM_BACK_FROMSPEED", s_customBackSpeed);
-static tSettingItem<REAL> s_iRiseSpeed("CAMERA_CUSTOM_RISE_FROMSPEED", s_customRiseSpeed);
-static tSettingItem<REAL> s_iPitch("CAMERA_CUSTOM_PITCH", s_customPitch);
-static tSettingItem<REAL> s_iZoom("CAMERA_CUSTOM_ZOOM", s_customZoom);
-static tSettingItem<REAL> s_iCustomTurnSpeed("CAMERA_CUSTOM_TURN_SPEED", s_customTurnSpeed);
-static tSettingItem<REAL> s_iCustomTurnSpeed180("CAMERA_CUSTOM_TURN_SPEED_180", s_customTurnSpeed180);
+static tConfItem<REAL> s_iBack("CAMERA_CUSTOM_BACK", s_customBack);
+static tConfItem<REAL> s_iRise("CAMERA_CUSTOM_RISE", s_customRise);
+static tConfItem<REAL> s_iBackSpeed("CAMERA_CUSTOM_BACK_FROMSPEED", s_customBackSpeed);
+static tConfItem<REAL> s_iRiseSpeed("CAMERA_CUSTOM_RISE_FROMSPEED", s_customRiseSpeed);
+static tConfItem<REAL> s_iPitch("CAMERA_CUSTOM_PITCH", s_customPitch);
+static tConfItem<REAL> s_iZoom("CAMERA_CUSTOM_ZOOM", s_customZoom);
+static tConfItem<REAL> s_iCustomTurnSpeed("CAMERA_CUSTOM_TURN_SPEED", s_customTurnSpeed);
+static tConfItem<REAL> s_iCustomTurnSpeed180("CAMERA_CUSTOM_TURN_SPEED_180", s_customTurnSpeed180);
 
-static tSettingItem<REAL> s_iGBack("CAMERA_GLANCE_BACK", s_glanceBack);
-static tSettingItem<REAL> s_iGRise("CAMERA_GLANCE_RISE", s_glanceRise);
-static tSettingItem<REAL> s_iGBackSpeed("CAMERA_GLANCE_BACK_FROMSPEED", s_glanceBackSpeed);
-static tSettingItem<REAL> s_iGRiseSpeed("CAMERA_GLANCE_RISE_FROMSPEED", s_glanceRiseSpeed);
-static tSettingItem<REAL> s_iGPitch("CAMERA_GLANCE_PITCH", s_glancePitch);
+static tConfItem<REAL> s_iGBack("CAMERA_GLANCE_BACK", s_glanceBack);
+static tConfItem<REAL> s_iGRise("CAMERA_GLANCE_RISE", s_glanceRise);
+static tConfItem<REAL> s_iGBackSpeed("CAMERA_GLANCE_BACK_FROMSPEED", s_glanceBackSpeed);
+static tConfItem<REAL> s_iGRiseSpeed("CAMERA_GLANCE_RISE_FROMSPEED", s_glanceRiseSpeed);
+static tConfItem<REAL> s_iGPitch("CAMERA_GLANCE_PITCH", s_glancePitch);
 
 static nSettingItem<REAL> s_iSBack("CAMERA_SERVER_CUSTOM_BACK", s_serverCustomBack);
 static nSettingItem<REAL> s_iSRise("CAMERA_SERVER_CUSTOM_RISE", s_serverCustomRise);
@@ -284,7 +284,7 @@ static nSettingItem<REAL> s_iSGPitch("CAMERA_SERVER_GLANCE_PITCH", s_serverGlanc
 
 // turn speed of internal camera
 static REAL s_inTurnSpeed=40;
-static tSettingItem<REAL> s_iInTurnSpeed("CAMERA_IN_TURN_SPEED", s_inTurnSpeed);
+static tConfItem<REAL> s_iInTurnSpeed("CAMERA_IN_TURN_SPEED", s_inTurnSpeed);
 
 bool eCamera::InterestingToWatch(eGameObject const *g){
     return g &&
@@ -1259,69 +1259,69 @@ static inline void makefinite(eCoord &x){makefinite(x.x);makefinite(x.y);}
 
 // distance scale for tests measured relative to cycle speed
 static REAL se_cameraSmartDistanceScale = .2;
-static tSettingItem< REAL > se_confCameraSmartDistanceScale( "CAMERA_SMART_DISTANCESCALE", se_cameraSmartDistanceScale );
+static tConfItem< REAL > se_confCameraSmartDistanceScale( "CAMERA_SMART_DISTANCESCALE", se_cameraSmartDistanceScale );
 
 // minimal distance scale of tests in meters
 static REAL se_cameraSmartMinDistanceScale = 5.0;
-static tSettingItem< REAL > se_confCameraSmartMinDistanceScale( "CAMERA_SMART_MIN_DISTANCESCALE", se_cameraSmartMinDistanceScale );
+static tConfItem< REAL > se_confCameraSmartMinDistanceScale( "CAMERA_SMART_MIN_DISTANCESCALE", se_cameraSmartMinDistanceScale );
 
 // minimal distance of the camera to the cycle in meters
 static REAL se_cameraSmartMinDistance = 10.0;
-static tSettingItem< REAL > se_confCameraSmartMinDistance( "CAMERA_SMART_MIN_DISTANCE", se_cameraSmartMinDistance );
+static tConfItem< REAL > se_confCameraSmartMinDistance( "CAMERA_SMART_MIN_DISTANCE", se_cameraSmartMinDistance );
 
 // typical cycle speed
 static REAL se_cameraSmartCycleSpeed = 20.0;
-static tSettingItem< REAL > se_confCameraSmartCycleSpeed( "CAMERA_SMART_CYCLESPEED", se_cameraSmartCycleSpeed );
+static tConfItem< REAL > se_confCameraSmartCycleSpeed( "CAMERA_SMART_CYCLESPEED", se_cameraSmartCycleSpeed );
 
 // typical height in speed units
 static REAL se_cameraSmartHeight = 2.0;
-static tSettingItem< REAL > se_confCameraSmartHeight( "CAMERA_SMART_HEIGHT", se_cameraSmartHeight );
+static tConfItem< REAL > se_confCameraSmartHeight( "CAMERA_SMART_HEIGHT", se_cameraSmartHeight );
 // typical height in speed units
 static REAL se_cameraSmartDistance = 4.0;
-static tSettingItem< REAL > se_confCameraSmartDistance( "CAMERA_SMART_DISTANCE", se_cameraSmartDistance );
+static tConfItem< REAL > se_confCameraSmartDistance( "CAMERA_SMART_DISTANCE", se_cameraSmartDistance );
 // extra factor for height
 static REAL se_cameraSmartHeightExtra = .5f;
-static tSettingItem< REAL > se_confCameraSmartHeightExtra( "CAMERA_SMART_HEIGHT_EXTRA", se_cameraSmartHeightExtra );
+static tConfItem< REAL > se_confCameraSmartHeightExtra( "CAMERA_SMART_HEIGHT_EXTRA", se_cameraSmartHeightExtra );
 
 // influence of turning
 static REAL se_cameraSmartHeightTurning = .5;
-static tSettingItem< REAL > se_confCameraSmartHeightTurning( "CAMERA_SMART_HEIGHT_TURNING", se_cameraSmartHeightTurning );
+static tConfItem< REAL > se_confCameraSmartHeightTurning( "CAMERA_SMART_HEIGHT_TURNING", se_cameraSmartHeightTurning );
 
 // influence of grinding
 static REAL se_cameraSmartHeightGrinding = 0;
-static tSettingItem< REAL > se_confCameraSmartHeightGrinding( "CAMERA_SMART_HEIGHT_GRINDING", se_cameraSmartHeightGrinding );
+static tConfItem< REAL > se_confCameraSmartHeightGrinding( "CAMERA_SMART_HEIGHT_GRINDING", se_cameraSmartHeightGrinding );
 
 // influence of wall in front
 static REAL se_cameraSmartHeightObstacle = 1.0;
-static tSettingItem< REAL > se_confCameraSmartHeightObstacle( "CAMERA_SMART_HEIGHT_OBSTACLE", se_cameraSmartHeightObstacle );
+static tConfItem< REAL > se_confCameraSmartHeightObstacle( "CAMERA_SMART_HEIGHT_OBSTACLE", se_cameraSmartHeightObstacle );
 
 // factor moving the camera to the side if it is in front of the cycle
 static REAL se_cameraSmartAvoidFront = 10.0;
-static tSettingItem< REAL > se_confCameraSmartAvoidFront( "CAMERA_SMART_AVOID_FRONT", se_cameraSmartAvoidFront );
+static tConfItem< REAL > se_confCameraSmartAvoidFront( "CAMERA_SMART_AVOID_FRONT", se_cameraSmartAvoidFront );
 
 // factor moving the camera to the side if it is in front of the cycle
 static REAL se_cameraSmartAvoidFront2 = 0.1;
-static tSettingItem< REAL > se_confCameraSmartAvoidFront2( "CAMERA_SMART_AVOID_FRONT2", se_cameraSmartAvoidFront2 );
+static tConfItem< REAL > se_confCameraSmartAvoidFront2( "CAMERA_SMART_AVOID_FRONT2", se_cameraSmartAvoidFront2 );
 
 // amount of turning from grinding
 static REAL se_cameraSmartTurn = 5.0;
-static tSettingItem< REAL > se_confCameraSmartTurn( "CAMERA_SMART_TURN_GRINDING", se_cameraSmartTurn );
+static tConfItem< REAL > se_confCameraSmartTurn( "CAMERA_SMART_TURN_GRINDING", se_cameraSmartTurn );
 
 // speed of center pos smoothing
 static REAL se_cameraSmartCenterPosSmooth = 6.0;
-static tSettingItem< REAL > se_confCameraSmartCenterPosSmooth( "CAMERA_SMART_CENTER_POS_SMOOTH", se_cameraSmartCenterPosSmooth );
+static tConfItem< REAL > se_confCameraSmartCenterPosSmooth( "CAMERA_SMART_CENTER_POS_SMOOTH", se_cameraSmartCenterPosSmooth );
 
 // speed of center dir smoothing
 static REAL se_cameraSmartCenterDirSmooth = 3.0;
-static tSettingItem< REAL > se_confCameraSmartCenterDirSmooth( "CAMERA_SMART_CENTER_DIR_SMOOTH", se_cameraSmartCenterDirSmooth );
+static tConfItem< REAL > se_confCameraSmartCenterDirSmooth( "CAMERA_SMART_CENTER_DIR_SMOOTH", se_cameraSmartCenterDirSmooth );
 
 // amount of lookahead relative to speed
 static REAL se_cameraSmartCenterLookahead = .5;
-static tSettingItem< REAL > se_confCameraSmartCenterLookahead( "CAMERA_SMART_CENTER_LOOKAHEAD", se_cameraSmartCenterLookahead );
+static tConfItem< REAL > se_confCameraSmartCenterLookahead( "CAMERA_SMART_CENTER_LOOKAHEAD", se_cameraSmartCenterLookahead );
 
 // max amount of lookahead
 static REAL se_cameraSmartCenterMaxLookahead = 5;
-static tSettingItem< REAL > se_confCameraSmartCenterMaxLookahead( "CAMERA_SMART_CENTER_MAX_LOOKAHEAD", se_cameraSmartCenterMaxLookahead );
+static tConfItem< REAL > se_confCameraSmartCenterMaxLookahead( "CAMERA_SMART_CENTER_MAX_LOOKAHEAD", se_cameraSmartCenterMaxLookahead );
 
 
 /*

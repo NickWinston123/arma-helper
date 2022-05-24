@@ -602,49 +602,49 @@ tCONFIG_ENUM( rSysDep::rSwapMode );
 
 static tConfItem< rSysDep::rSwapMode > swapModeCI("SWAP_MODE", rSysDep::swapMode_ );
 
-static tConfItem<REAL> sgs("SPEED_GAUGE_SIZE",subby_SpeedGaugeSize);
-static tConfItem<REAL> sgx("SPEED_GAUGE_LOCX",subby_SpeedGaugeLocX);
-static tConfItem<REAL> sgy("SPEED_GAUGE_LOCY",subby_SpeedGaugeLocY);
+static tConfItem<REAL> sgs("HUD_SPEED_GAUGE_SIZE",subby_SpeedGaugeSize);
+static tConfItem<REAL> sgx("HUD_SPEED_GAUGE_LOCX",subby_SpeedGaugeLocX);
+static tConfItem<REAL> sgy("HUD_SPEED_GAUGE_LOCY",subby_SpeedGaugeLocY);
 
-static tConfItem<REAL> bgs("BRAKE_GAUGE_SIZE",subby_BrakeGaugeSize);
-static tConfItem<REAL> bgx("BRAKE_GAUGE_LOCX",subby_BrakeGaugeLocX);
-static tConfItem<REAL> bgy("BRAKE_GAUGE_LOCY",subby_BrakeGaugeLocY);
+static tConfItem<REAL> bgs("HUD_BRAKE_GAUGE_SIZE",subby_BrakeGaugeSize);
+static tConfItem<REAL> bgx("HUD_BRAKE_GAUGE_LOCX",subby_BrakeGaugeLocX);
+static tConfItem<REAL> bgy("HUD_BRAKE_GAUGE_LOCY",subby_BrakeGaugeLocY);
 
-static tConfItem<REAL> rgs("RUBBER_GAUGE_SIZE",subby_RubberGaugeSize);
-static tConfItem<REAL> rgx("RUBBER_GAUGE_LOCX",subby_RubberGaugeLocX);
-static tConfItem<REAL> rgy("RUBBER_GAUGE_LOCY",subby_RubberGaugeLocY);
+static tConfItem<REAL> rgs("HUD_RUBBER_GAUGE_SIZE",subby_RubberGaugeSize);
+static tConfItem<REAL> rgx("HUD_RUBBER_GAUGE_LOCX",subby_RubberGaugeLocX);
+static tConfItem<REAL> rgy("HUD_RUBBER_GAUGE_LOCY",subby_RubberGaugeLocY);
 
-static tConfItem<bool> showh("SHOW_HUD",subby_ShowHUD);
-static tConfItem<bool> showf("SHOW_FASTEST",subby_ShowSpeedFastest);
-static tConfItem<bool> shows("SHOW_SCORE",subby_ShowScore);
-static tConfItem<bool> showae("SHOW_ALIVE",subby_ShowAlivePeople);
-static tConfItem<bool> showp("SHOW_PING",subby_ShowPing);
-static tConfItem<bool> showsm("SHOW_SPEED",subby_ShowSpeedMeter);
-static tConfItem<bool> showbm("SHOW_BRAKE",subby_ShowBrakeMeter);
-static tConfItem<bool> showrm("SHOW_RUBBER",subby_ShowRubberMeter);
-static tConfItem<bool> showtim("SHOW_TIME",showTime);
-static tConfItem<bool> show24("SHOW_TIME_24",show24hour);
-static tConfItem<bool> showpos("SHOW_POSITION",showPosition);
+static tConfItem<bool> showh("HUD_SHOW",subby_ShowHUD);
+static tConfItem<bool> showf("HUD_SHOW_FASTEST",subby_ShowSpeedFastest);
+static tConfItem<bool> shows("HUD_SHOW_SCORE",subby_ShowScore);
+static tConfItem<bool> showae("HUD_SHOW_ALIVE",subby_ShowAlivePeople);
+static tConfItem<bool> showp("HUD_SHOW_PING",subby_ShowPing);
+static tConfItem<bool> showsm("HUD_SHOW_SPEED",subby_ShowSpeedMeter);
+static tConfItem<bool> showbm("HUD_SHOW_BRAKE",subby_ShowBrakeMeter);
+static tConfItem<bool> showrm("HUD_SHOW_RUBBER",subby_ShowRubberMeter);
+static tConfItem<bool> showtim("HUD_SHOW_TIME",showTime);
+static tConfItem<bool> show24("HUD_SHOW_TIME_24",show24hour);
+static tConfItem<bool> showpos("HUD_SHOW_POSITION",showPosition);
 
-static tConfItem<REAL> scorex("SCORE_LOCX",subby_ScoreLocX);
-static tConfItem<REAL> scorey("SCORE_LOCY",subby_ScoreLocY);
-static tConfItem<REAL> scores("SCORE_SIZE",subby_ScoreSize);
+static tConfItem<REAL> scorex("HUD_SCORE_LOCX",subby_ScoreLocX);
+static tConfItem<REAL> scorey("HUD_SCORE_LOCY",subby_ScoreLocY);
+static tConfItem<REAL> scores("HUD_SCORE_SIZE",subby_ScoreSize);
 
-static tConfItem<REAL> fastx("FASTEST_LOCX",subby_FastestLocX);
-static tConfItem<REAL> fasty("FASTEST_LOCY",subby_FastestLocY);
-static tConfItem<REAL> fasts("FASTEST_SIZE",subby_FastestSize);
+static tConfItem<REAL> fastx("HUD_FASTEST_LOCX",subby_FastestLocX);
+static tConfItem<REAL> fasty("HUD_FASTEST_LOCY",subby_FastestLocY);
+static tConfItem<REAL> fasts("HUD_FASTEST_SIZE",subby_FastestSize);
 
-static tConfItem<REAL> aex("ALIVE_LOCX",subby_AlivePeopleLocX);
-static tConfItem<REAL> aey("ALIVE_LOCY",subby_AlivePeopleLocY);
-static tConfItem<REAL> aes("ALIVE_SIZE",subby_AlivePeopleSize);
+static tConfItem<REAL> aex("HUD_ALIVE_LOCX",subby_AlivePeopleLocX);
+static tConfItem<REAL> aey("HUD_ALIVE_LOCY",subby_AlivePeopleLocY);
+static tConfItem<REAL> aes("HUD_ALIVE_SIZE",subby_AlivePeopleSize);
 
-static tConfItem<REAL> px("PING_LOCX",subby_PingLocX);
-static tConfItem<REAL> py("PING_LOCY",subby_PingLocY);
-static tConfItem<REAL> ps("PING_SIZE",subby_PingSize);
+static tConfItem<REAL> px("HUD_PING_LOCX",subby_PingLocX);
+static tConfItem<REAL> py("HUD_PING_LOCY",subby_PingLocY);
+static tConfItem<REAL> ps("HUD_PING_SIZE",subby_PingSize);
 
-static tConfItem<REAL> positionx("POSITION_LOCX",subby_CoordLocX);
-static tConfItem<REAL> positiony("POSITION_LOCY",subby_CoordLoxY);
-static tConfItem<REAL> positions("POSITION_SIZE",subby_CoordSize);
+static tConfItem<REAL> positionx("HUD_POSITION_LOCX",subby_CoordLocX);
+static tConfItem<REAL> positiony("HUD_POSITION_LOCY",subby_CoordLoxY);
+static tConfItem<REAL> positions("HUD_POSITION_SIZE",subby_CoordSize);
 
 uMenuItemToggle hud3
 (&hud_prefs,"$pref_showfastest_text",

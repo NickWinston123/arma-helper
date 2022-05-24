@@ -46,10 +46,10 @@ int hex_to_int( char c ){
 
 // minimal tolerated values of font color before a white background is rendered
 static REAL sr_minR = .5, sr_minG = .5, sr_minB =.5, sr_minTotal = .7;
-tSettingItem< REAL > sr_minRConf( "FONT_MIN_R", sr_minR );
-tSettingItem< REAL > sr_minGConf( "FONT_MIN_G", sr_minG );
-tSettingItem< REAL > sr_minBConf( "FONT_MIN_B", sr_minB );
-tSettingItem< REAL > sr_minTotalConf( "FONT_MIN_TOTAL", sr_minTotal );
+tConfItem< REAL > sr_minRConf( "FONT_MIN_R", sr_minR );
+tConfItem< REAL > sr_minGConf( "FONT_MIN_G", sr_minG );
+tConfItem< REAL > sr_minBConf( "FONT_MIN_B", sr_minB );
+tConfItem< REAL > sr_minTotalConf( "FONT_MIN_TOTAL", sr_minTotal );
 
 // *******************************************************************************************
 // *

@@ -34,6 +34,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define MAX_PLAYERS 4
 
+//For Menu Color Settings
+#define COLORRANDOMIZATIONOFF 0
+#define COLORRANDOMIZATIONRANDOM 1
+#define COLORRANDOMIZATIONUNIQUE 2
+
 #include "rSDL.h"
 
 #include "uInput.h"
@@ -115,6 +120,8 @@ public:
     tCONTROLLED_PTR(ePlayerNetID) netPlayer;
 
     int rgb[3]; // our color
+
+    int colorRandomization; // The players color randomization
 
     tString instantChatString[MAX_INSTANT_CHAT];
     // instant chat macros

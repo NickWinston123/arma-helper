@@ -1035,6 +1035,12 @@ void sg_PlayerMenu(int Player){
      "$player_num_per_team_help",
      p->favoriteNumberOfPlayersPerTeam, 1, 16, 1);
 
+    //Color Randomization in the player menu
+    uMenuItemSelection<int> se_cr(&playerMenu,"$player_color_randomization_text","$player_color_randomization_help",p->colorRandomization);
+    se_cr.NewChoice("$player_color_randomization_none_text",   "$player_color_randomization_none_help",   COLORRANDOMIZATIONOFF);
+    se_cr.NewChoice("$player_color_randomization_random_text", "$player_color_randomization_random_help", COLORRANDOMIZATIONRANDOM);
+    se_cr.NewChoice("$player_color_randomization_unique_text", "$player_color_randomization_unique_help", COLORRANDOMIZATIONUNIQUE);
+
     ArmageTron_color_menuitem B(&playerMenu,"$player_blue_text",
                                 "$player_blue_help",
                                 p->rgb,2);

@@ -473,9 +473,8 @@ color_b_help            Cycle and wall colour, blue component.
 color_g_help            Cycle and wall colour, green component.
 color_r_help            Cycle and wall colour, red component.
 
-player_random_color_help Gives a player a random color every round. The max range is 32 allowing multi-colored tails / bikes.
-player_unique_color_help Gives a player a semi-random unique color every round. Attempts to generate colors that are different from other players.
-
+player_random_color_help 		Color Randomization: 0 = None, 1 = Random (completely random), 2 = Unique (attempts to change to a color no one has).
+player_random_color_range_help  Max random value generated. Default: 32 (0 - 32).
 
 #********************************************
 #********************************************

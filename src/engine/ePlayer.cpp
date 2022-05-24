@@ -1338,7 +1338,13 @@ ePlayer::ePlayer()
     StoreConfitem(tNEW(tConfItem<int>) (confname,
                                         "$color_r_help",
                                         rgb[0]));
+    
     confname.Clear();
+    confname << "PLAYER_RANDOM_COLOR_"<< id+1;
+    colorRandomization=0;
+    StoreConfitem(tNEW(tConfItem<int>) (confname,
+                                         "$player_random_color_help",
+                                         colorRandomization));
 #endif
 
     tRandomizer & randomizer = tRandomizer::GetInstance();
@@ -8583,15 +8589,10 @@ static int se_ColorDistance( int a[3], int b[3] )
     return distance;
 }
 
+static int se_RandomizeColorRange = 32;
+static tConfItem<int> se_RandomizeColorRangeConf("PLAYER_RANDOM_COLOR_RANGE", se_RandomizeColorRange);
 
-bool se_randomizeColor = false;
-static tSettingItem< bool > se_randomizeColorConf( "PLAYER_RANDOM_COLOR", se_randomizeColor );
-
-bool se_uniqueColor = false;
-static tSettingItem< bool > se_uniqueColorConf( "PLAYER_UNIQUE_COLOR", se_uniqueColor );
-
-
-//This seems more random. Stolen from the old randomize color, but no comparing. Also another bonus, generates multi colored cycle / tails with the limit increase to 32.
+//This seems more random.
 static void se_RandomizeColor(ePlayer * l)
 {
     int currentRGB[3];
@@ -8602,7 +8603,7 @@ static void se_RandomizeColor(ePlayer * l)
     for( int i = 2; i >= 0; --i )
         {
             currentRGB[i] = l->rgb[i];
-            newRGB[i] = randomizer.Get(32);
+            newRGB[i] = randomizer.Get(se_RandomizeColorRange);
         }
 
     for( int i = 2; i >= 0; --i )
@@ -8611,7 +8612,7 @@ static void se_RandomizeColor(ePlayer * l)
         }
 }
 
-//This didnt seem to be too random, more like picking a unique color no one else currently has.
+//Attempts to pick a color no one else currently has.
 static void se_UniqueColor( ePlayer * l, ePlayerNetID * p )
 {
     int currentRGB[3];
@@ -8786,15 +8787,20 @@ void ePlayerNetID::Update()
                 p->favoriteNumberOfPlayersPerTeam=ePlayer::PlayerConfig(i)->favoriteNumberOfPlayersPerTeam;
                 p->nameTeamAfterMe=ePlayer::PlayerConfig(i)->nameTeamAfterMe;
 
-                if ( se_randomizeColor )
-                {
-                    se_RandomizeColor(local_p);
-                }
-
-                if ( se_uniqueColor )
-                {
-                    se_UniqueColor(local_p,p);
-                }
+                //Color Customizations
+                switch(ePlayer::PlayerConfig(i)->colorRandomization)
+                    {
+                        case COLORRANDOMIZATIONOFF:
+                            break;
+                        case COLORRANDOMIZATIONRANDOM:
+                        se_RandomizeColor(local_p);
+                            break;
+                        case COLORRANDOMIZATIONUNIQUE:
+                        se_UniqueColor(local_p,p);
+                            break;
+                        default:
+                            break;
+                    }
 
 
                 p->r=ePlayer::PlayerConfig(i)->rgb[0];

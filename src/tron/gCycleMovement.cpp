@@ -189,7 +189,7 @@ static nSettingItemWatched<REAL> c_d_d_b("CYCLE_DELAY_DOUBLEBIND_BONUS",
 
 // number of turns buffered exactly
 int sg_cycleTurnMemory = 3;
-static tSettingItem<int> c_tm("CYCLE_TURN_MEMORY",
+static tConfItem<int> c_tm("CYCLE_TURN_MEMORY",
                               sg_cycleTurnMemory);
 
 REAL sg_delayCycleTimeBased = 1;

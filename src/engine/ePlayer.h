@@ -113,7 +113,7 @@ public:
 
     eCamMode startCamera;
     bool     allowCam[10];
-    int      startFOV;
+    int      FOV;
     bool     smartCustomGlance; //!< flag making the smart camera use the custom settings for glancing
 
     tCHECKED_PTR(eCamera)           cam;

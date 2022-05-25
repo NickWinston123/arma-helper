@@ -454,7 +454,7 @@ auto_login_confitem_help    Should this player automatically request authenticat
 hide_identity_confitem_help Should this player hide their ID?
 camcenter_help            Center internal camera on driving direction
 start_cam_help            Initial Camera
-start_fov_help            Initial field of vision
+fov_help            field of vision
 allow_cam_help            Allow/forbid the different camera modes
 instant_chat_string_help    Instant chat available with hotkeys
 name_team_after_player_help    If set, the team is named after the leading player

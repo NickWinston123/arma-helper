@@ -337,7 +337,7 @@ static void se_SetWatchedObject( eCamera * cam, eGameObject * obj )
 void eCamera::MyInit(){
     if (localPlayer){
         if (cameraMain_) mode = localPlayer->startCamera; //PENDING:
-        fov=localPlayer->startFOV;
+        fov=localPlayer->FOV;
     }
 
     // find center: the object our player controls
@@ -1542,7 +1542,9 @@ void eCamera::Timestep(REAL ts){
     {
         netPlayer = localPlayer->netPlayer;
     }
-
+    if (fov != localPlayer->FOV) {
+        fov = localPlayer->FOV;
+    }
     // the best center is always our own vehicle. Focus on it if possible.
     if (netPlayer)
     {

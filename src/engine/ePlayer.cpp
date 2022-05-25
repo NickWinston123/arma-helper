@@ -1236,11 +1236,11 @@ ePlayer::ePlayer()
                   startCamera));
 
     confname.Clear();
-    confname << "START_FOV_"<< id+1;
-    startFOV=90;
+    confname << "FOV_"<< id+1;
+    FOV=90;
     StoreConfitem(tNEW(tConfItem<int>) (confname,
-                                        "$start_fov_help",
-                                        startFOV));
+                                        "$fov_help",
+                                        FOV));
     confname.Clear();
 
     confname.Clear();

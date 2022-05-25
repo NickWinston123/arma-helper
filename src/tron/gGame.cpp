@@ -1350,7 +1350,13 @@ static void sg_AddDelayedCmd(std::istream &s)
     int cLevel = tConfItemBase::AccessLevel(cmd_str);
 
 	// add extracted command
-    if (tCurrentAccessLevel::GetAccessLevel() <= cLevel)
+    bool requiredAccessLevel = true;
+
+    if ( sn_GetNetState() == nSERVER ) {
+        requiredAccessLevel = tCurrentAccessLevel::GetAccessLevel() <= cLevel;
+    }
+    
+    if (requiredAccessLevel)
     {
         new gDelayCommand(cmd_str.str(), delay, interval);
 

@@ -95,7 +95,6 @@ void eDebugLine::Update(REAL ts)
 void eDebugLine::Render()
 {
 #ifndef DEDICATED
-#ifdef DEBUGLINE
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
     BeginLines();
@@ -107,7 +106,6 @@ void eDebugLine::Render()
         Vertex(entry.stop.x,  entry.stop.y,  entry.stopH);
     }
     RenderEnd();
-#endif
 #endif
 }
 
@@ -134,12 +132,10 @@ void eDebugLine::ResetOptions()
 void eDebugLine::Draw(const eCoord& start, REAL startH,
                       const eCoord& stop , REAL stopH)
 {
-#ifdef DEBUGLINE
     eLineEntry& line = eLineEntry::Create();
     line.start  = start;
     line.startH = startH;
     line.stop   = stop;
     line.stopH  = stopH;
-#endif
 }
 

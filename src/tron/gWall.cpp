@@ -912,6 +912,7 @@ void gNetPlayerWall::RenderList(bool list, gWallRenderMode renderMode ){
             if( denom <= 0 )
             {
                 // zero length wall
+                this->cycle_->setTailMoving(false);
                 return;
             }
 
@@ -976,17 +977,21 @@ void gNetPlayerWall::RenderList(bool list, gWallRenderMode renderMode ){
                 REAL denom = pa-pe;
                 if( denom > 0 )
                 {
+                    this->cycle_->setTailMoving(false);
                     continue;
                 }
 
                 REAL cut = (cycle_->GetDistance() - cycle_->ThisWallsLength() - pe) / denom;
-                if ( cut < 0 )
+                if ( cut < 0 ) {
+                    this->cycle_->setTailMoving(false);
                     continue;
+                }
 
                 if ( cut < 1 )
                 {
                     p1 = p2 + (p1-p2)*cut;
                     ta = te + (ta-te)*cut;
+                    this->cycle_->setTailPos(p1);
                 }
             }
 

@@ -1126,6 +1126,530 @@ private:
     WallHug hugReplacement_;       //!< a possible replacement candidate for one of the hugged walls
 };
 
+
+// HELPER
+
+bool sg_helper = false;
+static tConfItem<bool> sg_helperConf("HELPER", sg_helper);
+
+REAL sg_helperSensorMult = 10;
+static tConfItem<REAL> sg_helperSensorMultConf("HELPER_SENSOR_MULT", sg_helperSensorMult);
+
+REAL sg_helperBrightness = 1;
+static tConfItem<REAL> sg_helperBrightnessConf("HELPER_BRIGHTESS", sg_helperBrightness);
+
+
+bool sg_helperEnemyTracers = false;
+static tConfItem<bool> sg_helperEnemyTracersConf("HELPER_ENEMY_TRACERS", sg_helperEnemyTracers);
+
+REAL sg_helperEnemyTracersDetectionRange = 150;
+static tConfItem<REAL> sg_helperEnemyTracersDetectionRangeConf("HELPER_ENEMY_TRACERS_DETECTION_RANGE", sg_helperEnemyTracersDetectionRange);
+
+REAL sg_helperEnemyTracersSpeedMult = 1.5;
+static tConfItem<REAL> sg_helperEnemyTracersSpeedMultConf("HELPER_ENEMY_TRACERS_SPEED_MULT", sg_helperEnemyTracersSpeedMult);
+
+REAL sg_helperEnemyTracersDelayMult = 1;
+static tConfItem<REAL> sg_helperEnemyTracersDelayMultConf("HELPER_ENEMY_TRACERS_DELAY_MULT", sg_helperEnemyTracersDelayMult);
+
+REAL sg_helperEnemyTracersTimeout = 0.01;
+static tConfItem<REAL> sg_helperEnemyTracersTimeoutConf("HELPER_ENEMY_TRACERS_TIMEOUT", sg_helperEnemyTracersTimeout);
+
+
+bool sg_helperDetectCut = false;
+static tConfItem<bool> sg_helperDetectCutConf("HELPER_DETECT_CUT", sg_helperDetectCut);
+
+REAL sg_helperDetectCutDetectionRange = 150;
+static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf("HELPER_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
+
+REAL sg_helperDetectCutTimeout = .001;
+static tConfItem<REAL> sg_helperDetectCutTimeoutConf("HELPER_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
+
+REAL sg_helperDetectCutReact = .0015;
+static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg_helperDetectCutReact);
+
+
+bool sg_helperShowHit = false;
+static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit);
+
+REAL sg_showHitDataRange = 1;
+static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE", sg_showHitDataRange);
+
+REAL sg_showHitDataFreeRange = 1;
+static tConfItem<REAL> sg_showHitDataFreeRangeConf("HELPER_SHOW_HIT_OPEN_RANGE", sg_showHitDataFreeRange);
+
+REAL sg_showHitDataTimeout = 0.009;
+static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
+
+
+bool sg_helperShowTail = false;
+static tConfItem<bool> sg_helperShowTailConf("HELPER_SHOW_TAIL", sg_helperShowTail);
+
+REAL sg_helperShowTailPassthrough = 0.5;
+static tConfItem<REAL> sg_helperShowTailPassthroughConf("HELPER_SHOW_TAIL_PASSTHROUGH", sg_helperShowTailPassthrough);
+
+REAL sg_helperShowTailTimeout = 1;
+static tConfItem<REAL> sg_helperShowTailTimeoutConf("HELPER_SHOW_TAIL_TIMEOUT", sg_helperShowTailTimeout);
+
+
+bool sg_helperShowCorners = false;
+static tConfItem<bool> sg_helperShowCornersConf("HELPER_SHOW_CORNERS", sg_helperShowCorners);
+
+bool sg_helperShowCornersPassed = 0;
+static tConfItem<bool> sg_helperShowCornersPassedC("HELPER_CORNERS_PASSED",sg_helperShowCornersPassed);
+
+REAL sg_helperShowCornersPassedRange = 1;
+static tConfItem<REAL> sg_helperShowCornersPassedRangeC("HELPER_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
+
+REAL sg_helperShowCornersBoundary = 10;
+static tConfItem<REAL> sg_showTraceDatacornerRangeC("HELPER_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
+
+REAL sg_helperShowCornersBoundaryPassed = 2.5;
+static tConfItem<REAL> sg_showTraceDatacornerPassedRangeC("HELPER_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
+
+REAL sg_helperShowCornersTimeout = 1;
+static tConfItem<REAL> sg_traceTimeoutc("HELPER_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
+
+struct HelperData
+{
+    gSensor const &front;
+    gSensor const &left;
+    gSensor const &right;
+    REAL &speedFactor;
+    REAL &turnSpeedFactor;
+    REAL &turnSpeedFactorPercent;
+    REAL &turnDistance;
+
+    HelperData(gSensor const &a_front, gSensor const &a_left,
+               gSensor const &a_right, REAL &a_speedFactor, REAL &a_turnSpeedFactor, REAL & a_turnSpeedFactorPercent,REAL &a_turnDistance)
+        : front(a_front), left(a_left), right(a_right),
+          speedFactor(a_speedFactor), turnSpeedFactor(a_turnSpeedFactor), turnSpeedFactorPercent(a_turnSpeedFactorPercent),turnDistance(a_turnDistance) {}
+};
+
+class gHelper
+{
+    gHelper();
+
+public:
+    gHelper(gCycle *owner)
+        : owner_(owner), player_(owner->Player()),
+          ownerWallLength(owner->ThisWallsLength()),
+          ownerTurnDelay(
+              owner->GetTurnDelay())
+    {
+        ownerPos = &owner_->pos;
+        ownerDir = &owner_->dir;
+        tailPos = &owner_->tailPos;
+        ownerSpeed = &owner_->verletSpeed_;
+    }
+
+    gCycle *getOwner() { return owner_; }
+
+
+     eCoord closestCorner(eCoord center, REAL radius)
+    {
+
+        eCoord corner[3];
+        eCoord closestCorner;
+
+        corner[0] = eCoord(center.x - (radius), center.y + (radius));
+        corner[1] = eCoord(center.x + (radius), center.y + (radius));
+        corner[2] = eCoord(center.x + (radius), center.y - (radius));
+        corner[3] = eCoord(center.x - (radius), center.y - (radius));
+
+        REAL positionDifference[3];
+
+        positionDifference[0] = st_GetDifference(corner[0], (*ownerPos));
+        positionDifference[1] = st_GetDifference(corner[1], (*ownerPos));
+        positionDifference[2] = st_GetDifference(corner[2], (*ownerPos));
+        positionDifference[3] = st_GetDifference(corner[3], (*ownerPos));
+
+        REAL currentMax = 99999;
+        for (int i = 0; i < 4; i++)
+        {
+            if (positionDifference[i] <= currentMax)
+            {
+                currentMax = positionDifference[i];
+                closestCorner = corner[i];
+            }
+        }
+        return closestCorner;
+    }
+
+    template<class ecoordOne, class ecoordTwo>
+    void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
+                   ecoordOne start,ecoordTwo end) {
+                       
+        if (timeout >= 6) {
+            timeout = 1;
+        }
+        eDebugLine::SetTimeout(timeout);
+        eDebugLine::SetColor(R * sg_helperBrightness, G * sg_helperBrightness, B * sg_helperBrightness);
+        eDebugLine::Draw(start, height, end, height);
+    }
+
+    gCycle *findClosestEnemy()
+    {
+        const tList<eGameObject> &gameObjects = owner_->Grid()->GameObjects();
+
+        gCycle *closestTarget = nullptr;
+        REAL currentMax = 1212121212;
+        for (int i = gameObjects.Len() - 1; i >= 0; i--)
+        {
+            gCycle *other = dynamic_cast<gCycle *>(gameObjects(i));
+            if (bool(other) && other->Alive() && other->Team() != owner_->Team())
+            {
+                REAL positionDifference =
+                    st_GetDifference(other->Position(), (*ownerPos));
+
+                if (positionDifference <= currentMax)
+                {
+                    currentMax = positionDifference;
+                    closestTarget = other;
+                }
+            }
+        }
+        return closestTarget;
+    }
+
+    void detectCut(int detectionRange, HelperData &data)
+    {
+        REAL timeout = data.speedFactor + sg_helperDetectCutTimeout;
+        gCycle *target = findClosestEnemy();
+
+        if (bool(target))
+        {
+
+            eCoord enemypos = target->Position() - (*ownerPos);
+            eCoord actualEnemyPos = target->Position();
+            eCoord enemydir = target->Direction();
+            REAL enemyspeed = target->Speed();
+            REAL range =
+                ((*ownerSpeed) * (ownerTurnDelay * sg_helperEnemyTracersDelayMult));
+
+            enemypos = enemypos.Turn(ownerDir->Conj()).Turn(0, 1);
+            enemydir = enemydir.Turn(ownerDir->Conj()).Turn(0, 1);
+
+            bool enemyDirection = false;
+            if (enemydir.x <= 0 && enemydir.y == 1)
+            {
+                enemyDirection = true;
+            }
+
+            int side = 1;
+            if (enemypos.x < 0)
+            {
+                side *= -1;
+                enemypos.x *= -1;
+                enemydir.x *= -1;
+            }
+
+            REAL enemydist = target->Lag() * enemyspeed;
+
+
+            if (!sr_predictObjects) {
+                enemypos = enemypos - enemydir * enemydist;
+            }
+            enemydist += 2 * sg_helperDetectCutReact * enemyspeed;
+
+            REAL ourdist = sg_helperDetectCutReact * (*ownerSpeed);
+
+            enemypos.y -= ourdist;
+
+
+            REAL forward = -enemypos.y + .01;
+            if (forward < 0)
+                forward = 0;
+            if (forward > enemydist)
+                forward = enemydist;
+
+            enemypos.y += forward;
+            enemydist -= forward;
+            REAL closeReact = (range + detectionRange);
+            bool isClose = (enemypos.x < closeReact && enemypos.y < closeReact &&
+                            (enemypos.x > -closeReact && enemypos.y > -closeReact));
+
+
+            enemypos.x -= enemydist;
+
+            if (isClose && enemypos.y * enemyspeed > enemypos.x * (*ownerSpeed)) {
+                debugLine(1,0,0,0,timeout,(*ownerPos),actualEnemyPos);
+            } else if (enemypos.y * (*ownerSpeed) < -enemypos.x * enemyspeed) {
+
+                if (side == -1 && data.left.hit > range) {
+                    debugLine(0,1,0,0,timeout,(*ownerPos),actualEnemyPos);
+                }
+
+                if (side == 1 && data.right.hit > range) {
+                    debugLine(0,1,0,0,timeout,(*ownerPos),actualEnemyPos);
+                }
+            }
+        }
+    }
+
+    void enemyTracers(int detectionRange, REAL timeout)
+    {
+        {
+            gCycle *other = findClosestEnemy();
+
+            if (bool(other))
+            {
+
+                eCoord otherPos = other->Position();
+                REAL R = .1, G = .1, B = 0;
+                eCoord enemypos = otherPos - (*ownerPos);
+                bool isClose =
+                    (enemypos.x < detectionRange && enemypos.y < detectionRange &&
+                     (enemypos.x > -detectionRange && enemypos.y > -detectionRange));
+                bool enemyFaster =
+                    ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
+                bool isTeammate = (owner_->Team() == other->Team());
+
+                if ((isClose || enemyFaster))
+                {
+                    if (!isTeammate)
+                    {
+                        R = 1, G = 1;
+                    }
+
+                    if (isTeammate)
+                    {
+                    R = 1, G = 0, B = 1;
+                    }
+
+                    if (enemyFaster && !isTeammate)
+                    {
+                        R = 1, G = .5, B = 0;
+                    }
+
+                    debugLine(R,G,B,0,timeout,(*ownerPos),otherPos);
+                }
+            }
+        }
+    }
+    void showTail(HelperData &data)
+    {
+
+        static eCoord lastPos;
+        if (lastPos != (*tailPos))
+        {
+            REAL timeout = sg_helperShowTailTimeout * data.speedFactor;
+            eCoord target = (*tailPos) - (*ownerPos);
+            gSensor sensor(owner_, (*ownerPos), target);
+            sensor.detect(ownerWallLength);
+            if (sensor.hit >= sg_helperShowTailPassthrough) {
+                debugLine(owner_->color_.r,owner_->color_.g,owner_->color_.b,0,timeout,(*ownerPos),(*tailPos));
+                lastPos = (*tailPos);
+            }
+            else {
+                debugLine(owner_->color_.r,owner_->color_.g,owner_->color_.b,0,timeout,(*tailPos),(*tailPos));
+            }
+        }
+    }
+
+    void showCorners(HelperData &data)
+    {
+        static eCoord leftLast, rightLast, frontLast, oldRight, oldLeft;
+        int currentDirectionNumber = owner_->Grid()->DirectionWinding(*ownerDir);
+        REAL timeout = data.speedFactor * sg_helperShowCornersTimeout;
+
+        if (data.left.ehit)
+        {
+            eCoord leftCorner = *data.left.ehit->Point();
+
+            REAL firstEdgeDistance = eCoord::F(*ownerDir, leftCorner - (*ownerPos));
+            REAL secondEdgeDistance =
+                eCoord::F(*ownerDir, *data.left.ehit->Other()->Point() - (*ownerPos));
+
+            if (firstEdgeDistance < secondEdgeDistance)
+            {
+                firstEdgeDistance = secondEdgeDistance;
+                leftCorner = *data.left.ehit->Other()->Point();
+            }
+            eCoord distanceToCorner = leftCorner - (*ownerPos);
+
+            bool isClose = (distanceToCorner.x < sg_helperShowCornersBoundary &&
+                            distanceToCorner.y < sg_helperShowCornersBoundary &&
+                            (distanceToCorner.x > -sg_helperShowCornersBoundary &&
+                             distanceToCorner.y > -sg_helperShowCornersBoundary));
+
+            if (isClose && data.left.type != gSENSOR_RIM)
+            {
+                debugLine(1,.5,0,0,timeout,(*ownerPos),leftCorner);
+            }
+
+            if (sg_helperShowCornersPassed && leftLast != leftCorner)
+            {
+                eCoord leftLastCorner = leftLast - (*ownerPos);
+
+                if (fabs((eCoord::F(*ownerDir, leftLast - (*ownerPos)))) <=
+                    data.turnSpeedFactor * sg_helperShowCornersPassedRange)
+                {
+                    debugLine(.8,1,1,0,timeout,(*ownerPos),leftLast);
+                }
+            }
+        }
+
+        if (data.right.ehit)
+        {
+            eCoord rightCorner = *data.right.ehit->Point();
+            REAL firstEdgeDistance = eCoord::F(*ownerDir, rightCorner - (*ownerPos));
+            REAL secondEdgeDistance =
+                eCoord::F(*ownerDir, *data.right.ehit->Other()->Point() - (*ownerPos));
+
+            if (firstEdgeDistance < secondEdgeDistance)
+            {
+                firstEdgeDistance = secondEdgeDistance;
+                rightCorner = *data.right.ehit->Other()->Point();
+            }
+
+            eCoord distanceToCorner = rightCorner - (*ownerPos);
+
+            bool isClose = (distanceToCorner.x < sg_helperShowCornersBoundary &&
+                            distanceToCorner.y < sg_helperShowCornersBoundary &&
+                            (distanceToCorner.x > -sg_helperShowCornersBoundary &&
+                             distanceToCorner.y > -sg_helperShowCornersBoundary));
+
+            if (isClose && data.right.type != gSENSOR_RIM)
+            {
+                debugLine(1,.5,0,0,timeout,(*ownerPos),rightCorner);
+            }
+            if (sg_helperShowCornersPassed && rightLast != rightCorner)
+            {
+                eCoord rightLastCorner = frontLast - (*ownerPos);
+                if (fabs((eCoord::F(*ownerDir, rightLast - (*ownerPos)))) <=
+                    data.turnSpeedFactor * sg_helperShowCornersPassedRange)
+                {
+                     debugLine(.8,1,1,0,timeout,(*ownerPos),rightLast);
+                }
+            }
+        }
+    }
+
+    void showHit(HelperData &data)
+    {
+        if (!(fabs(ownerDir->x) == 1 || fabs(ownerDir->y) == 1))
+        {
+            return;
+        }
+
+        bool wallClose = data.front.hit < data.turnSpeedFactor * sg_showHitDataRange;
+
+        REAL timeout = data.turnSpeedFactor * sg_showHitDataTimeout;
+
+        if (wallClose)
+        {
+            debugLine(1,.5,0,0,data.speedFactor,(*ownerPos),data.front.before_hit);
+
+            gSensor left(owner_, data.front.before_hit,
+                         owner_->Direction().Turn(eCoord(0, 1)));
+            left.detect(30 + timeout);
+
+            gSensor right(owner_, data.front.before_hit,
+                          owner_->Direction().Turn(eCoord(0, -1)));
+            right.detect(30 + timeout);
+            bool leftOpen = left.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
+            bool rightOpen = right.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
+
+            if (leftOpen) {
+
+                    debugLine(0,1,0,0,data.speedFactor,data.front.before_hit,left.before_hit);
+            }
+            if (rightOpen) {
+                                 debugLine(0,1,0,0,data.speedFactor,data.front.before_hit,right.before_hit);
+            }
+            if (!leftOpen) {
+                 debugLine(1,0,0,0,data.speedFactor,data.front.before_hit,left.before_hit);
+            }
+            if (!rightOpen) {
+                debugLine(1,0,0,0,data.speedFactor,data.front.before_hit,right.before_hit);
+            }
+        }
+    }
+    
+    static gHelper & Get( gCycle * cycle )
+    {
+        tASSERT( cycle );
+
+        // create
+        if ( cycle->helper_.get() == 0 )
+            cycle->helper_.reset( new gHelper( cycle ) );
+
+        return *cycle->helper_;
+    }
+
+    void Activate()
+    {
+        REAL speedFactor = (1/(*ownerSpeed));
+        REAL turnSpeedFactor = ((*ownerSpeed) * ownerTurnDelay);
+        REAL turnSpeedFactorPercent = (1/turnSpeedFactor);
+        REAL turnDistance = (turnSpeedFactor/100);
+
+        REAL detectRange = ownerWallLength;
+        
+        if (detectRange < *ownerSpeed) {
+            detectRange = turnSpeedFactor;
+        } else {
+            detectRange *= turnSpeedFactor;
+        }
+        detectRange *= (sg_helperSensorMult*10);
+        
+        if (ownerWallLength < *ownerSpeed)
+        {
+            detectRange = *ownerSpeed;
+        }
+
+        gSensor front(owner_, (*ownerPos), *ownerDir);
+        front.detect(detectRange);
+
+        gSensor left(owner_, (*ownerPos), ownerDir->Turn(eCoord(0, 1)));
+        left.detect(detectRange);
+
+        gSensor right(owner_, (*ownerPos), ownerDir->Turn(eCoord(0, -1)));
+        right.detect(detectRange);
+
+        HelperData data(front, left, right,speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance);
+
+        if (sg_helperEnemyTracers)
+        {
+            enemyTracers(sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
+        }
+
+        if (sg_helperDetectCut)
+        {
+            detectCut(sg_helperDetectCutDetectionRange, data);
+        }
+
+        if (sg_helperShowHit)
+        {
+            showHit(data);
+        }
+
+        if (sg_helperShowTail)
+        {
+            showTail(data);
+        }
+
+        if (sg_helperShowCorners)
+        {
+            showCorners(data);
+        }
+
+    }
+
+private:
+    gCycle *owner_;
+    ePlayerNetID *player_;
+    gCycle *closestEnemy;
+    eCoord *ownerPos;
+    eCoord *ownerDir;
+    eCoord *tailPos;
+    REAL *ownerSpeed;
+    REAL ownerWallLength;
+    REAL ownerTurnDelay;
+};
+
+
+
 //  *****************************************************************
 
 static void sg_ArchiveCoord( eCoord & coord, int level )
@@ -1187,7 +1711,7 @@ next(NULL),list(NULL){
     m >> flags;
     braking  = flags & 0x01;
     chatting = flags & 0x02;
-    
+
     if(chatting && sg_chatBotControlByServer)
         return;
 
@@ -2761,8 +3285,13 @@ bool gCycle::Timestep(REAL currentTime){
         }
     }
 
-    bool ret = false;
+    bool playerIsMe = bool(player) && Alive() && player->IsHuman() && player->Owner() == sn_myNetID;
+    if (sg_helper && playerIsMe) {
+        gHelper & helper = gHelper::Get( this );
+        helper.Activate();
+    }
 
+    bool ret = false;
     // nothing special if simulating backwards
     if (currentTime < lastTime)
     {
@@ -3332,7 +3861,7 @@ void gCycle::KillAt( const eCoord& deathPos){
         MoveSafely( deathPos, lastTime, lastTime );
         return;
     }
-    
+
     deathReason_ = "OTHER";
 
     // find the killer from the enemy influence storage
@@ -4014,7 +4543,7 @@ bool gCycle::DoTurn(int d)
             tString logTurnPos;
             logTurnPos << pos.x << " " << pos.y << " " << dirDrive.x << " " << dirDrive.y;
             LogPlayersCycleTurns(this, logTurnPos);
-            
+
             if( sg_playerGridPosOnTurn && Player() )
             {
                 // FIXME: Too much copy'n'paste from ePlayer.cpp here
@@ -4031,7 +4560,7 @@ bool gCycle::DoTurn(int d)
                     se_playerGridPosWriter << ePlayerNetID::FilterName( Team()->Name() );
                 else
                     se_playerGridPosWriter << "";
-                
+
                 if ( styctcompat_se_playerGridPos )
                 {
                     se_playerGridPosWriter << verletSpeed_;
@@ -4290,14 +4819,14 @@ void gCycle::Kill(){
             lastShotTime = 0;
             shotStarted = 0;
             shotReservoir = 1.0;
-            
+
             if(sg_cycleDeathTeleport != 0 && Player())
             {
                 if(sg_cycleDeathTeleportExplosion)
                 {
                     tNEW(gExplosion)(grid, pos,lastTime, color_, this );
                 }
-                
+
                 if(sg_cycleDeathTeleportReset)
                 {
                     SetRubber(0);
@@ -4305,7 +4834,7 @@ void gCycle::Kill(){
                     brakingReservoir = 1;
                     RequestSync();
                 }
-                
+
                 se_cycleDeathTeleportWriter << Player()->GetUserName() << MapPosition().x << MapPosition().y << Direction().x << Direction().y;
                 if(Player()->CurrentTeam())
                     se_cycleDeathTeleportWriter << ePlayerNetID::FilterName(Team()->Name());
@@ -4317,7 +4846,7 @@ void gCycle::Kill(){
                 if(deathReason_.StrPos(" ") == -1)
                     se_cycleDeathTeleportWriter << "";
                 se_cycleDeathTeleportWriter.write();
-                
+
                 switch(sg_cycleDeathTeleport)
                 {
                     case 1:
@@ -6413,11 +6942,11 @@ void gCycle::SyncEnemy ( const eCoord& )
                 currentWall->real_CopyIntoGrid(grid);
             }
         }
-
+#ifdef DEBUG
         eDebugLine::SetTimeout(5);
         eDebugLine::SetColor( 1,0,0 );
         eDebugLine::Draw( crossPos, 0, crossPos, 8 );
-
+#endif
         // drop old wall
         if(currentWall){
             lastWall=currentWall;
@@ -6928,7 +7457,7 @@ void gCycle::ProcessShoot(bool deathShot)
 
                 eCoord shotPos = pos + (dirDrive * (shotRadius + sg_shotStartDistance));
                 eCoord shotVelocity = dirDrive * Speed() * sg_shotVelocityMultiplier;
-                
+
                 if(shotRadius <= 0) //HACK but useful for scripts that don't actually need a zone
                 {
                     sg_ZoneShotReleased << deathShot << "-1" << Player()->GetUserName() << shotPos.x/gArena::SizeMultiplier() << shotPos.y/gArena::SizeMultiplier() << shotVelocity.x << shotVelocity.y;
@@ -7267,38 +7796,38 @@ static void sg_RespawnPlayer(std::istream &s)
         ePlayerNetID *pPlayer = ePlayerNetID::FindPlayerByName(ePlayerNetID::FilterName(PlayerName));
         if(!pPlayer)
             return;
-        
+
         if(sg_RespawnPlayerStrict && !pPlayer->CanRespawn())
             return;
-        
+
         bool message = sg_RespawnPlayerCM;
         tString x_str, y_str;
         REAL dirx,diry;
-        
+
         #define RESPAWN_MAX_PARAMS 5
         tString str[RESPAWN_MAX_PARAMS];
         for(int i=0;i<RESPAWN_MAX_PARAMS;++i)
         {
             s >> str[i];
         }
-        
+
         tString str0 = str[0].ToLower();
         if(str0[0] == 't' || str0[0] == 'f' || str[4] != "") // we'll assume the first one is the message flag
         {
             message = (
-                str0[0] == 't' || 
+                str0[0] == 't' ||
                 ( str[0][0] >= '0' && str[0][0] <= '9' && bool(atoi(str[0])) )
             );
-            
+
             ++pos;
         }
-        
+
         x_str = str[pos++]; y_str = str[pos++];
         dirx = strtof(str[pos++], 0); diry = strtof(str[pos++], 0);
-        
+
         // prepare coord and direction ...
         eCoord ppos, pdir;
-        if(x_str == "" && y_str == "") 
+        if(x_str == "" && y_str == "")
         {
             sg_DetermineSpawnPoint(pPlayer,ppos,pdir);
         }

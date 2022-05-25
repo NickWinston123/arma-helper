@@ -51,6 +51,7 @@ class gPlayerWall;
 class eTempEdge;
 struct gPredictPositionData;
 class gFlagZoneHack;
+class gHelper;
 
 // minimum time between two cycle turns
 extern REAL sg_delayCycle;
@@ -175,9 +176,15 @@ class gCycle: public gCycleMovement
     friend class gCycleChatBot;
     std::unique_ptr< gCycleChatBot > chatBot_;
 
+    friend class gHelper;
+    std::unique_ptr< gHelper > helper_;
+
     bool dropWallRequested_; //!< flag indicating that someone requested a wall drop
 public:
     eCoord            lastGoodPosition_;    // the location of the last known good position
+    eCoord            tailPos;
+    eCoord            tailDir;
+    bool              tailMoving;
 
     REAL skew,skewDot;						// leaning to the side
 
@@ -307,6 +314,9 @@ public:
     int WindingNumber() const {return windingNumber_;}
 
     virtual bool            Vulnerable              ()                                    const     ;   //!< returns whether the cycle can be killed
+
+    void setTailPos(eCoord tailPos) {this->tailPos = tailPos;}
+    void setTailMoving(bool tailMoving) {this->tailMoving = tailMoving;}
 
     // bool CanMakeTurn() const { return pendingTurns <= 0 && lastTime >= nextTurn; }
 

@@ -735,9 +735,9 @@ public:
         tASSERT(character);
 
         hit = false;
-
+#ifdef DEBUG
         eDebugLine::SetTimeout(.5);
-
+#endif
         gCycle* cycle = const_cast<gCycle*>( this->cycle );
 
         // detect straight ahead
@@ -844,9 +844,9 @@ public:
             eDebugLine::Draw(start + dir*distance, .5, start + dir*distance, 1.5);
         }
 #endif
-
+#ifdef DEBUG
         eDebugLine::SetTimeout(0);
-
+#endif
     }
 
 };
@@ -2601,13 +2601,13 @@ bool gAIPlayer::EmergencySurvive( ThinkData & data, int enemyevade, int prefered
             }
         }
     }
-
+#ifdef DEBUG
     eDebugLine::SetTimeout(.5);
     eDebugLine::SetColor  (1, 0, 1);
     eCoord p = Object()->Position();
     eDebugLine::Draw(p, .5, p, 8.5);
     eDebugLine::SetTimeout(0);
-
+#endif
 
 
     // determine the total danger levels by taking the max of the individual experts:
@@ -2731,8 +2731,9 @@ bool gAIPlayer::EmergencySurvive( ThinkData & data, int enemyevade, int prefered
         log->DeleteEntry();
 
     return turn;
-
+#ifdef DEBUG
     eDebugLine::SetTimeout(0);
+#endif
 }
 
 
@@ -3011,7 +3012,7 @@ REAL gAIPlayer::Think(){
     if (state != AI_SURVIVE && state != AI_TRACE && (!target || !target->Alive()))
         SwitchToState(AI_SURVIVE, 1);
 #endif
-
+#ifdef DEBUG
     {
         eDebugLine::SetTimeout(.5);
         eDebugLine::SetColor  (0, 1, 0);
@@ -3019,7 +3020,7 @@ REAL gAIPlayer::Think(){
         eDebugLine::Draw(p, .5, p, 5.5);
         eDebugLine::SetTimeout(0);
     }
-
+#endif
     triesLeft = 10;
 
     REAL ret = 1;

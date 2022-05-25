@@ -768,13 +768,13 @@ public:
             {
                 tString strString;
                 strString << *content;
-                
+
                 static tString lastContent;
                 bool changeLast = (lastContent == strString);
 
                 ConTabCompletition(strString, cursorPos, changeLast);
                 *content = strString;
-                
+
                 lastContent = strString;
             }
             return true;
@@ -927,6 +927,10 @@ public:
 extern void Render(int);
 
 
+
+REAL sg_playerColorMenuMax = 15;
+static tConfItem< REAL > sg_playerColorMenuMaxConf("PLAYER_COLOR_MENU_MAX",sg_playerColorMenuMax);
+
 class ArmageTron_color_menuitem:public uMenuItemInt{
 protected:
     int *rgb;
@@ -934,7 +938,7 @@ protected:
 public:
     ArmageTron_color_menuitem(uMenu *m,const char *tit,
                               const char *help, int *RGB,int Me)
-            :uMenuItemInt(m,tit,help,RGB[Me],0,15),
+            :uMenuItemInt(m,tit,help,RGB[Me],0,sg_playerColorMenuMax),
     rgb(RGB),me(Me) {
         m->RequestSpaceBelow(.2);
     }

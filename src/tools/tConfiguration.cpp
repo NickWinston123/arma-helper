@@ -1395,12 +1395,13 @@ void st_LoadConfig( bool printChange )
 #ifdef DEDICATED
     tConfItemBase::printErrors=false;
 #endif
-    {
-        Load( var, "user.cfg" );
-    }
-    tConfItemBase::printErrors=true;
 
     Load( config, "settings.cfg" );
+
+    Load( var, "user.cfg" );
+
+    tConfItemBase::printErrors=true;
+
 #ifdef DEDICATED
     Load( config, "settings_dedicated.cfg" );
     if( extraConfig != "NONE" ) Load( config, extraConfig );

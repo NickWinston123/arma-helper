@@ -1396,11 +1396,12 @@ void st_LoadConfig( bool printChange )
     tConfItemBase::printErrors=false;
 #endif
 
+    tConfItemBase::printErrors=true;
     Load( config, "settings.cfg" );
 
     Load( var, "user.cfg" );
 
-    tConfItemBase::printErrors=true;
+
 
 #ifdef DEDICATED
     Load( config, "settings_dedicated.cfg" );

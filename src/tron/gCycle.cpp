@@ -3285,7 +3285,7 @@ bool gCycle::Timestep(REAL currentTime){
         }
     }
 
-    bool playerIsMe = bool(player) && Alive() && player->IsHuman() && player->Owner() == sn_myNetID;
+    bool playerIsMe = bool(player) && Alive() && player->IsHuman() && player->pID == 0 && player->Owner() == sn_myNetID;
     if (sg_helper && playerIsMe) {
         gHelper & helper = gHelper::Get( this );
         helper.Activate();

@@ -8727,6 +8727,16 @@ typedef std::pair< int, tJUST_CONTROLLED_PTR< ePlayerNetID > >
 ePrejoinPair;
 static ePrejoinShuffleMap se_prejoinShuffles;
 
+
+static bool se_disableCreate = false;
+static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
+
+static int se_createPlayers = 0;
+static tConfItem<int> se_createPlayersConf("CREATE_PLAYERS", se_createPlayers);
+
+static int se_createPlayersSpecific = 0;
+static tConfItem<int> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC", se_createPlayersSpecific);
+
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
 {
@@ -8760,12 +8770,12 @@ void ePlayerNetID::Update()
 
         for(int i=0; i<MAX_PLAYERS; ++i )
         {
-            bool in_game=ePlayer::PlayerIsInGame(i);
+            bool in_game=ePlayer::PlayerIsInGame(i) || i <= (se_createPlayers) || (se_createPlayersSpecific >= 1 && i == se_createPlayersSpecific-1);;
             ePlayer *local_p=ePlayer::PlayerConfig(i);
             tASSERT(local_p);
             tCONTROLLED_PTR(ePlayerNetID) &p=local_p->netPlayer;
 
-            if (!p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
+            if (!se_disableCreate &&!p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
             {
                 // reset last time so idle time in the menus does not count as play time
                 lastTime = tSysTimeFloat();

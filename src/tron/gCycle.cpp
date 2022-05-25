@@ -1195,19 +1195,19 @@ bool sg_helperShowCorners = false;
 static tConfItem<bool> sg_helperShowCornersConf("HELPER_SHOW_CORNERS", sg_helperShowCorners);
 
 bool sg_helperShowCornersPassed = 0;
-static tConfItem<bool> sg_helperShowCornersPassedC("HELPER_CORNERS_PASSED",sg_helperShowCornersPassed);
+static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_CORNERS_PASSED",sg_helperShowCornersPassed);
 
 REAL sg_helperShowCornersPassedRange = 1;
-static tConfItem<REAL> sg_helperShowCornersPassedRangeC("HELPER_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
+static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
 
 REAL sg_helperShowCornersBoundary = 10;
-static tConfItem<REAL> sg_showTraceDatacornerRangeC("HELPER_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
+static tConfItem<REAL> sg_showTraceDatacornerRangeConf("HELPER_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
 
 REAL sg_helperShowCornersBoundaryPassed = 2.5;
-static tConfItem<REAL> sg_showTraceDatacornerPassedRangeC("HELPER_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
+static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
 
 REAL sg_helperShowCornersTimeout = 1;
-static tConfItem<REAL> sg_traceTimeoutc("HELPER_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
+static tConfItem<REAL> sg_traceTimeoutConf("HELPER_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
 
 struct HelperData
 {

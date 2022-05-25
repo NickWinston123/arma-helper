@@ -5283,7 +5283,24 @@ static uActionTooltip ingamemenuTooltip( ingamemenu, 1 );
 
 static eLadderLogWriter sg_gameTimeWriter("GAME_TIME", true);
 
+static bool sg_forcePlayerUpdate = false;
+static tSettingItem<bool> sg_forcePlayerUpdateConf("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
+
+static REAL sg_forcePlayerUpdateDelay = 0.5;
+static tConfItem<REAL> sg_forcePlayerUpdateDelayConf("FORCE_PLAYER_UPDATE_DELAY", sg_forcePlayerUpdateDelay);
+
+static REAL lastForcedUpdate = tSysTimeFloat();
+
 bool gGame::GameLoop(bool input){
+
+    if (sg_forcePlayerUpdate) {
+        
+        if (tSysTimeFloat() >= lastForcedUpdate + sg_forcePlayerUpdateDelay) {
+            ePlayerNetID::Update();
+            lastForcedUpdate = tSysTimeFloat();
+        }
+    }
+
     nNetState netstate = sn_GetNetState();
 
 #ifdef DEBUG

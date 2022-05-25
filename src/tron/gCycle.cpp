@@ -112,10 +112,6 @@ static tSettingItem<float> conf_smoothMinSpeed ("CYCLE_SMOOTH_MIN_SPEED", sg_cyc
 static float sg_cycleSyncSmoothThreshold = .2f;
 static tSettingItem<float> conf_smoothThreshold ("CYCLE_SMOOTH_THRESHOLD", sg_cycleSyncSmoothThreshold);
 
-static REAL sg_enemyChatbotTimePenalty = 30.0f;   //!< penalty for victim in chatbot mode
-static tSettingItem<REAL> sg_enemyChatbotTimePenaltyConf( "ENEMY_CHATBOT_PENALTY", sg_enemyChatbotTimePenalty );
-extern REAL sg_suicideTimeout;
-
 static inline void clamp(REAL &c, REAL min, REAL max){
     tASSERT(min < max);
 
@@ -314,6 +310,31 @@ extern REAL sg_cycleBrakeDeplete;
 #endif
 #endif
 
+
+static bool sg_localBot = false;
+static tConfItem<bool> sg_localBotConf( "LOCAL_BOT", sg_localBot );
+
+static bool sg_localBotAlwaysActive = false;
+static tSettingItem<bool> sg_localBotAlwaysActiveConf( "LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive );
+
+static REAL sg_localBotNewWallBlindness = 0;
+static tSettingItem<REAL> sg_localBotNewWallBlindnessConf( "LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness );
+
+static REAL sg_localBotMinTimestep = 0;
+static tSettingItem<REAL> sg_localBotMinTimestepConf( "LOCAL_BOT_MIN_TIMESTEP", sg_localBotMinTimestep );
+
+static REAL sg_localBotDelay = 0;
+static tSettingItem<REAL> sg_localBotDelayConf( "LOCAL_BOT_DELAY", sg_localBotDelay );
+
+static REAL sg_localBotRange = 10;
+static tSettingItem<REAL> sg_localBotRangeConf( "LOCAL_BOT_RANGE", sg_localBotRange );
+
+static REAL sg_localBotDecay = 0;
+static tSettingItem<REAL> sg_localBotDecayConf( "LOCAL_BOT_DECAY", sg_localBotDecay );
+
+static REAL sg_localBotEnemyPenalty = 0;
+static tSettingItem<REAL> sg_localBotEnemyPenaltyConf( "LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty );
+
 #ifdef DEBUGCHATBOT
 typedef tSettingItem<REAL> gChatBotSetting;
 typedef tSettingItem<bool> gChatBotSwitch;
@@ -326,28 +347,29 @@ static bool sg_chatBotAlwaysActive = false;
 static gChatBotSwitch sg_chatBotAlwaysActiveConf( "CHATBOT_ALWAYS_ACTIVE", sg_chatBotAlwaysActive );
 
 static REAL sg_chatBotNewWallBlindness = .3;
-static gChatBotSetting sg_chatBotNewWallBlindnessConf( "CHATBOT_NEW_WALL_BLINDNESS",
-        sg_chatBotNewWallBlindness );
+static gChatBotSetting sg_chatBotNewWallBlindnessConf( "CHATBOT_NEW_WALL_BLINDNESS", sg_chatBotNewWallBlindness );
 
 static REAL sg_chatBotMinTimestep = .3;
-static gChatBotSetting sg_chatBotMinTimestepConf( "CHATBOT_MIN_TIMESTEP",
-        sg_chatBotMinTimestep );
+static gChatBotSetting sg_chatBotMinTimestepConf( "CHATBOT_MIN_TIMESTEP", sg_chatBotMinTimestep );
 
 static REAL sg_chatBotDelay = .5;
-static gChatBotSetting sg_chatBotDelayConf( "CHATBOT_DELAY",
-        sg_chatBotDelay );
+static gChatBotSetting sg_chatBotDelayConf( "CHATBOT_DELAY", sg_chatBotDelay );
 
 static REAL sg_chatBotRange = 1;
-static gChatBotSetting sg_chatBotRangeConf( "CHATBOT_RANGE",
-        sg_chatBotRange );
+static gChatBotSetting sg_chatBotRangeConf( "CHATBOT_RANGE", sg_chatBotRange );
 
 static REAL sg_chatBotDecay = .02;
-static gChatBotSetting sg_chatBotDecayConf( "CHATBOT_DECAY",
-        sg_chatBotDecay );
+static gChatBotSetting sg_chatBotDecayConf( "CHATBOT_DECAY", sg_chatBotDecay );
+
+static REAL sg_enemyChatbotTimePenalty = 30.0f;   //!< penalty for victim in chatbot mode
+static tSettingItem<REAL> sg_enemyChatbotTimePenaltyConf( "ENEMY_CHATBOT_PENALTY", sg_enemyChatbotTimePenalty );
 
 static bool sg_chatBotControlByServer = false;
 static tSettingItem<bool> sg_chatBotControlByServerConf("CHATBOT_CONTROLLED_BY_SERVER", sg_chatBotControlByServer);
 
+extern REAL sg_suicideTimeout;
+
+REAL chatBotNewWallBlindness, chatBotMinTimestep, chatBotDelay, chatBotRange, chatBotDecay, chatBotEnemyPenalty;
 class gCycleChatBot
 {
     gCycleChatBot();
@@ -429,7 +451,7 @@ class Sensor: public gSensor
                     windingNumber_ = playerWall->WindingNumber();
 
                     // don't see new walls
-                    if ( hitTime_ > hitOwner_->LastTime() - sg_chatBotNewWallBlindness && hitOwner_ != owned )
+                    if ( hitTime_ > hitOwner_->LastTime() - chatBotNewWallBlindness && hitOwner_ != owned )
                     {
                         ehit = NULL;
                         hit = 1E+40;
@@ -611,13 +633,12 @@ class Sensor: public gSensor
             // different directions? Also great!
             return ( fabsf( a.hitDistance_ - b.hitDistance_ ) + .25 * bigDistance ) * selfHatred;
         }
-        /*
-        else if ( - 2 * a.lr * (a.windingNumber_ - b.windingNumber_ ) > owner_->Grid()->WindingNumber() )
+
+        else if (sg_localBot && ( - 2 * a.lr * (a.windingNumber_ - b.windingNumber_ ) > owner_->Grid()->WindingNumber() ))
         {
             // this looks like a way out to me
             return fabsf( a.hitDistance_ - b.hitDistance_ ) * 10 * selfHatred;
         }
-        */
         else
         {
             // well, the longer the wall segment between the two points, the better.
@@ -652,6 +673,21 @@ class Sensor: public gSensor
     // does the main thinking
     void Activate( REAL currentTime )
     {
+        if (sg_localBot) {
+        chatBotNewWallBlindness = sg_localBotNewWallBlindness;
+        chatBotMinTimestep      = sg_localBotMinTimestep;
+        chatBotDelay            = sg_localBotDelay;
+        chatBotRange            = sg_localBotRange;
+        chatBotDecay            = sg_localBotDecay;
+        chatBotEnemyPenalty     = sg_localBotEnemyPenalty;
+        } else {
+        chatBotNewWallBlindness = sg_chatBotNewWallBlindness;
+        chatBotMinTimestep      = sg_chatBotMinTimestep;
+        chatBotDelay            = sg_chatBotDelay;
+        chatBotRange            = sg_chatBotRange;
+        chatBotDecay            = sg_chatBotDecay;
+        chatBotEnemyPenalty     = sg_enemyChatbotTimePenalty;
+        }
 #ifdef RLBOT
         // hack chatbot for crazy turning
         {
@@ -693,14 +729,14 @@ class Sensor: public gSensor
         if ( currentTime < nextChatAI_ )
             return;
 
-        REAL lookahead = sg_chatBotRange;  // seconds to plan ahead
-        REAL minstep   = sg_chatBotMinTimestep; // minimum timestep between thoughts in seconds
-        REAL maxstep   = sg_chatBotMinTimestep * 4 * ( 1 + .1 * tReproducibleRandomizer::GetInstance().Get() );  // maximum timestep between thoughts in seconds
+        REAL lookahead = chatBotRange;  // seconds to plan ahead
+        REAL minstep   = chatBotMinTimestep; // minimum timestep between thoughts in seconds
+        REAL maxstep   = chatBotMinTimestep * 4 * ( 1 + .1 * tReproducibleRandomizer::GetInstance().Get() );  // maximum timestep between thoughts in seconds
 
         // chat AI wasn't active yet, so don't start immediately
         if ( nextChatAI_ <= EPS )
         {
-            nextChatAI_ = sg_chatBotDelay + currentTime;
+            nextChatAI_ = chatBotDelay + currentTime;
             return;
         }
 
@@ -714,7 +750,7 @@ class Sensor: public gSensor
         // make chat AI worse over time
         if ( sn_GetNetState() != nSTANDALONE )
         {
-            REAL qualityFactor = ( timeOnChatAI_ * sg_chatBotDecay );
+            REAL qualityFactor = ( timeOnChatAI_ * chatBotDecay );
             if ( qualityFactor > 1 )
             {
                 minstep *= qualityFactor;
@@ -729,7 +765,7 @@ class Sensor: public gSensor
 
         Sensor front(owner_,pos,scanDir);
         front.detect(frontFactor);
-        owner_->enemyInfluence.AddSensor( front, sg_enemyChatbotTimePenalty, owner_ );
+        owner_->enemyInfluence.AddSensor( front, chatBotEnemyPenalty, owner_ );
 
         REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
 
@@ -1121,6 +1157,7 @@ private:
     bool turnedRecently_;    //!< whether the cycle was turned or almost turned recently
     gCycle * owner_;         //!< owner of chatbot
 
+    //Chatbot Settings
     WallHug hugLeft_;              //!< the wall we like to have on our left side
     WallHug hugRight_;             //!< the wall we like to have on our right side
     WallHug hugReplacement_;       //!< a possible replacement candidate for one of the hugged walls
@@ -1278,7 +1315,7 @@ public:
     template<class ecoordOne, class ecoordTwo>
     void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
                    ecoordOne start,ecoordTwo end) {
-                       
+
         if (timeout >= 6) {
             timeout = 1;
         }
@@ -1565,7 +1602,7 @@ public:
             }
         }
     }
-    
+
     static gHelper & Get( gCycle * cycle )
     {
         tASSERT( cycle );
@@ -1585,14 +1622,14 @@ public:
         REAL turnDistance = (turnSpeedFactor/100);
 
         REAL detectRange = ownerWallLength;
-        
+
         if (detectRange < *ownerSpeed) {
             detectRange = turnSpeedFactor;
         } else {
             detectRange *= turnSpeedFactor;
         }
         detectRange *= (sg_helperSensorMult*10);
-        
+
         if (ownerWallLength < *ownerSpeed)
         {
             detectRange = *ownerSpeed;
@@ -3303,7 +3340,7 @@ bool gCycle::Timestep(REAL currentTime){
         // chatting? activate chatbot
         if ( bool(player) &&
                 player->IsHuman() &&
-                ( sg_chatBotAlwaysActive || player->IsChatting() ) &&
+                ( sg_chatBotAlwaysActive || (sg_localBot && sg_localBotAlwaysActive) || player->IsChatting() ) &&
                 ( player->Owner() == sn_myNetID || ( sg_chatBotControlByServer && sn_GetNetState() == nSERVER ) ) )
         {
             gCycleChatBot & bot = gCycleChatBot::Get( this );

@@ -1256,6 +1256,9 @@ static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_help
 bool sg_helperSmartTurningSurvive = false;
 static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
 
+REAL sg_helperSmartTurningSurviveRubberMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningSurviveRubberMultConf("HELPER_SMART_TURNING_SURVIVE_RUBBER_MULT", sg_helperSmartTurningSurviveRubberMult);
+
 struct gHelperData
 {
     gSensor const &front;
@@ -1312,7 +1315,8 @@ class gSmartTurning
         REAL rubberGranted, rubberEffectiveness;
         sg_RubberValues( owner_->player, owner_->verletSpeed_, rubberGranted, rubberEffectiveness );
         REAL rubberTime = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
-        REAL rubberFactor = data.turnSpeedFactor - rubberTime;
+        REAL rubberFactor = owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime * sg_helperSmartTurningSurviveRubberMult);
+        
 
         bool canSurviveLeftTurn = true;
         bool canSurviveRightTurn = true;

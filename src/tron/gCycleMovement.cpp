@@ -3359,7 +3359,7 @@ bool gCycleMovement::DoTurn( int dir )
     
     bool helperSmartTurning = sg_helper && sg_helperSmartTurning && Owner() == ::sn_myNetID && Player()->IsHuman();
     REAL currentTime;
-    
+
     if (helperSmartTurning) {
         
         bool ignoreTurn = false;
@@ -3370,7 +3370,7 @@ bool gCycleMovement::DoTurn( int dir )
         if (currentTime < this->turnIgnoreTime) {
             ignoreTurn = true;
         }
-        con << dir << " " << this->blockTurn << "\n"; 
+
         //Blocked turns
         if (this->blockTurn == dir || this->blockTurn == 2) {
             ignoreTurn = true;

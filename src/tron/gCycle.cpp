@@ -1259,8 +1259,8 @@ static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SU
 bool sg_helperSmartTurningOpposite = false;
 static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_OPPOSITE", sg_helperSmartTurningOpposite);
 
-REAL sg_helperSmartTurningOppositeClosedInMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningOppositeClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningOppositeClosedInMult);
+REAL sg_helperSmartTurningClosedInMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
 
 REAL sg_helperSmartTurningSurviveRubberMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningSurviveRubberMultConf("HELPER_SMART_TURNING_SURVIVE_RUBBER_MULT", sg_helperSmartTurningSurviveRubberMult);
@@ -1336,7 +1336,7 @@ class gSmartTurning
 
         bool closedIn, blockedBySelf;
         if (sg_helperSmartTurningOpposite || sg_helperSmartTurningSurvive) {
-            closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningOppositeClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningOppositeClosedInMult);
+            closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
             blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
         }
 

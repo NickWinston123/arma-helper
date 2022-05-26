@@ -860,40 +860,40 @@ class Sensor: public gSensor
             self.lr = 1;
             REAL rearRightOpen = Distance( backwardRight, self );
 
-            /*
-            // override: don't camp (too much)
-            if ( forwardRight.type == gSENSOR_SELF &&
-                    forwardLeft.type == gSENSOR_SELF &&
-                    backwardRight.type == gSENSOR_SELF &&
-                    backwardLeft.type == gSENSOR_SELF &&
-                    front.type == gSENSOR_SELF &&
-                    forwardRight.lr == front.lr &&
-                    forwardLeft.lr == front.lr &&
-                    backwardRight.lr == front.lr &&
-                    backwardLeft.lr == front.lr &&
-                    frontOpen + leftOpen + rightOpen < owner_->GetDistance() * .5 )
-            {
-                turnedRecently_ = true;
-                if ( front.lr > 0 )
+            if (sg_localBot) {
+                // override: don't camp (too much)
+                if ( forwardRight.type == gSENSOR_SELF &&
+                        forwardLeft.type == gSENSOR_SELF &&
+                        backwardRight.type == gSENSOR_SELF &&
+                        backwardLeft.type == gSENSOR_SELF &&
+                        front.type == gSENSOR_SELF &&
+                        forwardRight.lr == front.lr &&
+                        forwardLeft.lr == front.lr &&
+                        backwardRight.lr == front.lr &&
+                        backwardLeft.lr == front.lr &&
+                        frontOpen + leftOpen + rightOpen < owner_->GetDistance() * .5 )
                 {
-                    if ( leftOpen > minstep * speed )
-                        // force a turn to the left
-                        rightOpen = 0;
-                    else if ( front.hit * range < 2 * minstep )
-                        // force a preliminary turn to the right that will allow us to reverse
-                        frontOpen = 0;
-                }
-                else
-                {
-                    if ( rightOpen > minstep * speed )
-                        // force a turn to the right
-                        leftOpen = 0;
-                    else if ( front.hit * range < 2 * minstep )
-                        // force a preliminary turn to the left that will allow us to reverse
-                        frontOpen = 0;
+                    turnedRecently_ = true;
+                    if ( front.lr > 0 )
+                    {
+                        if ( leftOpen > minstep * speed )
+                            // force a turn to the left
+                            rightOpen = 0;
+                        else if ( front.hit * range < 2 * minstep )
+                            // force a preliminary turn to the right that will allow us to reverse
+                            frontOpen = 0;
+                    }
+                    else
+                    {
+                        if ( rightOpen > minstep * speed )
+                            // force a turn to the right
+                            leftOpen = 0;
+                        else if ( front.hit * range < 2 * minstep )
+                            // force a preliminary turn to the left that will allow us to reverse
+                            frontOpen = 0;
+                    }
                 }
             }
-            */
 
             // override rim hugging
             if ( forwardRight.type == gSENSOR_SELF &&
@@ -1256,6 +1256,12 @@ static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_help
 bool sg_helperSmartTurningSurvive = false;
 static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
 
+bool sg_helperSmartTurningOpposite = false;
+static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_OPPOSITE", sg_helperSmartTurningOpposite);
+
+REAL sg_helperSmartTurningOppositeClosedInMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningOppositeClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningOppositeClosedInMult);
+
 REAL sg_helperSmartTurningSurviveRubberMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningSurviveRubberMultConf("HELPER_SMART_TURNING_SURVIVE_RUBBER_MULT", sg_helperSmartTurningSurviveRubberMult);
 
@@ -1301,7 +1307,7 @@ class gSmartTurning
     void Activate( gHelperData &data) {
         localCurrentTime = se_GameTime();
 
-        if (sg_helperSmartTurningSurvive) {
+        if (sg_helperSmartTurningSurvive || sg_helperSmartTurningOpposite) {
             canSurviveTurn(data);
         }
     }
@@ -1328,20 +1334,65 @@ class gSmartTurning
             canSurviveRightTurn = false;
         }
 
-        if (!canSurviveLeftTurn && !canSurviveRightTurn) {
-            this->blockTurn = 2;
-            return;
-        } 
-        if (!canSurviveLeftTurn) {
-            this->blockTurn = -1;
-            return;
-        } 
-        if (!canSurviveRightTurn) {
-            this->blockTurn = 1;
-            return;
-        } 
+        bool closedIn, blockedBySelf;
+        if (sg_helperSmartTurningOpposite || sg_helperSmartTurningSurvive) {
+            bool closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningOppositeClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningOppositeClosedInMult);
+            bool blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
+        }
 
-        this->blockTurn = 0;
+        if (sg_helperSmartTurningOpposite) {
+            sg_helperSmartTurningSurvive = false;
+                        
+            if (closedIn || blockedBySelf) {
+                goto SKIP_FORCETURN;
+            }
+
+            if (!canSurviveLeftTurn && canSurviveRightTurn)
+            {
+                owner_->forceTurn = 1;
+                owner_->blockTurn = 0;
+                return;
+            }
+            else if (canSurviveLeftTurn && !canSurviveRightTurn)
+            {
+                owner_->forceTurn = -1;
+                owner_->blockTurn = 0;
+                return;
+            }
+
+            SKIP_FORCETURN:
+            {
+                this->forceTurn = 0;
+                return;
+            }
+        }
+
+        if (sg_helperSmartTurningSurvive) {
+
+            if (closedIn || blockedBySelf) {
+                goto SKIP_BLOCKTURN;
+            }
+
+            if (!canSurviveLeftTurn && !canSurviveRightTurn) {
+                this->blockTurn = 2;
+                return;
+            } 
+            if (!canSurviveLeftTurn) {
+                this->blockTurn = -1;
+                return;
+            } 
+            if (!canSurviveRightTurn) {
+                this->blockTurn = 1;
+                return;
+            } 
+
+            SKIP_BLOCKTURN:
+            {
+                this->blockTurn = 0;
+                return;
+            }
+        }
+
     }
 
     static gSmartTurning & Get( gHelper * helper, gCycle *owner )

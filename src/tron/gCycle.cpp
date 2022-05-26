@@ -1336,8 +1336,8 @@ class gSmartTurning
 
         bool closedIn, blockedBySelf;
         if (sg_helperSmartTurningOpposite || sg_helperSmartTurningSurvive) {
-            bool closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningOppositeClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningOppositeClosedInMult);
-            bool blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
+            closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningOppositeClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningOppositeClosedInMult);
+            blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
         }
 
         if (sg_helperSmartTurningOpposite) {

@@ -3356,6 +3356,41 @@ bool gCycleMovement::DoTurn( int dir )
 
     if (dir >  1) dir =  1;
     if (dir < -1) dir = -1;
+    
+    bool helperSmartTurning = sg_helper && sg_helperSmartTurning && Owner() == ::sn_myNetID && Player()->IsHuman();
+    REAL currentTime;
+    
+    if (helperSmartTurning) {
+        
+        bool ignoreTurn = false;
+
+        currentTime = this->localCurrentTime;
+        
+        //Ignored turns
+        if (currentTime < this->turnIgnoreTime) {
+            ignoreTurn = true;
+        }
+        con << dir << " " << this->blockTurn << "\n"; 
+        //Blocked turns
+        if (this->blockTurn == dir || this->blockTurn == 2) {
+            ignoreTurn = true;
+            this->blockTurn = 0;
+        }
+        
+        //Don't turn
+        if (ignoreTurn) {
+            this->lastTurnAttemptTime = currentTime;
+            this->lastTurnAttemptDir = dir;
+            return false;
+        }
+
+        if (this->forceTurn != 0) {
+            dir = this->forceTurn;
+            this->forceTurn = 0;
+        }
+
+    }
+
 
     REAL nextTurnTime = GetNextTurn( dir );
     if ( nextTurnTime <= lastTime )
@@ -3440,6 +3475,12 @@ bool gCycleMovement::DoTurn( int dir )
         // turn winding numbers
         int wn = windingNumberWrapped_;
         Grid()->Turn(wn, dir);
+
+        if (helperSmartTurning) {
+            this->lastTurnTime = currentTime;
+            this->lastTurnDir = dir;
+        }
+
         this->SetWindingNumberWrapped( wn );
 
         eCoord nextDirDrive = Grid()->GetDirection(windingNumberWrapped_);

@@ -62,6 +62,9 @@ extern bool headlights;
 // steering help
 extern REAL sg_rubberCycle;
 
+// Smart Turning
+extern bool sg_helper;
+extern bool sg_helperSmartTurning;
 
 // this class set is responsible for remembering which walls are too
 // close together to pass through safely. The AI uses this information,

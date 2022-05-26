@@ -314,6 +314,9 @@ extern REAL sg_cycleBrakeDeplete;
 static bool sg_localBot = false;
 static tConfItem<bool> sg_localBotConf( "LOCAL_BOT", sg_localBot );
 
+static bool sg_localBotPlayers = false;
+static tConfItem<bool> sg_localBotPlayersConf( "LOCAL_BOT_ENABLED_FOR_PLAYER1", sg_localBotPlayers );
+
 static bool sg_localBotAlwaysActive = false;
 static tSettingItem<bool> sg_localBotAlwaysActiveConf( "LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive );
 
@@ -1246,7 +1249,14 @@ static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_CORNERS_BOU
 REAL sg_helperShowCornersTimeout = 1;
 static tConfItem<REAL> sg_traceTimeoutConf("HELPER_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
 
-struct HelperData
+
+bool sg_helperSmartTurning = false;
+static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
+
+bool sg_helperSmartTurningSurvive = false;
+static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
+
+struct gHelperData
 {
     gSensor const &front;
     gSensor const &left;
@@ -1256,7 +1266,7 @@ struct HelperData
     REAL &turnSpeedFactorPercent;
     REAL &turnDistance;
 
-    HelperData(gSensor const &a_front, gSensor const &a_left,
+    gHelperData(gSensor const &a_front, gSensor const &a_left,
                gSensor const &a_right, REAL &a_speedFactor, REAL &a_turnSpeedFactor, REAL & a_turnSpeedFactorPercent,REAL &a_turnDistance)
         : front(a_front), left(a_left), right(a_right),
           speedFactor(a_speedFactor), turnSpeedFactor(a_turnSpeedFactor), turnSpeedFactorPercent(a_turnSpeedFactorPercent),turnDistance(a_turnDistance) {}
@@ -1265,6 +1275,97 @@ struct HelperData
 class gHelper
 {
     gHelper();
+
+//SmartTurning
+class gSmartTurning
+    {
+    public:
+        gSmartTurning(gHelper *helper, gCycle *owner)
+                : helper_             ( helper ),
+                  owner_              ( owner ),
+                  localCurrentTime    ( owner_->localCurrentTime ),
+                  lastTurnAttemptTime ( owner_->lastTurnAttemptTime ),
+                  lastTurnAttemptDir  ( owner_->lastTurnAttemptDir ),
+                  lastTurnTime        ( owner_->lastTurnTime ),
+                  turnIgnoreTime      ( owner_->turnIgnoreTime ),
+                  lastTurnDir         ( owner_->lastTurnDir ), // 0 none, -1 left , 1 right
+                  blockTurn           ( owner_->blockTurn ), // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
+                  forceTurn           ( owner_->forceTurn ) // 0 = NONE, -1 = LEFT, 1 = RIGHT
+
+        {
+        }
+
+    void Activate( gHelperData &data) {
+        localCurrentTime = se_GameTime();
+
+        if (sg_helperSmartTurningSurvive) {
+            canSurviveTurn(data);
+        }
+    }
+
+    void autoTrace(gHelperData &data) {
+
+    }
+
+    void canSurviveTurn(gHelperData &data) {
+
+        REAL rubberGranted, rubberEffectiveness;
+        sg_RubberValues( owner_->player, owner_->verletSpeed_, rubberGranted, rubberEffectiveness );
+        REAL rubberTime = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
+        REAL rubberRatio = owner_->GetRubber()/rubberGranted;
+        REAL rubberFactor = data.turnSpeedFactor - rubberTime;
+
+        bool canSurviveLeftTurn = true;
+        bool canSurviveRightTurn = true;
+        
+        if (data.left.hit < rubberFactor) {
+            canSurviveLeftTurn = false;
+        }
+        if (data.right.hit < rubberFactor) {
+            canSurviveRightTurn = false;
+        }
+
+        if (!canSurviveLeftTurn && !canSurviveRightTurn) {
+            this->blockTurn = 2;
+            return;
+        } 
+        if (!canSurviveLeftTurn) {
+            this->blockTurn = -1;
+            return;
+        } 
+        if (!canSurviveRightTurn) {
+            this->blockTurn = 1;
+            return;
+        } 
+
+        this->blockTurn = 0;
+    }
+
+    static gSmartTurning & Get( gHelper * helper, gCycle *owner )
+    {
+        tASSERT( helper );
+
+        // create
+        if ( helper->smartTurning.get() == 0 )
+            helper->smartTurning.reset( new gSmartTurning( helper, owner ) );
+
+        return *helper->smartTurning;
+    }
+
+    private:
+        gCycle *owner_;
+        gHelper *helper_;
+        gHelperData *data_;
+        REAL &localCurrentTime;
+        REAL &lastTurnAttemptTime;
+        REAL &lastTurnAttemptDir;
+        REAL &lastTurnTime;
+        REAL &turnIgnoreTime;
+        REAL &lastTurnDir; // -1 left , 1 right
+        REAL &blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
+        REAL &forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
+    };
+
 
 public:
     gHelper(gCycle *owner)
@@ -1277,6 +1378,7 @@ public:
         ownerDir = &owner_->dir;
         tailPos = &owner_->tailPos;
         ownerSpeed = &owner_->verletSpeed_;
+        gSmartTurning::Get( this , owner );
     }
 
     gCycle *getOwner() { return owner_; }
@@ -1348,7 +1450,7 @@ public:
         return closestTarget;
     }
 
-    void detectCut(int detectionRange, HelperData &data)
+    void detectCut(int detectionRange, gHelperData &data)
     {
         REAL timeout = data.speedFactor + sg_helperDetectCutTimeout;
         gCycle *target = findClosestEnemy();
@@ -1463,7 +1565,7 @@ public:
             }
         }
     }
-    void showTail(HelperData &data)
+    void showTail(gHelperData &data)
     {
 
         static eCoord lastPos;
@@ -1483,7 +1585,7 @@ public:
         }
     }
 
-    void showCorners(HelperData &data)
+    void showCorners(gHelperData &data)
     {
         static eCoord leftLast, rightLast, frontLast, oldRight, oldLeft;
         int currentDirectionNumber = owner_->Grid()->DirectionWinding(*ownerDir);
@@ -1562,7 +1664,7 @@ public:
         }
     }
 
-    void showHit(HelperData &data)
+    void showHit(gHelperData &data)
     {
         if (!(fabs(ownerDir->x) == 1 || fabs(ownerDir->y) == 1))
         {
@@ -1621,6 +1723,7 @@ public:
         REAL turnSpeedFactorPercent = (1/turnSpeedFactor);
         REAL turnDistance = (turnSpeedFactor/100);
 
+
         REAL detectRange = ownerWallLength;
 
         if (detectRange < *ownerSpeed) {
@@ -1644,7 +1747,11 @@ public:
         gSensor right(owner_, (*ownerPos), ownerDir->Turn(eCoord(0, -1)));
         right.detect(detectRange);
 
-        HelperData data(front, left, right,speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance);
+        gHelperData data(front, left, right,speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance);
+
+        if (sg_helperSmartTurning) {
+            smartTurning->Activate(data);
+        }
 
         if (sg_helperEnemyTracers)
         {
@@ -1674,6 +1781,7 @@ public:
     }
 
 private:
+    friend class gSmartTurning;
     gCycle *owner_;
     ePlayerNetID *player_;
     gCycle *closestEnemy;
@@ -1683,6 +1791,7 @@ private:
     REAL *ownerSpeed;
     REAL ownerWallLength;
     REAL ownerTurnDelay;
+    std::unique_ptr< gSmartTurning > smartTurning;
 };
 
 
@@ -3340,7 +3449,7 @@ bool gCycle::Timestep(REAL currentTime){
         // chatting? activate chatbot
         if ( bool(player) &&
                 player->IsHuman() &&
-                ( sg_chatBotAlwaysActive || (sg_localBot && sg_localBotAlwaysActive) || player->IsChatting() ) &&
+                ( sg_chatBotAlwaysActive || (sg_localBot && sg_localBotAlwaysActive && (sg_localBotPlayers || player->pID != 0)) || player->IsChatting() ) &&
                 ( player->Owner() == sn_myNetID || ( sg_chatBotControlByServer && sn_GetNetState() == nSERVER ) ) )
         {
             gCycleChatBot & bot = gCycleChatBot::Get( this );

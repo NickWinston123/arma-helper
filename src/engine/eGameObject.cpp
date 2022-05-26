@@ -131,6 +131,15 @@ eGameObject::eGameObject(eGrid *g,const eCoord &p,const eCoord &d,eFace *current
     if ( lastTime < 0 )
         lastTime=0;
     team = 0;
+    
+    localCurrentTime = -999;
+    lastTurnAttemptTime = -999;
+    lastTurnAttemptDir = -999;
+    lastTurnTime = -999;
+    turnIgnoreTime = 0;
+    lastTurnDir = 0; // 0 = NONE, -1 = left, 1 = right
+    blockTurn = 0; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
+    forceTurn = 0; // 0 = NONE, -1 = LEFT, 1 = RIGHT
 }
 
 eGameObject::~eGameObject(){

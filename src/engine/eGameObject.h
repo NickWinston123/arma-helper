@@ -84,6 +84,14 @@ protected:
     // (the latter may be useful if there exists other pointers to
     // the object)
 
+    REAL localCurrentTime;
+    REAL lastTurnAttemptTime;
+    REAL lastTurnAttemptDir;
+    REAL lastTurnTime;
+    REAL turnIgnoreTime;
+    REAL lastTurnDir; // 0 = NONE, -1 = left, 1 = right
+    REAL blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
+    REAL forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
 
     bool autodelete;
     REAL lastTime;          // the time it was last updated

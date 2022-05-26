@@ -3356,16 +3356,19 @@ bool gCycleMovement::DoTurn( int dir )
 
     if (dir >  1) dir =  1;
     if (dir < -1) dir = -1;
-    
-    bool helperSmartTurning = sg_helper && sg_helperSmartTurning && Owner() == ::sn_myNetID && Player()->IsHuman();
+
+    bool helperSmartTurning = sg_helper && sg_helperSmartTurning;
     REAL currentTime;
 
     if (helperSmartTurning) {
-        
+
+        if (!playerIsMe) {
+            goto CONTINUE;
+        }
         bool ignoreTurn = false;
 
         currentTime = this->localCurrentTime;
-        
+
         //Ignored turns
         if (currentTime < this->turnIgnoreTime) {
             ignoreTurn = true;
@@ -3374,13 +3377,13 @@ bool gCycleMovement::DoTurn( int dir )
         //Blocked turns
         if (this->blockTurn == dir || this->blockTurn == 2) {
             ignoreTurn = true;
-            this->blockTurn = 0;
         }
-        
+
         //Don't turn
         if (ignoreTurn) {
             this->lastTurnAttemptTime = currentTime;
             this->lastTurnAttemptDir = dir;
+            turns = 0;
             return false;
         }
 
@@ -3391,7 +3394,7 @@ bool gCycleMovement::DoTurn( int dir )
 
     }
 
-
+CONTINUE:
     REAL nextTurnTime = GetNextTurn( dir );
     if ( nextTurnTime <= lastTime )
     {
@@ -3476,7 +3479,7 @@ bool gCycleMovement::DoTurn( int dir )
         int wn = windingNumberWrapped_;
         Grid()->Turn(wn, dir);
 
-        if (helperSmartTurning) {
+        if (helperSmartTurning && playerIsMe) {
             this->lastTurnTime = currentTime;
             this->lastTurnDir = dir;
         }
@@ -4073,7 +4076,7 @@ bool gCycleMovement::TimestepCore( REAL currentTime, bool calculateAcceleration 
             // the control code calling this has no clue that the cycle has entered the rubber gap
             // and would respect the destination's position, allowing for extremely deep grinds.
             if( sn_GetNetState() != nCLIENT &&
-                currentDestination && !currentDestination->hasBeenUsed && 
+                currentDestination && !currentDestination->hasBeenUsed &&
                 rubberneeded >= rubberAvailable &&
                 space * 1.25 < (currentDestination->gameTime - lastTime) * verletSpeed_)
             {
@@ -4224,7 +4227,7 @@ bool gCycleMovement::TimestepCore( REAL currentTime, bool calculateAcceleration 
     // use up rubber from tunneling (calculated by CalculateAcceleration)
     if ( rubberEffectiveness > 0 )
     {
-        rubber += rubberUsage * ts * verletSpeed_ / rubberEffectiveness; 
+        rubber += rubberUsage * ts * verletSpeed_ / rubberEffectiveness;
     }
     else if ( rubberUsage > 0 )
     {

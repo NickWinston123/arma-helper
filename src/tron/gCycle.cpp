@@ -1312,7 +1312,6 @@ class gSmartTurning
         REAL rubberGranted, rubberEffectiveness;
         sg_RubberValues( owner_->player, owner_->verletSpeed_, rubberGranted, rubberEffectiveness );
         REAL rubberTime = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
-        REAL rubberRatio = owner_->GetRubber()/rubberGranted;
         REAL rubberFactor = data.turnSpeedFactor - rubberTime;
 
         bool canSurviveLeftTurn = true;

@@ -4725,9 +4725,6 @@ static tConfItem<bool> se_showPlayerCommandConf( "SHOW_IP_PLAYERS", se_showPlaye
 static tString se_consoleComand("/console");
 static tConfItem<tString> se_consoleComandConf("LOCAL_CONSOLE_COMMAND", se_consoleComand);
 
-static tString se_listcolorsCommand("/listcolors");
-static tConfItem<tString> se_listcolorsCommandConf("LOCAL_LISTCOLORS_COMMAND", se_listcolorsCommand);
-
 static tString se_colorsCommand("/colors");
 static tConfItem<tString> se_colorsCommandConf("LOCAL_COLORS_COMMAND", se_colorsCommand);
 
@@ -4749,7 +4746,6 @@ void ePlayerNetID::Chat(const tString& s_orig)
     tString se_localChatCommands[] =
     { 
         se_consoleComand, 
-        se_listcolorsCommand, 
         se_colorsCommand, 
         se_infoCommand, 
         se_rgbCommand
@@ -4808,7 +4804,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
             }
         }
         // Short handle for grabbing player colors.
-        else if ((command == se_listcolorsCommand) || (command == se_colorsCommand))
+        else if ((command == se_colorsCommand))
         {
             listPlayerColors(tString(s_orig));
         }

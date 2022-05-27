@@ -144,6 +144,10 @@ void GLmeter_subby(float value,float max, float locx, float locy, float size, co
 static REAL sg_hudCacheThreshold=.0001;
 static tSettingItem< REAL > sg_minDropIntervalConf( "HUD_CACHE_THRESHOLD", sg_hudCacheThreshold );
 
+
+static bool sg_HudHideWhileChatting=true;
+static tConfItem< bool > sg_HudHideWhileChattingConf( "HUD_HIDE_WHILE_CHATTING", sg_HudHideWhileChatting );
+
 class gGLMeter
 {
 public:
@@ -403,7 +407,7 @@ static void display_hud_subby( ePlayer* player ){
 
                 if (me!=NULL){
                     gCycle *h = dynamic_cast<gCycle *>(me->Object());
-                    if (h && ( !player->netPlayer || !player->netPlayer->IsChatting()) && se_GameTime()>-2){
+                    if (h && ( !player->netPlayer || ( !player->netPlayer->IsChatting() || !sg_HudHideWhileChatting) ) && se_GameTime()>-2){
                         // myscore=p->TotalScore();
                         myping = me->ping;
 

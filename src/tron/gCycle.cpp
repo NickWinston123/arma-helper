@@ -314,8 +314,8 @@ extern REAL sg_cycleBrakeDeplete;
 static bool sg_localBot = false;
 static tConfItem<bool> sg_localBotConf( "LOCAL_BOT", sg_localBot );
 
-static bool sg_localBotPlayers = false;
-static tConfItem<bool> sg_localBotPlayersConf( "LOCAL_BOT_ENABLED_FOR_PLAYER1", sg_localBotPlayers );
+static bool sg_localBotEnableForPlayer1 = false;
+static tConfItem<bool> sg_localBotEnableForPlayer1Conf( "LOCAL_BOT_ENABLED_FOR_PLAYER1", sg_localBotEnableForPlayer1 );
 
 static bool sg_localBotAlwaysActive = false;
 static tSettingItem<bool> sg_localBotAlwaysActiveConf( "LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive );
@@ -345,6 +345,9 @@ typedef tSettingItem<bool> gChatBotSwitch;
 typedef nSettingItem<REAL> gChatBotSetting;
 typedef nSettingItem<bool> gChatBotSwitch;
 #endif
+
+static bool sg_chatBotDisableForPlayer1 = false;
+static tConfItem<bool> sg_chatBotDisableForPlayer1Conf( "CHATBOT_DISABLE_FOR_PLAYER1", sg_chatBotDisableForPlayer1 );
 
 static bool sg_chatBotAlwaysActive = false;
 static gChatBotSwitch sg_chatBotAlwaysActiveConf( "CHATBOT_ALWAYS_ACTIVE", sg_chatBotAlwaysActive );
@@ -3521,8 +3524,8 @@ bool gCycle::Timestep(REAL currentTime){
         }
     }
 
-    bool playerIsMe = bool(player) && Alive() && player->IsHuman() && player->pID == 0 && player->Owner() == sn_myNetID;
-    if (sg_helper && playerIsMe) {
+    bool playerIsMe = bool(player) && Alive() && player->IsHuman() && player->Owner() == sn_myNetID;
+    if (sg_helper && playerIsMe && player->pID == 0) {
         gHelper & helper = gHelper::Get( this );
         helper.Activate();
     }
@@ -3536,16 +3539,19 @@ bool gCycle::Timestep(REAL currentTime){
     // no targets are given
     else if ( !currentDestination && pendingTurns.empty() )
     {
+        bool activateChatbotForThisPlayer = !sg_chatBotDisableForPlayer1 || player->pID != 0;
         // chatting? activate chatbot
-        if ( bool(player) &&
-                player->IsHuman() &&
-                ( sg_chatBotAlwaysActive || (sg_localBot && sg_localBotAlwaysActive && (sg_localBotPlayers || player->pID != 0)) || player->IsChatting() ) &&
-                ( player->Owner() == sn_myNetID || ( sg_chatBotControlByServer && sn_GetNetState() == nSERVER ) ) )
-        {
+        if (playerIsMe && 
+        ( ( activateChatbotForThisPlayer && sg_chatBotAlwaysActive ) || 
+          ( sg_localBot && sg_localBotAlwaysActive && (sg_localBotEnableForPlayer1 || player->pID != 0)) || 
+          ( activateChatbotForThisPlayer && player->IsChatting() ) || 
+          ( sg_chatBotControlByServer && sn_GetNetState() == nSERVER ) 
+          ) )
+           {
             gCycleChatBot & bot = gCycleChatBot::Get( this );
             bot.Activate( currentTime );
-        }
-        else if ( chatBot_.get() )
+        } 
+        else if ( chatBot_.get() ) 
         {
             chatBot_->nextChatAI_ = 0;
         }

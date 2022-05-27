@@ -5407,8 +5407,14 @@ public:
     }
 };
 
+static bool se_toggleChatFlag = false;
+static tConfItem<bool> se_toggleChatFlagConf("CHAT_FLAG_TOGGLE", se_toggleChatFlag);
+
+static bool se_toggleChatFlagAlways = false;
+static tConfItem<bool> se_toggleChatFlagAlwaysConf("CHAT_FLAG_ALWAYS", se_toggleChatFlagAlways);
+
 static bool se_BlockChatFlags = false;
-static tConfItem<bool> se_BlockChatFlagsConf("BLOCK_CHAT_FLAGS", se_BlockChatFlags);
+static tConfItem<bool> se_BlockChatFlagsConf("CHAT_FLAG_BLOCK", se_BlockChatFlags);
 
 void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
 {
@@ -5417,6 +5423,10 @@ void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
         ePlayerNetID *p = se_PlayerNetIDs[i];
         if (p->Owner()==sn_myNetID && p->pID >= 0)
         {
+            if (se_toggleChatFlag){
+                break;
+            }
+
             if (!se_BlockChatFlags) {
                 p->SetChatting( flag, cs );
             } else {
@@ -5977,8 +5987,10 @@ void ePlayerNetID::Activity()
         RequestSync();
     }
 
-    chatting_ = disconnected = false;
-
+    disconnected = false;
+    if (!se_toggleChatFlag && !se_toggleChatFlagAlways) {
+        chatting_ = false;
+    }
     // store time
     this->lastActivity_ = tSysTimeFloat();
 }
@@ -9376,7 +9388,6 @@ typedef std::pair< int, tJUST_CONTROLLED_PTR< ePlayerNetID > >
 ePrejoinPair;
 static ePrejoinShuffleMap se_prejoinShuffles;
 
-
 static bool se_disableCreate = false;
 static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
 
@@ -9386,6 +9397,7 @@ static tConfItem<int> se_createPlayersConf("CREATE_PLAYERS", se_createPlayers);
 static int se_createPlayersSpecific = 0;
 static tConfItem<int> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC", se_createPlayersSpecific);
 
+bool toggleChatFlagShow = true;
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
 {
@@ -9446,6 +9458,7 @@ void ePlayerNetID::Update()
                 p->object = NULL;
                 p = NULL;
             }
+            
 
             if (bool(p) && in_game)  // update
             {
@@ -9467,11 +9480,25 @@ void ePlayerNetID::Update()
                             break;
                     }
 
-
+                
                 p->r=ePlayer::PlayerConfig(i)->rgb[0];
                 p->g=ePlayer::PlayerConfig(i)->rgb[1];
                 p->b=ePlayer::PlayerConfig(i)->rgb[2];
 
+                if (se_toggleChatFlag) {
+                    if (toggleChatFlagShow) {
+                        p->SetChatting( ePlayerNetID::ChatFlags_Chat, true );
+                        toggleChatFlagShow = false;
+                    } else {
+                        p->SetChatting( ePlayerNetID::ChatFlags_Chat, false );
+                        toggleChatFlagShow = true;
+                    }
+                }
+
+                if (se_toggleChatFlagAlways) {
+                    p->SetChatting( ePlayerNetID::ChatFlags_Chat, true );
+                }
+                
                 sg_ClampPingCharity();
                 p->pingCharity=::pingCharity;
                 if( sn_GetNetState() != nSERVER )

@@ -203,6 +203,10 @@ REAL sg_delayCycleBonus=.95;
 static tSettingItem<REAL> c_db("CYCLE_DELAY_BONUS",
                                sg_delayCycleBonus);
 
+REAL sg_delayDbCycleBonus=.95;
+static tSettingItem<REAL> c_dbb("CYCLE_DELAY_BONUS_DOUBLEBIND",
+                               sg_delayDbCycleBonus);
+
 REAL sg_cycleTurnSpeedFactor=.95;
 static nSettingItemWatched<REAL> c_ctf("CYCLE_TURN_SPEED_FACTOR",
                                        sg_cycleTurnSpeedFactor,
@@ -1076,7 +1080,7 @@ REAL gCycleMovement::GetTurnDelay( void ) const
 REAL gCycleMovement::GetTurnDelayDb( void ) const
 {
     // the basic delay as it was before 0.2.8 looked like this:
-    REAL baseDelay   = sg_delayCycle*sg_delayCycleBonus/SpeedMultiplier()*sg_delayCycleDoublebindBonus;
+    REAL baseDelay   = sg_delayCycle*(sg_delayDbCycleBonus)/SpeedMultiplier()*sg_delayCycleDoublebindBonus;
 
     // we're modifying it by a power law to make speed turns easier or harder:
     REAL speedFactor = verletSpeed_/(sg_speedCycle*SpeedMultiplier());

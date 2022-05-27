@@ -1265,6 +1265,8 @@ static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNI
 REAL sg_helperSmartTurningSurviveRubberMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningSurviveRubberMultConf("HELPER_SMART_TURNING_SURVIVE_RUBBER_MULT", sg_helperSmartTurningSurviveRubberMult);
 
+
+
 struct gHelperData
 {
     gSensor const &front;
@@ -1307,25 +1309,95 @@ class gSmartTurning
     void Activate( gHelperData &data) {
         localCurrentTime = se_GameTime();
 
-        if (sg_helperSmartTurningSurvive || sg_helperSmartTurningOpposite) {
-            canSurviveTurn(data);
+        if (sg_helperSmartTurningOpposite || sg_helperSmartTurningSurvive ) {
+            calculateRubberFactor(sg_helperSmartTurningSurviveRubberMult);
         }
+
+        if (sg_helperSmartTurningSurvive) {
+            sg_helperSmartTurningOpposite = 0;
+            smartTurningSurvive(data);
+        }
+
+        if (sg_helperSmartTurningOpposite) {
+            smartTurningOpposite(data);
+        }
+
+    }
+
+    void smartTurningBot (gHelperData &data) {
+
     }
 
     void autoTrace(gHelperData &data) {
 
     }
 
-    void canSurviveTurn(gHelperData &data) {
+    void smartTurningOpposite(gHelperData &data) {
 
-        REAL rubberGranted, rubberEffectiveness;
-        sg_RubberValues( owner_->player, owner_->verletSpeed_, rubberGranted, rubberEffectiveness );
-        REAL rubberTime = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
-        REAL rubberFactor = owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime * sg_helperSmartTurningSurviveRubberMult);
+        REAL canSurviveLeftTurn, canSurviveRightTurn;
+        bool closedIn, blockedBySelf;
         
+        canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf);
+        
+        if (closedIn || blockedBySelf) {
+            goto SKIP_FORCETURN;
+        }
 
-        bool canSurviveLeftTurn = true;
-        bool canSurviveRightTurn = true;
+        if (!canSurviveLeftTurn && canSurviveRightTurn)
+        {
+            owner_->forceTurn = 1;
+            owner_->blockTurn = 0;
+            return;
+        }
+        else if (canSurviveLeftTurn && !canSurviveRightTurn)
+        {
+            owner_->forceTurn = -1;
+            owner_->blockTurn = 0;
+            return;
+        }
+
+        SKIP_FORCETURN:
+        {
+            this->forceTurn = 0;
+            return;
+        }
+    }
+
+    void smartTurningSurvive(gHelperData &data) {
+        
+        REAL canSurviveLeftTurn, canSurviveRightTurn;
+        bool closedIn, blockedBySelf;
+        
+        canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf);
+        
+        if (closedIn || blockedBySelf) {
+            goto SKIP_BLOCKTURN;
+        }
+
+        if (!canSurviveLeftTurn && !canSurviveRightTurn) {
+            this->blockTurn = 2;
+            return;
+        } 
+        if (!canSurviveLeftTurn) {
+            this->blockTurn = -1;
+            return;
+        } 
+        if (!canSurviveRightTurn) {
+            this->blockTurn = 1;
+            return;
+        } 
+
+        SKIP_BLOCKTURN:
+        {
+            this->blockTurn = 0;
+            return;
+        }
+    }
+
+    void canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, REAL &canSurviveRightTurn, bool &closedIn, bool &blockedBySelf) {     
+
+        canSurviveLeftTurn = true;
+        canSurviveRightTurn = true;
         
         if (data.left.hit < rubberFactor) {
             canSurviveLeftTurn = false;
@@ -1334,65 +1406,16 @@ class gSmartTurning
             canSurviveRightTurn = false;
         }
 
-        bool closedIn, blockedBySelf;
-        if (sg_helperSmartTurningOpposite || sg_helperSmartTurningSurvive) {
-            closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
-            blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
-        }
+        closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
+        blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
+    }
+    
 
-        if (sg_helperSmartTurningOpposite) {
-            sg_helperSmartTurningSurvive = false;
-                        
-            if (closedIn || blockedBySelf) {
-                goto SKIP_FORCETURN;
-            }
-
-            if (!canSurviveLeftTurn && canSurviveRightTurn)
-            {
-                owner_->forceTurn = 1;
-                owner_->blockTurn = 0;
-                return;
-            }
-            else if (canSurviveLeftTurn && !canSurviveRightTurn)
-            {
-                owner_->forceTurn = -1;
-                owner_->blockTurn = 0;
-                return;
-            }
-
-            SKIP_FORCETURN:
-            {
-                this->forceTurn = 0;
-                return;
-            }
-        }
-
-        if (sg_helperSmartTurningSurvive) {
-
-            if (closedIn || blockedBySelf) {
-                goto SKIP_BLOCKTURN;
-            }
-
-            if (!canSurviveLeftTurn && !canSurviveRightTurn) {
-                this->blockTurn = 2;
-                return;
-            } 
-            if (!canSurviveLeftTurn) {
-                this->blockTurn = -1;
-                return;
-            } 
-            if (!canSurviveRightTurn) {
-                this->blockTurn = 1;
-                return;
-            } 
-
-            SKIP_BLOCKTURN:
-            {
-                this->blockTurn = 0;
-                return;
-            }
-        }
-
+    void calculateRubberFactor(REAL rubberMult) {
+        REAL rubberGranted, rubberEffectiveness;
+        sg_RubberValues( owner_->player, owner_->verletSpeed_, rubberGranted, rubberEffectiveness );
+        REAL rubberTime = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
+        rubberFactor = owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime * rubberMult);
     }
 
     static gSmartTurning & Get( gHelper * helper, gCycle *owner )
@@ -1418,6 +1441,7 @@ class gSmartTurning
         REAL &lastTurnDir; // -1 left , 1 right
         REAL &blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
         REAL &forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
+        REAL rubberFactor;
     };
 
 
@@ -1848,6 +1872,18 @@ private:
     std::unique_ptr< gSmartTurning > smartTurning;
 };
 
+
+
+
+class gSmarterBot
+{
+    gSmarterBot();
+public:
+
+private:
+
+    gCycle * owner_;         //!< owner of chatbot
+};
 
 
 //  *****************************************************************

@@ -4718,8 +4718,8 @@ static bool IsLegalPlayerName( tString const & name )
 static bool se_enableChatCommands = true;
 static tConfItem<bool> se_enableChatCommandsConf( "LOCAL_CHAT_COMMANDS", se_enableChatCommands );
 
-static bool se_showPlayerCommand = true;
-static tConfItem<bool> se_showPlayerCommandConf( "LOCAL_DISABLE_PLAYERS", se_showPlayerCommand );
+static bool se_disablePlayersCommand = true;
+static tConfItem<bool> se_disablePlayersCommandConf( "LOCAL_DISABLE_PLAYERS", se_disablePlayersCommand );
 
 // our local commands (should always be lowercase)
 static tString se_consoleComand("/console");
@@ -4770,13 +4770,14 @@ void ePlayerNetID::Chat(const tString& s_orig)
         }
     }
 
-    if ((!se_showPlayerCommand) && s_orig.StartsWith("/")
+    if ((se_disablePlayersCommand) && s_orig.StartsWith("/")
         && (command == "/players" || command == "/listplayers"))
     {
         tCurrentAccessLevel level(tAccessLevel_Owner, true);
         tString params("PLAYERS");
         std::stringstream s(static_cast<char const*>(params));
         tConfItemBase::LoadAll(s);
+        return;
     }
 
     if (isLocalCommand && se_enableChatCommands && (s_orig.StartsWith("/")))

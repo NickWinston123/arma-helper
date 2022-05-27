@@ -4719,7 +4719,7 @@ static bool se_enableChatCommands = true;
 static tConfItem<bool> se_enableChatCommandsConf( "LOCAL_CHAT_COMMANDS", se_enableChatCommands );
 
 static bool se_showPlayerCommand = true;
-static tConfItem<bool> se_showPlayerCommandConf( "SHOW_IP_PLAYERS", se_showPlayerCommand );
+static tConfItem<bool> se_showPlayerCommandConf( "LOCAL_DISABLE_PLAYERS", se_showPlayerCommand );
 
 // our local commands (should always be lowercase)
 static tString se_consoleComand("/console");

@@ -9486,19 +9486,13 @@ void ePlayerNetID::Update()
                 p->b=ePlayer::PlayerConfig(i)->rgb[2];
 
                 if (se_toggleChatFlag) {
-                    if (toggleChatFlagShow) {
-                        p->SetChatting( ePlayerNetID::ChatFlags_Chat, true );
-                        toggleChatFlagShow = false;
-                    } else {
-                        p->SetChatting( ePlayerNetID::ChatFlags_Chat, false );
-                        toggleChatFlagShow = true;
-                    }
+                    p->SetChatting( ePlayerNetID::ChatFlags_Chat, !p->IsChatting());
                 }
 
                 if (se_toggleChatFlagAlways) {
                     p->SetChatting( ePlayerNetID::ChatFlags_Chat, true );
                 }
-                
+
                 sg_ClampPingCharity();
                 p->pingCharity=::pingCharity;
                 if( sn_GetNetState() != nSERVER )

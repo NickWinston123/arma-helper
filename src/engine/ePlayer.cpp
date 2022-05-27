@@ -62,6 +62,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 #include <climits>
 
+// /rgb
+#include "eFloor.h"
+
 //!RACE FILE
 #include "../tron/gRace.h"
 
@@ -4711,46 +4714,117 @@ static bool IsLegalPlayerName( tString const & name )
     return false;
 }
 
-void ePlayerNetID::Chat(const tString &s_orig)
+#ifndef DEDICATED
+static bool se_enableChatCommands = true;
+static tConfItem<bool> se_enableChatCommandsConf( "LOCAL_CHAT_COMMANDS", se_enableChatCommands );
+
+static bool se_showPlayerCommand = true;
+static tConfItem<bool> se_showPlayerCommandConf( "SHOW_IP_PLAYERS", se_showPlayerCommand );
+
+// our local commands (should always be lowercase)
+static tString se_consoleComand("/console");
+static tConfItem<tString> se_consoleComandConf("LOCAL_CONSOLE_COMMAND", se_consoleComand);
+
+static tString se_listcolorsCommand("/listcolors");
+static tConfItem<tString> se_listcolorsCommandConf("LOCAL_LISTCOLORS_COMMAND", se_listcolorsCommand);
+
+static tString se_colorsCommand("/colors");
+static tConfItem<tString> se_colorsCommandConf("LOCAL_COLORS_COMMAND", se_colorsCommand);
+
+static tString se_infoCommand("/info");
+static tConfItem<tString> se_infoCommandConf("LOCAL_INFO_COMMAND", se_infoCommand);
+
+static tString se_rgbCommand("/rgb");
+static tConfItem<tString> se_rgbCommandConf("LOCAL_RGB_COMMAND", se_rgbCommand);
+
+#endif //if not dedicated
+
+void ePlayerNetID::Chat(const tString& s_orig)
 {
-    tColoredString s( s_orig );
+    tColoredString s(s_orig);
     s.NetFilter();
 
 #ifndef DEDICATED
-    // check for direct console commands
-    tString command("");
-    if(s_orig.StartsWith("/"))
-        command = s_orig.SubStr(0,s_orig.StrPos(" "));
 
-    if(command == "/console")
+    tString se_localChatCommands[] =
+    { 
+        se_consoleComand, 
+        se_listcolorsCommand, 
+        se_colorsCommand, 
+        se_infoCommand, 
+        se_rgbCommand
+    };
+
+    std::string chatString(s_orig);
+    std::istringstream passedString(chatString);
+
+    tString command;
+
+    passedString >> command;
+    tToLower(command);
+    tConfItemBase::EatWhitespace(passedString);
+
+    bool isLocalCommand = false;
+
+    for (int i = sizeof(se_localChatCommands) / sizeof(se_localChatCommands[0]) - 1; i >= 0; --i)
     {
-        // direct commands are executed at owner level
-        tCurrentAccessLevel level( tAccessLevel_Owner, true );
-
-        tString params("");
-        if (s_orig.StrPos(" ") == -1)
-            return;
-        else
-            params = s_orig.SubStr(s_orig.StrPos(" ") + 1);
-
-        if ( tRecorder::IsPlayingBack() )
+        if (command.StartsWith(se_localChatCommands[i]))
         {
-            tConfItemBase::LoadPlayback();
-        }
-        else
-        {
-            std::stringstream s(static_cast< char const * >( params ) );
-            tConfItemBase::LoadAll(s);
+            isLocalCommand = true;
         }
     }
-    //Not sure if this is a good short handle. Maybe something like /colors? Then introduce the basic list if no parameters are sent, but if a players name is sent give that players colors alone.
-    else if( s_orig.StartsWith("/listcolors") || s_orig.StartsWith("/colors") )
+
+    if ((!se_showPlayerCommand) && s_orig.StartsWith("/")
+        && (command == "/players" || command == "/listplayers"))
     {
-        con << "Player Colors: \n";
-        se_listPlayerColors();
+        tCurrentAccessLevel level(tAccessLevel_Owner, true);
+        tString params("PLAYERS");
+        std::stringstream s(static_cast<char const*>(params));
+        tConfItemBase::LoadAll(s);
+    }
+
+    if (isLocalCommand && se_enableChatCommands && (s_orig.StartsWith("/")))
+    {
+        // check for direct console commands
+        if (command == se_consoleComand)
+        {
+            // direct commands are executed at owner level
+            tCurrentAccessLevel level(tAccessLevel_Owner, true);
+
+            tString params("");
+            if (s_orig.StrPos(" ") == -1)
+                return;
+            else
+                params = s_orig.SubStr(s_orig.StrPos(" ") + 1);
+
+            if (tRecorder::IsPlayingBack())
+            {
+                tConfItemBase::LoadPlayback();
+            }
+            else
+            {
+                std::stringstream s(static_cast<char const*>(params));
+                tConfItemBase::LoadAll(s);
+            }
+        }
+        // Short handle for grabbing player colors.
+        else if ((command == se_listcolorsCommand) || (command == se_colorsCommand))
+        {
+            listPlayerColors(tString(s_orig));
+        }
+        // Short handle for grabbing player information.
+        else if (command == se_infoCommand)
+        {
+            listPlayerInfo(tString(s_orig));
+        }
+        // Short handle for changing our RGB values.
+        else if (command == se_rgbCommand)
+        {
+            currentPlayerRGB(tString(s_orig));
+        }
     }
     else
-#endif
+#endif // if not dedicated
     {
         tString retStr(s);
         if (eBannedWords::BadWordTrigger(this, retStr))
@@ -4759,23 +4833,23 @@ void ePlayerNetID::Chat(const tString &s_orig)
 
         switch (sn_GetNetState())
         {
-        case nCLIENT:
-        {
-            se_NewChatMessage( this, s )->BroadCast();
-            break;
-        }
-        case nSERVER:
-        {
-            se_BroadcastChat( this, s );
-            
-            // break;
-        }
-        // falling through on purpose
-        default:
-        {
-            se_DisplayChatLocally( this, s );
-            break;
-        }
+            case nCLIENT:
+            {
+                se_NewChatMessage(this, s)->BroadCast();
+                break;
+            }
+            case nSERVER:
+            {
+                se_BroadcastChat(this, s);
+
+                // falling through on purpose
+                // break;
+            }
+            default:
+            {
+                se_DisplayChatLocally(this, s);
+                break;
+            }
         }
     }
 }
@@ -8667,23 +8741,601 @@ static void se_UniqueColor( ePlayer * l, ePlayerNetID * p )
 }
 
 //Gather all the rgb colors and put them in a nice list.
-static void se_listPlayerColors()
+//Usage /colors with no parameters returns all players and their colors.
+//      /colors playername returns that specific players color or more depending if the search term is found in other player names
+void ePlayerNetID::listPlayerColors(tString s_orig)
 {
-    tColoredString listColors;
-     for ( int i = 0; i <= se_PlayerNetIDs.Len()-1; i++ )
+
+    if (se_PlayerNetIDs.Len()>0)
     {
-        ePlayerNetID * otherPlayers = se_PlayerNetIDs(i);
+        if (s_orig.StrPos(" ") == -1)
+        {
+            con << tOutput("$player_colors_text");
 
+            for ( int i = 0; i <= se_PlayerNetIDs.Len()-1; i++ )
+            {
+                ePlayerNetID *p=se_PlayerNetIDs(i);
+                con << (i+1) << ") " << gatherPlayerColor(p);
 
-        listColors << (i+1) << ": " << otherPlayers->GetColoredName() << "0xRESETT (" << otherPlayers->r << ", " << otherPlayers->g << ", " << otherPlayers->b << ")\n";
-     
-        con << listColors;
+            }
+        }
+        else
+        {
+            tArray<tString> msgsExt = s_orig.Split(" ");
+            bool playerFound = false;
 
-        listColors  = "";
+            con << tOutput("$player_colors_text");
+
+            for(int i = 0; i < msgsExt.Len(); i++)
+            {
+                tString word = msgsExt[i];
+                int j = 0;
+                for ( int i = 0; i <= se_PlayerNetIDs.Len()-1; i++ )
+                {
+                    ePlayerNetID *p=se_PlayerNetIDs(i);
+
+                    if (p->GetName().Filter().Contains(word.Filter()))
+                    {
+                        playerFound = true;
+
+                        con << (j+1) << ") " << gatherPlayerColor(p);
+                        j++;
+
+                    }
+                }
+            }
+            //No one found.
+            if (!playerFound)
+            {
+                con << tOutput("$player_colors_not_found", msgsExt[1]);
+            }
+
+        }
 
     }
 }
 
+tColoredString ePlayerNetID::gatherPlayerColor(ePlayerNetID* p, bool showReset)
+{
+    tColoredString listColors;
+    if (showReset){
+        return listColors << p->GetColoredName() << "0xRESETT (" << p->r << ", " << p->g << ", "
+                          << p->b << ")\n";
+    } else {
+        tString coloredName = p->GetColoredName();
+        return listColors << coloredName.StripWhitespace() << " (" << p->r << ", " << p->g << ", " << p->b
+                          << ")\n";
+    }
+}
+
+
+/*
+List player information.
+Displays:
+Colored Name
+Position
+Direction
+Used Rubber out of max
+Speed
+Spectating / Playing
+Chatting
+Sometimes Alive / Dead
+Usage: /info - Returns own information
+       /info playername - Returns that players name. (or more depending if the search word is found in more than one player)
+*/
+
+void ePlayerNetID::listPlayerInfo(tString s_orig)
+{
+
+    if (se_PlayerNetIDs.Len()>0)
+    {
+        if (s_orig.StrPos(" ") == -1)
+        {
+            con << tOutput("$player_info_text");
+            ePlayerNetID *p = se_GetLocalPlayer();
+            con << gatherPlayerInfo(p);
+        }
+        else
+        {
+            tArray<tString> msgsExt = s_orig.Split(" ");
+            tArray<ePlayerNetID *> foundPlayers;
+            bool playerFound = false;
+            con << tOutput("$player_info_text");
+            for(int i = 0; i < msgsExt.Len(); i++)
+            {
+                tString word = msgsExt[i];
+
+                for(int i=0; i < se_PlayerNetIDs.Len(); i++)
+                {
+                    ePlayerNetID *p=se_PlayerNetIDs(i);
+
+                    if (p->GetName().Filter().Contains(word.Filter()))
+                    {
+                        playerFound = true;
+
+                        con << gatherPlayerInfo(p);
+
+                    }
+                }
+            }
+
+            if (!playerFound)
+            {
+                con << tOutput("$player_not_found_text", msgsExt[1]);
+            }
+
+        }
+
+    }
+}
+
+
+
+tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID * p)
+{
+    tColoredString listinfo;
+    listinfo << "Results for " << p->GetColoredName() << "0xRESETT: \n";
+
+    ///Status. Includes player type, spectating or playing, and if the player is chatting.
+    listinfo << "Status: ";
+    (p->IsHuman()) ? listinfo << "Human" : listinfo << "Bot";
+
+    //Oddly IsSpectating returned some confusing results.
+    (!p->CurrentTeam()) ? listinfo << ", Spectating" : listinfo << ", Playing";
+
+    //Are we chatting / out of focus? Calculating the time worked for our local player but didnt work too well for players who joined before us.
+    (p->IsChatting()) ? listinfo << ", Chatting" : listinfo << ""; // ("<< fabs(p->TimeChatting()) << ") seconds\n" : listinfo << "\n";
+
+
+    //Only grab this information if the player is an active object.
+    if (p->Object() && p->currentTeam)
+    {
+        //If the player is an active object, are they alive? Pretty sure we know this already but no harm in including it.
+        (p->Object()->Alive()) ? listinfo << ", Alive\n" : listinfo << ", Dead\n";
+
+        //Only grab this information if the player is an alive object.
+        if (p->Object()->Alive())
+        {
+            gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
+
+            listinfo <<  "Position: x: " << pCycle->MapPosition().x << ", y: " << pCycle->MapPosition().y  << "\n";
+
+            //Had trouble converting the direction to an angle, will have to visit this later
+            listinfo << "Map Direction: " << "x: " << pCycle->MapDirection().x << ", y: " << pCycle->MapDirection().y << "\n";
+            listinfo << "Speed: " << pCycle->verletSpeed_  << "\n";
+            listinfo << "Rubber: " << pCycle->GetRubber() << "/" << sg_rubberCycle << "\n";
+        }
+    }
+
+    return listinfo << "\n";
+}
+
+static tString se_colorVarFile("colors.txt");
+static tConfItem<tString> se_colorVarFileConf("RGB_COLORS_FILE", se_colorVarFile);
+
+static void se_loadSavedColor(int lineNumber)
+{
+    tArray<tString> colors;
+
+    std::ifstream i;
+    if (tDirectories::Var().Open(i, se_colorVarFile))
+    {
+        while (!i.eof())
+        {
+            std::string sayLine;
+            std::getline(i, sayLine);
+            std::istringstream s(sayLine);
+
+            tString params;
+            params.ReadLine(s);
+            int pos = 0;
+
+            if (params.Filter() != "")
+                colors.Insert(params);
+        }
+    }
+    i.close();
+
+    tString currentLine = colors[lineNumber];
+    if (currentLine != "")
+    {
+        int pos = 0;
+        tString Name = currentLine.ExtractNonBlankSubString(pos);
+        tString ColorOne = currentLine.ExtractNonBlankSubString(pos);
+        ColorOne.RemoveSubStr(0, 1);
+        int Color1 = atoi(ColorOne);
+        int Color2 = atoi(currentLine.ExtractNonBlankSubString(pos));
+        int Color3 = atoi(currentLine.ExtractNonBlankSubString(pos));
+        REAL c1 = Color1;
+        REAL c2 = Color2;
+        REAL c3 = Color3;
+        se_MakeColorValid(c1, c2, c3, 1.0f);
+        if (tColoredString::HasColors(Name))
+        {
+            con << tOutput("$player_colors_loading");
+            con << (lineNumber + 1) << ") " << Name << "0xRESETT (" << Color1 << ", " << Color2
+                << ", " << Color3 << ")\n";
+        }
+        else
+        {
+            con << tOutput("$player_colors_loading");
+            con << (lineNumber + 1) << ") "
+                << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15) << Name << "0xRESETT ("
+                << Color1 << ", " << Color2 << ", " << Color3 << ")\n";
+        }
+        ePlayer::PlayerConfig(0)->rgb[0] = Color1;
+        ePlayer::PlayerConfig(0)->rgb[1] = Color2;
+        ePlayer::PlayerConfig(0)->rgb[2] = Color3;
+    }
+}
+
+static int se_savedColorsCount()
+{
+    int count = 0;
+    std::ifstream i;
+    if (tDirectories::Var().Open(i, se_colorVarFile))
+    {
+        while (!i.eof())
+        {
+            std::string sayLine;
+            std::getline(i, sayLine);
+            std::istringstream s(sayLine);
+
+            tString params;
+            params.ReadLine(s);
+
+            if (params.Filter() != "")
+                count++;
+        }
+    }
+    i.close();
+
+    return count;
+}
+
+
+static void se_SavedColors(int savedColorsCount)
+{
+    tArray<tString> colors;
+
+    std::ifstream i;
+    if (tDirectories::Var().Open(i, se_colorVarFile))
+    {
+        while (!i.eof())
+        {
+            std::string sayLine;
+            std::getline(i, sayLine);
+            std::istringstream s(sayLine);
+
+            tString params;
+            params.ReadLine(s);
+            int pos = 0;
+
+            if (params.Filter() != "")
+                colors.Insert(params);
+        }
+    }
+    i.close();
+
+    for (int index = 0; index <= savedColorsCount; index++)
+    {
+        tString currentLine = colors[index];
+        if (currentLine != "")
+        {
+            int pos = 0;
+            tString Name = currentLine.ExtractNonBlankSubString(pos);
+            tString ColorOne = currentLine.ExtractNonBlankSubString(pos);
+            ColorOne.RemoveSubStr(0, 1);
+            int Color1 = atoi(ColorOne);
+            int Color2 = atoi(currentLine.ExtractNonBlankSubString(pos));
+            int Color3 = atoi(currentLine.ExtractNonBlankSubString(pos));
+            REAL c1 = Color1;
+            REAL c2 = Color2;
+            REAL c3 = Color3;
+            se_MakeColorValid(c1, c2, c3, 1.0f);
+            if (tColoredString::HasColors(Name))
+            {
+                con << (index + 1) << ") " << Name << "0xRESETT (" << Color1 << ", " << Color2
+                    << ", " << Color3 << ")\n";
+            }
+            else
+            {
+                con << (index + 1) << ") " << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15)
+                    << Name << "0xRESETT (" << Color1 << ", " << Color2 << ", " << Color3 << ")\n";
+            }
+        }
+    }
+}
+
+
+// Allow us to change our current RGB easily.
+// Usage: /rgb with no parameters displays current rgb.
+//        /rgb 15 3 3 Would set player 1's RGB to R15 G3 B3.
+//        /rgb unique gives all players unique colors.
+//        /rgb random gives all players random colors.
+//        /rgb 2 15 3 3 Will change player 2's colors to 15 3 3.
+//        /rgb save would save your current colors to colors.txt
+//        /rgb save player would save the players current colors to colors.txt
+//        /rgb list would list your current saved colors.
+//        /rgb load 1 would load from line #1 in the list.
+//        /rgb clear would clear your current list of saved colors.
+void ePlayerNetID::currentPlayerRGB(tString s_orig)
+{
+    if (s_orig.StrPos(" ") == -1)
+    {
+        con << tOutput("$player_colors_current_text");
+        for (int i = 0; i < MAX_PLAYERS; ++i)
+        {
+            bool in_game = ePlayer::PlayerIsInGame(i);
+            ePlayer* me = ePlayer::PlayerConfig(i);
+            tASSERT(me);
+            tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
+            if (bool(p) && in_game)
+            {
+                tColoredString listColors;
+                listColors << p->GetColoredName() << "0xRESETT ("
+                           << ePlayer::PlayerConfig(i)->rgb[0] << ", "
+                           << ePlayer::PlayerConfig(i)->rgb[1] << ", "
+                           << ePlayer::PlayerConfig(i)->rgb[2] << ")\n";
+                con << listColors;
+            }
+        }
+    }
+    else
+    {
+        tArray<tString> passedString = s_orig.Split(" ");
+        bool correctParameters = false;
+        bool help = false;
+        bool hideError = false;
+        bool load = false;
+        bool save = false;
+        bool random = false;
+        bool list = false;
+        bool clear = false;
+        bool unique = false;
+        int ourID = 0;
+
+        if (passedString[1] == "random")
+        {
+            correctParameters = true;
+            random = true;
+
+            // For now everyone gets random colors.
+            for (int i = 0; i < MAX_PLAYERS; ++i)
+            {
+                bool in_game = ePlayer::PlayerIsInGame(i);
+                ePlayer* me = ePlayer::PlayerConfig(i);
+                tASSERT(me);
+                tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
+
+                if (bool(p) && in_game)
+                {
+                    se_RandomizeColor(me);
+                }
+            }
+        }
+        else if (passedString[1] == "help")
+        {
+            help = true;
+            hideError = true;
+            con << tOutput("$player_colors_command_help", se_colorVarFile);
+        }
+        else if (passedString[1] == "save")
+        {
+            hideError = true;
+            save = true;
+            bool foundPlayer = false;
+
+            if (passedString.Len() == 2)
+            {
+                foundPlayer = true;
+                std::ofstream o;
+
+                if (tDirectories::Var().Open(o, se_colorVarFile, std::ios::app))
+                {
+                    con << tOutput("$player_colors_saved");
+                    for (int i = 0; i < MAX_PLAYERS; ++i)
+                    {
+                        bool in_game = ePlayer::PlayerIsInGame(i);
+                        ePlayer* me = ePlayer::PlayerConfig(i);
+                        tASSERT(me);
+                        tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
+
+                        if (bool(p) && in_game)
+                        {
+                            o << ePlayerNetID::gatherPlayerColor(p,0);
+                            con << ePlayerNetID::gatherPlayerColor(p);;
+                        }
+                    }
+                }
+                else
+                {
+                    con << tOutput("$players_color_error");
+                }
+                o.close();
+            }
+            else if (passedString.Len() >= 3)
+            {
+                for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
+                {
+                    ePlayerNetID* p = se_PlayerNetIDs(i);
+                    if (p->GetName().Filter().Contains(passedString[2].Filter()))
+                    {
+                        foundPlayer = true;
+                        std::ofstream o;
+                        if (tDirectories::Var().Open(o, se_colorVarFile, std::ios::app))
+                        {
+                            con << tOutput("$player_colors_saved");
+                            o << ePlayerNetID::gatherPlayerColor(p,0);
+                            con << ePlayerNetID::gatherPlayerColor(p);;
+                        }
+                        else
+                        {
+                            con << tOutput("$players_color_error");
+                        }
+                        o.close();
+                    }
+                }
+                if (!foundPlayer)
+                {
+                    con << tOutput("$player_colors_not_found", passedString[2]);
+                }
+            }
+        }
+
+        else if (passedString[1] == "load")
+        {
+            load = true;
+            int savedColorsCount = se_savedColorsCount();
+
+            if (passedString.Len() == 2)
+            {
+                con << tOutput("$player_colors_changed_usage_error");
+                return;
+            }
+            else if (passedString.Len() == 3)
+            {
+                correctParameters = true;
+                int lineNumber = (atoi(passedString[2]) - 1);
+                if ((lineNumber >= 0) && lineNumber <= savedColorsCount - 1)
+                {
+                    se_loadSavedColor(lineNumber);
+                }
+                else
+                {
+                    correctParameters = false;
+                    hideError = true;
+                    con << tOutput("$players_color_line_not_found", se_colorVarFile,
+                        savedColorsCount, lineNumber + 1);
+                }
+            }
+        }
+        else if (passedString[1] == "list")
+        {
+            hideError = true;
+            list = true;
+            int savedColorsCount = se_savedColorsCount();
+            con << tOutput("$players_color_list", savedColorsCount, se_colorVarFile);
+            if (savedColorsCount > 0)
+            {
+                se_SavedColors(savedColorsCount);
+            }
+            else
+            {
+                con << tOutput("$player_colors_empty");
+            }
+        }
+        else if (passedString[1] == "clear")
+        {
+            hideError = true;
+            clear = true;
+            std::ofstream o;
+            if (tDirectories::Var().Open(o, se_colorVarFile))
+            {
+                o << "";
+            }
+            o.close();
+            con << tOutput("$player_colors_cleared", se_colorVarFile);
+        }
+        else if (passedString[1] == "unique" && !(help || random || load || save || list || clear))
+        {
+            correctParameters = true;
+            unique = true;
+
+            // Also everyone gets unique colors if sent.
+            for (int i = 0; i < MAX_PLAYERS; ++i)
+            {
+                bool in_game = ePlayer::PlayerIsInGame(i);
+                ePlayer* me = ePlayer::PlayerConfig(i);
+                tASSERT(me);
+                tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
+
+                if (bool(p) && in_game)
+                {
+                    se_UniqueColor(me, p);
+                }
+            }
+        }
+
+        // Not really checking if the strings passed parameters are numbers,
+        // but if someone did /rgb asd asd asd it would just make it 0 0 0.
+        else if (passedString.Len() >= 4
+            && !(help || random || unique || load || save || list || clear))
+        {
+            // Guess we must be ID 0?
+            if (passedString.Len() == 4)
+            {
+                correctParameters = true;
+
+                int r = atoi(passedString[1]);
+                int g = atoi(passedString[2]);
+                int b = atoi(passedString[3]);
+
+                ePlayer::PlayerConfig(0)->rgb[0] = r;
+                ePlayer::PlayerConfig(0)->rgb[1] = g;
+                ePlayer::PlayerConfig(0)->rgb[2] = b;
+            }
+            else if (passedString.Len() == 5
+                && !(help || random || unique || load || save || list || clear))
+            {
+                ourID = atoi(passedString[1]);
+                if ((ourID <= MAX_PLAYERS) && (ourID > 0))
+                {
+                    correctParameters = true;
+
+                    bool in_game = ePlayer::PlayerIsInGame(ourID - 1);
+                    ePlayer* me = ePlayer::PlayerConfig(ourID - 1);
+
+                    int r = atoi(passedString[2]);
+                    int g = atoi(passedString[3]);
+                    int b = atoi(passedString[4]);
+
+                    ePlayer::PlayerConfig(ourID - 1)->rgb[0] = r;
+                    ePlayer::PlayerConfig(ourID - 1)->rgb[1] = g;
+                    ePlayer::PlayerConfig(ourID - 1)->rgb[2] = b;
+                }
+            }
+        }
+
+        // If the correct parameters are passed, display the changes.
+        if (correctParameters)
+        {
+            con << tOutput("$player_colors_current_text");
+
+            for (int i = 0; i < MAX_PLAYERS; ++i)
+            {
+                bool in_game = ePlayer::PlayerIsInGame(i);
+                ePlayer* me = ePlayer::PlayerConfig(i);
+                tASSERT(me);
+                tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
+                if (bool(p) && in_game)
+                {
+                    ePlayerNetID::Update();
+                    tColoredString listColors;
+                    listColors << i + 1 << ") " << p->GetColoredName() << "0xRESETT ("
+                               << ePlayer::PlayerConfig(i)->rgb[0] << ", "
+                               << ePlayer::PlayerConfig(i)->rgb[1] << ", "
+                               << ePlayer::PlayerConfig(i)->rgb[2] << ")\n";
+                    con << listColors;
+                }
+                if (!(bool(p) && in_game) && ourID - 1 == i)
+                {
+                    con << tOutput("$player_colors_changed_text", ourID,
+                        ePlayer::PlayerConfig(i)->rgb[0], ePlayer::PlayerConfig(i)->rgb[1],
+                        ePlayer::PlayerConfig(i)->rgb[2]);
+                }
+            }
+        }
+        else
+        {
+            // If hideError is enabled we wont display the error message.
+            if (!hideError)
+            {
+                con << tOutput("$player_colors_changed_usage_error");
+            }
+        }
+    }
+}
 
 static nSettingItem<int> se_pingCharityServerConf("PING_CHARITY_SERVER",sn_pingCharityServer );
 static nVersionFeature   se_pingCharityServerControlled( 14 );

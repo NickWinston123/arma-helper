@@ -450,6 +450,16 @@ public:
     static void OnlineStatsLadderLog(); //  writes the online players, teams and the numbers
     static void  ResetScore();  // resets the ranking list
 
+    // List the colors of other players.
+    static void listPlayerColors(tString s_orig);
+    // List the information of other players.
+    static void listPlayerInfo(tString s_orig);
+    // Fast way to change / display current RGB
+    static void currentPlayerRGB(tString s_orig);
+    //Grab Stuff
+    static tColoredString gatherPlayerInfo(ePlayerNetID * p);
+    static tColoredString gatherPlayerColor(ePlayerNetID * p, bool showReset = true);
+
     static void DisplayScores(); // display scores on the screen
 
     void GreetHighscores(tString &s); // tell him his positions in the

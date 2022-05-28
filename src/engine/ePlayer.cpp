@@ -9397,7 +9397,6 @@ static tConfItem<int> se_createPlayersConf("CREATE_PLAYERS", se_createPlayers);
 static int se_createPlayersSpecific = 0;
 static tConfItem<int> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC", se_createPlayersSpecific);
 
-bool toggleChatFlagShow = true;
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
 {

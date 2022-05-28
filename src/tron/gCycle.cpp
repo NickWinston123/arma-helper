@@ -318,7 +318,7 @@ static bool sg_localBotEnableForPlayer1 = false;
 static tConfItem<bool> sg_localBotEnableForPlayer1Conf( "LOCAL_BOT_ENABLED_FOR_PLAYER1", sg_localBotEnableForPlayer1 );
 
 static bool sg_localBotAlwaysActive = false;
-static tSettingItem<bool> sg_localBotAlwaysActiveConf( "LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive );
+static tConfItem<bool> sg_localBotAlwaysActiveConf( "LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive );
 
 static REAL sg_localBotNewWallBlindness = 0;
 static tSettingItem<REAL> sg_localBotNewWallBlindnessConf( "LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness );
@@ -5567,6 +5567,10 @@ void gCycleWallsDisplayListManager::RenderAll( eCamera const * camera, gCycle * 
 bool sg_HideCycles = false;
 static tConfItem<bool> sg_HideCyclesConf("HIDE_CYCLES", sg_HideCycles);
 
+
+bool sg_HidePyramid = false;
+static tConfItem<bool> sg_HidePyramidConf("HIDE_PYRAMID", sg_HidePyramid);
+
 void gCycle::Render(const eCamera *cam){
     /*
     // for use when there's rendering problems on one specific occasion
@@ -5793,7 +5797,9 @@ void gCycle::Render(const eCamera *cam){
                     alpha = timeout - se_GameTime();
                 }
             }
-
+            if (sg_HidePyramid && player->Owner() == sn_myNetID) {
+                renderPyramid = false;
+            }
             if ( renderPyramid )
             {
                 GLfloat s=sin(lastTime);
@@ -5827,6 +5833,8 @@ void gCycle::Render(const eCamera *cam){
                 glPopMatrix();
             }
         }
+        SKIP_PYRAMID:
+
 
 #ifdef USE_HEADLIGHT
         // Headlight contributed by Jonathan

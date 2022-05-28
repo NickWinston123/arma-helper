@@ -1650,11 +1650,7 @@ static tConfItemFunc st_Dummy7("SHOW_OWN_NAME", &st_Dummy);
 static tConfItemFunc st_Dummy8("FADEOUT_NAME_DELAY", &st_Dummy);
 static tConfItemFunc st_Dummy9("FLOOR_MIRROR_INT", &st_Dummy);
 #endif
-#ifndef DEBUG
-// settings missing in optimized mode
-static tConfItemFunc st_Dummy10("SIMULATE_RECEIVE_PACKET_LOSS", &st_Dummy);
-static tConfItemFunc st_Dummy11("SIMULATE_SEND_PACKET_LOSS", &st_Dummy);
-#endif
+
 namespace
 {
 std::vector<tConfigMigration::Callback> &st_MigrationCallbacks()

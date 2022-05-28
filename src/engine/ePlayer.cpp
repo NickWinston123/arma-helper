@@ -1027,7 +1027,7 @@ private:
 };
 
 void ePlayerNetID::SetSilenced( bool silenced )
-{ 
+{
     silenced_ = silenced;
     eVoter * pVoter = eVoter::GetPersistentVoter(Owner());
     if(pVoter)
@@ -1341,7 +1341,7 @@ ePlayer::ePlayer()
     StoreConfitem(tNEW(tConfItem<int>) (confname,
                                         "$color_r_help",
                                         rgb[0]));
-    
+
     confname.Clear();
     confname << "PLAYER_RANDOM_COLOR_"<< id+1;
     colorRandomization=0;
@@ -3879,7 +3879,7 @@ static void se_ListPlayers( ePlayerNetID * receiver, std::istream &s, tString co
 
     int count = 0;
     short receiverOwner = nNetObject::Owner(receiver);
-    
+
     for ( int i2 = se_PlayerNetIDs.Len()-1; i2>=0; --i2 )
     {
         ePlayerNetID* p2 = se_PlayerNetIDs(i2);
@@ -3933,7 +3933,7 @@ static void se_ListPlayers( ePlayerNetID * receiver, std::istream &s, tString co
                 tos << ", IP = " << IP;
             }
         }
-        
+
         if ( sn_GetNetState() != nCLIENT && ( ( p2->Owner() != 0 && tCurrentAccessLevel::GetAccessLevel() <= se_nVerAccessLevel ) || ( p2->Owner() != 0 && p2->Owner() == receiverOwner ) ) )
         {
             tos << ", " << sn_GetClientVersionString( sn_Connections[ p2->Owner() ].version.Max() ) << " (ID: " << sn_Connections[ p2->Owner() ].version.Max() << ")";
@@ -4744,10 +4744,10 @@ void ePlayerNetID::Chat(const tString& s_orig)
 #ifndef DEDICATED
 
     tString se_localChatCommands[] =
-    { 
-        se_consoleComand, 
-        se_colorsCommand, 
-        se_infoCommand, 
+    {
+        se_consoleComand,
+        se_colorsCommand,
+        se_infoCommand,
         se_rgbCommand
     };
 
@@ -5147,7 +5147,7 @@ static char const * const se_chatCmdCommands[] = {
 static void ChatTabCompletition(tString &strString, int &curserPos, bool changeLast)
 {
     if (!se_tabCompletion) return;
-    
+
     static tString oldString;
     static int cfgPos;
     static int lastPos;
@@ -5202,7 +5202,7 @@ static void ChatTabCompletition(tString &strString, int &curserPos, bool changeL
             break;
         }
     }
-    
+
     for(int i = 0; i < msgsExt.Len(); i++)
     {
         tString word = msgsExt[i];
@@ -5283,7 +5283,7 @@ static void ChatTabCompletition(tString &strString, int &curserPos, bool changeL
         }
 
         cusPos++;
-        
+
         if(isChat && i == chatPos) word = word.Filter();
 
         if ((i + 1) == msgsExt.Len())
@@ -5409,6 +5409,9 @@ public:
 
 static bool se_toggleChatFlag = false;
 static tConfItem<bool> se_toggleChatFlagConf("CHAT_FLAG_TOGGLE", se_toggleChatFlag);
+
+tString se_toggleChatFlagEnabledPlayers("1,2,3,4");
+static tConfItem<tString> se_toggleChatFlagEnabledPlayersConf( "CHAT_FLAG_TOGGLE_ENABLED_PLAYERS", se_toggleChatFlagEnabledPlayers );
 
 static bool se_toggleChatFlagAlways = false;
 static tConfItem<bool> se_toggleChatFlagAlwaysConf("CHAT_FLAG_ALWAYS", se_toggleChatFlagAlways);
@@ -5797,12 +5800,12 @@ void se_ListPastChatters(ePlayerNetID * receiver)
                 }
             }
 
-                    
+
             if(recentLastSaid)
             {
                 // put report in list
                 report.push_back(LastChatData(machine, *recentLastSaid));
-                
+
                 // let it bubble up
                 for(int j = report.size()-1; j > 0; --j)
                 {
@@ -5811,7 +5814,7 @@ void se_ListPastChatters(ePlayerNetID * receiver)
                         std::swap(report[j-1], report[j]);
                     }
                 }
-                
+
                 // cull reports
                 if(report.size() > MaxReport)
                     report.pop_back();
@@ -5832,7 +5835,7 @@ void se_ListPastChatters(ePlayerNetID * receiver)
         tColoredString line;
         LastChatData const & data = *iter;
         eChatSaidEntry const & lastSaid = *(data.entry);
-        
+
         if ( tCurrentAccessLevel::GetAccessLevel() <= se_ipAccessLevel )
         {
             tString IP = data.machine->GetIP();
@@ -5841,9 +5844,9 @@ void se_ListPastChatters(ePlayerNetID * receiver)
                 line << "IP = " << IP << "; ";
             }
         }
-        
+
         line << lastSaid.PlayerName() << ": " << lastSaid.Said() << "\n";
-        
+
         sn_ConsoleOut( line, receiverOwner );
     }
 }
@@ -7288,7 +7291,7 @@ void ePlayerNetID::DeAuthenticate( ePlayerNetID const * admin )
         }
 
         SetLoggedIn(false);
-        
+
         se_playerLogoutWriter << GetFilteredAuthenticatedName() << ePlayerNetID::FilterName(GetName());
         se_playerLogoutWriter.write();
     }
@@ -7548,7 +7551,7 @@ static void se_OptionalNameFilters( tString & remoteName, int owner )
     // console messages go out of sync.
     if ( sn_GetNetState() == nCLIENT )
         return;
-    
+
     if(sn_GetNetState() == nSERVER)
         remoteName = tColoredString::ReplaceBadColors(remoteName);
 
@@ -8143,7 +8146,7 @@ void ePlayerNetID::AddScore(int points)
     score += points;
     if(currentTeam)
         currentTeam->AddScore( points );
-    
+
     RequestSync(true);
 }
 
@@ -8398,13 +8401,13 @@ tString ePlayerNetID::Ranking( int MAX, bool cut )
                 tString ping; ping << int(p->ping*1000);
                 line.SetPos(33+(6-ping.Len()), cut );
                 line << ping;
-                
+
                 line.SetPos(39, cut );
                 if ( p->currentTeam )
                 {
                     //tString teamtemp = p->currentTeam->Name();
                     //teamtemp.RemoveHex();
-                    //Not sure why we need to filter the color here. 
+                    //Not sure why we need to filter the color here.
                        // line << tColoredString::RemoveColors(p->currentTeam->Name());
                     line << p->currentTeam->GetColoredName();
                     line.SetPos(56, cut );
@@ -8551,7 +8554,7 @@ void ePlayerNetID::GridPosLadderLog()
 
                 if (pCycle && pCycle->Team()) se_playerGridPosWriter << FilterName(pCycle->Team()->Name());
                 else se_playerGridPosWriter << "";
-                
+
                 if(styctcompat_se_playerGridPos)
                 {
                     se_playerGridPosWriter << pCycle->verletSpeed_;
@@ -8686,7 +8689,7 @@ static void se_RandomizeColor(ePlayer * l)
 {
     int currentRGB[3];
     int newRGB[3];
-    
+
     static tReproducibleRandomizer randomizer;
 
     for( int i = 2; i >= 0; --i )
@@ -9457,7 +9460,7 @@ void ePlayerNetID::Update()
                 p->object = NULL;
                 p = NULL;
             }
-            
+
 
             if (bool(p) && in_game)  // update
             {
@@ -9479,13 +9482,16 @@ void ePlayerNetID::Update()
                             break;
                     }
 
-                
+
                 p->r=ePlayer::PlayerConfig(i)->rgb[0];
                 p->g=ePlayer::PlayerConfig(i)->rgb[1];
                 p->b=ePlayer::PlayerConfig(i)->rgb[2];
 
                 if (se_toggleChatFlag) {
+                    bool toggleThisPlayersChatFlag =  tIsInList(se_toggleChatFlagEnabledPlayers, p->pID+1);
+                    if (toggleThisPlayersChatFlag) {
                     p->SetChatting( ePlayerNetID::ChatFlags_Chat, !p->IsChatting());
+                    }
                 }
 
                 if (se_toggleChatFlagAlways) {
@@ -10915,7 +10921,7 @@ static void Kill_conf(std::istream &s)
 
         se_playerKilledWriter << p->GetUserName() << nMachine::GetMachine(p->Owner()).GetIP() << p->Object()->Position().x << p->Object()->Position().y << p->Object()->Direction().x << p->Object()->Direction().y;
         se_playerKilledWriter.write();
-        
+
         gCycle *c = dynamic_cast<gCycle *>(p->Object());
         if(c) c->Kill("ADMIN_KILL");
     }
@@ -10946,7 +10952,7 @@ static void Kill_ID_conf(std::istream &s)
 
             se_playerKilledWriter << p->GetUserName() << nMachine::GetMachine(p->Owner()).GetIP() << p->Object()->Position().x << p->Object()->Position().y << p->Object()->Direction().x << p->Object()->Direction().y;
             se_playerKilledWriter.write();
-            
+
             gCycle *c = dynamic_cast<gCycle *>(p->Object());
             if(c) c->Kill("ADMIN_KILL");
         }

@@ -1495,7 +1495,7 @@ tString tColoredString::ReplaceBadColors( const char * c )
             {
                 ret << (*(c++));
                 ret << "X";
-                
+
                 ++c; len -= 2;
                 continue;
             }
@@ -2184,6 +2184,13 @@ tString tString::Truncate( int truncateAt ) const
     return SubStr( 0, truncateAt ) << "...";
 }
 
+tString intTotString( int number )
+{
+    std::string s = std::to_string(number);
+    //char const *pchar = s.c_str();
+    return tString(s.c_str());
+}
+
 // *******************************************************************************************
 // *
 // *	tIsInList
@@ -2230,6 +2237,11 @@ bool tIsInList( tString const & list_, tString const & item )
     }
 
     return false;
+}
+
+bool tIsInList( tString const & list_, int number )
+{
+    return tIsInList(list_, intTotString(number));
 }
 
 // **********************************************************************

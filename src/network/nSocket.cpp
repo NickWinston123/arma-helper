@@ -1968,10 +1968,10 @@ public:
     }
 };
 
-#ifdef DEBUG
-static REAL sn_simulateReceivePacketLoss = 0;
+
+static REAL sn_simulateReceivePacketLoss = 0; // 0 - 1
 static tSettingItem<REAL> sn_sumulateReceivePacketLossConfig( "SIMULATE_RECEIVE_PACKET_LOSS", sn_simulateReceivePacketLoss );
-#endif
+
 
 // *******************************************************************************************
 // *
@@ -1994,11 +1994,11 @@ int nSocket::Read( int8 * buf, int len, nAddress & addr ) const
     int ret = 0;
 
     static tReproducibleRandomizer randomizer;
-#ifdef DEBUG
+
     // pretend nothing was received
     if ( sn_simulateReceivePacketLoss > randomizer.Get() )
         return -1;
-#endif
+
 
     // check playback
     if ( !ReadArchiver< tPlaybackBlock >::Archive( buf, ret, addr ) )
@@ -2049,10 +2049,9 @@ int nSocket::Read( int8 * buf, int len, nAddress & addr ) const
     return ret;
 }
 
-#ifdef DEBUG
+
 static REAL sn_simulateSendPacketLoss = 0;
 static tSettingItem<REAL> sn_sumulateSendPacketLossConfig( "SIMULATE_SEND_PACKET_LOSS", sn_simulateSendPacketLoss );
-#endif
 
 // *******************************************************************************************
 // *
@@ -2087,12 +2086,11 @@ int nSocket::Write( const int8 * buf, int len, const sockaddr * addr, int addrle
     static tReproducibleRandomizer randomizer;
     if ( !tRecorder::Playback( section, ret ) )
     {
-#ifdef DEBUG
+
         // pretend send was successful in packet loss simulation
         if ( sn_simulateSendPacketLoss > randomizer.Get() )
             ret = len;
         else
-#endif
         {
             // don't send if a playback is running
             if ( !tRecorder::IsPlayingBack() )

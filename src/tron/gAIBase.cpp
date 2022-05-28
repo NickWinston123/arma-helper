@@ -39,7 +39,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eFloor.h"
 #include "eDebugLine.h"
 #include "gAICharacter.h"
-#include "tReferenceHolder.h"
 #include "tRandom.h"
 #include "tRecorder.h"
 #include <stdlib.h>
@@ -58,7 +57,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define AI_STARTSTRAIGHT     11
 #define AI_STATECHANGE       12
 
-static tReferenceHolder< gAIPlayer > sg_AIReferences;
+
 
 #ifdef DEBUG
 //#define TESTSTATE AI_PATH

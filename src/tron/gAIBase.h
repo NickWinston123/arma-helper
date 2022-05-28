@@ -38,8 +38,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tList.h"
 #include "tRandom.h"
 #include "nObserver.h"
+#include "tReferenceHolder.h"
 
 #include <vector>
+
 
 class gSensor;
 class gAISensor;
@@ -58,7 +60,7 @@ gAI_STATE;
 
 class gAIPlayer: public ePlayerNetID{
     friend class gAITeam;
-
+    friend class gSmarterBot;
     tReproducibleRandomizer randomizer_;
 protected:
     gAICharacter*           character; // our specification of abilities
@@ -193,7 +195,7 @@ public:
     }
 
     virtual bool IsHuman() const { return false; }
-
+    
     gCycle* Object()
     {
         eGameObject* go = ePlayerNetID::Object();
@@ -223,6 +225,8 @@ public:
         return false;
     }
 };
+
+static tReferenceHolder< gAIPlayer > sg_AIReferences;
 
 // the AI team
 class gAITeam: public eTeam

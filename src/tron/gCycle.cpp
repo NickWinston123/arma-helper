@@ -314,8 +314,8 @@ extern REAL sg_cycleBrakeDeplete;
 static bool sg_localBot = false;
 static tConfItem<bool> sg_localBotConf( "LOCAL_BOT", sg_localBot );
 
-static bool sg_localBotEnableForPlayer1 = false;
-static tConfItem<bool> sg_localBotEnableForPlayer1Conf( "LOCAL_BOT_ENABLED_FOR_PLAYER1", sg_localBotEnableForPlayer1 );
+tString sg_localBotEnableForPlayers("1,2,3,4");
+static tConfItem<tString> sg_localBotEnableForPlayersConf( "LOCAL_BOT_ENABLED_PLAYERS", sg_localBotEnableForPlayers );
 
 static bool sg_localBotAlwaysActive = false;
 static tConfItem<bool> sg_localBotAlwaysActiveConf( "LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive );
@@ -346,8 +346,8 @@ typedef nSettingItem<REAL> gChatBotSetting;
 typedef nSettingItem<bool> gChatBotSwitch;
 #endif
 
-static bool sg_chatBotDisableForPlayer1 = false;
-static tConfItem<bool> sg_chatBotDisableForPlayer1Conf( "CHATBOT_DISABLE_FOR_PLAYER1", sg_chatBotDisableForPlayer1 );
+tString sg_chatBotEnabledForPlayers = tString("1,2,3,4");
+static tConfItem<tString> sg_chatBotEnabledForPlayersConf( "CHATBOT_ENALED_PLAYERS", sg_chatBotEnabledForPlayers );
 
 static bool sg_chatBotAlwaysActive = false;
 static gChatBotSwitch sg_chatBotAlwaysActiveConf( "CHATBOT_ALWAYS_ACTIVE", sg_chatBotAlwaysActive );
@@ -1290,6 +1290,44 @@ class gHelper
 {
     gHelper();
 
+class gSmarterBot
+{
+    gSmarterBot(gHelper *helper, gCycle *owner,  ePlayerNetID *player)
+            :  helper_             ( helper ),
+               owner_              ( owner ),
+               player_             ( player )
+                {
+                    // ai 	= tNEW( gAIPlayer ) ();
+                    // sg_AIReferences.Add( ai );
+                }
+void createAI(){
+                        ai  = dynamic_cast<gAIPlayer*>(player_);
+}
+
+void Exist() {
+    con << "Created AI? " << bool(ai) << "\n";
+}
+public:
+    static gSmarterBot & Get( gHelper * helper, gCycle *owner,  ePlayerNetID *player )
+    {
+        tASSERT( helper );
+
+        // create
+        if ( helper->smarterBot.get() == 0 )
+            helper->smarterBot.reset( new gSmarterBot( helper, owner, player ) );
+
+        return *helper->smarterBot;
+    }
+private:
+    friend class gHelper;
+    gHelper *helper_;
+    gCycle * owner_;         //!< owner of chatbot
+    ePlayerNetID *player_;
+    gAIPlayer *ai;
+
+};
+
+
 //SmartTurning
 class gSmartTurning
     {
@@ -1339,9 +1377,9 @@ class gSmartTurning
 
         REAL canSurviveLeftTurn, canSurviveRightTurn;
         bool closedIn, blockedBySelf;
-        
+
         canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf);
-        
+
         if (closedIn || blockedBySelf) {
             goto SKIP_FORCETURN;
         }
@@ -1367,12 +1405,12 @@ class gSmartTurning
     }
 
     void smartTurningSurvive(gHelperData &data) {
-        
+
         REAL canSurviveLeftTurn, canSurviveRightTurn;
         bool closedIn, blockedBySelf;
-        
+
         canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf);
-        
+
         if (closedIn || blockedBySelf) {
             goto SKIP_BLOCKTURN;
         }
@@ -1380,15 +1418,15 @@ class gSmartTurning
         if (!canSurviveLeftTurn && !canSurviveRightTurn) {
             this->blockTurn = 2;
             return;
-        } 
+        }
         if (!canSurviveLeftTurn) {
             this->blockTurn = -1;
             return;
-        } 
+        }
         if (!canSurviveRightTurn) {
             this->blockTurn = 1;
             return;
-        } 
+        }
 
         SKIP_BLOCKTURN:
         {
@@ -1397,11 +1435,11 @@ class gSmartTurning
         }
     }
 
-    void canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, REAL &canSurviveRightTurn, bool &closedIn, bool &blockedBySelf) {     
+    void canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, REAL &canSurviveRightTurn, bool &closedIn, bool &blockedBySelf) {
 
         canSurviveLeftTurn = true;
         canSurviveRightTurn = true;
-        
+
         if (data.left.hit < rubberFactor) {
             canSurviveLeftTurn = false;
         }
@@ -1412,7 +1450,7 @@ class gSmartTurning
         closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
         blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
     }
-    
+
 
     void calculateRubberFactor(REAL rubberMult) {
         REAL rubberGranted, rubberEffectiveness;
@@ -1460,6 +1498,7 @@ public:
         tailPos = &owner_->tailPos;
         ownerSpeed = &owner_->verletSpeed_;
         gSmartTurning::Get( this , owner );
+        gSmarterBot::Get( this , owner, player_);
     }
 
     gCycle *getOwner() { return owner_; }
@@ -1863,6 +1902,7 @@ public:
 
 private:
     friend class gSmartTurning;
+    friend class gSmarterBot;
     gCycle *owner_;
     ePlayerNetID *player_;
     gCycle *closestEnemy;
@@ -1873,20 +1913,11 @@ private:
     REAL ownerWallLength;
     REAL ownerTurnDelay;
     std::unique_ptr< gSmartTurning > smartTurning;
+    std::unique_ptr< gSmarterBot > smarterBot;
+
 };
 
 
-
-
-class gSmarterBot
-{
-    gSmarterBot();
-public:
-
-private:
-
-    gCycle * owner_;         //!< owner of chatbot
-};
 
 
 //  *****************************************************************
@@ -3524,6 +3555,7 @@ bool gCycle::Timestep(REAL currentTime){
         }
     }
 
+
     bool playerIsMe = bool(player) && Alive() && player->IsHuman() && player->Owner() == sn_myNetID;
     if (sg_helper && playerIsMe && player->pID == 0) {
         gHelper & helper = gHelper::Get( this );
@@ -3539,19 +3571,19 @@ bool gCycle::Timestep(REAL currentTime){
     // no targets are given
     else if ( !currentDestination && pendingTurns.empty() )
     {
-        bool activateChatbotForThisPlayer = !sg_chatBotDisableForPlayer1 || player->pID != 0;
+        bool activateChatbotForThisPlayer = tIsInList(sg_chatBotEnabledForPlayers, player->pID+1);
         // chatting? activate chatbot
-        if (playerIsMe && 
-        ( ( activateChatbotForThisPlayer && sg_chatBotAlwaysActive ) || 
-          ( sg_localBot && sg_localBotAlwaysActive && (sg_localBotEnableForPlayer1 || player->pID != 0)) || 
-          ( activateChatbotForThisPlayer && player->IsChatting() ) || 
-          ( sg_chatBotControlByServer && sn_GetNetState() == nSERVER ) 
+        if (playerIsMe &&
+        ( ( activateChatbotForThisPlayer && sg_chatBotAlwaysActive ) ||
+          ( sg_localBot && sg_localBotAlwaysActive && tIsInList(sg_localBotEnableForPlayers, player->pID+1)) ||
+          ( activateChatbotForThisPlayer && player->IsChatting() ) ||
+          ( sg_chatBotControlByServer && sn_GetNetState() == nSERVER )
           ) )
            {
             gCycleChatBot & bot = gCycleChatBot::Get( this );
             bot.Activate( currentTime );
-        } 
-        else if ( chatBot_.get() ) 
+        }
+        else if ( chatBot_.get() )
         {
             chatBot_->nextChatAI_ = 0;
         }
@@ -5833,7 +5865,6 @@ void gCycle::Render(const eCamera *cam){
                 glPopMatrix();
             }
         }
-        SKIP_PYRAMID:
 
 
 #ifdef USE_HEADLIGHT

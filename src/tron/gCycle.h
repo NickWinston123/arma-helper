@@ -52,6 +52,8 @@ class eTempEdge;
 struct gPredictPositionData;
 class gFlagZoneHack;
 class gHelper;
+class gSmarterBot;
+class gAIBot;
 
 // minimum time between two cycle turns
 extern REAL sg_delayCycle;

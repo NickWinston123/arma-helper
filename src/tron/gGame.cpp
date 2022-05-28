@@ -71,6 +71,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gSvgOutput.h"
 #include "rScreen.h"
 
+#include "nNetwork.h"
 //HACK RACE
 #include "gRace.h"
 
@@ -1355,7 +1356,7 @@ static void sg_AddDelayedCmd(std::istream &s)
     if ( sn_GetNetState() == nSERVER ) {
         requiredAccessLevel = tCurrentAccessLevel::GetAccessLevel() <= cLevel;
     }
-    
+
     if (requiredAccessLevel)
     {
         new gDelayCommand(cmd_str.str(), delay, interval);
@@ -1655,7 +1656,7 @@ void update_settings( bool const * goon )
             while ( sg_NumHumans() <= 0 && sg_NumUsers() > 0 && ( !goon || *goon ) && uMenu::quickexit == uMenu::QuickExit_Off )
             {
                 if(!gamestateWaitEnabled) break;
-                
+
                 if ( !restarted && bool(sg_currentGame) )
                 {
                     sg_currentGame->StartNewMatch();
@@ -3435,13 +3436,13 @@ static void sg_ParseMap ( gParser * aParser )
 void gGame::Verify()
 {
     std::map<int, gDelayCommand *>::iterator it = gDelayCommand::delayedCommands_.end(), itNext;
-    
+
     // test map and load map settings
     sg_ParseMap( aParser );
     init_game_grid(grid, aParser);
     Arena.LeastDangerousSpawnPoint();
     exit_game_grid(grid);
-    
+
     // clear extra delayed commands
     if(!gDelayCommand::delayedCommands_.empty()) itNext = (--it);
     for (; it != gDelayCommand::delayedCommands_.end(); it=itNext)
@@ -5184,7 +5185,7 @@ void gGame::Analysis(REAL time){
 #ifndef DEDICATED
                 && humans > 0
 #else
-                && (gamestateWaitEnabled || humans > 0) 
+                && (gamestateWaitEnabled || humans > 0)
 #endif
                )){
 #ifdef DEBUG
@@ -5300,7 +5301,6 @@ static REAL lastForcedUpdate = tSysTimeFloat();
 bool gGame::GameLoop(bool input){
 
     if (sg_forcePlayerUpdate) {
-        
         if (tSysTimeFloat() >= lastForcedUpdate + sg_forcePlayerUpdateDelay) {
             ePlayerNetID::Update();
             lastForcedUpdate = tSysTimeFloat();
@@ -6264,7 +6264,7 @@ static void sg_CustomCenterMessage(std::istream &s)
             output.SetTemplateParameter(++pos,msg);
         }
         output << str.str().c_str();
-        
+
         sn_CenterMessage(tColoredString(output));
     }
 }

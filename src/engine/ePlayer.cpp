@@ -7817,11 +7817,13 @@ nDescriptor &ePlayerNetID::CreatorDescriptor() const
 
 void ePlayerNetID::ControlObject(eNetGameObject *c)
 {
+    if (!c)
+    {
+        return;
+    }
+
     if (bool(object) && c!=object)
         ClearObject();
-
-
-
 
     object=c;
     c->team = currentTeam;

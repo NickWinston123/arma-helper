@@ -1266,7 +1266,7 @@ REAL sg_helperSmartTurningClosedInMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
 
 REAL sg_helperSmartTurningSurviveRubberMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningSurviveRubberMultConf("HELPER_SMART_TURNING_SURVIplayer_VE_RUBBER_MULT", sg_helperSmartTurningSurviveRubberMult);
+static tConfItem<REAL> sg_helperSmartTurningSurviveRubberMultConf("HELPER_SMART_TURNING_SURVIVE_RUBBER_MULT", sg_helperSmartTurningSurviveRubberMult);
 
 
 

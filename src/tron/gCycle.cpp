@@ -1266,7 +1266,7 @@ REAL sg_helperSmartTurningClosedInMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
 
 REAL sg_helperSmartTurningSurviveRubberMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningSurviveRubberMultConf("HELPER_SMART_TURNING_SURVIVE_RUBBER_MULT", sg_helperSmartTurningSurviveRubberMult);
+static tConfItem<REAL> sg_helperSmartTurningSurviveRubberMultConf("HELPER_SMART_TURNING_SURVIplayer_VE_RUBBER_MULT", sg_helperSmartTurningSurviveRubberMult);
 
 
 
@@ -1297,11 +1297,15 @@ class gSmarterBot
                owner_              ( owner ),
                player_             ( player )
                 {
-                    // ai 	= tNEW( gAIPlayer ) ();
-                    // sg_AIReferences.Add( ai );
+
                 }
 void createAI(){
-                        ai  = dynamic_cast<gAIPlayer*>(player_);
+//     if (!ai) {
+//                      ai 	= tNEW( gAIPlayer ) ();
+//                      sg_AIReferences.Add( ai );
+//     } else {
+// ai->ControlObject(player_->Object());
+//     }
 }
 
 void Exist() {
@@ -1872,7 +1876,9 @@ public:
         if (sg_helperSmartTurning) {
             smartTurning->Activate(data);
         }
-
+        // if (smarterBot){
+        //     smarterBot->createAI();
+        // }
         if (sg_helperEnemyTracers)
         {
             enemyTracers(sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
@@ -5603,6 +5609,16 @@ static tConfItem<bool> sg_HideCyclesConf("HIDE_CYCLES", sg_HideCycles);
 bool sg_HidePyramid = false;
 static tConfItem<bool> sg_HidePyramidConf("HIDE_PYRAMID", sg_HidePyramid);
 
+
+REAL sg_renderCycleOffset = 0; // -0.76 for true position
+static tConfItem<REAL> sg_renderCycleOffsetConf("RENDER_CYCLE_OFFSET", sg_renderCycleOffset);
+
+REAL sg_renderCycleWheelsHeight = 0; // -0.76 for true position
+static tConfItem<REAL> sg_renderCycleWheelsHeightConf("RENDER_WHEELS_HEIGHT", sg_renderCycleWheelsHeight);
+
+REAL sg_cycleRenderPos2 = 0.73;
+static tConfItem<REAL> sg_cycleRenderPos2Conf("RENDER_POS2", sg_cycleRenderPos2);
+
 void gCycle::Render(const eCamera *cam){
     /*
     // for use when there's rendering problems on one specific occasion
@@ -5705,7 +5721,7 @@ void gCycle::Render(const eCamera *cam){
         glPushMatrix();
         //glTranslatef(-1.84,0,0);
         if (!mp)
-            glTranslatef(-1.5,0,0);
+            glTranslatef(-1.5+sg_renderCycleOffset,0,0);
 
         glPushMatrix();
 
@@ -5754,7 +5770,7 @@ void gCycle::Render(const eCamera *cam){
                 wheelTex->Select();
 
                 glPushMatrix();
-                glTranslatef(0,0,.73);
+                glTranslatef(0,0,0.73);
 
                 GLfloat mr[4][4]={{rotationRearWheel.x,0,rotationRearWheel.y,0},
                                   {0,1,0,0},
@@ -5768,7 +5784,7 @@ void gCycle::Render(const eCamera *cam){
                 glPopMatrix();
 
                 glPushMatrix();
-                glTranslatef(1.84,0,.43);
+                glTranslatef(1.84,0,.43+sg_renderCycleWheelsHeight);
 
                 GLfloat mf[4][4]={{rotationFrontWheel.x,0,rotationFrontWheel.y,0},
                                   {0,1,0,0},

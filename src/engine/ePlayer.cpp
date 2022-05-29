@@ -7820,10 +7820,7 @@ void ePlayerNetID::ControlObject(eNetGameObject *c)
     if (bool(object) && c!=object)
         ClearObject();
 
-    if (!c)
-    {
-        return;
-    }
+
 
 
     object=c;

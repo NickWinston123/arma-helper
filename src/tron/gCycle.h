@@ -299,6 +299,8 @@ private:
 
     void MyInitAfterCreation();
 
+    void updateColor();
+
     void SetCurrentWall(gNetPlayerWall *w);
 
     void PreparePredictPosition( gPredictPositionData & data ); //!< prepares CalculatePredictPosition() call, requesting a raycast to the front

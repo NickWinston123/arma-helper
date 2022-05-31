@@ -72,7 +72,7 @@ static bool sg_SwapWinDeath = false;
 static tSettingItem<bool> sg_SwitchWinDeathColorCONF("SWAP_WINZONE_DEATHZONE_COLORS", sg_SwapWinDeath);
 
 static int sg_zoneAlphaToggle = 0;
-static tSettingItem<int> sg_zoneAlphaToggleConf( "ZONE_ALPHA_TOGGLE", sg_zoneAlphaToggle );
+static tConfItem<int> sg_zoneAlphaToggleConf( "ZONE_ALPHA_TOGGLE", sg_zoneAlphaToggle );
 
 static int sg_zoneDeath = 1;
 static tSettingItem<int> sg_zoneDeathConf( "WIN_ZONE_DEATHS", sg_zoneDeath );
@@ -117,25 +117,25 @@ static tSettingItem<REAL>sg_cycleZoneApprochConf("CYCLE_ZONES_APPROCH", sg_cycle
 static tSettingItem<REAL>sg_cycleZoneApproachConf("CYCLE_ZONES_APPROACH", sg_cycleZonesApproach);
 
 static int sg_zoneSegments = 11;
-static tSettingItem<int> sg_zoneSegmentsConf( "ZONE_SEGMENTS", sg_zoneSegments );
+static tConfItem<int> sg_zoneSegmentsConf( "ZONE_SEGMENTS", sg_zoneSegments );
 
 static REAL sg_zoneSegLength = .5;
-static tSettingItem<REAL> sg_zoneSegLengthConf( "ZONE_SEG_LENGTH", sg_zoneSegLength );
+static tConfItem<REAL> sg_zoneSegLengthConf( "ZONE_SEG_LENGTH", sg_zoneSegLength );
 
 static REAL sg_zoneBottom = 0.0f;
-static tSettingItem<REAL> sg_zoneBottomConf( "ZONE_BOTTOM", sg_zoneBottom );
+static tConfItem<REAL> sg_zoneBottomConf( "ZONE_BOTTOM", sg_zoneBottom );
 
 static REAL sg_zoneHeight = 5.0f;
-static tSettingItem<REAL> sg_zoneHeightConf( "ZONE_HEIGHT", sg_zoneHeight );
+static tConfItem<REAL> sg_zoneHeightConf( "ZONE_HEIGHT", sg_zoneHeight );
 
 // FIXME: allow more zone types in a more flexible system later
 static REAL sg_zoneHeightFort = 1.0f;
-static tSettingItem<REAL> sg_zoneHeightFortConf( "ZONE_HEIGHT_FORT", sg_zoneHeightFort );
+static tConfItem<REAL> sg_zoneHeightFortConf( "ZONE_HEIGHT_FORT", sg_zoneHeightFort );
 static REAL sg_zoneHeightKOH = 1.0f;
-static tSettingItem<REAL> sg_zoneHeightKOHConf( "ZONE_HEIGHT_KOH", sg_zoneHeightKOH );
+static tConfItem<REAL> sg_zoneHeightKOHConf( "ZONE_HEIGHT_KOH", sg_zoneHeightKOH );
 
 static bool sg_zoneNoFadeInSvr = false;
-static tSettingItem<bool> sg_zoneNoFadeInSvrConf( "ZONE_NO_FADE_IN_SERVER", sg_zoneNoFadeInSvr );
+static tConfItem<bool> sg_zoneNoFadeInSvrConf( "ZONE_NO_FADE_IN_SERVER", sg_zoneNoFadeInSvr );
 
 
 static eLadderLogWriter sg_flagConquestRoundWinWriter("FLAG_CONQUEST_ROUND_WIN", true);

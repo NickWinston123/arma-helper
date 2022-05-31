@@ -7825,8 +7825,6 @@ void ePlayerNetID::ControlObject(eNetGameObject *c)
     if (bool(object) && c!=object)
         ClearObject();
 
-
-
     object=c;
     c->team = currentTeam;
 
@@ -8753,6 +8751,67 @@ static void se_UniqueColor( ePlayer * l, ePlayerNetID * p )
     }
 }
 
+void getRainbowRGB(int iteration, int max, REAL &r,REAL &g,REAL &b)
+{
+    float inc = 6.0 / max;
+    float x = iteration * inc;
+    r = 0.0f;
+    g = 0.0f;
+    b = 0.0f;
+    if ((0 <= x && x <= 1) || (5 <= x && x <= 6))
+        r = 1.0f;
+    else if (4 <= x && x <= 5)
+        r = x - 4;
+    else if (1 <= x && x <= 2)
+        r = 1.0f - (x - 1);
+    if (1 <= x && x <= 3)
+        g = 1.0f;
+    else if (0 <= x && x <= 1)
+        g = x - 0;
+    else if (3 <= x && x <= 4)
+        g = 1.0f - (x - 3);
+    if (3 <= x && x <= 5)
+        b = 1.0f;
+    else if (2 <= x && x <= 3)
+        b = x - 2;
+    else if (5 <= x && x <= 6) {
+        b = 1.0f - (x - 5);
+    }
+    r *= 15;
+    b *= 15;
+    g *= 15;
+}
+
+static int se_RandomizeColorRainbowMaxRange = 180;
+static tConfItem<int> se_RandomizeColorRainbowMaxRangeConf("PLAYER_RANDOM_COLOR_RAINBOW_MAX", se_RandomizeColorRainbowMaxRange);
+
+int rainbowIteration = 0;
+bool countUp = true;
+static void se_rainbowColor( ePlayer * l )
+{
+    if (rainbowIteration >= se_RandomizeColorRainbowMaxRange) {
+        countUp = false;
+    }
+
+    if (rainbowIteration <= 0) {
+        countUp = true;
+    }
+
+    REAL r = 0, g = 0, b = 0;
+
+    getRainbowRGB(rainbowIteration,se_RandomizeColorRainbowMaxRange,r,g,b);
+
+    l->rgb[0] = r;
+    l->rgb[1] = g;
+    l->rgb[2] = b;
+
+    if (countUp) {
+        rainbowIteration++; 
+    } else {
+        rainbowIteration--;
+    }
+}
+
 //Gather all the rgb colors and put them in a nice list.
 //Usage /colors with no parameters returns all players and their colors.
 //      /colors playername returns that specific players color or more depending if the search term is found in other player names
@@ -9401,6 +9460,9 @@ static tConfItem<int> se_createPlayersConf("CREATE_PLAYERS", se_createPlayers);
 static int se_createPlayersSpecific = 0;
 static tConfItem<int> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC", se_createPlayersSpecific);
 
+static bool se_forceTeamname = false;
+static tConfItem<bool> se_forceTeamnameConf("FORCE_TEAMNAME", se_forceTeamname);
+
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
 {
@@ -9465,6 +9527,11 @@ void ePlayerNetID::Update()
 
             if (bool(p) && in_game)  // update
             {
+                
+                if (se_forceTeamname) {
+                    p->Chat(tString( "/teamname" ));
+                }
+                
                 p->favoriteNumberOfPlayersPerTeam=ePlayer::PlayerConfig(i)->favoriteNumberOfPlayersPerTeam;
                 p->nameTeamAfterMe=ePlayer::PlayerConfig(i)->nameTeamAfterMe;
 
@@ -9474,10 +9541,13 @@ void ePlayerNetID::Update()
                         case COLORRANDOMIZATIONOFF:
                             break;
                         case COLORRANDOMIZATIONRANDOM:
-                        se_RandomizeColor(local_p);
+                            se_RandomizeColor(local_p);
                             break;
                         case COLORRANDOMIZATIONUNIQUE:
-                        se_UniqueColor(local_p,p);
+                            se_UniqueColor(local_p,p);
+                            break;
+                        case COLORRANDOMIZATIONRAINBOW:
+                            se_rainbowColor(local_p);
                             break;
                         default:
                             break;

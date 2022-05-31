@@ -3210,6 +3210,16 @@ void gCycle::MyInitAfterCreation(){
 #endif
 }
 
+bool sg_updateCycleColor = false;
+static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycleColor);
+
+void gCycle::updateColor() {
+        player->Color(color_.r, color_.g, color_.b);
+        player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
+        se_MakeColorValid(color_.r, color_.g, color_.b, 1.0f);
+        se_MakeColorValid(trailColor_.r, trailColor_.g, trailColor_.b, .5f);
+}
+
 void gCycle::InitAfterCreation(){
 #ifdef DEBUG
     if (!isfinite(Speed()))
@@ -3566,6 +3576,11 @@ bool gCycle::Timestep(REAL currentTime){
     if (sg_helper && playerIsMe && player->pID == 0) {
         gHelper & helper = gHelper::Get( this );
         helper.Activate();
+    }
+
+    if (sg_updateCycleColor && playerIsMe ) //&& player->pID == 0
+    {
+        this->updateColor();
     }
 
     bool ret = false;

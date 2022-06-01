@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+#include "tConfiguration.h"
 #include "eFloor.h"
 #include "rScreen.h"
 #include "rTexture.h"
@@ -135,6 +136,42 @@ void se_MakeColorValid(REAL& r, REAL& g, REAL& b, REAL f)
         r += step_r;
         g += step_g;
         b += step_b;
+        if (r > 1)
+            r = 1;
+        if (g > 1)
+            g = 1;
+        if (b > 1)
+            b = 1;
+    }
+}
+
+REAL sr_filterCycleWallsMinR = 0, sr_filterCycleWallsMinG = 0, sr_filterCycleWallsMinB = 0;
+tConfItem< REAL > sr_filterCycleWallsRC( "FILTER_CYCLE_WALLS_MIN_R", sr_filterCycleWallsMinR );
+tConfItem< REAL > sr_filterCycleWallsGC( "FILTER_CYCLE_WALLS_MIN_G", sr_filterCycleWallsMinG );
+tConfItem< REAL > sr_filterCycleWallsBC( "FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB );
+void se_removeDarkColors(REAL& r, REAL& g, REAL& b)
+{
+        if (sr_filterCycleWallsMinR <= 1) {
+            sr_filterCycleWallsMinR = 0;
+        }
+        if (sr_filterCycleWallsMinG <= 1) {
+            sr_filterCycleWallsMinG = 0;
+        }
+        if (sr_filterCycleWallsMinB <= 1) {
+            sr_filterCycleWallsMinB = 0;
+        }
+    while (r < sr_filterCycleWallsMinR || g < sr_filterCycleWallsMinG || b < sr_filterCycleWallsMinB )
+    {
+    
+        if ( r < sr_filterCycleWallsMinR )
+            r += 0.1;
+    
+        if ( g < sr_filterCycleWallsMinG )
+            r += 0.1;
+    
+        if ( b < sr_filterCycleWallsMinB )
+            r += 0.1;
+    
         if (r > 1)
             r = 1;
         if (g > 1)

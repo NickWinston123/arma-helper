@@ -1214,11 +1214,17 @@ static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg
 bool sg_helperShowHit = false;
 static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit);
 
+REAL sg_showHitDataHeight = 1;
+static tConfItem<REAL> sg_showHitDataHeightConf("HELPER_SHOW_HIT_HEIGHT", sg_showHitDataHeight);
+
 REAL sg_showHitDataRange = 1;
 static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE", sg_showHitDataRange);
 
 REAL sg_showHitDataFreeRange = 1;
 static tConfItem<REAL> sg_showHitDataFreeRangeConf("HELPER_SHOW_HIT_OPEN_RANGE", sg_showHitDataFreeRange);
+
+int sg_showHitDataRecursion = 1;
+static tConfItem<int> sg_showHitDataRecursionConf("HELPER_SHOW_HIT_RECURSION", sg_showHitDataRecursion);
 
 REAL sg_showHitDataTimeout = 0.009;
 static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
@@ -1252,7 +1258,6 @@ static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_CORNERS_BOU
 REAL sg_helperShowCornersTimeout = 1;
 static tConfItem<REAL> sg_traceTimeoutConf("HELPER_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
 
-
 bool sg_helperSmartTurning = false;
 static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
 
@@ -1265,10 +1270,27 @@ static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_O
 REAL sg_helperSmartTurningClosedInMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
 
-REAL sg_helperSmartTurningSurviveRubberMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningSurviveRubberMultConf("HELPER_SMART_TURNING_SURVIVE_RUBBER_MULT", sg_helperSmartTurningSurviveRubberMult);
+REAL sg_helperSmartTurningRubberMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningRubberMultConf("HELPER_SMART_TURNING_RUBBER_MULT", sg_helperSmartTurningRubberMult);
+
+REAL sg_helperSmartTurningSpace = 0;
+static tConfItem<REAL> sg_helperSmartTurningSpaceConf("HELPER_SMART_TURNING_SPACE", sg_helperSmartTurningSpace);
+
+bool sg_helperDebug = false;
+static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
+
+bool sg_helperSmartTurningAutoBrake = false;
+static tConfItem<bool> sg_helperSmartTurningAutoBrakeConf("HELPER_SMART_TURNING_BRAKE", sg_helperSmartTurningAutoBrake);
+
+bool sg_helperSmartTurningAutoBrakeDeplete = false;
+static tConfItem<bool> sg_helperSmartTurningAutoBrakeDepleteConf("HELPER_SMART_TURNING_BRAKE_DEPLETE", sg_helperSmartTurningAutoBrakeDeplete);
 
 
+REAL sg_helperSmartTurningAutoBrakeMin = 0;
+static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMinConf("HELPER_SMART_TURNING_BRAKE_MIN", sg_helperSmartTurningAutoBrakeMin);
+
+REAL sg_helperSmartTurningAutoBrakeMax = 2;
+static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMaxConf("HELPER_SMART_TURNING_BRAKE_MAX", sg_helperSmartTurningAutoBrakeMax);
 
 struct gHelperData
 {
@@ -1354,8 +1376,8 @@ class gSmartTurning
     void Activate( gHelperData &data) {
         localCurrentTime = se_GameTime();
 
-        if (sg_helperSmartTurningOpposite || sg_helperSmartTurningSurvive ) {
-            calculateRubberFactor(sg_helperSmartTurningSurviveRubberMult);
+        if  ( sg_helperSmartTurningSpace <= 0 && (sg_helperSmartTurningOpposite || sg_helperSmartTurningSurvive )) {
+            calculateRubberFactor(sg_helperSmartTurningRubberMult);
         }
 
         if (sg_helperSmartTurningSurvive) {
@@ -1367,8 +1389,29 @@ class gSmartTurning
             smartTurningOpposite(data);
         }
 
+        if (sg_helperSmartTurningAutoBrake) {
+            autoUnBrake();
+        }
+
     }
 
+    void autoUnBrake() {
+        REAL brakingReservoir = owner_->GetBrakingReservoir();
+        con << brakingReservoir << "\n";
+        bool cycleBrakeDeplete = true;
+
+        if (sg_helperSmartTurningAutoBrakeDeplete && sg_helperSmartTurningAutoBrakeMin == 0 && sg_cycleBrakeDeplete != 1) {
+            cycleBrakeDeplete = false;
+        }
+
+        if (brakingReservoir <= sg_helperSmartTurningAutoBrakeMin && cycleBrakeDeplete) {
+            owner_->SetBraking(false);
+        }
+
+        // if (brakingReservoir >= sg_helperSmartTurningAutoBrakeMax) {
+        //     owner_->SetBraking(true);
+        // }
+    }
     void smartTurningBot (gHelperData &data) {
 
     }
@@ -1444,15 +1487,36 @@ class gSmartTurning
         canSurviveLeftTurn = true;
         canSurviveRightTurn = true;
 
-        if (data.left.hit < rubberFactor) {
-            canSurviveLeftTurn = false;
-        }
-        if (data.right.hit < rubberFactor) {
-            canSurviveRightTurn = false;
+        if (sg_helperSmartTurningSpace > 0) {
+            if (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningSpace) {
+                canSurviveLeftTurn = false;
+            }
+            if (data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningSpace) {
+                canSurviveRightTurn = false;
+            }
+        } else {
+
+            if (data.left.hit < rubberFactor) {
+                canSurviveLeftTurn = false;
+            }
+            if (data.right.hit < rubberFactor) {
+                canSurviveRightTurn = false;
+            }
         }
 
         closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
         blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
+
+        if (sg_helperDebug) {
+
+        gSensor left(owner_, owner_->pos, owner_->dir.Turn(eCoord(0, 1)));
+        left.detect(data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
+
+        gSensor right(owner_, owner_->pos, owner_->dir.Turn(eCoord(0, -1)));
+        right.detect(data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
+        helper_->debugLine(1,0,0,0,data.speedFactor,owner_->pos,left.before_hit);
+        helper_->debugLine(1,0,0,0,data.speedFactor,owner_->pos,right.before_hit);
+        }
     }
 
 
@@ -1802,31 +1866,53 @@ public:
         if (wallClose)
         {
             debugLine(1,.5,0,0,data.speedFactor,(*ownerPos),data.front.before_hit);
-
-            gSensor left(owner_, data.front.before_hit,
-                         owner_->Direction().Turn(eCoord(0, 1)));
-            left.detect(30 + timeout);
-
-            gSensor right(owner_, data.front.before_hit,
-                          owner_->Direction().Turn(eCoord(0, -1)));
-            right.detect(30 + timeout);
-            bool leftOpen = left.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
-            bool rightOpen = right.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
-
-            if (leftOpen) {
-
-                    debugLine(0,1,0,0,data.speedFactor,data.front.before_hit,left.before_hit);
-            }
-            if (rightOpen) {
-                                 debugLine(0,1,0,0,data.speedFactor,data.front.before_hit,right.before_hit);
-            }
-            if (!leftOpen) {
-                 debugLine(1,0,0,0,data.speedFactor,data.front.before_hit,left.before_hit);
-            }
-            if (!rightOpen) {
-                debugLine(1,0,0,0,data.speedFactor,data.front.before_hit,right.before_hit);
-            }
+            showHitDebugLinesLeft((*ownerPos), owner_->Direction(), timeout, data, sg_showHitDataRecursion);
+            showHitDebugLinesRight((*ownerPos), owner_->Direction(), timeout, data, sg_showHitDataRecursion);
         }
+    }
+
+    void showHitDebugLinesLeft(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion) {
+       
+        if (recursion == 0) {
+            return;
+        }
+        recursion--;
+
+        eCoord dirLeft = dir.Turn(eCoord(0, 1));
+        gSensor left(owner_, pos, dirLeft);
+        left.detect(30 + timeout);
+        
+        bool leftOpen = left.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
+
+        if (leftOpen) {
+            debugLine(0,1,0,sg_showHitDataHeight,data.speedFactor,pos,left.before_hit);
+        } else {
+            debugLine(1,0,0,sg_showHitDataHeight,data.speedFactor,pos,left.before_hit);
+        }
+
+        showHitDebugLinesLeft(left.before_hit, dirLeft, timeout, data, recursion);
+    }
+
+    void showHitDebugLinesRight(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion) { 
+
+        if (recursion == 0) {
+            return;
+        }
+        recursion--;
+
+        eCoord dirRight = dir.Turn(eCoord(0, -1));
+        gSensor right(owner_, pos, dirRight);
+        right.detect(30 + timeout);
+        
+        bool rightOpen = right.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
+
+        if (rightOpen) {
+            debugLine(0,1,0,sg_showHitDataHeight,data.speedFactor,pos,right.before_hit);
+        } else {
+            debugLine(1,0,0,sg_showHitDataHeight,data.speedFactor,pos,right.before_hit);
+        }
+        
+        showHitDebugLinesRight(right.before_hit, dirRight, timeout, data, recursion);
     }
 
     static gHelper & Get( gCycle * cycle )
@@ -1924,6 +2010,9 @@ private:
 };
 
 
+
+bool sr_filterCycleWalls = false;
+static tConfItem< bool > sr_filterCycleWallsConf( "FILTER_CYCLE_WALLS", sr_filterCycleWalls );
 
 
 //  *****************************************************************
@@ -3094,8 +3183,10 @@ void gCycle::MyInitAfterCreation(){
             player->TrailColor(trailColor_.r,trailColor_.g,trailColor_.b);
         }
 
+
         se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
         se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
+
     }
 
     // load model and texture
@@ -3214,10 +3305,21 @@ bool sg_updateCycleColor = false;
 static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycleColor);
 
 void gCycle::updateColor() {
+
+
+        // if (sr_filterCycleWalls) {
+        //     se_removeDarkColors( color_.r, color_.g, color_.b );
+        //     se_removeDarkColors( trailColor_.r, trailColor_.g, trailColor_.b);
+        // }
+
         player->Color(color_.r, color_.g, color_.b);
         player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
-        se_MakeColorValid(color_.r, color_.g, color_.b, 1.0f);
-        se_MakeColorValid(trailColor_.r, trailColor_.g, trailColor_.b, .5f);
+
+        // se_MakeColorValid(color_.r, color_.g, color_.b, 1.0f);
+        // se_MakeColorValid(trailColor_.r, trailColor_.g, trailColor_.b, .5f);
+
+
+
 }
 
 void gCycle::InitAfterCreation(){
@@ -3571,14 +3673,14 @@ bool gCycle::Timestep(REAL currentTime){
         }
     }
 
-
-    bool playerIsMe = bool(player) && Alive() && player->IsHuman() && player->Owner() == sn_myNetID;
+    bool playerAlive =  bool(player) && Alive();
+    bool playerIsMe = playerAlive && player->IsHuman() && player->Owner() == sn_myNetID;
     if (sg_helper && playerIsMe && player->pID == 0) {
         gHelper & helper = gHelper::Get( this );
         helper.Activate();
     }
 
-    if (sg_updateCycleColor && playerIsMe ) //&& player->pID == 0
+    if (sg_updateCycleColor && playerAlive ) //&& player->pID == 0
     {
         this->updateColor();
     }

@@ -55,4 +55,5 @@ bool se_BlackSky();
 void se_FloorColor(REAL& r, REAL& g, REAL &b);
 
 void se_MakeColorValid(REAL& r, REAL & g, REAL& b, REAL f);
+void se_removeDarkColors(REAL& r, REAL & g, REAL& b);
 #endif

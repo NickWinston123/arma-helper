@@ -9463,6 +9463,9 @@ static tConfItem<int> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC", se
 static bool se_forceTeamname = false;
 static tConfItem<bool> se_forceTeamnameConf("FORCE_TEAMNAME", se_forceTeamname);
 
+static bool se_forceSync = false;
+static tConfItem<bool> se_forceSyncConf("FORCE_SYNC", se_forceSync);
+
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
 {
@@ -9627,6 +9630,9 @@ void ePlayerNetID::Update()
                     p->RequestSync();
                 }
 
+                if (se_forceSync) {
+                    p->RequestSync();
+                }
                 p->SetName( local_p->Name() );
             }
         }

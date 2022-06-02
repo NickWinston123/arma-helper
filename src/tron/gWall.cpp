@@ -992,6 +992,7 @@ void gNetPlayerWall::RenderList(bool list, gWallRenderMode renderMode ){
                     p1 = p2 + (p1-p2)*cut;
                     ta = te + (ta-te)*cut;
                     this->cycle_->setTailPos(p1);
+                    this->cycle_->setTailMoving(true);
                 }
             }
 

@@ -69,6 +69,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rRender.h"
 #endif
 
+#include "ePath.h"
+
 // TODO: get rid of this
 #include "tDirectories.h"
 
@@ -1214,6 +1216,10 @@ static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg
 bool sg_helperShowHit = false;
 static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit);
 
+bool sg_helperShowHitInternalTimeout = false;
+static tConfItem<bool> sg_helperShowHitInternalTimeoutConf("HELPER_SHOW_HIT_INTERNAL_TIMEOUT", sg_helperShowHitInternalTimeout);
+
+
 REAL sg_showHitDataHeight = 1;
 static tConfItem<REAL> sg_showHitDataHeightConf("HELPER_SHOW_HIT_HEIGHT", sg_showHitDataHeight);
 
@@ -1261,6 +1267,9 @@ static tConfItem<REAL> sg_traceTimeoutConf("HELPER_CORNERS_TIMEOUT", sg_helperSh
 bool sg_helperSmartTurning = false;
 static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
 
+bool sg_helperSmartTurningIgnoreClosedIn = false;
+static tConfItem<bool> sg_helperSmartTurningIgnoreClosedInConf("HELPER_SMART_TURNING_IGNORE_CLOSEDIN", sg_helperSmartTurningIgnoreClosedIn);
+
 bool sg_helperSmartTurningSurvive = false;
 static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
 
@@ -1291,6 +1300,10 @@ static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMinConf("HELPER_SMART_TURNI
 
 REAL sg_helperSmartTurningAutoBrakeMax = 2;
 static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMaxConf("HELPER_SMART_TURNING_BRAKE_MAX", sg_helperSmartTurningAutoBrakeMax);
+
+bool sg_helperSmartTurningFollowTail = false;
+static tConfItem<bool> sg_helperSmartTurningFollowTailConf("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
+
 
 struct gHelperData
 {
@@ -1373,7 +1386,7 @@ class gSmartTurning
         {
         }
 
-    void Activate( gHelperData &data) {
+    void Activate( gHelperData &data ) {
         localCurrentTime = se_GameTime();
 
         if  ( sg_helperSmartTurningSpace <= 0 && (sg_helperSmartTurningOpposite || sg_helperSmartTurningSurvive )) {
@@ -1392,9 +1405,104 @@ class gSmartTurning
         if (sg_helperSmartTurningAutoBrake) {
             autoUnBrake();
         }
-
+        if (sg_helperSmartTurningFollowTail) {
+            followTail(data);
+        }
     }
 
+    void followTail(gHelperData &data) {
+        bool drivingStraight = (fabs(owner_->Direction().x) == 1 || fabs(owner_->Direction().y) == 1);
+        if (owner_->tailMoving != true) {
+            return;
+        }
+
+        int turnDirection = thinkPath(owner_->tailPos,data);
+        if (turnDirection == -1) {
+            owner_->Act(&gCycle::se_turnRight, 1);
+        }
+        if (turnDirection == 1) {
+            owner_->Act(&gCycle::se_turnLeft, 1);
+        }
+    }
+
+    int thinkPath( eCoord pos, gHelperData &data ) {
+        eFace * tailFace = owner_->grid->FindSurroundingFace(owner_->tailPos);
+        eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
+                            owner_->tailPos, tailFace,
+                            owner_,
+                            path);
+        
+        REAL mindist = 10;                   
+        int lr = 0;
+        eCoord dir = owner_->Direction();
+
+        REAL ls=data.left.hit;
+        REAL rs=data.right.hit;
+
+        for (int z = 10; z>=0; z--)
+            path.Proceed();
+
+        bool goon   = path.Proceed();
+        bool nogood = false;
+
+        do
+        {
+            if (goon)
+                goon = path.GoBack();
+            else
+                goon = true;
+
+            eCoord pos   = path.CurrentPosition() + path.CurrentOffset() * 0.1f;
+            eCoord opos  = owner_->Position();
+            eCoord odir  = pos - opos;
+
+            eCoord intermediate = opos + dir * eCoord::F(odir, dir);
+
+            gSensor p(owner_, opos, intermediate - opos);
+            p.detect(1.1f);
+            nogood = (p.hit <= .999999999 || eCoord::F(path.CurrentOffset(), odir) < 0);
+
+            if (!nogood)
+            {
+                gSensor p(owner_, intermediate, pos - intermediate);
+                p.detect(1);
+                nogood = (p.hit <= .99999999 || eCoord::F(path.CurrentOffset(), odir) < 0);
+            }
+
+        }
+        while (goon && nogood);
+
+        if (goon)
+        {
+
+            // now we have found our next goal. Try to get there.
+            eCoord pos    = owner_->Position();
+            eCoord target = path.CurrentPosition();
+
+            helper_->debugLine(1,0,0,0,data.speedFactor,owner_->pos,target);
+            // look how far ahead the target is:
+            REAL ahead = eCoord::F(target - pos, dir)
+                        + eCoord::F(path.CurrentOffset(), dir);
+
+            if ( ahead > 0)
+            {	  // it is still before us. just wait a while.
+                mindist = ahead;
+            }
+            else
+            { // we have passed it. Make a turn towards it.
+                REAL side = (target - pos) * dir;
+
+                if ( !((side > 0 && ls < 3) || (side < 0 && rs < 3))
+                        && (fabs(side) > 3 || ahead < -10) )
+                {
+                    lr += (side > 0 ? 1 : -1);
+                    return lr;
+                }
+            }
+        }
+
+    }
+    
     void autoUnBrake() {
         REAL brakingReservoir = owner_->GetBrakingReservoir();
         con << brakingReservoir << "\n";
@@ -1507,6 +1615,9 @@ class gSmartTurning
         closedIn = (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
         blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
 
+        if (sg_helperSmartTurningIgnoreClosedIn) {
+            closedIn = false;
+        }        
         if (sg_helperDebug) {
 
         gSensor left(owner_, owner_->pos, owner_->dir.Turn(eCoord(0, 1)));
@@ -1524,7 +1635,7 @@ class gSmartTurning
         REAL rubberGranted, rubberEffectiveness;
         sg_RubberValues( owner_->player, owner_->verletSpeed_, rubberGranted, rubberEffectiveness );
         REAL rubberTime = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
-        rubberFactor = owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime * rubberMult);
+        rubberFactor = ( owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime) * sg_helperSmartTurningRubberMult );
     }
 
     static gSmartTurning & Get( gHelper * helper, gCycle *owner )
@@ -1551,6 +1662,7 @@ class gSmartTurning
         REAL &blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
         REAL &forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
         REAL rubberFactor;
+        ePath path;
     };
 
 
@@ -1865,9 +1977,9 @@ public:
 
         if (wallClose)
         {
-            debugLine(1,.5,0,0,data.speedFactor,(*ownerPos),data.front.before_hit);
-            showHitDebugLinesLeft((*ownerPos), owner_->Direction(), timeout, data, sg_showHitDataRecursion);
-            showHitDebugLinesRight((*ownerPos), owner_->Direction(), timeout, data, sg_showHitDataRecursion);
+            debugLine(1,.5,0,0,timeout,(*ownerPos),data.front.before_hit);
+            showHitDebugLinesLeft(data.front.before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
+            showHitDebugLinesRight(data.front.before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
         }
     }
 
@@ -1880,17 +1992,26 @@ public:
 
         eCoord dirLeft = dir.Turn(eCoord(0, 1));
         gSensor left(owner_, pos, dirLeft);
-        left.detect(30 + timeout);
-        
-        bool leftOpen = left.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
+        left.detect(1000);
+        eCoord hitPos = left.before_hit;
+        REAL hitDistance = left.hit;
+
+        bool leftOpen = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
+        REAL internalTimeout;
+        if (sg_helperShowHitInternalTimeout){
+            internalTimeout = (eCoord::F(pos,hitPos) * timeout); //eCoord::F(left.before_hit - pos,dirLeft) * data.turnSpeedFactor;//eCoord::F(pos,right.before_hit)*timeout;
+        } else {
+            internalTimeout = timeout;
+        }
+        internalTimeout /= recursion;
 
         if (leftOpen) {
-            debugLine(0,1,0,sg_showHitDataHeight,data.speedFactor,pos,left.before_hit);
+            debugLine(0,1,0,sg_showHitDataHeight,internalTimeout,pos,hitPos);
         } else {
-            debugLine(1,0,0,sg_showHitDataHeight,data.speedFactor,pos,left.before_hit);
+            debugLine(1,0,0,sg_showHitDataHeight,internalTimeout,pos,hitPos);
         }
 
-        showHitDebugLinesLeft(left.before_hit, dirLeft, timeout, data, recursion);
+        showHitDebugLinesLeft(hitPos, dirLeft, timeout, data, recursion);
     }
 
     void showHitDebugLinesRight(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion) { 
@@ -1902,14 +2023,22 @@ public:
 
         eCoord dirRight = dir.Turn(eCoord(0, -1));
         gSensor right(owner_, pos, dirRight);
-        right.detect(30 + timeout);
+        right.detect(1000);
         
         bool rightOpen = right.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
 
-        if (rightOpen) {
-            debugLine(0,1,0,sg_showHitDataHeight,data.speedFactor,pos,right.before_hit);
+        REAL internalTimeout;
+        if (sg_helperShowHitInternalTimeout){
+            internalTimeout = (eCoord::F(pos,right.before_hit) * timeout); //eCoord::F(left.before_hit - pos,dirLeft) * data.turnSpeedFactor;//eCoord::F(pos,right.before_hit)*timeout;
         } else {
-            debugLine(1,0,0,sg_showHitDataHeight,data.speedFactor,pos,right.before_hit);
+            internalTimeout = timeout;
+        }
+        internalTimeout /= recursion;
+
+        if (rightOpen) {
+            debugLine(0,1,0,sg_showHitDataHeight,internalTimeout,pos,right.before_hit);
+        } else {
+            debugLine(1,0,0,sg_showHitDataHeight,internalTimeout,pos,right.before_hit);
         }
         
         showHitDebugLinesRight(right.before_hit, dirRight, timeout, data, recursion);
@@ -1934,19 +2063,21 @@ public:
         REAL turnDistance = (turnSpeedFactor/100);
 
 
-        REAL detectRange = ownerWallLength;
+        REAL detectRange;
+        detectRange = 1000;
+        // detectRange = ownerWallLength;
 
-        if (detectRange < *ownerSpeed) {
-            detectRange = turnSpeedFactor;
-        } else {
-            detectRange *= turnSpeedFactor;
-        }
-        detectRange *= (sg_helperSensorMult*10);
+        // if (detectRange < *ownerSpeed) {
+        //     detectRange = turnSpeedFactor;
+        // } else {
+        //     detectRange *= turnSpeedFactor;
+        // }
+        // detectRange *= (sg_helperSensorMult*10);
 
-        if (ownerWallLength < *ownerSpeed)
-        {
-            detectRange = *ownerSpeed;
-        }
+        // if (ownerWallLength < *ownerSpeed)
+        // {
+        //     detectRange = *ownerSpeed;
+        // }
 
         gSensor front(owner_, (*ownerPos), *ownerDir);
         front.detect(detectRange);
@@ -3117,7 +3248,7 @@ void gCycle::MyInitAfterCreation(){
 #ifndef DEDICATED
     new gCycleWallRenderer( this );
 #endif
-
+    tailMoving = false;
     dropWallRequested_ = false;
     lastGoodPosition_ = pos;
 

@@ -1216,6 +1216,9 @@ static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg
 bool sg_helperShowHit = false;
 static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit);
 
+bool sg_helperShowHitNew = false;
+static tConfItem<bool> sg_helperShowHitNewConf("HELPER_SHOW_HIT_NEW", sg_helperShowHitNew);
+
 bool sg_helperShowHitInternalTimeout = false;
 static tConfItem<bool> sg_helperShowHitInternalTimeoutConf("HELPER_SHOW_HIT_INTERNAL_TIMEOUT", sg_helperShowHitInternalTimeout);
 
@@ -1977,6 +1980,43 @@ public:
 
         if (wallClose)
         {
+            debugLine(1,.5,0,0,data.speedFactor,(*ownerPos),data.front.before_hit);
+
+            gSensor left(owner_, data.front.before_hit,
+                         owner_->Direction().Turn(eCoord(0, 1)));
+            left.detect(30 + timeout);
+
+            gSensor right(owner_, data.front.before_hit,
+                          owner_->Direction().Turn(eCoord(0, -1)));
+            right.detect(30 + timeout);
+            bool leftOpen = left.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
+            bool rightOpen = right.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
+
+            if (leftOpen) {
+
+                    debugLine(0,1,0,0,data.speedFactor,data.front.before_hit,left.before_hit);
+            }
+            if (rightOpen) {
+                                 debugLine(0,1,0,0,data.speedFactor,data.front.before_hit,right.before_hit);
+            }
+            if (!leftOpen) {
+                 debugLine(1,0,0,0,data.speedFactor,data.front.before_hit,left.before_hit);
+            }
+            if (!rightOpen) {
+                debugLine(1,0,0,0,data.speedFactor,data.front.before_hit,right.before_hit);
+            }
+        }
+    }
+
+    void showHitNew(gHelperData &data)
+    {
+
+        bool wallClose = data.front.hit < data.turnSpeedFactor * sg_showHitDataRange;
+
+        REAL timeout = data.speedFactor * sg_showHitDataTimeout;
+
+        if (wallClose)
+        {
             debugLine(1,.5,0,0,timeout,(*ownerPos),data.front.before_hit);
             showHitDebugLinesLeft(data.front.before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
             showHitDebugLinesRight(data.front.before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
@@ -2109,6 +2149,10 @@ public:
         if (sg_helperShowHit)
         {
             showHit(data);
+        }
+
+        if (sg_helperShowHitNew) {
+            showHitNew(data);
         }
 
         if (sg_helperShowTail)

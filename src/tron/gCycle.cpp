@@ -2013,7 +2013,7 @@ public:
 
         bool wallClose = data.front.hit < data.turnSpeedFactor * sg_showHitDataRange;
 
-        REAL timeout = data.speedFactor * sg_showHitDataTimeout;
+        REAL timeout = data.turnSpeedFactor * sg_showHitDataTimeout;
 
         if (wallClose)
         {

@@ -4866,18 +4866,19 @@ static ePlayerNetID* identifyPlayer(tString inname)
 }
 */
 
-// identify a local player
+// identify a local human player
 ePlayerNetID *se_GetLocalPlayer()
 {
     for(int i=0; i<se_PlayerNetIDs.Len(); i++)
     {
         ePlayerNetID *p = se_PlayerNetIDs[i];
 
-        if( p->Owner() == sn_myNetID )
+        if( p->Owner() == sn_myNetID && p->IsHuman())
             return p;
     }
     return NULL;
 }
+
 
 static tString sg_AdminName("Admin");
 bool restrictAdminName(tString const &newValue)
@@ -5878,7 +5879,7 @@ ePlayerNetID::ePlayerNetID(int p):nNetObject(),listID(-1), teamListID(-1), timeC
     substitute          = NULL;
 
     loginWanted = false;
-
+    respawnedLocally = false;
 
     if (p>=0)
     {

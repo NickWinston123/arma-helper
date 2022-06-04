@@ -4170,6 +4170,9 @@ static void respawnallenable(std::istream &s)
 static tConfItemFunc sg_respawnall_conf("RESPAWN_ALL", &respawnallenable);
 static tAccessLevelSetter sg_respawnallConfLevel( sg_respawnall_conf, tAccessLevel_Moderator );
 
+bool sg_localRespawn = false;
+static tConfItem<bool> sg_localRespawnConf("LOCAL_RESPAWN",sg_localRespawn);
+
 // uncomment to activate respawning
 #define RESPAWN_HACK
 
@@ -4177,8 +4180,29 @@ static tAccessLevelSetter sg_respawnallConfLevel( sg_respawnall_conf, tAccessLev
 // Respawns cycles (crude test)
 static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
 {
-    if (sg_respawnTime < 0)
+    if (sg_respawnTime < 0 && (!sg_localRespawn))
     {
+        return;
+    }
+
+    if (sg_localRespawn && (sn_GetNetState() == nCLIENT )) {
+        
+        ePlayerNetID *p = se_GetLocalPlayer();
+        if (!p) {
+            return;
+        }
+        
+        eGameObject *e = p->Object();
+
+        if (e && !e->Alive()) {
+            eCoord pos, dir;
+            sg_DetermineSpawnPoint(p,pos,dir);
+            gCycle * cycle = new gCycle( grid, pos, dir, p );
+            p->ControlObject(cycle);
+            p->respawnedLocally = true;
+            sg_Timestamp();
+        }
+
         return;
     }
 

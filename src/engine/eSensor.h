@@ -48,6 +48,7 @@ public:
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
     //  virtual void PassEdge(eEdge *e,REAL time,REAL a,int recursion=1);
     void detect(REAL range);
+    REAL Hit() {return hit;}
 
     void SetCurrentFace(eFace *f) { currentFace = f ; }
 

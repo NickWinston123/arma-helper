@@ -234,6 +234,7 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     // access level. lower numeric values are better.
 public:
     typedef std::set< eTeam * > eTeamSet;
+    bool respawnedLocally;
 private:
 
     int listID;                          // ID in the list of all players

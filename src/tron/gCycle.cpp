@@ -3546,12 +3546,13 @@ static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycle
 
 
 void gCycle::updateColor() {
+        player->Color(color_.r, color_.g, color_.b);
+        player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
+        
         if (sr_filterCycleWalls) {
              removeDarkColors( color_.r, color_.g, color_.b );
              removeDarkColors( trailColor_.r, trailColor_.g, trailColor_.b);
          }
-        player->Color(color_.r, color_.g, color_.b);
-        player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
 }
 
 void gCycle::InitAfterCreation(){

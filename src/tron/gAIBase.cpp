@@ -131,7 +131,7 @@ static REAL Delay()
 
 
 
-static gAICharacter* BestIQ( int iq )
+gAICharacter* BestIQ( int iq )
 {
     int i;
 

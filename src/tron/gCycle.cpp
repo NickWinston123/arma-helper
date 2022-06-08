@@ -1226,6 +1226,10 @@ static tConfItem<bool> sg_helperShowHitInternalTimeoutConf("HELPER_SHOW_HIT_INTE
 REAL sg_showHitDataHeight = 1;
 static tConfItem<REAL> sg_showHitDataHeightConf("HELPER_SHOW_HIT_HEIGHT", sg_showHitDataHeight);
 
+REAL sg_showHitDataHeightFront = 1;
+static tConfItem<REAL> sg_showHitDataHeightFrontConf("HELPER_SHOW_HIT_HEIGHT_FRONT", sg_showHitDataHeightFront);
+
+
 REAL sg_showHitDataRange = 1;
 static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE", sg_showHitDataRange);
 
@@ -1338,12 +1342,17 @@ class gSmarterBot
 
                 }
 void createAI(){
-//     if (!ai) {
-//                      ai 	= tNEW( gAIPlayer ) ();
-//                      sg_AIReferences.Add( ai );
-//     } else {
-// ai->ControlObject(player_->Object());
-//     }
+    if (!ai) {
+                     ai 	= tNEW( gAIPlayer ) ();
+                     sg_AIReferences.Add( ai );
+                    ai 	= tNEW( gAIPlayer ) ();
+                     ai->character = BestIQ( 1000 );
+    } else {
+    //ai->ControlObject(owner_);
+    //ai->Think();
+            //ai->SetName( ai->character->name );
+            //ai->UpdateTeam();
+    }
 }
 
 void Exist() {
@@ -1677,8 +1686,8 @@ public:
         tailPos = &owner_->tailPos;
         ownerSpeed = &owner_->verletSpeed_;
         gSmartTurning::Get( this , owner );
-        gSmarterBot::Get( this , owner, player_);
-        frontTest = new gSensor(owner_, (*ownerPos), *ownerDir);
+        //gSmarterBot::Get( this , owner, player_);
+        //frontTest = new gSensor(owner_, (*ownerPos), *ownerDir);
     }
     void getSensors()  {
         //frontTest = new gSensor(owner_, (*ownerPos), *ownerDir;)
@@ -1981,7 +1990,7 @@ public:
 
         if (wallClose)
         {
-            debugLine(1,.5,0,0,data.speedFactor,(*ownerPos),data.front.before_hit);
+            debugLine(1,.5,0,sg_showHitDataHeightFront,data.speedFactor,(*ownerPos),data.front.before_hit);
 
             gSensor left(owner_, data.front.before_hit,
                          owner_->Direction().Turn(eCoord(0, 1)));
@@ -1995,16 +2004,16 @@ public:
 
             if (leftOpen) {
 
-                    debugLine(0,1,0,0,data.speedFactor,data.front.before_hit,left.before_hit);
+                debugLine(0,1,0,sg_showHitDataHeight,data.speedFactor,data.front.before_hit,left.before_hit);
             }
             if (rightOpen) {
-                                 debugLine(0,1,0,0,data.speedFactor,data.front.before_hit,right.before_hit);
+                debugLine(0,1,0,sg_showHitDataHeight,data.speedFactor,data.front.before_hit,right.before_hit);
             }
             if (!leftOpen) {
-                 debugLine(1,0,0,0,data.speedFactor,data.front.before_hit,left.before_hit);
+                 debugLine(1,0,0,sg_showHitDataHeight,data.speedFactor,data.front.before_hit,left.before_hit);
             }
             if (!rightOpen) {
-                debugLine(1,0,0,0,data.speedFactor,data.front.before_hit,right.before_hit);
+                debugLine(1,0,0,sg_showHitDataHeight,data.speedFactor,data.front.before_hit,right.before_hit);
             }
         }
     }
@@ -2142,9 +2151,9 @@ public:
         if (sg_helperSmartTurning) {
             smartTurning->Activate(data);
         }
-        // if (smarterBot){
-        //     smarterBot->createAI();
-        // }
+        //  if (smarterBot){
+        //      smarterBot->createAI();
+        //  }
         if (sg_helperEnemyTracers)
         {
             enemyTracers(sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
@@ -2190,7 +2199,7 @@ private:
     REAL ownerTurnDelay;
     std::unique_ptr< gSmartTurning > smartTurning;
     std::unique_ptr< gSmarterBot > smarterBot;
-    gSensor * frontTest;
+   // gSensor * frontTest;
 
 };
 
@@ -3486,25 +3495,63 @@ void gCycle::MyInitAfterCreation(){
 #endif
 }
 
+
+REAL sr_filterCycleWallsMinR = 0; 
+static tConfItem<REAL> sr_filterCycleWallsMinRConf("FILTER_CYCLE_WALLS_MIN_R", sr_filterCycleWallsMinR);
+
+REAL sr_filterCycleWallsMinG = 0; 
+static tConfItem<REAL> sr_filterCycleWallsMinGConf("FILTER_CYCLE_WALLS_MIN_G", sr_filterCycleWallsMinG);
+
+REAL sr_filterCycleWallsMinB = 0; 
+static tConfItem<REAL> sr_filterCycleWallsMinBConf("FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB);
+
+void removeDarkColors(REAL& r, REAL& g, REAL& b)
+{
+    if (sr_filterCycleWallsMinR > 1) {
+        sr_filterCycleWallsMinR = 1;
+    }
+    
+    if (sr_filterCycleWallsMinG > 1) {
+        sr_filterCycleWallsMinG = 1;
+    }
+    if (sr_filterCycleWallsMinB > 1) {
+        sr_filterCycleWallsMinB = 1;
+    }
+    while (r < sr_filterCycleWallsMinR || g < sr_filterCycleWallsMinG || b < sr_filterCycleWallsMinB )
+    {
+        if ( r < sr_filterCycleWallsMinR ) {
+            r += 0.1;
+        }
+
+        if ( g < sr_filterCycleWallsMinG ) {
+            g += 0.1;
+        }
+
+
+        if ( b < sr_filterCycleWallsMinB ) {
+            b += 0.1;
+        }
+
+        if (r > 1)
+            r = 1;
+        if (g > 1)
+            g = 1;
+        if (b > 1)
+            b = 1;
+    }
+}
+
 bool sg_updateCycleColor = false;
 static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycleColor);
 
+
 void gCycle::updateColor() {
-
-
-        // if (sr_filterCycleWalls) {
-        //     se_removeDarkColors( color_.r, color_.g, color_.b );
-        //     se_removeDarkColors( trailColor_.r, trailColor_.g, trailColor_.b);
-        // }
-
+        if (sr_filterCycleWalls) {
+             removeDarkColors( color_.r, color_.g, color_.b );
+             removeDarkColors( trailColor_.r, trailColor_.g, trailColor_.b);
+         }
         player->Color(color_.r, color_.g, color_.b);
         player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
-
-        // se_MakeColorValid(color_.r, color_.g, color_.b, 1.0f);
-        // se_MakeColorValid(trailColor_.r, trailColor_.g, trailColor_.b, .5f);
-
-
-
 }
 
 void gCycle::InitAfterCreation(){
@@ -6694,6 +6741,10 @@ gCycle::gCycle(nMessage &m)
     se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
     se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
 
+    if (sr_filterCycleWalls) {
+            removeDarkColors( color_.r, color_.g, color_.b );
+            removeDarkColors( trailColor_.r, trailColor_.g, trailColor_.b);
+    }
     // set last time so that the first read_sync will not think this is old
     lastTimeAnim = lastTime = -EPS;
 

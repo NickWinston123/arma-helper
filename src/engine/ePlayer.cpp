@@ -70,6 +70,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "../tron/gRotation.h"
 #include "eBannedWords.h"
+#include "../tron/gServerBrowser.h"
 
 int se_lastSaidMaxEntries = 8;
 
@@ -4734,6 +4735,8 @@ static tConfItem<tString> se_infoCommandConf("LOCAL_INFO_COMMAND", se_infoComman
 static tString se_rgbCommand("/rgb");
 static tConfItem<tString> se_rgbCommandConf("LOCAL_RGB_COMMAND", se_rgbCommand);
 
+static tString se_browserCommand("/browser");
+static tConfItem<tString> se_browserCommandConf("LOCAL_BROWSER_COMMAND", se_browserCommand);
 #endif //if not dedicated
 
 void ePlayerNetID::Chat(const tString& s_orig)
@@ -4748,7 +4751,8 @@ void ePlayerNetID::Chat(const tString& s_orig)
         se_consoleComand,
         se_colorsCommand,
         se_infoCommand,
-        se_rgbCommand
+        se_rgbCommand,
+        se_browserCommand
     };
 
     std::string chatString(s_orig);
@@ -4818,6 +4822,9 @@ void ePlayerNetID::Chat(const tString& s_orig)
         else if (command == se_rgbCommand)
         {
             currentPlayerRGB(tString(s_orig));
+        } else if (command == se_browserCommand) {
+            con << "Launchin browser";
+            gServerBrowser::BrowseMaster();
         }
     }
     else
@@ -8807,7 +8814,7 @@ static void se_rainbowColor( ePlayer * l )
     l->rgb[2] = b;
 
     if (countUp) {
-        rainbowIteration++; 
+        rainbowIteration++;
     } else {
         rainbowIteration--;
     }
@@ -9531,9 +9538,20 @@ void ePlayerNetID::Update()
 
             if (bool(p) && in_game)  // update
             {
-                
+
                 if (se_forceTeamname) {
                     p->Chat(tString( "/teamname" ));
+                }
+
+                if (se_toggleChatFlag) {
+                    bool toggleThisPlayersChatFlag =  tIsInList(se_toggleChatFlagEnabledPlayers, p->pID+1);
+                    if (toggleThisPlayersChatFlag) {
+                    p->SetChatting( ePlayerNetID::ChatFlags_Chat, !p->IsChatting());
+                    }
+                }
+
+                if (se_toggleChatFlagAlways) {
+                    p->SetChatting( ePlayerNetID::ChatFlags_Chat, true );
                 }
                 
                 p->favoriteNumberOfPlayersPerTeam=ePlayer::PlayerConfig(i)->favoriteNumberOfPlayersPerTeam;
@@ -9561,17 +9579,6 @@ void ePlayerNetID::Update()
                 p->r=ePlayer::PlayerConfig(i)->rgb[0];
                 p->g=ePlayer::PlayerConfig(i)->rgb[1];
                 p->b=ePlayer::PlayerConfig(i)->rgb[2];
-
-                if (se_toggleChatFlag) {
-                    bool toggleThisPlayersChatFlag =  tIsInList(se_toggleChatFlagEnabledPlayers, p->pID+1);
-                    if (toggleThisPlayersChatFlag) {
-                    p->SetChatting( ePlayerNetID::ChatFlags_Chat, !p->IsChatting());
-                    }
-                }
-
-                if (se_toggleChatFlagAlways) {
-                    p->SetChatting( ePlayerNetID::ChatFlags_Chat, true );
-                }
 
                 sg_ClampPingCharity();
                 p->pingCharity=::pingCharity;

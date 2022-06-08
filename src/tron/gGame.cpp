@@ -4180,7 +4180,7 @@ static tConfItem<bool> sg_localRespawnConf("LOCAL_RESPAWN",sg_localRespawn);
 // Respawns cycles (crude test)
 static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
 {
-    if (sg_respawnTime < 0 && (!sg_localRespawn))
+    if (sg_respawnTime < 0 && !sg_localRespawn)
     {
         return;
     }
@@ -5576,7 +5576,7 @@ bool gGame::GameLoop(bool input){
 
 
 
-        if (sn_GetNetState()!=nCLIENT)
+        //if (sn_GetNetState()!=nCLIENT)
         {
             // simulate IAs
             for(int i=se_PlayerNetIDs.Len()-1;i>=0;i--)

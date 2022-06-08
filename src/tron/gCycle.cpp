@@ -2204,11 +2204,6 @@ private:
 };
 
 
-
-bool sr_filterCycleWalls = false;
-static tConfItem< bool > sr_filterCycleWallsConf( "FILTER_CYCLE_WALLS", sr_filterCycleWalls );
-
-
 //  *****************************************************************
 
 static void sg_ArchiveCoord( eCoord & coord, int level )
@@ -3495,6 +3490,8 @@ void gCycle::MyInitAfterCreation(){
 #endif
 }
 
+bool sr_filterCycleWalls = false;
+static tConfItem< bool > sr_filterCycleWallsConf( "FILTER_CYCLE_WALLS", sr_filterCycleWalls );
 
 REAL sr_filterCycleWallsMinR = 0; 
 static tConfItem<REAL> sr_filterCycleWallsMinRConf("FILTER_CYCLE_WALLS_MIN_R", sr_filterCycleWallsMinR);
@@ -3504,6 +3501,9 @@ static tConfItem<REAL> sr_filterCycleWallsMinGConf("FILTER_CYCLE_WALLS_MIN_G", s
 
 REAL sr_filterCycleWallsMinB = 0; 
 static tConfItem<REAL> sr_filterCycleWallsMinBConf("FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB);
+
+REAL sr_filterCycleWallsMinTotal = 0; 
+static tConfItem<REAL> sr_filterCycleWallsMinTotalConf("FILTER_CYCLE_WALLS_MIN_TOTAL", sr_filterCycleWallsMinTotal);
 
 void removeDarkColors(REAL& r, REAL& g, REAL& b)
 {
@@ -3517,18 +3517,23 @@ void removeDarkColors(REAL& r, REAL& g, REAL& b)
     if (sr_filterCycleWallsMinB > 1) {
         sr_filterCycleWallsMinB = 1;
     }
-    while (r < sr_filterCycleWallsMinR || g < sr_filterCycleWallsMinG || b < sr_filterCycleWallsMinB )
+    if (sr_filterCycleWallsMinTotal > 1) {
+        sr_filterCycleWallsMinTotal = 1;
+    }
+    while (r < sr_filterCycleWallsMinR || g < sr_filterCycleWallsMinG || b < sr_filterCycleWallsMinB || ((r+g+b)/3 < sr_filterCycleWallsMinTotal ))
     {
-        if ( r < sr_filterCycleWallsMinR ) {
+        REAL currentTotal = (r + g + b)/3;
+
+        if ( r < sr_filterCycleWallsMinR || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
             r += 0.1;
         }
 
-        if ( g < sr_filterCycleWallsMinG ) {
+        if ( g < sr_filterCycleWallsMinG || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
             g += 0.1;
         }
 
 
-        if ( b < sr_filterCycleWallsMinB ) {
+        if ( b < sr_filterCycleWallsMinB || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
             b += 0.1;
         }
 
@@ -3548,7 +3553,7 @@ static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycle
 void gCycle::updateColor() {
         player->Color(color_.r, color_.g, color_.b);
         player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
-        
+
         if (sr_filterCycleWalls) {
              removeDarkColors( color_.r, color_.g, color_.b );
              removeDarkColors( trailColor_.r, trailColor_.g, trailColor_.b);

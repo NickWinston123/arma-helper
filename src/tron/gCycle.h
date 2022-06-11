@@ -190,6 +190,7 @@ public:
     eCoord            tailPos;
     eCoord            tailDir;
     bool              tailMoving;
+    bool              forcedInvulnerable;
 
     REAL skew,skewDot;						// leaning to the side
 

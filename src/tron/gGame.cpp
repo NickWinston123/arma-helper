@@ -4186,15 +4186,15 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
     }
 
     if (sg_localRespawn && (sn_GetNetState() == nCLIENT )) {
-        
+
         ePlayerNetID *p = se_GetLocalPlayer();
         if (!p) {
             return;
         }
         
         eGameObject *e = p->Object();
-
-        if (e && !e->Alive()) {
+        //e checks if player is an actual game object ( spectaters are not )
+        if (!e || e && !e->Alive()) {
             eCoord pos, dir;
             sg_DetermineSpawnPoint(p,pos,dir);
             gCycle * cycle = new gCycle( grid, pos, dir, p );
@@ -5317,16 +5317,26 @@ static eLadderLogWriter sg_gameTimeWriter("GAME_TIME", true);
 static bool sg_forcePlayerUpdate = false;
 static tSettingItem<bool> sg_forcePlayerUpdateConf("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
 
-static REAL sg_forcePlayerUpdateDelay = 0.5;
-static tConfItem<REAL> sg_forcePlayerUpdateDelayConf("FORCE_PLAYER_UPDATE_DELAY", sg_forcePlayerUpdateDelay);
+static bool sg_forceSyncAll = false;
+static tSettingItem<bool> sg_forceSyncAllConf("FORCE_SYNC_ALL", sg_forceSyncAll);
+
+static REAL sg_forceClockDelay = 0.5;
+static tConfItem<REAL> sg_forceClockDelayConf("FORCE_CLOCK_DELAY", sg_forceClockDelay);
 
 static REAL lastForcedUpdate = tSysTimeFloat();
 
 bool gGame::GameLoop(bool input){
 
-    if (sg_forcePlayerUpdate) {
-        if (tSysTimeFloat() >= lastForcedUpdate + sg_forcePlayerUpdateDelay) {
+    if (sg_forcePlayerUpdate || sg_forceSyncAll) {
+        if (tSysTimeFloat() >= lastForcedUpdate + sg_forceClockDelay) {
+            
+            if (sg_forcePlayerUpdate){
             ePlayerNetID::Update();
+            }
+
+            if (sg_forceSyncAll) {
+            nNetObject::SyncAll();
+            }
             lastForcedUpdate = tSysTimeFloat();
         }
     }

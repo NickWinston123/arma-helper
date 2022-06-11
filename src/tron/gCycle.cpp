@@ -1246,6 +1246,10 @@ static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT", sg_s
 bool sg_helperShowTail = false;
 static tConfItem<bool> sg_helperShowTailConf("HELPER_SHOW_TAIL", sg_helperShowTail);
 
+REAL sg_helperShowTailHeight = 1;
+static tConfItem<REAL> sg_helperShowTailHeightConf("HELPER_SHOW_TAIL_HEIGHT", sg_helperShowTailHeight);
+
+
 REAL sg_helperShowTailPassthrough = 0.5;
 static tConfItem<REAL> sg_helperShowTailPassthroughConf("HELPER_SHOW_TAIL_PASSTHROUGH", sg_helperShowTailPassthrough);
 
@@ -1257,19 +1261,19 @@ bool sg_helperShowCorners = false;
 static tConfItem<bool> sg_helperShowCornersConf("HELPER_SHOW_CORNERS", sg_helperShowCorners);
 
 bool sg_helperShowCornersPassed = 0;
-static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_CORNERS_PASSED",sg_helperShowCornersPassed);
+static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_SHOW_CORNERS_PASSED",sg_helperShowCornersPassed);
 
 REAL sg_helperShowCornersPassedRange = 1;
-static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
+static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
 
 REAL sg_helperShowCornersBoundary = 10;
-static tConfItem<REAL> sg_showTraceDatacornerRangeConf("HELPER_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
+static tConfItem<REAL> sg_showTraceDatacornerRangeConf("HELPER_SHOW_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
 
 REAL sg_helperShowCornersBoundaryPassed = 2.5;
-static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
+static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_SHOW_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
 
 REAL sg_helperShowCornersTimeout = 1;
-static tConfItem<REAL> sg_traceTimeoutConf("HELPER_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
+static tConfItem<REAL> sg_traceTimeoutConf("HELPER_SHOW_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
 
 bool sg_helperSmartTurning = false;
 static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
@@ -1292,6 +1296,10 @@ static tConfItem<REAL> sg_helperSmartTurningRubberMultConf("HELPER_SMART_TURNING
 REAL sg_helperSmartTurningSpace = 0;
 static tConfItem<REAL> sg_helperSmartTurningSpaceConf("HELPER_SMART_TURNING_SPACE", sg_helperSmartTurningSpace);
 
+
+bool sg_helperSmartTurningPlan = false;
+static tConfItem<bool> sg_helperSmartTurningPlanConf("HELPER_SMART_TURNING_PLAN", sg_helperSmartTurningPlan);
+
 bool sg_helperDebug = false;
 static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
 
@@ -1311,6 +1319,36 @@ static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMaxConf("HELPER_SMART_TURNI
 bool sg_helperSmartTurningFollowTail = false;
 static tConfItem<bool> sg_helperSmartTurningFollowTailConf("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
 
+REAL sg_helperSmartTurningFollowTailDelayMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
+
+REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
+
+
+
+struct gSmartTurningCornerData
+{
+    eCoord currentPos;
+    eCoord lastPos;
+    gSensorWallType type;
+    REAL distanceFromPlayer;
+    REAL turnTime;
+    REAL noticedTime;
+    REAL ignoredTime;
+    bool exist;
+    bool infront;
+
+    REAL getTurnTime(REAL speed) {
+        return distanceFromPlayer/= speed * .98f;
+    }
+
+    bool isInfront(eCoord pos, eCoord dir) {
+    return eCoord::F(dir, currentPos - pos) > 0;
+    }
+
+    gSmartTurningCornerData() {}
+};
 
 struct gHelperData
 {
@@ -1406,12 +1444,18 @@ class gSmartTurning
         }
 
         if (sg_helperSmartTurningSurvive) {
-            sg_helperSmartTurningOpposite = 0;
+            sg_helperSmartTurningOpposite = 0; sg_helperSmartTurningPlan = 0;
             smartTurningSurvive(data);
         }
 
         if (sg_helperSmartTurningOpposite) {
+            sg_helperSmartTurningSurvive = 0; sg_helperSmartTurningPlan = 0;
             smartTurningOpposite(data);
+        }
+
+        if (sg_helperSmartTurningPlan) {
+            sg_helperSmartTurningSurvive = 0; sg_helperSmartTurningOpposite = 0;
+            smartTurningPlan(data);
         }
 
         if (sg_helperSmartTurningAutoBrake) {
@@ -1422,25 +1466,90 @@ class gSmartTurning
         }
     }
 
+    bool isClose(eCoord pos, REAL closeFactor){
+    eCoord distanceToPos = owner_->pos - pos;
+    return (distanceToPos.x < closeFactor &&
+            distanceToPos.y < closeFactor &&
+            distanceToPos.x > -closeFactor &&
+            distanceToPos.y > -closeFactor);
+    }
+
+    void smartTurningPlan(gHelperData &data) {
+        if (!sg_helperShowCorners) {
+            helper_->findCorners(data);
+        }
+        if (helper_->leftCorner.exist) {
+            //con << helper_->leftCorner.getTurnTime(owner_->verletSpeed_) << "\n";
+            if (  isClose(owner_->pos, sg_helperShowCornersBoundary) && helper_->leftCorner.infront  && data.left.hit > 3 && helper_->leftCorner.getTurnTime(owner_->verletSpeed_) <= 0.0005) {
+                owner_->Act(&gCycle::se_turnLeft, 1);
+            }
+        }
+
+        // bool isClose = helper_->leftCorner.isClose(owner_->pos, sg_helperShowCornersBoundary) || helper_->rightCorner.isClose(owner_->pos, sg_helperShowCornersBoundary);
+        // if (!isClose){
+        //     return;
+        // }
+        // bool turnLeft = helper_->leftCorner.distanceFromPlayer < helper_->rightCorner.distanceFromPlayer;
+        // if (turnLeft) {
+        // if (helper_->leftCorner.infront && helper_->leftCorner.distanceFromPlayer <= 0.01 && data.left.hit > 5) {
+        //     owner_->Act(&gCycle::se_turnLeft, 1);
+        // }
+        // } else {
+        // if (helper_->leftCorner.infront && helper_->rightCorner.distanceFromPlayer <= 0.01 && data.right.hit > 5) {
+        //     owner_->Act(&gCycle::se_turnRight, 1);
+        // }
+        // }
+    }
+
+    void thinkSurvive(gHelperData &data) {
+
+    }
+
+    REAL lastTailTurnTime = -999;
     void followTail(gHelperData &data) {
-        bool drivingStraight = helper_->drivingStraight();
+
+        // if (!isClose(owner_->tailPos, data.turnSpeedFactor * 3)) {
+        //     return;
+        // }
+
         if (owner_->tailMoving != true) {
+            return;
+        }
+        REAL delay = data.turnSpeedFactor * sg_helperSmartTurningFollowTailDelayMult;
+        bool drivingStraight = helper_->drivingStraight();
+        REAL canSurviveLeftTurn, canSurviveRightTurn;
+        bool closedIn, blockedBySelf;
+
+        canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningFollowTailFreeSpaceMult);
+        if (closedIn || blockedBySelf) {
+            return;
+        }
+       
+        //bool turnedRecently = !(lastTailTurnTime < 0) && owner_->lastTurnTime + delay > owner_->localCurrentTime;
+        //con << owner_->lastTurnTime + delay << " > " << owner_->localCurrentTime << "\n" << turnedRecently << "\n";
+        bool readyToTurn = owner_->localCurrentTime > lastTailTurnTime + delay;
+
+        if (!readyToTurn) {
             return;
         }
 
         int turnDirection = thinkPath(owner_->tailPos,data);
-        if (turnDirection == -1) {
+
+        if (canSurviveRightTurn && turnDirection == -1) {
             owner_->Act(&gCycle::se_turnRight, 1);
+            lastTailTurnTime = owner_->localCurrentTime;
         }
-        if (turnDirection == 1) {
+
+        if (canSurviveLeftTurn && turnDirection == 1) {
             owner_->Act(&gCycle::se_turnLeft, 1);
+            lastTailTurnTime = owner_->localCurrentTime;
         }
     }
 
     int thinkPath( eCoord pos, gHelperData &data ) {
-        eFace * tailFace = owner_->grid->FindSurroundingFace(owner_->tailPos);
+        eFace * posFace = owner_->grid->FindSurroundingFace(owner_->pos);
         eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
-                            owner_->tailPos, tailFace,
+                            owner_->pos, posFace,
                             owner_,
                             path);
 
@@ -1451,8 +1560,11 @@ class gSmartTurning
         REAL ls=data.left.hit;
         REAL rs=data.right.hit;
 
-        for (int z = 10; z>=0; z--)
-            path.Proceed();
+        // for (int z = 10; z>=0; z--){
+        //     if (!path.Proceed()){
+        //         break;
+        //     }
+        // }
 
         bool goon   = path.Proceed();
         bool nogood = false;
@@ -1517,7 +1629,6 @@ class gSmartTurning
 
     void autoUnBrake() {
         REAL brakingReservoir = owner_->GetBrakingReservoir();
-        con << brakingReservoir << "\n";
         bool cycleBrakeDeplete = true;
 
         if (sg_helperSmartTurningAutoBrakeDeplete && sg_helperSmartTurningAutoBrakeMin == 0 && sg_cycleBrakeDeplete != 1) {
@@ -1525,12 +1636,12 @@ class gSmartTurning
         }
 
         if (brakingReservoir <= sg_helperSmartTurningAutoBrakeMin && cycleBrakeDeplete) {
-            owner_->SetBraking(false);
+            owner_->braking = false;
         }
 
-        // if (brakingReservoir >= sg_helperSmartTurningAutoBrakeMax) {
-        //     owner_->SetBraking(true);
-        // }
+         if (brakingReservoir >= sg_helperSmartTurningAutoBrakeMax) {
+             owner_->braking = true;
+         }
     }
     void smartTurningBot (gHelperData &data) {
 
@@ -1545,7 +1656,8 @@ class gSmartTurning
         REAL canSurviveLeftTurn, canSurviveRightTurn;
         bool closedIn, blockedBySelf;
 
-        canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf);
+
+        canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningSpace);
 
         if ((closedIn && sg_helperSmartTurningClosedIn ) || blockedBySelf) {
             goto SKIP_FORCETURN;
@@ -1576,7 +1688,7 @@ class gSmartTurning
         REAL canSurviveLeftTurn, canSurviveRightTurn;
         bool closedIn, blockedBySelf;
 
-        canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf);
+        canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningSpace);
 
         if ((closedIn && sg_helperSmartTurningClosedIn ) || blockedBySelf) {
             goto SKIP_BLOCKTURN;
@@ -1602,27 +1714,27 @@ class gSmartTurning
         }
     }
 
-    void canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, REAL &canSurviveRightTurn, bool &closedIn, bool &blockedBySelf) {
+    void canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, REAL &canSurviveRightTurn, bool &closedIn, bool &blockedBySelf, REAL freeSpaceFactor = 0 ) {
 
         canSurviveLeftTurn = true;
         canSurviveRightTurn = true;
 
-        if (sg_helperSmartTurningSpace > 0) {
-            if (data.left.hit < data.turnSpeedFactor * sg_helperSmartTurningSpace) {
+        if (freeSpaceFactor > 0) {
+            if (data.left.hit < data.turnSpeedFactor * freeSpaceFactor) {
                 canSurviveLeftTurn = false;
             }
-            if (data.right.hit < data.turnSpeedFactor * sg_helperSmartTurningSpace) {
+            if (data.right.hit < data.turnSpeedFactor * freeSpaceFactor) {
                 canSurviveRightTurn = false;
             }
-        } else {
+        } 
 
-            if (data.left.hit < rubberFactor) {
-                canSurviveLeftTurn = false;
-            }
-            if (data.right.hit < rubberFactor) {
-                canSurviveRightTurn = false;
-            }
+        if (data.left.hit < rubberFactor) {
+            canSurviveLeftTurn = false;
         }
+        if (data.right.hit < rubberFactor) {
+            canSurviveRightTurn = false;
+        }
+        
 
         closedIn = (data.left.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
         blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
@@ -1647,7 +1759,7 @@ class gSmartTurning
         rubberFactor = ( owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime) * sg_helperSmartTurningRubberMult );
     }
 
-    static gSmartTurning & Get( gHelper * helper, gCycle *owner )
+    static gSmartTurning & Get( gHelper * helper, gCycle *owner)
     {
         tASSERT( helper );
 
@@ -1685,12 +1797,7 @@ public:
         ownerDir = &owner_->dir;
         tailPos = &owner_->tailPos;
         ownerSpeed = &owner_->verletSpeed_;
-        gSmartTurning::Get( this , owner );
-        //gSmarterBot::Get( this , owner, player_);
-        //frontTest = new gSensor(owner_, (*ownerPos), *ownerDir);
-    }
-    void getSensors()  {
-        //frontTest = new gSensor(owner_, (*ownerPos), *ownerDir;)
+        gSmartTurning::Get( this , owner );;
     }
     gCycle *getOwner() { return owner_; }
 
@@ -1876,104 +1983,127 @@ public:
             }
         }
     }
+
     void showTail(gHelperData &data)
     {
+        
+        if (owner_->tailMoving != true) {
+            return;
+        }
 
-        static eCoord lastPos;
-        if (lastPos != (*tailPos))
-        {
-            REAL timeout = sg_helperShowTailTimeout * data.speedFactor;
-            eCoord target = (*tailPos) - (*ownerPos);
-            gSensor sensor(owner_, (*ownerPos), target);
-            sensor.detect(ownerWallLength);
-            if (sensor.hit >= sg_helperShowTailPassthrough) {
-                debugLine(owner_->color_.r,owner_->color_.g,owner_->color_.b,0,timeout,(*ownerPos),(*tailPos));
-                lastPos = (*tailPos);
-            }
-            else {
-                debugLine(owner_->color_.r,owner_->color_.g,owner_->color_.b,0,timeout,(*tailPos),(*tailPos));
+        REAL timeout = sg_helperShowTailTimeout * data.speedFactor;
+        gSensor sensor(owner_, (*ownerPos), (*tailPos) - (*ownerPos));
+        sensor.detect(REAL(.98));
+        if (sensor.hit >= sg_helperShowTailPassthrough) {
+            debugLine(owner_->color_.r,owner_->color_.g,owner_->color_.b,sg_helperShowTailHeight,timeout,(*ownerPos),(*tailPos));
+        }
+
+        
+    }
+
+    void showCorners(gHelperData &data) {
+        REAL timeout = data.speedFactor * sg_helperShowCornersTimeout;
+        findCorners(data);
+        showCorner(data,leftCorner,timeout);
+        showCorner(data,rightCorner,timeout);
+    }
+
+    void showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout) {
+        if (corner.exist) {
+            REAL timeout = data.speedFactor * sg_helperShowCornersTimeout;
+
+            eCoord distanceToCorner = corner.currentPos - (*ownerPos);
+            bool isClose = smartTurning->isClose(*ownerPos, sg_helperShowCornersBoundary);
+
+            if (isClose && data.left.type != gSENSOR_RIM)
+            {
+                debugLine(1,.5,0,0,timeout,(*ownerPos),corner.currentPos);
             }
         }
     }
 
-    void showCorners(gHelperData &data)
+    void findCorners(gHelperData &data)
     {
-        static eCoord leftLast, rightLast, frontLast, oldRight, oldLeft;
-        int currentDirectionNumber = owner_->Grid()->DirectionWinding(*ownerDir);
-        REAL timeout = data.speedFactor * sg_helperShowCornersTimeout;
-
         if (data.left.ehit)
         {
-            eCoord leftCorner = *data.left.ehit->Point();
+            leftCorner.type = data.left.type;
+            leftCorner.currentPos = *data.left.ehit->Point();
+            leftCorner.distanceFromPlayer = eCoord::F(*ownerDir, leftCorner.currentPos - (*ownerPos));
+            REAL secondEdgeDistance = eCoord::F(*ownerDir, *data.left.ehit->Other()->Point() - (*ownerPos));
 
-            REAL firstEdgeDistance = eCoord::F(*ownerDir, leftCorner - (*ownerPos));
-            REAL secondEdgeDistance =
-                eCoord::F(*ownerDir, *data.left.ehit->Other()->Point() - (*ownerPos));
-
-            if (firstEdgeDistance < secondEdgeDistance)
+            if (leftCorner.distanceFromPlayer < secondEdgeDistance)
             {
-                firstEdgeDistance = secondEdgeDistance;
-                leftCorner = *data.left.ehit->Other()->Point();
+                leftCorner.distanceFromPlayer = secondEdgeDistance;
+                leftCorner.currentPos = *data.left.ehit->Other()->Point();
             }
-            eCoord distanceToCorner = leftCorner - (*ownerPos);
+            leftCorner.noticedTime = owner_->localCurrentTime;
+            leftCorner.exist = true;
+            leftCorner.infront = leftCorner.isInfront(*ownerPos, *ownerDir);
+            // eCoord distanceToCorner = leftCorner.currentPos - (*ownerPos);
 
-            bool isClose = (distanceToCorner.x < sg_helperShowCornersBoundary &&
-                            distanceToCorner.y < sg_helperShowCornersBoundary &&
-                            (distanceToCorner.x > -sg_helperShowCornersBoundary &&
-                             distanceToCorner.y > -sg_helperShowCornersBoundary));
+            // bool isClose = (distanceToCorner.x < sg_helperShowCornersBoundary &&
+            //                 distanceToCorner.y < sg_helperShowCornersBoundary &&
+            //                 (distanceToCorner.x > -sg_helperShowCornersBoundary &&
+            //                  distanceToCorner.y > -sg_helperShowCornersBoundary));
 
-            if (isClose && data.left.type != gSENSOR_RIM)
-            {
-                debugLine(1,.5,0,0,timeout,(*ownerPos),leftCorner);
-            }
+            // if (isClose && data.left.type != gSENSOR_RIM)
+            // {
+            //     debugLine(1,.5,0,0,timeout,(*ownerPos),leftCorner.currentPos);
+            // }
 
-            if (sg_helperShowCornersPassed && leftLast != leftCorner)
-            {
-                eCoord leftLastCorner = leftLast - (*ownerPos);
-
-                if (fabs((eCoord::F(*ownerDir, leftLast - (*ownerPos)))) <=
-                    data.turnSpeedFactor * sg_helperShowCornersPassedRange)
-                {
-                    debugLine(.8,1,1,0,timeout,(*ownerPos),leftLast);
-                }
-            }
+             if (sg_helperShowCornersPassed && leftCorner.lastPos != leftCorner.currentPos)
+             {
+                 leftCorner.lastPos = leftCorner.currentPos;
+                 leftCorner.ignoredTime = owner_->localCurrentTime;
+             }
+            //     if (fabs((eCoord::F(*ownerDir, leftCorner.lastPos - (*ownerPos)))) <=
+            //         data.turnSpeedFactor * sg_helperShowCornersPassedRange)
+            //     {
+            //         debugLine(.8,1,1,0,timeout,(*ownerPos),leftCorner.lastPos);
+            //     }
+            // }
         }
 
         if (data.right.ehit)
         {
-            eCoord rightCorner = *data.right.ehit->Point();
-            REAL firstEdgeDistance = eCoord::F(*ownerDir, rightCorner - (*ownerPos));
+            rightCorner.type = data.right.type;
+            rightCorner.currentPos = *data.right.ehit->Point();
+            rightCorner.distanceFromPlayer = eCoord::F(*ownerDir, rightCorner.currentPos - (*ownerPos));
             REAL secondEdgeDistance =
                 eCoord::F(*ownerDir, *data.right.ehit->Other()->Point() - (*ownerPos));
 
-            if (firstEdgeDistance < secondEdgeDistance)
+            if (rightCorner.distanceFromPlayer < secondEdgeDistance)
             {
-                firstEdgeDistance = secondEdgeDistance;
-                rightCorner = *data.right.ehit->Other()->Point();
+                rightCorner.distanceFromPlayer = secondEdgeDistance;
+                rightCorner.currentPos = *data.right.ehit->Other()->Point();
             }
+            rightCorner.noticedTime = owner_->localCurrentTime;
+            rightCorner.exist = true;
+            rightCorner.infront = rightCorner.isInfront(*ownerPos, *ownerDir);
+            // eCoord distanceToCorner = rightCorner.currentPos - (*ownerPos);
 
-            eCoord distanceToCorner = rightCorner - (*ownerPos);
+            // bool isClose = (distanceToCorner.x < sg_helperShowCornersBoundary &&
+            //                 distanceToCorner.y < sg_helperShowCornersBoundary &&
+            //                 (distanceToCorner.x > -sg_helperShowCornersBoundary &&
+            //                  distanceToCorner.y > -sg_helperShowCornersBoundary));
 
-            bool isClose = (distanceToCorner.x < sg_helperShowCornersBoundary &&
-                            distanceToCorner.y < sg_helperShowCornersBoundary &&
-                            (distanceToCorner.x > -sg_helperShowCornersBoundary &&
-                             distanceToCorner.y > -sg_helperShowCornersBoundary));
-
-            if (isClose && data.right.type != gSENSOR_RIM)
-            {
-                debugLine(1,.5,0,0,timeout,(*ownerPos),rightCorner);
-            }
-            if (sg_helperShowCornersPassed && rightLast != rightCorner)
-            {
-                eCoord rightLastCorner = frontLast - (*ownerPos);
-                if (fabs((eCoord::F(*ownerDir, rightLast - (*ownerPos)))) <=
-                    data.turnSpeedFactor * sg_helperShowCornersPassedRange)
-                {
-                     debugLine(.8,1,1,0,timeout,(*ownerPos),rightLast);
-                }
-            }
+            // if (isClose && data.right.type != gSENSOR_RIM)
+            // {
+            //     debugLine(1,.5,0,0,timeout,(*ownerPos),rightCorner.currentPos);
+            // }
+             if (sg_helperShowCornersPassed && rightCorner.lastPos != rightCorner.currentPos)
+             {
+                 rightCorner.lastPos = rightCorner.currentPos;
+             }
+            //     if (fabs((eCoord::F(*ownerDir, rightCorner.lastPos - (*ownerPos)))) <=
+            //         data.turnSpeedFactor * sg_helperShowCornersPassedRange)
+            //     {
+            //          debugLine(.8,1,1,0,timeout,(*ownerPos),rightCorner.lastPos);
+            //     }
+            // }
         }
     }
+
     bool drivingStraight() {
         return ((fabs(ownerDir->x) == 1 || fabs(ownerDir->y) == 1));
     }
@@ -2135,8 +2265,6 @@ public:
         // {
         //     detectRange = *ownerSpeed;
         // }
-        // frontTest->detect(1000);
-        // con << frontTest->Hit() << "\n";
         gSensor front(owner_, (*ownerPos), *ownerDir);
         front.detect(detectRange);
 
@@ -2151,9 +2279,7 @@ public:
         if (sg_helperSmartTurning) {
             smartTurning->Activate(data);
         }
-        //  if (smarterBot){
-        //      smarterBot->createAI();
-        //  }
+
         if (sg_helperEnemyTracers)
         {
             enemyTracers(sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
@@ -2188,6 +2314,7 @@ public:
 private:
     friend class gSmartTurning;
     friend class gSmarterBot;
+    gSmartTurningCornerData leftCorner, rightCorner;
     gCycle *owner_;
     ePlayerNetID *player_;
     gCycle *closestEnemy;
@@ -2199,7 +2326,6 @@ private:
     REAL ownerTurnDelay;
     std::unique_ptr< gSmartTurning > smartTurning;
     std::unique_ptr< gSmarterBot > smarterBot;
-   // gSensor * frontTest;
 
 };
 
@@ -3306,6 +3432,7 @@ void gCycle::MyInitAfterCreation(){
 #ifndef DEDICATED
     new gCycleWallRenderer( this );
 #endif
+    forcedInvulnerable = false;
     tailMoving = false;
     dropWallRequested_ = false;
     lastGoodPosition_ = pos;
@@ -3493,16 +3620,16 @@ void gCycle::MyInitAfterCreation(){
 bool sr_filterCycleWalls = false;
 static tConfItem< bool > sr_filterCycleWallsConf( "FILTER_CYCLE_WALLS", sr_filterCycleWalls );
 
-REAL sr_filterCycleWallsMinR = 0; 
+REAL sr_filterCycleWallsMinR = 0;
 static tConfItem<REAL> sr_filterCycleWallsMinRConf("FILTER_CYCLE_WALLS_MIN_R", sr_filterCycleWallsMinR);
 
-REAL sr_filterCycleWallsMinG = 0; 
+REAL sr_filterCycleWallsMinG = 0;
 static tConfItem<REAL> sr_filterCycleWallsMinGConf("FILTER_CYCLE_WALLS_MIN_G", sr_filterCycleWallsMinG);
 
-REAL sr_filterCycleWallsMinB = 0; 
+REAL sr_filterCycleWallsMinB = 0;
 static tConfItem<REAL> sr_filterCycleWallsMinBConf("FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB);
 
-REAL sr_filterCycleWallsMinTotal = 0; 
+REAL sr_filterCycleWallsMinTotal = 0;
 static tConfItem<REAL> sr_filterCycleWallsMinTotalConf("FILTER_CYCLE_WALLS_MIN_TOTAL", sr_filterCycleWallsMinTotal);
 
 void removeDarkColors(REAL& r, REAL& g, REAL& b)
@@ -3510,7 +3637,6 @@ void removeDarkColors(REAL& r, REAL& g, REAL& b)
     if (sr_filterCycleWallsMinR > 1) {
         sr_filterCycleWallsMinR = 1;
     }
-    
     if (sr_filterCycleWallsMinG > 1) {
         sr_filterCycleWallsMinG = 1;
     }
@@ -3520,6 +3646,7 @@ void removeDarkColors(REAL& r, REAL& g, REAL& b)
     if (sr_filterCycleWallsMinTotal > 1) {
         sr_filterCycleWallsMinTotal = 1;
     }
+
     while (r < sr_filterCycleWallsMinR || g < sr_filterCycleWallsMinG || b < sr_filterCycleWallsMinB || ((r+g+b)/3 < sr_filterCycleWallsMinTotal ))
     {
         REAL currentTotal = (r + g + b)/3;
@@ -3531,7 +3658,6 @@ void removeDarkColors(REAL& r, REAL& g, REAL& b)
         if ( g < sr_filterCycleWallsMinG || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
             g += 0.1;
         }
-
 
         if ( b < sr_filterCycleWallsMinB || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
             b += 0.1;
@@ -7959,9 +8085,19 @@ REAL gCycleExtrapolator::DoGetDistanceSinceLastTurn( void ) const
 //!
 // *******************************************************************************************
 
+bool sg_alwaysInvulnerableEnemies = false;
+static tConfItem<bool> sg_alwaysInvulnerableEnemiesConf("CYCLE_ALWAYS_INVUNERABLE_ENEMIES", sg_alwaysInvulnerableEnemies);
+
+bool sg_alwaysInvulnerableSelf = false;
+static tConfItem<bool> sg_alwaysInvulnerableSelfConf("CYCLE_ALWAYS_INVUNERABLE_SELF", sg_alwaysInvulnerableSelf);
+
 bool gCycle::Vulnerable() const
 {
-    return Alive() && lastTime > spawnTime_ + sg_cycleInvulnerableTime;
+    if (this->forcedInvulnerable || (sg_alwaysInvulnerableSelf && Owner() == ::sn_myNetID) || (sg_alwaysInvulnerableEnemies && Owner() != ::sn_myNetID)) {
+        return false;
+    }
+    
+    return Alive() && (lastTime > spawnTime_ + sg_cycleInvulnerableTime);
 }
 
 static float sg_shotThreshold = 2.0f;

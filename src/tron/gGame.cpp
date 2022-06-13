@@ -5329,7 +5329,7 @@ bool gGame::GameLoop(bool input){
 
     if (sg_forcePlayerUpdate || sg_forceSyncAll) {
         if (tSysTimeFloat() >= lastForcedUpdate + sg_forceClockDelay) {
-            
+
             if (sg_forcePlayerUpdate){
             ePlayerNetID::Update();
             }
@@ -5586,7 +5586,7 @@ bool gGame::GameLoop(bool input){
 
 
 
-        //if (sn_GetNetState()!=nCLIENT)
+        if (sn_GetNetState()!=nCLIENT)
         {
             // simulate IAs
             for(int i=se_PlayerNetIDs.Len()-1;i>=0;i--)

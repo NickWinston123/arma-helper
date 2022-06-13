@@ -4824,7 +4824,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
             currentPlayerRGB(tString(s_orig));
         } else if (command == se_browserCommand) {
             con << "Launchin browser";
-            gServerBrowser::BrowseMaster();
+            &gServerBrowser::BrowseMaster;
         }
     }
     else

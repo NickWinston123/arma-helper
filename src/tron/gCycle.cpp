@@ -1216,9 +1216,6 @@ static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg
 bool sg_helperShowHit = false;
 static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit);
 
-bool sg_helperShowHitNew = false;
-static tConfItem<bool> sg_helperShowHitNewConf("HELPER_SHOW_HIT_NEW", sg_helperShowHitNew);
-
 bool sg_helperShowHitInternalTimeout = false;
 static tConfItem<bool> sg_helperShowHitInternalTimeoutConf("HELPER_SHOW_HIT_INTERNAL_TIMEOUT", sg_helperShowHitInternalTimeout);
 
@@ -1242,6 +1239,19 @@ static tConfItem<int> sg_showHitDataRecursionConf("HELPER_SHOW_HIT_RECURSION", s
 REAL sg_showHitDataTimeout = 0.009;
 static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
 
+
+bool sg_helperShowTailTracer = false;
+static tConfItem<bool> sg_helperShowTailTracerConf("HELPER_SHOW_TAIL_TRACER", sg_helperShowTailTracer);
+
+REAL sg_helperShowTailTracerHeight = 1;
+static tConfItem<REAL> sg_helperShowTailTracerHeightConf("HELPER_SHOW_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
+
+REAL sg_helperShowTailTracerTimeoutMult = 1;
+static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf("HELPER_SHOW_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
+
+
+bool sg_helperShowTailPath = false;
+static tConfItem<bool> sg_helperShowTailPathConf("HELPER_SHOW_TAIL_PATH", sg_helperShowTailPath);
 
 bool sg_helperShowTail = false;
 static tConfItem<bool> sg_helperShowTailConf("HELPER_SHOW_TAIL", sg_helperShowTail);
@@ -1325,7 +1335,43 @@ static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf("HELPER_SMAR
 REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
 
+struct gHelperEnemiesData
+{
+    gCycle* owner_;
+    tArray<gCycle*> allEnemies;
+    gCycle* closestEnemy;
 
+
+    bool exist(gCycle*enemy) { return bool(enemy);}
+
+    gCycle *findClosestEnemy()
+    {
+        allEnemies.Clear();
+        const tList<eGameObject> &gameObjects = owner_->Grid()->GameObjects();
+
+
+        closestEnemy = nullptr;
+        REAL currentMax = 1212121212;
+        for (int i = gameObjects.Len() - 1; i >= 0; i--)
+        {
+            gCycle *other = dynamic_cast<gCycle *>(gameObjects(i));
+            if (bool(other) && other->Alive() && other->Team() != owner_->Team())
+            {
+                REAL positionDifference = st_GetDifference(other->Position(), owner_->Position());
+
+                if (positionDifference <= currentMax)
+                {
+                    currentMax = positionDifference;
+                    closestEnemy = other;
+                }
+                allEnemies.Insert(other);
+            }
+        }
+        return closestEnemy;
+    }
+
+    gHelperEnemiesData() {}
+};
 
 struct gSmartTurningCornerData
 {
@@ -1360,10 +1406,13 @@ struct gHelperData
     REAL &turnSpeedFactorPercent;
     REAL &turnDistance;
 
-    gHelperData(gSensor const &a_front, gSensor const &a_left,
-               gSensor const &a_right, REAL &a_speedFactor, REAL &a_turnSpeedFactor, REAL & a_turnSpeedFactorPercent,REAL &a_turnDistance)
+    gHelperData(gSensor const &a_front, gSensor const &a_left, gSensor const &a_right,
+    REAL &a_speedFactor, REAL &a_turnSpeedFactor, REAL &a_turnSpeedFactorPercent, REAL &a_turnDistance)
         : front(a_front), left(a_left), right(a_right),
-          speedFactor(a_speedFactor), turnSpeedFactor(a_turnSpeedFactor), turnSpeedFactorPercent(a_turnSpeedFactorPercent),turnDistance(a_turnDistance) {}
+          speedFactor(a_speedFactor),
+          turnSpeedFactor(a_turnSpeedFactor),
+           turnSpeedFactorPercent(a_turnSpeedFactorPercent),
+           turnDistance(a_turnDistance) {}
 };
 
 class gHelper
@@ -1508,6 +1557,9 @@ class gSmartTurning
     REAL lastTailTurnTime = -999;
     void followTail(gHelperData &data) {
 
+        if (owner_->justCreated == true){
+            lastTailTurnTime = -999;
+        }
         // if (!isClose(owner_->tailPos, data.turnSpeedFactor * 3)) {
         //     return;
         // }
@@ -1524,7 +1576,7 @@ class gSmartTurning
         if (closedIn || blockedBySelf) {
             return;
         }
-       
+
         //bool turnedRecently = !(lastTailTurnTime < 0) && owner_->lastTurnTime + delay > owner_->localCurrentTime;
         //con << owner_->lastTurnTime + delay << " > " << owner_->localCurrentTime << "\n" << turnedRecently << "\n";
         bool readyToTurn = owner_->localCurrentTime > lastTailTurnTime + delay;
@@ -1548,10 +1600,13 @@ class gSmartTurning
 
     int thinkPath( eCoord pos, gHelperData &data ) {
         eFace * posFace = owner_->grid->FindSurroundingFace(owner_->pos);
+
+
         eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
                             owner_->pos, posFace,
                             owner_,
                             path);
+
 
         REAL mindist = 10;
         int lr = 0;
@@ -1560,11 +1615,11 @@ class gSmartTurning
         REAL ls=data.left.hit;
         REAL rs=data.right.hit;
 
-        // for (int z = 10; z>=0; z--){
-        //     if (!path.Proceed()){
-        //         break;
-        //     }
-        // }
+         for (int z = 10; z>=0; z--){
+             if (!path.Proceed()){
+                 break;
+             }
+         }
 
         bool goon   = path.Proceed();
         bool nogood = false;
@@ -1592,6 +1647,7 @@ class gSmartTurning
                 p.detect(1);
                 nogood = (p.hit <= .99999999 || eCoord::F(path.CurrentOffset(), odir) < 0);
             }
+            //helper_->debugLine(1,0,0,0,data.speedFactor,pos,pos);
 
         }
         while (goon && nogood);
@@ -1603,7 +1659,7 @@ class gSmartTurning
             eCoord pos    = owner_->Position();
             eCoord target = path.CurrentPosition();
 
-            helper_->debugLine(1,0,0,0,data.speedFactor,owner_->pos,target);
+            helper_->debugLine(1,0,0,0,data.speedFactor,target,target);
             // look how far ahead the target is:
             REAL ahead = eCoord::F(target - pos, dir)
                         + eCoord::F(path.CurrentOffset(), dir);
@@ -1643,6 +1699,7 @@ class gSmartTurning
              owner_->braking = true;
          }
     }
+
     void smartTurningBot (gHelperData &data) {
 
     }
@@ -1719,14 +1776,17 @@ class gSmartTurning
         canSurviveLeftTurn = true;
         canSurviveRightTurn = true;
 
-        if (freeSpaceFactor > 0) {
+        closedIn = (data.left.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
+        blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
+
+        if (freeSpaceFactor > 0 && !closedIn || !blockedBySelf) {
             if (data.left.hit < data.turnSpeedFactor * freeSpaceFactor) {
                 canSurviveLeftTurn = false;
             }
             if (data.right.hit < data.turnSpeedFactor * freeSpaceFactor) {
                 canSurviveRightTurn = false;
             }
-        } 
+        }
 
         if (data.left.hit < rubberFactor) {
             canSurviveLeftTurn = false;
@@ -1734,10 +1794,7 @@ class gSmartTurning
         if (data.right.hit < rubberFactor) {
             canSurviveRightTurn = false;
         }
-        
 
-        closedIn = (data.left.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
-        blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF);
 
         if (sg_helperDebug) {
 
@@ -1797,8 +1854,10 @@ public:
         ownerDir = &owner_->dir;
         tailPos = &owner_->tailPos;
         ownerSpeed = &owner_->verletSpeed_;
+        enemies.owner_ = owner;
         gSmartTurning::Get( this , owner );;
     }
+
     gCycle *getOwner() { return owner_; }
 
 
@@ -1831,57 +1890,33 @@ public:
         }
         return closestCorner;
     }
-
-    template<class ecoordOne, class ecoordTwo>
     void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
-                   ecoordOne start,ecoordTwo end) {
-
+                   eCoord start,eCoord end) {
         if (timeout >= 6) {
             timeout = 1;
         }
+        REAL startHeight = height;
+        if (start == end) {
+            startHeight = 0;
+        }
         eDebugLine::SetTimeout(timeout);
         eDebugLine::SetColor(R * sg_helperBrightness, G * sg_helperBrightness, B * sg_helperBrightness);
-        eDebugLine::Draw(start, height, end, height);
-    }
-
-    gCycle *findClosestEnemy()
-    {
-        const tList<eGameObject> &gameObjects = owner_->Grid()->GameObjects();
-
-        gCycle *closestTarget = nullptr;
-        REAL currentMax = 1212121212;
-        for (int i = gameObjects.Len() - 1; i >= 0; i--)
-        {
-            gCycle *other = dynamic_cast<gCycle *>(gameObjects(i));
-            if (bool(other) && other->Alive() && other->Team() != owner_->Team())
-            {
-                REAL positionDifference =
-                    st_GetDifference(other->Position(), (*ownerPos));
-
-                if (positionDifference <= currentMax)
-                {
-                    currentMax = positionDifference;
-                    closestTarget = other;
-                }
-            }
-        }
-        return closestTarget;
+        eDebugLine::Draw(start, startHeight, end, height);
     }
 
     void detectCut(int detectionRange, gHelperData &data)
     {
         REAL timeout = data.speedFactor + sg_helperDetectCutTimeout;
-        gCycle *target = findClosestEnemy();
+        gCycle *target = enemies.findClosestEnemy();
 
-        if (bool(target))
+        if (enemies.exist(target))
         {
 
             eCoord enemypos = target->Position() - (*ownerPos);
             eCoord actualEnemyPos = target->Position();
             eCoord enemydir = target->Direction();
             REAL enemyspeed = target->Speed();
-            REAL range =
-                ((*ownerSpeed) * (ownerTurnDelay * sg_helperEnemyTracersDelayMult));
+            REAL range = ((*ownerSpeed) * (ownerTurnDelay * sg_helperEnemyTracersDelayMult));
 
             enemypos = enemypos.Turn(ownerDir->Conj()).Turn(0, 1);
             enemydir = enemydir.Turn(ownerDir->Conj()).Turn(0, 1);
@@ -1928,16 +1963,21 @@ public:
 
             enemypos.x -= enemydist;
 
-            if (isClose && enemypos.y * enemyspeed > enemypos.x * (*ownerSpeed)) {
-                debugLine(1,0,0,0,timeout,(*ownerPos),actualEnemyPos);
-            } else if (enemypos.y * (*ownerSpeed) < -enemypos.x * enemyspeed) {
+            if (isClose && enemypos.y * enemyspeed > enemypos.x * (*ownerSpeed))
+            {
+                debugLine(1, 0, 0, 0, timeout, (*ownerPos), actualEnemyPos);
+            }
+            else if (enemypos.y * (*ownerSpeed) < -enemypos.x * enemyspeed)
+            {
 
-                if (side == -1 && data.left.hit > range) {
-                    debugLine(0,1,0,0,timeout,(*ownerPos),actualEnemyPos);
+                if (side == -1 && data.left.hit > range)
+                {
+                    debugLine(0, 1, 0, 0, timeout, (*ownerPos), actualEnemyPos);
                 }
 
-                if (side == 1 && data.right.hit > range) {
-                    debugLine(0,1,0,0,timeout,(*ownerPos),actualEnemyPos);
+                if (side == 1 && data.right.hit > range)
+                {
+                    debugLine(0, 1, 0, 0, timeout, (*ownerPos), actualEnemyPos);
                 }
             }
         }
@@ -1946,11 +1986,16 @@ public:
     void enemyTracers(int detectionRange, REAL timeout)
     {
         {
-            gCycle *other = findClosestEnemy();
+            gCycle *other = enemies.findClosestEnemy();
 
-            if (bool(other))
+            //for(int i=0;i < enemies.allEnemies.Len();i++)
             {
-
+               // gCycle *other = enemies.allEnemies[i];
+                if (!enemies.exist(other)) { 
+                    //continue; 
+                    return;
+                }
+                
                 eCoord otherPos = other->Position();
                 REAL R = .1, G = .1, B = 0;
                 eCoord enemypos = otherPos - (*ownerPos);
@@ -1986,7 +2031,7 @@ public:
 
     void showTail(gHelperData &data)
     {
-        
+
         if (owner_->tailMoving != true) {
             return;
         }
@@ -1998,9 +2043,27 @@ public:
             debugLine(owner_->color_.r,owner_->color_.g,owner_->color_.b,sg_helperShowTailHeight,timeout,(*ownerPos),(*tailPos));
         }
 
-        
+
     }
 
+    void showTailPath(gHelperData &data)
+    {
+        smartTurning->thinkPath(owner_->tailPos,data);
+    }
+
+    void showTailTracer(gHelperData &data)
+    {
+
+        if (owner_->tailMoving != true) {
+            return;
+        }
+        REAL distanceToTail = eCoord::F(*ownerDir, (*tailPos) - (*ownerPos));
+        REAL timeout = fabs(distanceToTail)/10 * data.speedFactor;
+
+        debugLine(1,1,1,sg_helperShowTailTracerHeight,timeout*sg_helperShowTailTracerTimeoutMult,*tailPos,*tailPos);
+
+
+    }
     void showCorners(gHelperData &data) {
         REAL timeout = data.speedFactor * sg_helperShowCornersTimeout;
         findCorners(data);
@@ -2036,32 +2099,17 @@ public:
                 leftCorner.distanceFromPlayer = secondEdgeDistance;
                 leftCorner.currentPos = *data.left.ehit->Other()->Point();
             }
+
             leftCorner.noticedTime = owner_->localCurrentTime;
             leftCorner.exist = true;
             leftCorner.infront = leftCorner.isInfront(*ownerPos, *ownerDir);
-            // eCoord distanceToCorner = leftCorner.currentPos - (*ownerPos);
 
-            // bool isClose = (distanceToCorner.x < sg_helperShowCornersBoundary &&
-            //                 distanceToCorner.y < sg_helperShowCornersBoundary &&
-            //                 (distanceToCorner.x > -sg_helperShowCornersBoundary &&
-            //                  distanceToCorner.y > -sg_helperShowCornersBoundary));
-
-            // if (isClose && data.left.type != gSENSOR_RIM)
-            // {
-            //     debugLine(1,.5,0,0,timeout,(*ownerPos),leftCorner.currentPos);
-            // }
-
-             if (sg_helperShowCornersPassed && leftCorner.lastPos != leftCorner.currentPos)
-             {
+            if (leftCorner.lastPos != leftCorner.currentPos)
+            {
                  leftCorner.lastPos = leftCorner.currentPos;
                  leftCorner.ignoredTime = owner_->localCurrentTime;
-             }
-            //     if (fabs((eCoord::F(*ownerDir, leftCorner.lastPos - (*ownerPos)))) <=
-            //         data.turnSpeedFactor * sg_helperShowCornersPassedRange)
-            //     {
-            //         debugLine(.8,1,1,0,timeout,(*ownerPos),leftCorner.lastPos);
-            //     }
-            // }
+            }
+
         }
 
         if (data.right.ehit)
@@ -2069,83 +2117,27 @@ public:
             rightCorner.type = data.right.type;
             rightCorner.currentPos = *data.right.ehit->Point();
             rightCorner.distanceFromPlayer = eCoord::F(*ownerDir, rightCorner.currentPos - (*ownerPos));
-            REAL secondEdgeDistance =
-                eCoord::F(*ownerDir, *data.right.ehit->Other()->Point() - (*ownerPos));
+            REAL secondEdgeDistance =  eCoord::F(*ownerDir, *data.right.ehit->Other()->Point() - (*ownerPos));
 
             if (rightCorner.distanceFromPlayer < secondEdgeDistance)
             {
                 rightCorner.distanceFromPlayer = secondEdgeDistance;
                 rightCorner.currentPos = *data.right.ehit->Other()->Point();
             }
+
             rightCorner.noticedTime = owner_->localCurrentTime;
             rightCorner.exist = true;
             rightCorner.infront = rightCorner.isInfront(*ownerPos, *ownerDir);
-            // eCoord distanceToCorner = rightCorner.currentPos - (*ownerPos);
 
-            // bool isClose = (distanceToCorner.x < sg_helperShowCornersBoundary &&
-            //                 distanceToCorner.y < sg_helperShowCornersBoundary &&
-            //                 (distanceToCorner.x > -sg_helperShowCornersBoundary &&
-            //                  distanceToCorner.y > -sg_helperShowCornersBoundary));
-
-            // if (isClose && data.right.type != gSENSOR_RIM)
-            // {
-            //     debugLine(1,.5,0,0,timeout,(*ownerPos),rightCorner.currentPos);
-            // }
-             if (sg_helperShowCornersPassed && rightCorner.lastPos != rightCorner.currentPos)
-             {
-                 rightCorner.lastPos = rightCorner.currentPos;
-             }
-            //     if (fabs((eCoord::F(*ownerDir, rightCorner.lastPos - (*ownerPos)))) <=
-            //         data.turnSpeedFactor * sg_helperShowCornersPassedRange)
-            //     {
-            //          debugLine(.8,1,1,0,timeout,(*ownerPos),rightCorner.lastPos);
-            //     }
-            // }
+            if (rightCorner.lastPos != rightCorner.currentPos)
+            {
+                rightCorner.lastPos = rightCorner.currentPos;
+            }
         }
     }
 
     bool drivingStraight() {
         return ((fabs(ownerDir->x) == 1 || fabs(ownerDir->y) == 1));
-    }
-
-    void showHit(gHelperData &data)
-    {
-        if (!drivingStraight()) {
-            return;
-        }
-
-        bool wallClose = data.front.hit < data.turnSpeedFactor * sg_showHitDataRange;
-
-        REAL timeout = data.turnSpeedFactor * sg_showHitDataTimeout;
-
-        if (wallClose)
-        {
-            debugLine(1,.5,0,sg_showHitDataHeightFront,data.speedFactor,(*ownerPos),data.front.before_hit);
-
-            gSensor left(owner_, data.front.before_hit,
-                         owner_->Direction().Turn(eCoord(0, 1)));
-            left.detect(30 + timeout);
-
-            gSensor right(owner_, data.front.before_hit,
-                          owner_->Direction().Turn(eCoord(0, -1)));
-            right.detect(30 + timeout);
-            bool leftOpen = left.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
-            bool rightOpen = right.hit > data.turnSpeedFactor * sg_showHitDataFreeRange;
-
-            if (leftOpen) {
-
-                debugLine(0,1,0,sg_showHitDataHeight,data.speedFactor,data.front.before_hit,left.before_hit);
-            }
-            if (rightOpen) {
-                debugLine(0,1,0,sg_showHitDataHeight,data.speedFactor,data.front.before_hit,right.before_hit);
-            }
-            if (!leftOpen) {
-                 debugLine(1,0,0,sg_showHitDataHeight,data.speedFactor,data.front.before_hit,left.before_hit);
-            }
-            if (!rightOpen) {
-                debugLine(1,0,0,sg_showHitDataHeight,data.speedFactor,data.front.before_hit,right.before_hit);
-            }
-        }
     }
 
     void showHitNew(gHelperData &data)
@@ -2180,19 +2172,11 @@ public:
         REAL hitDistance = left.hit;
 
         bool leftOpen = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
-        REAL internalTimeout;
-        // if (sg_helperShowHitInternalTimeout){
-        //     internalTimeout = (eCoord::F(pos,hitPos) * timeout); //eCoord::F(left.before_hit - pos,dirLeft) * data.turnSpeedFactor;//eCoord::F(pos,right.before_hit)*timeout;
-        // } else
-        {
-             internalTimeout = timeout;
-        }
-        //internalTimeout /= recursion;
 
         if (leftOpen) {
-            debugLine(0,1,0,sg_showHitDataHeight,internalTimeout,pos,hitPos);
+            debugLine(0,1,0,sg_showHitDataHeight,timeout,pos,hitPos);
         } else {
-            debugLine(1,0,0,sg_showHitDataHeight,internalTimeout/recursion,pos,hitPos);
+            debugLine(1,0,0,sg_showHitDataHeight,timeout/recursion,pos,hitPos);
         }
 
         showHitDebugLinesLeft(hitPos, dirLeft, timeout, data, recursion);
@@ -2213,19 +2197,10 @@ public:
 
         bool rightOpen = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
 
-        REAL internalTimeout;
-        // if (sg_helperShowHitInternalTimeout){
-        //     internalTimeout = (eCoord::F(pos,right.before_hit) * timeout); //eCoord::F(left.before_hit - pos,dirLeft) * data.turnSpeedFactor;//eCoord::F(pos,right.before_hit)*timeout;
-        // } else
-        {
-            internalTimeout = timeout;
-        }
-        // internalTimeout /= recursion;
-
         if (rightOpen) {
-            debugLine(0,1,0,sg_showHitDataHeight,internalTimeout,pos,hitPos);
+            debugLine(0,1,0,sg_showHitDataHeight,timeout,pos,hitPos);
         } else {
-            debugLine(1,0,0,sg_showHitDataHeight,internalTimeout/recursion,pos,hitPos);
+            debugLine(1,0,0,sg_showHitDataHeight,timeout/recursion,pos,hitPos);
         }
 
         showHitDebugLinesRight(right.before_hit, dirRight, timeout, data, recursion);
@@ -2290,12 +2265,7 @@ public:
             detectCut(sg_helperDetectCutDetectionRange, data);
         }
 
-        if (sg_helperShowHit)
-        {
-            showHit(data);
-        }
-
-        if (sg_helperShowHitNew) {
+        if (sg_helperShowHit) {
             showHitNew(data);
         }
 
@@ -2304,17 +2274,27 @@ public:
             showTail(data);
         }
 
+        if (sg_helperShowTailTracer){
+            showTailTracer(data);
+        }
+
+        if (sg_helperShowTailPath) {
+            showTailPath(data);
+        }
+
         if (sg_helperShowCorners)
         {
             showCorners(data);
         }
 
+        owner_->justCreated = false;
     }
 
 private:
     friend class gSmartTurning;
     friend class gSmarterBot;
     gSmartTurningCornerData leftCorner, rightCorner;
+    gHelperEnemiesData enemies;
     gCycle *owner_;
     ePlayerNetID *player_;
     gCycle *closestEnemy;
@@ -3436,6 +3416,7 @@ void gCycle::MyInitAfterCreation(){
     tailMoving = false;
     dropWallRequested_ = false;
     lastGoodPosition_ = pos;
+    justCreated = true;
 
     lastShotTime = 0;
     shotStarted = 0;
@@ -3726,6 +3707,7 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos,const eCoord &d,ePlayerNetID *p)
     dir = dirDrive;
 
     deathTime=0;
+
 
     lastNetWall=lastWall=currentWall=NULL;
 
@@ -8096,7 +8078,7 @@ bool gCycle::Vulnerable() const
     if (this->forcedInvulnerable || (sg_alwaysInvulnerableSelf && Owner() == ::sn_myNetID) || (sg_alwaysInvulnerableEnemies && Owner() != ::sn_myNetID)) {
         return false;
     }
-    
+
     return Alive() && (lastTime > spawnTime_ + sg_cycleInvulnerableTime);
 }
 

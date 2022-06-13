@@ -191,7 +191,7 @@ public:
     eCoord            tailDir;
     bool              tailMoving;
     bool              forcedInvulnerable;
-
+    bool              justCreated;
     REAL skew,skewDot;						// leaning to the side
 
     bool 				mp; 				// use moviepack or not?

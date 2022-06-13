@@ -1193,6 +1193,9 @@ static tConfItem<REAL> sg_helperEnemyTracersDetectionRangeConf("HELPER_ENEMY_TRA
 REAL sg_helperEnemyTracersSpeedMult = 1.5;
 static tConfItem<REAL> sg_helperEnemyTracersSpeedMultConf("HELPER_ENEMY_TRACERS_SPEED_MULT", sg_helperEnemyTracersSpeedMult);
 
+REAL sg_helperEnemyTracersPassthrough = 1;
+static tConfItem<REAL> sg_helperEnemyTracersPassthroughConf("HELPER_ENEMY_TRACERS_PASSTHROUGH", sg_helperEnemyTracersPassthrough);
+
 REAL sg_helperEnemyTracersDelayMult = 1;
 static tConfItem<REAL> sg_helperEnemyTracersDelayMultConf("HELPER_ENEMY_TRACERS_DELAY_MULT", sg_helperEnemyTracersDelayMult);
 
@@ -1344,7 +1347,7 @@ struct gHelperEnemiesData
 
     bool exist(gCycle*enemy) { return bool(enemy);}
 
-    gCycle *findClosestEnemy()
+    gCycle detectEnemies()
     {
         allEnemies.Clear();
         const tList<eGameObject> &gameObjects = owner_->Grid()->GameObjects();
@@ -1367,7 +1370,6 @@ struct gHelperEnemiesData
                 allEnemies.Insert(other);
             }
         }
-        return closestEnemy;
     }
 
     gHelperEnemiesData() {}
@@ -1527,11 +1529,11 @@ class gSmartTurning
         if (!sg_helperShowCorners) {
             helper_->findCorners(data);
         }
-        if (helper_->leftCorner.exist) {
-            //con << helper_->leftCorner.getTurnTime(owner_->verletSpeed_) << "\n";
-            if (  isClose(owner_->pos, sg_helperShowCornersBoundary) && helper_->leftCorner.infront  && data.left.hit > 3 && helper_->leftCorner.getTurnTime(owner_->verletSpeed_) <= 0.0005) {
-                owner_->Act(&gCycle::se_turnLeft, 1);
-            }
+        if (helper_->leftCorner.exist && helper_->leftCorner.isInfront(owner_->pos, owner_->dir) ) {
+            con << helper_->leftCorner.getTurnTime(owner_->verletSpeed_) << "\n";
+            // if (  isClose(owner_->pos, sg_helperShowCornersBoundary) && helper_->leftCorner.infront  && data.left.hit > 3 && helper_->leftCorner.getTurnTime(owner_->verletSpeed_) <= 0.0005) {
+            //     owner_->Act(&gCycle::se_turnLeft, 1);
+            // }
         }
 
         // bool isClose = helper_->leftCorner.isClose(owner_->pos, sg_helperShowCornersBoundary) || helper_->rightCorner.isClose(owner_->pos, sg_helperShowCornersBoundary);
@@ -1598,7 +1600,7 @@ class gSmartTurning
         }
     }
 
-    int thinkPath( eCoord pos, gHelperData &data ) {
+    int thinkPath( eCoord pos, gHelperData &data, REAL timeout = 1) {
         eFace * posFace = owner_->grid->FindSurroundingFace(owner_->pos);
 
 
@@ -1647,7 +1649,8 @@ class gSmartTurning
                 p.detect(1);
                 nogood = (p.hit <= .99999999 || eCoord::F(path.CurrentOffset(), odir) < 0);
             }
-            //helper_->debugLine(1,0,0,0,data.speedFactor,pos,pos);
+            helper_->debugLine(0,1,1,0,timeout*data.speedFactor,pos,pos);
+
 
         }
         while (goon && nogood);
@@ -1659,7 +1662,7 @@ class gSmartTurning
             eCoord pos    = owner_->Position();
             eCoord target = path.CurrentPosition();
 
-            helper_->debugLine(1,0,0,0,data.speedFactor,target,target);
+            helper_->debugLine(1,0,0,0,timeout*data.speedFactor,target,target);
             // look how far ahead the target is:
             REAL ahead = eCoord::F(target - pos, dir)
                         + eCoord::F(path.CurrentOffset(), dir);
@@ -1907,7 +1910,7 @@ public:
     void detectCut(int detectionRange, gHelperData &data)
     {
         REAL timeout = data.speedFactor + sg_helperDetectCutTimeout;
-        gCycle *target = enemies.findClosestEnemy();
+        gCycle *target = enemies.closestEnemy;
 
         if (enemies.exist(target))
         {
@@ -1986,24 +1989,18 @@ public:
     void enemyTracers(int detectionRange, REAL timeout)
     {
         {
-            gCycle *other = enemies.findClosestEnemy();
-
-            //for(int i=0;i < enemies.allEnemies.Len();i++)
+            for(int i=0;i < enemies.allEnemies.Len();i++)
             {
-               // gCycle *other = enemies.allEnemies[i];
-                if (!enemies.exist(other)) { 
-                    //continue; 
-                    return;
+               gCycle *other = enemies.allEnemies[i];
+                if (!enemies.exist(other) || !canSeeTarget(other->Position(),sg_helperEnemyTracersPassthrough)) {
+                    continue;
+                    //return;
                 }
-                
+
                 eCoord otherPos = other->Position();
                 REAL R = .1, G = .1, B = 0;
-                eCoord enemypos = otherPos - (*ownerPos);
-                bool isClose =
-                    (enemypos.x < detectionRange && enemypos.y < detectionRange &&
-                     (enemypos.x > -detectionRange && enemypos.y > -detectionRange));
-                bool enemyFaster =
-                    ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
+                bool isClose = smartTurning->isClose(otherPos, detectionRange);
+                bool enemyFaster = ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
                 bool isTeammate = (owner_->Team() == other->Team());
 
                 if ((isClose || enemyFaster))
@@ -2029,6 +2026,12 @@ public:
         }
     }
 
+    bool canSeeTarget(eCoord target,REAL passthrough) {
+        gSensor sensor(owner_, (*ownerPos), target - (*ownerPos));
+        sensor.detect(REAL(.98));
+        return (sensor.hit >=passthrough);
+    }
+
     void showTail(gHelperData &data)
     {
 
@@ -2037,9 +2040,8 @@ public:
         }
 
         REAL timeout = sg_helperShowTailTimeout * data.speedFactor;
-        gSensor sensor(owner_, (*ownerPos), (*tailPos) - (*ownerPos));
-        sensor.detect(REAL(.98));
-        if (sensor.hit >= sg_helperShowTailPassthrough) {
+
+        if (canSeeTarget((*tailPos),sg_helperShowTailPassthrough)) {
             debugLine(owner_->color_.r,owner_->color_.g,owner_->color_.b,sg_helperShowTailHeight,timeout,(*ownerPos),(*tailPos));
         }
 
@@ -2048,7 +2050,7 @@ public:
 
     void showTailPath(gHelperData &data)
     {
-        smartTurning->thinkPath(owner_->tailPos,data);
+        smartTurning->thinkPath(owner_->tailPos,data,5);
     }
 
     void showTailTracer(gHelperData &data)
@@ -2224,32 +2226,17 @@ public:
         REAL turnSpeedFactorPercent = (1/turnSpeedFactor);
         REAL turnDistance = (turnSpeedFactor/100);
 
-
-        REAL detectRange;
-        detectRange = 1000;
-        // detectRange = ownerWallLength;
-
-        // if (detectRange < *ownerSpeed) {
-        //     detectRange = turnSpeedFactor;
-        // } else {
-        //     detectRange *= turnSpeedFactor;
-        // }
-        // detectRange *= (sg_helperSensorMult*10);
-
-        // if (ownerWallLength < *ownerSpeed)
-        // {
-        //     detectRange = *ownerSpeed;
-        // }
         gSensor front(owner_, (*ownerPos), *ownerDir);
-        front.detect(detectRange);
+        front.detect(1000);
 
         gSensor left(owner_, (*ownerPos), ownerDir->Turn(eCoord(0, 1)));
-        left.detect(detectRange);
+        left.detect(1000);
 
         gSensor right(owner_, (*ownerPos), ownerDir->Turn(eCoord(0, -1)));
-        right.detect(detectRange);
+        right.detect(1000);
 
         gHelperData data(front, left, right,speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance);
+        enemies.detectEnemies();
 
         if (sg_helperSmartTurning) {
             smartTurning->Activate(data);

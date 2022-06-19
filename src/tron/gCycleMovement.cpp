@@ -3363,11 +3363,10 @@ bool gCycleMovement::DoTurn( int dir )
 
     if (helperSmartTurning) {
 
-        playerIsMe = Owner() == ::sn_myNetID && Player()->IsHuman();
-
-        if (!playerIsMe) {
+        if (!(Owner() == ::sn_myNetID && Player()->IsHuman())) {
             goto CONTINUE;
         }
+        playerIsMe = true;
         bool ignoreTurn = false;
 
         currentTime = this->localCurrentTime;
@@ -3407,7 +3406,7 @@ CONTINUE:
             // if rubber was used in this turn, check for depletion timing
             if( rubberSpeedFactor < 1 )
             {
-                /*
+
                   // turns out this is a bad idea; default clients cheat and
                   // often produce perfectly timed grinds.
                   // Maybe they'll send additional timing information one day
@@ -3440,7 +3439,7 @@ CONTINUE:
 
                 // and report
                 // player->AnalyzeTiming( timing );
-                */
+                
                 uncannyTimingToReport_ = false;
             }
             else
@@ -4242,7 +4241,7 @@ bool gCycleMovement::TimestepCore( REAL currentTime, bool calculateAcceleration 
     bool rubberUsedUp = false;
     if ( rubber > rubber_granted )
     {
-        if ( sn_GetNetState() != nCLIENT )
+        if ( sn_GetNetState() != nCLIENT || !ID()  )
         {
             throw gCycleDeath( pos );
         }

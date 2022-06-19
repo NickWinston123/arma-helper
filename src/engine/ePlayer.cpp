@@ -5859,6 +5859,10 @@ void se_ListPastChatters(ePlayerNetID * receiver)
     }
 }
 
+static bool se_disableCreate = false;
+static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
+
+
 ePlayerNetID::ePlayerNetID(int p):nNetObject(),listID(-1), teamListID(-1), timeCreated_( tSysTimeFloat() ), allowTeamChange_(false), registeredMachine_(0), pID(p)
 {
     flagOverrideChat = false;
@@ -5921,7 +5925,9 @@ ePlayerNetID::ePlayerNetID(int p):nNetObject(),listID(-1), teamListID(-1), timeC
     ping=0; // hehe! server has no ping.
 
     lastSync=tSysTimeFloat();
-
+    if (se_disableCreate) {
+        return;
+    }
     RequestSync();
     score=0;
     lastScore_=IMPOSSIBLY_LOW_SCORE;
@@ -9459,8 +9465,6 @@ typedef std::pair< int, tJUST_CONTROLLED_PTR< ePlayerNetID > >
 ePrejoinPair;
 static ePrejoinShuffleMap se_prejoinShuffles;
 
-static bool se_disableCreate = false;
-static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
 
 static int se_createPlayers = 0;
 static tConfItem<int> se_createPlayersConf("CREATE_PLAYERS", se_createPlayers);
@@ -9512,15 +9516,17 @@ void ePlayerNetID::Update()
             tASSERT(local_p);
             tCONTROLLED_PTR(ePlayerNetID) &p=local_p->netPlayer;
 
-            if (!se_disableCreate &&!p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
+            if (!p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
             {
                 // reset last time so idle time in the menus does not count as play time
                 lastTime = tSysTimeFloat();
 
                 p=tNEW(ePlayerNetID) (i);
                 //p->FindDefaultTeam();
+                if (!se_disableCreate) {
                 p->SetDefaultTeam();
                 p->RequestSync();
+                }
             }
 
             if (bool(p) && (!in_game || ( local_p->spectate && !se_VisibleSpectatorsSupported() ) ) && // remove player
@@ -9609,7 +9615,7 @@ void ePlayerNetID::Update()
                     }
                 }
 
-                if ( p->spectating_ != spectate )
+                if ( p->spectating_ != spectate  && !se_disableCreate)
                     p->RequestSync();
                 p->spectating_ = spectate;
 
@@ -9626,7 +9632,7 @@ void ePlayerNetID::Update()
                 }
 
                 // update stealth status
-                if ( p->stealth_ != local_p->stealth )
+                if ( p->stealth_ != local_p->stealth && !se_disableCreate )
                     p->RequestSync();
                 p->stealth_ = local_p->stealth;
 
@@ -9638,7 +9644,7 @@ void ePlayerNetID::Update()
                     p->RequestSync();
                 }
 
-                if (se_forceSync) {
+                if (se_forceSync && !se_disableCreate) {
                     p->RequestSync();
                 }
                 p->SetName( local_p->Name() );

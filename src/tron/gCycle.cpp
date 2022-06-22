@@ -1183,6 +1183,9 @@ static tConfItem<REAL> sg_helperBrightnessConf("HELPER_BRIGHTESS", sg_helperBrig
 REAL sg_helperSensorRange = 1000;
 static tConfItem<REAL> sg_helperSensorRangeConf("HELPER_SENSOR_RANGE", sg_helperSensorRange);
 
+bool sg_helperSensorLightUsagetMode = false;
+static tConfItem<bool> sg_helperSensorLightUsagetModeConf("HELPER_SENSOR_LIGHT_USAGE_MODE", sg_helperSensorLightUsagetMode);
+
 bool sg_helperDebug = false;
 static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
 
@@ -1455,20 +1458,43 @@ struct gHelperSensors
 struct gHelperSensorsData
 {
     gCycle *owner_;
+    gSensor  front_stored;
+    gSensor  left_stored;
+    gSensor  right_stored;
+    bool lock;
 
     gHelperSensorsData(gCycle *owner):
-    owner_(owner) {}
+    owner_(owner),
+    lock(false),
+    front_stored(gSensor(owner_, owner_->Position(), owner_->Direction())),
+    left_stored(gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)))),
+    right_stored(gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1))))
+     {
+        //front_stored = (gSensor(owner_, owner_->Position(), owner_->Direction()));
+       // left_stored = (new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1))));
+       // right_stored = (new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1))));
+        front_stored.detect(sg_helperSensorRange);
+        left_stored.detect(sg_helperSensorRange);
+        right_stored.detect(sg_helperSensorRange);
+        toggleLock();
+     }
+
+     void toggleLock(){ lock = !lock; }
 
     gHelperSensors * getSensors() {
+        if (sg_helperSensorLightUsagetMode && lock)
+        {
+            return new gHelperSensors(front_stored, left_stored, right_stored);
+        }
+
         gSensor front(owner_, owner_->Position(), owner_->Direction());
         front.detect(sg_helperSensorRange);
         gSensor left(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
         left.detect(sg_helperSensorRange);
         gSensor right(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
         right.detect(sg_helperSensorRange);
-        return new gHelperSensors(front,left,right);
+        return new gHelperSensors(front, left, right);
     }
-
 };
 
 struct gHelperData

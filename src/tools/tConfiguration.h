@@ -256,7 +256,7 @@ public:
     //static tConfItemBase* Anchor(){return dynamic_cast<tConfItemBase *>(s_ConfItemAnchor);}
     static bool printChange; //!< if set, setting changes are printed to the console and, if printErrors is set as well, suggestions of typo fixes are given.
     static bool printErrors; //!< if set, unknown settings are pointed out.
-
+    
     tConfItemBase(const char *title, const tOutput& help);
     tConfItemBase(const char *title);
 
@@ -392,10 +392,14 @@ public:
     typedef bool (*ShouldChangeFuncT)(T const &newValue);
 protected:
     T    *target;
+    T    defaultValue;
     ShouldChangeFuncT shouldChangeFunc_;
 
     tConfItem(T &t):tConfItemBase(""),target(&t), shouldChangeFunc_(NULL) {}
 public:
+    T getDefault() {
+        return defaultValue;
+    }
     tConfItem(const char *title,const tOutput& help,T& t)
             :tConfItemBase(title,help),target(&t), shouldChangeFunc_(NULL) {
                 /*tConfItemMap & confmap = ConfItemMap();

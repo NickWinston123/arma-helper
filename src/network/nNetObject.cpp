@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
+#include "ePlayer.h"
 #include "tMemManager.h"
 #include "nNetObject.h"
 #include "tLocale.h"
@@ -1351,7 +1352,11 @@ void nNetObject::RequestSync(int user,bool ack){ // only for a single user
         sn_SyncRequestedObject.Add( this, syncListID_ );
 }
 
+
 void nNetObject::RequestSync(bool ack){
+    if (se_disableCreate) {
+    return;
+    }
     this->GetID();
 
 #ifdef nSIMULATE_PING

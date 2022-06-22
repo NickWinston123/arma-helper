@@ -3360,15 +3360,11 @@ bool gCycleMovement::DoTurn( int dir )
     bool helperSmartTurning = sg_helper && sg_helperSmartTurning;
     bool playerIsMe = false;
     REAL currentTime;
-
-    if (helperSmartTurning) {
-
-        if (!(Owner() == ::sn_myNetID && Player()->IsHuman())) {
-            goto CONTINUE;
-        }
+    
+    if (helperSmartTurning && (Owner() == ::sn_myNetID && Player()->IsHuman())) {
         playerIsMe = true;
         bool ignoreTurn = false;
-
+        //this->helper->Activate();
         currentTime = this->localCurrentTime;
 
         //Ignored turns
@@ -3396,7 +3392,6 @@ bool gCycleMovement::DoTurn( int dir )
 
     }
 
-CONTINUE:
     REAL nextTurnTime = GetNextTurn( dir );
     if ( nextTurnTime <= lastTime )
     {
@@ -4241,7 +4236,7 @@ bool gCycleMovement::TimestepCore( REAL currentTime, bool calculateAcceleration 
     bool rubberUsedUp = false;
     if ( rubber > rubber_granted )
     {
-        if ( sn_GetNetState() != nCLIENT || !ID()  )
+        if ( sn_GetNetState() != nCLIENT || sg_localDeath && !ID()  )
         {
             throw gCycleDeath( pos );
         }

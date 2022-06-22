@@ -64,6 +64,7 @@ extern bool headlights;
 // steering help
 extern REAL sg_rubberCycle;
 
+extern bool sg_localDeath;
 // Smart Turning
 extern bool sg_helper;
 extern bool sg_helperSmartTurning;

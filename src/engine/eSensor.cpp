@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
@@ -92,6 +92,20 @@ void eSensor::PassEdge(const eWall *w,REAL time,REAL a,int){
 //  PassEdge((const eEdge *)e,time,a,recursion);
 //}
 
+void eSensor::detect(REAL range, const eCoord &start, const eCoord &d){
+
+    before_hit=start+d*(range-.001);
+    hit=range+.00001f;
+    ehit = 0;
+
+    try
+    {
+        Move(start+d*range,0,range);
+    }
+    catch( eSensorFinished & e )
+    {
+    }
+}
 void eSensor::detect(REAL range){
     //  eCoord start = pos;
     //  pos=pos+dir*.01;
@@ -105,17 +119,17 @@ void eSensor::detect(REAL range){
       ePoint b(pos+dir*range);
       eEdge e(&a,&b);
 
-      
+
       for(int i=eGameObject::gameObjects.Len()-1;i>=0;i--){
         eGameObject *target=gameobject::gameObjects(i);
-        
+
         if (target->type()==ArmageTron_CYCLE){
     gCycle *c=(gCycle *)target;
     if (c->Alive() && c!=owned){
      const eEdge *oe=c->Edge();
      if (oe){
        ePoint *meet=e.IntersectWith(oe);
-     
+
        if (meet){ // whoops. Hit!
          REAL ratio=oe->Ratio(*meet);
          // gPlayerWall *w=(gPlayerWall *)oe->w;
@@ -126,7 +140,7 @@ void eSensor::detect(REAL range){
      }
     }
         }
-      } 
+      }
     }
     */
 

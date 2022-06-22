@@ -1343,8 +1343,12 @@ static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_O
 REAL sg_helperSmartTurningClosedInMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
 
-REAL sg_helperSmartTurningRubberMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningRubberMultConf("HELPER_SMART_TURNING_RUBBER_MULT", sg_helperSmartTurningRubberMult);
+REAL sg_helperSmartTurningRubberTimeMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningRubberTimeMultConf("HELPER_SMART_TURNING_RUBBERTIME_MULT", sg_helperSmartTurningRubberTimeMult);
+
+REAL sg_helperSmartTurningRubberFactorMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningRubberFactorMultConf("HELPER_SMART_TURNING_RUBBERFACTOR_MULT", sg_helperSmartTurningRubberFactorMult);
+
 
 REAL sg_helperSmartTurningSpace = 0;
 static tConfItem<REAL> sg_helperSmartTurningSpaceConf("HELPER_SMART_TURNING_SPACE", sg_helperSmartTurningSpace);
@@ -1436,23 +1440,51 @@ struct gSmartTurningCornerData
     gSmartTurningCornerData() {}
 };
 
+struct gHelperSensors
+{
+    gSensor &front;
+    gSensor &left;
+    gSensor &right;
+
+    gHelperSensors(gSensor &front_,gSensor &left_,gSensor &right_)
+    :   front(front_),
+        left(left_),
+        right(right_) {}
+};
+
+struct gHelperSensorsData
+{
+    gCycle *owner_;
+
+    gHelperSensorsData(gCycle *owner):
+    owner_(owner) {}
+
+    gHelperSensors * getSensors() {
+        gSensor front(owner_, owner_->Position(), owner_->Direction());
+        front.detect(sg_helperSensorRange);
+        gSensor left(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
+        left.detect(sg_helperSensorRange);
+        gSensor right(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
+        right.detect(sg_helperSensorRange);
+        return new gHelperSensors(front,left,right);
+    }
+
+};
+
 struct gHelperData
 {
-    gSensor const &front;
-    gSensor const &left;
-    gSensor const &right;
+    gHelperSensorsData &sensors;
     REAL &speedFactor;
     REAL &turnSpeedFactor;
     REAL &turnSpeedFactorPercent;
     REAL &turnDistance;
 
-    gHelperData(gSensor const &a_front, gSensor const &a_left, gSensor const &a_right,
-    REAL &a_speedFactor, REAL &a_turnSpeedFactor, REAL &a_turnSpeedFactorPercent, REAL &a_turnDistance)
-        : front(a_front), left(a_left), right(a_right),
+    gHelperData(gHelperSensorsData &sensors_, REAL &a_speedFactor, REAL &a_turnSpeedFactor, REAL &a_turnSpeedFactorPercent, REAL &a_turnDistance)
+        : sensors(sensors_),
           speedFactor(a_speedFactor),
           turnSpeedFactor(a_turnSpeedFactor),
-           turnSpeedFactorPercent(a_turnSpeedFactorPercent),
-           turnDistance(a_turnDistance) {}
+          turnSpeedFactorPercent(a_turnSpeedFactorPercent),
+          turnDistance(a_turnDistance) {}
 };
 
 class gHelper
@@ -1564,7 +1596,7 @@ class gSmartTurning
         }
         if (helper_->leftCorner.exist) {
             //con << helper_->leftCorner.getTurnTime(owner_->verletSpeed_) << "\n";
-            if (  isClose(owner_->pos, sg_helperShowCornersBoundary) && helper_->leftCorner.infront  && data.left.hit > 3 && helper_->leftCorner.getTurnTime(owner_->verletSpeed_) <= 0.0005) {
+            if (  isClose(owner_->pos, sg_helperShowCornersBoundary) && helper_->leftCorner.infront  && data.sensors.getSensors()->left.hit > 3 && helper_->leftCorner.getTurnTime(owner_->verletSpeed_) <= 0.0005) {
                 owner_->Act(&gCycle::se_turnLeft, 1);
             }
         }
@@ -1575,11 +1607,11 @@ class gSmartTurning
         // }
         // bool turnLeft = helper_->leftCorner.distanceFromPlayer < helper_->rightCorner.distanceFromPlayer;
         // if (turnLeft) {
-        // if (helper_->leftCorner.infront && helper_->leftCorner.distanceFromPlayer <= 0.01 && data.left.hit > 5) {
+        // if (helper_->leftCorner.infront && helper_->leftCorner.distanceFromPlayer <= 0.01 && data.sensors.getSensors()->left.hit > 5) {
         //     owner_->Act(&gCycle::se_turnLeft, 1);
         // }
         // } else {
-        // if (helper_->leftCorner.infront && helper_->rightCorner.distanceFromPlayer <= 0.01 && data.right.hit > 5) {
+        // if (helper_->leftCorner.infront && helper_->rightCorner.distanceFromPlayer <= 0.01 && data.sensors.getSensors()->right.hit > 5) {
         //     owner_->Act(&gCycle::se_turnRight, 1);
         // }
         // }
@@ -1647,8 +1679,8 @@ class gSmartTurning
         int lr = 0;
         eCoord dir = owner_->Direction();
 
-        REAL ls=data.left.hit;
-        REAL rs=data.right.hit;
+        REAL ls=data.sensors.getSensors()->left.hit;
+        REAL rs=data.sensors.getSensors()->right.hit;
 
          for (int z = 5; z>=0; z--){
              if (!path.Proceed()){
@@ -1751,7 +1783,7 @@ class gSmartTurning
 
         canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningSpace);
 
-        if ((closedIn) || blockedBySelf) {
+        if ((closedIn) || (closedIn) && blockedBySelf) {
             goto SKIP_FORCETURN;
         }
 
@@ -1782,7 +1814,7 @@ class gSmartTurning
 
         canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningSpace);
         //con << "CAN SURVIVE ? L R " << canSurviveLeftTurn << " " << canSurviveRightTurn << " " << this->blockTurn << " \n";
-        if ((closedIn && sg_helperSmartTurningClosedIn ) || blockedBySelf) {
+        if ((closedIn && sg_helperSmartTurningClosedIn ) || (closedIn) && blockedBySelf) {
             goto SKIP_BLOCKTURN;
         }
 
@@ -1815,44 +1847,55 @@ class gSmartTurning
         }
         else
         {
-            calculateRubberFactor(sg_helperSmartTurningRubberMult);
+            calculateRubberFactor(sg_helperSmartTurningRubberTimeMult, sg_helperSmartTurningRubberFactorMult);
             compareFactor = rubberFactor;
         }
 
         if (dir == -1)
         {
-            return data.left.hit > compareFactor;
+            return data.sensors.getSensors()->left.hit > compareFactor;
         }
         else if (dir == 1)
         {
-            return data.right.hit > compareFactor;
+            return data.sensors.getSensors()->right.hit > compareFactor;
         }
     }
 
+    void canSurviveTurnDir(int dir) {
+        gSensor *sensor;
+        if (dir == -1 ){
+            sensor = new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
+        } else if (dir == 1) {
+            sensor = new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
+        }
+        sensor->detect(owner_->GetTurnDelay() * owner_->verletSpeed_);
+        con << sensor->hit << "\n";
+    }
+
     void canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, REAL &canSurviveRightTurn, bool &closedIn, bool &blockedBySelf, REAL freeSpaceFactor = 0 ) {
-        calculateRubberFactor(sg_helperSmartTurningRubberMult);
+        calculateRubberFactor(sg_helperSmartTurningRubberTimeMult,sg_helperSmartTurningRubberFactorMult);
         canSurviveLeftTurn = true;
         canSurviveRightTurn = true;
+        closedIn = (data.sensors.getSensors()->left.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.sensors.getSensors()->right.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
+        blockedBySelf = (closedIn && data.sensors.getSensors()->left.type == gSENSOR_SELF && data.sensors.getSensors()->right.type == gSENSOR_SELF && data.sensors.getSensors()->front.type == gSENSOR_SELF);
 
-        closedIn = (data.left.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.right.hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
-        blockedBySelf = (closedIn && data.left.type == gSENSOR_SELF && data.right.type == gSENSOR_SELF && data.front.type == gSENSOR_SELF);
+        if (freeSpaceFactor > 0) {
 
-        if (freeSpaceFactor > 0 && !closedIn && !blockedBySelf) {
-//            con << "right " << data.left.hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << "\n";
-            if (data.left.hit < data.turnSpeedFactor * freeSpaceFactor) {
+//            con << "right " << data.sensors.getSensors()->left.hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << "\n";
+            if (data.sensors.getSensors()->left.hit < data.turnSpeedFactor * freeSpaceFactor) {
                 canSurviveLeftTurn = false;
             }
-//            con << "left " << data.right.hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << " " << (data.right.hit < data.turnSpeedFactor * freeSpaceFactor) << "\n";
-            if (data.right.hit < data.turnSpeedFactor * freeSpaceFactor) {
+//            con << "left " << data.sensors.getSensors()->right.hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << " " << (data.sensors.getSensors()->right.hit < data.turnSpeedFactor * freeSpaceFactor) << "\n";
+            if (data.sensors.getSensors()->right.hit < data.turnSpeedFactor * freeSpaceFactor) {
                 canSurviveRightTurn = false;
             }
         }
 
    //     con << "rubber factor " << rubberFactor <<"\n";
-        if (data.left.hit < rubberFactor) {
+        if (data.sensors.getSensors()->left.hit < rubberFactor) {
             canSurviveLeftTurn = false;
         }
-        if (data.right.hit < rubberFactor) {
+        if (data.sensors.getSensors()->right.hit < rubberFactor) {
             canSurviveRightTurn = false;
         }
 
@@ -1870,11 +1913,13 @@ class gSmartTurning
     }
 
 
-    void calculateRubberFactor(REAL rubberMult) {
+    void calculateRubberFactor(REAL rubberMult, REAL rubberFactorMult) {
         REAL rubberGranted, rubberEffectiveness;
         sg_RubberValues( owner_->player, owner_->verletSpeed_, rubberGranted, rubberEffectiveness );
         REAL rubberTime = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
-        rubberFactor = ( owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime) * sg_helperSmartTurningRubberMult );
+        // orig rubberFactor = ( owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime) * sg_helperSmartTurningRubberTimeMult );
+        rubberFactor = owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime * sg_helperSmartTurningRubberTimeMult );
+        rubberFactor *= rubberFactorMult;
     }
 
     static gSmartTurning & Get( gHelper * helper, gCycle *owner)
@@ -2028,7 +2073,7 @@ public:
             eCoord actualEnemyPos = target->Position();
             eCoord enemydir = target->Direction();
             REAL enemyspeed = target->Speed();
-            
+
             HelperDebug("detectCut","ownerPos", (*ownerPos));
             HelperDebug("detectCut","relativeEnemyPos", relativeEnemyPos);
             HelperDebug("detectCut","actualEnemyPos", actualEnemyPos);
@@ -2037,7 +2082,7 @@ public:
             relativeEnemyPos = relativeEnemyPos.Turn(ownerDir->Conj()).Turn(0, 1);
             enemydir = enemydir.Turn(ownerDir->Conj()).Turn(0, 1);
 
-            //  relativeEnemyPos makes the enemy 0,0. Owner position relative to enemy as center point 
+            //  relativeEnemyPos makes the enemy 0,0. Owner position relative to enemy as center point
             HelperDebug("detectCut","relativeEnemyPos after turn ", relativeEnemyPos);
             HelperDebug("detectCut","enemydir after turn ", enemydir);
 
@@ -2081,7 +2126,7 @@ public:
             relativeEnemyPos.y += forward;
             enemydist -= forward;
             relativeEnemyPos.x -= enemydist;
-            
+
             HelperDebug("detectCut","relativeEnemyPos.y after forward",relativeEnemyPos.y);
             HelperDebug("detectCut","relativeEnemyPos.x after forward ",relativeEnemyPos.x);
             bool canCutUs = relativeEnemyPos.y * enemyspeed > relativeEnemyPos.x * (*ownerSpeed);
@@ -2230,9 +2275,9 @@ public:
     }
 
     void findCorners(gHelperData &data)
-    {
-        findCorner(data,leftCorner,data.left);
-        findCorner(data,rightCorner,data.right);
+    {   
+        findCorner(data,leftCorner,data.sensors.getSensors()->left);
+        findCorner(data,rightCorner,data.sensors.getSensors()->right);
         //findCorner(data,frontCorner,data.front);
     }
 
@@ -2244,7 +2289,7 @@ public:
             bool isClose = smartTurning->isClose(corner.currentPos, sg_helperShowCornersBoundary);
 
 
-            if (isClose && data.left.type != gSENSOR_RIM)
+            if (isClose && data.sensors.getSensors()->left.type != gSENSOR_RIM)
             {
                 debugLine(1,.5,0,0,timeout,corner.currentPos,corner.currentPos);
             }
@@ -2269,15 +2314,15 @@ public:
             return;
         }
 
-        bool wallClose = data.front.hit < data.turnSpeedFactor * sg_showHitDataRange;
+        bool wallClose = data.sensors.getSensors()->front.hit < data.turnSpeedFactor * sg_showHitDataRange;
 
         REAL timeout = data.speedFactor * sg_showHitDataTimeout;
 
         if (wallClose)
         {
-            debugLine(1,.5,0,0,data.speedFactor,(*ownerPos),data.front.before_hit);
-            showHitDebugLinesLeft(data.front.before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
-            showHitDebugLinesRight(data.front.before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
+            debugLine(1,.5,0,0,data.speedFactor,(*ownerPos),data.sensors.getSensors()->front.before_hit);
+            showHitDebugLinesLeft(data.sensors.getSensors()->front.before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
+            showHitDebugLinesRight(data.sensors.getSensors()->front.before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
         }
     }
 
@@ -2340,6 +2385,16 @@ public:
         return *cycle->helper_;
     }
 
+    // void detectSensor(const gSensor &sensor) {
+    //     sensor.detect(sg_helperSensorRange);
+    // }
+
+    // void updateAllSensors(gHelperData &data) {
+    //     //detectSensor(data.front);
+    //     //detectSensor(data.left);
+    //     //detectSensor(data.right);
+    // }
+
     void Activate()
     {
         owner_->localCurrentTime = se_GameTime();
@@ -2362,16 +2417,8 @@ public:
         // {
         //     detectRange = *ownerSpeed;
         // }
-        gSensor front(owner_, (*ownerPos), *ownerDir);
-        front.detect(sg_helperSensorRange);
-
-        gSensor left(owner_, (*ownerPos), ownerDir->Turn(eCoord(0, 1)));
-        left.detect(sg_helperSensorRange);
-
-        gSensor right(owner_, (*ownerPos), ownerDir->Turn(eCoord(0, -1)));
-        right.detect(sg_helperSensorRange);
-
-        gHelperData data(front, left, right,speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance);
+        gHelperSensorsData sensors(owner_);
+        gHelperData data(sensors, speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance);
         enemies.detectEnemies();
         if (sg_helperSmartTurning) {
             smartTurning->Activate(data);
@@ -4726,7 +4773,7 @@ eLadderLogWriter sg_deathTeamkillWriter("DEATH_TEAMKILL", true);
 static bool sg_suicideMessage = true;
 static tSettingItem< bool > sg_suicideMessageConf( "SUICIDE_MESSAGE", sg_suicideMessage );
 
-static bool sg_localDeath = true;
+bool sg_localDeath = true;
 static tConfItem< bool > sg_localDeathConf( "LOCAL_DEATH", sg_localDeath );
 void gCycle::KillAt( const eCoord& deathPos){
     // don't kill invulnerable cycles

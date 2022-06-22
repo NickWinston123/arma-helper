@@ -58,6 +58,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define PLAYER_CONFITEMS (30+MAX_INSTANT_CHAT)
 
+extern bool se_disableCreate;
 // maximal length of chat message
 extern int se_SpamMaxLen;
 

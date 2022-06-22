@@ -1481,7 +1481,54 @@ struct gHelperSensorsData
 
      void toggleLock(){ lock = !lock; }
 
+     gSensor getSensor(int dir)
+     {
+         if (sg_helperSensorLightUsagetMode && lock)
+         {
+             switch (dir)
+             {
+             case -1:
+             {
+                 return left_stored;
+             }
+             case 0:
+             {
+                 return front_stored;
+             }
+             case 1:
+             {
+                 return right_stored;
+             }
+             }
+         }
+         else
+         {
+             switch (dir)
+             {
+             case -1:
+             {
+                 gSensor left(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
+                 left.detect(sg_helperSensorRange);
+                 return left;
+             }
+             case 0:
+             {
+                 gSensor front(owner_, owner_->Position(), owner_->Direction());
+                 front.detect(sg_helperSensorRange);
+                 return front;
+             }
+             case 1:
+             {
+                 gSensor right(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
+                 right.detect(sg_helperSensorRange);
+                 return right;
+             }
+             }
+         }
+     }
+
     gHelperSensors * getSensors() {
+
         if (sg_helperSensorLightUsagetMode && lock)
         {
             return new gHelperSensors(front_stored, left_stored, right_stored);
@@ -2301,7 +2348,7 @@ public:
     }
 
     void findCorners(gHelperData &data)
-    {   
+    {
         findCorner(data,leftCorner,data.sensors.getSensors()->left);
         findCorner(data,rightCorner,data.sensors.getSensors()->right);
         //findCorner(data,frontCorner,data.front);

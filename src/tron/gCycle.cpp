@@ -2116,7 +2116,7 @@ public:
         eDebugLine::Draw(start, startHeight, end, height);
     }
 
-    void detectCut(int detectionRange, gHelperData &data)
+    void detectCut(gHelperData &data, int detectionRange)
     {
         REAL timeout = data.speedFactor + sg_helperDetectCutTimeout;
         gCycle *target = enemies.closestEnemy;
@@ -2214,7 +2214,7 @@ public:
         }
     }
 
-    void enemyTracers(int detectionRange, REAL timeout)
+    void enemyTracers(gHelperData &data, int detectionRange, REAL timeout)
     {
     
         for(int i=0;i < enemies.allEnemies.Len();i++)
@@ -2462,12 +2462,12 @@ public:
 
         if (sg_helperEnemyTracers)
         {
-            enemyTracers(sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
+            enemyTracers(data, sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
         }
 
         if (sg_helperDetectCut)
         {
-            detectCut(sg_helperDetectCutDetectionRange, data);
+            detectCut(data, sg_helperDetectCutDetectionRange);
         }
 
         if (sg_helperShowHit) {

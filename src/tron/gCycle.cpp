@@ -1449,8 +1449,8 @@ struct gHelperSensors
     gSensor &left;
     gSensor &right;
 
-    gHelperSensors(gSensor &front_,gSensor &left_,gSensor &right_)
-    :   front(front_),
+    gHelperSensors(gSensor &front_,gSensor &left_,gSensor &right_):
+        front(front_),
         left(left_),
         right(right_) {}
 };
@@ -1458,76 +1458,75 @@ struct gHelperSensors
 struct gHelperSensorsData
 {
     gCycle *owner_;
-    gSensor  front_stored;
-    gSensor  left_stored;
-    gSensor  right_stored;
+    gSensor front_stored;
+    gSensor left_stored;
+    gSensor right_stored;
     bool lock;
 
-    gHelperSensorsData(gCycle *owner):
+    gHelperSensorsData(gCycle *owner) : 
     owner_(owner),
     lock(false),
     front_stored(gSensor(owner_, owner_->Position(), owner_->Direction())),
     left_stored(gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)))),
     right_stored(gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1))))
-     {
-        //front_stored = (gSensor(owner_, owner_->Position(), owner_->Direction()));
-       // left_stored = (new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1))));
-       // right_stored = (new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1))));
+    {
+
         front_stored.detect(sg_helperSensorRange);
         left_stored.detect(sg_helperSensorRange);
         right_stored.detect(sg_helperSensorRange);
         toggleLock();
-     }
+    }
 
-     void toggleLock(){ lock = !lock; }
+    void toggleLock() { lock = !lock; }
 
-     gSensor getSensor(int dir)
-     {
-         if (sg_helperSensorLightUsagetMode && lock)
-         {
-             switch (dir)
-             {
-             case -1:
-             {
-                 return left_stored;
-             }
-             case 0:
-             {
-                 return front_stored;
-             }
-             case 1:
-             {
-                 return right_stored;
-             }
-             }
-         }
-         else
-         {
-             switch (dir)
-             {
-             case -1:
-             {
-                 gSensor left(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
-                 left.detect(sg_helperSensorRange);
-                 return left;
-             }
-             case 0:
-             {
-                 gSensor front(owner_, owner_->Position(), owner_->Direction());
-                 front.detect(sg_helperSensorRange);
-                 return front;
-             }
-             case 1:
-             {
-                 gSensor right(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
-                 right.detect(sg_helperSensorRange);
-                 return right;
-             }
-             }
-         }
-     }
+    gSensor getSensor(int dir)
+    {
+        if (sg_helperSensorLightUsagetMode && lock)
+        {
+            switch (dir)
+            {
+            case -1:
+            {
+                return left_stored;
+            }
+            case 0:
+            {
+                return front_stored;
+            }
+            case 1:
+            {
+                return right_stored;
+            }
+            }
+        }
+        else
+        {
+            switch (dir)
+            {
+            case -1:
+            {
+                gSensor left(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
+                left.detect(sg_helperSensorRange);
+                return left;
+            }
+            case 0:
+            {
+                gSensor front(owner_, owner_->Position(), owner_->Direction());
+                front.detect(sg_helperSensorRange);
+                return front;
+            }
+            case 1:
+            {
+                gSensor right(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
+                right.detect(sg_helperSensorRange);
+                return right;
+            }
+            }
+        }
+    }
 
-    gHelperSensors * getSensors() {
+    gHelperSensors *getSensors()
+    {
 
         if (sg_helperSensorLightUsagetMode && lock)
         {
@@ -1684,7 +1683,7 @@ class gSmartTurning
         //     owner_->Act(&gCycle::se_turnLeft, 1);
         // }
         // } else {
-        // if (helper_->leftCorner.infront && helper_->rightCorner.distanceFromPlayer <= 0.01 && data.sensors.getSensor(-1).hit > 5) {
+        // if (helper_->leftCorner.infront && helper_->rightCorner.distanceFromPlayer <= 0.01 && data.sensors.getSensor(1).hit > 5) {
         //     owner_->Act(&gCycle::se_turnRight, 1);
         // }
         // }
@@ -1753,7 +1752,7 @@ class gSmartTurning
         eCoord dir = owner_->Direction();
 
         REAL ls=data.sensors.getSensor(-1).hit;
-        REAL rs=data.sensors.getSensor(-1).hit;
+        REAL rs=data.sensors.getSensor(1).hit;
 
          for (int z = 5; z>=0; z--){
              if (!path.Proceed()){
@@ -1886,7 +1885,7 @@ class gSmartTurning
         bool closedIn, blockedBySelf;
 
         canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningSpace);
-        //con << "CAN SURVIVE ? L R " << canSurviveLeftTurn << " " << canSurviveRightTurn << " " << this->blockTurn << " \n";
+
         if ((closedIn && sg_helperSmartTurningClosedIn ) || (closedIn) && blockedBySelf) {
             goto SKIP_BLOCKTURN;
         }
@@ -1930,7 +1929,7 @@ class gSmartTurning
         }
         else if (dir == 1)
         {
-            return data.sensors.getSensor(-1).hit > compareFactor;
+            return data.sensors.getSensor(1).hit > compareFactor;
         }
     }
 
@@ -1949,8 +1948,8 @@ class gSmartTurning
         calculateRubberFactor(sg_helperSmartTurningRubberTimeMult,sg_helperSmartTurningRubberFactorMult);
         canSurviveLeftTurn = true;
         canSurviveRightTurn = true;
-        closedIn = (data.sensors.getSensor(-1).hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.sensors.getSensor(-1).hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
-        blockedBySelf = (closedIn && data.sensors.getSensor(-1).type == gSENSOR_SELF && data.sensors.getSensor(-1).type == gSENSOR_SELF && data.sensors.getSensor(0).type == gSENSOR_SELF);
+        closedIn = (data.sensors.getSensor(-1).hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult && data.sensors.getSensor(1).hit <= data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
+        blockedBySelf = (closedIn && data.sensors.getSensor(-1).type == gSENSOR_SELF && data.sensors.getSensor(1).type == gSENSOR_SELF && data.sensors.getSensor(0).type == gSENSOR_SELF);
 
         if (freeSpaceFactor > 0) {
 
@@ -1958,8 +1957,8 @@ class gSmartTurning
             if (data.sensors.getSensor(-1).hit < data.turnSpeedFactor * freeSpaceFactor) {
                 canSurviveLeftTurn = false;
             }
-//            con << "left " << data.sensors.getSensor(-1).hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << " " << (data.sensors.getSensor(-1).hit < data.turnSpeedFactor * freeSpaceFactor) << "\n";
-            if (data.sensors.getSensor(-1).hit < data.turnSpeedFactor * freeSpaceFactor) {
+//            con << "left " << data.sensors.getSensor(1).hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << " " << (data.sensors.getSensor(1).hit < data.turnSpeedFactor * freeSpaceFactor) << "\n";
+            if (data.sensors.getSensor(1).hit < data.turnSpeedFactor * freeSpaceFactor) {
                 canSurviveRightTurn = false;
             }
         }
@@ -1968,7 +1967,7 @@ class gSmartTurning
         if (data.sensors.getSensor(-1).hit < rubberFactor) {
             canSurviveLeftTurn = false;
         }
-        if (data.sensors.getSensor(-1).hit < rubberFactor) {
+        if (data.sensors.getSensor(1).hit < rubberFactor) {
             canSurviveRightTurn = false;
         }
 
@@ -1990,7 +1989,6 @@ class gSmartTurning
         REAL rubberGranted, rubberEffectiveness;
         sg_RubberValues( owner_->player, owner_->verletSpeed_, rubberGranted, rubberEffectiveness );
         REAL rubberTime = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
-        // orig rubberFactor = ( owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime) * sg_helperSmartTurningRubberTimeMult );
         rubberFactor = owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTime * sg_helperSmartTurningRubberTimeMult );
         rubberFactor *= rubberFactorMult;
     }
@@ -2041,15 +2039,6 @@ public:
 
     gCycle *getOwner() { return owner_; }
 
-    // template <class T>
-    // void HelperDebug(const char *from, const char *description, T value)
-    // {
-    //     HelperDebug(from,description,value,"",true);
-    // }
-
-    // void HelperDebug(const char *from, const char *description, T value, const char *afterstring = "",
-    //                  bool spamProtection = true)
-
     template <class T>
     void HelperDebug(const char *from, const char *description, T value, bool spamProtection = true)
     {
@@ -2080,7 +2069,7 @@ public:
         {
             lastHelperDebugMessage = description;
         }
-        debugMessage << value << "\n "; //<< afterstring << "\n";
+        debugMessage << value << "\n "; 
         con << debugMessage;
     }
 
@@ -2140,24 +2129,24 @@ public:
             if (!smartTurning->isClose(target->Position(), closeReact)) {
                 return;
             }
-            HelperDebug("detectCut","\n", 1);
-            HelperDebug("detectCut","start", 1);
+            // HelperDebug("detectCut","\n", 1);
+            // HelperDebug("detectCut","start", 1);
             eCoord relativeEnemyPos = target->Position() - (*ownerPos);
             eCoord actualEnemyPos = target->Position();
             eCoord enemydir = target->Direction();
             REAL enemyspeed = target->Speed();
 
-            HelperDebug("detectCut","ownerPos", (*ownerPos));
-            HelperDebug("detectCut","relativeEnemyPos", relativeEnemyPos);
-            HelperDebug("detectCut","actualEnemyPos", actualEnemyPos);
-            HelperDebug("detectCut","enemydir", enemydir);
+            // HelperDebug("detectCut","ownerPos", (*ownerPos));
+            // HelperDebug("detectCut","relativeEnemyPos", relativeEnemyPos);
+            // HelperDebug("detectCut","actualEnemyPos", actualEnemyPos);
+            // HelperDebug("detectCut","enemydir", enemydir);
 
             relativeEnemyPos = relativeEnemyPos.Turn(ownerDir->Conj()).Turn(0, 1);
             enemydir = enemydir.Turn(ownerDir->Conj()).Turn(0, 1);
 
             //  relativeEnemyPos makes the enemy 0,0. Owner position relative to enemy as center point
-            HelperDebug("detectCut","relativeEnemyPos after turn ", relativeEnemyPos);
-            HelperDebug("detectCut","enemydir after turn ", enemydir);
+            // HelperDebug("detectCut","relativeEnemyPos after turn ", relativeEnemyPos);
+            // HelperDebug("detectCut","enemydir after turn ", enemydir);
 
             // bool enemyDirection = false;
             // if (enemydir.x <= 0 && enemydir.y == 1)
@@ -2172,9 +2161,9 @@ public:
                 relativeEnemyPos.x *= -1;
                 enemydir.x *= -1;
             }
-            HelperDebug("detectCut","side ", side);
-            HelperDebug("detectCut","relativeEnemyPos.x", relativeEnemyPos.x);
-            HelperDebug("detectCut","enemydir.x", enemydir.x);
+            // HelperDebug("detectCut","side ", side);
+            // HelperDebug("detectCut","relativeEnemyPos.x", relativeEnemyPos.x);
+            // HelperDebug("detectCut","enemydir.x", enemydir.x);
             REAL enemydist = target->Lag() * enemyspeed;
 
 
@@ -2185,8 +2174,8 @@ public:
 
             REAL ourdist = sg_helperDetectCutReact * (*ownerSpeed);
 
-            HelperDebug("detectCut","enemydist",enemydist);
-            HelperDebug("detectCut","ourdist",ourdist);
+            // HelperDebug("detectCut","enemydist",enemydist);
+            // HelperDebug("detectCut","ourdist",ourdist);
             relativeEnemyPos.y -= ourdist;
 
 
@@ -2200,11 +2189,11 @@ public:
             enemydist -= forward;
             relativeEnemyPos.x -= enemydist;
 
-            HelperDebug("detectCut","relativeEnemyPos.y after forward",relativeEnemyPos.y);
-            HelperDebug("detectCut","relativeEnemyPos.x after forward ",relativeEnemyPos.x);
+            // HelperDebug("detectCut","relativeEnemyPos.y after forward",relativeEnemyPos.y);
+            // HelperDebug("detectCut","relativeEnemyPos.x after forward ",relativeEnemyPos.x);
             bool canCutUs = relativeEnemyPos.y * enemyspeed > relativeEnemyPos.x * (*ownerSpeed);
             bool canCutEnemy = relativeEnemyPos.y * (*ownerSpeed) < -relativeEnemyPos.x * enemyspeed;
-            HelperDebug("detectCut","end", 1);
+            // HelperDebug("detectCut","end", 1);
             if (canCutUs && !canCutEnemy)
             {
                 debugLine(1, 0, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
@@ -2227,42 +2216,41 @@ public:
 
     void enemyTracers(int detectionRange, REAL timeout)
     {
+    
+        for(int i=0;i < enemies.allEnemies.Len();i++)
         {
-            for(int i=0;i < enemies.allEnemies.Len();i++)
+            gCycle *other = enemies.allEnemies[i];
+            if (!enemies.exist(other)) {
+                continue;
+            }
+
+            eCoord otherPos = other->Position();
+            REAL R = .1, G = .1, B = 0;
+            bool isClose = smartTurning->isClose(otherPos, detectionRange + data.turnSpeedFactor);
+            bool enemyFaster = ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
+            bool isTeammate = (owner_->Team() == other->Team());
+
+            if ((isClose || enemyFaster))
             {
-               gCycle *other = enemies.allEnemies[i];
-                if (!enemies.exist(other) || !canSeeTarget(other->Position(),sg_helperEnemyTracersPassthrough)) {
-                    continue;
-                    //return;
-                }
-
-                eCoord otherPos = other->Position();
-                REAL R = .1, G = .1, B = 0;
-                bool isClose = smartTurning->isClose(otherPos, detectionRange);
-                bool enemyFaster = ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
-                bool isTeammate = (owner_->Team() == other->Team());
-
-                if ((isClose || enemyFaster))
+                if (!isTeammate)
                 {
-                    if (!isTeammate)
-                    {
-                        R = 1, G = 1;
-                    }
-
-                    if (isTeammate)
-                    {
-                    R = 1, G = 0, B = 1;
-                    }
-
-                    if (enemyFaster && !isTeammate)
-                    {
-                        R = 1, G = .5, B = 0;
-                    }
-
-                    debugLine(R,G,B,sg_helperEnemyTracersHeight,timeout,(*ownerPos),otherPos,sg_helperEnemyTracersBrightness);
+                    R = 1, G = 1;
                 }
+
+                if (isTeammate)
+                {
+                R = 1, G = 0, B = 1;
+                }
+
+                if (enemyFaster && !isTeammate)
+                {
+                    R = 1, G = .5, B = 0;
+                }
+
+                debugLine(R,G,B,sg_helperEnemyTracersHeight,timeout,(*ownerPos),otherPos,sg_helperEnemyTracersBrightness);
             }
         }
+        
     }
 
     bool canSeeTarget(eCoord target,REAL passthrough) {
@@ -2348,17 +2336,15 @@ public:
     }
 
     void findCorners(gHelperData &data)
-    {
+    {   
         findCorner(data,leftCorner,data.sensors.getSensor(-1));
-        findCorner(data,rightCorner,data.sensors.getSensor(-1));
+        findCorner(data,rightCorner,data.sensors.getSensor(1));
         //findCorner(data,frontCorner,data.front);
     }
 
     void showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout) {
         if (corner.exist) {
             REAL timeout = data.speedFactor * sg_helperShowCornersTimeout;
-
-            //eCoord distanceToCorner = corner.currentPos - (*ownerPos);
             bool isClose = smartTurning->isClose(corner.currentPos, sg_helperShowCornersBoundary);
 
 
@@ -2458,16 +2444,6 @@ public:
         return *cycle->helper_;
     }
 
-    // void detectSensor(const gSensor &sensor) {
-    //     sensor.detect(sg_helperSensorRange);
-    // }
-
-    // void updateAllSensors(gHelperData &data) {
-    //     //detectSensor(data.front);
-    //     //detectSensor(data.left);
-    //     //detectSensor(data.right);
-    // }
-
     void Activate()
     {
         owner_->localCurrentTime = se_GameTime();
@@ -2476,23 +2452,10 @@ public:
         REAL turnSpeedFactorPercent = (1/turnSpeedFactor);
         REAL turnDistance = (turnSpeedFactor/100);
 
-
-        // detectRange = ownerWallLength;
-
-        // if (detectRange < *ownerSpeed) {
-        //     detectRange = turnSpeedFactor;
-        // } else {
-        //     detectRange *= turnSpeedFactor;
-        // }
-        // detectRange *= (sg_helperSensorRange*10);
-
-        // if (ownerWallLength < *ownerSpeed)
-        // {
-        //     detectRange = *ownerSpeed;
-        // }
         gHelperSensorsData sensors(owner_);
         gHelperData data(sensors, speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance);
         enemies.detectEnemies();
+
         if (sg_helperSmartTurning) {
             smartTurning->Activate(data);
         }

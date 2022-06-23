@@ -140,6 +140,7 @@ eGameObject::eGameObject(eGrid *g,const eCoord &p,const eCoord &d,eFace *current
     lastTurnDir = 0; // 0 = NONE, -1 = left, 1 = right
     blockTurn = 0; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
     forceTurn = 0; // 0 = NONE, -1 = LEFT, 1 = RIGHT
+    lastBlockedTurn = 0;
 }
 
 eGameObject::~eGameObject(){

@@ -52,6 +52,7 @@ class eGameObject{
     friend class eSensor;
     friend class eGrid;
     friend class ePlayerNetID;
+    friend class gZone;
 
     // a list of all active gameobjects
     int id;
@@ -92,7 +93,7 @@ protected:
     REAL lastTurnDir; // 0 = NONE, -1 = left, 1 = right
     REAL blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
     REAL forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
-
+    REAL lastBlockedTurn;
     bool autodelete;
     REAL lastTime;          // the time it was last updated
     REAL deathTime;          // the time the thing died
@@ -160,7 +161,7 @@ public:
 
     // what happens if we pass eWall w? (at position e->p[0]*a + e->p[1]*(1-a) )
     virtual void PassEdge( const eWall *w,REAL time,REAL a,int recursion=1 );
-
+    
     // what length multiplicator does driving along the given wall get when it is the given distance away?
     virtual REAL PathfindingModifier( const eWall *w ) const { return 1 ;}
 

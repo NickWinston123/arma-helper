@@ -1270,7 +1270,6 @@ static tConfItem<REAL> sg_showHitDataHeightConf("HELPER_SHOW_HIT_HEIGHT", sg_sho
 REAL sg_showHitDataHeightFront = 1;
 static tConfItem<REAL> sg_showHitDataHeightFrontConf("HELPER_SHOW_HIT_HEIGHT_FRONT", sg_showHitDataHeightFront);
 
-
 REAL sg_showHitDataRange = 1;
 static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE", sg_showHitDataRange);
 
@@ -1331,6 +1330,9 @@ static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_SHOW_CORNER
 REAL sg_helperShowCornersTimeout = 1;
 static tConfItem<REAL> sg_traceTimeoutConf("HELPER_SHOW_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
 
+REAL sg_helperShowCornersHeight = 1;
+static tConfItem<REAL> sg_helperShowCornersHeightConf("HELPER_SHOW_CORNERS_HEIGHT", sg_helperShowCornersHeight);
+
 bool sg_helperSmartTurning = false;
 static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
 
@@ -1339,6 +1341,15 @@ static tConfItem<bool> sg_helperSmartTurningClosedInConf("HELPER_SMART_TURNING_C
 
 bool sg_helperSmartTurningSurvive = false;
 static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
+
+REAL sg_helperSmartTurningSurviveTraceTurnTime = 0.0002;
+static tConfItem<REAL> sg_helperSmartTurningSurviveTraceTurnTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_TIME", sg_helperSmartTurningSurviveTraceTurnTime);
+
+REAL sg_helperSmartTurningSurviveTraceNoticeTime = 0;
+static tConfItem<REAL> sg_helperSmartTurningSurviveTraceNoticeTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_NOTICE_TIME", sg_helperSmartTurningSurviveTraceNoticeTime);
+
+REAL sg_helperSmartTurningSurviveTraceCloseFactor = 1;
+static tConfItem<REAL> sg_helperSmartTurningSurviveTraceCloseFactorConf("HELPER_SMART_TURNING_SURVIVE_TRACE_CLOSE_FACTOR", sg_helperSmartTurningSurviveTraceCloseFactor);
 
 bool sg_helperSmartTurningOpposite = false;
 static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_OPPOSITE", sg_helperSmartTurningOpposite);
@@ -1463,7 +1474,7 @@ struct gHelperSensorsData
     gSensor right_stored;
     bool lock;
 
-    gHelperSensorsData(gCycle *owner) : 
+    gHelperSensorsData(gCycle *owner) :
     owner_(owner),
     lock(false),
     front_stored(gSensor(owner_, owner_->Position(), owner_->Direction())),
@@ -1478,8 +1489,12 @@ struct gHelperSensorsData
     }
 
     void toggleLock() { lock = !lock; }
+    gSensor getSensor( int dir)
+    {
+        return getSensor(owner_->Position(),dir);
+    }
 
-    gSensor getSensor(int dir)
+    gSensor getSensor(eCoord start, int dir)
     {
         if (sg_helperSensorLightUsagetMode && lock)
         {
@@ -1505,19 +1520,19 @@ struct gHelperSensorsData
             {
             case -1:
             {
-                gSensor left(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
+                gSensor left(owner_, start, owner_->Direction().Turn(eCoord(0, 1)));
                 left.detect(sg_helperSensorRange);
                 return left;
             }
             case 0:
             {
-                gSensor front(owner_, owner_->Position(), owner_->Direction());
+                gSensor front(owner_, start, owner_->Direction());
                 front.detect(sg_helperSensorRange);
                 return front;
             }
             case 1:
             {
-                gSensor right(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
+                gSensor right(owner_, start, owner_->Direction().Turn(eCoord(0, -1)));
                 right.detect(sg_helperSensorRange);
                 return right;
             }
@@ -1896,26 +1911,74 @@ class gSmartTurning
         }
         if (!canSurviveLeftTurn) {
             this->blockTurn = -1;
+
             return;
         }
         if (!canSurviveRightTurn) {
             this->blockTurn = 1;
+
             return;
         }
 
         SKIP_BLOCKTURN:
         {
+            owner_->lastBlockedTurn = this->blockTurn;
             this->blockTurn = 0;
+            smartTurningSurviveTrace(data);
             return;
         }
     }
+    void smartTurningSurviveTrace(gHelperData &data) {
+        int lastTurn = owner_->lastTurnAttemptDir;
+        con << lastTurn << "= last dir\n";
+        switch(lastTurn) {
+            case -1: {
+                REAL turnTimeFactor = helper_->leftCorner.getTurnTime(owner_->Speed());//(helper_->leftCorner.turnTime - owner_->localCurrentTime);
+                
+                if ( isClose(helper_->leftCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor)  && 
+                     owner_->lastTurnAttemptTime + sg_helperSmartTurningSurviveTraceNoticeTime > helper_->rightCorner.noticedTime && 
+                     helper_->leftCorner.getTurnTime(owner_->Speed()) > 0 && 
+                     (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
+                        con << "left" << helper_->leftCorner.turnTime << " | " << turnTimeFactor <<  "\n";
+                    makeTurnIfPossible(data,-1,1);
+                }
+            }
+            case 1: {
+                REAL turnTimeFactor = helper_->rightCorner.getTurnTime(owner_->Speed());//(helper_->leftCorner.turnTime - owner_->localCurrentTime);
+                
+                if ( isClose(helper_->rightCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) && 
+                     owner_->lastTurnAttemptTime + sg_helperSmartTurningSurviveTraceNoticeTime > helper_->rightCorner.noticedTime && 
+                     helper_->rightCorner.getTurnTime(owner_->Speed()) > 0 &&
+                     (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
+                    con << "right" << helper_->rightCorner.turnTime << " | " << turnTimeFactor <<  "\n";
+                    makeTurnIfPossible(data,1,1);
+                }
+            }
+        }
+    }
+
+    void makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFactor = 0){
+        switch (dir) {
+            case -1: {
+                if (canSurviveTurnSpecific(data,dir,spaceFactor)) {
+                    owner_->Act(&gCycle::se_turnLeft, 1, true);
+                }
+            }
+            case 1: {
+                if (canSurviveTurnSpecific(data,dir,spaceFactor)) {
+                    owner_->Act(&gCycle::se_turnRight, 1, true);
+                }
+            }
+        }
+    }
+
     bool canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceFactor = 0)
     {
         REAL compareFactor;
 
         if (spaceFactor > 0)
         {
-            compareFactor = spaceFactor;
+            compareFactor = spaceFactor * data.turnSpeedFactor;
         }
         else
         {
@@ -2069,7 +2132,7 @@ public:
         {
             lastHelperDebugMessage = description;
         }
-        debugMessage << value << "\n "; 
+        debugMessage << value << "\n ";
         con << debugMessage;
     }
 
@@ -2216,7 +2279,7 @@ public:
 
     void enemyTracers(gHelperData &data, int detectionRange, REAL timeout)
     {
-    
+
         for(int i=0;i < enemies.allEnemies.Len();i++)
         {
             gCycle *other = enemies.allEnemies[i];
@@ -2250,7 +2313,7 @@ public:
                 debugLine(R,G,B,sg_helperEnemyTracersHeight,timeout,(*ownerPos),otherPos,sg_helperEnemyTracersBrightness);
             }
         }
-        
+
     }
 
     bool canSeeTarget(eCoord target,REAL passthrough) {
@@ -2313,9 +2376,13 @@ public:
 
     void findCorner(gHelperData &data, gSmartTurningCornerData &corner, const gSensor &sensor) {
 
+        corner.noticedTime = owner_->localCurrentTime;
+        corner.exist = true;
+
         corner.type = sensor.type;
         corner.currentPos = *sensor.ehit->Point();
         corner.distanceFromPlayer = eCoord::F(*ownerDir, corner.currentPos - (*ownerPos));
+        corner.turnTime = leftCorner.getTurnTime(owner_->Speed()) + owner_->localCurrentTime;
         REAL secondEdgeDistance = eCoord::F(*ownerDir, *sensor.ehit->Other()->Point() - (*ownerPos));
 
         if (corner.distanceFromPlayer < secondEdgeDistance)
@@ -2323,20 +2390,17 @@ public:
             corner.distanceFromPlayer = secondEdgeDistance;
             corner.currentPos = *sensor.ehit->Other()->Point();
         }
-
-        corner.noticedTime = owner_->localCurrentTime;
-        corner.exist = true;
         corner.infront = corner.isInfront(*ownerPos, *ownerDir);
 
         if (corner.lastPos != corner.currentPos)
         {
-                corner.lastPos = corner.currentPos;
-                corner.ignoredTime = owner_->localCurrentTime;
+            corner.lastPos = corner.currentPos;
+            corner.ignoredTime = owner_->localCurrentTime;
         }
     }
 
     void findCorners(gHelperData &data)
-    {   
+    {
         findCorner(data,leftCorner,data.sensors.getSensor(-1));
         findCorner(data,rightCorner,data.sensors.getSensor(1));
         //findCorner(data,frontCorner,data.front);
@@ -2348,9 +2412,9 @@ public:
             bool isClose = smartTurning->isClose(corner.currentPos, sg_helperShowCornersBoundary);
 
 
-            if (isClose && data.sensors.getSensor(-1).type != gSENSOR_RIM)
+            if (isClose)// && data.sensors.getSensor(-1).type != gSENSOR_RIM)
             {
-                debugLine(1,.5,0,0,timeout,corner.currentPos,corner.currentPos);
+                debugLine(1,.5,0,sg_helperShowCornersHeight,timeout,corner.currentPos,corner.currentPos);
             }
         }
     }
@@ -2379,10 +2443,34 @@ public:
 
         if (wallClose)
         {
-            debugLine(1,.5,0,0,data.speedFactor,(*ownerPos),data.sensors.getSensor(0).before_hit);
-            showHitDebugLinesLeft(data.sensors.getSensor(0).before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
-            showHitDebugLinesRight(data.sensors.getSensor(0).before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
+            eCoord frontBeforeHit = data.sensors.getSensor(0).before_hit;
+            debugLine(1,.5,0,sg_showHitDataHeightFront,data.speedFactor,(*ownerPos),frontBeforeHit);
+            showHitDebugLines(frontBeforeHit, owner_->Direction(), timeout, data, sg_showHitDataRecursion, -1);
+            showHitDebugLines(frontBeforeHit, owner_->Direction(), timeout, data, sg_showHitDataRecursion, 1);
+            //showHitDebugLinesLeft(data.sensors.getSensor(0).before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
+            //showHitDebugLinesRight(data.sensors.getSensor(0).before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
         }
+    }
+
+    void showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir) {
+
+        if (recursion <= 0) {
+            return;
+        }
+        recursion--;
+        eCoord newDir = dir.Turn(eCoord(0, sensorDir * -1));
+        gSensor sensor = data.sensors.getSensor(pos, sensorDir);
+        eCoord hitPos = sensor.before_hit;
+        REAL hitDistance = sensor.hit;
+
+        bool open = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
+
+        if (open) {
+            debugLine(0,1,0,sg_showHitDataHeightFront,timeout,pos,hitPos);
+        } else {
+            debugLine(1,0,0,sg_showHitDataHeightFront,timeout,pos,hitPos);
+        }
+        showHitDebugLines(hitPos,newDir,timeout,data,recursion,sensorDir);
     }
 
     void showHitDebugLinesLeft(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion) {
@@ -5311,7 +5399,7 @@ static void se_cycleTurn(std::istream& s)
 }
 static tConfItemFunc se_cycleTurnConf("CYCLE_TURN", &se_cycleTurn);
 
-bool gCycle::Act(uActionPlayer *Act, REAL x){
+bool gCycle::Act(uActionPlayer *Act, REAL x, bool botTurn){
     // don't accept premature input
     if (se_mainGameTimer && ( se_mainGameTimer->speed <= 0 || se_mainGameTimer->Time() < -1 ) )
         return false;
@@ -5391,7 +5479,7 @@ static tSettingItem<bool> sg_playerGridPosOnTurnConf("PLAYER_GRIDPOS_ON_TURN",sg
 extern eLadderLogWriter se_playerGridPosWriter ;
 extern bool styctcompat_se_playerGridPos ;
 
-bool gCycle::DoTurn(int d)
+bool gCycle::DoTurn(int d, bool botTurn)
 {
 #ifdef DELAYEDTURN_DEBUG
     REAL delay = tSysTimeFloat() - sg_turnReceivedTime;
@@ -5418,7 +5506,7 @@ bool gCycle::DoTurn(int d)
 
         clientside_action();
 
-        if ( gCycleMovement::DoTurn( d ) )
+        if ( gCycleMovement::DoTurn( d, botTurn ) )
         {
             sg_ArchiveCoord( pos, 1 );
 

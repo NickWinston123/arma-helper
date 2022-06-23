@@ -1488,9 +1488,9 @@ bool gCycleMovement::Turn( REAL dir )
 //!
 // *******************************************************************************************
 
-bool gCycleMovement::Turn( int dir )
+bool gCycleMovement::Turn( int dir, bool botTurn)
 {
-    return DoTurn( dir );
+    return DoTurn( dir, botTurn );
 }
 
 static void sg_DropTempWall( eCoord const & dir, gSensor const & sensor )
@@ -3349,7 +3349,7 @@ void gCycleMovement::ApplyAcceleration( REAL dt )
 //!
 // *******************************************************************************************
 
-bool gCycleMovement::DoTurn( int dir )
+bool gCycleMovement::DoTurn( int dir, bool botTurn)
 {
     if ( turns == 0 )
         turns = 1;
@@ -3360,8 +3360,8 @@ bool gCycleMovement::DoTurn( int dir )
     bool helperSmartTurning = sg_helper && sg_helperSmartTurning;
     bool playerIsMe = false;
     REAL currentTime;
-    
-    if (helperSmartTurning && (Owner() == ::sn_myNetID && Player()->IsHuman())) {
+
+    if (helperSmartTurning && !botTurn && (Owner() == ::sn_myNetID && Player()->IsHuman())) {
         playerIsMe = true;
         bool ignoreTurn = false;
         //this->helper->Activate();
@@ -3434,7 +3434,7 @@ bool gCycleMovement::DoTurn( int dir )
 
                 // and report
                 // player->AnalyzeTiming( timing );
-                
+
                 uncannyTimingToReport_ = false;
             }
             else

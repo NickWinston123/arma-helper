@@ -375,9 +375,9 @@ public:
 
     virtual REAL PathfindingModifier( const eWall *w ) const;
 
-    virtual bool Act(uActionPlayer *Act,REAL x);
+    virtual bool Act(uActionPlayer *Act,REAL x, bool botTurn = false);
 
-    virtual bool DoTurn(int dir);
+    virtual bool DoTurn(int dir, bool botTurn = false);
     void DropWall( bool buildNew=true );                                    //!< Drops the current wall and builds a new one
 
     // void Turbo(bool turbo);

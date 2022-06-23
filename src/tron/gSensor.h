@@ -44,5 +44,6 @@ public:
             :eSensor(o,start,d), type(gSENSOR_NONE){}
 
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
+    //virtual void HitZone(gZone *zone );
 };
 #endif

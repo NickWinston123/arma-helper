@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef ArmageTron_SENSOR_H
 #define ArmageTron_SENSOR_H
 
+#include "..\src\tron\gZone.h"
 #include "eGameObject.h"
 #include "eTess2.h"
 //#include "eGrid.h"
@@ -46,6 +47,7 @@ public:
     eSensor(eGameObject *o,const eCoord &start,const eCoord &d);
 
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
+    //virtual void HitZone(gZone *zone);
     //  virtual void PassEdge(eEdge *e,REAL time,REAL a,int recursion=1);
     void detect(REAL range);
     void detect(REAL range, const eCoord &start, const eCoord &d);

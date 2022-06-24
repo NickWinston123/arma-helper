@@ -119,8 +119,9 @@ public:
 
     // movement commands
     bool                    Turn                    ( REAL                  dir         )           ;   //!< Turn left for positive argument, right for negative argument
-    bool                    Turn                    ( int                   dir, bool botTurn = false )           ;   //!< Turn left for positive argument, right for negative argument
-
+    bool                    Turn                    ( int                   dir         )           ;   //!< Turn left for positive argument, right for negative argument
+    bool                    BotTurn                 ( int                   dir         )           ;   //!< Turn left for positive argument, right for negative argument
+    
     void                    MoveSafely              (const eCoord &         dest
             ,                                        REAL                   startTime
             ,                                        REAL                   endTime     )           ;   //!< move without throwing exceptions on passing a wall
@@ -180,7 +181,7 @@ protected:
     static  gDestination*   GetDestinationBefore    ( const SyncData &      sync
             ,                                         gDestination*         first       ) 		    ;   //!< determine the destination from before the sync message
 
-    virtual bool            DoTurn                  ( int                   dir, bool botTurn = false )           ;   //!< turns the cycle in the given direction
+    virtual bool            DoTurn                  ( int                   dir, bool botTurn         )           ;   //!< turns the cycle in the given direction
     virtual REAL            DoGetDistanceSinceLastTurn  (                               ) const     ;   //!< returns the distance since the last turn
 
     virtual void            RightBeforeDeath        ( int                   numTries    )           ;   //!< called when the cycle is very close to a wall and about to crash

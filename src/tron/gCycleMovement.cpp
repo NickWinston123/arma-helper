@@ -1488,9 +1488,17 @@ bool gCycleMovement::Turn( REAL dir )
 //!
 // *******************************************************************************************
 
-bool gCycleMovement::Turn( int dir, bool botTurn)
+bool gCycleMovement::Turn( int dir )
 {
-    return DoTurn( dir, botTurn );
+    this->lastBotTurnTime = lastTime;
+    this->lastBotTurnDir = dir;
+    return DoTurn( dir, false );
+}
+
+
+bool gCycleMovement::BotTurn( int dir )
+{
+    return DoTurn( dir, true );
 }
 
 static void sg_DropTempWall( eCoord const & dir, gSensor const & sensor )
@@ -3349,7 +3357,7 @@ void gCycleMovement::ApplyAcceleration( REAL dt )
 //!
 // *******************************************************************************************
 
-bool gCycleMovement::DoTurn( int dir, bool botTurn)
+bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
 {
     if ( turns == 0 )
         turns = 1;
@@ -3476,7 +3484,7 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn)
         int wn = windingNumberWrapped_;
         Grid()->Turn(wn, dir);
 
-        if (helperSmartTurning && playerIsMe) {
+        if (helperSmartTurning && !botTurn && playerIsMe) {
             this->lastTurnTime = currentTime;
             this->lastTurnDir = dir;
         }

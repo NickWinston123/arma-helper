@@ -1348,8 +1348,8 @@ static tConfItem<bool> sg_helperSmartTurningSurviveTraceConf("HELPER_SMART_TURNI
 REAL sg_helperSmartTurningSurviveTraceTurnTime = 0.02;
 static tConfItem<REAL> sg_helperSmartTurningSurviveTraceTurnTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_TIME", sg_helperSmartTurningSurviveTraceTurnTime);
 
-REAL sg_helperSmartTurningSurviveTraceContinueTime = 0;
-static tConfItem<REAL> sg_helperSmartTurningSurviveTraceContinueTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_CONTNUE_TIME", sg_helperSmartTurningSurviveTraceContinueTime);
+REAL sg_helperSmartTurningSurviveTraceActiveTime = 1;
+static tConfItem<REAL> sg_helperSmartTurningSurviveTraceActiveTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_ACTIVE_TIME", sg_helperSmartTurningSurviveTraceActiveTime);
 
 REAL sg_helperSmartTurningSurviveTraceCloseFactor = 1;
 static tConfItem<REAL> sg_helperSmartTurningSurviveTraceCloseFactorConf("HELPER_SMART_TURNING_SURVIVE_TRACE_CLOSE_FACTOR", sg_helperSmartTurningSurviveTraceCloseFactor);
@@ -1945,7 +1945,7 @@ class gSmartTurning
                 REAL turnTimeFactor = helper_->leftCorner.getTurnTime(owner_->Speed());
 
                 if ( isClose(helper_->leftCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) &&
-                     owner_->lastTurnAttemptTime + sg_helperSmartTurningSurviveTraceContinueTime > helper_->leftCorner.noticedTime &&
+                     owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/10 * data.turnSpeedFactor) > helper_->leftCorner.noticedTime &&
                      helper_->leftCorner.getTurnTime(owner_->Speed()) > 0 &&
                      (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
                     makeTurnIfPossible(data,-1,1);
@@ -1956,7 +1956,7 @@ class gSmartTurning
                 REAL turnTimeFactor = helper_->rightCorner.getTurnTime(owner_->Speed());
 
                 if ( isClose(helper_->rightCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) &&
-                     owner_->lastTurnAttemptTime + sg_helperSmartTurningSurviveTraceContinueTime > helper_->rightCorner.noticedTime &&
+                     owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/10 * data.turnSpeedFactor) > helper_->rightCorner.noticedTime &&
                      helper_->rightCorner.getTurnTime(owner_->Speed()) > 0 &&
                      (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
                     makeTurnIfPossible(data,1,1);

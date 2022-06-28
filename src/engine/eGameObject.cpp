@@ -158,6 +158,10 @@ eGameObject::~eGameObject(){
 // makes two gameObjects interact:
 void eGameObject::InteractWith(eGameObject *,REAL,int){}
 
+void eGameObject::HitZone(eGameObject * zone ,REAL time){
+    return;
+}
+
 // what happens if we pass eWall w?
 void eGameObject::PassEdge(const eWall *w,REAL,REAL,int){
     if (w) Kill();
@@ -304,8 +308,7 @@ rerun:
             // look for the best way out
             do
             {
-                run = run->Next();
-
+                run = run->Next();   
                 if (run == in) // never leave through the edge we entered
                     continue;
 
@@ -316,7 +319,7 @@ rerun:
 
                 // keep a bit of the score, but not too much. We want to
                 // sort out exactly parallel walls here.
-                if ( score > smallBias || ( score > 0 && !run->GetWall() ) )
+            if ( score > smallBias || ( score > 0 && !run->GetWall() ) )
                     score = smallBias;
 
                 eCoord cross = e.IntersectWithCareless(run);

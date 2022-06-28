@@ -163,6 +163,8 @@ public:
 
     // what happens if we pass eWall w? (at position e->p[0]*a + e->p[1]*(1-a) )
     virtual void PassEdge( const eWall *w,REAL time,REAL a,int recursion=1 );
+
+    virtual void HitZone (eGameObject *zone,REAL time);
     
     // what length multiplicator does driving along the given wall get when it is the given distance away?
     virtual REAL PathfindingModifier( const eWall *w ) const { return 1 ;}

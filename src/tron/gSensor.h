@@ -29,11 +29,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ArmageTron_gSENSOR_H
 
 #include "eSensor.h"
+#include "eGrid.h"
 
 class eEdge;
 
 typedef enum{gSENSOR_NONE,gSENSOR_RIM, gSENSOR_ENEMY,
-             gSENSOR_TEAMMATE ,gSENSOR_SELF} gSensorWallType;
+             gSENSOR_TEAMMATE ,gSENSOR_SELF, gSENSOR_ZONE} gSensorWallType;
 
 // sensor sent out to detect near eWalls
 class gSensor: public eSensor{
@@ -41,9 +42,16 @@ public:
     gSensorWallType type;
 
     gSensor(eGameObject *o,const eCoord &start,const eCoord &d)
-            :eSensor(o,start,d), type(gSENSOR_NONE){}
-
+            :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction(d) {}
+    
+    const eCoord &start_;
+    const eCoord &direction;
+    eGameObject *owner_;
+    const tList<eGameObject>& gameObjects;
+    bool HitIntersceptsZone(gZone * zone);
+    bool calculateZoneHit();
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
+    //virtual  void  HitZone(eGameObject * zone ,REAL time);
     //virtual void HitZone(gZone *zone );
 };
 #endif

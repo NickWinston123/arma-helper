@@ -53,6 +53,11 @@ eSensor::eSensor(eGameObject *o,const eCoord &start,const eCoord &d)
         currentFace=NULL;
 }
 
+void eSensor::HitZone(eGameObject * zone ,REAL time) {
+    
+    throw eSensorFinished();
+}
+
 void eSensor::PassEdge(const eWall *w,REAL time,REAL a,int){
     if (!w->Massive()){
         return;

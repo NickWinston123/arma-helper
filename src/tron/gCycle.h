@@ -124,6 +124,7 @@ private:
 };
 
 class gCycleChatBot;
+class gHelperEmergencyTurn;
 
 #ifndef DEDICATED
 class gCycleWallsDisplayListManager
@@ -180,6 +181,7 @@ class gCycle: public gCycleMovement
     REAL timeCameIntoView;
 
     friend class gCycleChatBot;
+    friend class gHelperEmergencyTurn;
     std::unique_ptr< gCycleChatBot > chatBot_;
 
     friend class gHelper;

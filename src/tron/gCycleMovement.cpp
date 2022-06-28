@@ -1490,14 +1490,14 @@ bool gCycleMovement::Turn( REAL dir )
 
 bool gCycleMovement::Turn( int dir )
 {
-    this->lastBotTurnTime = lastTime;
-    this->lastBotTurnDir = dir;
     return DoTurn( dir, false );
 }
 
 
 bool gCycleMovement::BotTurn( int dir )
 {
+    this->lastBotTurnTime = lastTime;
+    this->lastBotTurnDir = dir;
     return DoTurn( dir, true );
 }
 
@@ -3368,8 +3368,7 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
     bool helperSmartTurning = sg_helper && sg_helperSmartTurning;
     bool playerIsMe = false;
     REAL currentTime;
-
-    if (helperSmartTurning && !botTurn && (Owner() == ::sn_myNetID && Player()->IsHuman())) {
+    if (helperSmartTurning && !botTurn && (Owner() == ::sn_myNetID && Player() && Player()->IsHuman())) {
         playerIsMe = true;
         bool ignoreTurn = false;
         //this->helper->Activate();
@@ -3387,9 +3386,10 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
 
         //Don't turn
         if (ignoreTurn) {
+            con << "BLOCKED TURN dir = " << dir << " blockturn =" << this->blockTurn  << "\n";
             this->lastTurnAttemptTime = currentTime;
             this->lastTurnAttemptDir = dir;
-            turns = 0;
+            this->blockTurn = 0;
             return false;
         }
 

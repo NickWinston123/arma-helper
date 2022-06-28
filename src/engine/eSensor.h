@@ -47,6 +47,7 @@ public:
     eSensor(eGameObject *o,const eCoord &start,const eCoord &d);
 
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
+    virtual void HitZone(eGameObject * zone ,REAL time);
     //virtual void HitZone(gZone *zone);
     //  virtual void PassEdge(eEdge *e,REAL time,REAL a,int recursion=1);
     void detect(REAL range);

@@ -9511,10 +9511,13 @@ void ePlayerNetID::Update()
 
         for(int i=0; i<MAX_PLAYERS; ++i )
         {
-            bool in_game=ePlayer::PlayerIsInGame(i) || i <= (se_createPlayers) || (se_createPlayersSpecific >= 1 && i == se_createPlayersSpecific-1);;
             ePlayer *local_p=ePlayer::PlayerConfig(i);
             tASSERT(local_p);
             tCONTROLLED_PTR(ePlayerNetID) &p=local_p->netPlayer;
+            bool in_game=ePlayer::PlayerIsInGame(i) || 
+            (local_p && local_p->ID() != 0 && (i <= (se_createPlayers) || (se_createPlayersSpecific >= 1 && i == se_createPlayersSpecific-1)));
+
+            
 
             if (!se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
             {
@@ -9528,7 +9531,7 @@ void ePlayerNetID::Update()
                 p->RequestSync();
 
             }
-
+            //con << in_game << "\n";
             if (bool(p) && (!in_game || ( local_p->spectate && !se_VisibleSpectatorsSupported() ) ) && // remove player
                     p->Owner() == ::sn_myNetID )
             {

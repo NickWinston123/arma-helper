@@ -488,7 +488,7 @@ public:
     virtual void ReadVal(std::istream &s){
         // eat whitepsace
         int c= EatWhitespace(s);
-
+        //con << *target << "\n";
         T dummy( *target );
         if (c!='\n' && s && !s.eof() && s.good()){
             DoRead( s, dummy, DUMMYREQUIRED() );

@@ -59,7 +59,7 @@ bool gSensor::HitIntersceptsZone(gZone *zone)
         REAL distance = eCoord::F(direction, intercept - start_);
         REAL distance2 = eCoord::F(direction, intercept2 - start_);
         bool exist = intercept == intercept && intercept2 == intercept2;
-        con << "EXIST ? " << exist << "\n";
+        //con << "EXIST ? " << exist << "\n";
         if (!exist) { return false;}
         distance = (distance);
         distance2 = (distance2);

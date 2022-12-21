@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "eNetGameObject.h"
 #include <deque>
-
+class gHelper;
 class gCycle;
 class gDestination;
 class gPlayerWall;
@@ -203,9 +203,9 @@ private:
 protected:
     short           alive_;                     //!< status: 1: cycle is alive, -1: cycle just died, 0: cycle is dead
 
-protected:
+public:
     gEnemyInfluence				enemyInfluence; //!< keeps track of enemies that influenced this cycle
-
+protected:
     gDestination*   destinationList;            //!< the list of destinations that belong to this cycle ( for memory management )
     gDestination*   currentDestination;         //!< the destination this cycle aims for now
     gDestination*   lastDestination;            //!< the last destination that was passed
@@ -223,14 +223,16 @@ protected:
     mutable bool    refreshSpaceAhead_;         //!< flag to set when maximum space in front of cycle should be recalculated
     REAL            maxSpaceMaxCast_;           //!< the maximum raycast length to determine the above value
     mutable gMaxSpaceAheadHitInfo * maxSpaceHit_; //!< detailed information about the wall in front
+public:
+    int             windingNumber_;             //!< number that gets increased on every right turn and decreased on every left turn ( used by the AI )
 
     unsigned short  turns;                      //!< the number of turns taken so far
     unsigned short  braking;                    //!< flag indicating status of brakes ( on/off )
-
+    std::deque<int> pendingTurns; 
+protected:
     bool            uncannyTimingToReport_;     //!< flag indicating whether we have uncanny timing to report from the last turn
 
-    int             windingNumber_;             //!< number that gets increased on every right turn and decreased on every left turn ( used by the AI )
-    int             windingNumberWrapped_;      //!< winding number wrapped to be used as an index to the axes code
+   int             windingNumberWrapped_;      //!< winding number wrapped to be used as an index to the axes code
 
     mutable REAL    gap_[2];                    //!< when driving towards a wall, this is set to the maximal distance we need to approach it so that when the cycle turns, it can squeeze through any gaps
     mutable bool    keepLookingForGap_[2];      //!< flags telling the system whether it is worthwile to look for further, smaller, gaps
@@ -240,7 +242,7 @@ protected:
     REAL            lastTurnTimeRight_;         //!< the time of the last turn right
     REAL            lastTurnTimeLeft_;          //!< the time of the last turn left
     REAL            lastTimeAlive_;             //!< the time of the last timestep where we would not have been killed
-    std::deque<int> pendingTurns;               //!< stores turns ordered by the user, but not yet executed
+              //!< stores turns ordered by the user, but not yet executed
 
     REAL            brakingReservoir;           //!< the reservoir for braking. 1 means full, 0 is empty
     REAL            rubber;                     //!< the amount rubber used up by the cycle
@@ -253,6 +255,14 @@ protected:
 
     // room for accessors
 public:
+    gEnemyInfluence getEnemyInfluence() const
+    {
+        return enemyInfluence;
+    }
+    int getWindingNumber() const
+    {
+        return windingNumber_;
+    }
     std::deque<eCoord>   turnedPositions;            //!< stores the positions turned
     std::deque<eCoord>   turnedDirections;           //!< stores the directions turned
 
@@ -316,6 +326,7 @@ class gDestination{
     friend class gCycleMovement;
     friend class gCycle;				// todo: remove me
     friend class gCycleExtrapolator;	// todo: remove me
+    friend class gHelper;
 
     eCoord position;			// position of turn/brake command
     eCoord direction;			// driving direction after the command

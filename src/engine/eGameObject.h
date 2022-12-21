@@ -84,7 +84,7 @@ protected:
     // (autodelete=0) ?
     // (the latter may be useful if there exists other pointers to
     // the object)
-
+public:
     REAL localCurrentTime;
     REAL lastTurnAttemptTime;
     REAL lastTurnAttemptDir;
@@ -96,6 +96,7 @@ protected:
     REAL lastBlockedTurn;
     REAL lastBotTurnTime;
     REAL lastBotTurnDir;
+
     bool autodelete;
     REAL lastTime;          // the time it was last updated
     REAL deathTime;          // the time the thing died
@@ -111,7 +112,7 @@ protected:
 
     tJUST_CONTROLLED_PTR<eFace> currentFace;  // the eFace pos it is currently
     tCHECKED_PTR(eGrid) grid;         // the game grid we are on
-
+protected:
     // entry and deletion in the list of all eGameObjects
 public:
     //! tells game objects what the maximum lag caused by lazy simulation of timesteps is

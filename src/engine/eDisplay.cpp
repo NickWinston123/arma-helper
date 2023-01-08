@@ -618,6 +618,7 @@ void eGrid::display_simple( eCamera* cam, int viewer,bool floor,
         eGameObject::RenderAll(this, cameras(viewer));
 
     eDebugLine::Render();
+    ePath::RenderLast();
 #ifdef DEBUG
 
     ePath::RenderLast();

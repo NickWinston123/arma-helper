@@ -63,6 +63,7 @@ class gAIPlayer: public ePlayerNetID{
     friend class gSmarterBot;
     tReproducibleRandomizer randomizer_;
 public:
+    gAIPlayer(gCycle* cycle);
     gAICharacter*           character; // our specification of abilities
 
     // for all offensive modes:
@@ -243,6 +244,6 @@ public:
     virtual bool IsHuman() const { return false; } // does this team consist of humans?
 };
 
-gAICharacter* BestIQ( int iq );
+static gAICharacter* BestIQ( int iq );
 
 #endif

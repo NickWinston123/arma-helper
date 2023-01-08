@@ -37,6 +37,7 @@ public:
     explicit eCoord(REAL X=0,REAL Y=0):x(X),y(Y){}
 
     // Calculations:
+    const eCoord& operator+=(eCoord const &other)    { x+=other.x; y+=other.y; return *this;} //!< adds two coordinates
     inline bool operator==(const eCoord &a) const;
     bool operator!=(const eCoord &a) const{return !operator==(a);}
     eCoord operator-(const eCoord &a) const{return eCoord(x-a.x,y-a.y);}

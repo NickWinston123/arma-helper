@@ -176,6 +176,10 @@ static tConfItem<REAL> sg_helperShowCornersHeightConf("HELPER_SHOW_CORNERS_HEIGH
 bool sg_helperSmartTurning = false;
 static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
 
+
+bool sg_helperAI = false;
+static tConfItem<bool> sg_helperAIc("HELPER_AI", sg_helperAI);
+
 bool sg_helperSmartTurningFrontBot = false;
 static tConfItem<bool> sg_helperSmartTurningFrontBotConf("HELPER_SMART_TURNING_FRONT_BOT", sg_helperSmartTurningFrontBot);
 
@@ -251,6 +255,618 @@ static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf("HELPER_SMAR
 
 REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
+
+
+class gCycleTouchEvent{
+public:
+    REAL dist;      // the position on this cycle's wall the touching happened
+    REAL otherDist; // the position on the other cylce's wall
+    int  otherSide; // the side of the other cylce this wall touches
+    int  winding;   // winding number to add if we cross here
+
+    gCycleTouchEvent()
+    {
+        dist      = 0;
+        otherDist = 0;
+        otherSide = -100;
+    }
+};
+
+class gCycleMemoryEntry{
+public:
+    gCycleMemory *memory;
+    int id;
+    nObserverPtr< gCycle > cycle;
+
+    gCycleMemoryEntry(gCycleMemory* m, const gCycle* c)
+            :memory(m),id(-1), cycle(c)
+    {
+        memory->memory.Add(this, id);
+
+        max[0].dist = -1E+30;
+        max[1].dist = -1E+30;
+        min[0].dist =  1E+30;
+        min[1].dist =  1E+30;
+    }
+
+    ~gCycleMemoryEntry()
+    {
+        memory->memory.Remove(this, id);
+    }
+
+    // usable data
+    gCycleTouchEvent max[2]; // latest touch event (with the given cylce)
+    gCycleTouchEvent min[2]; // earliest touch event
+};
+
+#define TOL 4
+
+
+// look for a closed loop in the walls if cycle a hits cycle b's wall at
+// distance bDist and on side bSide.
+// Look for the loop in driving direction of b if dir is 1 or to the other side of dir is 0.
+// the end of the loop is reached when the wall of cycle a is driven along in
+// direction aEndDir, passing the distance aEndDist and the side's bit is set
+// in aEndSides.
+// Cycles that will be closed in the loop are stored in the array
+// closedIn.
+// return value: the number of open points this loop contains
+// (if this is >0, that usually means the space is wide open)
+//  or -1 if there is no loop.
+static bool CheckLoop(const gCycle *a, const gCycle *b,
+                      REAL bDist, int bSide, int dir,
+                      tArray<const gCycle*>& closedIn, int& winding,
+                      REAL aEndDist = 0, int aEndSides = 3, int aEndDir = 1 )
+{
+    tASSERT(0<= bSide && 1 >= bSide);
+    tASSERT(0<= dir && 1 >= dir);
+
+    int tries = 10;       // so long until we give up
+    int ends  = 0;
+
+    bool bClosedIn    = false;
+
+    const gCycle *run = b;      // we run along this cycle's wall
+    int end           = dir;    // and move towards this end its wall wall
+    int side          = bSide;  // we are on this side of the cycle
+    REAL dist         = bDist;  // and are at this distance.
+    winding           = 0;      // the winding number we collected
+
+    int turn     = a->Grid()->WindingNumber();
+    int halfTurn = turn >> 1;
+
+
+#ifdef DEBUG
+    //  con << "\n";
+#endif
+
+    while(tries-- > 0 && run &&
+            !(run == a &&
+              end == aEndDir &&
+              aEndSides & (1 << side) &&
+              (end > 0 ? dist >= aEndDist : dist <= aEndDist ) ) )
+    {
+#ifdef DEBUG
+        //      con << "end = " << end << ", side = " << side << ", dist = " << dist
+        //	  << ", winding = " << winding << "\n";
+#endif
+        if (end > 0)
+        {
+
+            // find the last connection
+            gCycleMemoryEntry* last = run->memory.Latest(side);
+            if (!last || last->max[side].dist <= dist + TOL)
+            {
+                // no interference. We can move directly around the cylce
+                // and close it in.
+#ifdef DEBUG
+                //	      con << "Turning around...\n";
+#endif
+
+                winding += halfTurn *
+                           ( side > 0 ? -1 : 1);
+
+                end  = 0;
+                side = 1-side;
+                closedIn[closedIn.Len()] = run;
+                dist = run->GetDistance();
+
+                // detect early loop
+                if (run == b)
+                {
+                    if (bClosedIn)
+                    {
+                        winding = 0;
+                        return false;
+                    }
+                    else
+                        bClosedIn = true;
+                }
+            }
+            else
+            {
+#ifdef DEBUG
+                //	      con << "Crossing...\n";
+#endif
+
+                // find the first connection
+                gCycleMemoryEntry* first = run->memory.Earliest(side);
+                if (first && first->min[side].dist >= dist + TOL)
+                {
+                    // we cross the connection:
+                    winding += first->min[side].winding;
+                    run      = first->cycle;
+                    end      = (side == first->min[side].otherSide) ? 1 : 0;
+
+                    //		  if (end == 0)
+                    // we need to turn around to follow
+                    winding += halfTurn * (side > 0 ? 1 : -1);
+
+                    dist     = first->min[side].otherDist;
+                    side     = first->min[side].otherSide;
+                }
+                else
+                {
+                    winding = 0;
+                    return false;
+                }
+            }
+        }
+        else // dir = -1, we move towards the end
+        {
+            // find the first connection
+            gCycleMemoryEntry* first = run->memory.Earliest(side);
+            if (!first || first->min[side].dist >= dist - TOL)
+            {
+#ifdef DEBUG
+                //	      con << "Turning around...\n";
+#endif
+
+
+                // no interference. We can move directly around the cylce's end.
+                winding += halfTurn * ( side > 0 ? 1 : -1);
+
+                end  = 1;
+                side = 1-side;
+                ends++;
+                dist = -2 * TOL;
+            }
+            else
+            {
+#ifdef DEBUG
+                //	      con << "Crossing...\n";
+#endif
+
+
+                // find the latest connection
+                gCycleMemoryEntry* last = run->memory.Latest(side);
+                if (last && last->max[side].dist <= dist - TOL)
+                {
+                    // we cross the connection:
+                    winding += last->max[side].winding;
+
+                    // we need to turn around to start:
+                    winding += halfTurn * (side > 0 ? -1 : 1);
+
+                    run      = last->cycle;
+                    end      = (side == last->max[side].otherSide) ? 0 : 1;
+
+                    //		  if (end == 1)
+                    // we need to turn around to follow
+                    //		  winding -= halfTurn * (side > 0 ? 1 : -1);
+
+                    dist     = last->max[side].otherDist;
+                    side     = last->max[side].otherSide;
+                }
+                else
+                    // uh oh. we are already closed in. No chance...
+                {
+                    winding = 0;
+                    return false;
+                }
+            }
+        }
+    }
+
+#ifdef DEBUG
+    //      con << "end = " << end << ", side = " << side << ", dist = " << dist
+    //	  << ", winding = " << winding << "\n\n";
+#endif
+
+    if (tries >= 0)
+    {
+        return true;
+    }
+    else
+    {
+        winding = 0;
+        return false;
+    }
+}
+
+
+// see if the given Cycle is trapped currently
+static bool IsTrapped(const gCycle *trapped, const gCycle *other)
+{
+    tArray<const gCycle*> closedIn;
+    int winding = 0;
+    if (CheckLoop(trapped, trapped, trapped->GetDistance(), 1, 0, closedIn, winding, trapped->GetDistance() - 1))
+    {
+        if (winding + 2 < 0)
+        {
+            // see if the other cylce is trapped with him
+            for (int i = closedIn.Len()-1; i>=0; i--)
+                if (other == closedIn(i))
+                    return false;  // we can get him!
+
+            // no. trapped is trapped allone.
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool sg_pathHelper = false;
+static tConfItem<bool> sg_pathHelperC("HELPER_PATH", sg_pathHelper);
+
+bool sg_pathHelperTurn = false;
+static tConfItem<bool> sg_pathHelperTurnC("HELPER_PATH_RENDER", sg_pathHelperTurn);
+
+bool sg_pathHelperShowTurn = false;
+static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_PATH_TURN_SHOW", sg_pathHelperShowTurn);
+
+REAL sg_pathHelperUpdateTime = -1000;
+static tConfItem<REAL> sg_pathHelperUpdateTimeC("HELPER_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
+
+REAL sg_pathHelperThinkAgain = 1;
+static tConfItem<REAL> sg_pathHelperThinkAgainC("HELPER_PATH_THINK_AGAIN", sg_pathHelperThinkAgain);
+
+int sg_pathHelperMode = 0;
+static tConfItem<int> sg_pathHelperModeC("HELPER_PATH_MODE", sg_pathHelperMode);
+//sg_pathHelperModeC->help = tOutput("help");
+
+REAL sg_pathHelperAutoRange = 150;
+static tConfItem<REAL> sg_pathHelperAutoRangeC("HELPER_PATH_AUTO_RANGE", sg_pathHelperAutoRange);
+
+
+gPathHelper::gPathHelper(gHelper *helper, gCycle *owner)
+    : helper_(helper),
+      owner_(owner),
+      lastPath(owner_->localCurrentTime - 100),
+      lastTime(owner_->localCurrentTime),
+      nextTime(0),
+      pathInvalid(true)
+{
+    // Initialize any other member variables here
+}
+
+bool gPathHelper::targetExist() {
+    return target != eCoord(0,0) && targetCurrentFace_;
+}
+
+gPathHelper & gPathHelper::Get(gHelper * helper, gCycle *owner)
+{
+    tASSERT( owner );
+
+    // create
+    if ( helper->pathHelper.get() == 0 )
+        helper->pathHelper.reset( new gPathHelper( helper, owner ) );
+
+    return *helper->pathHelper;
+}
+
+bool gPathHelper::tailMode(gHelperData data)
+{
+    if ( owner_->tailMoving) {
+
+        target = owner_->tailPos;
+        targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(owner_->tailPos);
+        return true;
+    }
+    return false;
+}
+
+bool gPathHelper::enemyMode(gHelperData data)
+{
+    gCycle *enemy = helper_->enemies.closestEnemy;
+
+    if (helper_->enemies.exist(enemy)) {
+        target = enemy->Position();
+        targetCurrentFace_ = enemy->CurrentFace();
+        return true;
+    }
+    return false;
+
+}
+
+bool gPathHelper::autoMode(gHelperData data)
+{
+    gCycle *enemy = helper_->enemies.closestEnemy;
+
+    bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoRange + data.turnSpeedFactor);
+    if (isClose) {
+        target = enemy->Position();
+        targetCurrentFace_ = enemy->CurrentFace();
+        return true;
+    }
+    else if (owner_->tailMoving) {
+        target = owner_->tailPos;
+        targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(target);
+        return true;
+    }
+
+    return false;
+}
+
+bool gPathHelper::UpdatePath()
+{
+    bool updateTime = lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
+    return updateTime;
+}
+
+#include "rRender.h"
+
+REAL se_pathHeight = 1;
+static tConfItem<REAL> se_pathHeightC("HELPER_PATH_HEIGHT", se_pathHeight);
+
+void gPathHelper::RenderPath(gHelperData & data)
+{
+    if (!path_.Valid())
+    {
+        return;
+    }
+
+   // glDisable(GL_TEXTURE_2D);
+   // glDisable(GL_LIGHTING);
+
+    glColor4f(1,0,0,1);
+
+    BeginLineStrip();
+    for (int i = path_.positions.Len()-1; i>=0; i--)
+    {
+        eCoord c = path_.positions(i) + path_.offsets(i);
+        Vertex(c.x, c.y, se_pathHeight);
+        helper_->debugLine(.2,1,0,se_pathHeight,data.speedFactor,c,c,1);
+    }
+    RenderEnd();
+
+    glColor4f(1,1,0,1);
+
+    BeginLineStrip();
+    if (path_.current >= 0 && path_.positions.Len() > 0)
+    {
+        eCoord c = path_.CurrentPosition();
+        Vertex(c.x, c.y, 0);
+        Vertex(c.x, c.y, se_pathHeight * 2);
+
+    }
+    RenderEnd();
+}
+
+void gPathHelper::RenderTurn(gHelperData &data)
+{
+    if (!path_.Valid())
+    {
+        return;
+    }
+
+    eCoord targetPos = path_.CurrentPosition() + path_.CurrentOffset();// * 0.1f;
+    eCoord currentPos = owner_->Position();
+    eCoord dirToTarget = targetPos - currentPos;
+
+    if (eCoord::F(owner_->Direction(), dirToTarget) > 0)
+    {
+        helper_->smartTurning->makeTurnIfPossible(data,1,1);
+        helper_->debugLine(.2, 1, 0, 3, data.speedFactor, owner_->Position(), data.sensors.getSensor(1)->before_hit, 1);
+    }
+    else
+    {
+        helper_->smartTurning->makeTurnIfPossible(data,-1,1);
+        helper_->debugLine(.2, 1, 0, 3, data.speedFactor, owner_->Position(), data.sensors.getSensor(-1)->before_hit, 1);
+    }
+}
+
+void gPathHelper::ThinkPath( gHelperData & data )
+{
+    if (!targetExist()) {
+        return;
+    }
+    // find a new path if the one we got is outdated:
+
+    if (targetCurrentFace_)
+    {
+        //owner_->FindCurrentFace();
+        eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
+                            target, targetCurrentFace_,
+                            owner_,
+                            path_);
+        //con << "Found updated path & " << lastPath << "\n";
+        lastPath = owner_->localCurrentTime;
+    }
+
+    if (!path_.Valid())
+    {
+        targetCurrentFace_ = NULL;
+        lastPath = -100;
+        return;
+    }
+    /*REAL d = (abs(target->Position()->x - Object()->Position().->) + abs(target->Position().Y - Object()->Position().Y)) * .2f;
+    if (d < mindist)
+        mindist = d;
+
+    data.thinkAgain = mindist / Object()->Speed();
+    if (data.thinkAgain > .4)
+        data.thinkAgain *= .7;
+*/
+}
+
+
+void gPathHelper::Activate(gHelperData &orig_data) {
+
+    if (sg_pathHelperTurn)
+    RenderPath(orig_data);
+    if (!helper_->aliveCheck() || !UpdatePath())
+        return;
+
+    {
+        gHelperData data = orig_data;
+
+        bool success = false;
+        switch (sg_pathHelperMode)
+        {
+            case 0:
+                success = autoMode(data);
+                break;
+            case 1:
+                success = tailMode(data);
+                break;
+            case 2:
+                success = enemyMode(data);
+                break;
+            default:
+                // do nothing
+                return;
+                break;
+        }
+        if (!success)
+            return;
+
+        ThinkPath(data);
+        //RenderPath();
+        //con << "Got Turn: " << data.turnDir << " Next Thought in " << nextthought << "\n";
+
+        //if (sg_pathHelperTurn)
+        //    helper_->smartTurning->makeTurnIfPossible(data,data.turnDir,1);
+
+        if (sg_pathHelperShowTurn)
+            RenderTurn(data);
+            //helper_->debugLine(.2,1,0,3,data.speedFactor,owner_->Position(),data.sensors.getSensor(data.turnDir)->before_hit,1);
+    }
+}
+
+
+
+// void gPathHelper::ThinkPath( gHelperData & data )
+// {
+//     if (!targetExist()) {
+//         data.thinkAgain = 4;
+//         return;
+//     }
+
+//     int lr = 0;
+//     REAL mindist = 10;
+
+//     eCoord dir = owner_->Direction();
+//     REAL ls    = data.sensors.getSensor(-1)->hit;
+//     REAL rs    = data.sensors.getSensor(1)->hit;
+
+//     //con << "TARGET: " << target << "\n";
+//     eCoord tDir = target - owner_->Position();
+
+//     // find a new path if the one we got is outdated:
+//     if (lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime)
+
+//         if (targetCurrentFace_)
+//         {
+//             //owner_->FindCurrentFace();
+//             eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
+//                                 target, targetCurrentFace_,
+//                                 owner_,
+//                                 path_);
+//             //con << "Found updated path & " << lastPath << "\n";
+//             lastPath = owner_->localCurrentTime;
+//         }
+
+//     if (!path_.Valid())
+//     {
+//         data.thinkAgain = 1;
+//         return;
+//     }
+
+//     // find the most advanced path point that is in our viewing range:
+
+//     if (!sg_pathHelperShowTurn && !sg_pathHelperTurn) {
+//         return;
+//     }
+
+//     for (int z = 10; z>=0; z--)
+//         path_.Proceed();
+
+//     bool goon   = path_.Proceed();
+//     bool nogood = false;
+
+//     do
+//     {
+//         if (goon)
+//             goon = path_.GoBack();
+//         else
+//             goon = true;
+
+//         eCoord pos   = path_.CurrentPosition() + path_.CurrentOffset() * 0.1f;
+//         eCoord opos  = owner_->Position();
+//         eCoord odir  = pos - opos;
+
+//         eCoord intermediate = opos + dir * eCoord::F(odir, dir);
+
+//         gSensor p(owner_, opos, intermediate - opos);
+//         p.detect(1.1f);
+//         nogood = (p.hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+
+//         if (!nogood)
+//         {
+//             gSensor p(owner_, intermediate, pos - intermediate);
+//             p.detect(1);
+//             nogood = (p.hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+//         }
+
+//     }
+//     while (goon && nogood);
+
+//     if (goon)
+//     {
+//         // now we have found our next goal. Try to get there.
+//         eCoord pos            = owner_->Position();
+//         eCoord current_target = path_.CurrentPosition();
+
+//         // look how far ahead the current_target is:
+//         REAL ahead = eCoord::F(current_target - pos, dir)
+//                    + eCoord::F(path_.CurrentOffset(), dir);
+
+//         if ( ahead > 0)
+//         {	  // it is still before us. just wait a while.
+//             mindist = ahead;
+//         }
+//         else
+//         { // we have passed it. Make a turn towards it.
+//             REAL side = (current_target - pos) * dir;
+
+//             if ( !((side > 0 && ls < 3) || (side < 0 && rs < 3))
+//                     && (fabs(side) > 3 || ahead < -10) )
+//             {
+//                 lr += (side > 0 ? 1 : -1);
+//                 lr = -lr;
+//             }
+//         }
+//     }
+//     else // nogood
+//     {
+//         lastPath -= 1;
+//     }
+
+//     REAL d = sqrt(tDir.NormSquared()) * .2f;
+//     if (d < mindist)
+//         mindist = d;
+
+//     data.thinkAgain = mindist / owner_->Speed();
+//     if (data.thinkAgain > .4)
+//         data.thinkAgain *= .7;
+//     data.thinkAgain;
+//     data.turnDir = lr;
+// }
+
+
+
 
 int noTurns = 0;
 class gHelperEmergencyTurn
@@ -1186,12 +1802,18 @@ gHelperSensors *gHelperSensorsData::getSensors()
 
 
 
-gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL &a_speedFactor, REAL &a_turnSpeedFactor, REAL &a_turnSpeedFactorPercent, REAL &a_turnDistance)
+gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL &a_speedFactor,
+                         REAL &a_turnSpeedFactor, REAL &a_turnSpeedFactorPercent,
+                         REAL &a_turnDistance, REAL a_thinkAgain, REAL a_turnDir,
+                         REAL a_turnTime)
     : sensors(sensors_),
       speedFactor(a_speedFactor),
       turnSpeedFactor(a_turnSpeedFactor),
       turnSpeedFactorPercent(a_turnSpeedFactorPercent),
-      turnDistance(a_turnDistance)
+      turnDistance(a_turnDistance),
+      thinkAgain(a_thinkAgain),
+      turnDir(a_turnDir),
+      turnTime(a_turnTime)
 { }
 
 
@@ -1377,7 +1999,7 @@ if (owner_->tailMoving) {
     }
     else {
         // The tail is in front of the cycle, stay on current path
-   
+
         // The tail is directly in front of or behind the cycle
         // Stay on current path
     }
@@ -1619,6 +2241,9 @@ if (owner_->tailMoving) {
     }
 
     bool gSmartTurning::makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFactor){
+        if (!helper_->drivingStraight())
+            return false;
+
         switch (dir) {
             case -1: {
                 if (canSurviveTurnSpecific(data,dir,spaceFactor)) {
@@ -2093,23 +2718,23 @@ if (owner_->tailMoving) {
         return owner_->CanMakeTurn((action == &gCycle::se_turnRight) ? 1 : -1);
     }
 
-
-
-
     gHelper::gHelper(gCycle *owner)
-        : owner_(owner), player_(owner->Player()),
+        : owner_(owner),
+          player_(owner->Player()),
           ownerWallLength(owner->ThisWallsLength()),
           ownerTurnDelay(owner->GetTurnDelay()),
           lastHelperDebugMessage(NULL),
           lastHelperDebugMessageTimeStamp(-999),
           data_stored(NULL)
     {
+        aiCreated = false;
         ownerPos = &owner_->pos;
         ownerDir = &owner_->dir;
         tailPos = &owner_->tailPos;
         ownerSpeed = &owner_->verletSpeed_;
         enemies.owner_ = owner;
-        gSmartTurning::Get( this , owner );;
+        gSmartTurning::Get(this, owner);
+        gPathHelper::Get(this, owner);
     }
 
     gCycle* gHelper::getOwner() { return owner_; }
@@ -2174,87 +2799,131 @@ if (owner_->tailMoving) {
             }
             // HelperDebug("detectCut","\n", 1);
             // HelperDebug("detectCut","start", 1);
-            eCoord relativeEnemyPos = target->Position() - (*ownerPos);
-            eCoord actualEnemyPos = target->Position();
-            eCoord enemydir = target->Direction();
-            REAL enemyspeed = target->Speed();
+                eCoord relativeEnemyPos = target->Position() - (*ownerPos);
+                eCoord actualEnemyPos = target->Position();
+                eCoord enemydir = target->Direction();
+                REAL enemyspeed = target->Speed();
 
-            // HelperDebug("detectCut","ownerPos", (*ownerPos));
-            // HelperDebug("detectCut","relativeEnemyPos", relativeEnemyPos);
-            // HelperDebug("detectCut","actualEnemyPos", actualEnemyPos);
-            // HelperDebug("detectCut","enemydir", enemydir);
+                // HelperDebug("detectCut","ownerPos", (*ownerPos));
+                // HelperDebug("detectCut","relativeEnemyPos", relativeEnemyPos);
+                // HelperDebug("detectCut","actualEnemyPos", actualEnemyPos);
+                // HelperDebug("detectCut","enemydir", enemydir);
 
-            relativeEnemyPos = relativeEnemyPos.Turn(ownerDir->Conj()).Turn(0, 1);
-            enemydir = enemydir.Turn(ownerDir->Conj()).Turn(0, 1);
+                relativeEnemyPos = relativeEnemyPos.Turn(ownerDir->Conj()).Turn(0, 1);
+                enemydir = enemydir.Turn(ownerDir->Conj()).Turn(0, 1);
 
-            //  relativeEnemyPos makes the enemy 0,0. Owner position relative to enemy as center point
-            // HelperDebug("detectCut","relativeEnemyPos after turn ", relativeEnemyPos);
-            // HelperDebug("detectCut","enemydir after turn ", enemydir);
+                //  relativeEnemyPos makes the enemy 0,0. Owner position relative to enemy as center point
+                // HelperDebug("detectCut","relativeEnemyPos after turn ", relativeEnemyPos);
+                // HelperDebug("detectCut","enemydir after turn ", enemydir);
 
-            // bool enemyDirection = false;
-            // if (enemydir.x <= 0 && enemydir.y == 1)
-            // {
-            //     enemyDirection = true;
-            // }
+                // bool enemyDirection = false;
+                // if (enemydir.x <= 0 && enemydir.y == 1)
+                // {
+                //     enemyDirection = true;
+                // }
 
-            int side = 1;
-            if (relativeEnemyPos.x < 0)
-            {
-                side *= -1;
-                relativeEnemyPos.x *= -1;
-                enemydir.x *= -1;
-            }
-            // HelperDebug("detectCut","side ", side);
-            // HelperDebug("detectCut","relativeEnemyPos.x", relativeEnemyPos.x);
-            // HelperDebug("detectCut","enemydir.x", enemydir.x);
-            REAL enemydist = target->Lag() * enemyspeed;
-
-            /*
-            if (!sr_predictObjects) {
-                relativeEnemyPos = relativeEnemyPos - enemydir * enemydist;
-            }
-            */
-            enemydist += sg_helperDetectCutReact * enemyspeed;
-
-            REAL ourdist = sg_helperDetectCutReact * (*ownerSpeed);
-
-            // HelperDebug("detectCut","enemydist",enemydist);
-            // HelperDebug("detectCut","ourdist",ourdist);
-            relativeEnemyPos.y -= ourdist;
-
-
-            REAL forward = -relativeEnemyPos.y + .01;
-            if (forward < 0)
-                forward = 0;
-            if (forward > enemydist)
-                forward = enemydist;
-
-            relativeEnemyPos.y += forward;
-            enemydist -= forward;
-            relativeEnemyPos.x -= enemydist;
-
-            // HelperDebug("detectCut","relativeEnemyPos.y after forward",relativeEnemyPos.y);
-            // HelperDebug("detectCut","relativeEnemyPos.x after forward ",relativeEnemyPos.x);
-            bool canCutUs = relativeEnemyPos.y * enemyspeed > relativeEnemyPos.x * (*ownerSpeed);
-            bool canCutEnemy = relativeEnemyPos.y * (*ownerSpeed) < -relativeEnemyPos.x * enemyspeed;
-            // HelperDebug("detectCut","end", 1);
-            if (canCutUs && !canCutEnemy)
-            {
-                debugLine(1, 0, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
-            }
-            else if (canCutEnemy)
-            {
-
-                if (side == -1 && smartTurning->canSurviveTurnSpecific(data,side,range))
+                int side = 1;
+                if (relativeEnemyPos.x < 0)
                 {
-                    debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
+                    side *= -1;
+                    relativeEnemyPos.x *= -1;
+                    enemydir.x *= -1;
                 }
+                // HelperDebug("detectCut","side ", side);
+                // HelperDebug("detectCut","relativeEnemyPos.x", relativeEnemyPos.x);
+                // HelperDebug("detectCut","enemydir.x", enemydir.x);
+                REAL enemydist = target->Lag() * enemyspeed;
 
-                if (side == 1 && smartTurning->canSurviveTurnSpecific(data,side,range))
-                {
-                    debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
+                /*
+                if (!sr_predictObjects) {
+                    relativeEnemyPos = relativeEnemyPos - enemydir * enemydist;
                 }
-            }
+                */
+                enemydist += sg_helperDetectCutReact * enemyspeed;
+
+                REAL ourdist = sg_helperDetectCutReact * (*ownerSpeed);
+
+                // HelperDebug("detectCut","enemydist",enemydist);
+                // HelperDebug("detectCut","ourdist",ourdist);
+                relativeEnemyPos.y -= ourdist;
+
+
+                REAL forward = -relativeEnemyPos.y + .01;
+                if (forward < 0)
+                    forward = 0;
+                if (forward > enemydist)
+                    forward = enemydist;
+
+                relativeEnemyPos.y += forward;
+                enemydist -= forward;
+                relativeEnemyPos.x -= enemydist;
+
+                // HelperDebug("detectCut","relativeEnemyPos.y after forward",relativeEnemyPos.y);
+                // HelperDebug("detectCut","relativeEnemyPos.x after forward ",relativeEnemyPos.x);
+    bool canCutUs, canCutEnemy;
+
+    canCutUs = relativeEnemyPos.y * enemyspeed > relativeEnemyPos.x * (*ownerSpeed);
+    canCutEnemy = relativeEnemyPos.y * (*ownerSpeed) < -relativeEnemyPos.x * enemyspeed;
+    if (canCutUs && !canCutEnemy)
+    {
+        debugLine(1, 0, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
+    }
+    else if (canCutEnemy)
+    {
+        if (side == -1 && smartTurning->canSurviveTurnSpecific(data,side,range))
+        {
+            debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
+        }
+
+        if (side == 1 && smartTurning->canSurviveTurnSpecific(data,side,range))
+        {
+            debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
+        }
+    }
+
+    /*
+    eCoord myPos = *ownerPos;
+eCoord enemyPos = target->Position();
+eCoord enemyDir = target->Direction();
+REAL enemySpeed = target->Speed();
+
+// Check if the enemy is facing towards or away from you
+bool enemyFacingTowards = enemyDir.x * (myPos.x - enemyPos.x) + enemyDir.y * (myPos.y - enemyPos.y) < 0;
+
+// Calculate the distance the enemy will travel before you can react to them cutting you off
+REAL enemyDist = target->Lag() * enemySpeed + sg_helperDetectCutReact * enemySpeed;
+
+// Calculate the distance you will travel before you can react to cutting off the enemy
+REAL myDist = sg_helperDetectCutReact * (*ownerSpeed);
+
+// Check if you can cut off the enemy
+bool canCutEnemy;
+if (enemyFacingTowards) {
+    // If the enemy is facing towards you, check if their distance traveled is less than the distance you need to travel to cut them off
+    canCutEnemy = enemyDist < myDist;
+} else {
+    // If the enemy is facing away from you, check if your distance traveled is less than the distance they need to travel to cut you off
+    canCutEnemy = myDist < enemyDist;
+}
+
+// Check if the enemy can cut you off
+bool canCutUs;
+if (enemyFacingTowards) {
+    // If the enemy is facing towards you, check if your distance traveled is less than the distance they need to travel to cut you off
+    canCutUs = myDist < enemyDist;
+} else {
+    // If the enemy is facing away from you, check if their distance traveled is less than the distance you need to travel to cut them off
+    canCutUs = enemyDist < myDist;
+}
+
+if (canCutUs && !canCutEnemy) {
+    // If the enemy can cut you off but you can't cut them off, draw a red line
+    debugLine(1, 0, 0, sg_helperDetectCutHeight, timeout, myPos, enemyPos);
+} else if (canCutEnemy) {
+    // If you can cut the enemy off, draw a green line
+    debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, myPos, enemyPos);
+}
+*/
         }
     }
 
@@ -2263,16 +2932,16 @@ if (owner_->tailMoving) {
         if (!aliveCheck()) { return; }
         for(int i=0;i < enemies.allEnemies.Len();i++)
         {
-            gCycle *other = enemies.allEnemies[i];
-            if (!enemies.exist(other)) {
+            gCycle *enemy = enemies.allEnemies[i];
+            if (!enemies.exist(enemy)) {
                 continue;
             }
 
-            eCoord otherPos = other->Position();
+            eCoord enemyPos = enemy->Position();
             REAL R = .1, G = .1, B = 0;
-            bool isClose = smartTurning->isClose(otherPos, detectionRange + data.turnSpeedFactor);
-            bool enemyFaster = ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
-            bool isTeammate = (owner_->Team() == other->Team());
+            bool isClose = smartTurning->isClose(enemyPos, detectionRange + data.turnSpeedFactor);
+            bool enemyFaster = ((enemy->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
+            bool isTeammate = (owner_->Team() == enemy->Team());
 
             if ((isClose || enemyFaster))
             {
@@ -2291,7 +2960,7 @@ if (owner_->tailMoving) {
                     R = 1, G = .5, B = 0;
                 }
 
-                debugLine(R,G,B,sg_helperEnemyTracersHeight,timeout,(*ownerPos),otherPos,sg_helperEnemyTracersBrightness);
+                debugLine(R,G,B,sg_helperEnemyTracersHeight,timeout,(*ownerPos),enemyPos,sg_helperEnemyTracersBrightness);
             }
         }
 
@@ -2315,8 +2984,6 @@ if (owner_->tailMoving) {
         if (canSeeTarget((*tailPos),sg_helperShowTailPassthrough)) {
             debugLine(owner_->color_.r,owner_->color_.g,owner_->color_.b,sg_helperShowTailHeight,timeout,(*ownerPos),(*tailPos));
         }
-
-
     }
 
     void gHelper::showTailPath(gHelperData &data)
@@ -2353,11 +3020,10 @@ if (owner_->tailMoving) {
         REAL timeout = fabs(distanceToTail)/10 * data.speedFactor;
 
         debugLine(1,1,1,sg_helperShowTailTracerHeight,timeout*sg_helperShowTailTracerTimeoutMult,*tailPos,*tailPos);
-
-
     }
 
-    void gHelper::findCorner(gHelperData &data, gSmartTurningCornerData &corner, const gSensor *sensor) {
+    void gHelper::findCorner(gHelperData &data, gSmartTurningCornerData &corner, const gSensor *sensor)
+    {
 
         corner.noticedTime = owner_->localCurrentTime;
         corner.exist = true;
@@ -2366,13 +3032,14 @@ if (owner_->tailMoving) {
         corner.currentPos = *sensor->ehit->Point();
         corner.distanceFromPlayer = eCoord::F(*ownerDir, corner.currentPos - (*ownerPos));
         corner.turnTime = leftCorner.getTurnTime(owner_->Speed()) + owner_->localCurrentTime;
-            REAL secondEdgeDistance = eCoord::F(*ownerDir, *sensor->ehit->Other()->Point() - (*ownerPos));
+        REAL secondEdgeDistance = eCoord::F(*ownerDir, *sensor->ehit->Other()->Point() - (*ownerPos));
 
         if (corner.distanceFromPlayer < secondEdgeDistance)
         {
             corner.distanceFromPlayer = secondEdgeDistance;
             corner.currentPos = *sensor->ehit->Other()->Point();
         }
+
         corner.infront = corner.isInfront(*ownerPos, *ownerDir);
 
         if (corner.lastPos != corner.currentPos)
@@ -2386,7 +3053,6 @@ if (owner_->tailMoving) {
     {
         findCorner(data,leftCorner,data.sensors.getSensor(-1));
         findCorner(data,rightCorner,data.sensors.getSensor(1));
-        //findCorner(data,frontCorner,data.front);
     }
 
     void gHelper::showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout) {
@@ -2408,7 +3074,6 @@ if (owner_->tailMoving) {
         findCorners(data);
         showCorner(data,leftCorner,timeout);
         showCorner(data,rightCorner,timeout);
-        //showCorner(data,frontCorner,timeout);
     }
 
     bool gHelper::drivingStraight() {
@@ -2432,14 +3097,14 @@ if (owner_->tailMoving) {
             debugLine(1,.5,0,sg_showHitDataHeightFront,data.speedFactor,(*ownerPos),frontBeforeHit);
             showHitDebugLines(frontBeforeHit, owner_->Direction(), timeout, data, sg_showHitDataRecursion, -1);
             showHitDebugLines(frontBeforeHit, owner_->Direction(), timeout, data, sg_showHitDataRecursion, 1);
-            //showHitDebugLinesLeft(data.sensors.getSensor(0)->before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
-            //showHitDebugLinesRight(data.sensors.getSensor(0)->before_hit, owner_->Direction(), timeout, data, sg_showHitDataRecursion);
         }
     }
 
-    void gHelper::showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir) {
+    void gHelper::showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir)
+    {
 
-        if (recursion <= 0) {
+        if (recursion <= 0)
+        {
             return;
         }
         recursion--;
@@ -2450,60 +3115,15 @@ if (owner_->tailMoving) {
 
         bool open = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
 
-        if (open) {
-            debugLine(0,1,0,sg_showHitDataHeightFront,timeout,pos,hitPos);
-        } else {
-            debugLine(1,0,0,sg_showHitDataHeightFront,timeout,pos,hitPos);
+        if (open)
+        {
+            debugLine(0, 1, 0, sg_showHitDataHeightFront, timeout, pos, hitPos);
         }
-        showHitDebugLines(hitPos,newDir,timeout,data,recursion,sensorDir);
-    }
-
-    void gHelper::showHitDebugLinesLeft(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion) {
-
-        if (recursion == 0) {
-            return;
+        else
+        {
+            debugLine(1, 0, 0, sg_showHitDataHeightFront, timeout, pos, hitPos);
         }
-        recursion--;
-
-        eCoord dirLeft = dir.Turn(eCoord(0, 1));
-        gSensor left(owner_, pos, dirLeft);
-        left.detect(1000);
-        eCoord hitPos = left.before_hit;
-        REAL hitDistance = left.hit;
-
-        bool leftOpen = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
-
-        if (leftOpen) {
-            debugLine(0,1,0,sg_showHitDataHeight,timeout,pos,hitPos);
-        } else {
-            debugLine(1,0,0,sg_showHitDataHeight,timeout,pos,hitPos);
-        }
-
-        showHitDebugLinesLeft(hitPos, dirLeft, timeout, data, recursion);
-    }
-
-    void gHelper::showHitDebugLinesRight(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion) {
-
-        if (recursion == 0) {
-            return;
-        }
-        recursion--;
-
-        eCoord dirRight = dir.Turn(eCoord(0, -1));
-        gSensor right(owner_, pos, dirRight);
-        right.detect(1000);
-        eCoord hitPos = right.before_hit;
-        REAL hitDistance = right.hit;
-
-        bool rightOpen = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
-
-        if (rightOpen) {
-            debugLine(0,1,0,sg_showHitDataHeight,timeout,pos,hitPos);
-        } else {
-            debugLine(1,0,0,sg_showHitDataHeight,timeout,pos,hitPos);
-        }
-
-        showHitDebugLinesRight(right.before_hit, dirRight, timeout, data, recursion);
+        showHitDebugLines(hitPos, newDir, timeout, data, recursion, sensorDir);
     }
 
     gHelper& gHelper::Get( gCycle * cycle )
@@ -2518,12 +3138,33 @@ if (owner_->tailMoving) {
 
     }
 
-
     bool gHelper::aliveCheck() {
         return owner_->Alive();
     }
+
     void gHelper::Activate()
     {
+        //con << "AI Created? " << bool(aiPlayer == nullptr) << "\n";
+        if (sg_helperAI)
+        {
+            if (!aiCreated)
+            {
+                con << "CREATING AI!! \n";
+                gAIPlayer *aiPlayer = new gAIPlayer(owner_);
+                // aiPlayer->character = BestIQ(1000);
+                sg_AIReferences.Add(aiPlayer);
+                aiCreated = true;
+            }
+            else
+            {
+                aiPlayer->Timestep(se_GameTime());
+            }
+        }
+        else
+        {
+            aiPlayer = nullptr;
+        }
+
         if (!aliveCheck()) { return; }
         owner_->localCurrentTime = se_GameTime();
         REAL speedFactor = (1/(*ownerSpeed));
@@ -2532,13 +3173,17 @@ if (owner_->tailMoving) {
         REAL turnDistance = (turnSpeedFactor/100);
 
         gHelperSensorsData sensors(owner_);
-        gHelperData data(sensors, speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance);
+        gHelperData data(sensors, speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance,0,0,0);
         data_stored = &data;
 
         enemies.detectEnemies();
 
         if (sg_helperSmartTurning) {
             smartTurning->Activate(data);
+        }
+
+        if (sg_pathHelper) {
+            pathHelper->Activate(data);
         }
 
         if (sg_helperEnemyTracers)
@@ -2579,3 +3224,7 @@ if (owner_->tailMoving) {
         owner_->justCreated = false;
     }
 
+
+gHelper::~gHelper()
+{
+}

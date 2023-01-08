@@ -59,216 +59,10 @@ class gAIBot;
 typedef enum{gSENSOR_NONE,gSENSOR_RIM, gSENSOR_ENEMY,
              gSENSOR_TEAMMATE ,gSENSOR_SELF, gSENSOR_ZONE} gSensorWallType;
 
-
-
+#include "gHelper.h"
 class eEdge;
 
 // sensor sent out to detect near eWalls
-
-struct gHelperSensors
-{
-    gSensor* front;
-    gSensor* left;
-    gSensor* right;
-
-    gHelperSensors(gSensor* front_, gSensor* left_, gSensor* right_);
-};
-
-
-struct gHelperSensorsData
-{
-    gCycle *owner_;
-    gSensor *front_stored;
-    gSensor *left_stored;
-    gSensor *right_stored;
-    bool lock;
-
-    gHelperSensorsData(gCycle *owner);
-    void toggleLock();
-    gSensor* getSensor(int dir);
-    gSensor* getSensor(eCoord start, int dir);
-    gHelperSensors *getSensors();
-};
-
-struct gHelperData
-{
-    gHelperSensorsData &sensors;
-    REAL &speedFactor;
-    REAL &turnSpeedFactor;
-    REAL &turnSpeedFactorPercent;
-    REAL &turnDistance;
-
-    gHelperData(gHelperSensorsData &sensors_, REAL &a_speedFactor, REAL &a_turnSpeedFactor, REAL &a_turnSpeedFactorPercent, REAL &a_turnDistance);
-};
-
-
-
-class gSmartTurning
-{
-public:
-    gSmartTurning(gHelper *helper, gCycle *owner);
-
-    void Activate(gHelperData &data);
-    bool isClose(eCoord pos, REAL closeFactor);
-    void smartTurningPlan(gHelperData &data);
-    void smartTurningSurvive(gHelperData &data);
-    void smartTurningOpposite(gHelperData &data);
-    void autoUnBrake();
-    void followTail(gHelperData &data);
-    void smartTurningFrontBot(gHelperData &data);
-    void thinkSurvive(gHelperData &data);
-    int thinkPath( eCoord pos, gHelperData &data );
-    bool canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceFactor = 0);
-    void smartTurningSurviveTrace(gHelperData &data);
-    void calculateRubberFactor(REAL rubberMult, REAL rubberFactorMult);
-    bool makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFactor = 0);
-    void canSurviveTurn(gHelperData &data,
-                        REAL &canSurviveLeftTurn,
-                        REAL &canSurviveRightTurn,
-                        bool &closedIn,
-                        bool &blockedBySelf,
-                        REAL freeSpaceFactor = 0 );
-    static gSmartTurning & Get( gHelper * helper, gCycle *owner);
-    int getEmergencyTurn(gHelperData &data);
-    bool CanMakeTurn(uActionPlayer *action);
-    private:
-        gCycle *owner_;
-        gHelper *helper_;
-        gHelperData *data_;
-        REAL &localCurrentTime;
-        REAL &lastTurnAttemptTime;
-        REAL &lastTurnAttemptDir;
-        REAL &lastTurnTime;
-        REAL &turnIgnoreTime;
-        REAL &lastTurnDir; // -1 left , 1 right
-        REAL &blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
-        REAL &forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
-        REAL rubberFactor;
-        REAL rubberTime;
-        REAL rubberRatio;
-        ePath path;
-    };
-
-
-struct gHelperEnemiesData
-{
-    gCycle* owner_;
-    tArray<gCycle*> allEnemies;
-    gCycle* closestEnemy;
-
-    bool exist(gCycle* enemy);
-    gCycle* detectEnemies();
-};
-
-
-struct gSmartTurningCornerData
-{
-    eCoord currentPos;
-    eCoord lastPos;
-    gSensorWallType type;
-    REAL distanceFromPlayer;
-    REAL turnTime;
-    REAL noticedTime;
-    REAL ignoredTime;
-    bool exist;
-    bool infront;
-
-    REAL getTurnTime(REAL speed);
-    bool isInfront(eCoord pos, eCoord dir);
-};
-
-struct gHelperData;
-
-class gHelper {
-    friend class gCycle;
-
-    public:
-    static gHelper & Get( gCycle * cycle );
-    gHelper(gCycle *owner);
-    void Activate();
-
-    void detectCut(gHelperData &data, int detectionRange);
-    void enemyTracers(gHelperData &data, int detectionRange, REAL timeout);
-    void showTail(gHelperData &data);
-    void showHit(gHelperData &data);
-
-    bool aliveCheck();
-    bool drivingStraight();
-    void followTail();
-    bool canSeeTarget(eCoord target,REAL passthrough);
-
-    void findCorner(gHelperData &data, gSmartTurningCornerData &corner, const gSensor *sensor);
-    void findCorners(gHelperData &data);
-    void showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout);
-    void showCorners(gHelperData &data);
-    void showTailTracer(gHelperData &data);
-
-    void showEnemyTail(gHelperData &data);
-
-    void showTailPath(gHelperData &data);
-
-    void showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir);
-    void showHitDebugLinesLeft(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion);
-    void showHitDebugLinesRight(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion);
-    bool isClose(eCoord pos, REAL closeFactor);
-    template <class T>
-    void HelperDebug(const char *from, const char *description, T value, bool spamProtection = true)
-    {/*
-        if (!sg_helperDebug)
-        {
-            return;
-        }
-        bool lastMessageIsSame = lastHelperDebugMessage == description;
-        bool delayNotPassed = false;owner_->localCurrentTime - lastHelperDebugMessageTimeStamp > sg_helperDebugDelay;
-
-        if (spamProtection && (lastMessageIsSame && delayNotPassed || delayNotPassed))
-        {
-            return;
-        }
-
-        lastHelperDebugMessageTimeStamp = owner_->localCurrentTime;
-
-        tString debugMessage;
-        if (sg_helperDebugTimeStamp)
-        {
-            debugMessage << "(" << owner_->localCurrentTime << ") ";
-        }
-
-        debugMessage << "0xff8888HELPER DEBUG - "
-                     << "0xff5555" << from << "0xffff88: " << description << " ";
-
-        if (spamProtection)
-        {
-            lastHelperDebugMessage = description;
-        }
-        debugMessage << value << "\n ";
-        con << debugMessage;*/
-    }
-    //static gHelper& Get( gCycle * cycle );
-    gCycle *getOwner();
-    eCoord closestCorner(eCoord center, REAL radius);
-    void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
-                   eCoord start,eCoord end, REAL brightness = 1);
-    private:
-    friend class gSmartTurning;
-    friend class gSmarterBot;
-    const char * lastHelperDebugMessage;
-    REAL lastHelperDebugMessageTimeStamp;
-    gSmartTurningCornerData leftCorner, rightCorner;//, frontCorner;
-    gHelperEnemiesData enemies;
-    gCycle *owner_;
-    ePlayerNetID *player_;
-    gCycle *closestEnemy;
-    eCoord *ownerPos;
-    eCoord *ownerDir;
-    eCoord *tailPos;
-    REAL *ownerSpeed;
-    REAL ownerWallLength;
-    REAL ownerTurnDelay;
-    std::unique_ptr< gSmartTurning > smartTurning;
-    //std::unique_ptr< gSmarterBot > smarterBot;
-    gHelperData *data_stored;
-};
 
 // minimum time between two cycle turns
 extern REAL sg_delayCycle;
@@ -369,9 +163,10 @@ public:
     {
         displayList_.Clear( inhibit );
     }
-private:
+
     gNetPlayerWall *                wallList_;                      //!< linked list of all walls
     gNetPlayerWall *                wallsWithDisplayList_;          //!< linked list of all walls with display list
+private:
     rDisplayList                    displayList_;                   //!< combined display list
     REAL                            wallsWithDisplayListMinDistance_; //!< minimal distance of the walls with display list
     int                             wallsInDisplayList_;            //!< number of walls in the current display list
@@ -406,6 +201,7 @@ public:
     eCoord            lastGoodPosition_;    // the location of the last known good position
     eCoord            tailPos;
     eCoord            tailDir;
+    eFace             *tailFace;
     bool              tailMoving;
     bool              forcedInvulnerable;
     bool              justCreated;
@@ -422,6 +218,21 @@ public:
     eCoord rotationFrontWheel,rotationRearWheel; 	// wheel position (rotation)
     REAL   heightFrontWheel,heightRearWheel;  		// wheel (suspension)
 
+    struct WallInfo
+    {
+        eCoord tailPos;      //!< the position of the end of the walls
+        eCoord tailDir;      //!< direction the tail is moving in
+        eCoord centerOfMass; //!< the center of the total walls
+    };
+
+    //! fills in tail info, assuming the total wall lenght is the one given
+    void FillWallInfoFlexible( WallInfo & info, REAL totalLength ) const;
+
+    //! fills in tail info using the real wall length assuming the given rubber usage ratio
+    void FillWallInfo( WallInfo & info, REAL rubberRatio, REAL offset = 0 ) const;
+
+    //! fills in tail info using the real wall length
+    void FillWallInfo( WallInfo & info ) const;
 public:
     //REAL	brakingReservoir; // reservoir for braking. 1 means full, 0 is empty
 

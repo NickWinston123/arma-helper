@@ -5498,59 +5498,60 @@ bool gGame::GameLoop(bool input){
         // and trigger the scheduled auto-logons.
         ePlayer::SendAuthNames();
 
-        synced_ = true;
+        synced_ = false;
     }
 
-	gDelayCommand::Run(gtime);
-	gZone::Timesteps(gtime);
+	//gDelayCommand::Run(gtime);
+    //con << "Running trash zone code..\n";
+	//gZone::Timesteps(gtime);
 
-    {
-        static float lastTime = 1e42;
-        if(sg_gameTimeInterval >= 0 && (gtime >= lastTime + sg_gameTimeInterval || gtime < lastTime)) {
-            double time;
-            if (sg_gameTimeInterval >0){
-                time = (floor(gtime/sg_gameTimeInterval))*sg_gameTimeInterval;
-            } else{
-                time = gtime;
-            }
-            sg_gameTimeWriter << time << gtime;
-            sg_gameTimeWriter.write();
-            lastTime = time;
-        }
-    } {
-        static float lastTime = 1e42;
-        if((gtime > sg_playerPositioningStartTime) && (sg_tacticalPositionInterval >= 0) && (gtime >= lastTime + sg_tacticalPositionInterval || gtime < lastTime)) {
-            gCycle::TacticalPositioning(gtime);
-            lastTime = gtime;
-        }
-    } {
-        static float lastTime = 1e42;
-        if((sg_playerGridPosInterval >= 0) && (gtime > sg_playerGridPosInterval) && (gtime >= lastTime + sg_playerGridPosInterval || gtime < lastTime)) {
-            ePlayerNetID::GridPosLadderLog();
-            lastTime = gtime;
-        }
-    } {
-        static float lastTime = 1e42;
-        if((sg_zoneGridPosInterval >= 0) && (gtime > sg_zoneGridPosInterval) && (gtime >= lastTime + sg_zoneGridPosInterval || gtime < lastTime)) {
-            gZone::GridPosLadderLog();
-            lastTime = gtime;
-        }
-    } {
-        static float lastTime = 1e42;
-        if((sg_onlineStatsInterval >= 0) && (gtime > sg_onlineStatsInterval) && (gtime >= lastTime + sg_onlineStatsInterval || gtime < lastTime)) {
-            ePlayerNetID::OnlineStatsLadderLog();
-            lastTime = gtime;
-        }
-    } {
-        static float lastTime = 1e42;
-        if(sg_svgOutputFreq >= 0 && (gtime >= lastTime + sg_svgOutputFreq || gtime < lastTime)) {
-            sg_svgOutput.Create();
-            if(sg_svgOutputScoreDifferences) {
-                ePlayerNetID::LogScoreDifferences();
-            }
-            lastTime = gtime;
-        }
-    }
+    // {
+    //     static float lastTime = 1e42;
+    //     if(sg_gameTimeInterval >= 0 && (gtime >= lastTime + sg_gameTimeInterval || gtime < lastTime)) {
+    //         double time;
+    //         if (sg_gameTimeInterval >0){
+    //             time = (floor(gtime/sg_gameTimeInterval))*sg_gameTimeInterval;
+    //         } else{
+    //             time = gtime;
+    //         }
+    //         sg_gameTimeWriter << time << gtime;
+    //         sg_gameTimeWriter.write();
+    //         lastTime = time;
+    //     }
+    // } {
+    //     static float lastTime = 1e42;
+    //     if((gtime > sg_playerPositioningStartTime) && (sg_tacticalPositionInterval >= 0) && (gtime >= lastTime + sg_tacticalPositionInterval || gtime < lastTime)) {
+    //         gCycle::TacticalPositioning(gtime);
+    //         lastTime = gtime;
+    //     }
+    // } {
+    //     static float lastTime = 1e42;
+    //     if((sg_playerGridPosInterval >= 0) && (gtime > sg_playerGridPosInterval) && (gtime >= lastTime + sg_playerGridPosInterval || gtime < lastTime)) {
+    //         ePlayerNetID::GridPosLadderLog();
+    //         lastTime = gtime;
+    //     }
+    // } {
+    //     static float lastTime = 1e42;
+    //     if((sg_zoneGridPosInterval >= 0) && (gtime > sg_zoneGridPosInterval) && (gtime >= lastTime + sg_zoneGridPosInterval || gtime < lastTime)) {
+    //         gZone::GridPosLadderLog();
+    //         lastTime = gtime;
+    //     }
+    // } {
+    //     static float lastTime = 1e42;
+    //     if((sg_onlineStatsInterval >= 0) && (gtime > sg_onlineStatsInterval) && (gtime >= lastTime + sg_onlineStatsInterval || gtime < lastTime)) {
+    //         ePlayerNetID::OnlineStatsLadderLog();
+    //         lastTime = gtime;
+    //     }
+    // } {
+    //     static float lastTime = 1e42;
+    //     if(sg_svgOutputFreq >= 0 && (gtime >= lastTime + sg_svgOutputFreq || gtime < lastTime)) {
+    //         sg_svgOutput.Create();
+    //         if(sg_svgOutputScoreDifferences) {
+    //             ePlayerNetID::LogScoreDifferences();
+    //         }
+    //         lastTime = gtime;
+    //     }
+    // }
 
     if (state==GS_PLAY){
         if (gtime<0 && gtime>-PREPARE_TIME+.3)

@@ -33,6 +33,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eWall.h"
 #include "eSensor.h"
 
+
+#include "nConfig.h"
+bool se_renderPath = 1;
+static tConfItem<bool> se_renderPathC("PATH_RENDER", se_renderPath);
+
+REAL se_pathTargetHeight = 2;
+static tConfItem<REAL> se_pathTargetHeightC("PATH_TARGET_HEIGHT", se_pathTargetHeight);
+
+REAL se_pathHeight2 = 1;
+
+
 // heap of HalfEdges that are considered to be included in a possible path
 static tHeap<eHalfEdge> open;
 static tHeap<eHalfEdge> closed;
@@ -358,13 +369,13 @@ tHeapBase *eHalfEdge::Heap() const
 
 static ePath* lastPath = NULL;
 
-#ifdef DEBUG
+
 #include "rRender.h"
 
 void ePath::RenderLast()  // renders the last found path
 {
 #ifndef DEDICATED
-    if (!lastPath)
+    if (!se_renderPath || !lastPath)
         return;
 
     glDisable(GL_TEXTURE_2D);
@@ -376,7 +387,7 @@ void ePath::RenderLast()  // renders the last found path
     for (int i = lastPath->positions.Len()-1; i>=0; i--)
     {
         eCoord c = lastPath->positions(i) + lastPath->offsets(i);
-        Vertex(c.x, c.y, 0.1f);
+        Vertex(c.x, c.y, se_pathHeight2);
     }
     RenderEnd();
 
@@ -387,12 +398,12 @@ void ePath::RenderLast()  // renders the last found path
     {
         eCoord c = lastPath->CurrentPosition();
         Vertex(c.x, c.y, 0);
-        Vertex(c.x, c.y, 50);
+        Vertex(c.x, c.y, se_pathTargetHeight);
     }
     RenderEnd();
 #endif
 }
-#endif
+
 
 bool ePath::Proceed()
 {

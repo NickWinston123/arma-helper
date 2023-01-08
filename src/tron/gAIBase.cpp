@@ -131,7 +131,7 @@ static REAL Delay()
 
 
 
-gAICharacter* BestIQ( int iq )
+static gAICharacter* BestIQ( int iq )
 {
     int i;
 
@@ -1350,7 +1350,7 @@ void gAIPlayer::SetTraceSide(int side)
 
 // flag set if pathfinding is enabled. It's an expensive opeeration, so we just turn it
 // off if the PC can't handle it. Doesn't doo much good, anyway.
-static bool sg_pathEnabled = true;
+static bool sg_pathEnabled = false;
 
 // state change:
 void gAIPlayer::SwitchToState(gAI_STATE nextState, REAL minTime)
@@ -3284,7 +3284,7 @@ void gAIPlayer::UpdateRouteStep()
             tERR_WARN("preventing going too deep in recursion\n");
             return;
         }
-    
+
         eGrid *grid = eGrid::CurrentGrid();
         // update path
         eCoord targetPos = route_[lastCoord_];
@@ -3362,3 +3362,17 @@ static void sg_SetAIRoute(std::istream &s)
 
 static tConfItemFunc sg_SetAIRoute_conf("SET_AI_POSITION",&sg_SetAIRoute);
 
+
+gAIPlayer::gAIPlayer(gCycle* cycle) : ePlayerNetID(cycle->Player()->pID)
+{
+    con << "Activating AI with ePlayerNetID: " << cycle->Player()->pID << "\n";
+        gAIPlayer();
+            
+            character = &gAICharacter::s_Characters(1);
+            SetName("afk");
+            //SetTeam ( cycle->Team() );
+            //UpdateTeam();
+                        sg_AIReferences.Add( this );
+                    //SetTeam( t );
+                    //ai->UpdateTeam();
+}

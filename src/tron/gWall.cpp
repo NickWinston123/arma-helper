@@ -977,7 +977,9 @@ void gNetPlayerWall::RenderList(bool list, gWallRenderMode renderMode ){
                 REAL denom = pa-pe;
                 if( denom > 0 )
                 {
-                    this->cycle_->setTailMoving(false);
+                    //this->cycle_->setTailMoving(false);
+                    this->cycle_->setTailPos(p1);
+                    this->cycle_->setTailMoving(true);
                     continue;
                 }
 

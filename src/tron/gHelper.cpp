@@ -502,6 +502,9 @@ static bool IsTrapped(const gCycle *trapped, const gCycle *other)
 bool sg_tailHelper = false;
 static tConfItem<bool> sg_tailHelperC("HELPER_TAIL", sg_tailHelper);
 
+REAL sg_tailHelperBrightness = 1;
+static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
+
 gTailHelper::gTailHelper(gHelper *helper, gCycle *owner)
     : helper_(helper),
       owner_(owner)
@@ -614,19 +617,19 @@ std::vector<eCoord> gTailHelper::getPathToTail(double delay) {
 }
 
 
-    void gTailHelper::Activate(gHelperData &data) {
-        if (!owner_->tailMoving)
-            return;
+void gTailHelper::Activate(gHelperData &data) {
+    if (!owner_->tailMoving)
+        return;
 
-        std::vector<eCoord> path = getPathToTail(sg_tailHelperDelay);
-        eCoord lastPos = *ownerPos;
-        for (int i = 0; i < path.size(); i++) {
-            helper_->debugLine(1, 0, 0, 1, data.speedFactor, lastPos, path[i], 1);
-            lastPos = path[i];
-        }
+    std::vector<eCoord> path = getPathToTail(sg_tailHelperDelay);
+    eCoord lastPos = *ownerPos;
+    for (int i = 0; i < path.size(); i++) {
+        helper_->debugLine(1, 0, 0, 1, data.speedFactor, lastPos, path[i], sg_tailHelperBrightness);
+        lastPos = path[i];
     }
+}
 
-        
+
 
     /*
     void gTailHelper::Activate(gHelperData &data)
@@ -643,470 +646,336 @@ std::vector<eCoord> gTailHelper::getPathToTail(double delay) {
     }
     */
 
-        gTailHelper &gTailHelper::Get(gHelper * helper, gCycle * owner)
-        {
-        tASSERT(owner);
+    gTailHelper &gTailHelper::Get(gHelper * helper, gCycle * owner)
+    {
+    tASSERT(owner);
 
-        // create
-        if (helper->tailHelper.get() == 0)
-            helper->tailHelper.reset(new gTailHelper(helper, owner));
+    // create
+    if (helper->tailHelper.get() == 0)
+        helper->tailHelper.reset(new gTailHelper(helper, owner));
 
-        return *helper->tailHelper;
-        }
+    return *helper->tailHelper;
+    }
 
-        bool sg_pathHelper = false;
-        static tConfItem<bool> sg_pathHelperC("HELPER_PATH", sg_pathHelper);
+    bool sg_pathHelper = false;
+    static tConfItem<bool> sg_pathHelperC("HELPER_PATH", sg_pathHelper);
 
-        bool sg_pathHelperTurn = false;
-        static tConfItem<bool> sg_pathHelperTurnC("HELPER_PATH_RENDER", sg_pathHelperTurn);
+    bool sg_pathHelperTurn = false;
+    static tConfItem<bool> sg_pathHelperTurnC("HELPER_PATH_RENDER", sg_pathHelperTurn);
 
-        bool sg_pathHelperShowTurn = false;
-        static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_PATH_TURN_SHOW", sg_pathHelperShowTurn);
+    bool sg_pathHelperShowTurn = false;
+    static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_PATH_TURN_SHOW", sg_pathHelperShowTurn);
 
-        REAL sg_pathHelperThinkAgain = 1;
-        static tConfItem<REAL> sg_pathHelperThinkAgainC("HELPER_PATH_THINK_AGAIN", sg_pathHelperThinkAgain);
+    REAL sg_pathHelperThinkAgain = 1;
+    static tConfItem<REAL> sg_pathHelperThinkAgainC("HELPER_PATH_THINK_AGAIN", sg_pathHelperThinkAgain);
 
-        int sg_pathHelperMode = 0;
-        static tConfItem<int> sg_pathHelperModeC("HELPER_PATH_MODE", sg_pathHelperMode);
-        // sg_pathHelperModeC->help = tOutput("help");
+    int sg_pathHelperMode = 0;
+    static tConfItem<int> sg_pathHelperModeC("HELPER_PATH_MODE", sg_pathHelperMode);
+    // sg_pathHelperModeC->help = tOutput("help");
 
-        REAL sg_pathHelperAutoRange = 150;
-        static tConfItem<REAL> sg_pathHelperAutoRangeC("HELPER_PATH_AUTO_RANGE", sg_pathHelperAutoRange);
+    REAL sg_pathHelperAutoRange = 150;
+    static tConfItem<REAL> sg_pathHelperAutoRangeC("HELPER_PATH_AUTO_RANGE", sg_pathHelperAutoRange);
 
-        gPathHelper::gPathHelper(gHelper * helper, gCycle * owner)
-            : helper_(helper),
-              owner_(owner),
-              lastPath(owner_->localCurrentTime - 100),
-              lastTime(owner_->localCurrentTime),
-              nextTime(0),
-              pathInvalid(true)
-        {
-        // Initialize any other member variables here
-        }
+    gPathHelper::gPathHelper(gHelper * helper, gCycle * owner)
+        : helper_(helper),
+            owner_(owner),
+            lastPath(owner_->localCurrentTime - 100),
+            lastTime(owner_->localCurrentTime),
+            nextTime(0),
+            pathInvalid(true)
+    {
+    // Initialize any other member variables here
+    }
 
-        bool gPathHelper::targetExist()
-        {
-        return target != eCoord(0, 0) && targetCurrentFace_;
-        }
+    bool gPathHelper::targetExist()
+    {
+    return target != eCoord(0, 0) && targetCurrentFace_;
+    }
 
-        gPathHelper &gPathHelper::Get(gHelper * helper, gCycle * owner)
-        {
-        tASSERT(owner);
+    gPathHelper &gPathHelper::Get(gHelper * helper, gCycle * owner)
+    {
+    tASSERT(owner);
 
-        // create
-        if (helper->pathHelper.get() == 0)
-            helper->pathHelper.reset(new gPathHelper(helper, owner));
+    // create
+    if (helper->pathHelper.get() == 0)
+        helper->pathHelper.reset(new gPathHelper(helper, owner));
 
-        return *helper->pathHelper;
-        }
+    return *helper->pathHelper;
+    }
 
-        REAL eCoordDistance(const eCoord &p1, const eCoord &p2)
-        {
-        eCoord difference = p1 - p2;
-        return difference.Norm();
-        }
+    REAL eCoordDistance(const eCoord &p1, const eCoord &p2)
+    {
+    eCoord difference = p1 - p2;
+    return difference.Norm();
+    }
 
-        bool gPathHelper::cornerMode(gHelperData data)
-        {
-        helper_->findCorners(data);
+    bool gPathHelper::cornerMode(gHelperData data)
+    {
+    helper_->findCorners(data);
 
-        bool left = helper_->leftCorner.exist;
-        bool right = helper_->rightCorner.exist;
-        bool both = left && right;
+    bool left = helper_->leftCorner.exist;
+    bool right = helper_->rightCorner.exist;
+    bool both = left && right;
 
-        eCoord position;
-        if (left && !right)
-        {
-            position = helper_->leftCorner.currentPos;
-        }
+    eCoord position;
+    if (left && !right)
+    {
+        position = helper_->leftCorner.currentPos;
+    }
 
-        if (!left && right)
-        {
-            position = helper_->rightCorner.currentPos;
-        }
+    if (!left && right)
+    {
+        position = helper_->rightCorner.currentPos;
+    }
 
-        if (both)
-        {
-            // Calculate the distance from the owner's position to the left corner
-            REAL leftDistance = eCoordDistance(owner_->Position(), helper_->leftCorner.currentPos);
-            // Calculate the distance from the owner's position to the right corner
-            REAL rightDistance = eCoordDistance(owner_->Position(), helper_->rightCorner.currentPos);
-            position = (leftDistance < rightDistance) ? helper_->leftCorner.currentPos : helper_->rightCorner.currentPos;
-        }
+    if (both)
+    {
+        // Calculate the distance from the owner's position to the left corner
+        REAL leftDistance = eCoordDistance(owner_->Position(), helper_->leftCorner.currentPos);
+        // Calculate the distance from the owner's position to the right corner
+        REAL rightDistance = eCoordDistance(owner_->Position(), helper_->rightCorner.currentPos);
+        position = (leftDistance < rightDistance) ? helper_->leftCorner.currentPos : helper_->rightCorner.currentPos;
+    }
 
-        target = position;
+    target = position;
 
+    if (!DistanceCheck(data))
+    {
+        return false;
+    }
+
+    targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(target);
+
+    return true;
+    }
+
+    bool gPathHelper::tailMode(gHelperData data)
+    {
+    if (owner_->tailMoving)
+    {
+
+        target = owner_->tailPos;
         if (!DistanceCheck(data))
         {
             return false;
         }
-
-        targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(target);
-
+        targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(owner_->tailPos);
         return true;
-        }
+    }
+    return false;
+    }
 
-        bool gPathHelper::tailMode(gHelperData data)
+    bool gPathHelper::enemyMode(gHelperData data)
+    {
+    gCycle *enemy = helper_->enemies.closestEnemy;
+
+    if (helper_->enemies.exist(enemy))
+    {
+        target = enemy->Position();
+        if (!DistanceCheck(data))
         {
-        if (owner_->tailMoving)
-        {
-
-            target = owner_->tailPos;
-            if (!DistanceCheck(data))
-            {
-                return false;
-            }
-            targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(owner_->tailPos);
-            return true;
+            return false;
         }
-        return false;
-        }
+        targetCurrentFace_ = enemy->CurrentFace();
+        return true;
+    }
+    return false;
+    }
 
-        bool gPathHelper::enemyMode(gHelperData data)
+    bool gPathHelper::autoMode(gHelperData data)
+    {
+    gCycle *enemy = helper_->enemies.closestEnemy;
+
+    bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoRange + data.turnSpeedFactor);
+    if (isClose)
+    {
+        target = enemy->Position();
+        if (!DistanceCheck(data))
         {
-        gCycle *enemy = helper_->enemies.closestEnemy;
-
-        if (helper_->enemies.exist(enemy))
-        {
-            target = enemy->Position();
-            if (!DistanceCheck(data))
-            {
-                return false;
-            }
-            targetCurrentFace_ = enemy->CurrentFace();
-            return true;
+            return false;
         }
-        return false;
-        }
-
-        bool gPathHelper::autoMode(gHelperData data)
+        targetCurrentFace_ = enemy->CurrentFace();
+        return true;
+    }
+    else if (owner_->tailMoving)
+    {
+        target = owner_->tailPos;
+        if (!DistanceCheck(data))
         {
-        gCycle *enemy = helper_->enemies.closestEnemy;
-
-        bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoRange + data.turnSpeedFactor);
-        if (isClose)
-        {
-            target = enemy->Position();
-            if (!DistanceCheck(data))
-            {
-                return false;
-            }
-            targetCurrentFace_ = enemy->CurrentFace();
-            return true;
+            return false;
         }
-        else if (owner_->tailMoving)
-        {
-            target = owner_->tailPos;
-            if (!DistanceCheck(data))
-            {
-                return false;
-            }
-            targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(target);
-            return true;
-        }
+        targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(target);
+        return true;
+    }
 
-        return false;
-        }
+    return false;
+    }
 
-        REAL sg_pathHelperUpdateTime = -1000;
-        static tConfItem<REAL> sg_pathHelperUpdateTimeC("HELPER_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
+    REAL sg_pathHelperUpdateTime = -1000;
+    static tConfItem<REAL> sg_pathHelperUpdateTimeC("HELPER_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
 
-        bool gPathHelper::UpdateTimeCheck(gHelperData & data)
-        {
-        // eCoord b;
-        // switch (sg_pathHelperMode)
-        // {
-        //     case 0:
-        //     case 1:
-        //         b = owner_->tailPos;
-        //         break;
-        //     case 2:
-        //         b = helper_->enemies.closestEnemy->Position();
-        //         break;
-        //     default:
-        //         break;
-        // }
-        // eCoord a = lastPos;
-        // double distance = sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
-        // bool targetFarEnough = distance == 0 || distance > data.speedFactor * (sg_pathHelperUpdateDistance * 1000);
-        // //if (targetFarEnough)
-        // con << distance << " > " << data.speedFactor * sg_pathHelperUpdateDistance << " " << targetFarEnough << "\n";
-        // bool updateTime = lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
-        return lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
-        }
+    bool gPathHelper::UpdateTimeCheck(gHelperData & data)
+    {
+    // eCoord b;
+    // switch (sg_pathHelperMode)
+    // {
+    //     case 0:
+    //     case 1:
+    //         b = owner_->tailPos;
+    //         break;
+    //     case 2:
+    //         b = helper_->enemies.closestEnemy->Position();
+    //         break;
+    //     default:
+    //         break;
+    // }
+    // eCoord a = lastPos;
+    // double distance = sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
+    // bool targetFarEnough = distance == 0 || distance > data.speedFactor * (sg_pathHelperUpdateDistance * 1000);
+    // //if (targetFarEnough)
+    // con << distance << " > " << data.speedFactor * sg_pathHelperUpdateDistance << " " << targetFarEnough << "\n";
+    // bool updateTime = lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
+    return lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
+    }
 
-        REAL se_pathHeight = 1;
-        static tConfItem<REAL> se_pathHeightC("HELPER_PATH_HEIGHT", se_pathHeight);
+    REAL se_pathHeight = 1;
+    static tConfItem<REAL> se_pathHeightC("HELPER_PATH_HEIGHT", se_pathHeight);
 
-        void gPathHelper::RenderPath(gHelperData & data)
-        {
+    REAL se_pathBrightness = 1;
+    static tConfItem<REAL> se_pathBrightnessC("HELPER_PATH_BRIGHTNESS", se_pathBrightness);
+
+    void gPathHelper::RenderPath(gHelperData &data)
+    {
         if (!path_.Valid())
-        {
             return;
-        }
 
-        glDisable(GL_TEXTURE_2D);
-        glDisable(GL_LIGHTING);
-
-        glColor4f(1, 0, 0, 1);
-
-        BeginLineStrip();
+        eCoord last_c;
+        
         for (int i = path_.positions.Len() - 1; i >= 0; i--)
         {
             eCoord c = path_.positions(i) + path_.offsets(i);
-            Vertex(c.x, c.y, se_pathHeight);
-            helper_->debugLine(.2, 1, 0, se_pathHeight, data.speedFactor, c, c, 1);
+            if (i != path_.positions.Len() - 1)
+                helper_->debugLine(1, 0, 0, se_pathHeight, data.speedFactor, last_c, c, se_pathBrightness);
+            last_c = c;
         }
-
-        RenderEnd();
-
-        glColor4f(1, 1, 0, 1);
-
-        BeginLineStrip();
 
         if (path_.current >= 0 && path_.positions.Len() > 0)
         {
             eCoord c = path_.CurrentPosition();
-            Vertex(c.x, c.y, 0);
-            Vertex(c.x, c.y, se_pathHeight * 2);
+            helper_->debugLine(1, 1, 0, se_pathHeight, data.speedFactor, c, c, 1);
+            helper_->debugLine(1, 1, 0, (se_pathHeight * 2), data.speedFactor, c, c, se_pathBrightness);
         }
+    }
 
-        RenderEnd();
-        }
+    void gPathHelper::RenderTurn(gHelperData & data)
+    {
+    if (!path_.Valid())
+    {
+        return;
+    }
 
-        void gPathHelper::RenderTurn(gHelperData & data)
-        {
-        if (!path_.Valid())
-        {
-            return;
-        }
+    eCoord targetPos = path_.CurrentPosition() + path_.CurrentOffset(); // * 0.1f;
+    eCoord currentPos = owner_->Position();
+    eCoord dirToTarget = targetPos - currentPos;
 
-        eCoord targetPos = path_.CurrentPosition() + path_.CurrentOffset(); // * 0.1f;
-        eCoord currentPos = owner_->Position();
-        eCoord dirToTarget = targetPos - currentPos;
+    if (eCoord::F(owner_->Direction(), dirToTarget) > 0)
+    {
+        helper_->smartTurning->makeTurnIfPossible(data, 1, 1);
+        helper_->debugLine(.2, 1, 0, 3, data.speedFactor, owner_->Position(), data.sensors.getSensor(1)->before_hit, 1);
+    }
+    else
+    {
+        helper_->smartTurning->makeTurnIfPossible(data, -1, 1);
+        helper_->debugLine(.2, 1, 0, 3, data.speedFactor, owner_->Position(), data.sensors.getSensor(-1)->before_hit, 1);
+    }
+    }
 
-        if (eCoord::F(owner_->Direction(), dirToTarget) > 0)
-        {
-            helper_->smartTurning->makeTurnIfPossible(data, 1, 1);
-            helper_->debugLine(.2, 1, 0, 3, data.speedFactor, owner_->Position(), data.sensors.getSensor(1)->before_hit, 1);
-        }
-        else
-        {
-            helper_->smartTurning->makeTurnIfPossible(data, -1, 1);
-            helper_->debugLine(.2, 1, 0, 3, data.speedFactor, owner_->Position(), data.sensors.getSensor(-1)->before_hit, 1);
-        }
-        }
+    REAL sg_pathHelperUpdateDistance = 1;
+    static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
 
-        REAL sg_pathHelperUpdateDistance = 1;
-        static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
+    bool gPathHelper::DistanceCheck(gHelperData &data)
+    {
+    eCoord difference = target - lastPos;
+    REAL distance = difference.Norm();
+    // con << distance << " > " << sg_pathHelperUpdateDistance << " \n";
+    return distance >= sg_pathHelperUpdateDistance;
+    }
+    void gPathHelper::FindPath(gHelperData &data)
+    {
+    if (!targetExist())
+    {
+        return;
+    }
 
-        bool gPathHelper::DistanceCheck(gHelperData & data)
-        {
-        eCoord difference = target - lastPos;
-        REAL distance = difference.Norm();
-        // con << distance << " > " << sg_pathHelperUpdateDistance << " \n";
-        return distance >= sg_pathHelperUpdateDistance;
-        }
-        void gPathHelper::FindPath(gHelperData & data)
-        {
-        if (!targetExist())
-        {
-            return;
-        }
+    if (targetCurrentFace_)
+    {
+        // owner_->FindCurrentFace();
+        eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
+                            target, targetCurrentFace_,
+                            owner_,
+                            path_);
+        // con << "Found updated path & " << lastPath << "\n";
+        lastPath = owner_->localCurrentTime;
+        lastPos = target;
+        // con << "Updated path\n";
+    }
 
-        if (targetCurrentFace_)
-        {
-            // owner_->FindCurrentFace();
-            eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
-                                target, targetCurrentFace_,
-                                owner_,
-                                path_);
-            // con << "Found updated path & " << lastPath << "\n";
-            lastPath = owner_->localCurrentTime;
-            lastPos = target;
-            // con << "Updated path\n";
-        }
+    if (!path_.Valid())
+    {
+        targetCurrentFace_ = NULL;
+        lastPath = -100;
+        return;
+    }
+    }
 
-        if (!path_.Valid())
-        {
-            targetCurrentFace_ = NULL;
-            lastPath = -100;
-            return;
-        }
-        }
+    void gPathHelper::Activate(gHelperData &orig_data)
+    {
 
-        void gPathHelper::Activate(gHelperData & orig_data)
-        {
+    if (!helper_->aliveCheck())
+        return;
 
-        if (!helper_->aliveCheck())
-            return;
+    if (sg_pathHelperTurn)
+        RenderPath(orig_data);
 
-        if (sg_pathHelperTurn)
-            RenderPath(orig_data);
+    if (!UpdateTimeCheck(orig_data))
+        return;
 
-        if (!UpdateTimeCheck(orig_data))
-            return;
+    gHelperData data = orig_data;
 
-        gHelperData data = orig_data;
-
-        bool success = false;
-        switch (sg_pathHelperMode)
-        {
-        case 0:
-            success = autoMode(data);
-            break;
-        case 1:
-            success = tailMode(data);
-            break;
-        case 2:
-            success = enemyMode(data);
-            break;
-        case 3:
-            success = cornerMode(data);
-            break;
-        default:
-            // do nothing
-            return;
+    bool success = false;
+    switch (sg_pathHelperMode)
+    {
+    case 0:
+        success = autoMode(data);
+        break;
+    case 1:
+        success = tailMode(data);
+        break;
+    case 2:
+        success = enemyMode(data);
+        break;
+    case 3:
+        success = cornerMode(data);
+        break;
+    default:
+        // do nothing
+        return;
     }
 
     if (!success)
         return;
 
     FindPath(data);
-    //RenderPath();
-    //con << "Got Turn: " << data.turnDir << " Next Thought in " << nextthought << "\n";
+    // RenderPath();
+    // con << "Got Turn: " << data.turnDir << " Next Thought in " << nextthought << "\n";
 
-    //if (sg_pathHelperTurn)
-    //    helper_->smartTurning->makeTurnIfPossible(data,data.turnDir,1);
+    // if (sg_pathHelperTurn)
+    //     helper_->smartTurning->makeTurnIfPossible(data,data.turnDir,1);
 
     if (sg_pathHelperShowTurn)
         RenderTurn(data);
-        //helper_->debugLine(.2,1,0,3,data.speedFactor,owner_->Position(),data.sensors.getSensor(data.turnDir)->before_hit,1);
-
-}
-
-
-
-// void gPathHelper::ThinkPath( gHelperData & data )
-// {
-//     if (!targetExist()) {
-//         data.thinkAgain = 4;
-//         return;
-//     }
-
-//     int lr = 0;
-//     REAL mindist = 10;
-
-//     eCoord dir = owner_->Direction();
-//     REAL ls    = data.sensors.getSensor(-1)->hit;
-//     REAL rs    = data.sensors.getSensor(1)->hit;
-
-//     //con << "TARGET: " << target << "\n";
-//     eCoord tDir = target - owner_->Position();
-
-//     // find a new path if the one we got is outdated:
-//     if (lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime)
-
-//         if (targetCurrentFace_)
-//         {
-//             //owner_->FindCurrentFace();
-//             eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
-//                                 target, targetCurrentFace_,
-//                                 owner_,
-//                                 path_);
-//             //con << "Found updated path & " << lastPath << "\n";
-//             lastPath = owner_->localCurrentTime;
-//         }
-
-//     if (!path_.Valid())
-//     {
-//         data.thinkAgain = 1;
-//         return;
-//     }
-
-//     // find the most advanced path point that is in our viewing range:
-
-//     if (!sg_pathHelperShowTurn && !sg_pathHelperTurn) {
-//         return;
-//     }
-
-//     for (int z = 10; z>=0; z--)
-//         path_.Proceed();
-
-//     bool goon   = path_.Proceed();
-//     bool nogood = false;
-
-//     do
-//     {
-//         if (goon)
-//             goon = path_.GoBack();
-//         else
-//             goon = true;
-
-//         eCoord pos   = path_.CurrentPosition() + path_.CurrentOffset() * 0.1f;
-//         eCoord opos  = owner_->Position();
-//         eCoord odir  = pos - opos;
-
-//         eCoord intermediate = opos + dir * eCoord::F(odir, dir);
-
-//         gSensor p(owner_, opos, intermediate - opos);
-//         p.detect(1.1f);
-//         nogood = (p.hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
-
-//         if (!nogood)
-//         {
-//             gSensor p(owner_, intermediate, pos - intermediate);
-//             p.detect(1);
-//             nogood = (p.hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
-//         }
-
-//     }
-//     while (goon && nogood);
-
-//     if (goon)
-//     {
-//         // now we have found our next goal. Try to get there.
-//         eCoord pos            = owner_->Position();
-//         eCoord current_target = path_.CurrentPosition();
-
-//         // look how far ahead the current_target is:
-//         REAL ahead = eCoord::F(current_target - pos, dir)
-//                    + eCoord::F(path_.CurrentOffset(), dir);
-
-//         if ( ahead > 0)
-//         {	  // it is still before us. just wait a while.
-//             mindist = ahead;
-//         }
-//         else
-//         { // we have passed it. Make a turn towards it.
-//             REAL side = (current_target - pos) * dir;
-
-//             if ( !((side > 0 && ls < 3) || (side < 0 && rs < 3))
-//                     && (fabs(side) > 3 || ahead < -10) )
-//             {
-//                 lr += (side > 0 ? 1 : -1);
-//                 lr = -lr;
-//             }
-//         }
-//     }
-//     else // nogood
-//     {
-//         lastPath -= 1;
-//     }
-
-//     REAL d = sqrt(tDir.NormSquared()) * .2f;
-//     if (d < mindist)
-//         mindist = d;
-
-//     data.thinkAgain = mindist / owner_->Speed();
-//     if (data.thinkAgain > .4)
-//         data.thinkAgain *= .7;
-//     data.thinkAgain;
-//     data.turnDir = lr;
-// }
-
-
-
+    // helper_->debugLine(.2,1,0,3,data.speedFactor,owner_->Position(),data.sensors.getSensor(data.turnDir)->before_hit,1);
+    }
 
 int noTurns = 0;
 class gHelperEmergencyTurn
@@ -2203,7 +2072,7 @@ private:
         // if (!isClose(owner_->tailPos, data.turnSpeedFactor * 3)) {
         //     return;
         // }
-        
+
         if (owner_->tailMoving != true) {
             return;
         }

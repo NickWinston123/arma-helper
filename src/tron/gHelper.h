@@ -257,7 +257,7 @@ class gHelper {
     //static gHelper& Get( gCycle * cycle );
     gCycle *getOwner();
     eCoord closestCorner(eCoord center, REAL radius);
-    void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
+    static void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
                    eCoord start,eCoord end, REAL brightness = 1);
 
     ~gHelper();

@@ -54,9 +54,28 @@ struct gHelperData
     REAL turnDir;
     REAL turnTime;
 
-    gHelperData(gHelperSensorsData &sensors_, REAL &a_speedFactor, REAL &a_turnSpeedFactor, 
+    gHelperData(gHelperSensorsData &sensors_, REAL &a_speedFactor, REAL &a_turnSpeedFactor,
                 REAL &a_turnSpeedFactorPercent, REAL &a_turnDistance, REAL a_thinkAgain,
                 REAL a_turnDir, REAL a_turnTime);
+};
+
+class gTailHelper
+{
+    public:
+        // Constructor
+        gTailHelper(gHelper* helper, gCycle *owner);
+
+        void Activate(gHelperData &data);
+        std::vector<eCoord> getPathToTail(double delay);
+        static gTailHelper &Get(gHelper* helper, gCycle *owner);
+
+    private:
+        gCycle *owner_; // Pointer to the owner cycle
+        gHelper *helper_;
+        eCoord *ownerPos;
+        eCoord *ownerDir;
+        eCoord *tailPos;
+        REAL *ownerSpeed;
 };
 
 class gPathHelper
@@ -64,19 +83,20 @@ class gPathHelper
 public:
     // Constructor
     gPathHelper(gHelper* helper, gCycle *owner);
-    
+
     bool targetExist();
 
-    void ThinkPath(gHelperData &data);
+    void FindPath(gHelperData &data);
 
     void Activate(gHelperData &data);
 
     bool autoMode(gHelperData orig_data);
     bool enemyMode(gHelperData orig_data);
     bool tailMode(gHelperData orig_data);
-
-    bool UpdatePath();
-    void RenderPath(gHelperData & data);
+    bool cornerMode(gHelperData orig_data);
+    bool DistanceCheck(gHelperData & data);
+    bool UpdateTimeCheck(gHelperData &data);
+    void RenderPath(gHelperData &data);
     void RenderTurn(gHelperData &data);
 
     static gPathHelper &Get(gHelper* helper, gCycle *owner);
@@ -84,12 +104,13 @@ public:
 private:
 
     eCoord target;
-    tJUST_CONTROLLED_PTR<eFace> targetCurrentFace_; 
+    tJUST_CONTROLLED_PTR<eFace> targetCurrentFace_;
     gCycle *owner_; // Pointer to the owner cycle
     gHelper *helper_;
     REAL lastTime;
     REAL nextTime;
     REAL lastPath;
+    eCoord lastPos;
     ePath path_;
     bool pathInvalid;
 };
@@ -238,7 +259,7 @@ class gHelper {
     eCoord closestCorner(eCoord center, REAL radius);
     void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
                    eCoord start,eCoord end, REAL brightness = 1);
-    
+
     ~gHelper();
     private:
     gAIPlayer *aiPlayer;
@@ -246,6 +267,7 @@ class gHelper {
     friend class gSmartTurning;
     friend class gSmarterBot;
     friend class gPathHelper;
+    friend class gTailHelper;
     const char * lastHelperDebugMessage;
     REAL lastHelperDebugMessageTimeStamp;
     gSmartTurningCornerData leftCorner, rightCorner;//, frontCorner;
@@ -261,6 +283,7 @@ class gHelper {
     REAL ownerTurnDelay;
     std::unique_ptr< gSmartTurning > smartTurning;
     std::unique_ptr< gPathHelper > pathHelper;
+    std::unique_ptr< gTailHelper > tailHelper;
     //std::unique_ptr< gSmarterBot > smarterBot;
     gHelperData *data_stored;
 };

@@ -2551,6 +2551,8 @@ ePoint * eGrid::Insert(const eCoord& x, eFace *start){
 
 const eCoord se_zeroCoord(0,0);
 
+static bool se_EfficentFind = false;
+static tConfItem<bool> se_EfficentFindC("FIND_SURROUNDING_FACE_EFFICIENT", se_EfficentFind);
 
 eFace * eGrid::FindSurroundingFace(const eCoord &pos, eFace *currentFace) const{
     if (faces.Len()<1)
@@ -2590,6 +2592,8 @@ eFace * eGrid::FindSurroundingFace(const eCoord &pos, eFace *currentFace) const{
                 {
                     best      = run;
                     bestScore = score;
+                    if (se_EfficentFind)
+                        break;
                 }
             }
 

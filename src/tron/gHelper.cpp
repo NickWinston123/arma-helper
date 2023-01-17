@@ -152,7 +152,7 @@ void DebugLog(std::string message)
     }
     else
     {
-        con << tOutput("$players_color_error");
+        con << tOutput("Log Error");
     }
     o.close();
 }
@@ -1945,7 +1945,7 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
         case LEFT:
         {
 
-            left_stored->detect(sg_helperSensorRange, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
+            left_stored->detect(sg_helperSensorRange, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
             return left_stored;
         }
         case FRONT:
@@ -3617,7 +3617,6 @@ void gHelper::Activate()
     }
 
     if (sg_pathHelper) {
-        con << sensors_->getSensor(LEFT)->hit << "\n";
         pathHelper->Activate(data);
     }
 

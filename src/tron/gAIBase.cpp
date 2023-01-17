@@ -1064,7 +1064,8 @@ gAIPlayer::gAIPlayer(nMessage &m) :
         lastTime(se_GameTime()),
         nextTime(0),
         concentration(1),
-        log(NULL)
+        log(NULL),
+        hackermans(false)
 {
 }
 
@@ -1076,7 +1077,8 @@ gAIPlayer::gAIPlayer():
         lastTime(se_GameTime()),
         nextTime(0),
         concentration(1),
-        log(NULL)
+        log(NULL),
+        hackermans(false)
 {
     character = NULL;
     ClearTarget();
@@ -3156,7 +3158,8 @@ void gAIPlayer::Timestep(REAL time){
 
     if (!character)
     {
-        st_Breakpoint();
+        character = &gAICharacter::s_Characters(0);
+        //st_Breakpoint();
         return;
     }
 
@@ -3363,16 +3366,55 @@ static void sg_SetAIRoute(std::istream &s)
 static tConfItemFunc sg_SetAIRoute_conf("SET_AI_POSITION",&sg_SetAIRoute);
 
 
-gAIPlayer::gAIPlayer(gCycle* cycle) : ePlayerNetID(cycle->Player()->pID)
+// gAIPlayer::gAIPlayer(gCycle* cycle) : ePlayerNetID(cycle->Player()->pID)
+// {
+//     con << "Activating AI with ePlayerNetID: " << cycle->Player()->pID << "\n";
+//         gAIPlayer();
+
+//             character = &gAICharacter::s_Characters(1);
+//            //SetName("afk");
+//             //SetTeam ( cycle->Team() );
+//             //UpdateTeam();
+//            sg_AIReferences.Add( this );
+//                     //SetTeam( t );
+//                     //ai->UpdateTeam();
+// }
+
+gAIPlayer::gAIPlayer(gCycle* cycle):
+        character(NULL),
+        //	target(NULL),
+        lastPath(se_GameTime()-100),
+        lastTime(se_GameTime()),
+        nextTime(0),
+        concentration(1),
+        log(NULL),
+        owner_(cycle),
+        hackermans(true)
 {
-    con << "Activating AI with ePlayerNetID: " << cycle->Player()->pID << "\n";
-        gAIPlayer();
-            
-            character = &gAICharacter::s_Characters(1);
-            SetName("afk");
-            //SetTeam ( cycle->Team() );
-            //UpdateTeam();
-                        sg_AIReferences.Add( this );
-                    //SetTeam( t );
-                    //ai->UpdateTeam();
+    con << "Activating AI\n";
+    character = &gAICharacter::s_Characters(0);
+    con << "Set CHARACTER " << character << "\n";
+    ClearTarget();
+    traceSide = 1;
+    freeSide  = 0;
+    log       = NULL;
+
+    route_.clear();
+    lastCoord_ = 0;
+    targetCurrentFace_ = 0;
+
+    lastTime = 0;
+    lastPath = 0;
+    lastChangeAttempt = 0;
+    lazySideChange = 0;
+    path.Clear();
+
+    {
+        nextTime        = 10;
+        nextStateChange = 30;
+        state           = AI_TRACE;
+    }
+
+
+    ClearTarget();
 }

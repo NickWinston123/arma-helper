@@ -44,17 +44,33 @@ public:
     eCoord operator-() const{return eCoord(-x,-y);}
     eCoord operator+(const eCoord &a) const{return eCoord(x+a.x,y+a.y);}
     eCoord operator*(REAL a) const 		{return eCoord(x*a,y*a);}
+    
     eCoord operator/(REAL a) const 		{return eCoord(x/a,y/a);}
     const eCoord& operator*=(REAL a)  	{ x*=a; y*=a; return *this;}
     REAL NormSquared() 			const 	{return x*x+y*y;}
     REAL Norm() 				const 	{return sqrt(NormSquared());}
     void Normalize()					{ *this *= 1/Norm(); }
+    eCoord GetNormalized() const { 
+        eCoord temp = *this;
+        temp.Normalize();
+        return temp;
+    }
+    REAL GetNorm() const {
+        return Norm();
+    }
+
+
     eCoord &operator=(const eCoord &a) = default;
 
     //scalar product:
     static REAL F(const eCoord &a,const eCoord &b){
         return(a.x*b.x+a.y*b.y);
     }
+
+    REAL Dot(const eCoord &a) const {
+        return x*a.x + y*a.y;
+    }
+
 
     // change coordinates, so that a is at zero and c is at one.
     // gives the coordinate of b.

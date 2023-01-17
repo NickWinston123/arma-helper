@@ -140,6 +140,7 @@ public:
     virtual ~gCycleMovement                         ()                                              ;   //!< destructor
     virtual void OnRemoveFromGame(); // called when the cycle is physically removed from the game
 
+    void RequestSyncBypass();
     void RequestSync(bool ack=true);     //!< request a sync
     void RequestSync(int user,bool ack); //!< only for a single user
 

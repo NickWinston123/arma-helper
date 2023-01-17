@@ -3300,7 +3300,7 @@ bool gCycle::TimestepCore(REAL currentTime, bool calculateAcceleration ){
             REAL lookahead = Speed() * sg_syncIntervalEnemy*.5;
             if ( !sg_avoidBadOldClientSync || sg_NoLocalTunnelOnSync.Supported( Owner() ) || GetMaxSpaceAhead( lookahead ) >= lookahead )
             {
-                RequestSync(false);
+                RequestSyncBypass();
 
                 // checkpoint wall for better collision accuracy, only required on the server
                 if ( currentWall )

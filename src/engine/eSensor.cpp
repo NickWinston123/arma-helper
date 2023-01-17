@@ -38,6 +38,7 @@ eSensor::eSensor(eGameObject *o,const eCoord &start,const eCoord &d)
         :eStackGameObject(o->grid, start,d,o->currentFace)
         ,hit(1000),ehit(NULL),lr(0), owned(o) , inverseSpeed_(0)
 {
+    startPos_ = start;
     if (owned)
     {
         currentFace=owned->currentFace;
@@ -54,7 +55,7 @@ eSensor::eSensor(eGameObject *o,const eCoord &start,const eCoord &d)
 }
 
 void eSensor::HitZone(eGameObject * zone ,REAL time) {
-    
+
     throw eSensorFinished();
 }
 
@@ -97,20 +98,12 @@ void eSensor::PassEdge(const eWall *w,REAL time,REAL a,int){
 //  PassEdge((const eEdge *)e,time,a,recursion);
 //}
 
-void eSensor::detect(REAL range, const eCoord &start, const eCoord &d){
-
-    before_hit=start+d*(range-.001);
-    hit=range+.00001f;
-    ehit = 0;
-
-    try
-    {
-        Move(start+d*range,0,range);
-    }
-    catch( eSensorFinished & e )
-    {
-    }
+void eSensor::detect(REAL range, const eCoord &newPos, const eCoord &newDir){
+    pos = newPos;
+    dir = newDir;
+    detect(range);
 }
+
 void eSensor::detect(REAL range){
     //  eCoord start = pos;
     //  pos=pos+dir*.01;

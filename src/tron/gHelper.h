@@ -16,8 +16,71 @@
 #include "eSensor.h"
 #include "eGrid.h"
 
-class gAIPlayer;
+// class HelperDebug
+// {
+// public:
+//     template<typename T>
+//     static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
+//     {
+//         if (!sg_helperDebug)
+//         {
+//             return;
+//         }
 
+//         bool lastMessageIsSame = (lastHelperDebugMessage == description && lastHelperDebugSender == sender);
+//         float currentTime = tSysTimeFloat();
+//         bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < sg_helperDebugDelay;
+
+//         if (spamProtection && (lastMessageIsSame && delayNotPassed))
+//         {
+//             return;
+//         }
+
+//         lastHelperDebugMessageTimeStamp = currentTime;
+//         lastHelperDebugSender = sender;
+
+//         std::string debugMessage;
+
+//         if (sg_helperDebugTimeStamp)
+//         {
+//             debugMessage += "[" + std::to_string(tSysTimeFloat()) + "] ";
+//         }
+
+//         debugMessage += "0xff8888HELPER DEBUG - 0xff5555" + sender + ": 0xffff88:" + description + " ";
+
+//         if (spamProtection)
+//         {
+//             lastHelperDebugMessage = description;
+//         }
+
+//         debugMessage += (value) + "\n";
+//         con << debugMessage;
+//     }
+
+// private:
+//     static std::string lastHelperDebugMessage;
+//     static std::string lastHelperDebugSender;
+//     static float lastHelperDebugMessageTimeStamp;
+// };
+
+// std::string HelperDebug::lastHelperDebugMessage = "";
+// std::string HelperDebug::lastHelperDebugSender = "";
+// float HelperDebug::lastHelperDebugMessageTimeStamp = 0;
+
+
+
+//! return data of SolveTurn
+struct SolveTurnData
+{
+    REAL turnTime;  //!< seconds to wait before we turn
+    REAL quality;   //!< quality of the turn
+    eCoord turnDir; //!< direction to drive in
+    
+    SolveTurnData(): turnTime(0), quality(0){}
+};
+
+class gAIPlayer;
+void helperMenu();
 struct gHelperSensors
 {
     gSensor* front;
@@ -34,12 +97,11 @@ struct gHelperSensorsData
     gSensor *front_stored;
     gSensor *left_stored;
     gSensor *right_stored;
-    bool lock;
 
     gHelperSensorsData(gCycle *owner);
     void toggleLock();
-    gSensor* getSensor(int dir);
-    gSensor* getSensor(eCoord start, int dir);
+    gSensor* getSensor(int dir, bool newSensor = false);
+    gSensor* getSensor(eCoord start, int dir, bool newSensor = false);
     gHelperSensors *getSensors();
 };
 
@@ -119,7 +181,9 @@ class gSmartTurning
 {
 public:
     gSmartTurning(gHelper *helper, gCycle *owner);
-
+    //void findTurnToTarget(eCoord target);
+    //void SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data );
+    void findTurnToTarget( eCoord const & target, eCoord const & velocity );
     void Activate(gHelperData &data);
     bool isClose(eCoord pos, REAL closeFactor);
     void smartTurningPlan(gHelperData &data);
@@ -161,17 +225,29 @@ public:
         ePath path;
     };
 
-
-struct gHelperEnemiesData
+/*
+struct gHelperEnemiesData;
 {
     gCycle* owner_;
-    tArray<gCycle*> allEnemies;
+    std::vector<gCycle*> allEnemies;
     gCycle* closestEnemy;
 
     bool exist(gCycle* enemy);
     gCycle* detectEnemies();
 };
+*/
 
+#include <unordered_set>
+
+struct gHelperEnemiesData
+{
+    gCycle* owner_;
+    std::unordered_set<gCycle*> allEnemies;
+    gCycle* closestEnemy;
+
+    bool exist(gCycle* enemy);
+    gCycle* detectEnemies();
+};
 
 struct gSmartTurningCornerData
 {
@@ -185,7 +261,7 @@ struct gSmartTurningCornerData
     bool exist;
     bool infront;
 
-    REAL getTurnTime(REAL speed);
+    REAL getTimeUntilTurn(REAL speed);
     bool isInfront(eCoord pos, eCoord dir);
 };
 
@@ -209,7 +285,7 @@ class gHelper {
     void followTail();
     bool canSeeTarget(eCoord target,REAL passthrough);
 
-    void findCorner(gHelperData &data, gSmartTurningCornerData &corner, const gSensor *sensor);
+    bool findCorner(gHelperData &data, gSmartTurningCornerData &corner, const gSensor *sensor);
     void findCorners(gHelperData &data);
     void showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout);
     void showCorners(gHelperData &data);
@@ -254,12 +330,15 @@ class gHelper {
         debugMessage << value << "\n ";
         con << debugMessage;*/
     }
+
+    template <class T>
+    void renderHud(T value, const char *t);
+
     //static gHelper& Get( gCycle * cycle );
     gCycle *getOwner();
     eCoord closestCorner(eCoord center, REAL radius);
     static void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
                    eCoord start,eCoord end, REAL brightness = 1);
-
     ~gHelper();
     private:
     gAIPlayer *aiPlayer;
@@ -271,6 +350,7 @@ class gHelper {
     const char * lastHelperDebugMessage;
     REAL lastHelperDebugMessageTimeStamp;
     gSmartTurningCornerData leftCorner, rightCorner;//, frontCorner;
+    gSmartTurningCornerData lastLeftCorner, lastRightCorner;//, frontCorner;
     gHelperEnemiesData enemies;
     gCycle *owner_;
     ePlayerNetID *player_;
@@ -281,6 +361,7 @@ class gHelper {
     REAL *ownerSpeed;
     REAL ownerWallLength;
     REAL ownerTurnDelay;
+    gHelperSensorsData * sensors_;
     std::unique_ptr< gSmartTurning > smartTurning;
     std::unique_ptr< gPathHelper > pathHelper;
     std::unique_ptr< gTailHelper > tailHelper;

@@ -32,11 +32,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eGrid.h"
 
 class eEdge;
-
+class gSensorFinished{};
 // sensor sent out to detect near eWalls
 class gSensor: public eSensor{
 public:
     gSensorWallType type;
+
+    gCycle * wallOwner;
+
+    
+    gCycle * hitWallOwner() {return wallOwner;}
 
     gSensor(eGameObject *o,const eCoord &start,const eCoord &d)
             :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction(d) {}

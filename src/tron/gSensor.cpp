@@ -63,7 +63,7 @@ bool gSensor::HitIntersceptsZone(gZone *zone)
         if (!exist) { return false;}
         distance = (distance);
         distance2 = (distance2);
-        
+
         if (distance2 <= distance)
         {
             intercept = intercept2;
@@ -106,6 +106,7 @@ bool gSensor::calculateZoneHit() {
 
 //     }
 // }
+
 void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
     if (!ww)
         return;
@@ -122,12 +123,12 @@ void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
         const gPlayerWall *w=dynamic_cast<const gPlayerWall*>(ww);
         if (w)
         {
-            gCycle *owner=w->Cycle();
-            if (owner && owner->IsMe( owned ) )
+            wallOwner = w->Cycle();
+            if (wallOwner && wallOwner->IsMe( owned ) )
             {
                 type=gSENSOR_SELF;
             }
-            else if ( owner && owned && owner->Team() == owned->Team() )
+            else if ( wallOwner && owned && wallOwner->Team() == owned->Team() )
             {
                 type=gSENSOR_TEAMMATE;
             }
@@ -142,7 +143,7 @@ void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
         else if (dynamic_cast<const gWallRim*>(ww))
             type=gSENSOR_RIM;
 
-        throw;
+        //throw gSensorFinished;
     }
 }
 

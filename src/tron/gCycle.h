@@ -201,6 +201,9 @@ public:
     eCoord            lastGoodPosition_;    // the location of the last known good position
     eCoord            tailPos;
     eCoord            tailDir;
+    eCoord getTailDir() {
+            return tailDir;
+    }
     eFace             *tailFace;
     bool              tailMoving;
     bool              forcedInvulnerable;
@@ -360,6 +363,7 @@ public:
     {
         lastWall = newLastWall;
     }
+    void setTailDir(eCoord tailDir) {this->tailDir = tailDir;}
     void setTailPos(eCoord tailPos) {this->tailPos = tailPos;}
     void setTailMoving(bool tailMoving) {this->tailMoving = tailMoving;}
 

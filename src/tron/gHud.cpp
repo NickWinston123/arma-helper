@@ -49,6 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
+
 REAL subby_SpeedGaugeSize=.175, subby_SpeedGaugeLocX=0.0, subby_SpeedGaugeLocY=-0.9;
 REAL subby_BrakeGaugeSize=.175, subby_BrakeGaugeLocX=0.48, subby_BrakeGaugeLocY=-0.9;
 REAL subby_RubberGaugeSize=.175, subby_RubberGaugeLocX=-0.48, subby_RubberGaugeLocY=-0.9;

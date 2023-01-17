@@ -54,6 +54,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "uInputQueue.h"
 #include "nNetObject.h"
 #include "tToDo.h"
+#include "gHelper.h"
 #include "gMenus.h"
 #include "gCamera.h"
 #include "gServerBrowser.h"
@@ -3116,8 +3117,13 @@ void MainMenu(bool ingame){
     uMenuItemFunction spm(&MainMenu,
                            "$special_setup_menu_text",
                             "$special_setup_menu_help",
-                             &sg_SpecialMenu);
-#endif
+                                &sg_SpecialMenu);
+    uMenuItemFunction hm(&MainMenu,
+                            "Helper Menu",
+                                "Helper Menu",
+                                &helperMenu);
+                                
+    #endif
 
     uMenu Settings("$system_settings_menu_text");
 

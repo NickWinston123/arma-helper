@@ -104,13 +104,13 @@ public:
     eCoord pos;               // current position,
     eCoord dir;               // direction
     REAL  z;									// and height (currently unused)
-
+    eCoord initPos, initDir;
     eCoord startPos_;          // starting position
     eCoord startDir_;          // starting direction
 
     tJUST_CONTROLLED_PTR<eTeam> team;       		 				// the team we belong to
 
-    tJUST_CONTROLLED_PTR<eFace> currentFace;  // the eFace pos it is currently
+tJUST_CONTROLLED_PTR<eFace> currentFace;  // the eFace pos it is currently
     tCHECKED_PTR(eGrid) grid;         // the game grid we are on
 protected:
     // entry and deletion in the list of all eGameObjects
@@ -130,6 +130,7 @@ public:
     virtual void AddRef()  = 0;          //!< adds a reference
     virtual void Release() = 0;         //!< removes a reference
 
+    void Reset() { pos = initPos; dir = initDir;}
     void AddToList();
     void RemoveFromList();
     void RemoveFromListsAll();

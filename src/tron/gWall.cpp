@@ -920,6 +920,7 @@ void gNetPlayerWall::RenderList(bool list, gWallRenderMode renderMode ){
             r *= intensity;
             g *= intensity;
             b *= intensity;
+
         }
 
         REAL a=1;
@@ -979,6 +980,7 @@ void gNetPlayerWall::RenderList(bool list, gWallRenderMode renderMode ){
                 {
                     //this->cycle_->setTailMoving(false);
                     this->cycle_->setTailPos(p1);
+                    this->cycle_->setTailDir(dir);
                     this->cycle_->setTailMoving(true);
                     continue;
                 }
@@ -993,7 +995,9 @@ void gNetPlayerWall::RenderList(bool list, gWallRenderMode renderMode ){
                 {
                     p1 = p2 + (p1-p2)*cut;
                     ta = te + (ta-te)*cut;
+
                     this->cycle_->setTailPos(p1);
+                    this->cycle_->setTailDir(dir);
                     this->cycle_->setTailMoving(true);
                 }
             }
@@ -1632,6 +1636,7 @@ gNetPlayerWall::gNetPlayerWall(gCycle *cyc,
     obsoleted_=-100;
     gridding=1E+20;
     MyInitAfterCreation();
+    //cycle_->tailDirInit = cycle_->Direction();
 }
 
 /*
@@ -1789,7 +1794,7 @@ void gNetPlayerWall::CopyIntoGrid(eGrid * grid, bool force){
         else
         {
             // copy it into the grid at the next opportunity for server/standalone mode
-            RequestSync();
+            RequestSyncBypass();
             if ( grid )
                 real_CopyIntoGrid( grid );
             else

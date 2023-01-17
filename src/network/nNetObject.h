@@ -255,6 +255,7 @@ public:
 
     void GetID();			// get a network ID
     void RequestSync(bool ack=true);  // request a sync
+    void RequestSyncBypass();  // request a sync
     void RequestSync(int user,bool ack); // only for a single user
 
     // global functions:

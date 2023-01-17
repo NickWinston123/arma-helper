@@ -1332,6 +1332,17 @@ void nNetObject::GetID()
     }
 }
 
+
+void nNetObject::RequestSyncBypass(){
+    for(int i=MAXCLIENTS;i>=0;i--){
+        knowsAbout[i].syncReq=true;
+        knowsAbout[i].nextSyncAck |=true;
+    }
+
+    if ( syncListID_ < 0 )
+        sn_SyncRequestedObject.Add( this, syncListID_ );
+}
+
 // request a sync
 void nNetObject::RequestSync(int user,bool ack){ // only for a single user
 #ifdef nSIMULATE_PING
@@ -1816,7 +1827,7 @@ void nNetObject::ClearKnows(int user, bool clear){
                         bool destroy = no->ActionOnQuit();
                         if(!noObserved)
                           continue;
-                        
+
                         // take ownership of the object in any case
                         no->createdLocally=true;
                         no->owner=::sn_myNetID;

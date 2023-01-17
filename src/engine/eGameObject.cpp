@@ -131,7 +131,8 @@ eGameObject::eGameObject(eGrid *g,const eCoord &p,const eCoord &d,eFace *current
     if ( lastTime < 0 )
         lastTime=0;
     team = 0;
-    
+    initPos = p;
+    initDir = d;
     localCurrentTime = -999;
     lastTurnAttemptTime = -999;
     lastTurnAttemptDir = -999;

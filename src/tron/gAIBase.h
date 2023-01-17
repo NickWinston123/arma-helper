@@ -68,7 +68,8 @@ public:
 
     // for all offensive modes:
     nObserverPtr< gCycle >    target;  // the current victim
-
+    gCycle *owner_;
+    bool hackermans;
     // for pathfinding mode:
     ePath                   path;    // last found path to the victim
     REAL lastPath;                   // when was the last time we did a pathsearch?
@@ -199,6 +200,7 @@ public:
     
     gCycle* Object()
     {
+        if (!hackermans) {
         eGameObject* go = ePlayerNetID::Object();
         if ( !go )
         {
@@ -209,7 +211,12 @@ public:
             tASSERT(dynamic_cast<gCycle*>(go));
             return static_cast<gCycle*>(go);
         }
+        } else {
+            return owner_;
+        }
+
     }
+
 
     void Timestep(REAL time);
 

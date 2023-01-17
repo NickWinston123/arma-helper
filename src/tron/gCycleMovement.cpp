@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "rSDL.h"
-
+#include "gHelper.h"
 // declaration
 #ifndef		ARMAGETRONAD_SRC_TRON_GCYCLEMOVEMENT_H_INCLUDED
 #include	"gCycleMovement.h"
@@ -2766,6 +2766,18 @@ void gCycleMovement::RequestSync(bool ack)
     eNetGameObject::RequestSync( ack );
 }
 
+void gCycleMovement::RequestSyncBypass()
+{
+    // no more syncs when you're dead
+    if ( !Alive() )
+    {
+       return;
+    }
+
+    // delegate
+    eNetGameObject::RequestSyncBypass( );
+}
+
 void gCycleMovement::RequestSync(int user,bool ack)
 {
     // no more syncs when you're dead
@@ -3386,8 +3398,10 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
 
         //Don't turn
         if (ignoreTurn) {
-            con << "BLOCKED TURN dir = " << dir << " blockturn =" << this->blockTurn  << "\n";
-            this->lastTurnAttemptTime = currentTime;
+// std::stringstream ss;
+// ss << "dir = " << dir << " blockturn =" << this->blockTurn;
+// HelperDebug::Debug("ignoreTurn", "BLOCKED TURN", ss.str(), false);
+this->lastTurnAttemptTime = currentTime;
             this->lastTurnAttemptDir = dir;
             this->blockTurn = 0;
             return false;

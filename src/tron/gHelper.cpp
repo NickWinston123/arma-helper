@@ -1947,7 +1947,7 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
         {
             //con << "Detecting left sensor \n";
             left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
-           
+            con << "LEFT HIT " << left_stored->hit << " \n";
             //left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(cos(M_PI/4), sin(M_PI/4))), true);
             return left_stored;
         }
@@ -1962,7 +1962,7 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
             //con << "Detecting right sensor \n";
             //right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(cos(M_PI/4), -sin(M_PI/4))), true);
             right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
-            
+            con << "RIGHT HIT " << right_stored->hit << " \n";
             return right_stored;
         }
         }

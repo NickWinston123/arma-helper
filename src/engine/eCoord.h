@@ -44,13 +44,15 @@ public:
     eCoord operator-() const{return eCoord(-x,-y);}
     eCoord operator+(const eCoord &a) const{return eCoord(x+a.x,y+a.y);}
     eCoord operator*(REAL a) const 		{return eCoord(x*a,y*a);}
-    
+
     eCoord operator/(REAL a) const 		{return eCoord(x/a,y/a);}
+    const eCoord& operator*=(eCoord const &other)    { x*=other.x; y*=other.y; return *this;} //!< stretches a coordinate by a factor from the center
     const eCoord& operator*=(REAL a)  	{ x*=a; y*=a; return *this;}
+
     REAL NormSquared() 			const 	{return x*x+y*y;}
     REAL Norm() 				const 	{return sqrt(NormSquared());}
     void Normalize()					{ *this *= 1/Norm(); }
-    eCoord GetNormalized() const { 
+    eCoord GetNormalized() const {
         eCoord temp = *this;
         temp.Normalize();
         return temp;
@@ -117,6 +119,10 @@ inline std::ostream &operator<< (std::ostream &s,const eCoord &c){
 inline std::istream &operator>> (std::istream &s,eCoord &c){
     c.Read(s);
     return s;
+}
+
+inline eCoord operator*(REAL a, eCoord const &c) {
+    return c*a;
 }
 
 extern const eCoord se_zeroCoord;

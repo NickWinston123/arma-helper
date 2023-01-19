@@ -51,7 +51,7 @@ public:
     //virtual void HitZone(gZone *zone);
     //  virtual void PassEdge(eEdge *e,REAL time,REAL a,int recursion=1);
     void detect(REAL range);
-    void detect(REAL range, const eCoord &start, const eCoord &dir);
+    //void detect(REAL range, const eCoord &start, const eCoord &dir);
     REAL Hit() {return hit;}
 
     void SetCurrentFace(eFace *f) { currentFace = f ; }

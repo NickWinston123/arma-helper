@@ -86,7 +86,7 @@ public:
     void RemoveFromGame();		   //!< call this instead of the destructor
 
     int GetID() { return id_; }; //!< Gets the static zone ID
-	
+
 	void SetReferenceTime();               //!< sets the reference time to the current time
 
     gZone &         SetPosition         ( eCoord const & position );	//!< Sets the current position
@@ -138,7 +138,7 @@ public:
         }
         return false;
     }
-    
+
     bool InteractsWithZone() { return interactWithZone_; }
     bool isInside(gZone *zone)
     {
@@ -151,14 +151,26 @@ public:
         }
         return false;
     }
-	
+
+
+    bool isInside(gSensor *sensor)
+    {
+        for(int i=sensorsInside_.Len()-1;i>=0;--i)
+        {
+            if(sensorsInside_[i] == sensor)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 	void            OnCycleDestroyed    (gCycle *cycle,REAL time);
 
     void BounceOffPoint(eCoord dest, eCoord collide);
     gZone & AddWaypoint(eCoord const &point);
 	gZone & ClearWaypoints();
 	bool HasNoWaypoints() { return route_.empty(); }
-	
+
     void Destroy();
     bool destroyed_;
     tString             GetName() {return name_;}
@@ -167,7 +179,7 @@ public:
     static int          FindNext(tString name, int prev_pos);
     static int          FindIdFirst(int id);
     static int          FindIdNext(int id, int prev_pos);
-    
+
     static void         FindAll(tString object_id_str, bool byId, std::function<bool(gZone *)> callback);
 
     tString             GetEffect() {return effect_;}
@@ -181,12 +193,12 @@ public:
     static void ClearDelay();
 
     virtual void Collapse();    //  have the zone disappear instantly
-    
+
     void WriteLadderLog();
     static void GridPosLadderLog(); //  gridpos ladderlog for the zones
 
 protected:
-	int id_; 
+	int id_;
 
     bool wallInteract_;
     int wallBouncesLeft_;
@@ -251,6 +263,11 @@ private:
     virtual void OnNear( gCycle *target, REAL time );   //!< reacts to objects near the zone
     virtual void OnNear( gZone *target, REAL time );    //!< reacts to objects near the zone
 
+    virtual void OnEnter( gSensor *target, REAL time );  //!< reacts on objects inside the zone
+    virtual void OnExit( gSensor *target, REAL time );   //!< reacts to objects leaving the zone
+    virtual void OnNear( gSensor *target, REAL time );   //!< reacts to objects near the zone
+
+
     tArray<gCycle *> cycesInside_;
     void AddPlayerInteraction(gCycle *cycle) { cycesInside_.Insert(cycle); }
     void RemovePlayerInteraction(gCycle *cycle)
@@ -280,6 +297,20 @@ private:
         }
     }
 
+    tArray<gSensor *> sensorsInside_;
+    void AddSensorInteraction(gSensor *sensor) { sensorsInside_.Insert(sensor); }
+    void RemoveSensorInteraction(gSensor *sensor)
+    {
+        for(int i=0; i < sensorsInside_.Len(); i++)
+        {
+            gSensor *z = sensorsInside_[i];
+            if (z && (z == sensor))
+            {
+                sensorsInside_.RemoveAt(i);
+                break;
+            }
+        }
+    }
     static std::map<REAL, std::set<gZone*> > delayedZones_;
 
     virtual nDescriptor& CreatorDescriptor() const; //!< returns the descriptor to recreate this object over the network
@@ -626,7 +657,7 @@ class gTargetZoneHack: public gZone
 		void SetOnEnterCmd(tString &cmd, tString &mode) {if (mode=="add") OnEnterCmd << "\n" << cmd; else OnEnterCmd = cmd;};
 		void SetOnExitCmd(tString &cmd, tString &mode) {if (mode=="add") OnExitCmd << "\n" << cmd; else OnExitCmd = cmd;};
 		void SetOnVanishCmd(tString &cmd, tString &mode) {if (mode=="add") OnVanishCmd << "\n" << cmd; else OnVanishCmd = cmd;};
-		
+
 		inline bool playerHasUsed( ePlayerNetID * player )
 		{
 			return ( std::find( playersUsed_.begin(), playersUsed_.end(), player ) != playersUsed_.end() );

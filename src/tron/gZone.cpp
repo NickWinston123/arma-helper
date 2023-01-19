@@ -363,7 +363,7 @@ void gZone::FindAll(tString object_id_str, bool byId, std::function<bool(gZone *
         con << "Must be called while a grid exists!\n";
         return;
     }
-    
+
     int objIntId = atoi(object_id_str);
 
     // first check for the name
@@ -621,7 +621,7 @@ void gZone::WriteSync( nMessage & m )
 
     // write rotation speed
     m << rotationSpeed_;
-    
+
     // write zone type, only on initial sync
     if( m.Descriptor() == CreatorDescriptor().ID() )
         m << effect_;
@@ -683,7 +683,7 @@ void gZone::ReadSync( nMessage & m )
         SetRotationSpeed( .3f );
         SetRotationAcceleration( 0.0f );
     }
-    
+
     if( !m.End() && m.Descriptor() == CreatorDescriptor().ID() )
     {
         m >> effect_;
@@ -851,14 +851,14 @@ static void S_ZoneWallInteraction(eWall *pWall)
 
                                  // coordinate of the impact on the wall's line space
     REAL i = eCoord::F(XY,XP+V*t);
-    
+
     // Hey, now we won't bounce on invisible walls!
     // It took way too long to figure this out...
     if(pPlayerWall && !pPlayerWall->IsDangerous(i/norm_XY, se_GameTime()))
     {
         return;
     }
-    
+
     eCoord I;                    // position of the impact
     if (i>=0 && i<=norm_XY)      // there's an impact on the wall
     {
@@ -1041,8 +1041,8 @@ bool gZone::Timestep( REAL time )
         //??? game AND sync the last update on time.  Removing from game gets to
         //??? the client much later than the sync does if not killed and looks bad.
         //return false;
-        
-        //nelg: I couldn't reproduce what the above message is referring to. 
+
+        //nelg: I couldn't reproduce what the above message is referring to.
         //nelg: From what I've seen, the only result is additional CPU usage
         //nelg: (and subsequently, lag) as more zones are spawned and destroyed.
         return true;
@@ -1060,7 +1060,7 @@ bool gZone::Timestep( REAL time )
 
         zoneInit_ = true;
     }
-    
+
     //HACK to have objectzones interact with other zones.
     if(interactWithZone_ && dynamic_cast<gObjectZoneHack*>(this))
     {
@@ -1204,7 +1204,7 @@ bool gZone::Timestep( REAL time )
                             wallBouncesLeft_--;
                         }
                     }
-                    
+
                     if(sg_ballSpeedHitDecay > 0)
                     {
                         eCoord V = GetVelocity();
@@ -1305,7 +1305,7 @@ bool gZone::Timestep( REAL time )
                 route_.clear();
                 lastCoord_ = 0;
                 nextUpdate_ = -1;
-                
+
                 sg_zoneRouteStopWriter << GetEffect() << GetID() << GetName();
                 sg_zoneRouteStopWriter << lastPos.x/gArena::SizeMultiplier() << lastPos.y/gArena::SizeMultiplier();
                 sg_zoneRouteStopWriter << GetVelocity().x << GetVelocity().y;
@@ -1416,7 +1416,7 @@ static bool TriggerAvoidZone(gCycle * target, gZone * Zone, REAL currentTime)
             if(pos == -1) return false;
         }
 #endif
-        
+
         REAL tarX = target->Position().x;
         REAL tarY = target->Position().y;
         REAL zonX = Zone->Position().x;
@@ -1424,7 +1424,7 @@ static bool TriggerAvoidZone(gCycle * target, gZone * Zone, REAL currentTime)
 
         REAL tarDirX = target->Direction().x;
         REAL tarDirY = target->Direction().y;
-        
+
         bool shouldTurn = false;
         //A bad way to do this: loop through the zone's perimeter and determine if they intersect with the cycle direction
         REAL radi = Zone->GetRadius();
@@ -1434,16 +1434,16 @@ static bool TriggerAvoidZone(gCycle * target, gZone * Zone, REAL currentTime)
         for(int i=41;i>0;--i)
         {
             pX = (radi*cos(M_PI*2*(i/42.f)))+zonX; pY = (radi*sin(M_PI*2*(i/42.f)))+zonY;
-            
+
             s1_x = adjPosX - tarX; s1_y = adjPosY - tarY; s2_x = pX - lpX; s2_y = pY - lpY;
             s = (-s1_y * (tarX - lpX) + s1_x * (tarY - lpY)) / (-s2_x * s1_y + s1_x * s2_y);
             t = ( s2_x * (tarY - lpY) - s2_y * (tarX - lpX)) / (-s2_x * s1_y + s1_x * s2_y);
-            
+
             if(s >= 0 && s <= 1 && t >= 0 && t <= 1) { shouldTurn = true; break; };
-            
+
             lpX = pX; lpY = pY;
         }
-        
+
         if(!shouldTurn)
         {
             //con << "line\n";
@@ -1457,11 +1457,11 @@ static bool TriggerAvoidZone(gCycle * target, gZone * Zone, REAL currentTime)
             return false;
         }
 */
-        
+
 #ifdef DEBUG
         con << player->GetName() << " turning away from zone...\n";
 #endif
-        
+
         if ((tarX == zonX) || (tarY == zonY))
         {
             target->Act(&gCycle::se_turnRight, 1);
@@ -1471,16 +1471,16 @@ if(!sg_cyclesZonesAvoidOld)
 {
         // the lack of indenting here is because the older logic will likely be deleted anyway
         REAL absdir = atan2f(tarY-zonY,tarX-zonX);
-        
+
         REAL pi2 = M_PI*2;
         REAL reldir = fmod(atan2f(tarDirX,tarDirY)-absdir,pi2);
         while(reldir < 0) reldir += pi2;
-        
+
         if(reldir > M_PI)
             target->Act(&gCycle::se_turnLeft, 1);
         else
             target->Act(&gCycle::se_turnRight, 1);
-        
+
         return true;
 }
 
@@ -1524,7 +1524,7 @@ if(!sg_cyclesZonesAvoidOld)
                     target->Act(&gCycle::se_turnLeft, 1);
             }
         }
-        
+
         return true;
     }
 
@@ -1567,29 +1567,29 @@ static bool TriggerAimZone(gCycle * cycle, gZone * zone, REAL currentTime)
                 return false;
             }
         }
-        
+
         {
             gBaseZoneHack * fortZone = dynamic_cast<gBaseZoneHack *>(zone);
             if( fortZone && !cycle->flag_ && ( BaseZoneIsAttackable() || fortZone->Team() == cycle->Team() ) )
             {
                 return true;
             }
-            
+
             gFlagZoneHack * flagZone = dynamic_cast<gFlagZoneHack *>(zone);
-            if( flagZone && ( flagZone->Team() == cycle->Team() || !flagZone->IsHome() ) ) 
+            if( flagZone && ( flagZone->Team() == cycle->Team() || !flagZone->IsHome() ) )
             {
                 return true;
             }
         }
-        
+
         //con << zone->GetEffect() << "\n";
-        
+
         REAL absdir = atan2f(cycle->Position().y-zone->Position().y,cycle->Position().x-zone->Position().x);
-        
+
         REAL pi2 = M_PI*2;
         REAL reldir = fmod(atan2f(cycle->Direction().y,cycle->Direction().x)-absdir,pi2);
         while(reldir < 0) reldir += pi2;
-        
+
 #if 0
         // are we already facing the zone?
         if(roundf(absdir/8) == round(atan2f(cycle->Direction().y,cycle->Direction().x)/8))
@@ -1598,7 +1598,7 @@ static bool TriggerAimZone(gCycle * cycle, gZone * zone, REAL currentTime)
         REAL tarX = cycle->Position().x, tarY = cycle->Position().y;
         REAL zonX = zone->Position().x, zonY = zone->Position().y;
         REAL tarDirX = cycle->Direction().x, tarDirY = cycle->Direction().y;
-        
+
         //A bad way to do this: loop through the zone's perimeter and determine if they intersect with the cycle direction
         REAL radi = zone->GetRadius();
         REAL dist = sg_cycleZonesApproach;
@@ -1607,23 +1607,23 @@ static bool TriggerAimZone(gCycle * cycle, gZone * zone, REAL currentTime)
         for(int i=41;i>0;--i)
         {
             pX = (radi*cos(M_PI*2*(i/42.f)))+zonX; pY = (radi*sin(M_PI*2*(i/42.f)))+zonY;
-            
+
             s1_x = adjPosX - tarX; s1_y = adjPosY - tarY; s2_x = pX - lpX; s2_y = pY - lpY;
             s = (-s1_y * (tarX - lpX) + s1_x * (tarY - lpY)) / (-s2_x * s1_y + s1_x * s2_y);
             t = ( s2_x * (tarY - lpY) - s2_y * (tarX - lpX)) / (-s2_x * s1_y + s1_x * s2_y);
-            
+
             if(s >= 0 && s <= 1 && t >= 0 && t <= 1) { return true; };
-            
+
             lpX = pX; lpY = pY;
         }
 #endif
-        
+
         eCoord diff = zone->Position() - cycle->Position();
         eCoord diffEdge = ( diff * (1/(diff.Norm())) ) * (diff.Norm() - zone->GetRadius());
-        
+
         gSensor p(cycle, cycle->Position(), diffEdge);
         p.detect(1.f);
-        
+
         if(p.hit >= 1.f)
         {
             if(reldir < M_PI)
@@ -1631,7 +1631,7 @@ static bool TriggerAimZone(gCycle * cycle, gZone * zone, REAL currentTime)
             else if(reldir != M_PI)
                 cycle->Act(&gCycle::se_turnRight, 1);
         }
-        
+
         return true;
     }
     return false;
@@ -1691,10 +1691,15 @@ static void TriggerZoneApproach(gCycle * target, gZone * Zone, REAL currentTime)
 //!
 // *******************************************************************************
 
+    void gZone::OnEnter( gSensor *target, REAL time ) { con << "gsensor entered zone\n";};  //!< reacts on objects insid gZone:: the zone
+    void gZone::OnExit( gSensor *target, REAL time ){con << "gsensor left zone\n";};   //!< reacts to objects leaving the zone
+    void gZone::OnNear( gSensor *target, REAL time ){con << "gsensor near zone\n";};   //!< reacts to objects near the zone
+
+
 void gZone::InteractWith( eGameObject * target, REAL time, int recursion )
 {
     if(target == this || destroyed_) return;
-    
+
     gCycle* prey = dynamic_cast< gCycle* >( target );
     if ( InteractsWithCycle() && prey )
     {
@@ -1714,7 +1719,7 @@ void gZone::InteractWith( eGameObject * target, REAL time, int recursion )
             }
             else if ( dist < (r + (sg_cycleZonesApproach * 2)) )
             {
-                TriggerZoneApproach(prey, this, time);
+                //TriggerZoneApproach(prey, this, time);
                 OnNear(prey, time);
             }
         }
@@ -1725,7 +1730,7 @@ void gZone::InteractWith( eGameObject * target, REAL time, int recursion )
         }
         return;
     }
-    
+
     gZone *zone = dynamic_cast<gZone *>(target);
     if( InteractsWithZone() && zone )
     {
@@ -1753,6 +1758,38 @@ void gZone::InteractWith( eGameObject * target, REAL time, int recursion )
                 OnExit(zone, time);
                 RemoveZoneInteraction(zone);
             }
+        }
+        return;
+    }
+
+    gSensor *sensor = dynamic_cast<gSensor *>(target);
+    if ( sensor )
+    {
+       // con << "Got sensor\n";
+
+        {
+            REAL r = GetRadius(), dist = ( sensor->Position() - this->Position() ).NormSquared();
+            r *= r;
+            if ( dist <= r )
+            {
+                OnEnter( sensor, time );
+                if (!isInside(sensor)) // make sure this cycle isn't in zone already
+                {
+                    //  if not, then add them to the list
+                    AddSensorInteraction(sensor);
+                }
+                return;
+            }
+            else if ( dist < (r + (sg_cycleZonesApproach * 2)) )
+            {
+                //TriggerZoneApproach(sensor, this, time);
+                OnNear(sensor, time);
+            }
+        }
+        if (isInside(sensor)) // make sure this cycle already is within the zone
+        {
+            OnExit(sensor, time); // call the OnExit event
+            RemoveSensorInteraction(sensor);  // remove them from the list
         }
         return;
     }
@@ -1943,7 +1980,7 @@ void gZone::Render( const eCamera * cam )
         sg_zoneSegLength = .5;
     if ( sg_zoneSegments < 1 )
         sg_zoneSegments = 11;
-    
+
     if(lastTime == 0)
     {
         static REAL fakeTime = 0;
@@ -1972,7 +2009,7 @@ void gZone::Render( const eCamera * cam )
         h = sg_zoneHeightFort;
     else if( effect_ == "koh" )
         h = sg_zoneHeightKOH;
-    
+
     GLfloat m[4][4]={{r*rotation_.x,r*rotation_.y,0,0},
                      {-r*rotation_.y,r*rotation_.x,0,0},
                      {0,0,h,0},
@@ -2489,7 +2526,7 @@ gZone & gDeathZoneHack::SetType(int type)
                 wallBouncesLeft_ = 0;
             }
         }
-        
+
         switch(type)
         {
             case TYPE_SHOT: case TYPE_DEATH_SHOT:
@@ -2507,7 +2544,7 @@ gZone & gDeathZoneHack::SetType(int type)
                 }
                 // Otherwise, we have to be visible to ourselves for shot collisions to "work".
                 // falls through
-            case TYPE_ZOMBIE_ZONE: 
+            case TYPE_ZOMBIE_ZONE:
                 if(!interactWithZone_)
                 {
                     interactWithZone_ = true;
@@ -2975,7 +3012,7 @@ void gDeathZoneHack::OnExit( gZone * target, REAL time )
             this->pLastShotCollision = NULL;
         }
     }
-    
+
     if (this->pLastShotCollision == this)
     {
         this->pLastShotCollision = NULL;
@@ -3147,7 +3184,7 @@ gBaseZoneHack::gBaseZoneHack( eGrid * grid, const eCoord & pos, bool dynamicCrea
     lastRespawnRemindTime_ = -500;
     lastRespawnRemindWaiting_ = 0;
     touchy_ = false;
-    
+
     interactWithZone_ = true;
 
     if (teamowner!=NULL) team = teamowner;
@@ -5290,7 +5327,7 @@ void gBallZoneHack::OnEnter( gZone * target, REAL time )
     if(sg_ballsInteract)
     {
         gBallZoneHack *ball = dynamic_cast<gBallZoneHack *>(target);
-        
+
         if(ball)
         {
             s_zoneWallInteractionFound = false;
@@ -5300,7 +5337,7 @@ void gBallZoneHack::OnEnter( gZone * target, REAL time )
                 s_zoneWallInteractionCoord,
                 s_zoneWallInteractionRadius+.5,
                 CurrentFace());
-            
+
             if (!s_zoneWallInteractionFound)
             {
                 REAL r1 = this->GetRadius();
@@ -5364,7 +5401,7 @@ void gBallZoneHack::OnEnter( gZone * target, REAL time )
                     }
                 }
             }
-            
+
         }
     }
 }
@@ -6585,13 +6622,13 @@ static void sg_SetTargetCmd(std::istream &s)
         event_str = params.ExtractNonBlankSubString(pos);
     }
     tString cmd_str = params.SubStr(pos);
-    
-    gZone::FindAll(object_id_str, false, 
+
+    gZone::FindAll(object_id_str, false,
         [ &event_str, &cmd_str, &mode_str ]( gZone * z )
         {
             gTargetZoneHack * zone = dynamic_cast<gTargetZoneHack *>( z );
             if(!zone) return true;
-            
+
             if( event_str == "onenter" || event_str == "onentry" )
             {
                 zone->SetOnEnterCmd(cmd_str, mode_str);
@@ -6849,7 +6886,7 @@ void gTargetZoneHack::OnEnter( gCycle * target, REAL time )
                 lose << "$player_target_score_lose";
                 target->Player()->AddScore( zoneScore_, win, lose );
             }
-            
+
             // and decrease zone score value
             zoneScore_ -= zoneScoreDeplete_;
             if (zoneScore_ <= 0)
@@ -6857,7 +6894,7 @@ void gTargetZoneHack::OnEnter( gCycle * target, REAL time )
                 zoneScore_ = 0;
                 targetEmptyTime_ = time;
             }
-            
+
             if( (!sg_targetMultiEnter) || (!playerHasUsed( target->Player() )) )
             {
                 this->playersUsed_.push_back( target->Player() );
@@ -7536,7 +7573,7 @@ gObjectZoneHack::gObjectZoneHack( eGrid * grid, const eCoord & pos, bool dynamic
     color_.b = 0.5f;
 
     seekSpeed_ = 1.0;
-    
+
     interactWithZone_ = true;
     lastPollTime_ = 0;
 
@@ -7995,7 +8032,7 @@ gSoccerZoneHack::gSoccerZoneHack( eGrid * grid, const eCoord & pos, bool dynamic
     ballShots_ = 0;
 
     teamDistance_ = 0;
-    
+
     interactWithZone_ = true;
 
     if (teamowner)
@@ -8149,7 +8186,7 @@ bool gSoccerZoneHack::Timestep( REAL time )
             RequestSync( currentVelocity == eCoord(0,0) );
         }
     }
-    
+
     if(zoneType == gSoccer_BALL_SCORED && (GetVelocity() != eCoord(0,0)))
     {
         REAL dt = time - referenceTime_;
@@ -8212,11 +8249,11 @@ void gSoccerZoneHack::OnEnter( gCycle *target, REAL time )
     if (!team && (zoneType == gSoccer_BALL || zoneType == gSoccer_BALL_SCORED))
     {
         SetReferenceTime();
-        
+
         REAL dt = time - referenceTime_;
-        
+
         eCoord dest(posx_(dt), posy_(dt));
-        
+
         //if(sg_ballRimStop)
         {
             // HACK: don't process cycle walls this time...
@@ -8251,7 +8288,7 @@ void gSoccerZoneHack::OnEnter( gCycle *target, REAL time )
                 return;
             }
         }
-        
+
         //  calculate the bounce off. Source: gBallZoneHack
         eCoord p2 = target->Position();
         eCoord v2 = target->Direction()*target->Speed();
@@ -8291,7 +8328,7 @@ void gSoccerZoneHack::OnEnter( gCycle *target, REAL time )
         eCoord new_v1 = base*-target->Speed();
         eCoord new_p1 = p1c + new_v1*(-t+0.01);
         new_v1 = new_v1*(1+sg_ballCycleBoost*target->GetAcceleration()/100);
-        
+
         //if(sg_ballRimStop)
         {
             s_zoneWallInteractionFound = false;
@@ -8315,7 +8352,7 @@ void gSoccerZoneHack::OnEnter( gCycle *target, REAL time )
                 else
                 {
                     // Just set our velocity and let the wall bounce handle it
-                    SetVelocity(new_v1);                    
+                    SetVelocity(new_v1);
                     RequestSync();
                     return;
                 }
@@ -8336,7 +8373,7 @@ void gSoccerZoneHack::OnEnter( gCycle *target, REAL time )
         lastPlayerIn_ = target->Player();
 
         sg_soccerBallPlayerEntered << target->Player()->GetUserName();
-        if( target->Team() ) 
+        if( target->Team() )
             sg_soccerBallPlayerEntered << target->Team()->Name().Filter();
         else
             sg_soccerBallPlayerEntered << "";
@@ -8413,7 +8450,7 @@ void gSoccerZoneHack::OnEnter( gSoccerZoneHack *target, REAL time )
     {
         sg_soccerGoalScored << Team()->Name().Filter() << target->lastTeamIn_->Name().Filter() << target->lastPlayerIn_->GetUserName() << time;
         sg_soccerGoalScored.write();
-        
+
         bool ownGoal = (target->lastTeamIn_ == team);
         if(ownGoal && !sg_soccerBallOwnGoalNR)
         {
@@ -8438,7 +8475,7 @@ void gSoccerZoneHack::OnEnter( gSoccerZoneHack *target, REAL time )
             }
             else
                 target->lastTeamIn_->AddScore(sg_soccerGoalScore, tOutput("$soccer_goal_score", target->lastTeamIn_->GetColoredName(), Team()->GetColoredName(), sg_soccerGoalScore), tOutput());
-            
+
             if (sg_soccerBallFirstWin && (target->ballShots_ == 1))
             {
                 if(ownGoal)
@@ -8454,9 +8491,9 @@ void gSoccerZoneHack::OnEnter( gSoccerZoneHack *target, REAL time )
                     }
                     if(!win) sg_DeclareWinner(target->lastTeamIn_);
                 }
-                else 
+                else
                     sg_DeclareWinner(target->lastTeamIn_, tOutput("$soccer_winner"));
-                
+
                 //  ball must vanish after having a winner
                 target->SetType(gSoccer_BALL_SCORED);
                 target->SetReferenceTime();
@@ -8548,9 +8585,9 @@ static void sg_SpawnSoccer(std::istream &s)
             type = name;
             name = "";
         }
-        
+
         type = type.ToLower();
-        
+
         if(type == "ball" || type == "soccerball")
         {
             type = "soccerball";
@@ -9304,7 +9341,7 @@ static void sg_CreateZone_conf(std::istream &s)
     REAL reloc=0;
     if(zoneTypeStr == "teleport"){
         int prevPos = pos;
-        
+
         tString  zoneJumpXStr;
         tString  zoneJumpYStr;
         zoneJumpXStr = params.ExtractNonBlankSubString(pos);
@@ -9320,14 +9357,14 @@ static void sg_CreateZone_conf(std::istream &s)
         if (zoneRelAbsStr=="rel") relJump=1;
         else if (zoneRelAbsStr=="cycle") relJump=2;
         else relJump = 0;
-        
+
         if(isInter) pos = prevPos;
 
         prevPos = pos;
         const tString xdir_str = params.ExtractNonBlankSubString(pos);
         chint = xdir_str.ToLower()[0];
         isInter = (chint == 't' || chint == 'f');
-        
+
         REAL xdir = atof(xdir_str);
         const tString ydir_str = params.ExtractNonBlankSubString(pos);
         REAL ydir = atof(ydir_str);
@@ -9337,7 +9374,7 @@ static void sg_CreateZone_conf(std::istream &s)
         const tString reloc_str = params.ExtractNonBlankSubString(pos);
         reloc = atof(reloc_str);
         if (isInter || reloc_str == "") reloc = 1.0;
-        
+
         if(isInter) pos = prevPos;
     }
     const tString zoneInteractive = params.ExtractNonBlankSubString(pos);
@@ -9789,10 +9826,10 @@ static void sg_SetZoneRadius(std::istream &s,bool byId)
 {
     // parse the line to get the param : object_id, radius, speed
     tString object_id_str; s >> object_id_str;
-    
+
     tString radius_str; s >> radius_str;
     REAL radius = atof(radius_str);
-    
+
     tString speed_str; s >> speed_str;
     REAL speed = atof(speed_str);
 
@@ -9824,7 +9861,7 @@ static void sg_SetZoneCoord(std::istream &s,bool byId)
 {
     tString obj_id;
     s >> obj_id;
-    
+
     REAL posX, posY;
     s >> posX; posX *= gArena::SizeMultiplier();
     s >> posY; posY *= gArena::SizeMultiplier();
@@ -9913,7 +9950,7 @@ static void sg_AddZoneRoute(std::istream &s,bool byId,bool clear)
 
     // parse the line to get the param : object_id, path, speed ...
     tString object_id_str; s >> object_id_str;
-    
+
     std::vector<eCoord> route;
     tString x,y;
     REAL sizeMultiplier=gArena::SizeMultiplier();
@@ -9949,7 +9986,7 @@ static void sg_AddZoneRoute(std::istream &s,bool byId,bool clear)
                     {
                         eCoord curPos = zone->GetPosition();
                         zone->AddWaypoint(curPos);
-                        
+
                         dir = route.front() - curPos;
                         if(dir.Norm() != 0)
                         {
@@ -9976,7 +10013,7 @@ static void sg_AddZoneRoute(std::istream &s,bool byId,bool clear)
                     else
                         dir *= speed;
                 }
-                
+
                 for(std::vector<eCoord>::const_iterator iter = route.begin(); iter != route.end(); ++iter)
                 {
                     zone->AddWaypoint(*iter);
@@ -10067,10 +10104,10 @@ static void sg_SetZoneColor(std::istream &s,bool byId)
 {
     // parse the line to get the param : object_id, r, g, b ...
     tString object_id_str; s >> object_id_str;
-    
+
     tString zoneRedStr,zoneGreenStr,zoneBlueStr;
     s >> zoneRedStr; s >> zoneGreenStr; s >> zoneBlueStr;
-    
+
     gRealColor zoneColor;
     if ((zoneRedStr=="")||(zoneGreenStr=="")||(zoneBlueStr=="")) return;
 
@@ -10099,7 +10136,7 @@ static void sg_SetZoneExpansion(std::istream &s,bool byId)
 {
     // parse the line to get the param : object_id, expansion
     tString object_id_str; s >> object_id_str;
-    
+
     tString expansion_str; s >> expansion_str;
     REAL expansion = atof(expansion_str)*gArena::SizeMultiplier();
 
@@ -10124,7 +10161,7 @@ static void sg_SetZoneRotation(std::istream &s,bool byId)
 {
     // parse the line to get the param : object_id, expansion
     tString object_id_str; s >> object_id_str;
-    
+
     tString rotation_str; s >> rotation_str;
     REAL rotation = atof(rotation_str);
 
@@ -10148,7 +10185,7 @@ static void sg_SetZonePenetrate(std::istream &s,bool byId)
 {
     // parse the line to get the param : object_id, expansion
     tString object_id_str; s >> object_id_str;
-    
+
     tString penetrate_str; s >> penetrate_str;
     int penetrate_int = atoi(penetrate_str);
     bool penetrate = false;

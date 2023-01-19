@@ -75,7 +75,7 @@ struct SolveTurnData
     REAL turnTime;  //!< seconds to wait before we turn
     REAL quality;   //!< quality of the turn
     eCoord turnDir; //!< direction to drive in
-    
+
     SolveTurnData(): turnTime(0), quality(0){}
 };
 
@@ -102,7 +102,6 @@ struct gHelperSensorsData
     void toggleLock();
     gSensor* getSensor(int dir, bool newSensor = false);
     gSensor* getSensor(eCoord start, int dir, bool newSensor = false);
-    gHelperSensors *getSensors();
 };
 
 struct gHelperData
@@ -177,6 +176,15 @@ private:
     bool pathInvalid;
 };
 
+struct gTurnData{
+    public:
+        int direction;
+        int numberOfTurns;
+    gTurnData   (int direction_, int numberOfTurns_):
+    direction(direction_),
+    numberOfTurns(numberOfTurns_) { }
+};
+
 class gSmartTurning
 {
 public:
@@ -205,7 +213,7 @@ public:
                         bool &blockedBySelf,
                         REAL freeSpaceFactor = 0 );
     static gSmartTurning & Get( gHelper * helper, gCycle *owner);
-    int getEmergencyTurn(gHelperData &data);
+    gTurnData* getEmergencyTurn(gHelperData &data);
     bool CanMakeTurn(uActionPlayer *action);
     private:
         gCycle *owner_;

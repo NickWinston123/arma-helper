@@ -12,7 +12,7 @@
 #define LEFT -1
 #define RIGHT 1
 #define FRONT 0
-
+#define BOTH 2
 
 
 extern REAL sg_cycleBrakeRefill;
@@ -56,8 +56,8 @@ static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_help
 bool sg_helperSmartTurningFrontBot = false;
 static tConfItem<bool> sg_helperSmartTurningFrontBotConf("HELPER_SMART_TURNING_FRONT_BOT", sg_helperSmartTurningFrontBot);
 
-REAL sg_helperSmartTurningFrontBotActivationRange = 1;
-static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationRangeConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_RANGE", sg_helperSmartTurningFrontBotActivationRange);
+REAL sg_helperSmartTurningFrontBotThinkRange = 1;
+static tConfItem<REAL> sg_helperSmartTurningFrontBotThinkRangeConf("HELPER_SMART_TURNING_FRONT_BOT_THINK_RANGE", sg_helperSmartTurningFrontBotThinkRange);
 
 REAL sg_helperSmartTurningFrontBotActivationRubber = 0.98;
 static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationRubberConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_RUBBER", sg_helperSmartTurningFrontBotActivationRubber);
@@ -548,7 +548,7 @@ public:
             debugMessage += "[" + std::to_string(tSysTimeFloat()) + "] ";
         }
 
-        debugMessage += "0xff8888HELPER DEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xff8888 - 0xff5555" + sender + ": 0xffff88:" + description + " ";
+        debugMessage += "0xff8888HELPER DEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
 
         if (spamProtection)
         {
@@ -753,21 +753,18 @@ void gTailHelper::Activate(gHelperData &data) {
     bool sg_pathHelper = false;
     static tConfItem<bool> sg_pathHelperC("HELPER_PATH", sg_pathHelper);
 
-    bool sg_pathHelperTurn = false;
-    static tConfItem<bool> sg_pathHelperTurnC("HELPER_PATH_RENDER", sg_pathHelperTurn);
+    bool sg_pathHelperRenderPath = false;
+    static tConfItem<bool> sg_pathHelperRenderPathC("HELPER_PATH_RENDER", sg_pathHelperRenderPath);
 
     bool sg_pathHelperShowTurn = false;
     static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_PATH_TURN_SHOW", sg_pathHelperShowTurn);
-
-    REAL sg_pathHelperThinkAgain = 1;
-    static tConfItem<REAL> sg_pathHelperThinkAgainC("HELPER_PATH_THINK_AGAIN", sg_pathHelperThinkAgain);
 
     int sg_pathHelperMode = 0;
     static tConfItem<int> sg_pathHelperModeC("HELPER_PATH_MODE", sg_pathHelperMode);
     // sg_pathHelperModeC->help = tOutput("help");
 
-    REAL sg_pathHelperAutoRange = 150;
-    static tConfItem<REAL> sg_pathHelperAutoRangeC("HELPER_PATH_AUTO_RANGE", sg_pathHelperAutoRange);
+    REAL sg_pathHelperAutoCloseDistance = 150;
+    static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC("HELPER_PATH_AUTO_CLOSE_DISTANCE", sg_pathHelperAutoCloseDistance);
 
     gPathHelper::gPathHelper(gHelper * helper, gCycle * owner)
         : helper_(helper),
@@ -879,7 +876,7 @@ void gTailHelper::Activate(gHelperData &data) {
     {
     gCycle *enemy = helper_->enemies.closestEnemy;
 
-    bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoRange + data.turnSpeedFactor);
+    bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoCloseDistance + data.turnSpeedFactor);
     if (isClose)
     {
         target = enemy->Position();
@@ -930,7 +927,7 @@ void gTailHelper::Activate(gHelperData &data) {
     // bool updateTime = lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
     return lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
     }
-
+    
     REAL se_pathHeight = 1;
     static tConfItem<REAL> se_pathHeightC("HELPER_PATH_HEIGHT", se_pathHeight);
 
@@ -960,27 +957,27 @@ void gTailHelper::Activate(gHelperData &data) {
         }
     }
 
-    void gPathHelper::RenderTurn(gHelperData & data)
+    void gPathHelper::RenderTurn(gHelperData &data)
     {
-    if (!path_.Valid())
-    {
-        return;
-    }
+        if (!path_.Valid())
+        {
+            return;
+        }
 
-    eCoord targetPos = path_.CurrentPosition() + path_.CurrentOffset(); // * 0.1f;
-    eCoord currentPos = owner_->Position();
-    eCoord dirToTarget = targetPos - currentPos;
+        eCoord targetPos = path_.CurrentPosition() + path_.CurrentOffset(); // * 0.1f;
+        eCoord currentPos = owner_->Position();
+        eCoord dirToTarget = targetPos - currentPos;
 
-    if (eCoord::F(owner_->Direction(), dirToTarget) > 0)
-    {
-        helper_->smartTurning->makeTurnIfPossible(data, RIGHT, 1);
-        debugLine(.2, 1, 0, 3, data.speedFactor, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
-    }
-    else
-    {
-        helper_->smartTurning->makeTurnIfPossible(data, LEFT, 1);
-        debugLine(.2, 1, 0, 3, data.speedFactor, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
-    }
+        if (eCoord::F(owner_->Direction(), dirToTarget) > 0)
+        {
+            //helper_->smartTurning->makeTurnIfPossible(data, RIGHT, 1);
+            debugLine(.2, 1, 0, 3, data.speedFactor*3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
+        }
+        else
+        {
+            //helper_->smartTurning->makeTurnIfPossible(data, LEFT, 1);
+            debugLine(.2, 1, 0, 3, data.speedFactor*3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
+        }
     }
 
     REAL sg_pathHelperUpdateDistance = 1;
@@ -988,11 +985,12 @@ void gTailHelper::Activate(gHelperData &data) {
 
     bool gPathHelper::DistanceCheck(gHelperData &data)
     {
-    eCoord difference = target - lastPos;
-    REAL distance = difference.Norm();
-    // con << distance << " > " << sg_pathHelperUpdateDistance << " \n";
-    return distance >= sg_pathHelperUpdateDistance;
+        eCoord difference = target - lastPos;
+        REAL distance = difference.Norm();
+        // con << distance << " > " << sg_pathHelperUpdateDistance << " \n";
+        return distance >= sg_pathHelperUpdateDistance;
     }
+
     void gPathHelper::FindPath(gHelperData &data)
     {
     if (!targetExist())
@@ -1027,14 +1025,14 @@ void gTailHelper::Activate(gHelperData &data) {
     if (!helper_->aliveCheck())
         return;
 
-    if (sg_pathHelperTurn)
+    if (sg_pathHelperRenderPath)
         RenderPath(orig_data);
 
     if (!UpdateTimeCheck(orig_data))
         return;
 
     gHelperData data = orig_data;
-
+ 
     bool success = false;
     switch (sg_pathHelperMode)
     {
@@ -1062,7 +1060,7 @@ void gTailHelper::Activate(gHelperData &data) {
     // RenderPath();
     // con << "Got Turn: " << data.turnDir << " Next Thought in " << nextthought << "\n";
 
-    // if (sg_pathHelperTurn)
+    // if (sg_pathHelperRenderPath)
     //     helper_->smartTurning->makeTurnIfPossible(data,data.turnDir,1);
 
     if (sg_pathHelperShowTurn)
@@ -1665,7 +1663,7 @@ class Sensor: public gSensor
         owner_->Act( &gCycle::s_brake, brake ? 1 : -1 );
 
         noTurns++;
-        BotDebug("NO TURN FOUND", noTurns);
+        //BotDebug("NO TURN FOUND", noTurns);
         return turn;
 
 
@@ -1942,20 +1940,29 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
     {
         switch (dir)
         {
+            //left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
+           //right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
+            
         case LEFT:
         {
-
-            left_stored->detect(sg_helperSensorRange, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
+            //con << "Detecting left sensor \n";
+            left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
+           
+            //left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(cos(M_PI/4), sin(M_PI/4))), true);
             return left_stored;
         }
         case FRONT:
         {
-            front_stored->detect(sg_helperSensorRange, owner_->Position(), owner_->Direction());
+            //con << "Detecting front sensor \n";
+            front_stored->detect(sg_helperSensorRange, start, owner_->Direction(), true);
             return front_stored;
         }
         case RIGHT:
         {
-            right_stored->detect(sg_helperSensorRange, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
+            //con << "Detecting right sensor \n";
+            //right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(cos(M_PI/4), -sin(M_PI/4))), true);
+            right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
+            
             return right_stored;
         }
         }
@@ -1967,40 +1974,23 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
         case LEFT:
         {
             gSensor *left = new gSensor(owner_, start, owner_->Direction().Turn(eCoord(0, 1)));
-            left->detect(sg_helperSensorRange);
+            left->detect(sg_helperSensorRange, true);
             return left;
         }
         case FRONT:
         {
             gSensor *front = new gSensor(owner_, start, owner_->Direction());
-            front->detect(sg_helperSensorRange);
+            front->detect(sg_helperSensorRange, true);
             return front;
         }
         case RIGHT:
         {
             gSensor *right = new gSensor(owner_, start, owner_->Direction().Turn(eCoord(0, -1)));
-            right->detect(sg_helperSensorRange);
+            right->detect(sg_helperSensorRange, true);
             return right;
         }
         }
     }
-}
-
-gHelperSensors *gHelperSensorsData::getSensors()
-{
-
-    if (sg_helperSensorLightUsageMode)
-    {
-        return new gHelperSensors(front_stored, left_stored, right_stored);
-    }
-
-    gSensor *front = new gSensor(owner_, owner_->Position(), owner_->Direction());
-    front->detect(sg_helperSensorRange);
-    gSensor *left = new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)));
-    left->detect(sg_helperSensorRange);
-    gSensor *right = new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1)));
-    right->detect(sg_helperSensorRange);
-    return new gHelperSensors(front, left, right);
 }
 
 
@@ -2348,9 +2338,9 @@ void gSmartTurning::autoUnBrake() {
         owner_->braking = false;
     }
 
-        if (brakingReservoir >= sg_helperSmartTurningAutoBrakeMax) {
-            owner_->braking = true;
-        }
+    if (brakingReservoir >= sg_helperSmartTurningAutoBrakeMax) {
+        owner_->braking = true;
+    }
 }
 
 void gSmartTurning::smartTurningOpposite(gHelperData &data) {
@@ -2399,21 +2389,24 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data) {
     }
 
     if (!canSurviveLeftTurn && !canSurviveRightTurn) {
-        this->blockTurn = 2;
-        HelperDebug::Debug("SMART TURNING SURVIVE", "BLOCKING BOTH TURNS", "");
+        if (this->blockTurn != BOTH)
+            HelperDebug::Debug("SMART TURNING SURVIVE", "BLOCKING BOTH TURNS", "");
+        this->blockTurn = BOTH;
         return;
     }
-    
-    if (!canSurviveLeftTurn) {
 
-        HelperDebug::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS", "");
-        this->blockTurn = -1;
+    if (!canSurviveLeftTurn) {
+        
+        if (this->blockTurn != LEFT)
+            HelperDebug::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS", "");
+        this->blockTurn = LEFT;
         return;
     }
 
     if (!canSurviveRightTurn) {
-        this->blockTurn = 1;
-        HelperDebug::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN", "");
+        if (this->blockTurn != RIGHT)
+            HelperDebug::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN", "");
+        this->blockTurn = RIGHT;
         return;
     }
 
@@ -2421,6 +2414,8 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data) {
     {
         //this->turnIgnoreTime = -999;
         owner_->lastBlockedTurn = this->blockTurn;
+        if (this->blockTurn !=0)
+            HelperDebug::Debug("SMART TURNING SURVIVE", "UNBLOCKING TURNS", "");
         this->blockTurn = 0;
         if (sg_helperSmartTurningSurviveTrace) {
             smartTurningSurviveTrace(data);
@@ -2445,7 +2440,7 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data) {
             if ( helper_->leftCorner.exist && isClose(helper_->leftCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) &&
                     //owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/(10 * data.turnSpeedFactor)) > helper_->leftCorner.noticedTime &&
                     helper_->leftCorner.getTimeUntilTurn(owner_->Speed()) > 0 &&
-                    (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {                        
+                    (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
                 makeTurnIfPossible(data,LEFT,1);
                 HelperDebug::Debug("SMART TURNING TRACE", "TURNED LEFT IF POSSIBLE", "");
             }
@@ -2679,7 +2674,7 @@ void gSmartTurning::canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, 
     bool canTurnLeftRubber = true, canTurnRightRubber = true, canTurnLeftSpace = true, canTurnRightSpace = true;
     REAL closedInFactor = data.turnSpeedFactor * sg_helperSmartTurningClosedInMult;
     closedIn = (front->hit <= closedInFactor && left->hit <= closedInFactor && right->hit <= closedInFactor);
-    blockedBySelf = (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
+    blockedBySelf = (left->hit < 5 && right->hit < 5 )&& (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
 
     if (freeSpaceFactor > 0) {
 //            con << "right " << data.sensors.getSensor(LEFT)->hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << "\n";
@@ -2752,13 +2747,24 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
     }
 
     REAL hitRange = data.sensors.getSensor(FRONT)->hit;
-    if (hitRange <= sg_helperSmartTurningFrontBotActivationRange * data.turnSpeedFactor)
+    if (hitRange <= sg_helperSmartTurningFrontBotThinkRange * data.turnSpeedFactor)
     {
         calculateRubberFactor(sg_helperSmartTurningRubberTimeMult, sg_helperSmartTurningRubberFactorMult);
         gHelperEmergencyTurn emergencyTurn(owner_, helper_);
 
         if (rubberRatio >= sg_helperSmartTurningFrontBotActivationRubber || hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
-        {
+        {   
+            bool turnPossible = false;
+            // gTurnData *turnData = getEmergencyTurn(data);
+            // if (turnData != nullptr && turnData->numberOfTurns > 0)
+            // {
+            //     for (int i = 0; i < turnData->numberOfTurns; i++)
+            //     {
+            //         makeTurnIfPossible(data,turnData->direction, 0);
+            //     }
+            //     turnPossible = true;
+            // }
+
             REAL turn = emergencyTurn.getTurn();
             // REAL blockTurn = owner_->blockTurn;
             // owner_->blockTurn = 0;
@@ -2767,7 +2773,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
                 return;
             }
             noTurns = 0;
-            bool turnPossible = makeTurnIfPossible(data, turn , 0);
+            turnPossible = makeTurnIfPossible(data, turn , 0);
             // owner_->blockTurn = blockTurn;
 
             if (sg_helperSmartTurningFrontBotDisableTime > 0 && turnPossible)
@@ -2779,314 +2785,671 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
     // con << rubberFactor << " | " << rubberTime << " | " << rubberRatio << "\n";
 }
 
-int gSmartTurning::getEmergencyTurn(gHelperData &data)
-{
-    // seconds to plan ahead
-    REAL minstep = 0;
-    // cylce data
-    REAL speed = owner_->Speed();
-    eCoord dir = owner_->Direction();
-    eCoord pos = owner_->Position();
 
-    REAL lookahead = speed;
-    REAL ownerTurnDelay = owner_->GetTurnDelay();
-    REAL range = 10 * data.turnSpeedFactor;
-    eCoord scanDir = dir * range;
-
-    REAL frontFactor = .5;
-
-    SensorPub front(owner_, pos, scanDir);
-
-    front.detect(frontFactor);
-
-    owner_->enemyInfluence.AddSensor(front, 0, owner_);
-
-    REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
-
-    // get extra time we get through rubber usage
-    calculateRubberFactor(sg_helperSmartTurningRubberTimeMult, sg_helperSmartTurningRubberFactorMult);
-
-    if (front.ehit)
+    REAL Distance( SensorPub const & a, SensorPub const & b , gCycle *owner_)
     {
-        // these checks can hit our last wall and fail. Temporarily set it to
-        // NULL.
-        tJUST_CONTROLLED_PTR<gNetPlayerWall> lastWall = owner_->lastWall;
-        owner_->lastWall = NULL;
+        // make sure a is left from b
+        if ( a.Direction() * b.Direction() < 0 )
+            return Distance( b, a, owner_ );
 
-        REAL narrowFront = 1;
+        bool self = a.type == gSENSOR_SELF || b.type == gSENSOR_SELF;
+        bool rim  = a.type == gSENSOR_RIM || b.type == gSENSOR_RIM;
 
-        // cast four diagonal rays
-        SensorPub forwardLeft(owner_, pos, scanDir.Turn(+1, +1));
-        SensorPub backwardLeft(owner_, pos, scanDir.Turn(-1, +narrowFront));
-        SensorPub forwardRight(owner_, pos, scanDir.Turn(+1, -1));
-        SensorPub backwardRight(owner_, pos, scanDir.Turn(-1, -narrowFront));
-
-        REAL detectRange = (owner_->Speed());
-        forwardRight.detect(detectRange);
-        backwardRight.detect(detectRange);
-        forwardLeft.detect(detectRange);
-        backwardLeft.detect(detectRange);
-
-        // determine survival chances in the four directions
-        REAL frontOpen = forwardRight.Distance(forwardLeft, forwardRight);
-        REAL leftOpen = forwardRight.Distance(forwardLeft, backwardLeft);
-        REAL rightOpen = forwardRight.Distance(forwardRight, backwardRight);
-        REAL rearOpen = forwardRight.Distance(backwardLeft, backwardRight);
-
-        SensorPub self(owner_, pos, scanDir.Turn(-1, 0));
-        // fake entries
-        self.before_hit = pos;
-        self.windingNumber_ = owner_->windingNumber_;
-        self.type = gSENSOR_SELF;
-        self.hitDistance_ = 0;
-        self.hitOwner_ = owner_;
-        self.hitTime_ = owner_->localCurrentTime;
-        self.lr = -1;
-        REAL rearLeftOpen = forwardLeft.Distance(backwardLeft, self);
-        self.lr = 1;
-        REAL rearRightOpen = forwardLeft.Distance(backwardRight, self);
-
-        // override rim hugging
-        if (forwardRight.type == gSENSOR_SELF &&
-            forwardLeft.type == gSENSOR_RIM &&
-            backwardRight.type == gSENSOR_SELF &&
-            backwardLeft.type == gSENSOR_RIM && forwardRight.lr == -1 &&
-            backwardRight.lr == -1)
+        // avoid. own. walls.
+        REAL selfHatred = 1;
+        if ( a.type == gSENSOR_SELF )
         {
-
-            if (rightOpen > speed * (ownerTurnDelay - rubberTime * .8))
+            selfHatred *= .5;
+            if ( a.lr > 0 )
             {
-                HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Right by rim","");
-                //nextTurn_ = 1;
-                //noTurnFound = 0;
-                return 1;
+                selfHatred *= .5;
+                if ( b.type == gSENSOR_RIM )
+                    selfHatred *= .25;
+            }
+        }
+        if ( b.type == gSENSOR_SELF )
+        {
+            selfHatred *= .5;
+            if ( b.lr < 0 )
+            {
+                selfHatred *= .5;
+                if ( a.type == gSENSOR_RIM )
+                    selfHatred *= .25;
             }
         }
 
-        if (forwardLeft.type == gSENSOR_SELF &&
-            forwardRight.type == gSENSOR_RIM &&
-            backwardLeft.type == gSENSOR_SELF &&
-            backwardRight.type == gSENSOR_RIM && forwardLeft.lr == 1 &&
-            backwardLeft.lr == 1)
-        {
+        // some big distance to return if we don't know anything better
+        REAL bigDistance = owner_->MaxWallsLength();
+        if ( bigDistance <= 0 )
+            bigDistance = owner_->GetDistance();
 
-            if (leftOpen > speed * (ownerTurnDelay - rubberTime * .8))
+        if ( a.hitOwner_ != b.hitOwner_ )
+        {
+            // different owners? Great, there has to be a way through!
+            REAL ret =
+                a.hitDistance_ + b.hitDistance_;
+
+            if ( rim )
             {
-                HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Left by rim","");
-                //nextTurn_ = -1;
-                //noTurnFound = 0;
-                return -1;
+                ret = bigDistance * .001 + ret * .01 + ( a.before_hit - b.before_hit).Norm();
+
+                // we love going between the rim and enemies
+                if ( !self )
+                    ret = bigDistance * 2;
             }
+
+            // minimal factor should be 1, this path should never return something smaller than the
+            // paths where only one cycle's walls are hit
+            ret *= 16;
+
+            // or empty space
+            if ( a.type == gSENSOR_NONE || b.type == gSENSOR_NONE )
+                ret *= 2;
+
+            return ret * selfHatred;
+        }
+        else if ( rim )
+        {
+            // at least one rim wall? Take the distance between the hit positions.
+            return ( a.before_hit - b.before_hit).Norm() * selfHatred;
+        }
+        else if ( a.type == gSENSOR_NONE && b.type == gSENSOR_NONE )
+        {
+            // empty space! Woo!
+            return owner_->GetDistance() * 256;
+        }
+        else if ( a.lr != b.lr )
+        {
+            // different directions? Also great!
+            return ( fabsf( a.hitDistance_ - b.hitDistance_ ) + .25 * bigDistance ) * selfHatred;
         }
 
-        // get the best turn direction
-        int bestDir =
-            (leftOpen + rearLeftOpen > rightOpen + rearRightOpen) ? 1 : -1;
-
-        SensorPub direct(owner_, pos, scanDir.Turn(0, bestDir));
-        direct.detect(1);
-
-        // restore last wall
-        owner_->lastWall = lastWall;
-
-        uActionPlayer *bestAction =
-            (bestDir > 0) ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
-
-        REAL bestOpen = (bestDir > 0) ? leftOpen : rightOpen;
-        SensorPub &bestForward = (bestDir > 0) ? forwardLeft : forwardRight;
-        SensorPub &bestBackward = (bestDir > 0) ? backwardLeft : backwardRight;
-
-        // only turn if the hole has a shape that allows better entry after we do
-        // a zig-zag, or if we're past the good turning point see how the survival
-        // chance is distributed between forward and backward half
-        REAL forwardHalf = bestForward.Distance(direct, bestForward);
-        REAL backwardHalf = bestForward.Distance(direct, bestBackward);
-
-        REAL forwardOverhang =
-            bestForward.HitWallExtends(bestForward.Direction(), pos);
-        REAL backwardOverhang =
-            bestBackward.HitWallExtends(bestForward.Direction(), pos);
-
-        // we have to move forward this much before we can hope to turn
-        minMoveOn = bestBackward.HitWallExtends(dir, pos);
-
-        // maybe the direct to the side sensor is better?
-        REAL minMoveOnOther = direct.HitWallExtends(dir, pos);
-
-        // determine how far we can drive on
-        maxMoveOn = bestForward.HitWallExtends(dir, pos);
-        REAL maxMoveOnOther = front.HitWallExtends(dir, pos);
-        if (maxMoveOn > maxMoveOnOther)
-            maxMoveOn = maxMoveOnOther;
-
-        if (maxMoveOn > minMoveOnOther && forwardHalf > backwardHalf &&
-            direct.hitOwner_ == bestBackward.hitOwner_)
+        else if (( - 2 * a.lr * (a.windingNumber_ - b.windingNumber_ ) > owner_->Grid()->WindingNumber() ))
         {
-            backwardOverhang = direct.HitWallExtends(bestForward.Direction(), pos);
-            minMoveOn = minMoveOnOther;
-        }
-
-        // best place to turn
-        moveOn =
-            .5 * (minMoveOn * (1 + rubberRatio) + maxMoveOn * (1 - rubberRatio));
-
-        if (frontOpen < bestOpen &&
-            (forwardOverhang <= backwardOverhang ||
-                (minMoveOn < 0 && moveOn < minstep * speed)))
-        {
-
-            minMoveOn = maxMoveOn = moveOn = 0;
-
-            {
-                if (!CanMakeTurn(bestAction))
-                {
-                    //botTurnMethod = "bestActionV1";
-                    //noTurnFound = 0;
-                    return 0;
-                }
-                //              bool boxedInLeft = (backwardLeft.type == gSENSOR_SELF
-                //              && forwardLeft.type == gSENSOR_SELF);
-                //                bool boxedInRight = (backwardRight.type ==
-                //                gSENSOR_SELF && forwardRight.type == gSENSOR_SELF);
-                bool leftRearMoreOpen = rearLeftOpen > rearRightOpen;
-
-                if (data.sensors.getSensor(LEFT)->hit > data.turnSpeedFactor &&
-                    (bestAction == &gCycle::se_turnLeft) && leftRearMoreOpen)
-                //&&                (!(forwardLeft.type == gSENSOR_SELF &&
-                // backwardLeft.type == gSENSOR_SELF) ) )) //|| (backwardLeft.type ==
-                // gSENSOR_ENEMY) )
-                {
-                    HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Left by bestActionv1","");
-                    //nextTurn_ = -1;
-                    //noTurnFound = 0;
-                    return -1;
-                }
-                else if (data.sensors.getSensor(RIGHT)->hit > data.turnSpeedFactor &&
-
-                            (bestAction == &gCycle::se_turnRight) &&
-                            !leftRearMoreOpen) // &&
-                                            //      (!(forwardRight.type ==
-                                            //      gSENSOR_SELF &&
-                                            //      backwardRight.type ==
-                                            //      gSENSOR_SELF)) )) //||
-                                            //      (backwardRight.type ==
-                                            //      gSENSOR_ENEMY) )
-                {
-                    HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Right by bestActionv1","");
-                    //nextTurn_ = 1;
-                    //noTurnFound = 0;
-                    return 1;
-                }
-            }
+            // this looks like a way out to me
+            return fabsf( a.hitDistance_ - b.hitDistance_ ) * 10 * selfHatred;
         }
         else
         {
-            // the best
-            REAL bestSoFar = frontOpen > bestOpen ? frontOpen : bestOpen;
-            bestSoFar *= (10 * (1 - rubberRatio) + 1);
+            // well, the longer the wall segment between the two points, the better.
+            return fabsf( a.hitDistance_ - b.hitDistance_ ) * selfHatred;
+        }
 
-            if (rearOpen > bestSoFar &&
-                (rearLeftOpen > bestSoFar || rearRightOpen > bestSoFar))
+        // default: hit distance
+        return ( a.before_hit - b.before_hit).Norm() * selfHatred;
+    }
+gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
+    {
+
+        REAL chatBotNewWallBlindness = 0;
+        REAL chatBotMinTimestep      = 0;
+        REAL chatBotDelay            = 0;
+        REAL chatBotRange            = 15;
+        REAL chatBotDecay            = 0;
+        REAL chatBotEnemyPenalty     = 0;
+
+        REAL lookahead = chatBotRange;  // seconds to plan ahead
+        REAL minstep   = chatBotMinTimestep; // minimum timestep between thoughts in seconds
+
+        // cylce data
+        REAL speed = owner_->Speed();
+        eCoord dir = owner_->Direction();
+        eCoord pos = owner_->Position();
+
+
+        REAL range = speed * lookahead;
+        eCoord scanDir = dir * range;
+
+        REAL frontFactor = .5;
+
+        SensorPub front(owner_,pos,scanDir);
+        front.detect(frontFactor);
+        owner_->enemyInfluence.AddSensor( front, chatBotEnemyPenalty, owner_ );
+
+        REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
+
+        // get extra time we get through rubber usage
+        calculateRubberFactor(sg_helperSmartTurningRubberTimeMult, sg_helperSmartTurningRubberFactorMult);
+
+        if ( front.ehit )
+        {
+
+            // these checks can hit our last wall and fail. Temporarily set it to NULL.
+            tJUST_CONTROLLED_PTR< gNetPlayerWall > lastWall = owner_->lastWall;
+            owner_->lastWall = NULL;
+
+            REAL narrowFront = 1;
+
+            // cast four diagonal rays
+            SensorPub forwardLeft ( owner_, pos, scanDir.Turn(+1,+1 ) );
+            SensorPub backwardLeft( owner_, pos, scanDir.Turn(-1,+narrowFront) );
+            forwardLeft.detect(1);
+            backwardLeft.detect(1);
+            SensorPub forwardRight ( owner_, pos, scanDir.Turn(+1,-1 ) );
+            SensorPub backwardRight( owner_, pos, scanDir.Turn(-1,-narrowFront) );
+            forwardRight.detect(1);
+            backwardRight.detect(1);
+
+            // determine survival chances in the four directions
+            REAL frontOpen = Distance ( forwardLeft, forwardRight,owner_ );
+            REAL leftOpen  = Distance ( forwardLeft, backwardLeft,owner_ );
+            REAL rightOpen = Distance ( forwardRight, backwardRight,owner_ );
+            REAL rearOpen = Distance ( backwardLeft, backwardRight ,owner_);
+
+            SensorPub self( owner_, pos, scanDir.Turn(-1, 0) );
+            // fake entries
+            self.before_hit = pos;
+            self.windingNumber_ = owner_->windingNumber_;
+            self.type = gSENSOR_SELF;
+            self.hitDistance_ = 0;
+            self.hitOwner_ = owner_;
+            self.hitTime_ = owner_->localCurrentTime;
+            self.lr = -1;
+            REAL rearLeftOpen = Distance( backwardLeft, self ,owner_);
+            self.lr = 1;
+            REAL rearRightOpen = Distance( backwardRight, self ,owner_);
+            bool sg_localBot = true;
+            // if (sg_localBot) {
+            //     // override: don't camp (too much)
+            //     if ( forwardRight.type == gSENSOR_SELF &&
+            //             forwardLeft.type == gSENSOR_SELF &&
+            //             backwardRight.type == gSENSOR_SELF &&
+            //             backwardLeft.type == gSENSOR_SELF &&
+            //             front.type == gSENSOR_SELF &&
+            //             forwardRight.lr == front.lr &&
+            //             forwardLeft.lr == front.lr &&
+            //             backwardRight.lr == front.lr &&
+            //             backwardLeft.lr == front.lr &&
+            //             frontOpen + leftOpen + rightOpen < owner_->GetDistance() * .5 )
+            //     {
+
+            //         if ( front.lr > 0 )
+            //         {
+            //             if ( leftOpen > minstep * speed && ( leftOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )) //&& helper_->smartTurning->canSurviveTurnSpecific(data,-1,spaceFactor))
+            //                 // force a turn to the left
+            //                 rightOpen = 0;
+            //             else if ( front.hit * range < 2 * minstep )
+            //                 // force a preliminary turn to the right that will allow us to reverse
+            //                 frontOpen = 0;
+            //         }
+            //         else
+            //         {
+            //             if ( rightOpen > minstep * speed && ( rightOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 )))
+            //                 // force a turn to the right
+            //                 leftOpen = 0;
+            //             else if ( front.hit * range < 2 * minstep )
+            //                 // force a preliminary turn to the left that will allow us to reverse
+            //                 frontOpen = 0;
+            //         }
+            //     }
+            // }
+
+            // // override rim hugging
+            // if ( forwardRight.type == gSENSOR_SELF &&
+            //         forwardLeft.type == gSENSOR_RIM &&
+            //         backwardRight.type == gSENSOR_SELF &&
+            //         backwardLeft.type == gSENSOR_RIM &&
+            //         // backwardLeft.hit < .1 &&
+            //         forwardRight.lr == -1 &&
+            //         backwardRight.lr == -1 )
+            // {
+
+            //     if ( rightOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
+            //     {
+            //         return (new gTurnData(RIGHT,2));
+            //     }
+            //     else if ( leftOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
+            //     {
+            //         return (new gTurnData(LEFT,2));
+            //     }
+            // }
+
+            // if ( forwardLeft.type == gSENSOR_SELF &&
+            //         forwardRight.type == gSENSOR_RIM &&
+            //         backwardLeft.type == gSENSOR_SELF &&
+            //         backwardRight.type == gSENSOR_RIM &&
+            //         // backwardRight.hit < .1 &&
+            //         forwardLeft.lr == 1 &&
+            //         backwardLeft.lr == 1 )
+            // {
+
+            //     if ( leftOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
+            //     {
+            //         return (new gTurnData(LEFT,2));
+            //     }
+            //     else if ( rightOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
+            //     {
+            //         return (new gTurnData(RIGHT,2));
+            //     }
+            // }
+
+            // get the best turn direction
+            uActionPlayer * bestAction = ( leftOpen > rightOpen ) ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+            int             bestDir      = ( leftOpen > rightOpen ) ? 1 : -1;
+            REAL            bestOpen     = ( leftOpen > rightOpen ) ? leftOpen : rightOpen;
+            SensorPub &        bestForward  = ( leftOpen > rightOpen ) ? forwardLeft : forwardRight;
+            SensorPub &        bestBackward = ( leftOpen > rightOpen ) ? backwardLeft : backwardRight;
+
+            SensorPub direct ( owner_, pos, scanDir.Turn( 0, bestDir) );
+            direct.detect( 1 );
+
+            // restore last wall
+            owner_->lastWall = lastWall;
+
+            // only turn if the hole has a shape that allows better entry after we do a zig-zag, or if we're past the good turning point
+            // see how the survival chance is distributed between forward and backward half
+            REAL forwardHalf  = Distance ( direct, bestForward,owner_ );
+            REAL backwardHalf = Distance ( direct, bestBackward,owner_ );
+
+            REAL forwardOverhang  = bestForward.HitWallExtends( bestForward.Direction(), pos );
+            REAL backwardOverhang  = bestBackward.HitWallExtends( bestForward.Direction(), pos );
+
+            // we have to move forward this much before we can hope to turn
+            minMoveOn = bestBackward.HitWallExtends( dir, pos );
+
+            // maybe the direct to the side sensor is better?
+            REAL minMoveOnOther = direct.HitWallExtends( dir, pos );
+
+            // determine how far we can drive on
+            maxMoveOn      = bestForward.HitWallExtends( dir, pos );
+            REAL maxMoveOnOther = front.HitWallExtends( dir, pos );
+            if ( maxMoveOn > maxMoveOnOther )
+                maxMoveOn = maxMoveOnOther;
+
+            if ( maxMoveOn > minMoveOnOther && forwardHalf > backwardHalf && direct.hitOwner_ == bestBackward.hitOwner_ )
             {
-                bool goLeft = rearLeftOpen > rearRightOpen;
+                backwardOverhang  = direct.HitWallExtends( bestForward.Direction(), pos );
+                minMoveOn = minMoveOnOther;
+            }
 
-                // dead end. reverse into the opposite direction of the front wall
-                uActionPlayer *bestAction =
-                    goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
-                uActionPlayer *otherAction =
-                    !goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
-                SensorPub &bestForward = goLeft ? forwardLeft : forwardRight;
-                SensorPub &bestBackward = goLeft ? backwardLeft : backwardRight;
-                SensorPub &otherForward = !goLeft ? forwardLeft : forwardRight;
-                SensorPub &otherBackward = !goLeft ? backwardLeft : backwardRight;
+            // best place to turn
+            moveOn = .5 * ( minMoveOn * ( 1 + rubberRatio ) + maxMoveOn * ( 1 - rubberRatio ) );
 
-                // space in the two directions available for turns
-                REAL bestHit = bestForward.hit > bestBackward.hit ? bestBackward.hit
-                                                                    : bestForward.hit;
-                REAL otherHit = otherForward.hit > otherBackward.hit
-                                    ? otherBackward.hit
-                                    : otherForward.hit;
 
-                bool wait = false;
+            if ( frontOpen < bestOpen &&
+                    ( forwardOverhang <= backwardOverhang || ( minMoveOn < 0 && moveOn < minstep * speed ) ) )
+            {
 
-                if (!CanMakeTurn(bestAction))
+
+
+                minMoveOn = maxMoveOn = moveOn = 0;
+
                 {
-                    //botTurnMethod = "bestActionV2";
-                    //noTurnFound = 0;
-                    HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","cant make turn bestAction","");
-                    return 0;
+                    return (new gTurnData(bestDir,2));
                 }
 
-                // well, after a short turn to the right if space is tight
-                if (bestHit * lookahead <
-                    ownerTurnDelay +
-                        rubberTime)
-                { /*
-                            if (otherHit < bestForward.hit * 2 && front.hit *
-                            lookahead > ownerTurnDelay * 2)
-                            {
-                                // wait a bit, perhaps there will be a better
-                            spot
-                                // wait = true;
-                            }
-                            else */
-                    {
-                        // owner_->Act( otherAction, 1 );
+            }
+            else
+            {
+                // the best
+                REAL bestSoFar = frontOpen > bestOpen ? frontOpen : bestOpen;
+                bestSoFar *= ( 10 * ( 1 - rubberRatio ) + 1 );
 
-                        // there needs to be space ahead to finish the maneuver correctly
-                        if (maxMoveOn < speed * ownerTurnDelay)
+                if ( rearOpen > bestSoFar && ( rearLeftOpen > bestSoFar || rearRightOpen > bestSoFar ) )
+                {
+
+                    bool goLeft = rearLeftOpen > rearRightOpen;
+
+                    // dead end. reverse into the opposite direction of the front wall
+                    uActionPlayer * bestAction = goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+                    int bestDir = goLeft ? -1 : 1;
+                    uActionPlayer * otherAction = !goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+                    int otherDir = !goLeft ? -1 : 1;
+                    SensorPub &        bestForward  = goLeft ? forwardLeft : forwardRight;
+                    SensorPub &        bestBackward  = goLeft ? backwardLeft : backwardRight;
+                    SensorPub &        otherForward  = !goLeft ? forwardLeft : forwardRight;
+                    SensorPub &        otherBackward  = !goLeft ? backwardLeft : backwardRight;
+
+                    // space in the two directions available for turns
+                    REAL bestHit = bestForward.hit > bestBackward.hit ? bestBackward.hit : bestForward.hit;
+                    REAL otherHit = otherForward.hit > otherBackward.hit ? otherBackward.hit : otherForward.hit;
+
+                    bool wait = false;
+
+                    // well, after a short turn to the right if space is tight
+                    if ( bestHit * lookahead < owner_->GetTurnDelay() + rubberTime )
+                    {
+                        if ( otherHit < bestForward.hit * 2 && front.hit * lookahead > owner_->GetTurnDelay() * 2 )
                         {
-                            if (!CanMakeTurn(otherAction))
+                            // wait a bit, perhaps there will be a better spot
+                            wait = true;
+                        }
+                        else if (!wait)
+                        {
+
+                            //return (new gTurnData(otherDir,2));;
+
+                            // there needs to be space ahead to finish the maneuver correctly
+                            if ( maxMoveOn < speed * owner_->GetTurnDelay() )
                             {
-                                //botTurnMethod = "otherAction";
-                                //noTurnFound = 0;
-                                HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","cant make turn otherAction","");
-                                return 0;
-                            }
-                            // there isn't. oh well, turn into the wrong direction
-                            // completely, see if I care
-                            if (otherAction == &gCycle::se_turnLeft)
-                            {
-                                HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Left by otherAction","");
-                                //nextTurn_ = -1;
-                                //noTurnFound = 0;
-                                return -1;
-                            }
-                            else if (otherAction == &gCycle::se_turnRight)
-                            {
-                                HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Right by otherAction","");
-                                //nextTurn_ = 1;
-                                //noTurnFound = 0;
-                                return 1;
+                                // there isn't. oh well, turn into the wrong direction completely, see if I care
+                                //owner_->ActBot( otherAction, 1 );
+                                wait = true;
                             }
                         }
                     }
-                }
 
-                if (wait)
-                {
-                    if (bestAction == &gCycle::se_turnLeft)
+                    if ( !wait )
                     {
-                        HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Left by bestActionv2","");
-                        //nextTurn_ = -1;
-                        //noTurnFound = 0;
-                        return -1;
+                        return (new gTurnData(bestDir,2));
                     }
-                    else if (bestAction == &gCycle::se_turnRight)
-                    {
-                        HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Right by bestActionv2","");
-                        //nextTurn_ = 1;
-                        //noTurnFound = 0;
-                        return 1;
-                    }
+
+                    minMoveOn = maxMoveOn = moveOn = 0;
                 }
             }
+
+
         }
     }
-    //noTurnFound++;
-    HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","No turns found","");
-    return 2;
-}
+
+// int gSmartTurning::getEmergencyTurn(gHelperData &data)
+// {
+//     // seconds to plan ahead
+//     REAL minstep = 0;
+//     // cylce data
+//     REAL speed = owner_->Speed();
+//     eCoord dir = owner_->Direction();
+//     eCoord pos = owner_->Position();
+
+//     REAL lookahead = speed;
+//     REAL ownerTurnDelay = owner_->GetTurnDelay();
+//     REAL range = 10 * data.turnSpeedFactor;
+//     eCoord scanDir = dir * range;
+
+//     REAL frontFactor = .5;
+
+//     SensorPub front(owner_, pos, scanDir);
+
+//     front.detect(frontFactor);
+
+//     owner_->enemyInfluence.AddSensor(front, 0, owner_);
+
+//     REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
+
+//     // get extra time we get through rubber usage
+//     calculateRubberFactor(sg_helperSmartTurningRubberTimeMult, sg_helperSmartTurningRubberFactorMult);
+
+//     if (front.ehit)
+//     {
+//         // these checks can hit our last wall and fail. Temporarily set it to
+//         // NULL.
+//         tJUST_CONTROLLED_PTR<gNetPlayerWall> lastWall = owner_->lastWall;
+//         owner_->lastWall = NULL;
+
+//         REAL narrowFront = 1;
+
+//         // cast four diagonal rays
+//         SensorPub forwardLeft(owner_, pos, scanDir.Turn(+1, +1));
+//         SensorPub backwardLeft(owner_, pos, scanDir.Turn(-1, +narrowFront));
+//         SensorPub forwardRight(owner_, pos, scanDir.Turn(+1, -1));
+//         SensorPub backwardRight(owner_, pos, scanDir.Turn(-1, -narrowFront));
+
+//         REAL detectRange = (owner_->Speed());
+//         forwardRight.detect(detectRange);
+//         backwardRight.detect(detectRange);
+//         forwardLeft.detect(detectRange);
+//         backwardLeft.detect(detectRange);
+
+//         // determine survival chances in the four directions
+//         REAL frontOpen = forwardRight.Distance(forwardLeft, forwardRight);
+//         REAL leftOpen = forwardRight.Distance(forwardLeft, backwardLeft);
+//         REAL rightOpen = forwardRight.Distance(forwardRight, backwardRight);
+//         REAL rearOpen = forwardRight.Distance(backwardLeft, backwardRight);
+
+//         SensorPub self(owner_, pos, scanDir.Turn(-1, 0));
+//         // fake entries
+//         self.before_hit = pos;
+//         self.windingNumber_ = owner_->windingNumber_;
+//         self.type = gSENSOR_SELF;
+//         self.hitDistance_ = 0;
+//         self.hitOwner_ = owner_;
+//         self.hitTime_ = owner_->localCurrentTime;
+//         self.lr = -1;
+//         REAL rearLeftOpen = forwardLeft.Distance(backwardLeft, self);
+//         self.lr = 1;
+//         REAL rearRightOpen = forwardLeft.Distance(backwardRight, self);
+
+//         // override rim hugging
+//         if (forwardRight.type == gSENSOR_SELF &&
+//             forwardLeft.type == gSENSOR_RIM &&
+//             backwardRight.type == gSENSOR_SELF &&
+//             backwardLeft.type == gSENSOR_RIM && forwardRight.lr == -1 &&
+//             backwardRight.lr == -1)
+//         {
+
+//             if (rightOpen > speed * (ownerTurnDelay - rubberTime * .8))
+//             {
+//                 HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Right by rim","");
+//                 //nextTurn_ = 1;
+//                 //noTurnFound = 0;
+//                 return 1;
+//             }
+//         }
+
+//         if (forwardLeft.type == gSENSOR_SELF &&
+//             forwardRight.type == gSENSOR_RIM &&
+//             backwardLeft.type == gSENSOR_SELF &&
+//             backwardRight.type == gSENSOR_RIM && forwardLeft.lr == 1 &&
+//             backwardLeft.lr == 1)
+//         {
+
+//             if (leftOpen > speed * (ownerTurnDelay - rubberTime * .8))
+//             {
+//                 HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Left by rim","");
+//                 //nextTurn_ = -1;
+//                 //noTurnFound = 0;
+//                 return -1;
+//             }
+//         }
+
+//         // get the best turn direction
+//         int bestDir =
+//             (leftOpen + rearLeftOpen > rightOpen + rearRightOpen) ? 1 : -1;
+
+//         SensorPub direct(owner_, pos, scanDir.Turn(0, bestDir));
+//         direct.detect(1);
+
+//         // restore last wall
+//         owner_->lastWall = lastWall;
+
+//         uActionPlayer *bestAction =
+//             (bestDir > 0) ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+
+//         REAL bestOpen = (bestDir > 0) ? leftOpen : rightOpen;
+//         SensorPub &bestForward = (bestDir > 0) ? forwardLeft : forwardRight;
+//         SensorPub &bestBackward = (bestDir > 0) ? backwardLeft : backwardRight;
+
+//         // only turn if the hole has a shape that allows better entry after we do
+//         // a zig-zag, or if we're past the good turning point see how the survival
+//         // chance is distributed between forward and backward half
+//         REAL forwardHalf = bestForward.Distance(direct, bestForward);
+//         REAL backwardHalf = bestForward.Distance(direct, bestBackward);
+
+//         REAL forwardOverhang =
+//             bestForward.HitWallExtends(bestForward.Direction(), pos);
+//         REAL backwardOverhang =
+//             bestBackward.HitWallExtends(bestForward.Direction(), pos);
+
+//         // we have to move forward this much before we can hope to turn
+//         minMoveOn = bestBackward.HitWallExtends(dir, pos);
+
+//         // maybe the direct to the side sensor is better?
+//         REAL minMoveOnOther = direct.HitWallExtends(dir, pos);
+
+//         // determine how far we can drive on
+//         maxMoveOn = bestForward.HitWallExtends(dir, pos);
+//         REAL maxMoveOnOther = front.HitWallExtends(dir, pos);
+//         if (maxMoveOn > maxMoveOnOther)
+//             maxMoveOn = maxMoveOnOther;
+
+//         if (maxMoveOn > minMoveOnOther && forwardHalf > backwardHalf &&
+//             direct.hitOwner_ == bestBackward.hitOwner_)
+//         {
+//             backwardOverhang = direct.HitWallExtends(bestForward.Direction(), pos);
+//             minMoveOn = minMoveOnOther;
+//         }
+
+//         // best place to turn
+//         moveOn =
+//             .5 * (minMoveOn * (1 + rubberRatio) + maxMoveOn * (1 - rubberRatio));
+
+//         if (frontOpen < bestOpen &&
+//             (forwardOverhang <= backwardOverhang ||
+//                 (minMoveOn < 0 && moveOn < minstep * speed)))
+//         {
+
+//             minMoveOn = maxMoveOn = moveOn = 0;
+
+//             {
+//                 if (!CanMakeTurn(bestAction))
+//                 {
+//                     //botTurnMethod = "bestActionV1";
+//                     //noTurnFound = 0;
+//                     return 0;
+//                 }
+//                 //              bool boxedInLeft = (backwardLeft.type == gSENSOR_SELF
+//                 //              && forwardLeft.type == gSENSOR_SELF);
+//                 //                bool boxedInRight = (backwardRight.type ==
+//                 //                gSENSOR_SELF && forwardRight.type == gSENSOR_SELF);
+//                 bool leftRearMoreOpen = rearLeftOpen > rearRightOpen;
+
+//                 if (data.sensors.getSensor(LEFT)->hit > data.turnSpeedFactor &&
+//                     (bestAction == &gCycle::se_turnLeft) && leftRearMoreOpen)
+//                 //&&                (!(forwardLeft.type == gSENSOR_SELF &&
+//                 // backwardLeft.type == gSENSOR_SELF) ) )) //|| (backwardLeft.type ==
+//                 // gSENSOR_ENEMY) )
+//                 {
+//                     HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Left by bestActionv1","");
+//                     //nextTurn_ = -1;
+//                     //noTurnFound = 0;
+//                     return -1;
+//                 }
+//                 else if (data.sensors.getSensor(RIGHT)->hit > data.turnSpeedFactor &&
+
+//                             (bestAction == &gCycle::se_turnRight) &&
+//                             !leftRearMoreOpen) // &&
+//                                             //      (!(forwardRight.type ==
+//                                             //      gSENSOR_SELF &&
+//                                             //      backwardRight.type ==
+//                                             //      gSENSOR_SELF)) )) //||
+//                                             //      (backwardRight.type ==
+//                                             //      gSENSOR_ENEMY) )
+//                 {
+//                     HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Right by bestActionv1","");
+//                     //nextTurn_ = 1;
+//                     //noTurnFound = 0;
+//                     return 1;
+//                 }
+//             }
+//         }
+//         else
+//         {
+//             // the best
+//             REAL bestSoFar = frontOpen > bestOpen ? frontOpen : bestOpen;
+//             bestSoFar *= (10 * (1 - rubberRatio) + 1);
+
+//             if (rearOpen > bestSoFar &&
+//                 (rearLeftOpen > bestSoFar || rearRightOpen > bestSoFar))
+//             {
+//                 bool goLeft = rearLeftOpen > rearRightOpen;
+
+//                 // dead end. reverse into the opposite direction of the front wall
+//                 uActionPlayer *bestAction =
+//                     goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+//                 uActionPlayer *otherAction =
+//                     !goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+//                 SensorPub &bestForward = goLeft ? forwardLeft : forwardRight;
+//                 SensorPub &bestBackward = goLeft ? backwardLeft : backwardRight;
+//                 SensorPub &otherForward = !goLeft ? forwardLeft : forwardRight;
+//                 SensorPub &otherBackward = !goLeft ? backwardLeft : backwardRight;
+
+//                 // space in the two directions available for turns
+//                 REAL bestHit = bestForward.hit > bestBackward.hit ? bestBackward.hit
+//                                                                     : bestForward.hit;
+//                 REAL otherHit = otherForward.hit > otherBackward.hit
+//                                     ? otherBackward.hit
+//                                     : otherForward.hit;
+
+//                 bool wait = false;
+
+//                 if (!CanMakeTurn(bestAction))
+//                 {
+//                     //botTurnMethod = "bestActionV2";
+//                     //noTurnFound = 0;
+//                     HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","cant make turn bestAction","");
+//                     return 0;
+//                 }
+
+//                 // well, after a short turn to the right if space is tight
+//                 if (bestHit * lookahead <
+//                     ownerTurnDelay +
+//                         rubberTime)
+//                 { /*
+//                             if (otherHit < bestForward.hit * 2 && front.hit *
+//                             lookahead > ownerTurnDelay * 2)
+//                             {
+//                                 // wait a bit, perhaps there will be a better
+//                             spot
+//                                 // wait = true;
+//                             }
+//                             else */
+//                     {
+//                         // owner_->Act( otherAction, 1 );
+
+//                         // there needs to be space ahead to finish the maneuver correctly
+//                         if (maxMoveOn < speed * ownerTurnDelay)
+//                         {
+//                             if (!CanMakeTurn(otherAction))
+//                             {
+//                                 //botTurnMethod = "otherAction";
+//                                 //noTurnFound = 0;
+//                                 HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","cant make turn otherAction","");
+//                                 return 0;
+//                             }
+//                             // there isn't. oh well, turn into the wrong direction
+//                             // completely, see if I care
+//                             if (otherAction == &gCycle::se_turnLeft)
+//                             {
+//                                 HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Left by otherAction","");
+//                                 //nextTurn_ = -1;
+//                                 //noTurnFound = 0;
+//                                 return -1;
+//                             }
+//                             else if (otherAction == &gCycle::se_turnRight)
+//                             {
+//                                 HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Right by otherAction","");
+//                                 //nextTurn_ = 1;
+//                                 //noTurnFound = 0;
+//                                 return 1;
+//                             }
+//                         }
+//                     }
+//                 }
+
+//                 if (wait)
+//                 {
+//                     if (bestAction == &gCycle::se_turnLeft)
+//                     {
+//                         HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Left by bestActionv2","");
+//                         //nextTurn_ = -1;
+//                         //noTurnFound = 0;
+//                         return -1;
+//                     }
+//                     else if (bestAction == &gCycle::se_turnRight)
+//                     {
+//                         HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","Right by bestActionv2","");
+//                         //nextTurn_ = 1;
+//                         //noTurnFound = 0;
+//                         return 1;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     //noTurnFound++;
+//     HelperDebug::Debug("EMERGENCY TURN FRONT BOT THINK","No turns found","");
+//     return 2;
+// }
 
 bool gSmartTurning::CanMakeTurn(uActionPlayer *action)
 {
@@ -3594,10 +3957,6 @@ void gHelper::Activate()
             aiPlayer->Timestep(se_GameTime());
         }
     }
-    else
-    {
-        aiPlayer = nullptr;
-    }
 
     if (!aliveCheck()) { return; }
     owner_->localCurrentTime = se_GameTime();
@@ -3775,13 +4134,17 @@ void helperTailMenu () {
     tailMenu.Enter();
 }
 
+
 void helperPathMenu() {
     uMenu pathMenu("Path Settings");
-    uMenuItemReal autoRange(&pathMenu, "Auto Range", "Set the range for automatic pathfinding", sg_pathHelperAutoRange, 0, 1000, 10);
-    uMenuItemInt mode(&pathMenu, "Mode", "Set the pathfinding mode", sg_pathHelperMode, 0, 2);
-    uMenuItemReal thinkAgain(&pathMenu, "Think Again", "Set the time interval for re-planning path", sg_pathHelperThinkAgain, 0, 10, 0.1);
-    uMenuItemToggle showTurn(&pathMenu, "Show Turn", "Toggle showing the turning point on the path", sg_pathHelperShowTurn);
-    uMenuItemToggle pathTurn(&pathMenu, "Render Path", "Toggle rendering the path on the screen", sg_pathHelperTurn);
+   //  uMenuItemReal thinkAgain(&pathMenu, "Think Again", "Set the time interval for re-planning path", sg_pathHelperThinkAgain, 0, 10, 0.1);
+    uMenuItemToggle showTurn(&pathMenu, "Show Turn", "Show turn you should take to follow path", sg_pathHelperShowTurn);
+    uMenuItemToggle pathTurn(&pathMenu, "Render Path", "Rendering the generated path", sg_pathHelperRenderPath);
+    uMenuItemReal autoRange(&pathMenu, "Auto Range", "Distance enemy needs to be from player before switching from tail to enemy", sg_pathHelperAutoCloseDistance, 0, 1000, 10);
+    uMenuItemInt mode(&pathMenu, "Mode", "0 = Auto (Switch Between tail and close enemies), 1 = Tail Mode, 2 = Closest Enemy Mode, 3 = Corner Mode", sg_pathHelperMode, 0, 3);
+    uMenuItemReal updateDistance(&pathMenu, "Update Distance", "Set the distance the target needs to move before a new path is generated", sg_pathHelperUpdateDistance, 0, 1000, 10);
+    uMenuItemReal pathHeight(&pathMenu, "Path Height", "Set the height of the drawn path", se_pathHeight, 0, 1000, 10);
+    uMenuItemReal pathBrightness(&pathMenu, "Path Brightness", "Set the brightness of the drawn path", se_pathBrightness, 0, 1, 0.1);
     uMenuItemToggle pathHelper(&pathMenu, "Path Helper", "Toggle path helper on/off", sg_pathHelper);
     pathMenu.Enter();
 }
@@ -3794,7 +4157,7 @@ void helperSelfMenu()
     uMenuItemFunction cornersMenu(&helperSelfMenu, "Corners", "Settings for Corners", &helperCornersMenu);
     uMenuItemFunction showHitMenu(&helperSelfMenu, "Show Hit", "Settings for Show Hit", &helperShowHitMenu);
     uMenuItemFunction tailMenu(&helperSelfMenu, "Tail", "Settings for Tail", &helperTailMenu);
-    uMenuItemFunction pathMenu(&helperSelfMenu, "Path", "Settings for Path", &helperTailMenu);
+    uMenuItemFunction pathMenu(&helperSelfMenu, "Path", "Settings for Path", &helperPathMenu);
 
     helperSelfMenu.Enter();
 }
@@ -3810,7 +4173,7 @@ void helperSmartTurningSurviveTraceMenu(){
 
 void helperSmartTurningSurviveFrontBotMenu(){
     uMenu helperSmartTurningSurviveFrontBotMenu("Front Bot");
-    uMenuItemReal frontBotActivationRange(&helperSmartTurningSurviveFrontBotMenu, "Front Bot Activation Range", "Activation range for front bot", sg_helperSmartTurningFrontBotActivationRange, 0, 10, 0.1);
+    uMenuItemReal frontBotActivationRange(&helperSmartTurningSurviveFrontBotMenu, "Front Bot Think Range", "Think range for front bot", sg_helperSmartTurningFrontBotThinkRange, 0, 10, 0.1);
     uMenuItemReal frontBotActivationRubber(&helperSmartTurningSurviveFrontBotMenu, "Front Bot Activation Rubber", "Activation rubber for front bot", sg_helperSmartTurningFrontBotActivationRubber, 0, 1, 0.01);
     uMenuItemReal frontBotActivationSpace(&helperSmartTurningSurviveFrontBotMenu, "Front Bot Activation Space", "Activation space for front bot", sg_helperSmartTurningFrontBotActivationSpace, 0, 10, 0.1);
     uMenuItemReal frontBotDisableTime(&helperSmartTurningSurviveFrontBotMenu, "Front Bot Disable Time", "Disable time for front bot", sg_helperSmartTurningFrontBotDisableTime, 0, 10, 0.1);
@@ -3959,8 +4322,6 @@ void helperMenuPub(std::istream &s) {
 }
 
 static tConfItemFunc HelperMenuConf("HELPER_MENU",&helperMenuPub);
-
-
 
 
 gHelper::~gHelper()

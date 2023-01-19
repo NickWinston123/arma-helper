@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
@@ -40,19 +40,36 @@ public:
 
     gCycle * wallOwner;
 
-    
+
     gCycle * hitWallOwner() {return wallOwner;}
 
+    // gSensor(eGameObject *o,const eCoord &start,const eCoord &d)
+    //         :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction_(d) {
+    //         }
+
     gSensor(eGameObject *o,const eCoord &start,const eCoord &d)
-            :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction(d) {}
+            :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction_(d) {
+                // this->AddToList();
+                // grid->AddGameObjectInteresting(this);
+            }
+
+
+    // ~gSensor(){
+    //     // this->RemoveFromList();
+    //     // grid->RemoveGameObjectInteresting(this);
     
-    const eCoord &start_;
-    const eCoord &direction;
+    // void DoRemoveFromGame() {}
+    eCoord start_;
+    eCoord direction_;
     eGameObject *owner_;
     const tList<eGameObject>& gameObjects;
-    bool HitIntersceptsZone(gZone * zone);
-    bool calculateZoneHit();
+    bool HitIntersceptsZone2(gZone * zone);
+    bool HitIntersceptsZone(gZone * zone,REAL range);
+    void calculateZoneHit(REAL range);
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
+    void detect(REAL range, const eCoord &newPos, const eCoord &newDir, bool render = false);
+    void detect(REAL range, bool render = false);
+    //  virtual void InteractWith(eGameObject *target,REAL time,int recursion=1);
     //virtual  void  HitZone(eGameObject * zone ,REAL time);
     //virtual void HitZone(gZone *zone );
 };

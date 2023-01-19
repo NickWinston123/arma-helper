@@ -29,10 +29,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eWall.h"
 #include "eDebugLine.h"
 #include "eGrid.h"
+#include "tConfiguration.h"
 
 #ifdef DEBUG
 //#define DEBUGLINE
 #endif
+
+bool se_sensorsRender = false;
+static tConfItem<bool> se_sensorsRenderC("SENSORS_ESENSOR_RENDER", se_sensorsRender);
 
 eSensor::eSensor(eGameObject *o,const eCoord &start,const eCoord &d)
         :eStackGameObject(o->grid, start,d,o->currentFace)
@@ -98,15 +102,21 @@ void eSensor::PassEdge(const eWall *w,REAL time,REAL a,int){
 //  PassEdge((const eEdge *)e,time,a,recursion);
 //}
 
-void eSensor::detect(REAL range, const eCoord &newPos, const eCoord &newDir){
-    pos = newPos;
-    dir = newDir;
-    detect(range);
-}
+// void eSensor::detect(REAL range, const eCoord &newPos, const eCoord &newDir){
+//     pos = newPos;
+//     dir = newDir;
+//     before_hit = eCoord();
+//     hit = (1000);
+//     ehit = (NULL);
+//     inverseSpeed_ = 0;
+//     lr = 0;
+//     detect(range);
+// }
 
 void eSensor::detect(REAL range){
     //  eCoord start = pos;
     //  pos=pos+dir*.01;
+    eCoord start = pos;
     before_hit=pos+dir*(range-.001);
     hit=range+.00001f;
     ehit = 0;
@@ -149,8 +159,10 @@ void eSensor::detect(REAL range){
     catch( eSensorFinished & e )
     {
     }
+    if (!se_sensorsRender){ 
+        return;
+    }
 
-#ifdef DEBUGLINE
     if (hit < range)
     {
         eDebugLine::SetColor  (0, 1, 1);
@@ -164,7 +176,7 @@ void eSensor::detect(REAL range){
         eDebugLine::SetColor  (1, 0, 0);
         eDebugLine::Draw(start, .5, pos, .5);
     }
-#endif
+
 }
 
 

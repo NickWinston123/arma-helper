@@ -33,6 +33,10 @@ static tConfItem<REAL> sg_helperSensorRangeConf("HELPER_SENSOR_RANGE", sg_helper
 bool sg_helperSensorLightUsageMode = false;
 static tConfItem<bool> sg_helperSensorLightUsageModeConf("HELPER_SENSOR_LIGHT_USAGE_MODE", sg_helperSensorLightUsageMode);
 
+bool sg_helperSensorDiagonalMode = false;
+static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_SENSOR_DIAGONAL_MODE", sg_helperSensorDiagonalMode);
+
+
 bool sg_helperDebug = false;
 static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
 
@@ -1946,8 +1950,12 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
         case LEFT:
         {
             //con << "Detecting left sensor \n";
-            left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
-            con << "LEFT HIT " << left_stored->hit << " \n";
+            
+            if (sg_helperSensorDiagonalMode)
+                left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), sin(M_PI/4))), true);
+            else
+                left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
+            //con << "LEFT HIT " << left_stored->hit << " \n";
             //left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(cos(M_PI/4), sin(M_PI/4))), true);
             return left_stored;
         }
@@ -1960,9 +1968,11 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
         case RIGHT:
         {
             //con << "Detecting right sensor \n";
-            //right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(cos(M_PI/4), -sin(M_PI/4))), true);
-            right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
-            con << "RIGHT HIT " << right_stored->hit << " \n";
+            if (sg_helperSensorDiagonalMode)
+                right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), -sin(M_PI/4))), true);
+            else
+                right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
+            //con << "RIGHT HIT " << right_stored->hit << " \n";
             return right_stored;
         }
         }

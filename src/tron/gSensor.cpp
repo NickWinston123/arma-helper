@@ -357,7 +357,7 @@ void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
         else if (dynamic_cast<const gWallRim*>(ww))
             type=gSENSOR_RIM;
 
-        throw gSensorFinished();
+        throw;
     }
 
 

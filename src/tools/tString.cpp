@@ -44,6 +44,12 @@ tString::tString(const char *x){
     operator+=(x);
 }
 
+tString::tString(std::string x){
+    operator[](0)='\0';
+    operator+=(x.c_str());
+}
+
+
 tString::tString(const tString &x)
         :tArray< char >()
 {

@@ -40,6 +40,10 @@ static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_SENSOR_DIAGONAL_M
 bool sg_helperDebug = false;
 static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
 
+
+tString sg_helperDebugIgnoreList = tString("");
+static tConfItem<tString> sg_helperDebugIgnoreListConf( "HELPER_DEBUG_IGNORE_LIST", sg_helperDebugIgnoreList );
+
 REAL sg_helperDebugDelay = 0.15;
 static tConfItem<REAL> sg_helperDebugDelayConf("HELPER_DEBUG_DELAY",
                                             sg_helperDebugDelay);
@@ -103,10 +107,8 @@ static tConfItem<REAL> sg_helperSmartTurningRubberTimeMultConf("HELPER_SMART_TUR
 REAL sg_helperSmartTurningRubberFactorMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningRubberFactorMultConf("HELPER_SMART_TURNING_RUBBERFACTOR_MULT", sg_helperSmartTurningRubberFactorMult);
 
-
 REAL sg_helperSmartTurningSpace = 0;
 static tConfItem<REAL> sg_helperSmartTurningSpaceConf("HELPER_SMART_TURNING_SPACE", sg_helperSmartTurningSpace);
-
 
 bool sg_helperSmartTurningPlan = false;
 static tConfItem<bool> sg_helperSmartTurningPlanConf("HELPER_SMART_TURNING_PLAN", sg_helperSmartTurningPlan);
@@ -116,7 +118,6 @@ static tConfItem<bool> sg_helperSmartTurningAutoBrakeConf("HELPER_SMART_TURNING_
 
 bool sg_helperSmartTurningAutoBrakeDeplete = false;
 static tConfItem<bool> sg_helperSmartTurningAutoBrakeDepleteConf("HELPER_SMART_TURNING_BRAKE_DEPLETE", sg_helperSmartTurningAutoBrakeDeplete);
-
 
 REAL sg_helperSmartTurningAutoBrakeMin = 0;
 static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMinConf("HELPER_SMART_TURNING_BRAKE_MIN", sg_helperSmartTurningAutoBrakeMin);
@@ -522,6 +523,7 @@ static bool IsTrapped(const gCycle *trapped, const gCycle *other)
 float lastHelperDebugMessageTimeStamp;
 std::string lastHelperDebugMessage = "", lastHelperDebugSender = "";
 
+//#include "tString.h"
 class HelperDebug
 {
 public:
@@ -529,6 +531,11 @@ public:
     static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
     {
         if (!sg_helperDebug)
+        {
+            return;
+        }
+
+        if (HelperDebug::tIsInList(sg_helperDebugIgnoreList, tString(sender)))
         {
             return;
         }
@@ -559,8 +566,42 @@ public:
             lastHelperDebugMessage = description;
         }
 
-        debugMessage += (*value) + "\n";
+        debugMessage += std::to_string(*value) + "\n";
         con << debugMessage;
+    }
+private:
+    static bool tIsInList( tString const & list_, tString const & item )
+    {
+        tString list = list_;
+
+        while( list != "" )
+        {
+            // find the item
+            int pos = list.StrPos( item );
+
+            // no traditional match? shoot.
+            if ( pos < 0 )
+            {
+                return false;
+            }
+
+            // check whether the match is a true list match
+            if (
+                ( pos == 0 || list[pos-1] == ',' || isblank(list[pos-1]) )
+                &&
+                ( pos + item.Len() >= list.Len() || list[pos+item.Len()-1] == ',' || isblank(list[pos+item.Len()-1]) )
+                )
+            {
+                return true;
+            }
+            else
+            {
+                // no? truncate the list and go on.
+                list = list.SubStr( pos + 1 );
+            }
+        }
+
+        return false;
     }
 
 };
@@ -761,7 +802,14 @@ void gTailHelper::Activate(gHelperData &data) {
     static tConfItem<bool> sg_pathHelperRenderPathC("HELPER_PATH_RENDER", sg_pathHelperRenderPath);
 
     bool sg_pathHelperShowTurn = false;
-    static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_PATH_TURN_SHOW", sg_pathHelperShowTurn);
+    static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_PATH_RENDER_TURN", sg_pathHelperShowTurn);
+
+
+    bool sg_pathHelperShowTurnAct = false;
+    static tConfItem<bool> sg_pathHelperShowTurnActC("HELPER_PATH_RENDER_TURN_ACT", sg_pathHelperShowTurnAct);
+
+    REAL sg_pathHelperShowTurnAhead = 0;
+    static tConfItem<REAL> sg_pathHelperShowTurnAheadC("HELPER_PATH_RENDER_TURN_AHEAD", sg_pathHelperShowTurnAhead);
 
     int sg_pathHelperMode = 0;
     static tConfItem<int> sg_pathHelperModeC("HELPER_PATH_MODE", sg_pathHelperMode);
@@ -931,7 +979,7 @@ void gTailHelper::Activate(gHelperData &data) {
     // bool updateTime = lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
     return lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
     }
-    
+
     REAL se_pathHeight = 1;
     static tConfItem<REAL> se_pathHeightC("HELPER_PATH_HEIGHT", se_pathHeight);
 
@@ -968,20 +1016,83 @@ void gTailHelper::Activate(gHelperData &data) {
             return;
         }
 
-        eCoord targetPos = path_.CurrentPosition() + path_.CurrentOffset(); // * 0.1f;
-        eCoord currentPos = owner_->Position();
-        eCoord dirToTarget = targetPos - currentPos;
+    for (int z = 10; z>=0; z--)
+        path_.Proceed();
 
-        if (eCoord::F(owner_->Direction(), dirToTarget) > 0)
+    bool goon   = path_.Proceed();
+    bool nogood = false;
+
+    do
+    {
+        if (goon)
+            goon = path_.GoBack();
+        else
+            goon = true;
+
+        eCoord pos   = path_.CurrentPosition() + path_.CurrentOffset() * 0.1f;
+        eCoord opos  = owner_->Position();
+        eCoord odir  = pos - opos;
+
+        eCoord intermediate = opos + owner_->Direction() * eCoord::F(odir, owner_->Direction());
+
+        gSensor p(owner_, opos, intermediate - opos);
+        p.detect(1.1f);
+        nogood = (p.hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+
+        if (!nogood)
         {
-            //helper_->smartTurning->makeTurnIfPossible(data, RIGHT, 1);
-            debugLine(.2, 1, 0, 3, data.speedFactor*3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
+            gSensor p(owner_, intermediate, pos - intermediate);
+            p.detect(1);
+            nogood = (p.hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+        }
+
+    }
+    while (goon && nogood);
+
+
+    if (goon)
+    {
+        // now we have found our next goal. Try to get there.
+        eCoord pos    = owner_->Position();
+        eCoord target = path_.CurrentPosition();
+
+        // look how far ahead the target is:
+        REAL ahead = eCoord::F(target - pos, owner_->Direction())
+                     + eCoord::F(path_.CurrentOffset(), owner_->Direction());
+
+        HelperDebug::Debug("RenderTurn","AHEAD = ", &ahead);
+        if ( ahead > sg_pathHelperShowTurnAhead)
+        {	  // it is still before us. just wait a while.
+           // mindist = ahead;
         }
         else
+        { // we have passed it. Make a turn towards it.
+            int lr;
+            REAL side = (target - pos) * owner_->Direction();
+
+            if ( !((side > 0 && data.sensors.getSensor(LEFT)->hit < 3) || (side < 0 && data.sensors.getSensor(RIGHT)->hit < 3))
+                    && (fabs(side) > 3 || ahead < -10) )
+            {
+                lr += (side > 0 ? 1 : -1);
+            }
+
+        lr *= -1;
+        if (lr == RIGHT)
         {
-            //helper_->smartTurning->makeTurnIfPossible(data, LEFT, 1);
-            debugLine(.2, 1, 0, 3, data.speedFactor*3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
+            debugLine(.2, 1, 0, 3, data.speedFactor*3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
+            if (sg_pathHelperShowTurnAct)
+                helper_->smartTurning->makeTurnIfPossible(data, RIGHT, 1);
+
         }
+        else if (lr == LEFT)
+        {
+            debugLine(.2, 1, 0, 3, data.speedFactor*3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
+            if (sg_pathHelperShowTurnAct)
+                helper_->smartTurning->makeTurnIfPossible(data, LEFT, 1);
+
+        }
+        }
+    }
     }
 
     REAL sg_pathHelperUpdateDistance = 1;
@@ -1036,7 +1147,7 @@ void gTailHelper::Activate(gHelperData &data) {
         return;
 
     gHelperData data = orig_data;
- 
+
     bool success = false;
     switch (sg_pathHelperMode)
     {
@@ -1938,6 +2049,12 @@ gSensor * gHelperSensorsData::getSensor(int dir, bool newSensor)
     return getSensor(owner_->Position(),dir, newSensor);
 }
 
+gSensor *gHelperSensorsData::getSensor(eCoord start, eCoord dir)
+{
+    gSensor * sensor = new gSensor(owner_,start, dir);
+    sensor->detect(sg_helperSensorRange);
+    return sensor;
+}
 gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
 {
     if (sg_helperSensorLightUsageMode && !newSensor)
@@ -1946,11 +2063,11 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
         {
             //left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
            //right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
-            
+
         case LEFT:
         {
             //con << "Detecting left sensor \n";
-            
+
             if (sg_helperSensorDiagonalMode)
                 left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), sin(M_PI/4))), true);
             else
@@ -2406,7 +2523,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data) {
     }
 
     if (!canSurviveLeftTurn) {
-        
+
         if (this->blockTurn != LEFT)
             HelperDebug::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS", "");
         this->blockTurn = LEFT;
@@ -2684,8 +2801,8 @@ void gSmartTurning::canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, 
     bool canTurnLeftRubber = true, canTurnRightRubber = true, canTurnLeftSpace = true, canTurnRightSpace = true;
     REAL closedInFactor = data.turnSpeedFactor * sg_helperSmartTurningClosedInMult;
     closedIn = (front->hit <= closedInFactor && left->hit <= closedInFactor && right->hit <= closedInFactor);
-    blockedBySelf = (left->hit < 5 && right->hit < 5 )&& (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
-
+    blockedBySelf =  (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
+//(left->hit < 5 && right->hit < 5 )&&
     if (freeSpaceFactor > 0) {
 //            con << "right " << data.sensors.getSensor(LEFT)->hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << "\n";
         if (left->hit < data.turnSpeedFactor * freeSpaceFactor) {
@@ -2763,7 +2880,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
         gHelperEmergencyTurn emergencyTurn(owner_, helper_);
 
         if (rubberRatio >= sg_helperSmartTurningFrontBotActivationRubber || hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
-        {   
+        {
             bool turnPossible = false;
             // gTurnData *turnData = getEmergencyTurn(data);
             // if (turnData != nullptr && turnData->numberOfTurns > 0)
@@ -3906,16 +4023,20 @@ void gHelper::showHit(gHelperData &data)
     }
 }
 
-void gHelper::showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir)
+void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout, gHelperData &data, int recursion, int sensorDir)
 {
 
     if (recursion <= 0)
     {
         return;
     }
+
     recursion--;
-    eCoord newDir = dir.Turn(eCoord(0, sensorDir * -1));
-    gSensor *sensor = data.sensors.getSensor(pos, sensorDir);
+    eCoord newDir = initDir.Turn(eCoord(0, sensorDir * -1));
+
+    HelperDebug::Debug("showHitDebugLines","Recursion",&recursion);
+
+    gSensor *sensor = data.sensors.getSensor(currentPos, initDir);
     eCoord hitPos = sensor->before_hit;
     REAL hitDistance = sensor->hit;
 
@@ -3923,15 +4044,57 @@ void gHelper::showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperDat
 
     if (open)
     {
-        debugLine(0, 1, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
+        debugLine(0, 1, 0, sg_showHitDataHeightSides, timeout, currentPos, hitPos);
     }
     else
     {
-        debugLine(1, 0, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
+        debugLine(1, 0, 0, sg_showHitDataHeightSides, timeout, currentPos, hitPos);
     }
     showHitDebugLines(hitPos, newDir, timeout, data, recursion, sensorDir);
 }
 
+// void gHelper::showHitDebugLines(eCoord pos, eCoord initDir, REAL timeout, gHelperData &data, int recursion, int sensorDir)
+// {
+
+//     if (recursion <= 0)
+//     {
+//         return;
+//     }
+
+//     HelperDebug::Debug("showHitDebugLines","Recursion",&recursion);
+//     recursion--;
+//     eCoord newDir = initDir.Turn(eCoord(0, sensorDir * -1)); // Same as init direction
+//     eCoord newDir2 = initDir.Turn(eCoord(0, sensorDir)); // Opposite init direction
+
+//     gSensor *sensor = data.sensors.getSensor(pos, sensorDir * -1); // Same
+//     gSensor *sensor2 = data.sensors.getSensor(pos, sensorDir); // Opp
+
+//     eCoord hitPos = sensor->before_hit;
+//     eCoord hitPos2 = sensor2->before_hit;
+//     REAL hitDistance = sensor->hit;
+//     REAL hitDistance2 = sensor2->hit;
+
+//     bool open = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
+//     bool open2 = hitDistance2 > data.turnSpeedFactor * sg_showHitDataFreeRange;
+//     if (open)
+//     {
+//         debugLine(0, 1, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
+//     }
+//     else
+//     {
+//         debugLine(1, 0, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
+//     }
+//     if (open2)
+//     {
+//         debugLine(0, 1, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
+//     }
+//     else
+//     {
+//         debugLine(1, 0, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
+//     }
+//     showHitDebugLines(hitPos, newDir, timeout, data, recursion, sensorDir * -1);
+//     showHitDebugLines(hitPos, newDir2, timeout, data, recursion, sensorDir);
+// }
 gHelper& gHelper::Get( gCycle * cycle )
 {
     tASSERT( cycle );
@@ -4101,11 +4264,11 @@ void helperCornersMenu() {
 void helperShowHitMenu() {
     uMenu showHitMenu("Show Hit Settings");
 
-    uMenuItemReal showHitHeight(&showHitMenu, "Hit Height", "Height for displaying hit", sg_showHitDataHeight,0, 10, 0.1);
-    uMenuItemReal showHitHeightFront(&showHitMenu, "Hit Height (Front)", "Height for displaying hit in front", sg_showHitDataHeightFront,0, 10, 0.1);
-    uMenuItemReal showHitHeightSides(&showHitMenu, "Hit Height (Sides)", "Height for displaying hit on sides", sg_showHitDataHeightSides,0, 10, 0.1);
-    uMenuItemReal showHitRange(&showHitMenu, "Hit Range", "Range for displaying hit", sg_showHitDataRange,0, 10, 0.1);
-    uMenuItemReal showHitFreeRange(&showHitMenu, "Hit Open Range", "Open range for displaying hit", sg_showHitDataFreeRange,0, 10, 0.1);
+    uMenuItemReal showHitHeight(&showHitMenu, "Hit Height", "Height for displaying hit", sg_showHitDataHeight,0, 5, .1);
+    uMenuItemReal showHitHeightFront(&showHitMenu, "Hit Height (Front)", "Height for displaying hit in front", sg_showHitDataHeightFront,0, 5, 0.1);
+    uMenuItemReal showHitHeightSides(&showHitMenu, "Hit Height (Sides)", "Height for displaying hit on sides", sg_showHitDataHeightSides,0, 5, 0.1);
+    uMenuItemReal showHitRange(&showHitMenu, "Hit Range", "Range for displaying hit", sg_showHitDataRange,0, 1000, 5);
+    uMenuItemReal showHitFreeRange(&showHitMenu, "Hit Open Range", "Open range for displaying hit", sg_showHitDataFreeRange,0, 20, 1);
     uMenuItemInt showHitRecursion(&showHitMenu, "Hit Recursion", "Recursion level for displaying hit", sg_showHitDataRecursion, 1, 10);
     uMenuItemReal showHitTimeout(&showHitMenu, "Hit Timeout", "Timeout for displaying hit", sg_showHitDataTimeout,0, 10, 0.1);
     uMenuItemToggle showHit(&showHitMenu, "Show Hit", "Toggle display of hit", sg_helperShowHit);
@@ -4116,7 +4279,7 @@ void helperShowHitMenu() {
 void tailHelperMenu () {
     uMenu tailHelperMenu("Tail Helper Settings");
     uMenuItemToggle tailHelperToggle(&tailHelperMenu, "Tail Helper", "Toggle tail helper on/off", sg_tailHelper);
-    uMenuItemReal tailHelperBrightness(&tailHelperMenu, "Brightness", "Adjust tail helper brightness", sg_tailHelperBrightness, 0, 10, 0.1);
+    uMenuItemReal tailHelperBrightness(&tailHelperMenu, "Brightness", "Adjust tail helper brightness", sg_tailHelperBrightness, 0, 5, 0.1);
     tailHelperMenu.Enter();
 }
 
@@ -4133,13 +4296,14 @@ void tailTracerMenu() {
 void helperTailMenu () {
     uMenu tailMenu("Tail Settings");
 
+    uMenuItemFunction tailTracer(&tailMenu, "Tail Tracer", "Settings for Tail Tracer", &tailTracerMenu);
+    uMenuItemFunction tailHelper(&tailMenu, "Tail Helper", "Settings for Tail Helper", &tailHelperMenu);
     uMenuItemReal tailPassthrough(&tailMenu, "Tail Passthrough", "Passthrough for displaying tail", sg_helperShowTailPassthrough,0, 10, 0.1);
     uMenuItemReal tailHeight(&tailMenu, "Tail Height", "Height for displaying tail", sg_helperShowTailHeight,0, 10, 0.1);
     uMenuItemReal tailTimeout(&tailMenu, "Tail Timeout", "Timeout for displaying tail", sg_helperShowTailTimeout,0, 10, 0.1);
     uMenuItemToggle showTailPath(&tailMenu, "Show Tail Path", "Toggle display of tail path", sg_helperShowTailPath);
     uMenuItemToggle showTail(&tailMenu, "Show Tail", "Toggle display of tail", sg_helperShowTail);
-    uMenuItemFunction tailTracer(&tailMenu, "Tail Tracer", "Settings for Tail Tracer", &tailTracerMenu);
-    uMenuItemFunction tailHelper(&tailMenu, "Tail Helper", "Settings for Tail Helper", &tailHelperMenu);
+
 
     tailMenu.Enter();
 }
@@ -4148,13 +4312,14 @@ void helperTailMenu () {
 void helperPathMenu() {
     uMenu pathMenu("Path Settings");
    //  uMenuItemReal thinkAgain(&pathMenu, "Think Again", "Set the time interval for re-planning path", sg_pathHelperThinkAgain, 0, 10, 0.1);
+    uMenuItemReal showTurnAhead(&pathMenu, "Show Turn Ahead", "Distance from owner to current path target must be less than this value before rendering turn", sg_pathHelperShowTurnAhead, 0, 30, 0.1);
     uMenuItemToggle showTurn(&pathMenu, "Show Turn", "Show turn you should take to follow path", sg_pathHelperShowTurn);
     uMenuItemToggle pathTurn(&pathMenu, "Render Path", "Rendering the generated path", sg_pathHelperRenderPath);
-    uMenuItemReal autoRange(&pathMenu, "Auto Range", "Distance enemy needs to be from player before switching from tail to enemy", sg_pathHelperAutoCloseDistance, 0, 1000, 10);
+    uMenuItemReal autoRange(&pathMenu, "Auto Range", "Distance enemy needs to less than from player before switching from tail to enemy", sg_pathHelperAutoCloseDistance, 0, 500, 10);
     uMenuItemInt mode(&pathMenu, "Mode", "0 = Auto (Switch Between tail and close enemies), 1 = Tail Mode, 2 = Closest Enemy Mode, 3 = Corner Mode", sg_pathHelperMode, 0, 3);
-    uMenuItemReal updateDistance(&pathMenu, "Update Distance", "Set the distance the target needs to move before a new path is generated", sg_pathHelperUpdateDistance, 0, 1000, 10);
-    uMenuItemReal pathHeight(&pathMenu, "Path Height", "Set the height of the drawn path", se_pathHeight, 0, 1000, 10);
-    uMenuItemReal pathBrightness(&pathMenu, "Path Brightness", "Set the brightness of the drawn path", se_pathBrightness, 0, 1, 0.1);
+    uMenuItemReal updateDistance(&pathMenu, "Update Distance", "Set the distance the target needs to move before a new path is generated", sg_pathHelperUpdateDistance, 0, 50, 5);
+    uMenuItemReal pathHeight(&pathMenu, "Path Height", "Set the height of the drawn path", se_pathHeight, 0, 5, 0.1);
+    uMenuItemReal pathBrightness(&pathMenu, "Path Brightness", "Set the brightness of the drawn path", se_pathBrightness, 0, 5, 0.1);
     uMenuItemToggle pathHelper(&pathMenu, "Path Helper", "Toggle path helper on/off", sg_pathHelper);
     pathMenu.Enter();
 }
@@ -4249,6 +4414,8 @@ void helperDebugMenu() {
                                         "Helper Debug Timestamp enabled",
                                         sg_helperDebugTimeStamp);
 
+    uMenuItemString helperDebugIgnoreLis(&smartDebugMenu, "Helper Debug Ignore",
+    "Comma delimited list, any helper debug with a sensor matching any values will be suppressed",sg_helperDebugIgnoreList);
 
     uMenuItemToggle helperDebugEnabled(&smartDebugMenu,
                                        "Helper Debug",

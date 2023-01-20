@@ -46,6 +46,7 @@ public:
     tString();
     tString(const tString &);
     explicit tString(const char *);
+    explicit tString(std::string);
     explicit tString(const tOutput &);
 
     void ReadLine(std::istream &s, bool enableEscapeSequences=false);

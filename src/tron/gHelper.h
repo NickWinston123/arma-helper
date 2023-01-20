@@ -102,6 +102,7 @@ struct gHelperSensorsData
     void toggleLock();
     gSensor* getSensor(int dir, bool newSensor = false);
     gSensor* getSensor(eCoord start, int dir, bool newSensor = false);
+    gSensor* getSensor(eCoord start, eCoord dir);
 };
 
 struct gHelperData

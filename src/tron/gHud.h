@@ -28,6 +28,29 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef ARMAGETRON_HUD_H
 #define ARMAGETRON_HUD_H
 
+class gGLMeter
+{
+public:
+    gGLMeter();
+    void Display(float value,float max, float locx, float locy, float size, const char * t,bool displayvalue = true, bool reverse = false, REAL r=.5, REAL g=.5, REAL b=1);
+private:
+    REAL oldTime_;      // last rendered game time
+    REAL oldRel_;       // last rendered gauge position
+    rDisplayList list_; // caching display list
+};
+
+class gTextCache
+{
+public:
+    gTextCache();
+    bool Call(REAL propa, REAL propb);
+    rDisplayList list_;
+
+private:
+    REAL propa_, propb_;
+};
+
+
 extern REAL subby_SpeedGaugeSize, subby_SpeedGaugeLocX, subby_SpeedGaugeLocY;
 extern REAL subby_BrakeGaugeSize, subby_BrakeGaugeLocX, subby_BrakeGaugeLocY;
 extern REAL subby_RubberGaugeSize, subby_RubberGaugeLocX, subby_RubberGaugeLocY;

@@ -26,7 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "rSDL.h"
-#include "gHelper.h"
 // declaration
 #ifndef		ARMAGETRONAD_SRC_TRON_GCYCLEMOVEMENT_H_INCLUDED
 #include	"gCycleMovement.h"

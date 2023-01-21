@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rRender.h"
 #include <math.h>
 #include "gCycle.h"
+#include "gHelper.h"
 #include <time.h>
 
 #include "gHud.h"
@@ -149,15 +150,13 @@ static tSettingItem< REAL > sg_minDropIntervalConf( "HUD_CACHE_THRESHOLD", sg_hu
 static bool sg_HudHideWhileChatting=true;
 static tConfItem< bool > sg_HudHideWhileChattingConf( "HUD_HIDE_WHILE_CHATTING", sg_HudHideWhileChatting );
 
-class gGLMeter
-{
-public:
-    gGLMeter()
+
+    gGLMeter::gGLMeter()
     : oldTime_( -100 ), oldRel_( -100 )
     {
     }
 
-    void Display( float value,float max, float locx, float locy, float size, const char * t,bool displayvalue = true, bool reverse = false, REAL r=.5, REAL g=.5, REAL b=1)
+    void gGLMeter::Display( float value,float max, float locx, float locy, float size, const char * t,bool displayvalue, bool reverse, REAL r, REAL g, REAL b)
     {
         REAL rel = value/max;
         REAL time = se_GameTime();
@@ -178,22 +177,15 @@ public:
             GLmeter_subby(value, max,  locx, locy, size, t, displayvalue, reverse, r, g, b );
         }
     }
-private:
-    REAL oldTime_;      // last rendered game time
-    REAL oldRel_;       // last rendered gauge position
-    rDisplayList list_; // caching display list
-};
 
 // caches stuff based on two float properties
-class gTextCache
-{
-public:
-    gTextCache()
+
+    gTextCache::gTextCache()
     : propa_(-1), propb_(-1)
     {
     }
 
-    bool Call( REAL propa, REAL propb )
+    bool gTextCache::Call( REAL propa, REAL propb )
     {
         if ( propa != propa_ || propb != propb_ )
         {
@@ -208,10 +200,6 @@ public:
         }
     }
 
-    rDisplayList list_;
-private:
-    REAL propa_, propb_;
-};
 
 static int alivepeople, alivemates, thetopscore, hudfpscount;
 
@@ -407,11 +395,15 @@ static void display_hud_subby( ePlayer* player ){
                 }
 
                 if (me!=NULL){
+                     static gGLMeter meter2[MAX_PLAYERS];
+                    
                     gCycle *h = dynamic_cast<gCycle *>(me->Object());
                     if (h && ( !player->netPlayer || ( !player->netPlayer->IsChatting() || !sg_HudHideWhileChatting) ) && se_GameTime()>-2){
                         // myscore=p->TotalScore();
                         myping = me->ping;
-
+                        static gTextCache cacheArray[MAX_PLAYERS];
+                        gTextCache & cache = cacheArray[player->ID()];
+                        gHelperHudPub::Instance().Activate(cache);
                         if(subby_ShowSpeedMeter)
                         {
                             static gGLMeter meter[MAX_PLAYERS];

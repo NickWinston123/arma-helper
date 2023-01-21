@@ -2943,6 +2943,10 @@ static gAISensor * sg_GetSensor( gAIPlayer const * ai, int currentDirectionNumbe
     return ret;
 }
 
+static REAL sg_AIMode = -1;
+static tConfItem<REAL> sg_AIModeConf("AI_MODE", sg_AIMode);
+
+
 REAL gAIPlayer::Think(){
     // get the delay between two turns
     REAL delay = Delay();
@@ -3024,6 +3028,9 @@ REAL gAIPlayer::Think(){
     triesLeft = 10;
 
     REAL ret = 1;
+
+    if (helperAI && sg_AIMode > -1)
+        state = gAI_STATE(sg_AIMode);
 
     //not the best solution, but still better than segfault...
     if(left.get() != 0 && right.get() != 0) {
@@ -3152,6 +3159,9 @@ void gAIPlayer::ActOnData( ThinkDataBase & data )
 
 const REAL relax=25;
 
+static bool sg_AIForceThink = false;
+static tConfItem<bool> sg_AIForceThinkConf("AI_FORCE_THINK", sg_AIForceThink);
+
 void gAIPlayer::Timestep(REAL time){
     if (sg_AIBypass && !helperAI) return;
 
@@ -3186,7 +3196,8 @@ void gAIPlayer::Timestep(REAL time){
 
     if (helperAI)
         nextTime = bool(nextTime<time) ? nextTime :  time - (time*.005);
-    if (bool(Object()) && Object()->Alive() && nextTime<time){
+
+    if (bool(Object()) && Object()->Alive() && ((nextTime<time) || (helperAI && sg_AIForceThink))){
         gRandomController random( randomizer_ );
 
         REAL nextthought=Think();
@@ -3426,7 +3437,7 @@ gAIPlayer::gAIPlayer(gCycle* cycle):
     {
         nextTime        = 0;
         nextStateChange = 2;
-        state           = AI_SURVIVE;
+        state           = AI_CLOSECOMBAT;
     }
     character->properties[AI_STARTSTATE] = 0;
     character->properties[AI_STARTSTRAIGHT] = 0;

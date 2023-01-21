@@ -53,7 +53,6 @@ static tConfItem<bool> sg_helperDebugTimeStampConf("HELPER_DEBUG_TIMESTAMP",
                                                 sg_helperDebugTimeStamp);
 
 
-
 bool sg_helperAI = false;
 static tConfItem<bool> sg_helperAIc("HELPER_AI", sg_helperAI);
 
@@ -174,20 +173,83 @@ static tConfItem<REAL>
     sg_helperHudCacheTreshholdConf("HELPER_HUD_CACHE_THRESHOLD",
                                    sg_helperHudCacheTreshhold);
 
-static REAL sg_helperHudX = 0.5;
+static REAL sg_helperHudX = 0.74;
 static tConfItem<REAL> sg_helperHudXC("HELPER_HUD_X", sg_helperHudX);
 
 static REAL sg_helperHudDelay = 0.5;
 static tConfItem<REAL> sg_helperHudDelayC("HELPER_HUD_DELAY",
                                           sg_helperHudDelay);
 
-static REAL sg_helperHudY = -0.5;
+static REAL sg_helperHudY = -0.01;
 static tConfItem<REAL> sg_helperHudYC("HELPER_HUD_Y", sg_helperHudY);
 
-static REAL sg_helperHudSize = .175;
+static REAL sg_helperHudSize = .06;
 static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
 
 #include "rFont.h"
+
+std::vector<gHelperHudPubItems> gHelperHudPubItems::hudItems_;
+std::vector<gHelperHudPubItems> gHelperHudPubItems::GetHudItems()
+{
+    return hudItems_;
+}
+void gHelperHudPubItems::InsetHudItem(tColoredString & message)
+{
+    if (!sg_helperDebug)
+        return;
+
+    for(auto pubItem : hudItems_)
+    {
+        if(pubItem.message == message)
+        {
+            // item already exists, return without inserting
+            return;
+        }
+    }
+
+    gHelperHudPubItems newItem;
+    newItem.locX = sg_helperHudX;
+    newItem.locY = sg_helperHudY;
+    newItem.size = sg_helperHudSize;
+    newItem.message = message;
+    message.Clear();
+    message << "12321312123123132132\n";
+    hudItems_.push_back(newItem);
+}
+
+void gHelperHudPub::Activate(gTextCache & cache)
+{
+    if (!sg_helperHud)
+        return;
+    //rTextField hudDebug(sg_helperHudX-.2*rTextField::AspectWidthMultiplier(),sg_helperHudY,.15*sg_helperHudSize*rTextField::AspectWidthMultiplier(), .3*sg_helperHudSize);
+    rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
+    std::vector<gHelperHudPubItems> hudItems = gHelperHudPubItems::GetHudItems();
+    for (auto pubItem : hudItems)
+    {
+                 //if ( !cache.Call( 1, 0 ) )
+         {
+            rDisplayListFiller filler( cache.list_ );
+            hudDebug << pubItem.message << "\n";
+         }
+    }
+}
+
+
+// void gHelperHudPub::Activate()
+// {
+//     if (!sg_helperHud)
+//         return;
+
+//     std::vector<gHelperHudPubItems> hudItems = gHelperHudPubItems::GetHudItems();
+//     for (auto pubItem : hudItems)
+//     {
+//         int length = pubItem.message.Len();
+//         rTextField hudDebug(pubItem.locX - .15 * pubItem.size / 2.0, pubItem.locY, .15 * pubItem.size, .3 * pubItem.size);
+//         hudDebug << pubItem.message;
+//     }
+// }
+
+
 
 class gHelperHudItem
 {
@@ -2017,7 +2079,6 @@ gCycle* gHelperEnemiesData::detectEnemies() {
             allEnemies.insert(other);
         }
     }
-
 return closestEnemy;
 }
 
@@ -4132,6 +4193,7 @@ bool gHelper::aliveCheck() {
 
 void gHelper::Activate()
 {
+    tColoredString Activate;
 
     //con << "AI Created? " << bool(aiPlayer == nullptr) << "\n";
     if (sg_helperAI)
@@ -4147,11 +4209,9 @@ void gHelper::Activate()
             if (aiPlayer != NULL)
                 aiPlayer->Timestep(se_GameTime() + sg_helperAITime);
         }
-    } else {
-            if (aiPlayer != NULL)
-                aiPlayer->RemoveFromGame();
-
     }
+
+
 
     if (!aliveCheck()) { return; }
     owner_->localCurrentTime = se_GameTime();
@@ -4164,10 +4224,18 @@ void gHelper::Activate()
     data_stored = &data;
 
     enemies.detectEnemies();
+    //tColoredString Activate;
+    Activate << "0xffff88Smart Turning: " << (sg_helperSmartTurning ? "0x00aa001\n" : "0xaa00000\n");
+    gHelperHudPubItems::InsetHudItem(Activate);
+    Activate.Clear();
 
     if (sg_helperSmartTurning) {
         smartTurning->Activate(data);
     }
+
+    Activate << "0xffff88Path Helper: " << (sg_pathHelper ? "0x00aa001\n": "0xaa00000\n");
+    gHelperHudPubItems::InsetHudItem(Activate);
+    Activate.Clear();
 
     if (sg_pathHelper) {
         pathHelper->Activate(data);
@@ -4176,21 +4244,27 @@ void gHelper::Activate()
     if (sg_tailHelper) {
         tailHelper->Activate(data);
     }
-
     if (sg_helperEnemyTracers) {
         enemyTracers(data, sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
     }
+
+    Activate << "0xffff88Cut Detection: " << (sg_helperDetectCut ? "0x00aa001\n": "0xaa00000\n");
+    gHelperHudPubItems::InsetHudItem(Activate);
+    Activate.Clear();
 
     if (sg_helperDetectCut) {
         detectCut(data, sg_helperDetectCutDetectionRange);
     }
 
+    Activate << "0xffff88Show Hit: " << (sg_helperShowHit ? "0x00aa001\n": "0xaa00000\n");
+    gHelperHudPubItems::InsetHudItem(Activate);
+    Activate.Clear();
+
     if (sg_helperShowHit) {
         showHit(data);
     }
 
-    if (sg_helperShowTail)
-    {
+    if (sg_helperShowTail) {
         showTail(data);
     }
 
@@ -4280,7 +4354,7 @@ void helperCornersMenu() {
 void helperShowHitMenu() {
     uMenu showHitMenu("Show Hit Settings");
 
-    uMenuItemToggle showHitStartAtHitPos(&showHitMenu, "Start at Hit Pos", "If enabled, left and right sensors will start at the coordinates the front sensor hits", sg_helperShowHitStartAtHitPos);
+    uMenuItemToggle showHitStartAtHitPos(&showHitMenu, "Start at Hit Pos", "If sg_helperHudSize, left and right sensors will start at the coordinates the front sensor hits", sg_helperShowHitStartAtHitPos);
 
     uMenuItemReal showHitHeight(&showHitMenu, "Hit Height", "Height for displaying hit", sg_showHitDataHeight,0, 5, .1);
     uMenuItemReal showHitHeightFront(&showHitMenu, "Hit Height (Front)", "Height for displaying hit in front", sg_showHitDataHeightFront,0, 5, 0.1);
@@ -4425,13 +4499,13 @@ void helperDebugMenu() {
 
     uMenuItemToggle helperDebugTimeStamp(&smartDebugMenu,
                                         "Helper Debug Timestamp",
-                                        "Helper Debug Timestamp enabled",
+                                        "Helper Debug Timestamp sg_helperHudSize",
                                         sg_helperDebugTimeStamp);
 
     uMenuItemString helperDebugIgnoreLis(&smartDebugMenu, "Helper Debug Ignore",
     "Comma delimited list, any helper debug with a sensor matching any values will be suppressed",sg_helperDebugIgnoreList);
 
-    uMenuItemToggle helperDebugEnabled(&smartDebugMenu,
+    uMenuItemToggle helperDebugsg_helperHudSize(&smartDebugMenu,
                                        "Helper Debug",
                                        "Enable Helper Debug",
                                        sg_helperDebug);
@@ -4443,7 +4517,7 @@ void helperConfigMenu() {
     uMenu helperConfigMenu("Config Settings");
     uMenuItemReal brightness(&helperConfigMenu, "Brightness", "Adjust the brightness of debug lines", sg_helperBrightness, 0, 10, 0.1);
     uMenuItemReal sensorRange(&helperConfigMenu, "Sensor Range", "Adjust the range of sensors", sg_helperSensorRange, 0, 2000, 10);
-    uMenuItemToggle sensorLightUsage(&helperConfigMenu, "Sensor Light Usage Mode", "If enabled, only one sensor object is used. If disabled, an instance is created eachtime a sensor is needed.", sg_helperSensorLightUsageMode);
+    uMenuItemToggle sensorLightUsage(&helperConfigMenu, "Sensor Light Usage Mode", "If sg_helperHudSize, only one sensor object is used. If disabled, an instance is created eachtime a sensor is needed.", sg_helperSensorLightUsageMode);
     helperConfigMenu.Enter();
 }
 
@@ -4498,8 +4572,8 @@ void helperMenu()
                             "Helper tools for enemies",
                             helperEnemyMenu);
 
-    uMenuItemToggle helperEnabled(&helperSettingsMenu,
-                                "Helper Enabled",
+    uMenuItemToggle helpersg_helperHudSize(&helperSettingsMenu,
+                                "Helper sg_helperHudSize",
                                 "Enable Helper",
                                 sg_helper);
 

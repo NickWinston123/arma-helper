@@ -330,7 +330,7 @@ void rViewport::SetDirectionOfCorrection(int vp, int dir){
 }
 
 
-static REAL sr_HUDMaxWidth{1.333333};
+static REAL sr_HUDMaxWidth{1.9};
 static tConfItem<REAL> sr_HUDAspectModeConf("HUD_MAX_WIDTH", sr_HUDMaxWidth);
 
 // *******************************************************************************************

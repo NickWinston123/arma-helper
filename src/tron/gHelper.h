@@ -67,8 +67,84 @@
 // std::string HelperDebug::lastHelperDebugSender = "";
 // float HelperDebug::lastHelperDebugMessageTimeStamp = 0;
 
+#ifndef G_HELPER_HUD_PUB_ITEMS_H
+#define G_HELPER_HUD_PUB_ITEMS_H
+#include "gHud.h"
+class gHelperHudPubItems
+{
+public:
+    static std::vector<gHelperHudPubItems> GetHudItems();
+    static void InsetHudItem(tColoredString &message);
+
+    REAL locX;
+    REAL locY;
+    REAL size;
+    tColoredString message;
+
+private:
+    static std::vector<gHelperHudPubItems> hudItems_;
+};
+#endif
+
+#ifndef ArmageTron_GHELPER_HUD
+#define ArmageTron_GHELPER_HUD
+class gHelperHudPub
+{
+public:
+    // Returns the single instance of the class
+    static gHelperHudPub& Instance()
+    {
+        static gHelperHudPub instance;
+        return instance;
+    }
+
+    // Public methods
+    void Activate(gTextCache & cache);
+
+private:
+    // Private constructor to prevent multiple instances
+    gHelperHudPub() {}
+
+    // Prevent copying and assignment
+    gHelperHudPub(gHelperHudPub const&) = delete;
+    void operator=(gHelperHudPub const&) = delete;
+};
 
 
+
+#endif
+// class gHelperHudPubItems
+// {
+
+//     static gHelperHudPubItems GetHudItems() {
+//         return list of hud items
+//     }
+
+//     static gHelperHudPubItems InsetHudItem(locx, locy, size, message) {
+//         insert hud item
+//     }
+//     static REAL locX;
+//     static REAL locY
+//     static REAL size;
+//     static tColoredString message;
+// }
+// class gHelperHudPub
+// {
+//     public:
+//     static void Activate(gGLMeter * meter){
+
+//         gHelperHudPubItems = gHelperHudPubItems::GetHudItems();
+
+//         for ( pubItem. all gHelperHudPubItems)
+//         {
+//         int length = pubItem.message.Len();
+//         rTextField hudDebug(pubItem.locX-((.15*pubItem.size*(pubItem.locX-1.5))/2.0),pubItem.locY,.15*pubItem.size,.3*pubItem.size);
+//         hudDebug <<  message;
+//         }
+//     }
+// };
+
+extern bool sg_helperCurrentTimeLocal;
 //! return data of SolveTurn
 struct SolveTurnData
 {
@@ -282,7 +358,7 @@ class gHelper {
     gHelper(gCycle *owner);
     void Activate();
     REAL CurrentTime();
-    
+
     void detectCut(gHelperData &data, int detectionRange);
     void enemyTracers(gHelperData &data, int detectionRange, REAL timeout);
     void showTail(gHelperData &data);

@@ -99,7 +99,6 @@ struct gHelperSensorsData
     gSensor *right_stored;
 
     gHelperSensorsData(gCycle *owner);
-    void toggleLock();
     gSensor* getSensor(int dir, bool newSensor = false);
     gSensor* getSensor(eCoord start, int dir, bool newSensor = false);
     gSensor* getSensor(eCoord start, eCoord dir);
@@ -220,7 +219,6 @@ public:
         gCycle *owner_;
         gHelper *helper_;
         gHelperData *data_;
-        REAL &localCurrentTime;
         REAL &lastTurnAttemptTime;
         REAL &lastTurnAttemptDir;
         REAL &lastTurnTime;
@@ -283,7 +281,8 @@ class gHelper {
     static gHelper & Get( gCycle * cycle );
     gHelper(gCycle *owner);
     void Activate();
-
+    REAL CurrentTime();
+    
     void detectCut(gHelperData &data, int detectionRange);
     void enemyTracers(gHelperData &data, int detectionRange, REAL timeout);
     void showTail(gHelperData &data);

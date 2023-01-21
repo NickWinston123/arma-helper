@@ -5599,7 +5599,7 @@ bool gGame::GameLoop(bool input){
             for(int i=se_PlayerNetIDs.Len()-1;i>=0;i--)
             {
                 gAIPlayer *ai = dynamic_cast<gAIPlayer*>(se_PlayerNetIDs(i));
-                if (ai && think)
+                if (ai && think && !ai->helperAI)
                     ai->Timestep(gtime);
             }
 

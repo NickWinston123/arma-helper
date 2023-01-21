@@ -69,7 +69,7 @@ public:
     // for all offensive modes:
     nObserverPtr< gCycle >    target;  // the current victim
     gCycle *owner_;
-    bool hackermans;
+    bool helperAI;
     // for pathfinding mode:
     ePath                   path;    // last found path to the victim
     REAL lastPath;                   // when was the last time we did a pathsearch?
@@ -197,26 +197,30 @@ public:
     }
 
     virtual bool IsHuman() const { return false; }
-    
-    gCycle* Object()
+
+    gCycle *Object()
     {
-        if (!hackermans) {
-        eGameObject* go = ePlayerNetID::Object();
-        if ( !go )
+        if (!helperAI)
         {
-            return NULL;
+            eGameObject *go = ePlayerNetID::Object();
+            if (!go)
+            {
+                return NULL;
+            }
+            else
+            {
+                tASSERT(dynamic_cast<gCycle *>(go));
+                return static_cast<gCycle *>(go);
+            }
         }
         else
         {
-            tASSERT(dynamic_cast<gCycle*>(go));
-            return static_cast<gCycle*>(go);
+            if (owner_)
+                return owner_;
+            else
+                return NULL;
         }
-        } else {
-            return owner_;
-        }
-
     }
-
 
     void Timestep(REAL time);
 

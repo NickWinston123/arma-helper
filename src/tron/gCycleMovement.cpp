@@ -3398,10 +3398,7 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
 
         //Don't turn
         if (ignoreTurn) {
-// std::stringstream ss;
-// ss << "dir = " << dir << " blockturn =" << this->blockTurn;
-// HelperDebug::Debug("ignoreTurn", "BLOCKED TURN", ss.str(), false);
-this->lastTurnAttemptTime = currentTime;
+            this->lastTurnAttemptTime = currentTime;
             this->lastTurnAttemptDir = dir;
             this->blockTurn = 0;
             return false;
@@ -3496,6 +3493,7 @@ this->lastTurnAttemptTime = currentTime;
 
         // turn winding numbers
         int wn = windingNumberWrapped_;
+
         Grid()->Turn(wn, dir);
 
         if (helperSmartTurning && !botTurn && playerIsMe) {

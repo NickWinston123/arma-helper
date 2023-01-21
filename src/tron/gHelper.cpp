@@ -57,6 +57,8 @@ static tConfItem<bool> sg_helperDebugTimeStampConf("HELPER_DEBUG_TIMESTAMP",
 bool sg_helperAI = false;
 static tConfItem<bool> sg_helperAIc("HELPER_AI", sg_helperAI);
 
+REAL sg_helperAITime = 0;
+static tConfItem<REAL> sg_helperAITimec("HELPER_AI_TIME", sg_helperAITime);
 
 bool sg_helperSmartTurning = false;
 static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
@@ -821,8 +823,8 @@ void gTailHelper::Activate(gHelperData &data) {
     gPathHelper::gPathHelper(gHelper * helper, gCycle * owner)
         : helper_(helper),
             owner_(owner),
-            lastPath(owner_->localCurrentTime - 100),
-            lastTime(owner_->localCurrentTime),
+            lastPath(helper_->CurrentTime() - 100),
+            lastTime(helper_->CurrentTime()),
             nextTime(0),
             pathInvalid(true)
     {
@@ -976,8 +978,8 @@ void gTailHelper::Activate(gHelperData &data) {
     // bool targetFarEnough = distance == 0 || distance > data.speedFactor * (sg_pathHelperUpdateDistance * 1000);
     // //if (targetFarEnough)
     // con << distance << " > " << data.speedFactor * sg_pathHelperUpdateDistance << " " << targetFarEnough << "\n";
-    // bool updateTime = lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
-    return lastPath < owner_->localCurrentTime - sg_pathHelperUpdateTime;
+    // bool updateTime = lastPath < CurrentTime() - sg_pathHelperUpdateTime;
+    return lastPath < helper_->CurrentTime() - sg_pathHelperUpdateTime;
     }
 
     REAL se_pathHeight = 1;
@@ -1121,7 +1123,7 @@ void gTailHelper::Activate(gHelperData &data) {
                             owner_,
                             path_);
         // con << "Found updated path & " << lastPath << "\n";
-        lastPath = owner_->localCurrentTime;
+        lastPath = helper_->CurrentTime();
         lastPos = target;
         // con << "Updated path\n";
     }
@@ -1444,7 +1446,7 @@ class Sensor: public gSensor
         tString debugMessage;
         if (sg_helperDebugTimeStamp)
         {
-            debugMessage << "(" << owner_->localCurrentTime << ") ";
+            debugMessage << "(" << helper_->CurrentTime() << ") ";
         }
 
         debugMessage << "0xff8888HELPER DEBUG - "
@@ -2137,58 +2139,57 @@ gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL &a_speedFactor,
 { }
 
 
-class gSmarterBot
-{
-    gSmarterBot(gHelper *helper, gCycle *owner,  ePlayerNetID *player)
-            :  helper_             ( helper ),
-               owner_              ( owner ),
-               player_             ( player )
-                {
+// class gSmarterBot
+// {
+//     gSmarterBot(gHelper *helper, gCycle *owner,  ePlayerNetID *player)
+//             :  helper_             ( helper ),
+//                owner_              ( owner ),
+//                player_             ( player )
+//                 {
 
-                }
-void createAI(){
-    if (!ai) {
-                     ai 	= tNEW( gAIPlayer ) ();
-                     sg_AIReferences.Add( ai );
-                    ai 	= tNEW( gAIPlayer ) ();
-                     ai->character = BestIQ( 1000 );
-    } else {
-    //ai->ControlObject(owner_);
-    //ai->Think();
-            //ai->SetName( ai->character->name );
-            //ai->UpdateTeam();
-    }
-}
+//                 }
+// void createAI(){
+//     if (!ai) {
+//                      ai 	= tNEW( gAIPlayer ) ();
+//                      sg_AIReferences.Add( ai );
+//                     ai 	= tNEW( gAIPlayer ) ();
+//                      ai->character = BestIQ( 1000 );
+//     } else {
+//     //ai->ControlObject(owner_);
+//     //ai->Think();
+//             //ai->SetName( ai->character->name );
+//             //ai->UpdateTeam();
+//     }
+// }
 
-void Exist() {
-    con << "Created AI? " << bool(ai) << "\n";
-}
-public:
-    static gSmarterBot & Get( gHelper * helper, gCycle *owner,  ePlayerNetID *player )
-    {
-        tASSERT( helper );
+// void Exist() {
+//     con << "Created AI? " << bool(ai) << "\n";
+// }
+// public:
+//     static gSmarterBot & Get( gHelper * helper, gCycle *owner,  ePlayerNetID *player )
+//     {
+//         tASSERT( helper );
 
-        // // create
-        // if ( helper->smarterBot.get() == 0 )
-        //     helper->smarterBot.reset( new gSmarterBot( helper, owner, player ) );
+//         // // create
+//         // if ( helper->smarterBot.get() == 0 )
+//         //     helper->smarterBot.reset( new gSmarterBot( helper, owner, player ) );
 
-        // return *helper->smarterBot;
-    }
-private:
-    friend class gHelper;
-    gHelper *helper_;
-    gCycle * owner_;         //!< owner of chatbot
-    ePlayerNetID *player_;
-    gAIPlayer *ai;
+//         // return *helper->smarterBot;
+//     }
+// private:
+//     friend class gHelper;
+//     gHelper *helper_;
+//     gCycle * owner_;         //!< owner of chatbot
+//     ePlayerNetID *player_;
+//     gAIPlayer *ai;
 
-};
+// };
 
 
 //SmartTurning
 gSmartTurning::gSmartTurning(gHelper *helper, gCycle *owner)
         : helper_             ( helper ),
             owner_              ( owner ),
-            localCurrentTime    ( owner_->localCurrentTime ),
             lastTurnAttemptTime ( owner_->lastTurnAttemptTime ),
             lastTurnAttemptDir  ( owner_->lastTurnAttemptDir ),
             lastTurnTime        ( owner_->lastTurnTime ),
@@ -2345,9 +2346,9 @@ void gSmartTurning::followTail(gHelperData &data) {
     // }
     // }
     // return;
-    //bool turnedRecently = !(lastTailTurnTime < 0) && owner_->lastTurnTime + delay > owner_->localCurrentTime;
-    //con << owner_->lastTurnTime + delay << " > " << owner_->localCurrentTime << "\n" << turnedRecently << "\n";
-    bool readyToTurn = owner_->localCurrentTime > lastTailTurnTime + delay;
+    //bool turnedRecently = !(lastTailTurnTime < 0) && owner_->lastTurnTime + delay > CurrentTime();
+    //con << owner_->lastTurnTime + delay << " > " << CurrentTime() << "\n" << turnedRecently << "\n";
+    bool readyToTurn = helper_->CurrentTime() > lastTailTurnTime + delay;
 
     if (!readyToTurn) {
         return;
@@ -2357,12 +2358,12 @@ void gSmartTurning::followTail(gHelperData &data) {
 
     if (canSurviveRightTurn && turnDirection == -1) {
         owner_->Act(&gCycle::se_turnRight, 1);
-        lastTailTurnTime = owner_->localCurrentTime;
+        lastTailTurnTime = helper_->CurrentTime();
     }
 
     if (canSurviveLeftTurn && turnDirection == 1) {
         owner_->Act(&gCycle::se_turnLeft, 1);
-        lastTailTurnTime = owner_->localCurrentTime;
+        lastTailTurnTime = helper_->CurrentTime();
     }
 }
 
@@ -2905,7 +2906,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
 
             if (sg_helperSmartTurningFrontBotDisableTime > 0 && turnPossible)
             {
-                owner_->turnIgnoreTime = owner_->localCurrentTime + (sg_helperSmartTurningFrontBotDisableTime * data.turnDistance);
+                owner_->turnIgnoreTime = helper_->CurrentTime() + (sg_helperSmartTurningFrontBotDisableTime * data.turnDistance);
             }
         }
     }
@@ -3070,7 +3071,7 @@ gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
             self.type = gSENSOR_SELF;
             self.hitDistance_ = 0;
             self.hitOwner_ = owner_;
-            self.hitTime_ = owner_->localCurrentTime;
+            self.hitTime_ = helper_->CurrentTime();
             self.lr = -1;
             REAL rearLeftOpen = Distance( backwardLeft, self ,owner_);
             self.lr = 1;
@@ -3330,7 +3331,7 @@ gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
 //         self.type = gSENSOR_SELF;
 //         self.hitDistance_ = 0;
 //         self.hitOwner_ = owner_;
-//         self.hitTime_ = owner_->localCurrentTime;
+//         self.hitTime_ = CurrentTime();
 //         self.lr = -1;
 //         REAL rearLeftOpen = forwardLeft.Distance(backwardLeft, self);
 //         self.lr = 1;
@@ -3583,6 +3584,13 @@ bool gSmartTurning::CanMakeTurn(uActionPlayer *action)
     return owner_->CanMakeTurn((action == &gCycle::se_turnRight) ? 1 : -1);
 }
 
+bool sg_helperCurrentTimeLocal = true; // Determines if the helper uses its own internal clock or the games to sync actions
+static tConfItem<bool> sg_helperCurrentTimeLocalConf("HELPER_CURRENT_TIME_LOCAL", sg_helperCurrentTimeLocal);
+
+REAL gHelper::CurrentTime() {
+    return sg_helperCurrentTimeLocal ? owner_->localCurrentTime : se_GameTime();
+}
+
 gHelper::gHelper(gCycle *owner)
     : owner_(owner),
         player_(owner->Player()),
@@ -3593,6 +3601,11 @@ gHelper::gHelper(gCycle *owner)
         data_stored(NULL),
         sensors_(new gHelperSensorsData(owner_))
 {
+    // if (sg_helperCurrentTimeLocal) {
+    //     currentTimeFunc = &gCycle::localCurrentTime;
+    // } else {
+    //     currentTimeFunc = &se_GameTime;
+    // }
     aiCreated = false;
     ownerPos = &owner_->pos;
     ownerDir = &owner_->dir;
@@ -3924,13 +3937,13 @@ bool gHelper::findCorner(gHelperData &data, gSmartTurningCornerData &corner, con
         return false;
     }
 
-    corner.noticedTime = owner_->localCurrentTime;
+    corner.noticedTime = CurrentTime();
     corner.exist = true;
 
     corner.type = sensor->type;
     corner.currentPos = *sensor->ehit->Point();
     corner.distanceFromPlayer = ownerDir->Dot(corner.currentPos - *ownerPos);
-    corner.turnTime = leftCorner.getTimeUntilTurn(owner_->Speed()) + owner_->localCurrentTime;
+    corner.turnTime = leftCorner.getTimeUntilTurn(owner_->Speed()) + CurrentTime();
     REAL secondEdgeDistance = ownerDir->Dot(*sensor->ehit->Other()->Point() - *ownerPos);
 
     if (corner.distanceFromPlayer < secondEdgeDistance)
@@ -3944,7 +3957,7 @@ bool gHelper::findCorner(gHelperData &data, gSmartTurningCornerData &corner, con
     if (corner.lastPos != corner.currentPos)
     {
         corner.lastPos = corner.currentPos;
-        corner.ignoredTime = owner_->localCurrentTime;
+        corner.ignoredTime = CurrentTime();
     }
     return true;
 }
@@ -4002,24 +4015,30 @@ static tConfItem<int> sg_showHitDataRecursionConf("HELPER_SHOW_HIT_RECURSION", s
 REAL sg_showHitDataTimeout = 1;
 static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
 
+bool sg_helperShowHitStartAtHitPos = true;
+static tConfItem<bool> sg_helperShowHitStartAtHitPosConf("HELPER_SHOW_HIT_START_AT_HIT_POS", sg_helperShowHitStartAtHitPos);
+
 void gHelper::showHit(gHelperData &data)
 {
-    //renderHud("dummy val", "Wall Owner");
     if (!aliveCheck()) { return; }
     if (!drivingStraight()) {
         return;
     }
 
     bool wallClose = data.sensors.getSensor(FRONT)->hit < data.turnSpeedFactor * sg_showHitDataRange;
-    //renderHud("dummy val", 0, "Wall Owner");
     REAL timeout = data.speedFactor * sg_showHitDataTimeout;
 
     if (wallClose)
     {
         eCoord frontBeforeHit = data.sensors.getSensor(FRONT)->before_hit;
-        debugLine(1,.5,0,sg_showHitDataHeightFront,data.speedFactor,(*ownerPos),frontBeforeHit);
-        showHitDebugLines(frontBeforeHit, owner_->Direction(), timeout, data, sg_showHitDataRecursion, LEFT);
-        showHitDebugLines(frontBeforeHit, owner_->Direction(), timeout, data, sg_showHitDataRecursion, RIGHT);
+        debugLine(1,.5,0,sg_showHitDataHeightFront,timeout,(*ownerPos),frontBeforeHit);
+        if (sg_helperShowHitStartAtHitPos) {
+            showHitDebugLines(frontBeforeHit, owner_->Direction(), timeout, data, sg_showHitDataRecursion, LEFT);
+            showHitDebugLines(frontBeforeHit, owner_->Direction(), timeout, data, sg_showHitDataRecursion, RIGHT);
+        } else {
+            showHitDebugLines(*ownerPos, owner_->Direction().Turn(eCoord(0,1)), timeout, data, sg_showHitDataRecursion, LEFT);
+            showHitDebugLines(*ownerPos, owner_->Direction().Turn(eCoord(0,-1)), timeout, data, sg_showHitDataRecursion, RIGHT);
+        }
     }
 }
 
@@ -4120,15 +4139,18 @@ void gHelper::Activate()
         if (!aiCreated)
         {
             con << "CREATING AI!! \n";
-            gAIPlayer *aiPlayer = new gAIPlayer(owner_);
-            // aiPlayer->character = BestIQ(1000);
-            sg_AIReferences.Add(aiPlayer);
+            aiPlayer = new gAIPlayer(owner_);
             aiCreated = true;
         }
         else
         {
-            aiPlayer->Timestep(se_GameTime());
+            if (aiPlayer != NULL)
+                aiPlayer->Timestep(se_GameTime() + sg_helperAITime);
         }
+    } else {
+            if (aiPlayer != NULL)
+                aiPlayer->RemoveFromGame();
+
     }
 
     if (!aliveCheck()) { return; }
@@ -4138,9 +4160,8 @@ void gHelper::Activate()
     REAL turnSpeedFactorPercent = (1/turnSpeedFactor);
     REAL turnDistance = (turnSpeedFactor/100);
 
-    gHelperData data(*sensors_, speedFactor, turnSpeedFactor,turnSpeedFactorPercent,turnDistance,0,0,0);
+    gHelperData data(*sensors_, speedFactor, turnSpeedFactor, turnSpeedFactorPercent, turnDistance, 0, 0, 0);
     data_stored = &data;
-
 
     enemies.detectEnemies();
 
@@ -4156,13 +4177,11 @@ void gHelper::Activate()
         tailHelper->Activate(data);
     }
 
-    if (sg_helperEnemyTracers)
-    {
+    if (sg_helperEnemyTracers) {
         enemyTracers(data, sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
     }
 
-    if (sg_helperDetectCut)
-    {
+    if (sg_helperDetectCut) {
         detectCut(data, sg_helperDetectCutDetectionRange);
     }
 
@@ -4194,8 +4213,8 @@ void gHelper::Activate()
     owner_->justCreated = false;
 }
 
+//MENU
 #include "uMenu.h"
-
 void enemyTracersMenu() {
     uMenu enemyTracersMenu("Enemy Tracers Settings");
     uMenuItemReal enemyTracersDetectionRange(&enemyTracersMenu, "Tracer Detection Range", "Range for displaying enemy tracers", sg_helperEnemyTracersDetectionRange,0, 10, 0.1);
@@ -4209,7 +4228,6 @@ void enemyTracersMenu() {
 
     enemyTracersMenu.Enter();
 }
-
 
 void enemyTailMenu() {
     uMenu enemyTailMenu("Enemy Tail Settings");
@@ -4244,7 +4262,6 @@ void helperEnemyMenu()
     enemyMenu.Enter();
 }
 
-
 void helperCornersMenu() {
     uMenu cornersMenu("Corners Settings");
 
@@ -4260,9 +4277,10 @@ void helperCornersMenu() {
     cornersMenu.Enter();
 }
 
-
 void helperShowHitMenu() {
     uMenu showHitMenu("Show Hit Settings");
+
+    uMenuItemToggle showHitStartAtHitPos(&showHitMenu, "Start at Hit Pos", "If enabled, left and right sensors will start at the coordinates the front sensor hits", sg_helperShowHitStartAtHitPos);
 
     uMenuItemReal showHitHeight(&showHitMenu, "Hit Height", "Height for displaying hit", sg_showHitDataHeight,0, 5, .1);
     uMenuItemReal showHitHeightFront(&showHitMenu, "Hit Height (Front)", "Height for displaying hit in front", sg_showHitDataHeightFront,0, 5, 0.1);
@@ -4282,7 +4300,6 @@ void tailHelperMenu () {
     uMenuItemReal tailHelperBrightness(&tailHelperMenu, "Brightness", "Adjust tail helper brightness", sg_tailHelperBrightness, 0, 5, 0.1);
     tailHelperMenu.Enter();
 }
-
 
 void tailTracerMenu() {
     uMenu tailTracerMenu("Tail Tracer Settings");
@@ -4307,7 +4324,6 @@ void helperTailMenu () {
 
     tailMenu.Enter();
 }
-
 
 void helperPathMenu() {
     uMenu pathMenu("Path Settings");
@@ -4397,8 +4413,6 @@ void helperSmartTurningMenu() {
     smartTurningMenu.Enter();
 }
 
-
-
 void helperDebugMenu() {
     uMenu smartDebugMenu("Debug Menu");
     uMenuItemReal helperDebugDelay(&smartDebugMenu,
@@ -4432,7 +4446,6 @@ void helperConfigMenu() {
     uMenuItemToggle sensorLightUsage(&helperConfigMenu, "Sensor Light Usage Mode", "If enabled, only one sensor object is used. If disabled, an instance is created eachtime a sensor is needed.", sg_helperSensorLightUsageMode);
     helperConfigMenu.Enter();
 }
-
 
 void helperExperimentalMenu(){
     uMenu helperExperimentalMenu("Experimental Settings");
@@ -4499,7 +4512,6 @@ void helperMenuPub(std::istream &s) {
 }
 
 static tConfItemFunc HelperMenuConf("HELPER_MENU",&helperMenuPub);
-
 
 gHelper::~gHelper()
 {

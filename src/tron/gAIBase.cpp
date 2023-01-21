@@ -719,7 +719,7 @@ public:
         }
     }
 
-    gAISensor(const gCycle* c,
+    gAISensor(const gAIPlayer *ai, const gCycle* c,
               const eCoord& start, const eCoord& dir,
               REAL sideScan, // the amout of space we should scan left and right
               REAL frontScan, // the total front scanning range
@@ -728,7 +728,6 @@ public:
              )
             :cycle(c), distance(frontScan*2)
     {
-        gAIPlayer* ai = dynamic_cast<gAIPlayer*>(c->Player());
         tASSERT(ai);
         gAICharacter* character = ai->Character();
         tASSERT(character);
@@ -1065,7 +1064,7 @@ gAIPlayer::gAIPlayer(nMessage &m) :
         nextTime(0),
         concentration(1),
         log(NULL),
-        hackermans(false)
+        helperAI(false)
 {
 }
 
@@ -1078,7 +1077,7 @@ gAIPlayer::gAIPlayer():
         nextTime(0),
         concentration(1),
         log(NULL),
-        hackermans(false)
+        helperAI(false)
 {
     character = NULL;
     ClearTarget();
@@ -2825,9 +2824,9 @@ void gAIPlayer::RightBeforeDeath(int triesLeft) // is called right before the ve
     eCoord dir=Object()->Direction();
     REAL  side = speed*delay;
 
-    gAISensor front(Object(),Object()->Position(),dir, side, range, range*.3, 0);
-    gAISensor left(Object(),Object()->Position(),dir.Turn(eCoord(0,1)), side, range, range*.3, -1);
-    gAISensor right(Object(),Object()->Position(),dir.Turn(eCoord(0,-1)), side, range, range*.3, 1);
+    gAISensor front(this,Object(),Object()->Position(),dir, side, range, range*.3, 0);
+    gAISensor left(this,Object(),Object()->Position(),dir.Turn(eCoord(0,1)), side, range, range*.3, -1);
+    gAISensor right(this,Object(),Object()->Position(),dir.Turn(eCoord(0,-1)), side, range, range*.3, 1);
 
 
 
@@ -2899,7 +2898,7 @@ void gAIPlayer::NewObject()         // called when we control a new object
     ClearTarget();
 }
 
-static gAISensor * sg_GetSensor( int currentDirectionNumber, gCycle const & object, int turn, REAL side, REAL range, REAL corridor, REAL & mindist )
+static gAISensor * sg_GetSensor( gAIPlayer const * ai, int currentDirectionNumber, gCycle const & object, int turn, REAL side, REAL range, REAL corridor, REAL & mindist )
 {
     // determine the current direction
     eGrid & grid = *object.Grid();
@@ -2916,7 +2915,7 @@ static gAISensor * sg_GetSensor( int currentDirectionNumber, gCycle const & obje
     while ( !ret || ( turn * ( origDir * dir ) > .01 && currentDirectionNumber != direction ) )
     {
         // cast rays
-        gAISensor * sensor = tNEW(gAISensor)(&object,object.Position(),dir, side, range, corridor*.5f, turn );
+        gAISensor * sensor = tNEW(gAISensor)(ai, &object,object.Position(),dir, side, range, corridor*.5f, turn );
         if ( !ret || sensor->distance > ret->distance )
         {
             if ( ret )
@@ -2974,7 +2973,7 @@ REAL gAIPlayer::Think(){
     if (corridor < side * 2)
         corridor = side * 2;
 
-    gAISensor front(Object(),Object()->Position(),dir, side * 2, range, corridor, 0);
+    gAISensor front(this, Object(),Object()->Position(),dir, side * 2, range, corridor, 0);
 
 #ifdef DEBUG_X
     if (front.Hit())
@@ -2993,8 +2992,8 @@ REAL gAIPlayer::Think(){
     // get the sensors to the left and right with the most free space
     int currentDirectionNumber = Object()->Grid()->DirectionWinding( dir );
     REAL mindistLeft = 1E+30, mindistRight = 1E+30;
-    std::unique_ptr< gAISensor > left  ( sg_GetSensor( currentDirectionNumber, *Object(), -1, side, range, corridor, mindistLeft ) );
-    std::unique_ptr< gAISensor > right ( sg_GetSensor( currentDirectionNumber, *Object(), 1, side, range, corridor, mindistRight ) );
+    std::unique_ptr< gAISensor > left  ( sg_GetSensor(this, currentDirectionNumber, *Object(), -1, side, range, corridor, mindistLeft ) );
+    std::unique_ptr< gAISensor > right ( sg_GetSensor(this, currentDirectionNumber, *Object(), 1, side, range, corridor, mindistRight ) );
 
     // count intermediate walls to the left and right as if they were in front
     {
@@ -3154,17 +3153,24 @@ void gAIPlayer::ActOnData( ThinkDataBase & data )
 const REAL relax=25;
 
 void gAIPlayer::Timestep(REAL time){
-    if (sg_AIBypass) return;
+    if (sg_AIBypass && !helperAI) return;
 
-    if (!character)
+    if (!character || !Character())
     {
-        character = &gAICharacter::s_Characters(0);
-        //st_Breakpoint();
+        con << "NO CHARACTER!\n";
         return;
     }
+    // character = new gAICharacter();
 
+    // for (int i=0; i < 13; i++)
+    // {
+    //     character->properties[i] = 10;
+    //     character->iq += 100;
+    // }
+
+    // con << "Activate ? " << (bool(!helperAI && Object() && Object()->LastTime() < time - EPS) == false) << "\n";
     // don't think if the object is not up to date
-    if ( Object() && Object()->LastTime() < time - EPS )
+    if ( !helperAI && Object() && Object()->LastTime() < time - EPS )
         return;
 
     REAL ts=time-lastTime;
@@ -3176,6 +3182,10 @@ void gAIPlayer::Timestep(REAL time){
     concentration += 4*(character->properties[AI_REACTION]+1) * ts/relax;
     concentration=concentration/(1+ts/relax);
 
+    //con << nextTime << " < " << time << " ? " << bool(nextTime<time) << "\n";
+
+    if (helperAI)
+        nextTime = bool(nextTime<time) ? nextTime :  time - (time*.005);
     if (bool(Object()) && Object()->Alive() && nextTime<time){
         gRandomController random( randomizer_ );
 
@@ -3381,18 +3391,22 @@ static tConfItemFunc sg_SetAIRoute_conf("SET_AI_POSITION",&sg_SetAIRoute);
 // }
 
 gAIPlayer::gAIPlayer(gCycle* cycle):
-        character(NULL),
-        //	target(NULL),
+        character(new gAICharacter()),
         lastPath(se_GameTime()-100),
         lastTime(se_GameTime()),
         nextTime(0),
         concentration(1),
         log(NULL),
         owner_(cycle),
-        hackermans(true)
+        helperAI(true)
 {
+    for (int i=0; i < 13; i++)
+    {
+        character->properties[i] = 10;
+        character->iq += 100;
+    }
+
     con << "Activating AI\n";
-    character = &gAICharacter::s_Characters(0);
     con << "Set CHARACTER " << character << "\n";
     ClearTarget();
     traceSide = 1;
@@ -3410,11 +3424,11 @@ gAIPlayer::gAIPlayer(gCycle* cycle):
     path.Clear();
 
     {
-        nextTime        = 10;
-        nextStateChange = 30;
-        state           = AI_TRACE;
+        nextTime        = 0;
+        nextStateChange = 2;
+        state           = AI_SURVIVE;
     }
+    character->properties[AI_STARTSTATE] = 0;
+    character->properties[AI_STARTSTRAIGHT] = 0;
 
-
-    ClearTarget();
 }

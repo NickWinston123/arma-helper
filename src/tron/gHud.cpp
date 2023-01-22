@@ -178,27 +178,24 @@ static tConfItem< bool > sg_HudHideWhileChattingConf( "HUD_HIDE_WHILE_CHATTING",
         }
     }
 
-// caches stuff based on two float properties
+// caches stuff
 
-    gTextCache::gTextCache()
-    : propa_(-1), propb_(-1)
-    {
-    }
+// template <typename T1, typename T2>
+// bool gTextCache<T1, T2>::Call( T1 propa, T2 propb )
+// {
+//     if ( propa != propa_ || propb != propb_ )
+//     {
+//         propa_ = propa;
+//         propb_ = propb;
+//         list_.Clear();
+//         return false;
+//     }
+//     else
+//     {
+//         return list_.Call();
+//     }
+// }
 
-    bool gTextCache::Call( REAL propa, REAL propb )
-    {
-        if ( propa != propa_ || propb != propb_ )
-        {
-            propa_ = propa;
-            propb_ = propb;
-            list_.Clear();
-            return false;
-        }
-        else
-        {
-            return list_.Call();
-        }
-    }
 
 
 static int alivepeople, alivemates, thetopscore, hudfpscount;
@@ -396,14 +393,15 @@ static void display_hud_subby( ePlayer* player ){
 
                 if (me!=NULL){
                      static gGLMeter meter2[MAX_PLAYERS];
-                    
+
                     gCycle *h = dynamic_cast<gCycle *>(me->Object());
                     if (h && ( !player->netPlayer || ( !player->netPlayer->IsChatting() || !sg_HudHideWhileChatting) ) && se_GameTime()>-2){
                         // myscore=p->TotalScore();
                         myping = me->ping;
-                        static gTextCache cacheArray[MAX_PLAYERS];
-                        gTextCache & cache = cacheArray[player->ID()];
-                        gHelperHudPub::Instance().Activate(cache);
+                        static gTextCache<REAL,REAL> cacheArray[MAX_PLAYERS];
+                        gTextCache<REAL,REAL> & cache = cacheArray[player->ID()];
+                        gTextCache<std::string, std::string> cacheStr;
+                        gHelperHudPub::Instance().Activate();
                         if(subby_ShowSpeedMeter)
                         {
                             static gGLMeter meter[MAX_PLAYERS];
@@ -429,8 +427,8 @@ static void display_hud_subby( ePlayer* player ){
 
                         if(subby_ShowSpeedFastest)
                         {
-                            static gTextCache cacheArray[MAX_PLAYERS];
-                            gTextCache & cache = cacheArray[player->ID()];
+                            static gTextCache<REAL,REAL> cacheArray[MAX_PLAYERS];
+                            gTextCache<REAL,REAL> & cache = cacheArray[player->ID()];
                             if ( !cache.Call( max, 0 ) )
                             {
                                 rDisplayListFiller filler( cache.list_ );
@@ -452,8 +450,8 @@ static void display_hud_subby( ePlayer* player ){
                         }
 
                         if(subby_ShowScore){
-                            static gTextCache cacheArray[MAX_PLAYERS];
-                            gTextCache & cache = cacheArray[player->ID()];
+                            static gTextCache <REAL,REAL>cacheArray[MAX_PLAYERS];
+                            gTextCache <REAL,REAL>& cache = cacheArray[player->ID()];
                             if ( !cache.Call( topscore, myscore ) )
                             {
                                 rDisplayListFiller filler( cache.list_ );
@@ -476,8 +474,8 @@ static void display_hud_subby( ePlayer* player ){
                         }
 
                         if(subby_ShowAlivePeople){
-                            static gTextCache cacheArray[MAX_PLAYERS];
-                            gTextCache & cache = cacheArray[player->ID()];
+                            static gTextCache <REAL,REAL>cacheArray[MAX_PLAYERS];
+                            gTextCache <REAL,REAL>& cache = cacheArray[player->ID()];
                             if ( !cache.Call( alivepeople, alivemates ) )
                             {
                                 rDisplayListFiller filler( cache.list_ );
@@ -492,8 +490,8 @@ static void display_hud_subby( ePlayer* player ){
                         }
 
                         if(subby_ShowPing){
-                            static gTextCache cacheArray[MAX_PLAYERS];
-                            gTextCache & cache = cacheArray[player->ID()];
+                            static gTextCache <REAL,REAL>cacheArray[MAX_PLAYERS];
+                            gTextCache <REAL,REAL>& cache = cacheArray[player->ID()];
                             if ( !cache.Call( 0, myping ) )
                             {
                                 rDisplayListFiller filler( cache.list_ );
@@ -544,7 +542,7 @@ static void display_fps_subby()
     REAL newtime = tSysTimeFloat();
     REAL ts      = newtime - lastTime;
 
-    static gTextCache cache;
+    static gTextCache <REAL,REAL>cache;
     if ( cache.Call( fps, (int)tSysTimeFloat() ) )
     {
         return;

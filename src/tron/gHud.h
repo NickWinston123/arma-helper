@@ -39,17 +39,31 @@ private:
     rDisplayList list_; // caching display list
 };
 
+template <typename T1, typename T2>
 class gTextCache
 {
 public:
-    gTextCache();
-    bool Call(REAL propa, REAL propb);
+    gTextCache() : propa_{}, propb_{} {}
+
+    bool Call(T1 propa, T2 propb) {
+    if ( propa != propa_ || propb != propb_ )
+    {
+        propa_ = propa;
+        propb_ = propb;
+        list_.Clear();
+        return false;
+    }
+    else
+    {
+        return list_.Call();
+    }
+    };
     rDisplayList list_;
 
 private:
-    REAL propa_, propb_;
+    T1 propa_;
+    T2 propb_;
 };
-
 
 extern REAL subby_SpeedGaugeSize, subby_SpeedGaugeLocX, subby_SpeedGaugeLocY;
 extern REAL subby_BrakeGaugeSize, subby_BrakeGaugeLocX, subby_BrakeGaugeLocY;

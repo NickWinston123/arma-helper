@@ -187,6 +187,7 @@ struct tColoredStringProxy
 class tColoredString: public tString
 {
 public:
+
     ~tColoredString();                                      //!< Destructor
     tColoredString();                                       //!< Default constructor
     tColoredString( const tColoredString& other );          //!< Copy constructor

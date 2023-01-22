@@ -3029,8 +3029,12 @@ REAL gAIPlayer::Think(){
 
     REAL ret = 1;
 
-    if (helperAI && sg_AIMode > -1)
+    if (helperAI && sg_AIMode > -1) {
         state = gAI_STATE(sg_AIMode);
+        if (sg_AIMode == 4) {
+            ///SetRoute(owner_->tailPos);
+        }
+    }
 
     //not the best solution, but still better than segfault...
     if(left.get() != 0 && right.get() != 0) {
@@ -3387,59 +3391,48 @@ static void sg_SetAIRoute(std::istream &s)
 static tConfItemFunc sg_SetAIRoute_conf("SET_AI_POSITION",&sg_SetAIRoute);
 
 
-// gAIPlayer::gAIPlayer(gCycle* cycle) : ePlayerNetID(cycle->Player()->pID)
-// {
-//     con << "Activating AI with ePlayerNetID: " << cycle->Player()->pID << "\n";
-//         gAIPlayer();
-
-//             character = &gAICharacter::s_Characters(1);
-//            //SetName("afk");
-//             //SetTeam ( cycle->Team() );
-//             //UpdateTeam();
-//            sg_AIReferences.Add( this );
-//                     //SetTeam( t );
-//                     //ai->UpdateTeam();
-// }
-
-gAIPlayer::gAIPlayer(gCycle* cycle):
-        character(new gAICharacter()),
-        lastPath(se_GameTime()-100),
-        lastTime(se_GameTime()),
-        nextTime(0),
-        concentration(1),
-        log(NULL),
-        owner_(cycle),
-        helperAI(true)
+#include "gHelper.h"
+gAIPlayer::gAIPlayer(gCycle *cycle) : character(new gAICharacter()),
+                                      lastPath(se_GameTime() - 100),
+                                      lastTime(se_GameTime()),
+                                      nextTime(0),
+                                      concentration(1),
+                                      log(NULL),
+                                      owner_(cycle),
+                                      helperAI(true)
 {
-    for (int i=0; i < 13; i++)
-    {
+        for (int i = 0; i < 13; i++)
+        {
         character->properties[i] = 10;
         character->iq += 100;
-    }
+        }
 
-    con << "Activating AI\n";
-    con << "Set CHARACTER " << character << "\n";
-    ClearTarget();
-    traceSide = 1;
-    freeSide  = 0;
-    log       = NULL;
+        ClearTarget();
+        traceSide = 1;
+        freeSide = 0;
+        log = NULL;
 
-    route_.clear();
-    lastCoord_ = 0;
-    targetCurrentFace_ = 0;
+        route_.clear();
+        lastCoord_ = 0;
+        targetCurrentFace_ = 0;
 
-    lastTime = 0;
-    lastPath = 0;
-    lastChangeAttempt = 0;
-    lazySideChange = 0;
-    path.Clear();
+        lastTime = 0;
+        lastPath = 0;
+        lastChangeAttempt = 0;
+        lazySideChange = 0;
+        path.Clear();
 
-    {
-        nextTime        = 0;
-        nextStateChange = 2;
-        state           = AI_CLOSECOMBAT;
-    }
-    character->properties[AI_STARTSTATE] = 0;
-    character->properties[AI_STARTSTRAIGHT] = 0;
+        character->properties[AI_REACTION] = 5;
+        character->properties[AI_EMERGENCY] = 500;
+        character->properties[AI_RANGE] = 500;
+        character->properties[AI_STATE_TRACE] = 1;
+        character->properties[AI_STATE_CLOSECOMBAT] = 101;
+        character->properties[AI_STATE_PATH] = 10;
+        character->properties[AI_LOOP] = 2;
+        character->properties[AI_ENEMY] = 10;
+        character->properties[AI_TUNNEL] = 3;
+        character->properties[AI_DETECTTRACE] = 5;
+        character->properties[AI_STATECHANGE] = 0;
 
+        HelperDebug::Debug("gAIPlayer", "Activating AI", "");
 }

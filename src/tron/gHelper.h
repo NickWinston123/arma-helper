@@ -16,133 +16,214 @@
 #include "eSensor.h"
 #include "eGrid.h"
 
-// class HelperDebug
-// {
-// public:
-//     template<typename T>
-//     static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
-//     {
-//         if (!sg_helperDebug)
-//         {
-//             return;
-//         }
+static float lastHelperDebugMessageTimeStamp;
+static std::string lastHelperDebugMessage = "", lastHelperDebugSender = "";
 
-//         bool lastMessageIsSame = (lastHelperDebugMessage == description && lastHelperDebugSender == sender);
-//         float currentTime = tSysTimeFloat();
-//         bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < sg_helperDebugDelay;
+extern bool sg_helperDebug, sg_helperDebugTimeStamp;
+extern tString sg_helperDebugIgnoreList;
+extern REAL sg_helperDebugDelay;
 
-//         if (spamProtection && (lastMessageIsSame && delayNotPassed))
-//         {
-//             return;
-//         }
-
-//         lastHelperDebugMessageTimeStamp = currentTime;
-//         lastHelperDebugSender = sender;
-
-//         std::string debugMessage;
-
-//         if (sg_helperDebugTimeStamp)
-//         {
-//             debugMessage += "[" + std::to_string(tSysTimeFloat()) + "] ";
-//         }
-
-//         debugMessage += "0xff8888HELPER DEBUG - 0xff5555" + sender + ": 0xffff88:" + description + " ";
-
-//         if (spamProtection)
-//         {
-//             lastHelperDebugMessage = description;
-//         }
-
-//         debugMessage += (value) + "\n";
-//         con << debugMessage;
-//     }
-
-// private:
-//     static std::string lastHelperDebugMessage;
-//     static std::string lastHelperDebugSender;
-//     static float lastHelperDebugMessageTimeStamp;
-// };
-
-// std::string HelperDebug::lastHelperDebugMessage = "";
-// std::string HelperDebug::lastHelperDebugSender = "";
-// float HelperDebug::lastHelperDebugMessageTimeStamp = 0;
-
-#ifndef G_HELPER_HUD_PUB_ITEMS_H
-#define G_HELPER_HUD_PUB_ITEMS_H
-#include "gHud.h"
-class gHelperHudPubItems
+#ifndef ArmageTron_GHELPER_Debug
+#define ArmageTron_GHELPER_Debug
+#include "tSysTime.h"
+class HelperDebug
 {
 public:
-    static std::vector<gHelperHudPubItems> GetHudItems();
-    static void InsetHudItem(tColoredString &message);
+    template<typename T>
+    static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
+    {
+        if (!sg_helperDebug)
+        {
+            return;
+        }
 
-    REAL locX;
-    REAL locY;
-    REAL size;
-    tColoredString message;
+        if (tIsInList(sg_helperDebugIgnoreList, tString(sender)))
+        {
+            return;
+        }
 
-private:
-    static std::vector<gHelperHudPubItems> hudItems_;
+        bool lastMessageIsSame = (lastHelperDebugMessage == description && lastHelperDebugSender == sender);
+        float currentTime = tSysTimeFloat();
+        bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < sg_helperDebugDelay;
+
+        if (spamProtection && (lastMessageIsSame && delayNotPassed))
+        {
+            return;
+        }
+
+        lastHelperDebugMessageTimeStamp = currentTime;
+        lastHelperDebugSender = sender;
+
+        std::string debugMessage;
+
+        if (sg_helperDebugTimeStamp)
+           {
+            debugMessage += "[" + std::to_string(currentTime) + "] ";
+        }
+
+        debugMessage += "0xff8888HELPER DEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
+
+        if (spamProtection)
+        {
+            lastHelperDebugMessage = description;
+        }
+
+        if constexpr (std::is_same<T, std::string>::value) {
+            debugMessage += value + "\n";
+        } else {
+            debugMessage += std::to_string(*value) + "\n";
+        }
+        con << debugMessage;
+    }
 };
 #endif
 
+extern REAL sg_helperHudY, sg_helperHudX, sg_helperHudSize;
+extern bool sg_helperHud;
 #ifndef ArmageTron_GHELPER_HUD
 #define ArmageTron_GHELPER_HUD
+#include "gHud.h"
+#include "rFont.h"
 class gHelperHudPub
 {
 public:
     // Returns the single instance of the class
-    static gHelperHudPub& Instance()
+    static gHelperHudPub &Instance()
     {
         static gHelperHudPub instance;
         return instance;
     }
-
     // Public methods
-    void Activate(gTextCache & cache);
+    void Activate();
+
+    void toggleLock();
 
 private:
+    static bool lock;
     // Private constructor to prevent multiple instances
     gHelperHudPub() {}
 
     // Prevent copying and assignment
-    gHelperHudPub(gHelperHudPub const&) = delete;
-    void operator=(gHelperHudPub const&) = delete;
+    gHelperHudPub(gHelperHudPub const &) = delete;
+    void operator=(gHelperHudPub const &) = delete;
 };
 
+template <typename T>
+class gHelperHudPubItems
+{
+public:
+    gHelperHudPubItems(int id_, std::string parent_, REAL locX_, REAL locY_, REAL size_, std::string value_, std::string label_)
+        : id(id_), parent(parent_), locX(locX_), locY(locY_), size(size_), value(value_), label(label_) {}
+
+    static std::vector<gHelperHudPubItems<T>> GetHudItems();
+
+    static void InsertHudSubItem(T value, std::string label, int id, int parentID);
+    static void InsertHudItem(T value, std::string label, int id);
+    static void InsertHudSubItemReference(T &value, std::string label, int id, int parentID);
+    static void InsertHudItemReference(T &value, std::string label, int id);
 
 
+    static std::string ConvertToString(const T &value);
+    static T ConvertFromString(const std::string &s);
+
+    int id;
+    std::string parent;
+    REAL locX;
+    REAL locY;
+    REAL size;
+    std::string lastValue;
+    std::string value;
+    std::string label;
+
+private:
+    static gHelperHudPubItems<T>* ExistInList(int id);
+    static std::vector<gHelperHudPubItems<T>> hudItems_;
+};
+
+template <typename T>
+gHelperHudPubItems<T>* gHelperHudPubItems<T>::ExistInList(int id)
+{
+    for (auto item = hudItems_.begin(); item != hudItems_.end(); ++item)
+    {
+        if (item->id == id) {
+            return &*item;
+        }
+    }
+    return NULL;
+}
+
+template <typename T>
+std::vector<gHelperHudPubItems<T>> gHelperHudPubItems<T>::hudItems_;
+
+template <typename T>
+std::vector<gHelperHudPubItems<T>> gHelperHudPubItems<T>::GetHudItems()
+{
+    return hudItems_;
+}
+
+template <typename T>
+void gHelperHudPubItems<T>::InsertHudSubItemReference(T &value, std::string label, int id, int parentID)
+{
+    gHelperHudPubItems<T> *item = ExistInList(id);
+    if (item != NULL)
+    {
+        item->lastValue = item->value;
+        item->value = ConvertToString(value);
+    }
+    else
+    {
+        HelperDebug::Debug("InsertHudItem", "Creating Hud Sub Item for", label);
+        std::string value_str = ConvertToString(value);
+        hudItems_.push_back(gHelperHudPubItems(id, hudItems_[parentID].parent, hudItems_[parentID].locX, hudItems_[parentID].locY, hudItems_[parentID].size, value_str, label));
+    }
+}
+
+template <typename T>
+void gHelperHudPubItems<T>::InsertHudItemReference(T &value, std::string label, int id)
+{
+    gHelperHudPubItems<T> *item = ExistInList(id);
+    if (item != NULL)
+    {
+        item->lastValue = item->value;
+        item->value = ConvertToString(value);
+    }
+    else
+    {
+        HelperDebug::Debug("InsertHudItem", "Creating Hud Item for", label);
+        std::string value_str = ConvertToString(value);
+        hudItems_.push_back(gHelperHudPubItems(id, "", 0, 0, 0, value_str, label));
+    }
+}
+
+template <typename T>
+void gHelperHudPubItems<T>::InsertHudItem(T value, std::string label, int id)
+{
+    InsertHudItemReference(value, label, id);
+}
+
+template <typename T>
+void gHelperHudPubItems<T>::InsertHudSubItem(T value, std::string label, int id, int parentID)
+{
+    InsertHudSubItemReference(value, label, id, parentID);
+}
+
+template <typename T>
+std::string gHelperHudPubItems<T>::ConvertToString(const T &value)
+{
+    std::stringstream ss;
+    ss << value;
+    return ss.str();
+}
+
+template <typename T>
+T gHelperHudPubItems<T>::ConvertFromString(const std::string &s)
+{
+    T value;
+    std::stringstream ss(s);
+    ss >> value;
+    return value;
+}
 #endif
-// class gHelperHudPubItems
-// {
-
-//     static gHelperHudPubItems GetHudItems() {
-//         return list of hud items
-//     }
-
-//     static gHelperHudPubItems InsetHudItem(locx, locy, size, message) {
-//         insert hud item
-//     }
-//     static REAL locX;
-//     static REAL locY
-//     static REAL size;
-//     static tColoredString message;
-// }
-// class gHelperHudPub
-// {
-//     public:
-//     static void Activate(gGLMeter * meter){
-
-//         gHelperHudPubItems = gHelperHudPubItems::GetHudItems();
-
-//         for ( pubItem. all gHelperHudPubItems)
-//         {
-//         int length = pubItem.message.Len();
-//         rTextField hudDebug(pubItem.locX-((.15*pubItem.size*(pubItem.locX-1.5))/2.0),pubItem.locY,.15*pubItem.size,.3*pubItem.size);
-//         hudDebug <<  message;
-//         }
-//     }
-// };
 
 extern bool sg_helperCurrentTimeLocal;
 //! return data of SolveTurn
@@ -256,17 +337,20 @@ struct gTurnData{
     public:
         int direction;
         int numberOfTurns;
+        bool exist;
     gTurnData   (int direction_, int numberOfTurns_):
     direction(direction_),
-    numberOfTurns(numberOfTurns_) { }
+    numberOfTurns(numberOfTurns_),
+    exist(true) { }
+
+    gTurnData   (bool):
+    exist(false) { }
 };
 
 class gSmartTurning
 {
 public:
     gSmartTurning(gHelper *helper, gCycle *owner);
-    //void findTurnToTarget(eCoord target);
-    //void SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data );
     void findTurnToTarget( eCoord const & target, eCoord const & velocity );
     void Activate(gHelperData &data);
     bool isClose(eCoord pos, REAL closeFactor);
@@ -307,18 +391,6 @@ public:
         REAL rubberRatio;
         ePath path;
     };
-
-/*
-struct gHelperEnemiesData;
-{
-    gCycle* owner_;
-    std::vector<gCycle*> allEnemies;
-    gCycle* closestEnemy;
-
-    bool exist(gCycle* enemy);
-    gCycle* detectEnemies();
-};
-*/
 
 #include <unordered_set>
 
@@ -381,44 +453,7 @@ class gHelper {
 
     void showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir);
     bool isClose(eCoord pos, REAL closeFactor);
-    template <class T>
-    void HelperDebug(const char *from, const char *description, T value, bool spamProtection = true)
-    {/*
-        if (!sg_helperDebug)
-        {
-            return;
-        }
-        bool lastMessageIsSame = lastHelperDebugMessage == description;
-        bool delayNotPassed = false;owner_->localCurrentTime - lastHelperDebugMessageTimeStamp > sg_helperDebugDelay;
 
-        if (spamProtection && (lastMessageIsSame && delayNotPassed || delayNotPassed))
-        {
-            return;
-        }
-
-        lastHelperDebugMessageTimeStamp = owner_->localCurrentTime;
-
-        tString debugMessage;
-        if (sg_helperDebugTimeStamp)
-        {
-            debugMessage << "(" << owner_->localCurrentTime << ") ";
-        }
-
-        debugMessage << "0xff8888HELPER DEBUG - "
-                     << "0xff5555" << from << "0xffff88: " << description << " ";
-
-        if (spamProtection)
-        {
-            lastHelperDebugMessage = description;
-        }
-        debugMessage << value << "\n ";
-        con << debugMessage;*/
-    }
-
-    template <class T>
-    void renderHud(T value, const char *t);
-
-    //static gHelper& Get( gCycle * cycle );
     gCycle *getOwner();
     eCoord closestCorner(eCoord center, REAL radius);
     static void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,

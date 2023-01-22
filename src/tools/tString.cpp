@@ -946,6 +946,8 @@ bool tString::operator !=( const char* other ) const
     return Compare( other ) != 0;
 }
 
+
+
 // *******************************************************************************************
 // *
 // *	operator <

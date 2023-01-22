@@ -186,7 +186,7 @@ void gHelperHudPub::Activate()
 {
     if (!sg_helperHud || lock)
         return;
-        
+
     gTextCache<std::string, std::string> cache;
     rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
     std::vector<gHelperHudPubItems<std::string>> hudItems = gHelperHudPubItems<std::string>::GetHudItems();
@@ -2573,8 +2573,8 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
         REAL closeReact = (range + detectionRange);
 
         if (!smartTurning->isClose(target->Position(), closeReact)) {
-            // gHelperHudPubItems::InsertHudSubItem("Target: 0xffff00None", "Detect Cut",0);
-            return;
+             gHelperHudPubItems<std::string>::InsertHudSubItem("Target: 0x00dd00None", "Smart Turning",7,5);
+             return;
         }
             eCoord relativeEnemyPos = target->Position() - (*ownerPos);
             eCoord actualEnemyPos = target->Position();
@@ -2618,9 +2618,12 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
             // (*target->Player()->GetColoredName())
             //gHelperHudPubItems::InsertHudSubItem("Target: 0xffff00" , "Detect Cut",0);
+            //gHelperHudPubItems<std::string>::InsertHudSubItem("Target: 0x00dd00" + std::to_string((*target->Player()->GetColoredName())), "Smart Turning",8,5);
             if (canCutUs && !canCutEnemy)
             {
                 debugLine(1, 0, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
+                //gHelperHudPubItems<std::string>::InsertHudSubItem("Turn: 0xdd0000NO", "Detect Cut",8,5);
+
                 //gHelperHudPubItems::InsertHudSubItem("Turn: 0xdd0000NO" , "Detect Cut",1);
             }
             else if (canCutEnemy)
@@ -2629,12 +2632,14 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
                 {
                     debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
                     //gHelperHudPubItems::InsertHudSubItem("Turn: 0x00dd00LEFT", "Detect Cut",1);
+                    //gHelperHudPubItems<std::string>::InsertHudSubItem("Turn: 0x00dd00LEFT", "Detect Cut",9,5);
                 }
 
                 if (side == RIGHT && smartTurning->canSurviveTurnSpecific(data,side,range))
                 {
                     debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
                     //gHelperHudPubItems::InsertHudSubItem("Turn: 0x00dd00RIGHT" , "Detect Cut",1);
+                   // gHelperHudPubItems<std::string>::InsertHudSubItem("Turn: 0x00dd00RIGHT", "Detect Cut",10,5);
                 }
             }
 
@@ -3042,13 +3047,13 @@ void gHelper::Activate()
 
     enemies.detectEnemies();
 
-    if (sg_helperSmartTurning) {        
+    if (sg_helperSmartTurning) {
         gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Smart Turning",0);
         smartTurning->Activate(data);
     }
 
 
-    if (sg_pathHelper) {        
+    if (sg_pathHelper) {
         gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Path Helper",1);
         pathHelper->Activate(data);
     }
@@ -3069,7 +3074,7 @@ void gHelper::Activate()
     if (sg_helperShowHit) {
         gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Show Hit",6 );
         showHit(data);
-        
+
     }
 
     if (sg_helperShowTail) {

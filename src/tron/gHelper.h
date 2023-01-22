@@ -164,6 +164,9 @@ std::vector<gHelperHudPubItems<T>> gHelperHudPubItems<T>::GetHudItems()
 template <typename T>
 void gHelperHudPubItems<T>::InsertHudSubItemReference(T &value, std::string label, int id, int parentID)
 {
+    if (!sg_helperHud)
+        return;
+        
     gHelperHudPubItems<T> *item = ExistInList(id);
     if (item != NULL)
     {
@@ -181,6 +184,9 @@ void gHelperHudPubItems<T>::InsertHudSubItemReference(T &value, std::string labe
 template <typename T>
 void gHelperHudPubItems<T>::InsertHudItemReference(T &value, std::string label, int id)
 {
+    if (!sg_helperHud)
+        return;
+
     gHelperHudPubItems<T> *item = ExistInList(id);
     if (item != NULL)
     {
@@ -198,12 +204,16 @@ void gHelperHudPubItems<T>::InsertHudItemReference(T &value, std::string label, 
 template <typename T>
 void gHelperHudPubItems<T>::InsertHudItem(T value, std::string label, int id)
 {
+    if (!sg_helperHud)
+        return;
     InsertHudItemReference(value, label, id);
 }
 
 template <typename T>
 void gHelperHudPubItems<T>::InsertHudSubItem(T value, std::string label, int id, int parentID)
 {
+    if (!sg_helperHud)
+        return;
     InsertHudSubItemReference(value, label, id, parentID);
 }
 

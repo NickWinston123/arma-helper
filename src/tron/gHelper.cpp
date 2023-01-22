@@ -184,20 +184,17 @@ static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
 //VERSION 3
 void gHelperHudPub::Activate()
 {
-    // gTextCache<std::string, std::string> cache;
-    // if (!sg_helperHud)// || lock)
-    //     return;
-    // //con << "RUNNING \n";
+    if (!sg_helperHud || lock)
+        return;
+        
+    gTextCache<std::string, std::string> cache;
     rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
     std::vector<gHelperHudPubItems<std::string>> hudItems = gHelperHudPubItems<std::string>::GetHudItems();
-    //con << "SIZE " << hudItems.size() << "\n";
-    // con << "address " << &hudItems << "\n";
     for (auto pubItem : hudItems)
     {
-        //con << pubItem.value << " !+ " << pubItem.lastValue << "\n";
-        //if (!cache.Call(pubItem.value, pubItem.lastValue))
+        if (!cache.Call(pubItem.value, pubItem.lastValue))
         {
-          //  rDisplayListFiller filler(cache.list_);
+            rDisplayListFiller filler(cache.list_);
             hudDebug << "0xffff88" << pubItem.label << ": " << pubItem.value << "0xffff88\n";
         }
     }
@@ -3016,7 +3013,6 @@ void gHelper::Activate()
 {
     tColoredString Activate;
 
-    //con << "AI Created? " << bool(aiPlayer == nullptr) << "\n";
     if (sg_helperAI)
     {
         if (!aiCreated)
@@ -3046,17 +3042,15 @@ void gHelper::Activate()
 
     enemies.detectEnemies();
 
-    //gHelperHudPubItems::InsertHudItem(std::string("0xffff88Smart Turning: ") + (sg_helperSmartTurning ? "0x00dd001\n" : "0xdd00000\n"), "Smart Turning");
-
-    if (sg_helperSmartTurning) {
+    if (sg_helperSmartTurning) {        
+        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Smart Turning",0);
         smartTurning->Activate(data);
-        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Smart Turning",3);
     }
 
 
-    if (sg_pathHelper) {
+    if (sg_pathHelper) {        
+        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Path Helper",1);
         pathHelper->Activate(data);
-        //gHelperHudPubItems<bool>::InsertHudItem(std::ref(sg_pathHelper), "Path Helper",4);
     }
 
     if (sg_tailHelper) {
@@ -3067,14 +3061,15 @@ void gHelper::Activate()
     }
 
     if (sg_helperDetectCut) {
-        //gHelperHudPubItems<bool>::InsertHudItem(std::ref(sg_helperDetectCut), "Detect Cut",5);
+        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Detect Cut",5);
         detectCut(data, sg_helperDetectCutDetectionRange);
 
     }
 
     if (sg_helperShowHit) {
+        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Show Hit",6 );
         showHit(data);
-        //gHelperHudPubItems<bool>::InsertHudItem(std::ref(sg_helperShowHit), "Show Hit",6 );
+        
     }
 
     if (sg_helperShowTail) {

@@ -181,6 +181,17 @@ static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
 
 #include "rFont.h"
 #include "gHud.h"
+
+
+static std::map< tString, gHelperHudPubBase * > * st_confMap = 0;
+gHelperHudPubBase::gHelperHudMap & gHelperHudPubBase::GetHelperHudMap()
+{
+    if (!st_confMap)
+        st_confMap = tNEW( gHelperHudMap );
+    return *st_confMap;
+}
+
+
 //VERSION 3
 void gHelperHudPub::Activate()
 {

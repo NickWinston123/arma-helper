@@ -107,7 +107,7 @@ private:
     gHelperHudPub(gHelperHudPub const &) = delete;
     void operator=(gHelperHudPub const &) = delete;
 };
-
+#include "tConfiguration.h"
 class gHelperHudPubBase
 {
     public:
@@ -116,21 +116,15 @@ class gHelperHudPubBase
     const tString label;
 
     public:
+    virtual bool IsDefault() { return true; };
+    virtual void SetDefault() {};
 
 public:
     // the map of all configuration items
-    //typedef std::map< tString, gHelperHudPubBase * > gHelperHudMap;
-    //static gHelperHudMap const & GetHelperHudMap();
+    typedef std::map< tString, gHelperHudPubBase * > gHelperHudMap;
+    static gHelperHudMap & GetHelperHudMap();
 
 };
-
-// static std::map< tString, tConfItemBase * > * st_confMap = 0;
-// tConfItemBase::tConfItemMap & tConfItemBase::ConfItemMap()
-// {
-//     if (!st_confMap)
-//         st_confMap = tNEW( tConfItemMap );
-//     return *st_confMap;
-// }
 
 
 template <typename T>

@@ -108,6 +108,31 @@ private:
     void operator=(gHelperHudPub const &) = delete;
 };
 
+class gHelperHudPubBase
+{
+    public:
+    int id;
+    protected:
+    const tString label;
+
+    public:
+
+public:
+    // the map of all configuration items
+    //typedef std::map< tString, gHelperHudPubBase * > gHelperHudMap;
+    //static gHelperHudMap const & GetHelperHudMap();
+
+};
+
+// static std::map< tString, tConfItemBase * > * st_confMap = 0;
+// tConfItemBase::tConfItemMap & tConfItemBase::ConfItemMap()
+// {
+//     if (!st_confMap)
+//         st_confMap = tNEW( tConfItemMap );
+//     return *st_confMap;
+// }
+
+
 template <typename T>
 class gHelperHudPubItems
 {
@@ -166,14 +191,19 @@ void gHelperHudPubItems<T>::InsertHudSubItemReference(T &value, std::string labe
 {
     if (!sg_helperHud)
         return;
+
+    if (ExistInList(parentID) == NULL)
+        return;
         
     gHelperHudPubItems<T> *item = ExistInList(id);
     if (item != NULL)
     {
+        if (item->value == ConvertToString(value))
+            return;
         item->lastValue = item->value;
         item->value = ConvertToString(value);
     }
-    else
+    else 
     {
         HelperDebug::Debug("InsertHudItem", "Creating Hud Sub Item for", label);
         std::string value_str = ConvertToString(value);
@@ -190,6 +220,9 @@ void gHelperHudPubItems<T>::InsertHudItemReference(T &value, std::string label, 
     gHelperHudPubItems<T> *item = ExistInList(id);
     if (item != NULL)
     {
+        if (item->value == ConvertToString(value))
+            return;
+        con << "Reassigning Value\n";
         item->lastValue = item->value;
         item->value = ConvertToString(value);
     }

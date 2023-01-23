@@ -1779,10 +1779,12 @@ void sg_setDefaultValue(std::istream &s)
 
     tToUpper(passedString);
     
-    // if (passedString.Filter() == "")
-    // {
-    //     return;
-    // }
+    if (passedString.Filter() == "")
+    {
+        con << tOutput( "$config_command_unknown","");
+        return;
+    }
+
     #ifndef DEDICATED
     tCurrentAccessLevel level(tAccessLevel_Owner, true);
     #endif
@@ -1793,32 +1795,28 @@ void sg_setDefaultValue(std::istream &s)
         for (int i = 0; i < passedCommands.Len(); i++)
         {
             bool foundCommand = false;
-        tConfItemBase::tConfItemMap confmap = tConfItemBase::ConfItemMap();
-        tConfItemBase::tConfItemMap::iterator iter = confmap.find( passedCommands[i] );
-        if ( iter != confmap.end() )
-        {
-            tConfItemBase *ci = iter->second;
-            //con << ci->GetTitle() << " == " << passedCommands[i] << " ?\n";
-            //if (ci->GetTitle() == tString(passedCommands[i]))
+            tConfItemBase::tConfItemMap confmap = tConfItemBase::ConfItemMap();
+            tConfItemBase::tConfItemMap::iterator iter = confmap.find( passedCommands[i] );
+            if ( iter != confmap.end() )
             {
-                // check if the item has a default value
-                if (!ci->IsDefault())
+                tConfItemBase *ci = iter->second;
                 {
-                    // use the item's ReadVal function to set it back to its default value
-                    ci->SetDefault();
-                    
-                    break;
+                    // check if the item has a default value
+                    if (!ci->IsDefault())
+                    {
+                        ci->SetDefault();                    
+                        break;
+                    }
+                    foundCommand = true;
                 }
-                foundCommand = true;
+            }
+
+            if (!foundCommand)
+            {
+                con << tOutput( "$config_command_unknown", passedCommands[i] );
             }
         }
-
-        if (!foundCommand)
-        {
-            con << tOutput("No command found\n", passedCommands[i], "");
-        }
     }
-}
 }
 
 static tConfItemFunc sg_setDefaultValueConf("SET_DEFAULT", &sg_setDefaultValue);

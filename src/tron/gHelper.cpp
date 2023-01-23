@@ -2576,10 +2576,8 @@ static tConfItem<REAL> sg_helperDetectCutTimeoutConf("HELPER_DETECT_CUT_TIMEOUT"
 REAL sg_helperDetectCutHeight = 0;
 static tConfItem<REAL> sg_helperDetectCutHeightConf("HELPER_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
 
-
 REAL sg_helperDetectCutReact = .2; // .005 ?
 static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg_helperDetectCutReact);
-
 
 void gHelper::detectCut(gHelperData &data, int detectionRange)
 {
@@ -2593,7 +2591,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
         REAL closeReact = (range + detectionRange);
 
         if (!smartTurning->isClose(target->Position(), closeReact)) {
-             gHelperHudPubItems<std::string>::InsertHudSubItem("Target: 0x00dd00None", "Smart Turning",7,5);
+             //gHelperHudPubItems<std::string>::InsertHudSubItem("Target: 0x00dd00None", "Smart Turning",7,3);
              return;
         }
             eCoord relativeEnemyPos = target->Position() - (*ownerPos);
@@ -3072,7 +3070,6 @@ void gHelper::Activate()
         smartTurning->Activate(data);
     }
 
-
     if (sg_pathHelper) {
         gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Path Helper",1);
         pathHelper->Activate(data);
@@ -3081,18 +3078,19 @@ void gHelper::Activate()
     if (sg_tailHelper) {
         tailHelper->Activate(data);
     }
+    
     if (sg_helperEnemyTracers) {
         enemyTracers(data, sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
     }
 
     if (sg_helperDetectCut) {
-        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Detect Cut",5);
+        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Detect Cut",2);
         detectCut(data, sg_helperDetectCutDetectionRange);
 
     }
 
     if (sg_helperShowHit) {
-        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Show Hit",6 );
+        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Show Hit",3);
         showHit(data);
 
     }

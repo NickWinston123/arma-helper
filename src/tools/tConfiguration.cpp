@@ -143,6 +143,8 @@ const tConfiguration* tConfiguration::GetConfiguration() {
 }
 
 #endif
+
+
 /*
  * The old stuff follows
  ************************************************************************/
@@ -1767,3 +1769,54 @@ bool tConfigMigration::SavedBefore(char const *savedInVersion, char const *befor
         return '9' < *pA;
     }
 }
+
+
+void sg_setDefaultValue(std::istream &s)
+{
+    // String user passes with commands.
+    tString passedString;
+    passedString.ReadLine(s);
+    // Convert to lowercase.
+    tToLower(passedString);
+
+    if (passedString.Filter() == "")
+    {
+        return;
+    }
+    #ifndef DEDICATED
+    tCurrentAccessLevel level(tAccessLevel_Owner, true);
+    #endif
+
+    tArray<tString> passedCommands = passedString.Split(" ");
+    if (passedCommands.Len() > 0)
+    {
+        for (int i = 0; i < passedCommands.Len(); i++)
+        {
+            bool foundCommand = false;
+        tConfItemBase::tConfItemMap confmap = tConfItemBase::ConfItemMap();
+        for (tConfItemBase::tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end(); ++iter)
+        {
+            tConfItemBase *ci = iter->second;
+            if (ci->GetTitle() == passedCommands[i])
+            {
+                // check if the item has a default value
+                if (!ci->IsDefault())
+                {
+                    // use the item's ReadVal function to set it back to its default value
+                    ci->SetDefault();
+                    foundCommand = true;
+                    break;
+                }
+            }
+        }
+
+        if (!foundCommand)
+        {
+            con << tOutput("No command found ", passedCommands[i], "");
+        }
+    }
+}
+}
+
+//static tConfItemFunc sg_setDefaultValueConf("SET_DEFAULT", &sg_setDefaultValue);
+

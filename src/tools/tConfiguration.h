@@ -248,7 +248,7 @@ public:
     // the map of all configuration items
     typedef std::map< tString, tConfItemBase * > tConfItemMap;
     static tConfItemMap const & GetConfItemMap();
-protected:
+
     static tConfItemMap & ConfItemMap();
 public:
 
@@ -256,7 +256,7 @@ public:
     //static tConfItemBase* Anchor(){return dynamic_cast<tConfItemBase *>(s_ConfItemAnchor);}
     static bool printChange; //!< if set, setting changes are printed to the console and, if printErrors is set as well, suggestions of typo fixes are given.
     static bool printErrors; //!< if set, unknown settings are pointed out.
-    
+
     tConfItemBase(const char *title, const tOutput& help);
     tConfItemBase(const char *title);
 
@@ -308,6 +308,8 @@ public:
     static bool OpenFile( std::ifstream & s, tString const & filename, SearchPath path ); //! opens a file stream for configuration reading
     static void ReadFile( std::ifstream & s ); //! loads configuration from a file
 
+    virtual bool IsDefault() { return true; };
+    virtual void SetDefault() {};
     virtual void ReadVal(std::istream &s)=0;
     virtual void WriteVal(std::ostream &s)=0;
     virtual void FetchVal(tString &val)=0;
@@ -395,13 +397,14 @@ protected:
     T    defaultValue;
     ShouldChangeFuncT shouldChangeFunc_;
 
-    tConfItem(T &t):tConfItemBase(""),target(&t), shouldChangeFunc_(NULL) {}
+    tConfItem(T &t):tConfItemBase(""),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {}
 public:
-    T getDefault() {
-        return defaultValue;
-    }
+
+   virtual bool IsDefault() { return *target == defaultValue; }
+   virtual void SetDefault() { *target = defaultValue; }
+
     tConfItem(const char *title,const tOutput& help,T& t)
-            :tConfItemBase(title,help),target(&t), shouldChangeFunc_(NULL) {
+            :tConfItemBase(title,help),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
                 /*tConfItemMap & confmap = ConfItemMap();
                 for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
                 {
@@ -417,7 +420,7 @@ public:
             }
 
     tConfItem(const char *title,T& t)
-            :tConfItemBase(title),target(&t), shouldChangeFunc_(NULL) {
+            :tConfItemBase(title),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
                 /*tConfItemMap & confmap = ConfItemMap();
                 for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
                 {
@@ -433,7 +436,7 @@ public:
             }
 
     tConfItem(const char*title, T& t, ShouldChangeFuncT changeFunc)
-            :tConfItemBase(title),target(&t),shouldChangeFunc_(changeFunc) {
+            :tConfItemBase(title),target(&t),shouldChangeFunc_(changeFunc), defaultValue(t) {
                 /*tConfItemMap & confmap = ConfItemMap();
                 for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
                 {
@@ -574,18 +577,23 @@ public:
 };
 
 class tConfItemLine:public tConfItem<tString>, virtual public tConfItemBase{
+private:
+    //tString defaultValue;
 public:
-    tConfItemLine(const char *title,const char *help,tString &s)
+    tConfItemLine(const char *title,const char *help,tString &s)//, const tString &defaultVal)
             :tConfItemBase(title,help),tConfItem<tString>(title,help,s){}
 
     virtual ~tConfItemLine(){}
 
-    tConfItemLine(const char *title, tString &s)
+    tConfItemLine(const char *title, tString &s)//, const tString &defaultVal)
             :tConfItemBase(title),tConfItem<tString>(title,s){}
 
     virtual void ReadVal(std::istream &s);
     virtual void WriteVal(std::ostream &s);
+    virtual bool IsDefault() { return true; }
+    virtual void SetDefault() { *target = defaultValue; }
 };
+
 
 typedef void CONF_FUNC(std::istream &s);
 

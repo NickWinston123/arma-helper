@@ -1686,17 +1686,17 @@ void gSmartTurning::smartTurningPlan(gHelperData &data) {
     //     }
     // }
 
-    bool close = isClose(owner_->pos, sg_helperShowCornersBoundary) || isClose(owner_->pos, sg_helperShowCornersBoundary);
+    bool close = isClose(owner_->pos, sg_helperShowCornersBoundary);
     if (!close){
         return;
     }
     bool turnLeft = helper_->leftCorner.distanceFromPlayer < helper_->rightCorner.distanceFromPlayer;
     if (turnLeft) {
-    if (helper_->leftCorner.infront && helper_->leftCorner.distanceFromPlayer <= 0.01 && data.sensors.getSensor(LEFT)->hit > 5) {
+    if (helper_->leftCorner.infront && data.sensors.getSensor(LEFT)->hit > 5) {
         owner_->Act(&gCycle::se_turnLeft, 1);
     }
     } else {
-    if (helper_->leftCorner.infront && helper_->rightCorner.distanceFromPlayer <= 0.01 && data.sensors.getSensor(RIGHT)->hit > 5) {
+    if (helper_->leftCorner.infront && data.sensors.getSensor(RIGHT)->hit > 5) {
         owner_->Act(&gCycle::se_turnRight, 1);
     }
     }

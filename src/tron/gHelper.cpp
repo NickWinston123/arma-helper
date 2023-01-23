@@ -192,9 +192,9 @@ void gHelperHudPub::Activate()
     std::vector<gHelperHudPubItems<std::string>> hudItems = gHelperHudPubItems<std::string>::GetHudItems();
     for (auto pubItem : hudItems)
     {
-        if (!cache.Call(pubItem.value, pubItem.lastValue))
+        //if (!cache.Call(pubItem.value, pubItem.lastValue))
         {
-            rDisplayListFiller filler(cache.list_);
+            //rDisplayListFiller filler(cache.list_);
             hudDebug << "0xffff88" << pubItem.label << ": " << pubItem.value << "0xffff88\n";
         }
     }
@@ -1679,6 +1679,8 @@ void gSmartTurning::smartTurningPlan(gHelperData &data) {
     if (!sg_helperShowCorners) {
         helper_->findCorners(data);
     }
+
+    return;
     // if (helper_->leftCorner.exist) {
     //     //con << helper_->leftCorner.getTimeUntilTurn(owner_->verletSpeed_) << "\n";
     //     if (  isClose(owner_->pos, sg_helperShowCornersBoundary) && helper_->leftCorner.infront  && data.sensors.getSensor(LEFT)->hit > 3 && helper_->leftCorner.getTimeUntilTurn(owner_->verletSpeed_) <= 0.0005) {
@@ -1686,19 +1688,37 @@ void gSmartTurning::smartTurningPlan(gHelperData &data) {
     //     }
     // }
 
-    bool close = isClose(owner_->pos, sg_helperShowCornersBoundary);
-    if (!close){
+    bool cornerExistLeft = helper_->leftCorner.exist;
+    bool cornerExistRight = helper_->rightCorner.exist;
+
+    if (!cornerExistLeft && !cornerExistRight)
+        return;
+
+    bool leftIsClosest = cornerExistLeft && helper_->leftCorner.distanceFromPlayer < helper_->rightCorner.distanceFromPlayer;
+    gSmartTurningCornerData *cornerToUse;
+    if (leftIsClosest)
+        cornerToUse = &helper_->leftCorner;
+    else if (cornerExistRight)
+        cornerToUse = &helper_->rightCorner;
+    else
+        return;
+
+    bool close = isClose(cornerToUse->currentPos, sg_helperShowCornersBoundary);
+    if (!close)
+    {
         return;
     }
-    bool turnLeft = helper_->leftCorner.distanceFromPlayer < helper_->rightCorner.distanceFromPlayer;
-    if (turnLeft) {
-    if (helper_->leftCorner.infront && data.sensors.getSensor(LEFT)->hit > 5) {
-        owner_->Act(&gCycle::se_turnLeft, 1);
-    }
-    } else {
-    if (helper_->leftCorner.infront && data.sensors.getSensor(RIGHT)->hit > 5) {
-        owner_->Act(&gCycle::se_turnRight, 1);
-    }
+
+    if (cornerToUse->infront)
+    {
+        if (leftIsClosest && data.sensors.getSensor(LEFT)->hit > 5)
+        {
+            owner_->Act(&gCycle::se_turnLeft, 1);
+        }
+        else if (data.sensors.getSensor(RIGHT)->hit > 5)
+        {
+            owner_->Act(&gCycle::se_turnRight, 1);
+        }
     }
 }
 

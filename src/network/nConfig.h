@@ -194,7 +194,7 @@ public:
             :tConfItemBase(title), nConfItem<T>(t){}
     virtual ~nSettingItem(){}
 
-    virtual bool Save(){return true;}
+    virtual bool Save(){return false;}
 };
 
 

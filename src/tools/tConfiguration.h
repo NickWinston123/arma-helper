@@ -401,7 +401,15 @@ protected:
 public:
 
    virtual bool IsDefault() { return *target == defaultValue; }
-   virtual void SetDefault() { *target = defaultValue; }
+   virtual void SetDefault() { 
+                tOutput o;
+                o.SetTemplateParameter(1, title);
+                o.SetTemplateParameter(2, *target);
+                o.SetTemplateParameter(3, defaultValue);
+                o << "$config_value_changed";
+                con << o;
+
+                *target = defaultValue; }
 
     tConfItem(const char *title,const tOutput& help,T& t)
             :tConfItemBase(title,help),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
@@ -578,22 +586,30 @@ public:
 
 class tConfItemLine:public tConfItem<tString>, virtual public tConfItemBase{
 private:
-    //tString defaultValue;
+    tString defaultValue;
 public:
     tConfItemLine(const char *title,const char *help,tString &s)//, const tString &defaultVal)
-            :tConfItemBase(title,help),tConfItem<tString>(title,help,s){}
+            :tConfItemBase(title,help),tConfItem<tString>(title,help,s),defaultValue(s){}
 
     virtual ~tConfItemLine(){}
 
     tConfItemLine(const char *title, tString &s)//, const tString &defaultVal)
-            :tConfItemBase(title),tConfItem<tString>(title,s){}
+            :tConfItemBase(title),tConfItem<tString>(title,s),defaultValue(s){}
 
     virtual void ReadVal(std::istream &s);
     virtual void WriteVal(std::ostream &s);
-    virtual bool IsDefault() { return true; }
-    virtual void SetDefault() { *target = defaultValue; }
+    virtual bool IsDefault() { return *target == defaultValue; }
+    virtual void SetDefault()
+    {
+        tOutput o;
+        o.SetTemplateParameter(1, title);
+        o.SetTemplateParameter(2, *target);
+        o.SetTemplateParameter(3, defaultValue);
+        o << "$config_value_changed";
+        con << o;
+        *target = defaultValue;
+    }
 };
-
 
 typedef void CONF_FUNC(std::istream &s);
 

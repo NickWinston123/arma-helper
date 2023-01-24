@@ -202,51 +202,6 @@ gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
 }
 
 #include <map>
-
-/*
-void render_children(gHelperHudBase* item, std::map<std::string, std::vector<gHelperHudBase*>>& hudMap, rTextField& hudDebug) {
-    gTextCache<tString,tString> cache;
-    if (!(cache.Call(item->getValue(), item->getLastValue()))) {
-        rDisplayListFiller filler(cache.list_);
-        hudDebug << item->displayString() << "\n";
-        item->setLastValue();
-    }
-
-    std::string parent = item->getLabel();
-    if (hudMap.find(parent) != hudMap.end()) {
-        for (auto child : hudMap[parent]) {
-            render_children(child, hudMap, hudDebug);
-        }
-    }
-}
-
-
-void gHelperHudBase::Render() {
-    if (!sg_helperHud)
-        return;
-    std::map<std::string, std::vector<gHelperHudBase*>> hudMap;
-    gHelperHudMap &items = gHelperHudBase::GetHelperHudMap();
-
-    for (auto iter = items.begin(); iter != items.end(); iter++) {
-        gHelperHudBase *item = iter->second;
-        std::string parent = item->getParent();
-if (parent.empty()) {
-parent = "";
-}
-if (hudMap.find(parent) == hudMap.end()) {
-hudMap[parent] = std::vector<gHelperHudBase*>();
-}
-hudMap[parent].push_back(item);
-}
-rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
-
-for (auto item : hudMap[""]) {
-    render_children(item, hudMap, hudDebug);
-}
-
-
-}
-*/
 void gHelperHudBase::Render() {
     if (!sg_helperHud)
         return;
@@ -277,7 +232,7 @@ void gHelperHudBase::Render() {
             gTextCache<tString,tString> cache;
             if (!(cache.Call(item->getValue(), item->getLastValue()))) {
                 rDisplayListFiller filler(cache.list_);
-                hudDebug << item->displayString() << "\n";
+                hudDebug << item->displayString();// << "\n";
                 item->setLastValue();
             }
         }

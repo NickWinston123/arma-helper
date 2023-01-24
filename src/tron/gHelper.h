@@ -92,11 +92,13 @@ public:
     int id;
 
 protected:
-    const tString label;
-
+    const std::string label;
+    std::string parent;
 public:
-    gHelperHudBase(int id_, tString label_);
+    gHelperHudBase(int id_, std::string label_, std::string parent = "");
 
+    virtual std::string getLabel() { return label; }
+    virtual std::string getParent() { return parent;}
     virtual tString getValue() { return tString("Default"); };
     virtual tString getLastValue() { return tString("Default"); }
     virtual bool valueSame() { return true; }
@@ -106,7 +108,8 @@ public:
     static void Render();
 
 public:
-    typedef std::map<tString, gHelperHudBase *> gHelperHudMap;
+    typedef std::map<std::string, gHelperHudBase *> gHelperHudMap;
+
     static gHelperHudMap &GetHelperHudMap();
 };
 
@@ -114,8 +117,8 @@ template <typename T>
 class gHelperHudItem : virtual public gHelperHudBase
 {
 public:
-    gHelperHudItem(tString label_, T value_)
-        : label(label_), value(value_), id(0), parentID(0), gHelperHudBase(0, label_)
+    gHelperHudItem(std::string label_, T value_, std::string parent_ = "" )
+        : label(label_), value(value_), id(0), parentID(0), gHelperHudBase(0, label_, parent_)
     {
         setLastValue();
     }
@@ -127,7 +130,7 @@ public:
     REAL size;
     T value;
     T lastValue;
-    tString label;
+    std::string label;
     bool reference;
 
     virtual tString getValue()
@@ -167,7 +170,7 @@ template <typename T>
 class gHelperHudItemRef : public gHelperHudItem<T>
 {
 public:
-    gHelperHudItemRef(tString label_, T &value_)
+    gHelperHudItemRef(std::string label_, T &value_)
         : gHelperHudItem<T>(label_, value_), valueRef(value_), gHelperHudBase(0, label_)
     {
         gHelperHudItem<T>::reference = true;

@@ -183,7 +183,7 @@ static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
 #include "gHud.h"
 
 
-static std::map< tString, gHelperHudBase * > * st_confMap = 0;
+static std::map< std::string, gHelperHudBase * > * st_confMap = 0;
 gHelperHudBase::gHelperHudMap & gHelperHudBase::GetHelperHudMap()
 {
     if (!st_confMap)
@@ -191,28 +191,95 @@ gHelperHudBase::gHelperHudMap & gHelperHudBase::GetHelperHudMap()
     return *st_confMap;
 }
 
-gHelperHudBase::gHelperHudBase(int id_, tString label_)
+gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
 {
-    gHelperHudMap &hudMap = gHelperHudBase::GetHelperHudMap();
+    std::map<std::string, gHelperHudBase *> &hudMap = gHelperHudBase::GetHelperHudMap();
+
     if (hudMap.find(label_) != hudMap.end())
         tERR_ERROR_INT("Two gHelperHudBase with the same name " << label_ << "!");
     hudMap[label_] = this;
+    parent = parent_;
 }
+
+#include <map>
+
+/*
+void render_children(gHelperHudBase* item, std::map<std::string, std::vector<gHelperHudBase*>>& hudMap, rTextField& hudDebug) {
+    gTextCache<tString,tString> cache;
+    if (!(cache.Call(item->getValue(), item->getLastValue()))) {
+        rDisplayListFiller filler(cache.list_);
+        hudDebug << item->displayString() << "\n";
+        item->setLastValue();
+    }
+
+    std::string parent = item->getLabel();
+    if (hudMap.find(parent) != hudMap.end()) {
+        for (auto child : hudMap[parent]) {
+            render_children(child, hudMap, hudDebug);
+        }
+    }
+}
+
 
 void gHelperHudBase::Render() {
     if (!sg_helperHud)
         return;
+    std::map<std::string, std::vector<gHelperHudBase*>> hudMap;
+    gHelperHudMap &items = gHelperHudBase::GetHelperHudMap();
 
-    gTextCache<tString,tString> cache;
-    gHelperHudBase::gHelperHudMap hudMap = gHelperHudBase::GetHelperHudMap();
+    for (auto iter = items.begin(); iter != items.end(); iter++) {
+        gHelperHudBase *item = iter->second;
+        std::string parent = item->getParent();
+if (parent.empty()) {
+parent = "";
+}
+if (hudMap.find(parent) == hudMap.end()) {
+hudMap[parent] = std::vector<gHelperHudBase*>();
+}
+hudMap[parent].push_back(item);
+}
+rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
+
+for (auto item : hudMap[""]) {
+    render_children(item, hudMap, hudDebug);
+}
+
+
+}
+*/
+void gHelperHudBase::Render() {
+    if (!sg_helperHud)
+        return;
+
+    std::map<std::string, std::vector<gHelperHudBase*>> hudMap;
+    gHelperHudMap &items = gHelperHudBase::GetHelperHudMap();
+
+    // First, populate the hudMap with all items and their parent relationships
+    for (auto iter = items.begin(); iter != items.end(); iter++) {
+        gHelperHudBase *item = iter->second;
+        std::string parent = item->getParent();
+        if (parent.empty()) {
+            parent = "";
+        }
+        if (hudMap.find(parent) == hudMap.end()) {
+            hudMap[parent] = std::vector<gHelperHudBase*>();
+        }
+        hudMap[parent].push_back(item);
+    }
+
     rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
-    for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++)
-    {
-
-        if (!(cache.Call(iter->second->getValue(), iter->second->getLastValue()))) {
-            rDisplayListFiller filler(cache.list_);
-            hudDebug << iter->second->displayString() << "\n";
-            iter->second->setLastValue();
+    // Next, iterate through the hudMap and display parent items first, followed by their child items
+    for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++) {
+        if (iter->first != "") {
+            hudDebug << iter->first << ":\n";
+        }
+        for (auto item : iter->second) {
+            gTextCache<tString,tString> cache;
+            if (!(cache.Call(item->getValue(), item->getLastValue()))) {
+                rDisplayListFiller filler(cache.list_);
+                hudDebug << item->displayString() << "\n";
+                item->setLastValue();
+            }
         }
     }
 }
@@ -2528,15 +2595,20 @@ static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit)
 bool sg_helperDetectCut = false;
 static tConfItem<bool> sg_helperDetectCutConf("HELPER_DETECT_CUT", sg_helperDetectCut);
 
-gHelperHudItemRef<bool> sg_helperSmartTurningH(tString("Smart Turning"),sg_helperSmartTurning);
-gHelperHudItemRef<bool> sg_pathHelperH(tString("Path Helper"),sg_pathHelper);
-gHelperHudItemRef<bool> sg_helperDetectCutH(tString("Detect Cut"),sg_helperDetectCut);
-gHelperHudItemRef<bool> sg_helperShowHitH(tString("Show Hit"),sg_helperShowHit);
+gHelperHudItemRef<bool> sg_helperSmartTurningH(("Smart Turning"),sg_helperSmartTurning);
+gHelperHudItemRef<bool> sg_pathHelperH(("Path Helper"),sg_pathHelper);
 
-gHelperHudItem<tColoredString> closestEnemyH(tString("Closest Enemy"),tColoredString("None"));
-gHelperHudItem<tColoredString> cutTurnDirectionH(tString("Cut Turn Dir"),tColoredString("0xdd0000None"));
-gHelperHudItem<REAL> sg_helperShowHitFrontDistH(tString("Show Hit Front Dist"),1000);
 
+gHelperHudItemRef<bool> sg_helperDetectCutH(("Detect Cut"),sg_helperDetectCut);
+gHelperHudItem<tColoredString> closestEnemyH(("Closest Enemy"),tColoredString("None"), ("Detect Cut"));
+//closestEnemyH<tColoredString>.setParent(("Detect Cut"));
+gHelperHudItem<tColoredString> cutTurnDirectionH(("Cut Turn Dir"),tColoredString("0xdd0000None"), ("Detect Cut"));
+//cutTurnDirectionH<tColoredString>.setParent(("Detect Cut"));
+
+
+gHelperHudItemRef<bool> sg_helperShowHitH(("Show Hit"),sg_helperShowHit);
+gHelperHudItem<REAL> sg_helperShowHitFrontDistH(("Show Hit Front Dist"),1000,("Show Hit"));
+//sg_helperShowHitFrontDistH<REAL>.setParent(tString("Show Hit"));
 
 gCycle* gHelper::getOwner() { return owner_; }
 

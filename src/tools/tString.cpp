@@ -910,9 +910,12 @@ int tString::Compare( const char* other ) const
 {
     if ( !other )
         return 1;
-
-    return strcmp( *this, other );
+    if(strcmp( *this, other ) == 0)
+       return 0;
+    else 
+       return strcmp( *this, other );
 }
+
 
 // *******************************************************************************************
 // *

@@ -84,182 +84,127 @@ extern bool sg_helperHud;
 #define ArmageTron_GHELPER_HUD
 #include "gHud.h"
 #include "rFont.h"
-class gHelperHudPub
+#include "tConfiguration.h"
+#include "tString.h"
+class gHelperHudBase
 {
 public:
-    // Returns the single instance of the class
-    static gHelperHudPub &Instance()
-    {
-        static gHelperHudPub instance;
-        return instance;
-    }
-    // Public methods
-    void Activate();
-
-    void toggleLock();
-
-private:
-    static bool lock;
-    // Private constructor to prevent multiple instances
-    gHelperHudPub() {}
-
-    // Prevent copying and assignment
-    gHelperHudPub(gHelperHudPub const &) = delete;
-    void operator=(gHelperHudPub const &) = delete;
-};
-#include "tConfiguration.h"
-class gHelperHudPubBase
-{
-    public:
     int id;
-    protected:
+
+protected:
     const tString label;
 
-    public:
-    virtual bool IsDefault() { return true; };
-    virtual void SetDefault() {};
+public:
+    gHelperHudBase(int id_, tString label_);
+
+    virtual tString getValue() { return tString("Default"); };
+    virtual tString getLastValue() { return tString("Default"); }
+    virtual bool valueSame() { return true; }
+    virtual void setLastValue() { return; }
+    virtual tString displayString() { return tString("gHelperHudBase (ERROR?)"); }
+
+    static void Render();
 
 public:
-    // the map of all configuration items
-    typedef std::map< tString, gHelperHudPubBase * > gHelperHudMap;
-    static gHelperHudMap & GetHelperHudMap();
-
+    typedef std::map<tString, gHelperHudBase *> gHelperHudMap;
+    static gHelperHudMap &GetHelperHudMap();
 };
 
-
 template <typename T>
-class gHelperHudPubItems
+class gHelperHudItem : virtual public gHelperHudBase
 {
 public:
-    gHelperHudPubItems(int id_, std::string parent_, REAL locX_, REAL locY_, REAL size_, std::string value_, std::string label_)
-        : id(id_), parent(parent_), locX(locX_), locY(locY_), size(size_), value(value_), label(label_) {}
-
-    static std::vector<gHelperHudPubItems<T>> GetHudItems();
-
-    static void InsertHudSubItem(T value, std::string label, int id, int parentID);
-    static void InsertHudItem(T value, std::string label, int id);
-    static void InsertHudSubItemReference(T &value, std::string label, int id, int parentID);
-    static void InsertHudItemReference(T &value, std::string label, int id);
-
-
-    static std::string ConvertToString(const T &value);
-    static T ConvertFromString(const std::string &s);
+    gHelperHudItem(tString label_, T value_)
+        : label(label_), value(value_), id(0), parentID(0), gHelperHudBase(0, label_)
+    {
+        setLastValue();
+    }
 
     int id;
-    std::string parent;
+    int parentID;
     REAL locX;
     REAL locY;
     REAL size;
-    std::string lastValue;
-    std::string value;
-    std::string label;
+    T value;
+    T lastValue;
+    tString label;
+    bool reference;
 
-private:
-    static gHelperHudPubItems<T>* ExistInList(int id);
-    static std::vector<gHelperHudPubItems<T>> hudItems_;
+    virtual tString getValue()
+    {
+        tString valueStr;
+        valueStr << value;
+        return valueStr;
+    };
+
+    virtual tString getLastValue()
+    {
+        tString valueStr;
+        valueStr << lastValue;
+        return valueStr;
+    };
+
+    virtual void setValue(T val) {
+        value = val;
+        setLastValue();
+    };
+
+    virtual bool valueSame() { return getLastValue() == getValue(); }
+
+    virtual void setLastValue() { lastValue = value; }
+
+    virtual tString displayString()
+    {
+        tString displayString;
+        displayString << "0xdddd00" << gHelperHudItem<T>::label << "0xffff88: ";
+        displayString << getValue();
+        displayString << "0xffff88\n";
+        return displayString;
+    }
 };
 
 template <typename T>
-gHelperHudPubItems<T>* gHelperHudPubItems<T>::ExistInList(int id)
+class gHelperHudItemRef : public gHelperHudItem<T>
 {
-    for (auto item = hudItems_.begin(); item != hudItems_.end(); ++item)
+public:
+    gHelperHudItemRef(tString label_, T &value_)
+        : gHelperHudItem<T>(label_, value_), valueRef(value_), gHelperHudBase(0, label_)
     {
-        if (item->id == id) {
-            return &*item;
-        }
+        gHelperHudItem<T>::reference = true;
+        setLastValue();
     }
-    return NULL;
-}
 
-template <typename T>
-std::vector<gHelperHudPubItems<T>> gHelperHudPubItems<T>::hudItems_;
+    T &valueRef;
+    T lastValueRef;
 
-template <typename T>
-std::vector<gHelperHudPubItems<T>> gHelperHudPubItems<T>::GetHudItems()
-{
-    return hudItems_;
-}
-
-template <typename T>
-void gHelperHudPubItems<T>::InsertHudSubItemReference(T &value, std::string label, int id, int parentID)
-{
-    if (!sg_helperHud)
-        return;
-
-    if (ExistInList(parentID) == NULL)
-        return;
-        
-    gHelperHudPubItems<T> *item = ExistInList(id);
-    if (item != NULL)
+    virtual tString getValue()
     {
-        if (item->value == ConvertToString(value))
-            return;
-        item->lastValue = item->value;
-        item->value = ConvertToString(value);
+        tString valueStr;
+        valueStr << valueRef;
+        return valueStr;
     }
-    else 
+
+    virtual tString getLastValue()
     {
-        HelperDebug::Debug("InsertHudItem", "Creating Hud Sub Item for", label);
-        std::string value_str = ConvertToString(value);
-        hudItems_.push_back(gHelperHudPubItems(id, hudItems_[parentID].parent, hudItems_[parentID].locX, hudItems_[parentID].locY, hudItems_[parentID].size, value_str, label));
+        tString valueStr;
+        valueStr << lastValueRef;
+        return valueStr;
     }
-}
 
-template <typename T>
-void gHelperHudPubItems<T>::InsertHudItemReference(T &value, std::string label, int id)
-{
-    if (!sg_helperHud)
-        return;
-
-    gHelperHudPubItems<T> *item = ExistInList(id);
-    if (item != NULL)
+    virtual tString displayString()
     {
-        if (item->value == ConvertToString(value))
-            return;
-        con << "Reassigning Value\n";
-        item->lastValue = item->value;
-        item->value = ConvertToString(value);
+        tString displayString;
+        tString valueStr = getValue();
+        displayString << "0xdddd00" << gHelperHudItem<T>::label << "0xffff88: ";
+        displayString << (valueStr == tString("0") ? "0xdd0000Disabled" : (valueStr == tString("1") ? "0x00dd00Enabled" : valueStr));
+        displayString << "0xffff88\n";
+        return displayString;
     }
-    else
-    {
-        HelperDebug::Debug("InsertHudItem", "Creating Hud Item for", label);
-        std::string value_str = ConvertToString(value);
-        hudItems_.push_back(gHelperHudPubItems(id, "", 0, 0, 0, value_str, label));
-    }
-}
 
-template <typename T>
-void gHelperHudPubItems<T>::InsertHudItem(T value, std::string label, int id)
-{
-    if (!sg_helperHud)
-        return;
-    InsertHudItemReference(value, label, id);
-}
+    virtual bool valueSame() { return getValue() == getLastValue(); }
 
-template <typename T>
-void gHelperHudPubItems<T>::InsertHudSubItem(T value, std::string label, int id, int parentID)
-{
-    if (!sg_helperHud)
-        return;
-    InsertHudSubItemReference(value, label, id, parentID);
-}
-
-template <typename T>
-std::string gHelperHudPubItems<T>::ConvertToString(const T &value)
-{
-    std::stringstream ss;
-    ss << value;
-    return ss.str();
-}
-
-template <typename T>
-T gHelperHudPubItems<T>::ConvertFromString(const std::string &s)
-{
-    T value;
-    std::stringstream ss(s);
-    ss >> value;
-    return value;
-}
+    virtual void setLastValue() { lastValueRef = valueRef; }
+};
 #endif
 
 extern bool sg_helperCurrentTimeLocal;

@@ -42,11 +42,10 @@ private:
 template <typename T1, typename T2>
 class gTextCache
 {
-public:
+    public:
     gTextCache() : propa_{}, propb_{} {}
-
     bool Call(T1 propa, T2 propb) {
-    if ( propa != propa_ || propb != propb_ )
+    if ( !(propa == propa_) || !(propb == propb_) )
     {
         propa_ = propa;
         propb_ = propb;
@@ -58,12 +57,15 @@ public:
         return list_.Call();
     }
     };
+    
     rDisplayList list_;
 
 private:
     T1 propa_;
     T2 propb_;
+
 };
+
 
 extern REAL subby_SpeedGaugeSize, subby_SpeedGaugeLocX, subby_SpeedGaugeLocY;
 extern REAL subby_BrakeGaugeSize, subby_BrakeGaugeLocX, subby_BrakeGaugeLocY;

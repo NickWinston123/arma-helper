@@ -396,12 +396,15 @@ static void display_hud_subby( ePlayer* player ){
 
                     gCycle *h = dynamic_cast<gCycle *>(me->Object());
                     if (h && ( !player->netPlayer || ( !player->netPlayer->IsChatting() || !sg_HudHideWhileChatting) ) && se_GameTime()>-2){
+
+                        gHelperHudBase::Render();
+
                         // myscore=p->TotalScore();
                         myping = me->ping;
                         static gTextCache<REAL,REAL> cacheArray[MAX_PLAYERS];
                         gTextCache<REAL,REAL> & cache = cacheArray[player->ID()];
                         gTextCache<std::string, std::string> cacheStr;
-                        gHelperHudPub::Instance().Activate();
+
                         if(subby_ShowSpeedMeter)
                         {
                             static gGLMeter meter[MAX_PLAYERS];

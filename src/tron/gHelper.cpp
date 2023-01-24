@@ -183,45 +183,39 @@ static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
 #include "gHud.h"
 
 
-static std::map< tString, gHelperHudPubBase * > * st_confMap = 0;
-gHelperHudPubBase::gHelperHudMap & gHelperHudPubBase::GetHelperHudMap()
+static std::map< tString, gHelperHudBase * > * st_confMap = 0;
+gHelperHudBase::gHelperHudMap & gHelperHudBase::GetHelperHudMap()
 {
     if (!st_confMap)
         st_confMap = tNEW( gHelperHudMap );
     return *st_confMap;
 }
 
-
-//VERSION 3
-void gHelperHudPub::Activate()
+gHelperHudBase::gHelperHudBase(int id_, tString label_)
 {
-    if (!sg_helperHud || lock)
-        return;
-
-    gTextCache<std::string, std::string> cache;
-    rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
-    std::vector<gHelperHudPubItems<std::string>> hudItems = gHelperHudPubItems<std::string>::GetHudItems();
-    for (auto pubItem : hudItems)
-    {
-        //if (!cache.Call(pubItem.value, pubItem.lastValue))
-        {
-            //rDisplayListFiller filler(cache.list_);
-            hudDebug << "0xffff88" << pubItem.label << ": " << pubItem.value << "0xffff88\n";
-        }
-    }
-    toggleLock();
+    gHelperHudMap &hudMap = gHelperHudBase::GetHelperHudMap();
+    if (hudMap.find(label_) != hudMap.end())
+        tERR_ERROR_INT("Two gHelperHudBase with the same name " << label_ << "!");
+    hudMap[label_] = this;
 }
 
-bool gHelperHudPub::lock = true;
-
-
-void gHelperHudPub::toggleLock()
-{
+void gHelperHudBase::Render() {
     if (!sg_helperHud)
         return;
-    lock = !lock;
-}
 
+    gTextCache<tString,tString> cache;
+    gHelperHudBase::gHelperHudMap hudMap = gHelperHudBase::GetHelperHudMap();
+    rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
+    for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++)
+    {
+
+        if (!(cache.Call(iter->second->getValue(), iter->second->getLastValue()))) {
+            rDisplayListFiller filler(cache.list_);
+            hudDebug << iter->second->displayString() << "\n";
+            iter->second->setLastValue();
+        }
+    }
+}
 
 //! sensor picking up several walls between cycle and target
 class gTargetSensor: public gSensor
@@ -2505,6 +2499,7 @@ REAL gHelper::CurrentTime() {
     return sg_helperCurrentTimeLocal ? owner_->localCurrentTime : se_GameTime();
 }
 
+
 gHelper::gHelper(gCycle *owner)
     : owner_(owner),
         player_(owner->Player()),
@@ -2525,6 +2520,23 @@ gHelper::gHelper(gCycle *owner)
     gPathHelper::Get(this, owner);
     gTailHelper::Get(this, owner);
 }
+
+bool sg_helperShowHit = false;
+static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit);
+
+
+bool sg_helperDetectCut = false;
+static tConfItem<bool> sg_helperDetectCutConf("HELPER_DETECT_CUT", sg_helperDetectCut);
+
+gHelperHudItemRef<bool> sg_helperSmartTurningH(tString("Smart Turning"),sg_helperSmartTurning);
+gHelperHudItemRef<bool> sg_pathHelperH(tString("Path Helper"),sg_pathHelper);
+gHelperHudItemRef<bool> sg_helperDetectCutH(tString("Detect Cut"),sg_helperDetectCut);
+gHelperHudItemRef<bool> sg_helperShowHitH(tString("Show Hit"),sg_helperShowHit);
+
+gHelperHudItem<tColoredString> closestEnemyH(tString("Closest Enemy"),tColoredString("None"));
+gHelperHudItem<tColoredString> cutTurnDirectionH(tString("Cut Turn Dir"),tColoredString("0xdd0000None"));
+gHelperHudItem<REAL> sg_helperShowHitFrontDistH(tString("Show Hit Front Dist"),1000);
+
 
 gCycle* gHelper::getOwner() { return owner_; }
 
@@ -2575,9 +2587,6 @@ void gHelper::debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
 }
 
 
-bool sg_helperDetectCut = false;
-static tConfItem<bool> sg_helperDetectCutConf("HELPER_DETECT_CUT", sg_helperDetectCut);
-
 REAL sg_helperDetectCutDetectionRange = 150;
 static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf("HELPER_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
 
@@ -2598,11 +2607,11 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     if (enemies.exist(target))
     {
+        closestEnemyH.setValue(target->Player()->GetColoredName());
         REAL range = ((*ownerSpeed) * (ownerTurnDelay));
         REAL closeReact = (range + detectionRange);
 
         if (!smartTurning->isClose(target->Position(), closeReact)) {
-             //gHelperHudPubItems<std::string>::InsertHudSubItem("Target: 0x00dd00None", "Smart Turning",7,3);
              return;
         }
             eCoord relativeEnemyPos = target->Position() - (*ownerPos);
@@ -2645,35 +2654,28 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
             canCutUs = relativeEnemyPos.y * enemyspeed > relativeEnemyPos.x * (*ownerSpeed);
             canCutEnemy = relativeEnemyPos.y * (*ownerSpeed) < -relativeEnemyPos.x * enemyspeed;
 
-            // (*target->Player()->GetColoredName())
-            //gHelperHudPubItems::InsertHudSubItem("Target: 0xffff00" , "Detect Cut",0);
-            //gHelperHudPubItems<std::string>::InsertHudSubItem("Target: 0x00dd00" + std::to_string((*target->Player()->GetColoredName())), "Smart Turning",8,5);
             if (canCutUs && !canCutEnemy)
             {
                 debugLine(1, 0, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
-                //gHelperHudPubItems<std::string>::InsertHudSubItem("Turn: 0xdd0000NO", "Detect Cut",8,5);
-
-                //gHelperHudPubItems::InsertHudSubItem("Turn: 0xdd0000NO" , "Detect Cut",1);
+                cutTurnDirectionH.setValue(tColoredString("0xdd0000ABORT!"));
             }
             else if (canCutEnemy)
             {
                 if (side == LEFT && smartTurning->canSurviveTurnSpecific(data,side,range))
                 {
                     debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
-                    //gHelperHudPubItems::InsertHudSubItem("Turn: 0x00dd00LEFT", "Detect Cut",1);
-                    //gHelperHudPubItems<std::string>::InsertHudSubItem("Turn: 0x00dd00LEFT", "Detect Cut",9,5);
+                    cutTurnDirectionH.setValue(tColoredString("0x00dd00LEFT!"));
                 }
 
                 if (side == RIGHT && smartTurning->canSurviveTurnSpecific(data,side,range))
                 {
                     debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
-                    //gHelperHudPubItems::InsertHudSubItem("Turn: 0x00dd00RIGHT" , "Detect Cut",1);
-                   // gHelperHudPubItems<std::string>::InsertHudSubItem("Turn: 0x00dd00RIGHT", "Detect Cut",10,5);
+                    cutTurnDirectionH.setValue(tColoredString("0x00dd00RIGHT!"));
                 }
             }
 
     } else {
-        //gHelperHudPubItems::InsertHudSubItem("Target: 0xffff00None", "Detect Cut",0);
+        closestEnemyH.setValue(tColoredString("None"));
     }
 }
 
@@ -2903,9 +2905,6 @@ void gHelper::showCorners(gHelperData &data) {
 }
 
 
-bool sg_helperShowHit = false;
-static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit);
-
 REAL sg_showHitDataHeight = 1;
 static tConfItem<REAL> sg_showHitDataHeightConf("HELPER_SHOW_HIT_HEIGHT", sg_showHitDataHeight);
 
@@ -2937,9 +2936,12 @@ void gHelper::showHit(gHelperData &data)
         return;
     }
 
-    bool wallClose = data.sensors.getSensor(FRONT)->hit < data.turnSpeedFactor * sg_showHitDataRange;
+    REAL frontHit = data.sensors.getSensor(FRONT)->hit;
+    bool wallClose = frontHit < data.turnSpeedFactor * sg_showHitDataRange;
     REAL timeout = data.speedFactor * sg_showHitDataTimeout;
 
+
+    sg_helperShowHitFrontDistH.setValue(frontHit);
     //gHelperHudPubItems<std::string>::InsertHudSubItemC(std::to_string(ownerPos->x), "Owner Pos",9, 6 );
     if (wallClose)
     {
@@ -3043,6 +3045,7 @@ bool gHelper::aliveCheck() {
     return owner_ && owner_->Alive() && owner_->Grid();
 }
 
+
 void gHelper::Activate()
 {
     tColoredString Activate;
@@ -3077,31 +3080,31 @@ void gHelper::Activate()
     enemies.detectEnemies();
 
     if (sg_helperSmartTurning) {
-        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Smart Turning",0);
+        //gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Smart Turning",0);
         smartTurning->Activate(data);
     }
 
     if (sg_pathHelper) {
-        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Path Helper",1);
+        //gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Path Helper",1);
         pathHelper->Activate(data);
     }
 
     if (sg_tailHelper) {
         tailHelper->Activate(data);
     }
-    
+
     if (sg_helperEnemyTracers) {
         enemyTracers(data, sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
     }
 
     if (sg_helperDetectCut) {
-        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Detect Cut",2);
+        //gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Detect Cut",2);
         detectCut(data, sg_helperDetectCutDetectionRange);
 
     }
 
     if (sg_helperShowHit) {
-        gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Show Hit",3);
+        //gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Show Hit",3);
         showHit(data);
 
     }
@@ -3126,7 +3129,6 @@ void gHelper::Activate()
     }
 
     owner_->justCreated = false;
-    gHelperHudPub::Instance().toggleLock();
 }
 
 //MENU

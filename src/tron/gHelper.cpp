@@ -14,7 +14,6 @@
 #define FRONT 0
 #define BOTH 2
 
-
 extern REAL sg_cycleBrakeRefill;
 extern REAL sg_cycleBrakeDeplete;
 extern void sg_RubberValues( ePlayerNetID const * player, REAL speed, REAL & max, REAL & effectiveness );
@@ -29,52 +28,38 @@ static tConfItem<REAL> sg_helperBrightnessConf("HELPER_BRIGHTESS", sg_helperBrig
 
 REAL sg_helperSensorRange = 1000;
 static tConfItem<REAL> sg_helperSensorRangeConf("HELPER_SENSOR_RANGE", sg_helperSensorRange);
-
 bool sg_helperSensorLightUsageMode = false;
 static tConfItem<bool> sg_helperSensorLightUsageModeConf("HELPER_SENSOR_LIGHT_USAGE_MODE", sg_helperSensorLightUsageMode);
-
 bool sg_helperSensorDiagonalMode = false;
 static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_SENSOR_DIAGONAL_MODE", sg_helperSensorDiagonalMode);
 
-
 bool sg_helperDebug = false;
 static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
-
-
 tString sg_helperDebugIgnoreList = tString("");
-static tConfItem<tString> sg_helperDebugIgnoreListConf( "HELPER_DEBUG_IGNORE_LIST", sg_helperDebugIgnoreList );
-
+static tConfItem<tString> sg_helperDebugIgnoreListConf("HELPER_DEBUG_IGNORE_LIST", sg_helperDebugIgnoreList);
 REAL sg_helperDebugDelay = 0.15;
 static tConfItem<REAL> sg_helperDebugDelayConf("HELPER_DEBUG_DELAY",
-                                            sg_helperDebugDelay);
-
+                                               sg_helperDebugDelay);
 bool sg_helperDebugTimeStamp = true;
 static tConfItem<bool> sg_helperDebugTimeStampConf("HELPER_DEBUG_TIMESTAMP",
-                                                sg_helperDebugTimeStamp);
-
+                                                   sg_helperDebugTimeStamp);
 
 bool sg_helperAI = false;
 static tConfItem<bool> sg_helperAIc("HELPER_AI", sg_helperAI);
-
 REAL sg_helperAITime = 0;
 static tConfItem<REAL> sg_helperAITimec("HELPER_AI_TIME", sg_helperAITime);
 
 bool sg_helperSmartTurning = false;
 static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
-
 bool sg_helperSmartTurningFrontBot = false;
 static tConfItem<bool> sg_helperSmartTurningFrontBotConf("HELPER_SMART_TURNING_FRONT_BOT", sg_helperSmartTurningFrontBot);
-
 REAL sg_helperSmartTurningFrontBotThinkRange = 1;
 static tConfItem<REAL> sg_helperSmartTurningFrontBotThinkRangeConf("HELPER_SMART_TURNING_FRONT_BOT_THINK_RANGE", sg_helperSmartTurningFrontBotThinkRange);
 
 REAL sg_helperSmartTurningFrontBotActivationRubber = 0.98;
 static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationRubberConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_RUBBER", sg_helperSmartTurningFrontBotActivationRubber);
-
 REAL sg_helperSmartTurningFrontBotActivationSpace = 1;
 static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationSpaceConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_SPACE", sg_helperSmartTurningFrontBotActivationSpace);
-
-
 REAL sg_helperSmartTurningFrontBotDisableTime = 0;
 static tConfItem<REAL> sg_helperSmartTurningFrontBotDisableTimeConf("HELPER_SMART_TURNING_FRONT_BOT_DISABLE_TIME", sg_helperSmartTurningFrontBotDisableTime);
 
@@ -83,16 +68,12 @@ static tConfItem<bool> sg_helperSmartTurningClosedInConf("HELPER_SMART_TURNING_C
 
 bool sg_helperSmartTurningSurvive = false;
 static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
-
 bool sg_helperSmartTurningSurviveTrace = false;
 static tConfItem<bool> sg_helperSmartTurningSurviveTraceConf("HELPER_SMART_TURNING_SURVIVE_TRACE", sg_helperSmartTurningSurviveTrace);
-
 REAL sg_helperSmartTurningSurviveTraceTurnTime = 0.02;
 static tConfItem<REAL> sg_helperSmartTurningSurviveTraceTurnTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_TIME", sg_helperSmartTurningSurviveTraceTurnTime);
-
 REAL sg_helperSmartTurningSurviveTraceActiveTime = 1;
 static tConfItem<REAL> sg_helperSmartTurningSurviveTraceActiveTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_ACTIVE_TIME", sg_helperSmartTurningSurviveTraceActiveTime);
-
 REAL sg_helperSmartTurningSurviveTraceCloseFactor = 1;
 static tConfItem<REAL> sg_helperSmartTurningSurviveTraceCloseFactorConf("HELPER_SMART_TURNING_SURVIVE_TRACE_CLOSE_FACTOR", sg_helperSmartTurningSurviveTraceCloseFactor);
 
@@ -101,10 +82,8 @@ static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_O
 
 REAL sg_helperSmartTurningClosedInMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
-
 REAL sg_helperSmartTurningRubberTimeMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningRubberTimeMultConf("HELPER_SMART_TURNING_RUBBERTIME_MULT", sg_helperSmartTurningRubberTimeMult);
-
 REAL sg_helperSmartTurningRubberFactorMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningRubberFactorMultConf("HELPER_SMART_TURNING_RUBBERFACTOR_MULT", sg_helperSmartTurningRubberFactorMult);
 
@@ -116,24 +95,161 @@ static tConfItem<bool> sg_helperSmartTurningPlanConf("HELPER_SMART_TURNING_PLAN"
 
 bool sg_helperSmartTurningAutoBrake = false;
 static tConfItem<bool> sg_helperSmartTurningAutoBrakeConf("HELPER_SMART_TURNING_BRAKE", sg_helperSmartTurningAutoBrake);
-
 bool sg_helperSmartTurningAutoBrakeDeplete = false;
 static tConfItem<bool> sg_helperSmartTurningAutoBrakeDepleteConf("HELPER_SMART_TURNING_BRAKE_DEPLETE", sg_helperSmartTurningAutoBrakeDeplete);
-
 REAL sg_helperSmartTurningAutoBrakeMin = 0;
 static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMinConf("HELPER_SMART_TURNING_BRAKE_MIN", sg_helperSmartTurningAutoBrakeMin);
-
 REAL sg_helperSmartTurningAutoBrakeMax = 2;
 static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMaxConf("HELPER_SMART_TURNING_BRAKE_MAX", sg_helperSmartTurningAutoBrakeMax);
 
 bool sg_helperSmartTurningFollowTail = false;
 static tConfItem<bool> sg_helperSmartTurningFollowTailConf("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
-
 REAL sg_helperSmartTurningFollowTailDelayMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
-
 REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
+
+bool sg_tailHelper = false;
+static tConfItem<bool> sg_tailHelperC("HELPER_TAIL", sg_tailHelper);
+REAL sg_tailHelperBrightness = 1;
+static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
+REAL sg_tailHelperDelay = 0;
+static tConfItem<REAL> sg_tailHelperDelayC("HELPER_TAIL_DELAY", sg_tailHelperDelay);
+
+bool sg_pathHelper = false;
+static tConfItem<bool> sg_pathHelperC("HELPER_PATH", sg_pathHelper);
+bool sg_pathHelperRenderPath = false;
+static tConfItem<bool> sg_pathHelperRenderPathC("HELPER_PATH_RENDER", sg_pathHelperRenderPath);
+bool sg_pathHelperShowTurn = false;
+static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_PATH_RENDER_TURN", sg_pathHelperShowTurn);
+bool sg_pathHelperShowTurnAct = false;
+static tConfItem<bool> sg_pathHelperShowTurnActC("HELPER_PATH_RENDER_TURN_ACT", sg_pathHelperShowTurnAct);
+REAL sg_pathHelperShowTurnAhead = 0;
+static tConfItem<REAL> sg_pathHelperShowTurnAheadC("HELPER_PATH_RENDER_TURN_AHEAD", sg_pathHelperShowTurnAhead);
+int sg_pathHelperMode = 0;
+static tConfItem<int> sg_pathHelperModeC("HELPER_PATH_MODE", sg_pathHelperMode);
+REAL sg_pathHelperAutoCloseDistance = 150;
+static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC("HELPER_PATH_AUTO_CLOSE_DISTANCE", sg_pathHelperAutoCloseDistance);
+REAL sg_pathHelperUpdateTime = -1000;
+static tConfItem<REAL> sg_pathHelperUpdateTimeC("HELPER_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
+REAL se_pathHeight = 1;
+static tConfItem<REAL> se_pathHeightC("HELPER_PATH_HEIGHT", se_pathHeight);
+REAL se_pathBrightness = 1;
+static tConfItem<REAL> se_pathBrightnessC("HELPER_PATH_BRIGHTNESS", se_pathBrightness);
+REAL sg_pathHelperUpdateDistance = 1;
+static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
+
+bool sg_helperShowCorners = false;
+static tConfItem<bool> sg_helperShowCornersConf("HELPER_SHOW_CORNERS", sg_helperShowCorners);
+bool sg_helperShowCornersPassed = 0;
+static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_SHOW_CORNERS_PASSED",sg_helperShowCornersPassed);
+REAL sg_helperShowCornersPassedRange = 1;
+static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
+REAL sg_helperShowCornersBoundary = 10;
+static tConfItem<REAL> sg_showTraceDatacornerRangeConf("HELPER_SHOW_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
+REAL sg_helperShowCornersBoundaryPassed = 2.5;
+static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_SHOW_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
+REAL sg_helperShowCornersTimeout = 1;
+static tConfItem<REAL> sg_traceTimeoutConf("HELPER_SHOW_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
+REAL sg_helperShowCornersHeight = 1;
+static tConfItem<REAL> sg_helperShowCornersHeightConf("HELPER_SHOW_CORNERS_HEIGHT", sg_helperShowCornersHeight);
+
+bool sg_helperDetectCut = false;
+static tConfItem<bool> sg_helperDetectCutConf("HELPER_DETECT_CUT", sg_helperDetectCut);
+REAL sg_helperDetectCutDetectionRange = 150;
+static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf("HELPER_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
+REAL sg_helperDetectCutTimeout = .001;
+static tConfItem<REAL> sg_helperDetectCutTimeoutConf("HELPER_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
+REAL sg_helperDetectCutHeight = 0;
+static tConfItem<REAL> sg_helperDetectCutHeightConf("HELPER_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
+REAL sg_helperDetectCutReact = .2; // .005 ?
+static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg_helperDetectCutReact);
+bool sg_helperEnemyTracers = false;
+
+static tConfItem<bool> sg_helperEnemyTracersConf("HELPER_SHOW_ENEMY_TRACERS", sg_helperEnemyTracers);
+REAL sg_helperEnemyTracersHeight = 0;
+static tConfItem<REAL> sg_helperEnemyTracersHeightConf("HELPER_SHOW_ENEMY_TRACERS_HEIGHT", sg_helperEnemyTracersHeight);
+REAL sg_helperEnemyTracersDetectionRange = 150;
+static tConfItem<REAL> sg_helperEnemyTracersDetectionRangeConf("HELPER_SHOW_ENEMY_TRACERS_DETECTION_RANGE", sg_helperEnemyTracersDetectionRange);
+REAL sg_helperEnemyTracersSpeedMult = 1.5;
+static tConfItem<REAL> sg_helperEnemyTracersSpeedMultConf("HELPER_SHOW_ENEMY_TRACERS_SPEED_MULT", sg_helperEnemyTracersSpeedMult);
+REAL sg_helperEnemyTracersPassthrough = 1;
+static tConfItem<REAL> sg_helperEnemyTracersPassthroughConf("HELPER_SHOW_ENEMY_TRACERS_PASSTHROUGH", sg_helperEnemyTracersPassthrough);
+REAL sg_helperEnemyTracersDelayMult = 1;
+static tConfItem<REAL> sg_helperEnemyTracersDelayMultConf("HELPER_SHOW_ENEMY_TRACERS_DELAY_MULT", sg_helperEnemyTracersDelayMult);
+REAL sg_helperEnemyTracersTimeout = 0.01;
+static tConfItem<REAL> sg_helperEnemyTracersTimeoutConf("HELPER_SHOW_ENEMY_TRACERS_TIMEOUT", sg_helperEnemyTracersTimeout);
+REAL sg_helperEnemyTracersBrightness = 1;
+static tConfItem<REAL> sg_helperEnemyTracersBrightnessConf("HELPER_SHOW_ENEMY_TRACERS_BRIGHTNESS", sg_helperEnemyTracersBrightness);
+
+bool sg_helperShowTail = false;
+static tConfItem<bool> sg_helperShowTailConf("HELPER_SHOW_TAIL", sg_helperShowTail);
+bool sg_helperShowTailPath = false;
+static tConfItem<bool> sg_helperShowTailPathConf("HELPER_SHOW_TAIL_PATH", sg_helperShowTailPath);
+REAL sg_helperShowTailHeight = 1;
+static tConfItem<REAL> sg_helperShowTailHeightConf("HELPER_SHOW_TAIL_HEIGHT", sg_helperShowTailHeight);
+REAL sg_helperShowTailPassthrough = 0.5;
+static tConfItem<REAL> sg_helperShowTailPassthroughConf("HELPER_SHOW_TAIL_PASSTHROUGH", sg_helperShowTailPassthrough);
+REAL sg_helperShowTailTimeout = 1;
+static tConfItem<REAL> sg_helperShowTailTimeoutConf("HELPER_SHOW_TAIL_TIMEOUT", sg_helperShowTailTimeout);
+
+bool sg_helperShowEnemyTail = false;
+static tConfItem<bool> sg_helperShowEnemyTailConf("HELPER_SHOW_ENEMY_TAIL", sg_helperShowEnemyTail);
+REAL sg_helperShowEnemyTailHeight = 1;
+static tConfItem<REAL> sg_helperShowEnemyTailHeightConf("HELPER_SHOW_ENEMY_TAIL_HEIGHT", sg_helperShowEnemyTailHeight);
+REAL sg_helperShowEnemyTailDistanceMult = 1;
+static tConfItem<REAL> sg_helperShowEnemyTailDistanceMultConf("HELPER_SHOW_ENEMY_TAIL_DISTANCE_MULT", sg_helperShowEnemyTailDistanceMult);
+REAL sg_helperShowEnemyTailTimeoutMult = 1;
+static tConfItem<REAL> sg_helperShowEnemyTailTimeoutMultConf("HELPER_SHOW_ENEMY_TAIL_TIMEOUT_MULT", sg_helperShowEnemyTailTimeoutMult);
+REAL sg_helperShowEnemyTailBrightness = 1;
+static tConfItem<REAL> sg_helperShowEnemyTailBrightnessConf("HELPER_SHOW_ENEMY_TAIL_BRIGHTNESS", sg_helperShowEnemyTailBrightness);
+
+bool sg_helperShowTailTracer = false;
+static tConfItem<bool> sg_helperShowTailTracerConf("HELPER_SHOW_TAIL_TRACER", sg_helperShowTailTracer);
+REAL sg_helperShowTailTracerHeight = 1;
+static tConfItem<REAL> sg_helperShowTailTracerHeightConf("HELPER_SHOW_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
+REAL sg_helperShowTailTracerTimeoutMult = 1;
+static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf("HELPER_SHOW_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
+REAL sg_helperShowTailTracerDistanceMult = 10;
+static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf("HELPER_SHOW_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
+
+bool sg_helperShowHit = false;
+static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit);
+REAL sg_showHitDataHeight = 1;
+static tConfItem<REAL> sg_showHitDataHeightConf("HELPER_SHOW_HIT_HEIGHT", sg_showHitDataHeight);
+REAL sg_showHitDataHeightFront = 1;
+static tConfItem<REAL> sg_showHitDataHeightFrontConf("HELPER_SHOW_HIT_HEIGHT_FRONT", sg_showHitDataHeightFront);
+REAL sg_showHitDataHeightSides = 2;
+static tConfItem<REAL> sg_showHitDataHeightSidesConf("HELPER_SHOW_HIT_HEIGHT_SIDES", sg_showHitDataHeightSides);
+REAL sg_showHitDataRange = 1;
+static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE", sg_showHitDataRange);
+REAL sg_showHitDataFreeRange = 1;
+static tConfItem<REAL> sg_showHitDataFreeRangeConf("HELPER_SHOW_HIT_OPEN_RANGE", sg_showHitDataFreeRange);
+int sg_showHitDataRecursion = 1;
+static tConfItem<int> sg_showHitDataRecursionConf("HELPER_SHOW_HIT_RECURSION", sg_showHitDataRecursion);
+REAL sg_showHitDataTimeout = 1;
+static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
+bool sg_helperShowHitStartAtHitPos = true;
+static tConfItem<bool> sg_helperShowHitStartAtHitPosConf("HELPER_SHOW_HIT_START_AT_HIT_POS", sg_helperShowHitStartAtHitPos);
+
+// HELPER HUD
+bool sg_helperHud = false; // Helper Hud
+static tConfItem<bool> sg_helperHudConf("HELPER_HUD", sg_helperHud);
+REAL sg_helperHudX = 0.74; // Helper Hud Y Position
+static tConfItem<REAL> sg_helperHudXC("HELPER_HUD_X", sg_helperHudX);
+REAL sg_helperHudY = -0.01; // Helper Hud Y Position
+static tConfItem<REAL> sg_helperHudYC("HELPER_HUD_Y", sg_helperHudY);
+REAL sg_helperHudSize = .06; // Size of Helper Hud
+static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
+
+//HUD ITEMS
+gHelperHudItemRef<bool> sg_helperSmartTurningH("Smart Turning",sg_helperSmartTurning);
+gHelperHudItemRef<bool> sg_pathHelperH("Path Helper",sg_pathHelper);
+gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut",sg_helperDetectCut);
+gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy",tColoredString("None"), "Detect Cut");
+gHelperHudItem<tColoredString> cutTurnDirectionH("Cut Turn Dir",tColoredString("0xdd0000None"), "Detect Cut");
+gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit",sg_helperShowHit);
+gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist",1000,"Show Hit");
 
 void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
                eCoord start, eCoord end, REAL brightness = 1)
@@ -166,23 +282,8 @@ void DebugLog(std::string message)
     o.close();
 }
 
-// HELPER HUD
-bool sg_helperHud = false; // Helper Hud
-static tConfItem<bool> sg_helperHudConf("HELPER_HUD", sg_helperHud);
-
-REAL sg_helperHudX = 0.74; // Helper Hud Y Position
-static tConfItem<REAL> sg_helperHudXC("HELPER_HUD_X", sg_helperHudX);
-
- REAL sg_helperHudY = -0.01; // Helper Hud Y Position
-static tConfItem<REAL> sg_helperHudYC("HELPER_HUD_Y", sg_helperHudY);
-
- REAL sg_helperHudSize = .06; // Size of Helper Hud
-static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
-
 #include "rFont.h"
 #include "gHud.h"
-
-
 static std::map< std::string, gHelperHudBase * > * st_confMap = 0;
 gHelperHudBase::gHelperHudMap & gHelperHudBase::GetHelperHudMap()
 {
@@ -202,79 +303,54 @@ gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
 }
 
 #include <map>
-void gHelperHudBase::Render() {
+void gHelperHudBase::Render()
+{
     if (!sg_helperHud)
         return;
 
-    std::map<std::string, std::vector<gHelperHudBase*>> hudMap;
+    std::map<std::string, std::vector<gHelperHudBase *>> hudMap;
     gHelperHudMap &items = gHelperHudBase::GetHelperHudMap();
 
     // First, populate the hudMap with all items and their parent relationships
-    for (auto iter = items.begin(); iter != items.end(); iter++) {
+    for (auto iter = items.begin(); iter != items.end(); iter++)
+    {
         gHelperHudBase *item = iter->second;
         std::string parent = item->getParent();
-        if (parent.empty()) {
+        if (parent.empty())
+        {
             parent = "";
         }
-        if (hudMap.find(parent) == hudMap.end()) {
-            hudMap[parent] = std::vector<gHelperHudBase*>();
+        if (hudMap.find(parent) == hudMap.end())
+        {
+            hudMap[parent] = std::vector<gHelperHudBase *>();
         }
         hudMap[parent].push_back(item);
     }
 
     rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
-    // Next, iterate through the hudMap and display parent items first, followed by their child items
-    for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++) {
-        if (iter->first != "") {
-            hudDebug << iter->first << ":\n";
-        }
-        for (auto item : iter->second) {
-            gTextCache<tString,tString> cache;
-            if (!(cache.Call(item->getValue(), item->getLastValue()))) {
+    // Next, iterate through the hudMap and display child items directly after the parent item
+    for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++)
+    {
+        for (auto item : iter->second)
+        {
+            gTextCache<tString, tString> cache;
+            if (!(cache.Call(item->getValue(), item->getLastValue())))
+            {
                 rDisplayListFiller filler(cache.list_);
-                hudDebug << item->displayString();// << "\n";
-                item->setLastValue();
+                if (!item->getParent().empty())
+                {
+                    auto parentIter = hudMap.find(item->getParent());
+                    if (parentIter != hudMap.end())
+                    {
+                        hudDebug << item->getParent() << ":\n";
+                    }
+                    hudDebug << item->displayString();
+                    item->setLastValue();
+                }
             }
         }
     }
 }
-
-//! sensor picking up several walls between cycle and target
-class gTargetSensor: public gSensor
-{
-public:
-    int lastOwnLR; //!< the last LR value of a hit with an own wall
-    tCHECKED_PTR_CONST(eHalfEdge) lastOwnEHit; //!< the edge hit there
-
-    gTargetSensor(eGameObject * o,const eCoord &start,const eCoord &d)
-    :gSensor(o,start,d), lastOwnLR(0), lastOwnEHit(0) {}
-
-    void  PassEdge(const eWall *ww,REAL time,REAL a,int r)
-    {
-    try {
-        gSensor::PassEdge(ww,time,a,r);
-    }
-    catch( gSensorFinished & e )
-    {
-        if( type )
-        {
-            if( type == gSENSOR_SELF )
-            {
-                // copy the last own wall we see
-                lastOwnLR = lr;
-                lastOwnEHit = ehit;
-                ehit = 0;
-            }
-        }
-    }
-    }
-};
-
-bool sg_tailHelper = false;
-static tConfItem<bool> sg_tailHelperC("HELPER_TAIL", sg_tailHelper);
-
-REAL sg_tailHelperBrightness = 1;
-static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
 
 gTailHelper::gTailHelper(gHelper *helper, gCycle *owner)
     : helper_(helper),
@@ -285,10 +361,6 @@ gTailHelper::gTailHelper(gHelper *helper, gCycle *owner)
         tailPos = &owner_->tailPos;
         ownerSpeed = &owner_->verletSpeed_;
 }
-
-REAL sg_tailHelperDelay = 0;
-static tConfItem<REAL> sg_tailHelperDelayC("HELPER_TAIL_DELAY", sg_tailHelperDelay);
-
 
 std::vector<eCoord> gTailHelper::getPathToTail(double delay) {
     std::vector<eCoord> path;
@@ -324,7 +396,6 @@ std::vector<eCoord> gTailHelper::getPathToTail(double delay) {
     return path;
 }
 
-
 void gTailHelper::Activate(gHelperData &data) {
     if (!owner_->tailMoving)
         return;
@@ -337,59 +408,33 @@ void gTailHelper::Activate(gHelperData &data) {
     }
 }
 
-
-
 gTailHelper &gTailHelper::Get(gHelper * helper, gCycle * owner)
 {
     tASSERT(owner);
-
     // create
     if (helper->tailHelper.get() == 0)
         helper->tailHelper.reset(new gTailHelper(helper, owner));
-
     return *helper->tailHelper;
-    }
+}
 
-    bool sg_pathHelper = false;
-    static tConfItem<bool> sg_pathHelperC("HELPER_PATH", sg_pathHelper);
+gPathHelper::gPathHelper(gHelper *helper, gCycle *owner)
+    : helper_(helper),
+        owner_(owner),
+        lastPath(helper_->CurrentTime() - 100),
+        lastTime(helper_->CurrentTime()),
+        nextTime(0),
+        pathInvalid(true)
+{
+// Initialize any other member variables here
+}
 
-    bool sg_pathHelperRenderPath = false;
-    static tConfItem<bool> sg_pathHelperRenderPathC("HELPER_PATH_RENDER", sg_pathHelperRenderPath);
-
-    bool sg_pathHelperShowTurn = false;
-    static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_PATH_RENDER_TURN", sg_pathHelperShowTurn);
-
-    bool sg_pathHelperShowTurnAct = false;
-    static tConfItem<bool> sg_pathHelperShowTurnActC("HELPER_PATH_RENDER_TURN_ACT", sg_pathHelperShowTurnAct);
-
-    REAL sg_pathHelperShowTurnAhead = 0;
-    static tConfItem<REAL> sg_pathHelperShowTurnAheadC("HELPER_PATH_RENDER_TURN_AHEAD", sg_pathHelperShowTurnAhead);
-
-    int sg_pathHelperMode = 0;
-    static tConfItem<int> sg_pathHelperModeC("HELPER_PATH_MODE", sg_pathHelperMode);
-    // sg_pathHelperModeC->help = tOutput("help");
-
-    REAL sg_pathHelperAutoCloseDistance = 150;
-    static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC("HELPER_PATH_AUTO_CLOSE_DISTANCE", sg_pathHelperAutoCloseDistance);
-
-    gPathHelper::gPathHelper(gHelper *helper, gCycle *owner)
-        : helper_(helper),
-          owner_(owner),
-          lastPath(helper_->CurrentTime() - 100),
-          lastTime(helper_->CurrentTime()),
-          nextTime(0),
-          pathInvalid(true)
-    {
-    // Initialize any other member variables here
-    }
-
-    bool gPathHelper::targetExist()
-    {
+bool gPathHelper::targetExist()
+{
     return target != eCoord(0, 0) && targetCurrentFace_;
-    }
+}
 
-    gPathHelper &gPathHelper::Get(gHelper *helper, gCycle *owner)
-    {
+gPathHelper &gPathHelper::Get(gHelper *helper, gCycle *owner)
+{
     tASSERT(owner);
 
     // create
@@ -397,16 +442,16 @@ gTailHelper &gTailHelper::Get(gHelper * helper, gCycle * owner)
         helper->pathHelper.reset(new gPathHelper(helper, owner));
 
     return *helper->pathHelper;
-    }
+}
 
-    REAL eCoordDistance(const eCoord &p1, const eCoord &p2)
-    {
+REAL eCoordDistance(const eCoord &p1, const eCoord &p2)
+{
     eCoord difference = p1 - p2;
     return difference.Norm();
-    }
+}
 
-    bool gPathHelper::cornerMode(gHelperData data)
-    {
+bool gPathHelper::cornerMode(gHelperData data)
+{
     helper_->findCorners(data);
 
     bool left = helper_->leftCorner.exist;
@@ -459,874 +504,292 @@ gTailHelper &gTailHelper::Get(gHelper * helper, gCycle * owner)
         return true;
     }
     return false;
-    }
+}
 
-    bool gPathHelper::enemyMode(gHelperData data)
-    {
-    gCycle *enemy = helper_->enemies.closestEnemy;
+bool gPathHelper::enemyMode(gHelperData data)
+{
+gCycle *enemy = helper_->enemies.closestEnemy;
 
-    if (helper_->enemies.exist(enemy))
+if (helper_->enemies.exist(enemy))
+{
+    target = enemy->Position();
+    if (!DistanceCheck(data))
     {
-        target = enemy->Position();
-        if (!DistanceCheck(data))
-        {
-        return false;
-        }
-        targetCurrentFace_ = enemy->CurrentFace();
-        return true;
-    }
     return false;
     }
+    targetCurrentFace_ = enemy->CurrentFace();
+    return true;
+}
+return false;
+}
 
-    bool gPathHelper::autoMode(gHelperData data)
-    {
-    gCycle *enemy = helper_->enemies.closestEnemy;
+bool gPathHelper::autoMode(gHelperData data)
+{
+gCycle *enemy = helper_->enemies.closestEnemy;
 
-    bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoCloseDistance + data.turnSpeedFactor);
-    if (isClose)
+bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoCloseDistance + data.turnSpeedFactor);
+if (isClose)
+{
+    target = enemy->Position();
+    if (!DistanceCheck(data))
     {
-        target = enemy->Position();
-        if (!DistanceCheck(data))
-        {
-        return false;
-        }
-        targetCurrentFace_ = enemy->CurrentFace();
-        return true;
-    }
-    else if (owner_->tailMoving)
-    {
-        target = owner_->tailPos;
-        if (!DistanceCheck(data))
-        {
-        return false;
-        }
-        targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(target);
-        return true;
-    }
-
     return false;
     }
-
-    REAL sg_pathHelperUpdateTime = -1000;
-    static tConfItem<REAL> sg_pathHelperUpdateTimeC("HELPER_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
-
-    bool gPathHelper::UpdateTimeCheck(gHelperData &data)
+    targetCurrentFace_ = enemy->CurrentFace();
+    return true;
+}
+else if (owner_->tailMoving)
+{
+    target = owner_->tailPos;
+    if (!DistanceCheck(data))
     {
-    return lastPath < helper_->CurrentTime() - sg_pathHelperUpdateTime;
+    return false;
     }
+    targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(target);
+    return true;
+}
 
-    REAL se_pathHeight = 1;
-    static tConfItem<REAL> se_pathHeightC("HELPER_PATH_HEIGHT", se_pathHeight);
+return false;
+}
 
-    REAL se_pathBrightness = 1;
-    static tConfItem<REAL> se_pathBrightnessC("HELPER_PATH_BRIGHTNESS", se_pathBrightness);
 
-    void gPathHelper::RenderPath(gHelperData &data)
-    {
-    if (!path_.Valid())
-        return;
+bool gPathHelper::UpdateTimeCheck(gHelperData &data)
+{
+return lastPath < helper_->CurrentTime() - sg_pathHelperUpdateTime;
+}
+void gPathHelper::RenderPath(gHelperData &data)
+{
+if (!path_.Valid())
+    return;
 
-    eCoord last_c;
+eCoord last_c;
 
-    for (int i = path_.positions.Len() - 1; i >= 0; i--)
-    {
-        eCoord c = path_.positions(i) + path_.offsets(i);
-        if (i != path_.positions.Len() - 1)
-        debugLine(1, 0, 0, se_pathHeight, data.speedFactor, last_c, c, se_pathBrightness);
-        last_c = c;
-    }
+for (int i = path_.positions.Len() - 1; i >= 0; i--)
+{
+    eCoord c = path_.positions(i) + path_.offsets(i);
+    if (i != path_.positions.Len() - 1)
+    debugLine(1, 0, 0, se_pathHeight, data.speedFactor, last_c, c, se_pathBrightness);
+    last_c = c;
+}
 
-    if (path_.current >= 0 && path_.positions.Len() > 0)
-    {
-        eCoord c = path_.CurrentPosition();
-        debugLine(1, 1, 0, se_pathHeight, data.speedFactor, c, c, 1);
-        debugLine(1, 1, 0, (se_pathHeight * 2), data.speedFactor, c, c, se_pathBrightness);
-    }
-    }
+if (path_.current >= 0 && path_.positions.Len() > 0)
+{
+    eCoord c = path_.CurrentPosition();
+    debugLine(1, 1, 0, se_pathHeight, data.speedFactor, c, c, 1);
+    debugLine(1, 1, 0, (se_pathHeight * 2), data.speedFactor, c, c, se_pathBrightness);
+}
+}
 
-    void gPathHelper::RenderTurn(gHelperData &data)
-    {
-    if (!path_.Valid())
-    {
-        return;
-    }
+void gPathHelper::RenderTurn(gHelperData &data)
+{
+if (!path_.Valid())
+{
+    return;
+}
 
-    for (int z = 10; z >= 0; z--)
-        path_.Proceed();
+for (int z = 10; z >= 0; z--)
+    path_.Proceed();
 
-    bool goon = path_.Proceed();
-    bool nogood = false;
+bool goon = path_.Proceed();
+bool nogood = false;
 
-    do
-    {
-        if (goon)
-        goon = path_.GoBack();
-        else
-        goon = true;
-
-        eCoord pos = path_.CurrentPosition() + path_.CurrentOffset() * 0.1f;
-        eCoord opos = owner_->Position();
-        eCoord odir = pos - opos;
-
-        eCoord intermediate = opos + owner_->Direction() * eCoord::F(odir, owner_->Direction());
-
-        gSensor p(owner_, opos, intermediate - opos);
-        p.detect(1.1f);
-        nogood = (p.hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
-
-        if (!nogood)
-        {
-        gSensor p(owner_, intermediate, pos - intermediate);
-        p.detect(1);
-        nogood = (p.hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
-        }
-
-    } while (goon && nogood);
-
+do
+{
     if (goon)
+    goon = path_.GoBack();
+    else
+    goon = true;
+
+    eCoord pos = path_.CurrentPosition() + path_.CurrentOffset() * 0.1f;
+    eCoord opos = owner_->Position();
+    eCoord odir = pos - opos;
+
+    eCoord intermediate = opos + owner_->Direction() * eCoord::F(odir, owner_->Direction());
+
+    gSensor p(owner_, opos, intermediate - opos);
+    p.detect(1.1f);
+    nogood = (p.hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+
+    if (!nogood)
     {
-        // now we have found our next goal. Try to get there.
-        eCoord pos = owner_->Position();
-        eCoord target = path_.CurrentPosition();
-
-        // look how far ahead the target is:
-        REAL ahead = eCoord::F(target - pos, owner_->Direction()) + eCoord::F(path_.CurrentOffset(), owner_->Direction());
-
-        HelperDebug::Debug("RenderTurn", "AHEAD = ", &ahead);
-        if (ahead > sg_pathHelperShowTurnAhead)
-        { // it is still before us. just wait a while.
-          // mindist = ahead;
-        }
-        else
-        { // we have passed it. Make a turn towards it.
-        int lr;
-        REAL side = (target - pos) * owner_->Direction();
-
-        if (!((side > 0 && data.sensors.getSensor(LEFT)->hit < 3) || (side < 0 && data.sensors.getSensor(RIGHT)->hit < 3)) && (fabs(side) > 3 || ahead < -10))
-        {
-            lr += (side > 0 ? 1 : -1);
-        }
-
-        lr *= -1;
-        if (lr == RIGHT)
-        {
-            debugLine(.2, 1, 0, 3, data.speedFactor * 3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
-            if (sg_pathHelperShowTurnAct)
-                helper_->smartTurning->makeTurnIfPossible(data, RIGHT, 1);
-        }
-        else if (lr == LEFT)
-        {
-            debugLine(.2, 1, 0, 3, data.speedFactor * 3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
-            if (sg_pathHelperShowTurnAct)
-                helper_->smartTurning->makeTurnIfPossible(data, LEFT, 1);
-        }
-        }
-    }
+    gSensor p(owner_, intermediate, pos - intermediate);
+    p.detect(1);
+    nogood = (p.hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
     }
 
-    REAL sg_pathHelperUpdateDistance = 1;
-    static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
+} while (goon && nogood);
 
-    bool gPathHelper::DistanceCheck(gHelperData &data)
+if (goon)
+{
+    // now we have found our next goal. Try to get there.
+    eCoord pos = owner_->Position();
+    eCoord target = path_.CurrentPosition();
+
+    // look how far ahead the target is:
+    REAL ahead = eCoord::F(target - pos, owner_->Direction()) + eCoord::F(path_.CurrentOffset(), owner_->Direction());
+
+    HelperDebug::Debug("RenderTurn", "AHEAD = ", &ahead);
+    if (ahead > sg_pathHelperShowTurnAhead)
+    { // it is still before us. just wait a while.
+        // mindist = ahead;
+    }
+    else
+    { // we have passed it. Make a turn towards it.
+    int lr;
+    REAL side = (target - pos) * owner_->Direction();
+
+    if (!((side > 0 && data.sensors.getSensor(LEFT)->hit < 3) || (side < 0 && data.sensors.getSensor(RIGHT)->hit < 3)) && (fabs(side) > 3 || ahead < -10))
     {
-    eCoord difference = target - lastPos;
-    REAL distance = difference.Norm();
-    // con << distance << " > " << sg_pathHelperUpdateDistance << " \n";
-    return distance >= sg_pathHelperUpdateDistance;
+        lr += (side > 0 ? 1 : -1);
     }
 
-    void gPathHelper::FindPath(gHelperData &data)
+    lr *= -1;
+    if (lr == RIGHT)
     {
-    if (!targetExist())
-    {
-        return;
+        debugLine(.2, 1, 0, 3, data.speedFactor * 3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
+        if (sg_pathHelperShowTurnAct)
+            helper_->smartTurning->makeTurnIfPossible(data, RIGHT, 1);
     }
-
-    if (targetCurrentFace_)
+    else if (lr == LEFT)
     {
-        // owner_->FindCurrentFace();
-        eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
-                            target, targetCurrentFace_,
-                            owner_,
-                            path_);
-        // con << "Found updated path & " << lastPath << "\n";
-        lastPath = helper_->CurrentTime();
-        lastPos = target;
-        // con << "Updated path\n";
-    }
-
-    if (!path_.Valid())
-    {
-        targetCurrentFace_ = NULL;
-        lastPath = -100;
-        return;
+        debugLine(.2, 1, 0, 3, data.speedFactor * 3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
+        if (sg_pathHelperShowTurnAct)
+            helper_->smartTurning->makeTurnIfPossible(data, LEFT, 1);
     }
     }
+}
+}
 
-    void gPathHelper::Activate(gHelperData &orig_data)
-    {
+bool gPathHelper::DistanceCheck(gHelperData &data)
+{
+eCoord difference = target - lastPos;
+REAL distance = difference.Norm();
+// con << distance << " > " << sg_pathHelperUpdateDistance << " \n";
+return distance >= sg_pathHelperUpdateDistance;
+}
 
-    if (!helper_->aliveCheck())
-        return;
+void gPathHelper::FindPath(gHelperData &data)
+{
+if (!targetExist())
+{
+    return;
+}
 
-    if (sg_pathHelperRenderPath)
-        RenderPath(orig_data);
+if (targetCurrentFace_)
+{
+    // owner_->FindCurrentFace();
+    eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
+                        target, targetCurrentFace_,
+                        owner_,
+                        path_);
+    // con << "Found updated path & " << lastPath << "\n";
+    lastPath = helper_->CurrentTime();
+    lastPos = target;
+    // con << "Updated path\n";
+}
 
-    if (!UpdateTimeCheck(orig_data))
-        return;
+if (!path_.Valid())
+{
+    targetCurrentFace_ = NULL;
+    lastPath = -100;
+    return;
+}
+}
 
-    gHelperData data = orig_data;
+void gPathHelper::Activate(gHelperData &orig_data)
+{
 
-    bool success = false;
-    switch (sg_pathHelperMode)
-    {
-    case 0:
-        success = autoMode(data);
-        break;
-    case 1:
-        success = tailMode(data);
-        break;
-    case 2:
-        success = enemyMode(data);
-        break;
-    case 3:
-        success = cornerMode(data);
-        break;
-    default:
-        // do nothing
-        return;
-    }
+if (!helper_->aliveCheck())
+    return;
 
-    if (!success)
-        return;
+if (sg_pathHelperRenderPath)
+    RenderPath(orig_data);
 
-    FindPath(data);
-    // RenderPath();
-    // con << "Got Turn: " << data.turnDir << " Next Thought in " << nextthought << "\n";
+if (!UpdateTimeCheck(orig_data))
+    return;
 
-    // if (sg_pathHelperRenderPath)
-    //     helper_->smartTurning->makeTurnIfPossible(data,data.turnDir,1);
+gHelperData data = orig_data;
 
-    if (sg_pathHelperShowTurn)
-        RenderTurn(data);
-    // debugLine(.2,1,0,3,data.speedFactor,owner_->Position(),data.sensors.getSensor(data.turnDir)->before_hit,1);
-    }
+bool success = false;
+switch (sg_pathHelperMode)
+{
+case 0:
+    success = autoMode(data);
+    break;
+case 1:
+    success = tailMode(data);
+    break;
+case 2:
+    success = enemyMode(data);
+    break;
+case 3:
+    success = cornerMode(data);
+    break;
+default:
+    // do nothing
+    return;
+}
 
-    int noTurns = 0;
-    class gHelperEmergencyTurn
-    {
-    gHelperEmergencyTurn();
+if (!success)
+    return;
+
+FindPath(data);
+// RenderPath();
+// con << "Got Turn: " << data.turnDir << " Next Thought in " << nextthought << "\n";
+
+// if (sg_pathHelperRenderPath)
+//     helper_->smartTurning->makeTurnIfPossible(data,data.turnDir,1);
+
+if (sg_pathHelperShowTurn)
+    RenderTurn(data);
+// debugLine(.2,1,0,3,data.speedFactor,owner_->Position(),data.sensors.getSensor(data.turnDir)->before_hit,1);
+}
+
+int noTurns = 0;
+class gHelperEmergencyTurn
+{
+gHelperEmergencyTurn();
 
 public:
-    class Sensor : public gSensor
-    {
-    public:
-        Sensor(gCycle *o, const eCoord &start, const eCoord &d)
-            : gSensor(o, start, d), hitOwner_(0), hitTime_(0), hitDistance_(o->MaxWallsLength()), lrSuggestion_(0), windingNumber_(0)
-        {
-        if (hitDistance_ <= 0)
-            hitDistance_ = o->GetDistance();
-        }
-
-        /*
-        // do detection and additional stuff
-        void detect( REAL range )
-        {
-            gSensor::detect( range );
-        }
-        */
-
-        virtual void PassEdge(const eWall *ww, REAL time, REAL a, int r)
-        {
-        try
-        {
-            gSensor::PassEdge(ww, time, a, r);
-        }
-        catch (eSensorFinished &e)
-        {
-            if (DoExtraDetectionStuff())
-                throw;
-        }
-        }
-
-        bool DoExtraDetectionStuff()
-        {
-        // move towards the beginning of a wall
-        lrSuggestion_ = -lr;
-
-        switch (type)
-        {
-        case gSENSOR_NONE:
-        case gSENSOR_RIM:
-            lrSuggestion_ = 0;
-            return true;
-        default:
-            // unless it is an enemy, follow his wall instead (uncomment for a nasty cowardy campbot)
-            // lrSuggestion *= -1;
-        case gSENSOR_SELF:
-        {
-            // determine whether we're hitting the front or back half of his wall
-            if (!ehit)
-                return true;
-            eWall *wall = ehit->GetWall();
-            if (!wall)
-                return true;
-            gPlayerWall *playerWall = dynamic_cast<gPlayerWall *>(wall);
-            if (!playerWall)
-                return true;
-            hitOwner_ = playerWall->Cycle();
-            if (!hitOwner_)
-                return true;
-
-            // gCycleChatBot & enemyChatBot = Get( hitOwner_ );
-
-            REAL wallAlpha = playerWall->Edge()->Ratio(before_hit);
-            // that's an unreliable source
-            if (wallAlpha < 0)
-                wallAlpha = 0;
-            if (wallAlpha > 1)
-                wallAlpha = 1;
-            hitDistance_ = hitOwner_->GetDistance() - playerWall->Pos(wallAlpha);
-            hitTime_ = playerWall->Time(wallAlpha);
-            windingNumber_ = playerWall->WindingNumber();
-
-            // don't see new walls
-            if (hitTime_ > hitOwner_->LastTime() && hitOwner_ != owned)
-            {
-                ehit = NULL;
-                hit = 1E+40;
-                return false;
-            }
-
-            // REAL cycleDistance = hitOwner_->GetDistance();
-
-            // REAL wallStart = 0;
-
-            /*
-            if ( gCycle::WallsLength() > 0 )
-            {
-                wallStart = cyclePos - playerWall->Cycle()->ThisWallsLength();
-                if ( wallStart < 0 )
-                    wallStart = 0;
-            }
-            */
-        }
-        }
-
-        return true;
-        }
-
-        // check how far the hit wall extends straight into the given direction
-        REAL HitWallExtends(eCoord const &dir, eCoord const &origin)
-        {
-        if (!ehit || !ehit->Other())
-        {
-            return 1E+30;
-        }
-
-        REAL ret = -1E+30;
-        eCoord ends[2] = {*ehit->Point(), *ehit->Other()->Point()};
-        for (int i = 1; i >= 0; --i)
-        {
-            REAL newRet = eCoord::F(dir, ends[i] - origin);
-            if (newRet > ret)
-                ret = newRet;
-        }
-
-        return ret;
-        }
-
-        gCycle *hitOwner_;   // the owner of the hit wall
-        REAL hitTime_;       // the time the hit wall was built at
-        REAL hitDistance_;   // the distance of the wall to the cycle that built it
-        short lrSuggestion_; // sensor's oppinon on whether moving to the left or right of the hit wall is recommended (-1 for left, +1 for right)
-        int windingNumber_;  // the number of turns (with sign) the cycle has taken
-    };
-
-    gHelperEmergencyTurn(gCycle *owner, gHelper *helper) : owner_(owner),
-                                                           helper_(helper)
-    {
-    }
-
-    // determines the distance between two sensors; the size should give the likelyhood
-    // to survive if you pass through a gap between the two selected walls
-    REAL Distance(Sensor const &a, Sensor const &b)
-    {
-        // make sure a is left from b
-        if (a.Direction() * b.Direction() < 0)
-        return Distance(b, a);
-
-        bool self = a.type == gSENSOR_SELF || b.type == gSENSOR_SELF;
-        bool rim = a.type == gSENSOR_RIM || b.type == gSENSOR_RIM;
-
-        // avoid. own. walls.
-        REAL selfHatred = 1;
-        if (a.type == gSENSOR_SELF)
-        {
-        selfHatred *= .5;
-        if (a.lr > 0)
-        {
-            selfHatred *= .5;
-            if (b.type == gSENSOR_RIM)
-                selfHatred *= .25;
-        }
-        }
-        if (b.type == gSENSOR_SELF)
-        {
-        selfHatred *= .5;
-        if (b.lr < 0)
-        {
-            selfHatred *= .5;
-            if (a.type == gSENSOR_RIM)
-                selfHatred *= .25;
-        }
-        }
-
-        // some big distance to return if we don't know anything better
-        REAL bigDistance = owner_->MaxWallsLength();
-        if (bigDistance <= 0)
-        bigDistance = owner_->GetDistance();
-
-        if (a.hitOwner_ != b.hitOwner_)
-        {
-        // different owners? Great, there has to be a way through!
-        REAL ret =
-            a.hitDistance_ + b.hitDistance_;
-
-        if (rim)
-        {
-            ret = bigDistance * .001 + ret * .01 + (a.before_hit - b.before_hit).Norm();
-
-            // we love going between the rim and enemies
-            if (!self)
-                ret = bigDistance * 2;
-        }
-
-        // minimal factor should be 1, this path should never return something smaller than the
-        // paths where only one cycle's walls are hit
-        ret *= 16;
-
-        // or empty space
-        if (a.type == gSENSOR_NONE || b.type == gSENSOR_NONE)
-            ret *= 2;
-
-        return ret * selfHatred;
-        }
-        else if (rim)
-        {
-        // at least one rim wall? Take the distance between the hit positions.
-        return (a.before_hit - b.before_hit).Norm() * selfHatred;
-        }
-        else if (a.type == gSENSOR_NONE && b.type == gSENSOR_NONE)
-        {
-        // empty space! Woo!
-        return owner_->GetDistance() * 256;
-        }
-        else if (a.lr != b.lr)
-        {
-        // different directions? Also great!
-        return (fabsf(a.hitDistance_ - b.hitDistance_) + .25 * bigDistance) * selfHatred;
-        }
-
-        else if ((-2 * a.lr * (a.windingNumber_ - b.windingNumber_) > owner_->Grid()->WindingNumber()))
-        {
-        // this looks like a way out to me
-        return fabsf(a.hitDistance_ - b.hitDistance_) * 10 * selfHatred;
-        }
-        else
-        {
-        // well, the longer the wall segment between the two points, the better.
-        return fabsf(a.hitDistance_ - b.hitDistance_) * selfHatred;
-        }
-
-        // default: hit distance
-        return (a.before_hit - b.before_hit).Norm() * selfHatred;
-    }
-
-    int ActToTurn(uActionPlayer *action)
-    {
-        return action == &gCycle::se_turnLeft ? -1 : 1;
-    }
-
-    template <class T>
-    void BotDebug(const char *description, T value = "")
-    {
-        HelperDebug("gHelperEmergencyTurn", description, value);
-    }
-
-    void BotDebug(const char *description)
-    {
-        HelperDebug("gHelperEmergencyTurn", description, "");
-    }
-
-    template <class T>
-    void HelperDebug(const char *from, const char *description, T value, bool spamProtection = true)
-    {
-        if (!sg_helperDebug)
-        {
-        return;
-        }
-
-        tString debugMessage;
-        if (sg_helperDebugTimeStamp)
-        {
-        debugMessage << "(" << helper_->CurrentTime() << ") ";
-        }
-
-        debugMessage << "0xff8888HELPER DEBUG - "
-                     << "0xff5555" << from << "0xffff88: " << description << " ";
-
-        debugMessage << value << "\n ";
-        con << debugMessage;
-    }
-
-    // does the main thinking
-    int getTurn()
-    {
-        int turn = 0;
-
-        REAL lookahead = 100; // seconds to plan ahead
-        REAL minstep = 0;     // minimum timestep between thoughts in seconds
-
-        // cylce data
-        REAL speed = owner_->Speed();
-        eCoord dir = owner_->Direction();
-        eCoord pos = owner_->Position();
-
-        REAL range = speed * lookahead;
-        eCoord scanDir = dir * range;
-
-        REAL frontFactor = .5;
-
-        Sensor front(owner_, pos, scanDir);
-        front.detect(frontFactor);
-
-        if (!front.ehit)
-        {
-        return turn;
-        }
-
-        // owner_->enemyInfluence.AddSensor( front, 0, owner_ );
-
-        REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
-
-        // get extra time we get through rubber usage
-        REAL rubberGranted, rubberEffectiveness;
-        sg_RubberValues(owner_->Player(), speed, rubberGranted, rubberEffectiveness);
-        REAL rubberTime = (rubberGranted - owner_->GetRubber()) * rubberEffectiveness / speed;
-        REAL rubberRatio = owner_->GetRubber() / rubberGranted;
-
-        // turnedRecently_ = false;
-
-        // these checks can hit our last wall and fail. Temporarily set it to NULL.
-        tJUST_CONTROLLED_PTR<gNetPlayerWall> lastWall = owner_->getLastWall();
-        owner_->setLastWall(NULL);
-
-        REAL narrowFront = 1;
-
-        // cast four diagonal rays
-        Sensor forwardLeft(owner_, pos, scanDir.Turn(+1, +1));
-        forwardLeft.detect(1);
-
-        Sensor backwardLeft(owner_, pos, scanDir.Turn(-1, +narrowFront));
-        backwardLeft.detect(1);
-
-        Sensor forwardRight(owner_, pos, scanDir.Turn(+1, -1));
-        forwardRight.detect(1);
-
-        Sensor backwardRight(owner_, pos, scanDir.Turn(-1, -narrowFront));
-        backwardRight.detect(1);
-
-        // determine survival chances in the four directions
-        REAL frontOpen = Distance(forwardLeft, forwardRight);
-        REAL leftOpen = Distance(forwardLeft, backwardLeft);
-        REAL rightOpen = Distance(forwardRight, backwardRight);
-        REAL rearOpen = Distance(backwardLeft, backwardRight);
-
-        Sensor self(owner_, pos, scanDir.Turn(-1, 0));
-
-        // fake entries
-        self.before_hit = pos;
-        self.windingNumber_ = owner_->getWindingNumber();
-        self.type = gSENSOR_SELF;
-        self.hitDistance_ = 0;
-        self.hitOwner_ = owner_;
-        self.hitTime_ = owner_->LastTime(); // localCurrentTime;
-        self.lr = -1;
-        REAL rearLeftOpen = Distance(backwardLeft, self);
-        self.lr = 1;
-        REAL rearRightOpen = Distance(backwardRight, self);
-
-        {
-        // override: don't camp (too much)
-        if (forwardRight.type == gSENSOR_SELF &&
-            forwardLeft.type == gSENSOR_SELF &&
-            backwardRight.type == gSENSOR_SELF &&
-            backwardLeft.type == gSENSOR_SELF &&
-            front.type == gSENSOR_SELF &&
-            forwardRight.lr == front.lr &&
-            forwardLeft.lr == front.lr &&
-            backwardRight.lr == front.lr &&
-            backwardLeft.lr == front.lr &&
-            frontOpen + leftOpen + rightOpen < owner_->GetDistance() * .5)
-        {
-            // turnedRecently_ = true;
-            if (front.lr > 0)
-            {
-                if (leftOpen > minstep * speed)
-                    // force a turn to the left
-                    rightOpen = 0;
-                else if (front.hit * range < 2 * minstep)
-                    // force a preliminary turn to the right that will allow us to reverse
-                    frontOpen = 0;
-            }
-            else
-            {
-                if (rightOpen > minstep * speed)
-                    // force a turn to the right
-                    leftOpen = 0;
-                else if (front.hit * range < 2 * minstep)
-                    // force a preliminary turn to the left that will allow us to reverse
-                    frontOpen = 0;
-            }
-        }
-        }
-
-        // override rim hugging
-        if (forwardRight.type == gSENSOR_SELF &&
-            forwardLeft.type == gSENSOR_RIM &&
-            backwardRight.type == gSENSOR_SELF &&
-            backwardLeft.type == gSENSOR_RIM &&
-            // backwardLeft.hit < .1 &&
-            forwardRight.lr == -1 &&
-            backwardRight.lr == -1)
-        {
-        // turnedRecently_ = true;
-        if (rightOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
-        {
-            turn = 1;
-            BotDebug("right by override rim hugging 1");
-            return turn;
-
-            // owner_->Act( &gCycle::se_turnRight, 1 );
-            // owner_->Act( &gCycle::se_turnRight, 1 );
-        }
-        else if (leftOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
-        {
-            turn = -1;
-            BotDebug("left by override rim hugging 1");
-            return turn;
-            // owner_->Act( &gCycle::se_turnLeft, 1 );
-            // owner_->Act( &gCycle::se_turnLeft, 1 );
-        }
-        }
-
-        if (forwardLeft.type == gSENSOR_SELF &&
-            forwardRight.type == gSENSOR_RIM &&
-            backwardLeft.type == gSENSOR_SELF &&
-            backwardRight.type == gSENSOR_RIM &&
-            // backwardRight.hit < .1 &&
-            forwardLeft.lr == 1 &&
-            backwardLeft.lr == 1)
-        {
-        // turnedRecently_ = true;
-        if (leftOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
-        {
-            turn = -1;
-            BotDebug("right by override rim hugging 2");
-            return turn;
-            // owner_->Act( &gCycle::se_turnLeft, 1 );
-            // owner_->Act( &gCycle::se_turnLeft, 1 );
-        }
-        else if (rightOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
-        {
-            turn = 1;
-            BotDebug("left by override rim hugging 2");
-            return turn;
-        }
-        }
-
-        // get the best turn direction
-        uActionPlayer *bestAction = (leftOpen > rightOpen) ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
-        int bestDir = (leftOpen > rightOpen) ? 1 : -1;
-        REAL bestOpen = (leftOpen > rightOpen) ? leftOpen : rightOpen;
-        Sensor &bestForward = (leftOpen > rightOpen) ? forwardLeft : forwardRight;
-        Sensor &bestBackward = (leftOpen > rightOpen) ? backwardLeft : backwardRight;
-
-        Sensor direct(owner_, pos, scanDir.Turn(0, bestDir));
-        direct.detect(1);
-
-        // restore last wall
-        owner_->setLastWall(lastWall);
-
-        // only turn if the hole has a shape that allows better entry after we do a zig-zag, or if we're past the good turning point
-        // see how the survival chance is distributed between forward and backward half
-        REAL forwardHalf = Distance(direct, bestForward);
-        REAL backwardHalf = Distance(direct, bestBackward);
-
-        REAL forwardOverhang = bestForward.HitWallExtends(bestForward.Direction(), pos);
-        REAL backwardOverhang = bestBackward.HitWallExtends(bestForward.Direction(), pos);
-
-        // we have to move forward this much before we can hope to turn
-        minMoveOn = bestBackward.HitWallExtends(dir, pos);
-
-        // maybe the direct to the side sensor is better?
-        REAL minMoveOnOther = direct.HitWallExtends(dir, pos);
-
-        // determine how far we can drive on
-        maxMoveOn = bestForward.HitWallExtends(dir, pos);
-        REAL maxMoveOnOther = front.HitWallExtends(dir, pos);
-        if (maxMoveOn > maxMoveOnOther)
-        maxMoveOn = maxMoveOnOther;
-
-        if (maxMoveOn > minMoveOnOther && forwardHalf > backwardHalf && direct.hitOwner_ == bestBackward.hitOwner_)
-        {
-        backwardOverhang = direct.HitWallExtends(bestForward.Direction(), pos);
-        minMoveOn = minMoveOnOther;
-        }
-
-        // best place to turn
-        moveOn = .5 * (minMoveOn * (1 + rubberRatio) + maxMoveOn * (1 - rubberRatio));
-
-        // hit the brakes before you hit anything and if it's worth it
-        bool brake = sg_brakeCycle > 0 &&
-                     front.hit * lookahead * sg_cycleBrakeDeplete < owner_->GetBrakingReservoir() &&
-                     sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_->GetBrakingReservoir() &&
-                     (maxMoveOn - minMoveOn) > 0 &&
-                     owner_->GetBrakingReservoir() * (maxMoveOn - minMoveOn) < speed * owner_->GetTurnDelay();
-
-        if (frontOpen < bestOpen &&
-            (forwardOverhang <= backwardOverhang || (minMoveOn < 0 && moveOn < minstep * speed)))
-        {
-        minMoveOn = maxMoveOn = moveOn = 0;
-        {
-
-            turn = ActToTurn(bestAction);
-            BotDebug("frontOpen < bestOpen bestAction ", turn);
-            return turn;
-        }
-
-        brake = false;
-        }
-        else
-        {
-        // the best
-        REAL bestSoFar = frontOpen > bestOpen ? frontOpen : bestOpen;
-        bestSoFar *= (10 * (1 - rubberRatio) + 1);
-
-        if (rearOpen > bestSoFar && (rearLeftOpen > bestSoFar || rearRightOpen > bestSoFar))
-        {
-            brake = false;
-            // turnedRecently_ = true;
-
-            bool goLeft = rearLeftOpen > rearRightOpen;
-
-            // dead end. reverse into the opposite direction of the front wall
-            uActionPlayer *bestAction = goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
-            uActionPlayer *otherAction = !goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
-            Sensor &bestForward = goLeft ? forwardLeft : forwardRight;
-            Sensor &bestBackward = goLeft ? backwardLeft : backwardRight;
-            Sensor &otherForward = !goLeft ? forwardLeft : forwardRight;
-            Sensor &otherBackward = !goLeft ? backwardLeft : backwardRight;
-
-            // space in the two directions available for turns
-            REAL bestHit = bestForward.hit > bestBackward.hit ? bestBackward.hit : bestForward.hit;
-            REAL otherHit = otherForward.hit > otherBackward.hit ? otherBackward.hit : otherForward.hit;
-
-            bool wait = false;
-
-            // well, after a short turn to the right if space is tight
-            if (bestHit * lookahead < owner_->GetTurnDelay() + rubberTime)
-            {
-                if (otherHit < bestForward.hit * 2 && front.hit * lookahead > owner_->GetTurnDelay() * 2)
-                {
-                    // wait a bit, perhaps there will be a better spot
-                    wait = true;
-                    BotDebug("WAITING");
-                }
-                else if (!wait)
-                {
-                    {
-
-                        turn = ActToTurn(otherAction);
-                        BotDebug("rearOpen > bestSoFar ootherAction ", turn);
-                        return turn;
-                    }
-                    // // there needs to be space ahead to finish the maneuver correctly
-                    // if ( maxMoveOn < speed * owner_->GetTurnDelay() )
-                    // {
-                    //     // there isn't. oh well, turn into the wrong direction completely, see if I care
-                    //     owner_->Act( otherAction, 1 );
-                    //     wait = true;
-                    // }
-                }
-            }
-
-            if (!wait)
-            {
-                turn = ActToTurn(bestAction);
-                BotDebug("not waiting bestAction", turn);
-                return turn;
-            }
-
-            minMoveOn = maxMoveOn = moveOn = 0;
-        }
-        }
-
-        // execute brake command
-        owner_->Act(&gCycle::s_brake, brake ? 1 : -1);
-
-        noTurns++;
-        // BotDebug("NO TURN FOUND", noTurns);
-        return turn;
-    }
-
-private:
-    gCycle *owner_; //!< owner of chatbot
-    gHelper *helper_;
-    };
-
-    class SensorPub : public gSensor
-    {
+class Sensor : public gSensor
+{
 public:
-    SensorPub(gCycle *o, const eCoord &start, const eCoord &d)
-        : gSensor(o, start, d), hitOwner_(0), hitTime_(0),
-          hitDistance_(o->MaxWallsLength()), lrSuggestion_(0),
-          windingNumber_(0), owner_(o)
+    Sensor(gCycle *o, const eCoord &start, const eCoord &d)
+        : gSensor(o, start, d), hitOwner_(0), hitTime_(0), hitDistance_(o->MaxWallsLength()), lrSuggestion_(0), windingNumber_(0)
     {
-        if (hitDistance_ <= 0)
+    if (hitDistance_ <= 0)
         hitDistance_ = o->GetDistance();
     }
 
     virtual void PassEdge(const eWall *ww, REAL time, REAL a, int r)
     {
-        try
-        {
+    try
+    {
         gSensor::PassEdge(ww, time, a, r);
-        }
-        catch (eSensorFinished &e)
-        {
+    }
+    catch (eSensorFinished &e)
+    {
         if (DoExtraDetectionStuff())
             throw;
-        }
+    }
     }
 
     bool DoExtraDetectionStuff()
     {
-        // move towards the beginning of a wall
-        lrSuggestion_ = -lr;
+    // move towards the beginning of a wall
+    lrSuggestion_ = -lr;
 
-        switch (type)
-        {
-        case gSENSOR_NONE:
-        case gSENSOR_RIM:
+    switch (type)
+    {
+    case gSENSOR_NONE:
+    case gSENSOR_RIM:
         lrSuggestion_ = 0;
         return true;
-        default:
-        // unless it is an enemy, follow his wall instead (uncomment for a nasty
-        // cowardy campbot) lrSuggestion *= -1;
-        case gSENSOR_SELF:
-        {
+    default:
+        // unless it is an enemy, follow his wall instead (uncomment for a nasty cowardy campbot)
+        // lrSuggestion *= -1;
+    case gSENSOR_SELF:
+    {
         // determine whether we're hitting the front or back half of his wall
         if (!ehit)
             return true;
@@ -1340,6 +803,8 @@ public:
         if (!hitOwner_)
             return true;
 
+        // gCycleChatBot & enemyChatBot = Get( hitOwner_ );
+
         REAL wallAlpha = playerWall->Edge()->Ratio(before_hit);
         // that's an unreliable source
         if (wallAlpha < 0)
@@ -1351,145 +816,684 @@ public:
         windingNumber_ = playerWall->WindingNumber();
 
         // don't see new walls
-        if (hitTime_ > hitOwner_->LastTime() &&
-            hitOwner_ != owned)
+        if (hitTime_ > hitOwner_->LastTime() && hitOwner_ != owned)
         {
             ehit = NULL;
             hit = 1E+40;
             return false;
         }
-        }
-        }
 
-        return true;
+        // REAL cycleDistance = hitOwner_->GetDistance();
+
+        // REAL wallStart = 0;
+
+        /*
+        if ( gCycle::WallsLength() > 0 )
+        {
+            wallStart = cyclePos - playerWall->Cycle()->ThisWallsLength();
+            if ( wallStart < 0 )
+                wallStart = 0;
+        }
+        */
     }
-    // determines the distance between two sensors; the size should give the
-    // likelyhood to survive if you pass through a gap between the two selected
-    // walls
-    REAL Distance(SensorPub const &a, SensorPub const &b)
-    {
-        // make sure a is left from b
-        if (a.Direction() * b.Direction() < 0)
-        return Distance(b, a);
+    }
 
-        bool self = a.type == gSENSOR_SELF || b.type == gSENSOR_SELF;
-        bool rim = a.type == gSENSOR_RIM || b.type == gSENSOR_RIM;
-
-        // avoid. own. walls.
-        REAL selfHatred = 1;
-        if (a.type == gSENSOR_SELF)
-        {
-        selfHatred *= .5;
-        if (a.lr > 0)
-        {
-            selfHatred *= .5;
-            if (b.type == gSENSOR_RIM)
-                selfHatred *= .25;
-        }
-        }
-        if (b.type == gSENSOR_SELF)
-        {
-        selfHatred *= .5;
-        if (b.lr < 0)
-        {
-            selfHatred *= .5;
-            if (a.type == gSENSOR_RIM)
-                selfHatred *= .25;
-        }
-        }
-
-        // some big distance to return if we don't know anything better
-        REAL bigDistance = owner_->MaxWallsLength();
-        if (bigDistance <= 0)
-        bigDistance = owner_->GetDistance();
-
-        if (a.hitOwner_ != b.hitOwner_)
-        {
-        // different owners? Great, there has to be a way through!
-        REAL ret = a.hitDistance_ + b.hitDistance_;
-
-        if (rim)
-        {
-            ret = bigDistance * .001 + ret * .01 +
-                  (a.before_hit - b.before_hit).Norm();
-
-            // we love going between the rim and enemies
-            if (!self)
-                ret = bigDistance * 2;
-        }
-
-        // minimal factor should be 1, this path should never return something
-        // smaller than the paths where only one cycle's walls are hit
-        ret *= 16;
-
-        // or empty space
-        if (a.type == gSENSOR_NONE || b.type == gSENSOR_NONE)
-            ret *= 2;
-
-        return ret * selfHatred;
-        }
-        else if (rim)
-        {
-        // at least one rim wall? Take the distance between the hit positions.
-        return (a.before_hit - b.before_hit).Norm() * selfHatred;
-        }
-        else if (a.type == gSENSOR_NONE && b.type == gSENSOR_NONE)
-        {
-        // empty space! Woo!
-        return owner_->GetDistance() * 256;
-        }
-        else if (a.lr != b.lr)
-        {
-        // different directions? Also great!
-        return (fabsf(a.hitDistance_ - b.hitDistance_) + .25 * bigDistance) *
-               selfHatred;
-        }
-
-        else if (-2 * a.lr * (a.windingNumber_ - b.windingNumber_) >
-                 owner_->Grid()->WindingNumber())
-        {
-        // this looks like a way out to me
-        return fabsf(a.hitDistance_ - b.hitDistance_) * 10 * selfHatred;
-        }
-
-        else
-        {
-        // well, the longer the wall segment between the two points, the better.
-        return fabsf(a.hitDistance_ - b.hitDistance_) * selfHatred;
-        }
-
-        // default: hit distance
-        return (a.before_hit - b.before_hit).Norm() * selfHatred;
+    return true;
     }
 
     // check how far the hit wall extends straight into the given direction
     REAL HitWallExtends(eCoord const &dir, eCoord const &origin)
     {
-        if (!ehit || !ehit->Other())
-        {
+    if (!ehit || !ehit->Other())
+    {
         return 1E+30;
-        }
+    }
 
-        REAL ret = -1E+30;
-        eCoord ends[2] = {*ehit->Point(), *ehit->Other()->Point()};
-        for (int i = 1; i >= 0; --i)
-        {
+    REAL ret = -1E+30;
+    eCoord ends[2] = {*ehit->Point(), *ehit->Other()->Point()};
+    for (int i = 1; i >= 0; --i)
+    {
         REAL newRet = eCoord::F(dir, ends[i] - origin);
         if (newRet > ret)
             ret = newRet;
-        }
-
-        return ret;
     }
-    gCycle *owner_;
+
+    return ret;
+    }
+
     gCycle *hitOwner_;   // the owner of the hit wall
     REAL hitTime_;       // the time the hit wall was built at
     REAL hitDistance_;   // the distance of the wall to the cycle that built it
-    short lrSuggestion_; // sensor's oppinon on whether moving to the left or
-                         // right of the hit wall is recommended (-1 for left,
-                         // +1 for right)
+    short lrSuggestion_; // sensor's oppinon on whether moving to the left or right of the hit wall is recommended (-1 for left, +1 for right)
     int windingNumber_;  // the number of turns (with sign) the cycle has taken
-    };
+};
+
+gHelperEmergencyTurn(gCycle *owner, gHelper *helper) : owner_(owner),
+                                                        helper_(helper)
+{
+}
+
+// determines the distance between two sensors; the size should give the likelyhood
+// to survive if you pass through a gap between the two selected walls
+REAL Distance(Sensor const &a, Sensor const &b)
+{
+    // make sure a is left from b
+    if (a.Direction() * b.Direction() < 0)
+    return Distance(b, a);
+
+    bool self = a.type == gSENSOR_SELF || b.type == gSENSOR_SELF;
+    bool rim = a.type == gSENSOR_RIM || b.type == gSENSOR_RIM;
+
+    // avoid. own. walls.
+    REAL selfHatred = 1;
+    if (a.type == gSENSOR_SELF)
+    {
+    selfHatred *= .5;
+    if (a.lr > 0)
+    {
+        selfHatred *= .5;
+        if (b.type == gSENSOR_RIM)
+            selfHatred *= .25;
+    }
+    }
+    if (b.type == gSENSOR_SELF)
+    {
+    selfHatred *= .5;
+    if (b.lr < 0)
+    {
+        selfHatred *= .5;
+        if (a.type == gSENSOR_RIM)
+            selfHatred *= .25;
+    }
+    }
+
+    // some big distance to return if we don't know anything better
+    REAL bigDistance = owner_->MaxWallsLength();
+    if (bigDistance <= 0)
+    bigDistance = owner_->GetDistance();
+
+    if (a.hitOwner_ != b.hitOwner_)
+    {
+    // different owners? Great, there has to be a way through!
+    REAL ret =
+        a.hitDistance_ + b.hitDistance_;
+
+    if (rim)
+    {
+        ret = bigDistance * .001 + ret * .01 + (a.before_hit - b.before_hit).Norm();
+
+        // we love going between the rim and enemies
+        if (!self)
+            ret = bigDistance * 2;
+    }
+
+    // minimal factor should be 1, this path should never return something smaller than the
+    // paths where only one cycle's walls are hit
+    ret *= 16;
+
+    // or empty space
+    if (a.type == gSENSOR_NONE || b.type == gSENSOR_NONE)
+        ret *= 2;
+
+    return ret * selfHatred;
+    }
+    else if (rim)
+    {
+    // at least one rim wall? Take the distance between the hit positions.
+    return (a.before_hit - b.before_hit).Norm() * selfHatred;
+    }
+    else if (a.type == gSENSOR_NONE && b.type == gSENSOR_NONE)
+    {
+    // empty space! Woo!
+    return owner_->GetDistance() * 256;
+    }
+    else if (a.lr != b.lr)
+    {
+    // different directions? Also great!
+    return (fabsf(a.hitDistance_ - b.hitDistance_) + .25 * bigDistance) * selfHatred;
+    }
+
+    else if ((-2 * a.lr * (a.windingNumber_ - b.windingNumber_) > owner_->Grid()->WindingNumber()))
+    {
+    // this looks like a way out to me
+    return fabsf(a.hitDistance_ - b.hitDistance_) * 10 * selfHatred;
+    }
+    else
+    {
+    // well, the longer the wall segment between the two points, the better.
+    return fabsf(a.hitDistance_ - b.hitDistance_) * selfHatred;
+    }
+
+    // default: hit distance
+    return (a.before_hit - b.before_hit).Norm() * selfHatred;
+}
+
+int ActToTurn(uActionPlayer *action)
+{
+    return action == &gCycle::se_turnLeft ? -1 : 1;
+}
+
+template <class T>
+void BotDebug(std::string description, T value = "")
+{
+    HelperDebug::Debug("gHelperEmergencyTurn", description, &value);
+}
+
+void BotDebug(std::string description)
+{
+    HelperDebug::Debug("gHelperEmergencyTurn", description, "");
+}
+
+// does the main thinking
+gTurnData * getTurn()
+{
+    gTurnData * turn = (new gTurnData(false));
+
+    REAL lookahead = 100; // seconds to plan ahead
+    REAL minstep = 0;     // minimum timestep between thoughts in seconds
+
+    // cylce data
+    REAL speed = owner_->Speed();
+    eCoord dir = owner_->Direction();
+    eCoord pos = owner_->Position();
+
+    REAL range = speed * lookahead;
+    eCoord scanDir = dir * range;
+
+    REAL frontFactor = .5;
+
+    Sensor front(owner_, pos, scanDir);
+    front.detect(frontFactor);
+
+    if (!front.ehit)
+    {
+        return turn;
+    }
+
+    // owner_->enemyInfluence.AddSensor( front, 0, owner_ );
+
+    REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
+
+    // get extra time we get through rubber usage
+    REAL rubberGranted, rubberEffectiveness;
+    sg_RubberValues(owner_->Player(), speed, rubberGranted, rubberEffectiveness);
+    REAL rubberTime = (rubberGranted - owner_->GetRubber()) * rubberEffectiveness / speed;
+    REAL rubberRatio = owner_->GetRubber() / rubberGranted;
+
+    // turnedRecently_ = false;
+
+    // these checks can hit our last wall and fail. Temporarily set it to NULL.
+    tJUST_CONTROLLED_PTR<gNetPlayerWall> lastWall = owner_->getLastWall();
+    owner_->setLastWall(NULL);
+
+    REAL narrowFront = 1;
+
+    // cast four diagonal rays
+    Sensor forwardLeft(owner_, pos, scanDir.Turn(+1, +1));
+    forwardLeft.detect(1);
+
+    Sensor backwardLeft(owner_, pos, scanDir.Turn(-1, +narrowFront));
+    backwardLeft.detect(1);
+
+    Sensor forwardRight(owner_, pos, scanDir.Turn(+1, -1));
+    forwardRight.detect(1);
+
+    Sensor backwardRight(owner_, pos, scanDir.Turn(-1, -narrowFront));
+    backwardRight.detect(1);
+
+    // determine survival chances in the four directions
+    REAL frontOpen = Distance(forwardLeft, forwardRight);
+    REAL leftOpen = Distance(forwardLeft, backwardLeft);
+    REAL rightOpen = Distance(forwardRight, backwardRight);
+    REAL rearOpen = Distance(backwardLeft, backwardRight);
+
+    Sensor self(owner_, pos, scanDir.Turn(-1, 0));
+
+    // fake entries
+    self.before_hit = pos;
+    self.windingNumber_ = owner_->getWindingNumber();
+    self.type = gSENSOR_SELF;
+    self.hitDistance_ = 0;
+    self.hitOwner_ = owner_;
+    self.hitTime_ = owner_->LastTime(); // localCurrentTime;
+    self.lr = -1;
+    REAL rearLeftOpen = Distance(backwardLeft, self);
+    self.lr = 1;
+    REAL rearRightOpen = Distance(backwardRight, self);
+
+    {
+    // override: don't camp (too much)
+    if (forwardRight.type == gSENSOR_SELF &&
+        forwardLeft.type == gSENSOR_SELF &&
+        backwardRight.type == gSENSOR_SELF &&
+        backwardLeft.type == gSENSOR_SELF &&
+        front.type == gSENSOR_SELF &&
+        forwardRight.lr == front.lr &&
+        forwardLeft.lr == front.lr &&
+        backwardRight.lr == front.lr &&
+        backwardLeft.lr == front.lr &&
+        frontOpen + leftOpen + rightOpen < owner_->GetDistance() * .5)
+    {
+        // turnedRecently_ = true;
+        if (front.lr > 0)
+        {
+            if (leftOpen > minstep * speed)
+                // force a turn to the left
+                rightOpen = 0;
+            else if (front.hit * range < 2 * minstep)
+                // force a preliminary turn to the right that will allow us to reverse
+                frontOpen = 0;
+        }
+        else
+        {
+            if (rightOpen > minstep * speed)
+                // force a turn to the right
+                leftOpen = 0;
+            else if (front.hit * range < 2 * minstep)
+                // force a preliminary turn to the left that will allow us to reverse
+                frontOpen = 0;
+        }
+    }
+    }
+
+    // override rim hugging
+    if (forwardRight.type == gSENSOR_SELF &&
+        forwardLeft.type == gSENSOR_RIM &&
+        backwardRight.type == gSENSOR_SELF &&
+        backwardLeft.type == gSENSOR_RIM &&
+        // backwardLeft.hit < .1 &&
+        forwardRight.lr == -1 &&
+        backwardRight.lr == -1)
+    {
+    // turnedRecently_ = true;
+    if (rightOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
+    {
+        turn = new gTurnData(RIGHT,2);
+        BotDebug("right by override rim hugging 1");
+        return turn;
+
+        // owner_->Act( &gCycle::se_turnRight, 1 );
+        // owner_->Act( &gCycle::se_turnRight, 1 );
+    }
+    else if (leftOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
+    {
+        turn = new gTurnData(LEFT,2);
+        BotDebug("left 2 by override rim hugging 1");
+        return turn;
+        // owner_->Act( &gCycle::se_turnLeft, 1 );
+        // owner_->Act( &gCycle::se_turnLeft, 1 );
+    }
+    }
+
+    if (forwardLeft.type == gSENSOR_SELF &&
+        forwardRight.type == gSENSOR_RIM &&
+        backwardLeft.type == gSENSOR_SELF &&
+        backwardRight.type == gSENSOR_RIM &&
+        // backwardRight.hit < .1 &&
+        forwardLeft.lr == 1 &&
+        backwardLeft.lr == 1)
+    {
+    // turnedRecently_ = true;
+    if (leftOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
+    {
+        turn = new gTurnData(LEFT,2);
+        BotDebug("left 2 by override rim hugging 2");
+        return turn;
+        // owner_->Act( &gCycle::se_turnLeft, 1 );
+        // owner_->Act( &gCycle::se_turnLeft, 1 );
+    }
+    else if (rightOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
+    {
+        turn = new gTurnData(RIGHT,2);
+        BotDebug("right 2 by override rim hugging 2");
+        return turn;
+    }
+    }
+
+    // get the best turn direction
+    uActionPlayer *bestAction = (leftOpen > rightOpen) ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+    int bestDir = (leftOpen > rightOpen) ? 1 : -1;
+    REAL bestOpen = (leftOpen > rightOpen) ? leftOpen : rightOpen;
+    Sensor &bestForward = (leftOpen > rightOpen) ? forwardLeft : forwardRight;
+    Sensor &bestBackward = (leftOpen > rightOpen) ? backwardLeft : backwardRight;
+
+    Sensor direct(owner_, pos, scanDir.Turn(0, bestDir));
+    direct.detect(1);
+
+    // restore last wall
+    owner_->setLastWall(lastWall);
+
+    // only turn if the hole has a shape that allows better entry after we do a zig-zag, or if we're past the good turning point
+    // see how the survival chance is distributed between forward and backward half
+    REAL forwardHalf = Distance(direct, bestForward);
+    REAL backwardHalf = Distance(direct, bestBackward);
+
+    REAL forwardOverhang = bestForward.HitWallExtends(bestForward.Direction(), pos);
+    REAL backwardOverhang = bestBackward.HitWallExtends(bestForward.Direction(), pos);
+
+    // we have to move forward this much before we can hope to turn
+    minMoveOn = bestBackward.HitWallExtends(dir, pos);
+
+    // maybe the direct to the side sensor is better?
+    REAL minMoveOnOther = direct.HitWallExtends(dir, pos);
+
+    // determine how far we can drive on
+    maxMoveOn = bestForward.HitWallExtends(dir, pos);
+    REAL maxMoveOnOther = front.HitWallExtends(dir, pos);
+    if (maxMoveOn > maxMoveOnOther)
+    maxMoveOn = maxMoveOnOther;
+
+    if (maxMoveOn > minMoveOnOther && forwardHalf > backwardHalf && direct.hitOwner_ == bestBackward.hitOwner_)
+    {
+    backwardOverhang = direct.HitWallExtends(bestForward.Direction(), pos);
+    minMoveOn = minMoveOnOther;
+    }
+
+    // best place to turn
+    moveOn = .5 * (minMoveOn * (1 + rubberRatio) + maxMoveOn * (1 - rubberRatio));
+
+    // hit the brakes before you hit anything and if it's worth it
+    bool brake = sg_brakeCycle > 0 &&
+                    front.hit * lookahead * sg_cycleBrakeDeplete < owner_->GetBrakingReservoir() &&
+                    sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_->GetBrakingReservoir() &&
+                    (maxMoveOn - minMoveOn) > 0 &&
+                    owner_->GetBrakingReservoir() * (maxMoveOn - minMoveOn) < speed * owner_->GetTurnDelay();
+
+    if (frontOpen < bestOpen &&
+        (forwardOverhang <= backwardOverhang || (minMoveOn < 0 && moveOn < minstep * speed)))
+    {
+    minMoveOn = maxMoveOn = moveOn = 0;
+    {
+
+        turn = new gTurnData(ActToTurn(bestAction) ,1);;
+        BotDebug("frontOpen < bestOpen bestAction ", turn->direction);
+        return turn;
+    }
+
+    brake = false;
+    }
+    else
+    {
+    // the best
+    REAL bestSoFar = frontOpen > bestOpen ? frontOpen : bestOpen;
+    bestSoFar *= (10 * (1 - rubberRatio) + 1);
+
+    if (rearOpen > bestSoFar && (rearLeftOpen > bestSoFar || rearRightOpen > bestSoFar))
+    {
+        brake = false;
+        // turnedRecently_ = true;
+
+        bool goLeft = rearLeftOpen > rearRightOpen;
+
+        // dead end. reverse into the opposite direction of the front wall
+        uActionPlayer *bestAction = goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+        uActionPlayer *otherAction = !goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+        Sensor &bestForward = goLeft ? forwardLeft : forwardRight;
+        Sensor &bestBackward = goLeft ? backwardLeft : backwardRight;
+        Sensor &otherForward = !goLeft ? forwardLeft : forwardRight;
+        Sensor &otherBackward = !goLeft ? backwardLeft : backwardRight;
+
+        // space in the two directions available for turns
+        REAL bestHit = bestForward.hit > bestBackward.hit ? bestBackward.hit : bestForward.hit;
+        REAL otherHit = otherForward.hit > otherBackward.hit ? otherBackward.hit : otherForward.hit;
+
+        bool wait = false;
+
+        // well, after a short turn to the right if space is tight
+        if (bestHit * lookahead < owner_->GetTurnDelay() + rubberTime)
+        {
+            if (otherHit < bestForward.hit * 2 && front.hit * lookahead > owner_->GetTurnDelay() * 2)
+            {
+                // wait a bit, perhaps there will be a better spot
+                wait = true;
+                BotDebug("WAITING");
+            }
+            else if (!wait)
+            {
+                {
+
+                    turn = new gTurnData(ActToTurn(otherAction) ,1);;
+                    BotDebug("rearOpen > bestSoFar ootherAction ", turn->direction);
+                    return turn;
+                }
+                // // there needs to be space ahead to finish the maneuver correctly
+                // if ( maxMoveOn < speed * owner_->GetTurnDelay() )
+                // {
+                //     // there isn't. oh well, turn into the wrong direction completely, see if I care
+                //     owner_->Act( otherAction, 1 );
+                //     wait = true;
+                // }
+            }
+        }
+
+        if (!wait)
+        {
+            turn = new gTurnData(ActToTurn(bestAction) ,1);;
+            BotDebug("not waiting bestAction", turn->direction);
+            return turn;
+        }
+
+        minMoveOn = maxMoveOn = moveOn = 0;
+    }
+    }
+
+    // execute brake command
+    owner_->Act(&gCycle::s_brake, brake ? 1 : -1);
+
+    noTurns++;
+    // BotDebug("NO TURN FOUND", noTurns);
+    return turn;
+}
+
+private:
+gCycle *owner_; //!< owner of chatbot
+gHelper *helper_;
+};
+
+class SensorPub : public gSensor
+{
+public:
+SensorPub(gCycle *o, const eCoord &start, const eCoord &d)
+    : gSensor(o, start, d), hitOwner_(0), hitTime_(0),
+        hitDistance_(o->MaxWallsLength()), lrSuggestion_(0),
+        windingNumber_(0), owner_(o)
+{
+    if (hitDistance_ <= 0)
+    hitDistance_ = o->GetDistance();
+}
+
+virtual void PassEdge(const eWall *ww, REAL time, REAL a, int r)
+{
+    try
+    {
+    gSensor::PassEdge(ww, time, a, r);
+    }
+    catch (eSensorFinished &e)
+    {
+    if (DoExtraDetectionStuff())
+        throw;
+    }
+}
+
+bool DoExtraDetectionStuff()
+{
+    // move towards the beginning of a wall
+    lrSuggestion_ = -lr;
+
+    switch (type)
+    {
+    case gSENSOR_NONE:
+    case gSENSOR_RIM:
+    lrSuggestion_ = 0;
+    return true;
+    default:
+    // unless it is an enemy, follow his wall instead (uncomment for a nasty
+    // cowardy campbot) lrSuggestion *= -1;
+    case gSENSOR_SELF:
+    {
+    // determine whether we're hitting the front or back half of his wall
+    if (!ehit)
+        return true;
+    eWall *wall = ehit->GetWall();
+    if (!wall)
+        return true;
+    gPlayerWall *playerWall = dynamic_cast<gPlayerWall *>(wall);
+    if (!playerWall)
+        return true;
+    hitOwner_ = playerWall->Cycle();
+    if (!hitOwner_)
+        return true;
+
+    REAL wallAlpha = playerWall->Edge()->Ratio(before_hit);
+    // that's an unreliable source
+    if (wallAlpha < 0)
+        wallAlpha = 0;
+    if (wallAlpha > 1)
+        wallAlpha = 1;
+    hitDistance_ = hitOwner_->GetDistance() - playerWall->Pos(wallAlpha);
+    hitTime_ = playerWall->Time(wallAlpha);
+    windingNumber_ = playerWall->WindingNumber();
+
+    // don't see new walls
+    if (hitTime_ > hitOwner_->LastTime() &&
+        hitOwner_ != owned)
+    {
+        ehit = NULL;
+        hit = 1E+40;
+        return false;
+    }
+    }
+    }
+
+    return true;
+}
+// determines the distance between two sensors; the size should give the
+// likelyhood to survive if you pass through a gap between the two selected
+// walls
+REAL Distance(SensorPub const &a, SensorPub const &b)
+{
+    // make sure a is left from b
+    if (a.Direction() * b.Direction() < 0)
+    return Distance(b, a);
+
+    bool self = a.type == gSENSOR_SELF || b.type == gSENSOR_SELF;
+    bool rim = a.type == gSENSOR_RIM || b.type == gSENSOR_RIM;
+
+    // avoid. own. walls.
+    REAL selfHatred = 1;
+    if (a.type == gSENSOR_SELF)
+    {
+    selfHatred *= .5;
+    if (a.lr > 0)
+    {
+        selfHatred *= .5;
+        if (b.type == gSENSOR_RIM)
+            selfHatred *= .25;
+    }
+    }
+    if (b.type == gSENSOR_SELF)
+    {
+    selfHatred *= .5;
+    if (b.lr < 0)
+    {
+        selfHatred *= .5;
+        if (a.type == gSENSOR_RIM)
+            selfHatred *= .25;
+    }
+    }
+
+    // some big distance to return if we don't know anything better
+    REAL bigDistance = owner_->MaxWallsLength();
+    if (bigDistance <= 0)
+    bigDistance = owner_->GetDistance();
+
+    if (a.hitOwner_ != b.hitOwner_)
+    {
+    // different owners? Great, there has to be a way through!
+    REAL ret = a.hitDistance_ + b.hitDistance_;
+
+    if (rim)
+    {
+        ret = bigDistance * .001 + ret * .01 +
+                (a.before_hit - b.before_hit).Norm();
+
+        // we love going between the rim and enemies
+        if (!self)
+            ret = bigDistance * 2;
+    }
+
+    // minimal factor should be 1, this path should never return something
+    // smaller than the paths where only one cycle's walls are hit
+    ret *= 16;
+
+    // or empty space
+    if (a.type == gSENSOR_NONE || b.type == gSENSOR_NONE)
+        ret *= 2;
+
+    return ret * selfHatred;
+    }
+    else if (rim)
+    {
+    // at least one rim wall? Take the distance between the hit positions.
+    return (a.before_hit - b.before_hit).Norm() * selfHatred;
+    }
+    else if (a.type == gSENSOR_NONE && b.type == gSENSOR_NONE)
+    {
+    // empty space! Woo!
+    return owner_->GetDistance() * 256;
+    }
+    else if (a.lr != b.lr)
+    {
+    // different directions? Also great!
+    return (fabsf(a.hitDistance_ - b.hitDistance_) + .25 * bigDistance) *
+            selfHatred;
+    }
+
+    else if (-2 * a.lr * (a.windingNumber_ - b.windingNumber_) >
+                owner_->Grid()->WindingNumber())
+    {
+    // this looks like a way out to me
+    return fabsf(a.hitDistance_ - b.hitDistance_) * 10 * selfHatred;
+    }
+
+    else
+    {
+    // well, the longer the wall segment between the two points, the better.
+    return fabsf(a.hitDistance_ - b.hitDistance_) * selfHatred;
+    }
+
+    // default: hit distance
+    return (a.before_hit - b.before_hit).Norm() * selfHatred;
+}
+
+// check how far the hit wall extends straight into the given direction
+REAL HitWallExtends(eCoord const &dir, eCoord const &origin)
+{
+    if (!ehit || !ehit->Other())
+    {
+    return 1E+30;
+    }
+
+    REAL ret = -1E+30;
+    eCoord ends[2] = {*ehit->Point(), *ehit->Other()->Point()};
+    for (int i = 1; i >= 0; --i)
+    {
+    REAL newRet = eCoord::F(dir, ends[i] - origin);
+    if (newRet > ret)
+        ret = newRet;
+    }
+
+    return ret;
+}
+gCycle *owner_;
+gCycle *hitOwner_;   // the owner of the hit wall
+REAL hitTime_;       // the time the hit wall was built at
+REAL hitDistance_;   // the distance of the wall to the cycle that built it
+short lrSuggestion_; // sensor's oppinon on whether moving to the left or
+                        // right of the hit wall is recommended (-1 for left,
+                        // +1 for right)
+int windingNumber_;  // the number of turns (with sign) the cycle has taken
+};
 
 gCycle* gHelperEnemiesData::detectEnemies() {
     allEnemies.clear();
@@ -1679,27 +1683,6 @@ bool gSmartTurning::isClose(eCoord pos, REAL closeFactor) {
 }
 
 
-bool sg_helperShowCorners = false;
-static tConfItem<bool> sg_helperShowCornersConf("HELPER_SHOW_CORNERS", sg_helperShowCorners);
-
-bool sg_helperShowCornersPassed = 0;
-static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_SHOW_CORNERS_PASSED",sg_helperShowCornersPassed);
-
-REAL sg_helperShowCornersPassedRange = 1;
-static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
-
-REAL sg_helperShowCornersBoundary = 10;
-static tConfItem<REAL> sg_showTraceDatacornerRangeConf("HELPER_SHOW_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
-
-REAL sg_helperShowCornersBoundaryPassed = 2.5;
-static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_SHOW_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
-
-REAL sg_helperShowCornersTimeout = 1;
-static tConfItem<REAL> sg_traceTimeoutConf("HELPER_SHOW_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
-
-REAL sg_helperShowCornersHeight = 1;
-static tConfItem<REAL> sg_helperShowCornersHeightConf("HELPER_SHOW_CORNERS_HEIGHT", sg_helperShowCornersHeight);
-
 
 void gSmartTurning::smartTurningPlan(gHelperData &data) {
     if (!helper_->aliveCheck()) { return; }
@@ -1832,26 +1815,21 @@ void gSmartTurning::followTail(gHelperData &data) {
 int gSmartTurning::thinkPath( eCoord pos, gHelperData &data ) {
 
     eFace * posFace = owner_->grid->FindSurroundingFace(pos);
-
-
     eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
                         pos, posFace,
                         owner_,
                         path);
-
-
     REAL mindist = 10;
     int lr = 0;
     eCoord dir = owner_->Direction();
-
     REAL ls=data.sensors.getSensor(LEFT)->hit;
     REAL rs=data.sensors.getSensor(RIGHT)->hit;
 
-        for (int z = 5; z>=0; z--){
-            if (!path.Proceed()){
-                break;
-            }
+    for (int z = 5; z>=0; z--){
+        if (!path.Proceed()){
+            break;
         }
+    }
 
     bool goon   = path.Proceed();
     bool nogood = false;
@@ -1886,7 +1864,6 @@ int gSmartTurning::thinkPath( eCoord pos, gHelperData &data ) {
 
     if (goon)
     {
-
         // now we have found our next goal. Try to get there.
         eCoord pos    = owner_->Position();
         eCoord target = path.CurrentPosition();
@@ -1912,7 +1889,6 @@ int gSmartTurning::thinkPath( eCoord pos, gHelperData &data ) {
             }
         }
     }
-
 }
 
 void gSmartTurning::autoUnBrake() {
@@ -1974,6 +1950,10 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data) {
     canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningSpace);
     //con << canSurviveLeftTurn << " | " << canSurviveRightTurn << " | " << closedIn << " | " << blockedBySelf << " | " << sg_helperSmartTurningSpace << "\n";
 
+    if (owner_->turnIgnoreTime > owner_->localCurrentTime){
+        this->blockTurn = BOTH;
+        return;
+    }
     if ((closedIn && sg_helperSmartTurningClosedIn ) || (closedIn) && blockedBySelf) {
         goto SKIP_BLOCKTURN;
     }
@@ -2050,8 +2030,6 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data) {
         }
     }
 }
-
-
 
 bool gSmartTurning::makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFactor){
     if (!helper_->drivingStraight())
@@ -2146,18 +2124,6 @@ void gSmartTurning::canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, 
         canSurviveLeftTurn = canTurnLeftRubber;
         canSurviveRightTurn = canTurnRightRubber;
     }
-
-
-    // if (sg_helperDebug) {
-
-    // gSensor left(owner_, owner_->pos, owner_->dir.Turn(eCoord(0, 1)));
-    // left->detect(data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
-
-    // gSensor right(owner_, owner_->pos, owner_->dir.Turn(eCoord(0, -1)));
-    // right->detect(data.turnSpeedFactor * sg_helperSmartTurningClosedInMult);
-    // debugLine(1,0,0,0,data.speedFactor,owner_->pos,left->before_hit);
-    // debugLine(1,0,0,0,data.speedFactor,owner_->pos,right->before_hit);
-    // }
 }
 
 
@@ -2197,36 +2163,23 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
 
         if (rubberRatio >= sg_helperSmartTurningFrontBotActivationRubber || hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
         {
-            bool turnPossible = false;
-            gTurnData *turnData = getEmergencyTurn(data);
+            bool turnMade = false;
+            gTurnData *turnData = emergencyTurn.getTurn();//getEmergencyTurn(data);
             if (turnData != nullptr && turnData->exist && turnData->numberOfTurns > 0)
             {
                 for (int i = 0; i < turnData->numberOfTurns; i++)
                 {
-                    makeTurnIfPossible(data,turnData->direction, 0);
+                    if (makeTurnIfPossible(data,turnData->direction, 0) == true)
+                        turnMade = true;
                 }
-                turnPossible = true;
             }
-
-            // REAL turn = emergencyTurn.getTurn();
-            // // REAL blockTurn = owner_->blockTurn;
-            // // owner_->blockTurn = 0;
-            // // owner_->turnIgnoreTime = -999;
-            // if (turn == 0) {
-            //     return;
-            // }
-            // noTurns = 0;
-            // turnPossible = makeTurnIfPossible(data, turn , 0);
-            // owner_->blockTurn = blockTurn;
-
-            if (sg_helperSmartTurningFrontBotDisableTime > 0 && turnPossible)
+            if (sg_helperSmartTurningFrontBotDisableTime > 0 && turnMade)
             {
-                owner_->turnIgnoreTime = helper_->CurrentTime() + (sg_helperSmartTurningFrontBotDisableTime * data.turnDistance);
+                owner_->turnIgnoreTime = helper_->CurrentTime() + (sg_helperSmartTurningFrontBotDisableTime);
             }
         }
     }
 }
-
 
 REAL Distance( SensorPub const & a, SensorPub const & b , gCycle *owner_)
 {
@@ -2320,6 +2273,7 @@ REAL Distance( SensorPub const & a, SensorPub const & b , gCycle *owner_)
     // default: hit distance
     return ( a.before_hit - b.before_hit).Norm() * selfHatred;
 }
+
 gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
     {
 
@@ -2355,7 +2309,6 @@ gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
 
         if ( !front.ehit )
             return (new gTurnData(false));
-
 
         // these checks can hit our last wall and fail. Temporarily set it to NULL.
         tJUST_CONTROLLED_PTR< gNetPlayerWall > lastWall = owner_->lastWall;
@@ -2439,11 +2392,7 @@ gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
         if ( frontOpen < bestOpen &&
                 ( forwardOverhang <= backwardOverhang || ( minMoveOn < 0 && moveOn < minstep * speed ) ) )
         {
-
-
-
             minMoveOn = maxMoveOn = moveOn = 0;
-
             {
                 return (new gTurnData(bestDir,2));
             }
@@ -2457,7 +2406,6 @@ gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
 
             if ( rearOpen > bestSoFar && ( rearLeftOpen > bestSoFar || rearRightOpen > bestSoFar ) )
             {
-
                 bool goLeft = rearLeftOpen > rearRightOpen;
 
                 // dead end. reverse into the opposite direction of the front wall
@@ -2503,9 +2451,6 @@ gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
         }
 
         return (new gTurnData(false));
-
-
-
     }
 
 
@@ -2542,28 +2487,6 @@ gHelper::gHelper(gCycle *owner)
     gPathHelper::Get(this, owner);
     gTailHelper::Get(this, owner);
 }
-
-bool sg_helperShowHit = false;
-static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT", sg_helperShowHit);
-
-
-bool sg_helperDetectCut = false;
-static tConfItem<bool> sg_helperDetectCutConf("HELPER_DETECT_CUT", sg_helperDetectCut);
-
-gHelperHudItemRef<bool> sg_helperSmartTurningH(("Smart Turning"),sg_helperSmartTurning);
-gHelperHudItemRef<bool> sg_pathHelperH(("Path Helper"),sg_pathHelper);
-
-
-gHelperHudItemRef<bool> sg_helperDetectCutH(("Detect Cut"),sg_helperDetectCut);
-gHelperHudItem<tColoredString> closestEnemyH(("Closest Enemy"),tColoredString("None"), ("Detect Cut"));
-//closestEnemyH<tColoredString>.setParent(("Detect Cut"));
-gHelperHudItem<tColoredString> cutTurnDirectionH(("Cut Turn Dir"),tColoredString("0xdd0000None"), ("Detect Cut"));
-//cutTurnDirectionH<tColoredString>.setParent(("Detect Cut"));
-
-
-gHelperHudItemRef<bool> sg_helperShowHitH(("Show Hit"),sg_helperShowHit);
-gHelperHudItem<REAL> sg_helperShowHitFrontDistH(("Show Hit Front Dist"),1000,("Show Hit"));
-//sg_helperShowHitFrontDistH<REAL>.setParent(tString("Show Hit"));
 
 gCycle* gHelper::getOwner() { return owner_; }
 
@@ -2612,19 +2535,6 @@ void gHelper::debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
     eDebugLine::SetColor(R * sg_helperBrightness * brightness, G * sg_helperBrightness * brightness, B * sg_helperBrightness* brightness);
     eDebugLine::Draw(start, startHeight, end, height);
 }
-
-
-REAL sg_helperDetectCutDetectionRange = 150;
-static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf("HELPER_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
-
-REAL sg_helperDetectCutTimeout = .001;
-static tConfItem<REAL> sg_helperDetectCutTimeoutConf("HELPER_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
-
-REAL sg_helperDetectCutHeight = 0;
-static tConfItem<REAL> sg_helperDetectCutHeightConf("HELPER_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
-
-REAL sg_helperDetectCutReact = .2; // .005 ?
-static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg_helperDetectCutReact);
 
 void gHelper::detectCut(gHelperData &data, int detectionRange)
 {
@@ -2706,31 +2616,6 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     }
 }
 
-
-bool sg_helperEnemyTracers = false;
-static tConfItem<bool> sg_helperEnemyTracersConf("HELPER_SHOW_ENEMY_TRACERS", sg_helperEnemyTracers);
-
-REAL sg_helperEnemyTracersHeight = 0;
-static tConfItem<REAL> sg_helperEnemyTracersHeightConf("HELPER_SHOW_ENEMY_TRACERS_HEIGHT", sg_helperEnemyTracersHeight);
-
-REAL sg_helperEnemyTracersDetectionRange = 150;
-static tConfItem<REAL> sg_helperEnemyTracersDetectionRangeConf("HELPER_SHOW_ENEMY_TRACERS_DETECTION_RANGE", sg_helperEnemyTracersDetectionRange);
-
-REAL sg_helperEnemyTracersSpeedMult = 1.5;
-static tConfItem<REAL> sg_helperEnemyTracersSpeedMultConf("HELPER_SHOW_ENEMY_TRACERS_SPEED_MULT", sg_helperEnemyTracersSpeedMult);
-
-REAL sg_helperEnemyTracersPassthrough = 1;
-static tConfItem<REAL> sg_helperEnemyTracersPassthroughConf("HELPER_SHOW_ENEMY_TRACERS_PASSTHROUGH", sg_helperEnemyTracersPassthrough);
-
-REAL sg_helperEnemyTracersDelayMult = 1;
-static tConfItem<REAL> sg_helperEnemyTracersDelayMultConf("HELPER_SHOW_ENEMY_TRACERS_DELAY_MULT", sg_helperEnemyTracersDelayMult);
-
-REAL sg_helperEnemyTracersTimeout = 0.01;
-static tConfItem<REAL> sg_helperEnemyTracersTimeoutConf("HELPER_SHOW_ENEMY_TRACERS_TIMEOUT", sg_helperEnemyTracersTimeout);
-
-REAL sg_helperEnemyTracersBrightness = 1;
-static tConfItem<REAL> sg_helperEnemyTracersBrightnessConf("HELPER_SHOW_ENEMY_TRACERS_BRIGHTNESS", sg_helperEnemyTracersBrightness);
-
 void gHelper::enemyTracers(gHelperData &data, int detectionRange, REAL timeout)
 {
     if (!aliveCheck()) { return; }
@@ -2770,23 +2655,6 @@ void gHelper::enemyTracers(gHelperData &data, int detectionRange, REAL timeout)
 
 }
 
-
-bool sg_helperShowTail = false;
-static tConfItem<bool> sg_helperShowTailConf("HELPER_SHOW_TAIL", sg_helperShowTail);
-
-bool sg_helperShowTailPath = false;
-static tConfItem<bool> sg_helperShowTailPathConf("HELPER_SHOW_TAIL_PATH", sg_helperShowTailPath);
-
-
-REAL sg_helperShowTailHeight = 1;
-static tConfItem<REAL> sg_helperShowTailHeightConf("HELPER_SHOW_TAIL_HEIGHT", sg_helperShowTailHeight);
-
-REAL sg_helperShowTailPassthrough = 0.5;
-static tConfItem<REAL> sg_helperShowTailPassthroughConf("HELPER_SHOW_TAIL_PASSTHROUGH", sg_helperShowTailPassthrough);
-
-REAL sg_helperShowTailTimeout = 1;
-static tConfItem<REAL> sg_helperShowTailTimeoutConf("HELPER_SHOW_TAIL_TIMEOUT", sg_helperShowTailTimeout);
-
 void gHelper::showTail(gHelperData &data)
 {
     if (!aliveCheck()) { return; }
@@ -2807,21 +2675,6 @@ void gHelper::showTailPath(gHelperData &data)
     smartTurning->thinkPath(owner_->tailPos,data);
 }
 
-bool sg_helperShowEnemyTail = false;
-static tConfItem<bool> sg_helperShowEnemyTailConf("HELPER_SHOW_ENEMY_TAIL", sg_helperShowEnemyTail);
-
-REAL sg_helperShowEnemyTailHeight = 1;
-static tConfItem<REAL> sg_helperShowEnemyTailHeightConf("HELPER_SHOW_ENEMY_TAIL_HEIGHT", sg_helperShowEnemyTailHeight);
-
-REAL sg_helperShowEnemyTailDistanceMult = 1;
-static tConfItem<REAL> sg_helperShowEnemyTailDistanceMultConf("HELPER_SHOW_ENEMY_TAIL_DISTANCE_MULT", sg_helperShowEnemyTailDistanceMult);
-
-REAL sg_helperShowEnemyTailTimeoutMult = 1;
-static tConfItem<REAL> sg_helperShowEnemyTailTimeoutMultConf("HELPER_SHOW_ENEMY_TAIL_TIMEOUT_MULT", sg_helperShowEnemyTailTimeoutMult);
-
-REAL sg_helperShowEnemyTailBrightness = 1;
-static tConfItem<REAL> sg_helperShowEnemyTailBrightnessConf("HELPER_SHOW_ENEMY_TAIL_BRIGHTNESS", sg_helperShowEnemyTailBrightness);
-
 void gHelper::showEnemyTail(gHelperData &data)
 {
     if (!aliveCheck()) { return; }
@@ -2838,19 +2691,6 @@ void gHelper::showEnemyTail(gHelperData &data)
         debugLine(other->color_.r, other->color_.g, other->color_.b, sg_helperShowEnemyTailHeight, timeout * sg_helperShowEnemyTailTimeoutMult, other->tailPos, other->tailPos, sg_helperShowEnemyTailBrightness);
     }
 }
-
-
-bool sg_helperShowTailTracer = false;
-static tConfItem<bool> sg_helperShowTailTracerConf("HELPER_SHOW_TAIL_TRACER", sg_helperShowTailTracer);
-
-REAL sg_helperShowTailTracerHeight = 1;
-static tConfItem<REAL> sg_helperShowTailTracerHeightConf("HELPER_SHOW_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
-
-REAL sg_helperShowTailTracerTimeoutMult = 1;
-static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf("HELPER_SHOW_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
-
-REAL sg_helperShowTailTracerDistanceMult = 10;
-static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf("HELPER_SHOW_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
 
 void gHelper::showTailTracer(gHelperData &data)
 {
@@ -2931,31 +2771,6 @@ void gHelper::showCorners(gHelperData &data) {
     showCorner(data,rightCorner,timeout);
 }
 
-
-REAL sg_showHitDataHeight = 1;
-static tConfItem<REAL> sg_showHitDataHeightConf("HELPER_SHOW_HIT_HEIGHT", sg_showHitDataHeight);
-
-REAL sg_showHitDataHeightFront = 1;
-static tConfItem<REAL> sg_showHitDataHeightFrontConf("HELPER_SHOW_HIT_HEIGHT_FRONT", sg_showHitDataHeightFront);
-
-REAL sg_showHitDataHeightSides = 2;
-static tConfItem<REAL> sg_showHitDataHeightSidesConf("HELPER_SHOW_HIT_HEIGHT_SIDES", sg_showHitDataHeightSides);
-
-REAL sg_showHitDataRange = 1;
-static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE", sg_showHitDataRange);
-
-REAL sg_showHitDataFreeRange = 1;
-static tConfItem<REAL> sg_showHitDataFreeRangeConf("HELPER_SHOW_HIT_OPEN_RANGE", sg_showHitDataFreeRange);
-
-int sg_showHitDataRecursion = 1;
-static tConfItem<int> sg_showHitDataRecursionConf("HELPER_SHOW_HIT_RECURSION", sg_showHitDataRecursion);
-
-REAL sg_showHitDataTimeout = 1;
-static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
-
-bool sg_helperShowHitStartAtHitPos = true;
-static tConfItem<bool> sg_helperShowHitStartAtHitPosConf("HELPER_SHOW_HIT_START_AT_HIT_POS", sg_helperShowHitStartAtHitPos);
-
 void gHelper::showHit(gHelperData &data)
 {
     if (!aliveCheck()) { return; }
@@ -3014,48 +2829,6 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     showHitDebugLines(hitPos, newDir, timeout, data, recursion, sensorDir);
 }
 
-// void gHelper::showHitDebugLines(eCoord pos, eCoord initDir, REAL timeout, gHelperData &data, int recursion, int sensorDir)
-// {
-
-//     if (recursion <= 0)
-//     {
-//         return;
-//     }
-
-//     HelperDebug::Debug("showHitDebugLines","Recursion",&recursion);
-//     recursion--;
-//     eCoord newDir = initDir.Turn(eCoord(0, sensorDir * -1)); // Same as init direction
-//     eCoord newDir2 = initDir.Turn(eCoord(0, sensorDir)); // Opposite init direction
-
-//     gSensor *sensor = data.sensors.getSensor(pos, sensorDir * -1); // Same
-//     gSensor *sensor2 = data.sensors.getSensor(pos, sensorDir); // Opp
-
-//     eCoord hitPos = sensor->before_hit;
-//     eCoord hitPos2 = sensor2->before_hit;
-//     REAL hitDistance = sensor->hit;
-//     REAL hitDistance2 = sensor2->hit;
-
-//     bool open = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
-//     bool open2 = hitDistance2 > data.turnSpeedFactor * sg_showHitDataFreeRange;
-//     if (open)
-//     {
-//         debugLine(0, 1, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
-//     }
-//     else
-//     {
-//         debugLine(1, 0, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
-//     }
-//     if (open2)
-//     {
-//         debugLine(0, 1, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
-//     }
-//     else
-//     {
-//         debugLine(1, 0, 0, sg_showHitDataHeightSides, timeout, pos, hitPos);
-//     }
-//     showHitDebugLines(hitPos, newDir, timeout, data, recursion, sensorDir * -1);
-//     showHitDebugLines(hitPos, newDir2, timeout, data, recursion, sensorDir);
-// }
 gHelper& gHelper::Get( gCycle * cycle )
 {
     tASSERT( cycle );
@@ -3071,7 +2844,6 @@ gHelper& gHelper::Get( gCycle * cycle )
 bool gHelper::aliveCheck() {
     return owner_ && owner_->Alive() && owner_->Grid();
 }
-
 
 void gHelper::Activate()
 {
@@ -3091,8 +2863,6 @@ void gHelper::Activate()
                 aiPlayer->Timestep(se_GameTime() + sg_helperAITime);
         }
     }
-
-
 
     if (!aliveCheck()) { return; }
     owner_->localCurrentTime = se_GameTime();
@@ -3125,15 +2895,11 @@ void gHelper::Activate()
     }
 
     if (sg_helperDetectCut) {
-        //gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Detect Cut",2);
         detectCut(data, sg_helperDetectCutDetectionRange);
-
     }
 
     if (sg_helperShowHit) {
-        //gHelperHudPubItems<std::string>::InsertHudItem("0x00dd00Enabled", "Show Hit",3);
         showHit(data);
-
     }
 
     if (sg_helperShowTail) {

@@ -303,54 +303,45 @@ gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
 }
 
 #include <map>
-void gHelperHudBase::Render()
-{
+void gHelperHudBase::Render() {
     if (!sg_helperHud)
         return;
 
-    std::map<std::string, std::vector<gHelperHudBase *>> hudMap;
+    std::map<std::string, std::vector<gHelperHudBase*>> hudMap;
     gHelperHudMap &items = gHelperHudBase::GetHelperHudMap();
 
     // First, populate the hudMap with all items and their parent relationships
-    for (auto iter = items.begin(); iter != items.end(); iter++)
-    {
+    for (auto iter = items.begin(); iter != items.end(); iter++) {
         gHelperHudBase *item = iter->second;
         std::string parent = item->getParent();
-        if (parent.empty())
-        {
+        if (parent.empty()) {
             parent = "";
         }
-        if (hudMap.find(parent) == hudMap.end())
-        {
-            hudMap[parent] = std::vector<gHelperHudBase *>();
+        if (hudMap.find(parent) == hudMap.end()) {
+            hudMap[parent] = std::vector<gHelperHudBase*>();
         }
         hudMap[parent].push_back(item);
     }
 
     rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
-    // Next, iterate through the hudMap and display child items directly after the parent item
-    for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++)
-    {
-        for (auto item : iter->second)
-        {
-            gTextCache<tString, tString> cache;
-            if (!(cache.Call(item->getValue(), item->getLastValue())))
-            {
+    // Next, iterate through the hudMap and display parent items first, followed by their child items
+    for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++) {
+        if (iter->first != "") {
+            hudDebug << iter->first << ":\n";
+        }
+        for (auto item : iter->second) {
+            gTextCache<tString,tString> cache;
+            if (!(cache.Call(item->getValue(), item->getLastValue()))) {
                 rDisplayListFiller filler(cache.list_);
-                if (!item->getParent().empty())
-                {
-                    auto parentIter = hudMap.find(item->getParent());
-                    if (parentIter != hudMap.end())
-                    {
-                        hudDebug << item->getParent() << ":\n";
-                    }
-                    hudDebug << item->displayString();
-                    item->setLastValue();
-                }
+                hudDebug << item->displayString();
+                item->setLastValue();
             }
         }
     }
 }
+
+
+
 
 gTailHelper::gTailHelper(gHelper *helper, gCycle *owner)
     : helper_(helper),
@@ -1997,8 +1988,8 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data) {
 void gSmartTurning::smartTurningSurviveTrace(gHelperData &data) {
     if (!helper_->aliveCheck()) { return; }
     if (!helper_->drivingStraight()) { return; }
-    int lastTurn = owner_->lastTurnAttemptDir; // lastBlockedTurn
-    //con << lastTurn << " \n";
+    int lastTurn = owner_->lastTurnAttemptDir; 
+
     if (owner_->lastTurnAttemptTime < owner_->lastTurnTime) {
         return;
     }
@@ -2008,7 +1999,7 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data) {
             REAL turnTimeFactor = helper_->leftCorner.getTimeUntilTurn(owner_->Speed());
 
             if ( helper_->leftCorner.exist && isClose(helper_->leftCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) &&
-                    //owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/(10 * data.turnSpeedFactor)) > helper_->leftCorner.noticedTime &&
+                    owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/(10 * data.turnSpeedFactor)) > helper_->leftCorner.noticedTime &&
                     helper_->leftCorner.getTimeUntilTurn(owner_->Speed()) > 0 &&
                     (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
                 makeTurnIfPossible(data,LEFT,1);
@@ -2020,7 +2011,7 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data) {
             REAL turnTimeFactor = helper_->rightCorner.getTimeUntilTurn(owner_->Speed());
 
             if ( helper_->rightCorner.exist && isClose(helper_->rightCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) &&
-                    //owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/(10 * data.turnSpeedFactor)) > helper_->rightCorner.noticedTime &&
+                    owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/(10 * data.turnSpeedFactor)) > helper_->rightCorner.noticedTime &&
                     helper_->rightCorner.getTimeUntilTurn(owner_->Speed()) > 0 &&
                     (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
                 makeTurnIfPossible(data,RIGHT,1);
@@ -2096,19 +2087,20 @@ void gSmartTurning::canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, 
     REAL closedInFactor = data.turnSpeedFactor * sg_helperSmartTurningClosedInMult;
     closedIn = (front->hit <= closedInFactor && left->hit <= closedInFactor && right->hit <= closedInFactor);
     blockedBySelf =  (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
-//(left->hit < 5 && right->hit < 5 )&&
+
     if (freeSpaceFactor > 0) {
-//            con << "right " << data.sensors.getSensor(LEFT)->hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << "\n";
-        if (left->hit < data.turnSpeedFactor * freeSpaceFactor) {
+        if (left->hit < data.turnSpeedFactor * freeSpaceFactor 
+        && front->hit > data.turnSpeedFactor * freeSpaceFactor
+        && right->hit > data.turnSpeedFactor * freeSpaceFactor  ) {
             canTurnLeftSpace = false;
         }
-//            con << "left " << data.sensors.getSensor(RIGHT)->hit << " < " << data.turnSpeedFactor << " * " << freeSpaceFactor << " " << (data.sensors.getSensor(RIGHT)->hit < data.turnSpeedFactor * freeSpaceFactor) << "\n";
-        if (right->hit < data.turnSpeedFactor * freeSpaceFactor) {
+        if (right->hit < data.turnSpeedFactor * freeSpaceFactor
+            && front->hit > data.turnSpeedFactor * freeSpaceFactor
+            && left->hit > data.turnSpeedFactor * freeSpaceFactor ) {
             canTurnRightSpace = false;
         }
     }
 
-//     con << "rubber factor " << rubberFactor <<"\n";
     if (left->hit < rubberFactor) {
         canTurnLeftRubber = false;
     }
@@ -2165,7 +2157,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
         {
             bool turnMade = false;
             gTurnData *turnData = emergencyTurn.getTurn();//getEmergencyTurn(data);
-            if (turnData != nullptr && turnData->exist && turnData->numberOfTurns > 0)
+            if (turnData->exist && turnData->numberOfTurns > 0)
             {
                 for (int i = 0; i < turnData->numberOfTurns; i++)
                 {
@@ -2276,7 +2268,6 @@ REAL Distance( SensorPub const & a, SensorPub const & b , gCycle *owner_)
 
 gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
     {
-
         REAL chatBotNewWallBlindness = 0;
         REAL chatBotMinTimestep      = 0;
         REAL chatBotDelay            = 0;
@@ -2453,7 +2444,6 @@ gTurnData * gSmartTurning::getEmergencyTurn(gHelperData &data)
         return (new gTurnData(false));
     }
 
-
 bool gSmartTurning::CanMakeTurn(uActionPlayer *action)
 {
     return owner_->CanMakeTurn((action == &gCycle::se_turnRight) ? 1 : -1);
@@ -2594,7 +2584,10 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
             if (canCutUs && !canCutEnemy)
             {
                 debugLine(1, 0, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
-                cutTurnDirectionH.setValue(tColoredString("0xdd0000ABORT!"));
+                if (eCoord::F(*ownerDir, actualEnemyPos - *ownerPos) > 0) //Enemy is ahead of us
+                    cutTurnDirectionH.setValue(tColoredString("0xdd0000ABORT!")); 
+                else 
+                    closestEnemyH.setValue(tColoredString("None"));
             }
             else if (canCutEnemy)
             {
@@ -3012,6 +3005,7 @@ void tailHelperMenu () {
 
     uMenuItemToggle tailHelperToggle(&tailHelperMenu, "Tail Helper", "Toggle tail helper on/off", sg_tailHelper);
     uMenuItemReal tailHelperBrightness(&tailHelperMenu, "Brightness", "Adjust tail helper brightness", sg_tailHelperBrightness, 0, 5, 0.1);
+    
     tailHelperMenu.Enter();
 }
 
@@ -3022,6 +3016,7 @@ void tailTracerMenu() {
     uMenuItemReal tailTracerHeight(&tailTracerMenu, "Tail Tracer Height", "Height of tail tracer", sg_helperShowTailTracerHeight, 0, 10, 0.1);
     uMenuItemReal tailTracerTimeoutMult(&tailTracerMenu, "Tail Tracer Timeout Multiplier", "Timeout multiplier for tail tracer", sg_helperShowTailTracerTimeoutMult, 0, 10, 0.1);
     uMenuItemReal tailTracerDistanceMult(&tailTracerMenu, "Tail Tracer Distance Multiplier", "Distance multiplier for tail tracer", sg_helperShowTailTracerDistanceMult, 0, 100, 0.1);
+   
     tailTracerMenu.Enter();
 }
 
@@ -3035,7 +3030,6 @@ void helperTailMenu () {
     uMenuItemReal tailTimeout(&tailMenu, "Tail Timeout", "Timeout for displaying tail", sg_helperShowTailTimeout,0, 10, 0.1);
     uMenuItemToggle showTailPath(&tailMenu, "Show Tail Path", "Toggle display of tail path", sg_helperShowTailPath);
     uMenuItemToggle showTail(&tailMenu, "Show Tail", "Toggle display of tail", sg_helperShowTail);
-
 
     tailMenu.Enter();
 }
@@ -3195,7 +3189,6 @@ void helperMenu()
 {
     uMenu helperSettingsMenu("Helper Settings");
 
-
     uMenuItemFunction experimentalMenu(&helperSettingsMenu,
                             "Helper Experimental",
                             "Helper Experimental Settings",
@@ -3235,7 +3228,6 @@ void helperMenu()
                                 "Helper",
                                 "Enable Helper",
                                 sg_helper);
-
 
     helperSettingsMenu.Enter();
 }

@@ -61,7 +61,7 @@ public:
             debugMessage += "[" + std::to_string(currentTime) + "] ";
         }
 
-        debugMessage += "0xff8888HELPER DEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
+        debugMessage += "0xff8888HELPER DEBUG    0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
 
         if (spamProtection)
         {

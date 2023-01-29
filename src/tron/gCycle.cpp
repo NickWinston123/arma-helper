@@ -3841,20 +3841,20 @@ REAL gCycle::PathfindingModifier( const eWall *w ) const
 
 static void se_cycleTurn(std::istream& s)
 {
-#ifdef DEDICATED
+
     tString foundPlayer;
     s >> foundPlayer;
-#endif
+
 
     tString times, turn;
     s >> times;
     s >> turn;
+ePlayerNetID* player;
+// if (sn_GetNetState() != nCLIENT)
+//     player = se_GetLocalPlayer();
+//else
+    player = ePlayerNetID::FindPlayerByName(foundPlayer);
 
-#ifndef DEDICATED
-    ePlayerNetID* player = se_GetLocalPlayer();
-#else
-    ePlayerNetID* player = ePlayerNetID::FindPlayerByName(foundPlayer);
-#endif
 
     if (!player)
         return;
@@ -3882,11 +3882,11 @@ static void se_cycleTurn(std::istream& s)
             else
             {
                 tString msg;
-#ifndef DEDICATED
-                msg << "Usage: CYCLE_TURN <times> [turn: left | right] required.\n";
-#else
+// if (sn_GetNetState() != nCLIENT){
+//                 msg << "Usage: CYCLE_TURN <times> [turn: left | right] required.\n";
+// } else {
                 msg << "Usage: CYCLE_TURN <player> <times> [turn: left | right] required.\n";
-#endif
+//}
                 sn_ConsoleOut(msg, player->Owner());
             }
         }
@@ -7389,11 +7389,11 @@ void sg_DetermineSpawnPoint(ePlayerNetID *p,eCoord &pos,eCoord &dir)
             if(p->Object())
             {
                 dir = p->Object()->Direction();
-                
+
                 // move position back by current direction
                 // hopefully just enough to prevent going through rim
                 pos = p->Object()->Position() - ( dir * 0.001 );
-                
+
                 if( sg_defaultRespawnPosition == 3 )
                 {
                     // flip direction if desired

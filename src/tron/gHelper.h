@@ -15,11 +15,11 @@
 #include "gCycleMovement.h"
 #include "eSensor.h"
 #include "eGrid.h"
-
+void DebugLog(std::string message);
 static float lastHelperDebugMessageTimeStamp;
 static std::string lastHelperDebugMessage = "", lastHelperDebugSender = "";
 
-extern bool sg_helperDebug, sg_helperDebugTimeStamp;
+extern bool sg_helperDebug, sg_helperDebugTimeStamp, sg_helperHudFreeze;
 extern tString sg_helperDebugIgnoreList;
 extern REAL sg_helperDebugDelay;
 
@@ -29,52 +29,56 @@ extern REAL sg_helperDebugDelay;
 class HelperDebug
 {
 public:
-    template<typename T>
-    static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
+template <typename T> 
+static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
+{
+    if (!sg_helperDebug)
     {
-        if (!sg_helperDebug)
-        {
-            return;
-        }
-
-        if (tIsInList(sg_helperDebugIgnoreList, tString(sender)))
-        {
-            return;
-        }
-
-        bool lastMessageIsSame = (lastHelperDebugMessage == description && lastHelperDebugSender == sender);
-        float currentTime = tSysTimeFloat();
-        bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < sg_helperDebugDelay;
-
-        if (spamProtection && (lastMessageIsSame && delayNotPassed))
-        {
-            return;
-        }
-
-        lastHelperDebugMessageTimeStamp = currentTime;
-        lastHelperDebugSender = sender;
-
-        std::string debugMessage;
-
-        if (sg_helperDebugTimeStamp)
-           {
-            debugMessage += "[" + std::to_string(currentTime) + "] ";
-        }
-
-        debugMessage += "0xff8888HELPER DEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
-
-        if (spamProtection)
-        {
-            lastHelperDebugMessage = description;
-        }
-
-        if constexpr (std::is_same<T, std::string>::value) {
-            debugMessage += value + "\n";
-        } else {
-            debugMessage += std::to_string(*value) + "\n";
-        }
-        con << debugMessage;
+        return;
     }
+
+    if (tIsInList(sg_helperDebugIgnoreList, tString(sender)))
+    {
+        return;
+    }
+
+    bool lastMessageIsSame = (lastHelperDebugMessage == description && lastHelperDebugSender == sender);
+    float currentTime = tSysTimeFloat();
+    bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < sg_helperDebugDelay;
+
+    if (spamProtection && (lastMessageIsSame && delayNotPassed))
+    {
+        return;
+    }
+
+    lastHelperDebugMessageTimeStamp = currentTime;
+    lastHelperDebugSender = sender;
+
+    std::string debugMessage;
+
+    if (sg_helperDebugTimeStamp)
+    {
+        debugMessage += "[" + std::to_string(currentTime) + "] ";
+    }
+
+    debugMessage += "0xff8888HELPERDEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
+
+    if (spamProtection)
+    {
+        lastHelperDebugMessage = description;
+    }
+
+    if constexpr (std::is_same<T, std::string>::value) {
+        debugMessage += value + "\n";
+    } else if constexpr (std::is_pointer<T>::value) {
+        debugMessage += std::to_string(*value) + "\n";
+    } else {
+        debugMessage += std::to_string(value) + "\n";
+    }
+
+    con << debugMessage;
+}
+
 };
 #endif
 
@@ -109,7 +113,6 @@ public:
 
 public:
     typedef std::map<std::string, gHelperHudBase *> gHelperHudMap;
-
     static gHelperHudMap &GetHelperHudMap();
 };
 
@@ -136,7 +139,7 @@ public:
     virtual tString getValue()
     {
         tString valueStr;
-        valueStr << value;
+        !sg_helperHudFreeze ? valueStr << value : valueStr << lastValue;
         return valueStr;
     };
 
@@ -148,13 +151,17 @@ public:
     };
 
     virtual void setValue(T val) {
+        if (!sg_helperDebug || sg_helperHudFreeze)
+            return;
         value = val;
         setLastValue();
     };
 
     virtual bool valueSame() { return getLastValue() == getValue(); }
 
-    virtual void setLastValue() { lastValue = value; }
+    virtual void setLastValue() { if (sg_helperHudFreeze)
+                                    return;
+                                    lastValue = value; }
 
     virtual tString displayString()
     {
@@ -269,7 +276,7 @@ class gTailHelper
         gTailHelper(gHelper* helper, gCycle *owner);
 
         void Activate(gHelperData &data);
-        std::vector<eCoord> getPathToTail(double delay);
+        std::vector<eCoord> getPathToTail();
         static gTailHelper &Get(gHelper* helper, gCycle *owner);
 
     private:
@@ -278,7 +285,11 @@ class gTailHelper
         eCoord *ownerPos;
         eCoord *ownerDir;
         eCoord *tailPos;
+        eCoord *tailDir;
+        REAL turnDelay;
         REAL *ownerSpeed;
+        std::vector<eCoord> path;
+        REAL updateTime;
 };
 
 class gPathHelper
@@ -323,10 +334,12 @@ struct gTurnData{
         int direction;
         int numberOfTurns;
         bool exist;
-    gTurnData   (int direction_, int numberOfTurns_):
+        std::string reason;
+    gTurnData   (int direction_, int numberOfTurns_, std::string reason_):
     direction(direction_),
     numberOfTurns(numberOfTurns_),
-    exist(true) { }
+    exist(true),
+    reason(reason_) { }
 
     gTurnData   (bool):
     exist(false) { }
@@ -348,6 +361,7 @@ public:
     void thinkSurvive(gHelperData &data);
     int thinkPath( eCoord pos, gHelperData &data );
     bool canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceFactor = 0);
+    void smartTurningAutoTrace(gHelperData &data);
     void smartTurningSurviveTrace(gHelperData &data);
     void calculateRubberFactor(REAL rubberMult, REAL rubberFactorMult);
     bool makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFactor = 0);
@@ -360,7 +374,7 @@ public:
     static gSmartTurning & Get( gHelper * helper, gCycle *owner);
     gTurnData* getEmergencyTurn(gHelperData &data);
     bool CanMakeTurn(uActionPlayer *action);
-    private:
+private:
         gCycle *owner_;
         gHelper *helper_;
         gHelperData *data_;
@@ -375,7 +389,7 @@ public:
         REAL rubberTime;
         REAL rubberRatio;
         ePath path;
-    };
+};
 
 #include <unordered_set>
 
@@ -472,5 +486,42 @@ class gHelper {
     //std::unique_ptr< gSmarterBot > smarterBot;
     gHelperData *data_stored;
 };
+
+
+
+// struct gHelperAdvCycleData
+// {
+//     gCycle *owner;
+//     REAL   *ownerSpeed;
+//     eCoord *ownerPos;
+//     eCoord *ownerDir;
+//     eCoord *tailPos;
+//     eCoord *tailDir;
+
+//     void Load(gCycle *owner_){
+//         owner = owner_;
+//         ownerPos = *owner_->pos;
+//         ownerDir = *owner_->dir;
+//         tailPos = *owner_->tailPos;
+//         tailDir = *owner_->TailDir;
+//         ownerSpeed = *owner_->verletSpeed_;
+//     }
+// };
+
+// class gHelperAdvPath {
+
+// }
+
+// class gHelperAdv {
+//     public:
+//     static gHelperAdv & Get(gCycle * owner_){}
+//     gHelperAdv(gCycle *owner) {}
+//     void Activate(){}
+
+//     protected:
+
+//     private :
+//     gHelperAdvCycleData & data;
+// };
 
 #endif

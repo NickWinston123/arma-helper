@@ -1778,7 +1778,7 @@ void sg_setDefaultValue(std::istream &s)
     passedString.ReadLine(s);
 
     tToUpper(passedString);
-    
+
     if (passedString.Filter() == "")
     {
         con << tOutput( "$config_command_unknown","");
@@ -1804,7 +1804,7 @@ void sg_setDefaultValue(std::istream &s)
                     // check if the item has a default value
                     if (!ci->IsDefault())
                     {
-                        ci->SetDefault();                    
+                        ci->SetDefault();
                         break;
                     }
                     foundCommand = true;
@@ -1820,4 +1820,19 @@ void sg_setDefaultValue(std::istream &s)
 }
 
 static tConfItemFunc sg_setDefaultValueConf("SET_DEFAULT", &sg_setDefaultValue);
+
+
+void sg_listChangedCommands(std::istream &s)
+{
+
+    tConfItemBase::tConfItemMap confmap = tConfItemBase::ConfItemMap();
+    for( tConfItemBase::tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; iter++)
+    {
+        if (!iter->second->IsDefault()){
+            iter->second->displayChangedMsg();
+        }
+    }
+}
+
+static tConfItemFunc sg_listChangedCommandsConf("LIST_CHANGED_COMMANDS", &sg_listChangedCommands);
 

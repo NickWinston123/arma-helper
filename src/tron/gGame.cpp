@@ -4184,7 +4184,7 @@ void gGame::StateUpdate(){
 }
 
 static float sg_respawnTime = -1;
-static tSettingItem<float> sg_respawnTimeConfig( "RESPAWN_TIME", sg_respawnTime );
+static nSettingItem<float> sg_respawnTimeConfig( "RESPAWN_TIME", sg_respawnTime );
 
 extern void sg_DetermineSpawnPoint(ePlayerNetID *p,eCoord &pos,eCoord &dir);
 

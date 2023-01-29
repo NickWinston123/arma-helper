@@ -309,6 +309,7 @@ public:
     static void ReadFile( std::ifstream & s ); //! loads configuration from a file
 
     virtual bool IsDefault() { return true; };
+    virtual void displayChangedMsg() { con << tString("BASE ?");}
     virtual void SetDefault() {};
     virtual void ReadVal(std::istream &s)=0;
     virtual void WriteVal(std::ostream &s)=0;
@@ -399,17 +400,27 @@ protected:
 
     tConfItem(T &t):tConfItemBase(""),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {}
 public:
+    virtual void displayChangedMsg()
+    {
+        tOutput o;
+        o.SetTemplateParameter(1, title);
+        o.SetTemplateParameter(2, *target);
+        o.SetTemplateParameter(3, defaultValue);
+        o << "$config_value_was_changed";
+        con << o;
+    }
+    virtual bool IsDefault() { return *target == defaultValue; }
+    virtual void SetDefault()
+    {
+        tOutput o;
+        o.SetTemplateParameter(1, title);
+        o.SetTemplateParameter(2, *target);
+        o.SetTemplateParameter(3, defaultValue);
+        o << "$config_value_changed";
+        con << o;
 
-   virtual bool IsDefault() { return *target == defaultValue; }
-   virtual void SetDefault() { 
-                tOutput o;
-                o.SetTemplateParameter(1, title);
-                o.SetTemplateParameter(2, *target);
-                o.SetTemplateParameter(3, defaultValue);
-                o << "$config_value_changed";
-                con << o;
-
-                *target = defaultValue; }
+        *target = defaultValue;
+    }
 
     tConfItem(const char *title,const tOutput& help,T& t)
             :tConfItemBase(title,help),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
@@ -599,6 +610,17 @@ public:
     virtual void ReadVal(std::istream &s);
     virtual void WriteVal(std::ostream &s);
     virtual bool IsDefault() { return *target == defaultValue; }
+    
+    virtual void displayChangedMsg()
+    {
+        tOutput o;
+        o.SetTemplateParameter(1, title);
+        o.SetTemplateParameter(2, *target);
+        o.SetTemplateParameter(3, defaultValue);
+        o << "$config_value_was_changed";
+        con << o;
+    }
+
     virtual void SetDefault()
     {
         tOutput o;

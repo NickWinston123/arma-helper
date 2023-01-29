@@ -271,7 +271,7 @@ gHelperHudItem<eCoord> tailPosH("Tail Pos",eCoord(0,0));
 gHelperHudItem<eCoord> tailDirH("Tail Dir",eCoord(0,0));
 
 gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut",sg_helperDetectCut);
-gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug",tColoredString("None"),"Detect Cut");
+// gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug",tColoredString("None"),"Detect Cut");
 
 
 gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy",tColoredString("None"), "Detect Cut");
@@ -2671,8 +2671,8 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
         eCoord actualEnemyPos = target->Position();
         eCoord enemydir = target->Direction();
         REAL enemyspeed = target->Speed();
-        tColoredString debug;
-        debug << "relativeEnemyPos: " << relativeEnemyPos  << "\n" << "enemydir before: " << enemydir << "\n";
+        //tColoredString debug;
+        //debug << "relativeEnemyPos: " << relativeEnemyPos  << "\n" << "enemydir before: " << enemydir << "\n";
 
         // now we are at the center of the coordinate system facing
         // in direction (0,1).
@@ -2682,7 +2682,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
         eCoord relativeEnemyDir = enemydir;
         relativeEnemyDir = relativeEnemyDir.Turn(ownerDir->Conj()).Turn(0, 1);
 
-        bool sameDirectionAsEnemy = (relativeEnemyDir.x <= 0.0005 && relativeEnemyDir.y >= 1);
+        //bool sameDirectionAsEnemy = (relativeEnemyDir.x <= 0.0005 && relativeEnemyDir.y >= 1);
         bool oppositeDirectionofEnemy = (relativeEnemyDir.x <= 0.0005 && relativeEnemyDir.y <= -1);
 
 

@@ -29,7 +29,7 @@ extern REAL sg_helperDebugDelay;
 class HelperDebug
 {
 public:
-template <typename T> 
+template <typename T>
 static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
 {
     if (!sg_helperDebug)
@@ -157,6 +157,11 @@ public:
         setLastValue();
     };
 
+    gHelperHudItem & operator<<(T val){
+
+        setValue(value+=val);
+    }
+
     virtual bool valueSame() { return getLastValue() == getValue(); }
 
     virtual void setLastValue() { if (sg_helperHudFreeze)
@@ -256,16 +261,20 @@ struct gHelperSensorsData
 struct gHelperData
 {
     gHelperSensorsData &sensors;
-    REAL &speedFactor;
-    REAL &turnSpeedFactor;
-    REAL &turnSpeedFactorPercent;
-    REAL &turnDistance;
+    REAL speedFactor;
+    REAL turnSpeedFactor;
+    REAL turnSpeedFactorPercent;
+    REAL turnDistance;
     REAL thinkAgain;
     REAL turnDir;
     REAL turnTime;
 
-    gHelperData(gHelperSensorsData &sensors_, REAL &a_speedFactor, REAL &a_turnSpeedFactor,
-                REAL &a_turnSpeedFactorPercent, REAL &a_turnDistance, REAL a_thinkAgain,
+    void Load(  REAL a_speedFactor, REAL a_turnSpeedFactor,
+                REAL a_turnSpeedFactorPercent, REAL a_turnDistance, REAL a_thinkAgain,
+                REAL a_turnDir, REAL a_turnTime);
+    gHelperData(gHelperSensorsData *sensors);
+    gHelperData(gHelperSensorsData &sensors_, REAL a_speedFactor, REAL a_turnSpeedFactor,
+                REAL a_turnSpeedFactorPercent, REAL a_turnDistance, REAL a_thinkAgain,
                 REAL a_turnDir, REAL a_turnTime);
 };
 

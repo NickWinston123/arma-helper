@@ -280,6 +280,8 @@ gHelperHudItem<tColoredString> cutTurnDirectionH("Cut Turn Dir",tColoredString("
 gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit",sg_helperShowHit);
 gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist",1000,"Show Hit");
 
+gHelperHudItem<REAL> sg_helperActivateTimeH("Acivate Time",0);
+
 
 void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
                eCoord start, eCoord end, REAL brightness = 1)
@@ -350,12 +352,12 @@ gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
     parent = parent_;
 }
 
-#include <map>
+#include <unordered_map>
 void gHelperHudBase::Render() {
     if (!sg_helperHud)
         return;
 
-    std::map<std::string, std::vector<gHelperHudBase*>> hudMap;
+    std::unordered_map<std::string, std::vector<gHelperHudBase*>> hudMap;
     gHelperHudMap &items = gHelperHudBase::GetHelperHudMap();
 
     // First, populate the hudMap with all items and their parent relationships
@@ -1580,23 +1582,24 @@ int windingNumber_;  // the number of turns (with sign) the cycle has taken
 
 gCycle* gHelperEnemiesData::detectEnemies() {
     allEnemies.clear();
-    const tList<eGameObject>& gameObjects = owner_->Grid()->GameObjects();
-
     closestEnemy = nullptr;
-    REAL currentMax = 1212121212;
-    for (int i = 0; i < gameObjects.Len(); i++) {
-        auto other = dynamic_cast<gCycle*>(gameObjects[i]);
-        if (bool(other) && other->Alive() && other->Team() != owner_->Team()) {
+    REAL closestEnemyDistanceSquared = 1212121212;
+    for (int i = 0; i < se_PlayerNetIDs.Len(); i++) {
+        auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
+        if (other != nullptr && other->Alive() && other->Team() != owner_->Team()) {
             REAL positionDifference = st_GetDifference(other->Position(), owner_->Position());
-            if (positionDifference <= currentMax) {
-                currentMax = positionDifference;
+            if (positionDifference < closestEnemyDistanceSquared) {
+                closestEnemyDistanceSquared = positionDifference;
                 closestEnemy = other;
             }
-            allEnemies.insert(other);
+            allEnemies.emplace(other);
         }
     }
-return closestEnemy;
+
+    return closestEnemy;
 }
+
+
 
 
 bool gHelperEnemiesData::exist(gCycle* enemy) {
@@ -1640,18 +1643,15 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
     {
         switch (dir)
         {
-            //left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
-           //right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
 
         case LEFT:
         {
-            //con << "Detecting left sensor \n";
 
             if (sg_helperSensorDiagonalMode)
                 left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), sin(M_PI/4))), true);
             else
                 left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
-            //con << "LEFT HIT " << left_stored->hit << " \n";
+
             //left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(cos(M_PI/4), sin(M_PI/4))), true);
             return left_stored;
         }
@@ -1700,10 +1700,28 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
 }
 
 
+void gHelperData::Load(REAL a_speedFactor,
+                         REAL a_turnSpeedFactor, REAL a_turnSpeedFactorPercent,
+                         REAL a_turnDistance, REAL a_thinkAgain, REAL a_turnDir,
+                         REAL a_turnTime)
+    {
+      speedFactor = (a_speedFactor);
+      turnSpeedFactor = (a_turnSpeedFactor);
+      turnSpeedFactorPercent = (a_turnSpeedFactorPercent);
+      turnDistance = (a_turnDistance);
+      thinkAgain = (a_thinkAgain);
+      turnDir = (a_turnDir);
+      turnTime = (a_turnTime);
+      }
 
-gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL &a_speedFactor,
-                         REAL &a_turnSpeedFactor, REAL &a_turnSpeedFactorPercent,
-                         REAL &a_turnDistance, REAL a_thinkAgain, REAL a_turnDir,
+
+gHelperData::gHelperData(gHelperSensorsData *sensors_)
+    : sensors(*sensors_)
+{}
+
+gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL a_speedFactor,
+                         REAL a_turnSpeedFactor, REAL a_turnSpeedFactorPercent,
+                         REAL a_turnDistance, REAL a_thinkAgain, REAL a_turnDir,
                          REAL a_turnTime)
     : sensors(sensors_),
       speedFactor(a_speedFactor),
@@ -2585,8 +2603,8 @@ gHelper::gHelper(gCycle *owner)
         ownerTurnDelay(owner->GetTurnDelay()),
         lastHelperDebugMessage(NULL),
         lastHelperDebugMessageTimeStamp(-999),
-        data_stored(NULL),
-        sensors_(new gHelperSensorsData(owner_))
+        sensors_(new gHelperSensorsData(owner_)),
+        data_stored(new gHelperData(sensors_))
 {
     aiCreated = false;
     ownerPos = &owner_->pos;
@@ -2695,7 +2713,7 @@ OR
         ............
         .........<-- (| is our cycle, <-- is enemy cycle) passes enemyIsOnRight_and_enemyIsFacingOurLeft
         ....|........
-        
+
         */
         //Enemy is on our left side and driving toward our right
         bool enemyIsOnLeft = relativeEnemyPos.y < 0;
@@ -2802,7 +2820,7 @@ void gHelper::enemyTracers(gHelperData &data, int detectionRange, REAL timeout)
 
             if (isTeammate)
             {
-            R = 1, G = 0, B = 1;
+                R = 1, G = 0, B = 1;
             }
 
             if (enemyFaster && !isTeammate)
@@ -2943,7 +2961,6 @@ void gHelper::showHit(gHelperData &data)
     bool wallClose = frontHit < data.turnSpeedFactor * sg_showHitDataRange;
     REAL timeout = data.speedFactor * sg_showHitDataTimeout;
 
-
     sg_helperShowHitFrontDistH.setValue(frontHit);
 
     if (wallClose)
@@ -2970,8 +2987,6 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
 
     recursion--;
     eCoord newDir = initDir.Turn(eCoord(0, sensorDir * -1));
-
-    HelperDebug::Debug("showHitDebugLines","Recursion",&recursion);
 
     gSensor *sensor = data.sensors.getSensor(currentPos, initDir);
     eCoord hitPos = sensor->before_hit;
@@ -3008,10 +3023,54 @@ bool gHelper::aliveCheck() {
 
 void gHelper::Activate()
 {
+    REAL start = tRealSysTimeFloat();
     ownerPosH.setValue(*ownerPos);
     ownerDirH.setValue(*ownerDir);
     tailPosH.setValue(owner_->tailPos);
     tailDirH.setValue(owner_->tailDir);
+
+    if (!aliveCheck()) { return; }
+    owner_->localCurrentTime = se_GameTime();
+    REAL speedFactor = (1/(*ownerSpeed));
+    REAL turnSpeedFactor = ((*ownerSpeed) * ownerTurnDelay);
+    REAL turnSpeedFactorPercent = (1/turnSpeedFactor);
+    REAL turnDistance = (turnSpeedFactor/100);
+
+    data_stored->Load(speedFactor, turnSpeedFactor, turnSpeedFactorPercent, turnDistance, 0, 0, 0);
+    enemies.detectEnemies();
+
+    if (sg_helperSmartTurning)
+        smartTurning->Activate(*data_stored);
+
+    if (sg_pathHelper)
+        pathHelper->Activate(*data_stored);
+
+    if (sg_tailHelper)
+        tailHelper->Activate(*data_stored);
+
+    if (sg_helperEnemyTracers)
+        enemyTracers(*data_stored, sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
+
+    if (sg_helperDetectCut)
+        detectCut(*data_stored, sg_helperDetectCutDetectionRange);
+
+    if (sg_helperShowHit)
+        showHit(*data_stored);
+
+    if (sg_helperShowTail)
+        showTail(*data_stored);
+
+    if (sg_helperShowTailTracer)
+        showTailTracer(*data_stored);
+
+    if (sg_helperShowTailPath)
+        showTailPath(*data_stored);
+
+    if (sg_helperShowEnemyTail)
+        showEnemyTail(*data_stored);
+
+    if (sg_helperShowCorners)
+        showCorners(*data_stored);
 
     if (sg_helperAI)
     {
@@ -3028,64 +3087,9 @@ void gHelper::Activate()
         }
     }
 
-    if (!aliveCheck()) { return; }
-    owner_->localCurrentTime = se_GameTime();
-    REAL speedFactor = (1/(*ownerSpeed));
-    REAL turnSpeedFactor = ((*ownerSpeed) * ownerTurnDelay);
-    REAL turnSpeedFactorPercent = (1/turnSpeedFactor);
-    REAL turnDistance = (turnSpeedFactor/100);
-
-    gHelperData data(*sensors_, speedFactor, turnSpeedFactor, turnSpeedFactorPercent, turnDistance, 0, 0, 0);
-    data_stored = &data;
-
-    enemies.detectEnemies();
-
-    if (sg_helperSmartTurning) {
-        smartTurning->Activate(data);
-    }
-
-    if (sg_pathHelper) {
-        pathHelper->Activate(data);
-    }
-
-    if (sg_tailHelper) {
-        tailHelper->Activate(data);
-    }
-
-    if (sg_helperEnemyTracers) {
-        enemyTracers(data, sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
-    }
-
-    if (sg_helperDetectCut) {
-        detectCut(data, sg_helperDetectCutDetectionRange);
-    }
-
-    if (sg_helperShowHit) {
-        showHit(data);
-    }
-
-    if (sg_helperShowTail) {
-        showTail(data);
-    }
-
-    if (sg_helperShowTailTracer){
-        showTailTracer(data);
-    }
-
-    if (sg_helperShowTailPath) {
-        showTailPath(data);
-    }
-
-    if (sg_helperShowEnemyTail) {
-        showEnemyTail(data);
-    }
-
-    if (sg_helperShowCorners) {
-        showCorners(data);
-    }
-
     owner_->justCreated = false;
-    //REAL time = se_GameTime() - start;
+    REAL time = tRealSysTimeFloat() - start;
+    sg_helperActivateTimeH.setValue(time);
 }
 
 //MENU

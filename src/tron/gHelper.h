@@ -260,6 +260,7 @@ struct gHelperSensorsData
 
 struct gHelperData
 {
+    gCycle *owner_;
     gHelperSensorsData &sensors;
     REAL speedFactor;
     REAL turnSpeedFactor;
@@ -269,10 +270,11 @@ struct gHelperData
     REAL turnDir;
     REAL turnTime;
 
+    REAL speedFactor
     void Load(  REAL a_speedFactor, REAL a_turnSpeedFactor,
                 REAL a_turnSpeedFactorPercent, REAL a_turnDistance, REAL a_thinkAgain,
                 REAL a_turnDir, REAL a_turnTime);
-    gHelperData(gHelperSensorsData *sensors);
+    gHelperData(gHelperSensorsData *sensors,gCycle *owner);
     gHelperData(gHelperSensorsData &sensors_, REAL a_speedFactor, REAL a_turnSpeedFactor,
                 REAL a_turnSpeedFactorPercent, REAL a_turnDistance, REAL a_thinkAgain,
                 REAL a_turnDir, REAL a_turnTime);
@@ -394,10 +396,21 @@ private:
         REAL &lastTurnDir; // -1 left , 1 right
         REAL &blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
         REAL &forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
-        REAL rubberFactor;
-        REAL rubberTime;
-        REAL rubberRatio;
         ePath path;
+};
+
+struct gHelperRubberData
+{
+    gHelper *helper_;
+    gCycle *owner_;
+    REAL rubberAvailable,
+         rubberEffectiveness,
+         rubberFactor,
+         rubberUsedRatio,
+         rubberTimeLeft;
+
+    gHelperRubberData(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner) {}
+    void calculate();
 };
 
 #include <unordered_set>
@@ -432,68 +445,72 @@ struct gHelperData;
 
 class gHelper {
     friend class gCycle;
-
-    public:
-    static gHelper & Get( gCycle * cycle );
-    gHelper(gCycle *owner);
-    void Activate();
-    REAL CurrentTime();
-
-    void detectCut(gHelperData &data, int detectionRange);
-    void enemyTracers(gHelperData &data, int detectionRange, REAL timeout);
-    void showTail(gHelperData &data);
-    void showHit(gHelperData &data);
-
-    bool aliveCheck();
-    bool drivingStraight();
-    void followTail();
-    bool canSeeTarget(eCoord target,REAL passthrough);
-
-    bool findCorner(gHelperData &data, gSmartTurningCornerData &corner, const gSensor *sensor);
-    void findCorners(gHelperData &data);
-    void showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout);
-    void showCorners(gHelperData &data);
-    void showTailTracer(gHelperData &data);
-
-    void showEnemyTail(gHelperData &data);
-
-    void showTailPath(gHelperData &data);
-
-    void showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir);
-    bool isClose(eCoord pos, REAL closeFactor);
-
-    gCycle *getOwner();
-    eCoord closestCorner(eCoord center, REAL radius);
-    static void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
-                   eCoord start,eCoord end, REAL brightness = 1);
-    ~gHelper();
-    private:
-    gAIPlayer *aiPlayer;
-    bool aiCreated;
     friend class gSmartTurning;
     friend class gSmarterBot;
     friend class gPathHelper;
     friend class gTailHelper;
-    const char * lastHelperDebugMessage;
-    REAL lastHelperDebugMessageTimeStamp;
-    gSmartTurningCornerData leftCorner, rightCorner;//, frontCorner;
-    gSmartTurningCornerData lastLeftCorner, lastRightCorner;//, frontCorner;
-    gHelperEnemiesData enemies;
-    gCycle *owner_;
-    ePlayerNetID *player_;
-    gCycle *closestEnemy;
-    eCoord *ownerPos;
-    eCoord *ownerDir;
-    eCoord *tailPos;
-    REAL *ownerSpeed;
-    REAL ownerWallLength;
-    REAL ownerTurnDelay;
-    gHelperSensorsData * sensors_;
-    std::unique_ptr< gSmartTurning > smartTurning;
-    std::unique_ptr< gPathHelper > pathHelper;
-    std::unique_ptr< gTailHelper > tailHelper;
-    //std::unique_ptr< gSmarterBot > smarterBot;
-    gHelperData *data_stored;
+
+    public:
+        static gHelper & Get( gCycle * cycle );
+        gHelper(gCycle *owner);
+        void Activate();
+        REAL CurrentTime();
+
+        void detectCut(gHelperData &data, int detectionRange);
+        void enemyTracers(gHelperData &data, int detectionRange, REAL timeout);
+        void showTail(gHelperData &data);
+        void showHit(gHelperData &data);
+
+        bool aliveCheck();
+        bool drivingStraight();
+        void followTail();
+        bool canSeeTarget(eCoord target,REAL passthrough);
+
+        bool findCorner(gHelperData &data, gSmartTurningCornerData &corner, const gSensor *sensor);
+        void findCorners(gHelperData &data);
+        void showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout);
+        void showCorners(gHelperData &data);
+        void showTailTracer(gHelperData &data);
+
+        void showEnemyTail(gHelperData &data);
+
+        void showTailPath(gHelperData &data);
+
+        void showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir);
+        bool isClose(eCoord pos, REAL closeFactor);
+
+        gCycle *getOwner();
+        eCoord closestCorner(eCoord center, REAL radius);
+        static void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
+                    eCoord start,eCoord end, REAL brightness = 1);
+        ~gHelper();
+    private:
+        gCycle *owner_;
+        ePlayerNetID *player_;
+        gAIPlayer *aiPlayer;
+        bool aiCreated;
+        
+        gCycle *closestEnemy;
+        eCoord *ownerPos;
+        eCoord *ownerDir;
+        eCoord *tailPos;
+        REAL *ownerSpeed;
+        REAL ownerWallLength;
+        REAL ownerTurnDelay;
+
+        gHelperSensorsData * sensors_;
+        gHelperData *data_stored;
+        gSmartTurningCornerData leftCorner, rightCorner;//, frontCorner;
+        gSmartTurningCornerData lastLeftCorner, lastRightCorner;//, frontCorner;
+        gHelperEnemiesData enemies;
+    public:
+        gHelperRubberData * rubberData;
+    private:
+        std::unique_ptr< gSmartTurning > smartTurning;
+        std::unique_ptr< gPathHelper > pathHelper;
+        std::unique_ptr< gTailHelper > tailHelper;
+        //std::unique_ptr< gSmarterBot > smarterBot;
+
 };
 
 

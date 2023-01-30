@@ -59,7 +59,7 @@ class gAIBot;
 typedef enum{gSENSOR_NONE,gSENSOR_RIM, gSENSOR_ENEMY,
              gSENSOR_TEAMMATE ,gSENSOR_SELF, gSENSOR_ZONE} gSensorWallType;
 
-#include "gHelper.h"
+#include "gHelper/gHelper.h"
 class eEdge;
 
 // sensor sent out to detect near eWalls
@@ -74,9 +74,6 @@ extern bool headlights;
 extern REAL sg_rubberCycle;
 
 extern bool sg_localDeath;
-// Smart Turning
-extern bool sg_helper;
-extern bool sg_helperSmartTurning;
 
 // this class set is responsible for remembering which walls are too
 // close together to pass through safely. The AI uses this information,

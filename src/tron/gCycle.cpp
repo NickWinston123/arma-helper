@@ -2816,7 +2816,7 @@ bool gCycle::Timestep(REAL currentTime){
 
     bool playerAlive =  bool(player) && Alive();
     bool playerIsMe = playerAlive && player->IsHuman() && player->Owner() == sn_myNetID;
-    if (sg_helper && playerIsMe && player->pID == 0) {
+    if (helperConfig::sg_helper && playerIsMe && player->pID == 0) {
           gHelper & helper = gHelper::Get( this );
        helper.Activate();
     }

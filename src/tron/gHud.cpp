@@ -43,7 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rRender.h"
 #include <math.h>
 #include "gCycle.h"
-#include "gHelper.h"
+#include "gHelper/gHelperHud.h"
 #include <time.h>
 
 #include "gHud.h"

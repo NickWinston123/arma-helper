@@ -3390,8 +3390,6 @@ static void sg_SetAIRoute(std::istream &s)
 
 static tConfItemFunc sg_SetAIRoute_conf("SET_AI_POSITION",&sg_SetAIRoute);
 
-
-#include "gHelper.h"
 gAIPlayer::gAIPlayer(gCycle *cycle) : character(new gAICharacter()),
                                       lastPath(se_GameTime() - 100),
                                       lastTime(se_GameTime()),

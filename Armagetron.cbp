@@ -252,8 +252,11 @@
 		<Unit filename="src/tron/gCamera.h" />
 		<Unit filename="src/tron/gCycle.cpp" />
 		<Unit filename="src/tron/gCycle.h" />
-		<Unit filename="src/tron/gHelper.cpp" />
-		<Unit filename="src/tron/gHelper.h" />
+		<Unit filename="src/tron/gHelper/gHelperHud.cpp" />
+		<Unit filename="src/tron/gHelper/gHelperHud.h" />
+		<Unit filename="src/tron/gHelper/gHelper.cpp" />
+		<Unit filename="src/tron/gHelper/gHelper.h" />
+		<Unit filename="src/tron/gHelper/gHelperMenu.h" />
 		<Unit filename="src/tron/gCycleMovement.cpp" />
 		<Unit filename="src/tron/gCycleMovement.h" />
 		<Unit filename="src/tron/gExplosion.cpp" />

@@ -3376,7 +3376,7 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
     if (dir >  1) dir =  1;
     if (dir < -1) dir = -1;
 
-    bool helperSmartTurning = sg_helper && sg_helperSmartTurning;
+    bool helperSmartTurning = helperConfig::sg_helper && helperConfig::sg_helperSmartTurning;
     bool playerIsMe = false;
     REAL currentTime;
     if (helperSmartTurning && !botTurn && (Owner() == ::sn_myNetID && Player() && Player()->IsHuman())) {

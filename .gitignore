@@ -104,3 +104,5 @@ src/.project
 src/.settings
 autogen.sh
 .vscode
+.history
+

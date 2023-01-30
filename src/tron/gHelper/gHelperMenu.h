@@ -135,10 +135,23 @@ void helperPathMenu() {
     pathMenu.Enter();
 }
 
+void helperAutoBrakeMenu(){
+    uMenu helperAutoBrakeMenu("Auto Brake");
+
+    uMenuItemToggle autoBrakeDeplete(&helperAutoBrakeMenu, "Auto Brake Deplete", "Toggle auto brake deplete on/off - when on, will try to keep brake down", sg_helperAutoBrakeDeplete);
+    uMenuItemReal autoBrakeMin(&helperAutoBrakeMenu, "Auto Brake Min", "Minimum value that needs to be reached before un breaking", sg_helperAutoBrakeMin, -0.1, 1, 0.05);
+    uMenuItemReal autoBrakeMax(&helperAutoBrakeMenu, "Auto Brake Max", "Maximum value that can be reached before braking", sg_helperAutoBrakeMax, 0, 1.1, 0.05);
+    uMenuItemToggle autoBrake(&helperAutoBrakeMenu, "Auto Brake", "Toggle auto brake on/off", sg_helperAutoBrake);
+
+    helperAutoBrakeMenu.Enter();
+}
+
+
 void helperSelfMenu()
 {
     uMenu helperSelfMenu("Self");
-
+    uMenuItemFunction autoBrakeMenu(&helperSelfMenu, sg_helperAutoBrake ? "0x00dd00Auto Brake" : "0xdd0000Auto Brake", "Settings for Auto Brake", &helperAutoBrakeMenu);
+    
     uMenuItemFunction cornersMenu(&helperSelfMenu, "Corners", "Settings for Corners", &helperCornersMenu);
     uMenuItemFunction showHitMenu(&helperSelfMenu, sg_helperShowHit ? "0x00dd00Show Hit" : "0xdd0000Show Hit", "Settings for Show Hit", &helperShowHitMenu);
     uMenuItemFunction tailMenu(&helperSelfMenu, sg_helperShowTail ? "0x00dd00Tail" : "0xdd0000Tail", "Settings for Tail", &helperTailMenu);
@@ -170,16 +183,6 @@ void helperSmartTurningSurviveFrontBotMenu(){
     helperSmartTurningSurviveFrontBotMenu.Enter();
 }
 
-void helperSmartTurningSurviveAutoBrakeMenu(){
-    uMenu helperSmartTurningSurviveAutoBrakeMenu("Auto Brake");
-
-    uMenuItemToggle autoBrakeDeplete(&helperSmartTurningSurviveAutoBrakeMenu, "Auto Brake Deplete", "Toggle auto brake deplete on/off", sg_helperSmartTurningAutoBrakeDeplete);
-    uMenuItemReal autoBrakeMin(&helperSmartTurningSurviveAutoBrakeMenu, "Auto Brake Min", "Minimum value for auto brake", sg_helperSmartTurningAutoBrakeMin, 0, 10, 0.1);
-    uMenuItemReal autoBrakeMax(&helperSmartTurningSurviveAutoBrakeMenu, "Auto Brake Max", "Maximum value for auto brake", sg_helperSmartTurningAutoBrakeMax, 0, 10, 0.1);
-    uMenuItemToggle autoBrake(&helperSmartTurningSurviveAutoBrakeMenu, "Auto Brake", "Toggle auto brake on/off", sg_helperSmartTurningAutoBrake);
-
-    helperSmartTurningSurviveAutoBrakeMenu.Enter();
-}
 
 void helperSmartTurningSurviveFollowTailMenu(){
     uMenu helperSmartTurningSurviveFollowTailMenu("Follow Tail");
@@ -203,7 +206,6 @@ void helperSmartTurningMenu() {
     uMenuItemToggle survive(&smartTurningMenu, sg_helperSmartTurningSurvive ? "0x00dd00Survive" : "0xdd0000Survive", "Toggle survive on/off", sg_helperSmartTurningSurvive);
     uMenuItemToggle opposite(&smartTurningMenu, sg_helperSmartTurningOpposite ? "0x00dd00Opposite" : "0xdd0000Opposite", "Toggle opposite on/off", sg_helperSmartTurningOpposite);
 
-    uMenuItemFunction autoBrakeMenu(&smartTurningMenu, sg_helperSmartTurningAutoBrake ? "0x00dd00Auto Brake" : "0xdd0000Auto Brake", "Settings for Auto Brake", &helperSmartTurningSurviveAutoBrakeMenu);
     uMenuItemFunction followTailMenu(&smartTurningMenu, sg_helperSmartTurningFollowTail ? "0x00dd00Follow Tail" : "0xdd0000Follow Tail", "Settings for Follow Tail", &helperSmartTurningSurviveFollowTailMenu);
     uMenuItemFunction surviveTraceMenu(&smartTurningMenu, sg_helperSmartTurningSurviveTrace ? "0x00dd00Survive Trace" : "0xdd0000Survive Trace", "Settings for Survive Trace", &helperSmartTurningSurviveTraceMenu);
     uMenuItemFunction frontBotMenu(&smartTurningMenu, sg_helperSmartTurningFrontBot ? "0x00dd00Front Bot" : "0xdd0000Front Bot", "Settings for Front Bot", &helperSmartTurningSurviveFrontBotMenu);

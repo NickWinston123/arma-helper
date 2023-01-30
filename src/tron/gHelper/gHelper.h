@@ -238,7 +238,6 @@ public:
     void smartTurningPlan(gHelperData &data);
     void smartTurningSurvive(gHelperData &data);
     void smartTurningOpposite(gHelperData &data);
-    void autoUnBrake();
     void followTail(gHelperData &data);
     void smartTurningFrontBot(gHelperData &data);
     void thinkSurvive(gHelperData &data);
@@ -344,6 +343,8 @@ class gHelper {
         void showCorners(gHelperData &data);
         void showTailTracer(gHelperData &data);
 
+        void autoBrake();
+        
         void showEnemyTail(gHelperData &data);
 
         void showTailPath(gHelperData &data);
@@ -381,45 +382,5 @@ class gHelper {
         std::unique_ptr< gSmartTurning > smartTurning;
         std::unique_ptr< gPathHelper > pathHelper;
         std::unique_ptr< gTailHelper > tailHelper;
-        //std::unique_ptr< gSmarterBot > smarterBot;
-
 };
-
-
-
-// struct gHelperAdvCycleData
-// {
-//     gCycle *owner;
-//     REAL   *ownerSpeed;
-//     eCoord *ownerPos;
-//     eCoord *ownerDir;
-//     eCoord *tailPos;
-//     eCoord *tailDir;
-
-//     void Load(gCycle *owner_){
-//         owner = owner_;
-//         ownerPos = *owner_->pos;
-//         ownerDir = *owner_->dir;
-//         tailPos = *owner_->tailPos;
-//         tailDir = *owner_->TailDir;
-//         ownerSpeed = *owner_->verletSpeed_;
-//     }
-// };
-
-// class gHelperAdvPath {
-
-// }
-
-// class gHelperAdv {
-//     public:
-//     static gHelperAdv & Get(gCycle * owner_){}
-//     gHelperAdv(gCycle *owner) {}
-//     void Activate(){}
-
-//     protected:
-
-//     private :
-//     gHelperAdvCycleData & data;
-// };
-
 #endif

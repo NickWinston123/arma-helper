@@ -40,11 +40,9 @@ static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
 tString sg_helperDebugIgnoreList = tString("");
 static tConfItem<tString> sg_helperDebugIgnoreListConf("HELPER_DEBUG_IGNORE_LIST", sg_helperDebugIgnoreList);
 REAL sg_helperDebugDelay = 0.15;
-static tConfItem<REAL> sg_helperDebugDelayConf("HELPER_DEBUG_DELAY",
-                                               sg_helperDebugDelay);
+static tConfItem<REAL> sg_helperDebugDelayConf("HELPER_DEBUG_DELAY", sg_helperDebugDelay);
 bool sg_helperDebugTimeStamp = true;
-static tConfItem<bool> sg_helperDebugTimeStampConf("HELPER_DEBUG_TIMESTAMP",
-                                                   sg_helperDebugTimeStamp);
+static tConfItem<bool> sg_helperDebugTimeStampConf("HELPER_DEBUG_TIMESTAMP", sg_helperDebugTimeStamp);
 
 bool sg_helperAI = false;
 static tConfItem<bool> sg_helperAIc("HELPER_AI", sg_helperAI);
@@ -105,14 +103,14 @@ static tConfItem<REAL> sg_helperSmartTurningSpaceConf("HELPER_SMART_TURNING_SPAC
 bool sg_helperSmartTurningPlan = false;
 static tConfItem<bool> sg_helperSmartTurningPlanConf("HELPER_SMART_TURNING_PLAN", sg_helperSmartTurningPlan);
 
-bool sg_helperSmartTurningAutoBrake = false;
-static tConfItem<bool> sg_helperSmartTurningAutoBrakeConf("HELPER_SMART_TURNING_BRAKE", sg_helperSmartTurningAutoBrake);
-bool sg_helperSmartTurningAutoBrakeDeplete = false;
-static tConfItem<bool> sg_helperSmartTurningAutoBrakeDepleteConf("HELPER_SMART_TURNING_BRAKE_DEPLETE", sg_helperSmartTurningAutoBrakeDeplete);
-REAL sg_helperSmartTurningAutoBrakeMin = 0;
-static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMinConf("HELPER_SMART_TURNING_BRAKE_MIN", sg_helperSmartTurningAutoBrakeMin);
-REAL sg_helperSmartTurningAutoBrakeMax = 2;
-static tConfItem<REAL> sg_helperSmartTurningAutoBrakeMaxConf("HELPER_SMART_TURNING_BRAKE_MAX", sg_helperSmartTurningAutoBrakeMax);
+bool sg_helperAutoBrake = false;
+static tConfItem<bool> sg_helperAutoBrakeConf("HELPER_AUTO_BRAKE", sg_helperAutoBrake);
+bool sg_helperAutoBrakeDeplete = false;
+static tConfItem<bool> sg_helperAutoBrakeDepleteConf("HELPER_AUTO_BRAKE_DEPLETE", sg_helperAutoBrakeDeplete);
+REAL sg_helperAutoBrakeMin = 0;
+static tConfItem<REAL> sg_helperAutoBrakeMinConf("HELPER_AUTO_BRAKE_MIN", sg_helperAutoBrakeMin);
+REAL sg_helperAutoBrakeMax = 2;
+static tConfItem<REAL> sg_helperAutoBrakeMaxConf("HELPER_AUTO_BRAKE_MAX", sg_helperAutoBrakeMax);
 
 bool sg_helperSmartTurningFollowTail = false;
 static tConfItem<bool> sg_helperSmartTurningFollowTailConf("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
@@ -1581,6 +1579,7 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, eCoord dir)
     sensor->detect(sg_helperSensorRange);
     return sensor;
 }
+
 gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
 {
     if (sg_helperSensorLightUsageMode && !newSensor)
@@ -1596,23 +1595,19 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
             else
                 left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
 
-            //left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(cos(M_PI/4), sin(M_PI/4))), true);
             return left_stored;
         }
         case FRONT:
         {
-            //con << "Detecting front sensor \n";
             front_stored->detect(sg_helperSensorRange, start, owner_->Direction(), true);
             return front_stored;
         }
         case RIGHT:
         {
-            //con << "Detecting right sensor \n";
             if (sg_helperSensorDiagonalMode)
                 right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), -sin(M_PI/4))), true);
             else
                 right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
-            //con << "RIGHT HIT " << right_stored->hit << " \n";
             return right_stored;
         }
         }
@@ -1720,10 +1715,6 @@ void gSmartTurning::Activate( gHelperData &data ) {
     if (sg_helperSmartTurningPlan) {
         sg_helperSmartTurningSurvive = 0; sg_helperSmartTurningOpposite = 0;
         smartTurningPlan(data);
-    }
-
-    if (sg_helperSmartTurningAutoBrake) {
-        autoUnBrake();
     }
 
     if (sg_helperSmartTurningFollowTail) {
@@ -1932,23 +1923,6 @@ int gSmartTurning::thinkPath( eCoord pos, gHelperData &data ) {
     }
 }
 
-void gSmartTurning::autoUnBrake() {
-    if (!helper_->aliveCheck()) { return; }
-    REAL brakingReservoir = owner_->GetBrakingReservoir();
-    bool cycleBrakeDeplete = true;
-
-    if (sg_helperSmartTurningAutoBrakeDeplete && sg_helperSmartTurningAutoBrakeMin == 0 && sg_cycleBrakeDeplete != 1) {
-        cycleBrakeDeplete = false;
-    }
-
-    if (brakingReservoir <= sg_helperSmartTurningAutoBrakeMin && cycleBrakeDeplete) {
-        owner_->braking = false;
-    }
-
-    if (brakingReservoir >= sg_helperSmartTurningAutoBrakeMax) {
-        owner_->braking = true;
-    }
-}
 
 void gSmartTurning::smartTurningOpposite(gHelperData &data) {
     if (!helper_->aliveCheck()) { return; }
@@ -2577,7 +2551,6 @@ bool gHelper::drivingStraight() {
     return ((fabs(ownerDir->x) == 1 || fabs(ownerDir->y) == 1));
 }
 
-
 bool gHelper::canSeeTarget(eCoord target,REAL passthrough) {
     gSensor sensor(owner_, (*ownerPos), target - (*ownerPos));
     sensor.detect(REAL(.98));
@@ -2748,6 +2721,25 @@ OR
     }
 }
 
+void gHelper::autoBrake() {
+    if (!aliveCheck()) { return; }
+    REAL brakingReservoir = owner_->GetBrakingReservoir();
+    bool cycleBrakeDeplete = true;
+
+    if (sg_helperAutoBrakeDeplete && sg_helperAutoBrakeMin == 0 && sg_cycleBrakeDeplete < 0) {
+        cycleBrakeDeplete = false;
+    }
+
+    if (owner_->GetBraking() == true && brakingReservoir <= sg_helperAutoBrakeMin && cycleBrakeDeplete) {
+        owner_->ActBot( &gCycle::s_brake, -1 );
+    }
+
+    if (owner_->GetBraking() == false && brakingReservoir >= sg_helperAutoBrakeMax) {
+        owner_->ActBot( &gCycle::s_brake, 1);
+    }
+
+}
+
 void gHelper::enemyTracers(gHelperData &data, int detectionRange, REAL timeout)
 {
     if (!aliveCheck()) { return; }
@@ -2815,7 +2807,7 @@ void gHelper::showEnemyTail(gHelperData &data)
     {
         gCycle *other = *enemy;
         bool exist = enemies.exist(other);
-        if (!exist || exist && !other->tailMoving) {
+        if (!exist || !other->tailMoving) {
             continue;
         }
         distanceToTail = sg_helperShowEnemyTailDistanceMult * (eCoord::F(*ownerDir, (other->tailPos) - (*ownerPos)));
@@ -3019,6 +3011,9 @@ void gHelper::Activate()
 
     if (sg_helperShowCorners)
         showCorners(*data_stored);
+
+    if (sg_helperAutoBrake)
+        autoBrake();
 
     if (sg_helperAI)
     {

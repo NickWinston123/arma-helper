@@ -490,7 +490,7 @@ void gTailHelper::Activate(gHelperData &data) {
 
     eCoord lastPos = *ownerPos;
     for (int i = 0; i < path.size(); i++) {
-        debugLine(1, 0, 0, 1, data.speedFactor, lastPos, path[i], sg_tailHelperBrightness);
+        debugLine(1, 0, 0, 1, data.speedFactorF(), lastPos, path[i], sg_tailHelperBrightness);
         lastPos = path[i];
     }
 }
@@ -617,7 +617,7 @@ bool gPathHelper::autoMode(gHelperData data)
 {
 gCycle *enemy = helper_->enemies.closestEnemy;
 
-bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoCloseDistance + data.turnSpeedFactor);
+bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoCloseDistance + data.turnSpeedFactorF());
 if (isClose)
 {
     target = enemy->Position();
@@ -657,21 +657,21 @@ void gPathHelper::RenderPath(gHelperData &data)
     eCoord last_c;
     eCoord owner_pos = owner_->pos; // get the current position of the owner
 
-    debugLine(1, 1, 0, 0, data.speedFactor, owner_pos, path_.positions(0) + path_.offsets(0), se_pathBrightness);
+    debugLine(1, 1, 0, 0, data.speedFactorF(), owner_pos, path_.positions(0) + path_.offsets(0), se_pathBrightness);
 
     for (int i = path_.positions.Len() - 1; i >= 0; i--)
     {
         eCoord c = path_.positions(i) + path_.offsets(i);
         if (i != path_.positions.Len() - 1)
-            debugLine(1, 0, 0, se_pathHeight, data.speedFactor, last_c, c, se_pathBrightness);
+            debugLine(1, 0, 0, se_pathHeight, data.speedFactorF(), last_c, c, se_pathBrightness);
         last_c = c;
     }
 
     if (path_.current >= 0 && path_.positions.Len() > 0)
     {
         eCoord c = path_.CurrentPosition();
-        debugLine(1, 1, 0, se_pathHeight, data.speedFactor, c, c, 1);
-        debugLine(1, 1, 0, (se_pathHeight * 2), data.speedFactor, c, c, se_pathBrightness);
+        debugLine(1, 1, 0, se_pathHeight, data.speedFactorF(), c, c, 1);
+        debugLine(1, 1, 0, (se_pathHeight * 2), data.speedFactorF(), c, c, se_pathBrightness);
     }
 }
 
@@ -742,13 +742,13 @@ if (goon)
     lr *= -1;
     if (lr == RIGHT)
     {
-        debugLine(.2, 1, 0, 3, data.speedFactor * 3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
+        debugLine(.2, 1, 0, 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
         if (sg_pathHelperShowTurnAct)
             helper_->smartTurning->makeTurnIfPossible(data, RIGHT, 1);
     }
     else if (lr == LEFT)
     {
-        debugLine(.2, 1, 0, 3, data.speedFactor * 3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
+        debugLine(.2, 1, 0, 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
         if (sg_pathHelperShowTurnAct)
             helper_->smartTurning->makeTurnIfPossible(data, LEFT, 1);
     }
@@ -1712,6 +1712,16 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
     }
 }
 
+gHelperData::gHelperData(gHelperSensorsData *sensors_, gCycle *owner)
+    : sensors(*sensors_),
+      owner_(owner)
+{
+    ownerSpeed = &owner_->verletSpeed_;
+}
+
+REAL gHelperData::turnSpeedFactorF() {
+    return ((*ownerSpeed) * owner_->GetTurnDelay());
+}
 
 void gHelperData::Load(REAL a_speedFactor,
                          REAL a_turnSpeedFactor, REAL a_turnSpeedFactorPercent,
@@ -1728,9 +1738,6 @@ void gHelperData::Load(REAL a_speedFactor,
       }
 
 
-gHelperData::gHelperData(gHelperSensorsData *sensors_)
-    : sensors(*sensors_)
-{}
 
 gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL a_speedFactor,
                          REAL a_turnSpeedFactor, REAL a_turnSpeedFactorPercent,
@@ -1745,6 +1752,8 @@ gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL a_speedFactor,
       turnDir(a_turnDir),
       turnTime(a_turnTime)
 { }
+
+
 
 //SmartTurning
 gSmartTurning::gSmartTurning(gHelper *helper, gCycle *owner)
@@ -1845,14 +1854,14 @@ void gSmartTurning::followTail(gHelperData &data) {
     if (owner_->justCreated == true){
         lastTailTurnTime = -999;
     }
-    // if (!isClose(owner_->tailPos, data.turnSpeedFactor * 3)) {
+    // if (!isClose(owner_->tailPos, data.turnSpeedFactorF() * 3)) {
     //     return;
     // }
 
     if (owner_->tailMoving != true) {
         return;
     }
-    REAL delay = data.turnSpeedFactor * sg_helperSmartTurningFollowTailDelayMult;
+    REAL delay = data.turnSpeedFactorF() * sg_helperSmartTurningFollowTailDelayMult;
     bool drivingStraight = helper_->drivingStraight();
     REAL canSurviveLeftTurn, canSurviveRightTurn;
     bool closedIn, blockedBySelf;
@@ -1958,7 +1967,7 @@ int gSmartTurning::thinkPath( eCoord pos, gHelperData &data ) {
             p.detect(1);
             nogood = (p.hit <= .99999999 || eCoord::F(path.CurrentOffset(), odir) < 0);
         }
-        //debugLine(0,1,1,5,4*data.speedFactor,pos,pos);
+        //debugLine(0,1,1,5,4*data.speedFactorF(),pos,pos);
 
     }
     while (goon && nogood);
@@ -1969,8 +1978,8 @@ int gSmartTurning::thinkPath( eCoord pos, gHelperData &data ) {
         eCoord pos    = owner_->Position();
         eCoord target = path.CurrentPosition();
 
-        debugLine(.2,1,0,5,data.speedFactor,target,target);
-        debugLine(.2,1,0,5,data.speedFactor,pos,target);
+        debugLine(.2,1,0,5,data.speedFactorF(),target,target);
+        debugLine(.2,1,0,5,data.speedFactorF(),pos,target);
         // look how far ahead the target is:
         REAL ahead = eCoord::F(target - pos, dir) + eCoord::F(path.CurrentOffset(), dir);
 
@@ -2111,7 +2120,7 @@ void gSmartTurning::smartTurningAutoTrace(gHelperData &data) {
         case LEFT: {
             REAL turnTimeFactor = helper_->leftCorner.getTimeUntilTurn(owner_->Speed());
 
-            if ( helper_->leftCorner.exist && isClose(helper_->leftCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) &&
+            if ( helper_->leftCorner.exist && isClose(helper_->leftCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactorF()) &&
                     helper_->leftCorner.getTimeUntilTurn(owner_->Speed()) > 0 &&
                     helper_->leftCorner.distanceFromPlayer < sg_helperSmartTurningAutoTraceDistance &&
                     (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
@@ -2123,7 +2132,7 @@ void gSmartTurning::smartTurningAutoTrace(gHelperData &data) {
         case RIGHT: {
             REAL turnTimeFactor = helper_->rightCorner.getTimeUntilTurn(owner_->Speed());
 
-            if ( helper_->rightCorner.exist && isClose(helper_->rightCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) &&
+            if ( helper_->rightCorner.exist && isClose(helper_->rightCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactorF()) &&
                     helper_->rightCorner.getTimeUntilTurn(owner_->Speed()) > 0 &&
                     helper_->rightCorner.distanceFromPlayer < sg_helperSmartTurningAutoTraceDistance &&
                     (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
@@ -2149,8 +2158,8 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data) {
         case LEFT: {
             REAL turnTimeFactor = helper_->leftCorner.getTimeUntilTurn(owner_->Speed());
 
-            if ( helper_->leftCorner.exist && isClose(helper_->leftCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) &&
-                    owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/(10 * data.turnSpeedFactor)) > helper_->leftCorner.noticedTime &&
+            if ( helper_->leftCorner.exist && isClose(helper_->leftCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactorF()) &&
+                    owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/(10 * data.turnSpeedFactorF())) > helper_->leftCorner.noticedTime &&
                     helper_->leftCorner.getTimeUntilTurn(owner_->Speed()) > 0 &&
                     (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
                     if ( makeTurnIfPossible(data,LEFT,1) )
@@ -2161,8 +2170,8 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data) {
         case RIGHT: {
             REAL turnTimeFactor = helper_->rightCorner.getTimeUntilTurn(owner_->Speed());
 
-            if ( helper_->rightCorner.exist && isClose(helper_->rightCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactor) &&
-                    owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/(10 * data.turnSpeedFactor)) > helper_->rightCorner.noticedTime &&
+            if ( helper_->rightCorner.exist && isClose(helper_->rightCorner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactorF()) &&
+                    owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime/(10 * data.turnSpeedFactorF())) > helper_->rightCorner.noticedTime &&
                     helper_->rightCorner.getTimeUntilTurn(owner_->Speed()) > 0 &&
                     (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime)  ) {
                     if ( makeTurnIfPossible(data,RIGHT,1) )
@@ -2202,7 +2211,7 @@ bool gSmartTurning::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spac
 
     if (spaceFactor > 0)
     {
-        compareFactor = spaceFactor * data.turnSpeedFactor;
+        compareFactor = spaceFactor * data.turnSpeedFactorF();
     }
     else
     {
@@ -2234,19 +2243,19 @@ void gSmartTurning::canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, 
     gSensor *right = data.sensors.getSensor(RIGHT);
 
     bool canTurnLeftRubber = true, canTurnRightRubber = true, canTurnLeftSpace = true, canTurnRightSpace = true;
-    REAL closedInFactor = data.turnSpeedFactor * sg_helperSmartTurningClosedInMult;
+    REAL closedInFactor = data.turnSpeedFactorF() * sg_helperSmartTurningClosedInMult;
     closedIn = (front->hit <= closedInFactor && left->hit <= closedInFactor && right->hit <= closedInFactor);
     blockedBySelf =  (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
 
     if (freeSpaceFactor > 0) {
-        if (left->hit < data.turnSpeedFactor * freeSpaceFactor
-         && front->hit > data.turnSpeedFactor * freeSpaceFactor
-         && right->hit > data.turnSpeedFactor * freeSpaceFactor  ) {
+        if (left->hit < data.turnSpeedFactorF() * freeSpaceFactor
+         && front->hit > data.turnSpeedFactorF() * freeSpaceFactor
+         && right->hit > data.turnSpeedFactorF() * freeSpaceFactor  ) {
             canTurnLeftSpace = false;
         }
-        if (right->hit < data.turnSpeedFactor * freeSpaceFactor
-         && front->hit > data.turnSpeedFactor * freeSpaceFactor
-         && left->hit > data.turnSpeedFactor * freeSpaceFactor ) {
+        if (right->hit < data.turnSpeedFactorF() * freeSpaceFactor
+         && front->hit > data.turnSpeedFactorF() * freeSpaceFactor
+         && left->hit > data.turnSpeedFactorF() * freeSpaceFactor ) {
             canTurnRightSpace = false;
         }
     }
@@ -2300,7 +2309,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
         return;
     }
     REAL hitRange = data.sensors.getSensor(FRONT)->hit;
-    if (hitRange <= sg_helperSmartTurningFrontBotThinkRange * data.turnSpeedFactor)
+    if (hitRange <= sg_helperSmartTurningFrontBotThinkRange * data.turnSpeedFactorF())
     {
         //calculateRubberFactor(sg_helperSmartTurningRubberTimeMult, sg_helperSmartTurningRubberFactorMult);
         helper_->rubberData->calculate();
@@ -2616,7 +2625,7 @@ gHelper::gHelper(gCycle *owner)
         ownerWallLength(owner->ThisWallsLength()),
         ownerTurnDelay(owner->GetTurnDelay()),
         sensors_(new gHelperSensorsData(owner_)),
-        data_stored(new gHelperData(sensors_)),
+        data_stored(new gHelperData(sensors_,owner_)),
         rubberData(new gHelperRubberData(this, owner_))
 {
     aiCreated = false;
@@ -2685,7 +2694,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     {
         return;
     }
-    REAL timeout = data.speedFactor + sg_helperDetectCutTimeout;
+    REAL timeout = data.speedFactorF() + sg_helperDetectCutTimeout;
     gCycle *target = enemies.closestEnemy;
 
     if (enemies.exist(target))
@@ -2820,7 +2829,7 @@ void gHelper::enemyTracers(gHelperData &data, int detectionRange, REAL timeout)
 
         eCoord enemyPos = other->Position();
         REAL R = .1, G = .1, B = 0;
-        bool isClose = smartTurning->isClose(enemyPos, detectionRange + data.turnSpeedFactor);
+        bool isClose = smartTurning->isClose(enemyPos, detectionRange + data.turnSpeedFactorF());
         bool enemyFaster = ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
         bool isTeammate = (owner_->Team() == other->Team());
 
@@ -2854,7 +2863,7 @@ void gHelper::showTail(gHelperData &data)
         return;
     }
 
-    REAL timeout = sg_helperShowTailTimeout * data.speedFactor;
+    REAL timeout = sg_helperShowTailTimeout * data.speedFactorF();
 
     if (canSeeTarget((*tailPos),sg_helperShowTailPassthrough)) {
         debugLine(owner_->color_.r,owner_->color_.g,owner_->color_.b,sg_helperShowTailHeight,timeout,(*ownerPos),(*tailPos));
@@ -2879,7 +2888,7 @@ void gHelper::showEnemyTail(gHelperData &data)
             continue;
         }
         distanceToTail = sg_helperShowEnemyTailDistanceMult * (eCoord::F(*ownerDir, (other->tailPos) - (*ownerPos)));
-        timeout = fabs(distanceToTail) / 10 * data.speedFactor;
+        timeout = fabs(distanceToTail) / 10 * data.speedFactorF();
         debugLine(other->color_.r, other->color_.g, other->color_.b, sg_helperShowEnemyTailHeight, timeout * sg_helperShowEnemyTailTimeoutMult, other->tailPos, other->tailPos, sg_helperShowEnemyTailBrightness);
     }
 }
@@ -2897,7 +2906,7 @@ void gHelper::showTailTracer(gHelperData &data)
     }
 
     REAL distanceToTail = sg_helperShowTailTracerTimeoutMult * eCoord::F(*ownerDir, (*tailPos) - (*ownerPos));
-    REAL timeout = fabs(distanceToTail) / sg_helperShowTailTracerDistanceMult * data.speedFactor;
+    REAL timeout = fabs(distanceToTail) / sg_helperShowTailTracerDistanceMult * data.speedFactorF();
 
     debugLine(1, 1, 1, sg_helperShowTailTracerHeight, timeout * sg_helperShowTailTracerTimeoutMult, *tailPos, *tailPos);
 }
@@ -2944,7 +2953,7 @@ void gHelper::findCorners(gHelperData &data)
 
 void gHelper::showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout) {
     if (corner.exist) {
-        REAL timeout = data.speedFactor * sg_helperShowCornersTimeout;
+        REAL timeout = data.speedFactorF() * sg_helperShowCornersTimeout;
         bool isClose = smartTurning->isClose(corner.currentPos, sg_helperShowCornersBoundary);
 
 
@@ -2957,7 +2966,7 @@ void gHelper::showCorner(gHelperData &data, gSmartTurningCornerData &corner, REA
 
 void gHelper::showCorners(gHelperData &data) {
     if (!aliveCheck()) { return; }
-    REAL timeout = data.speedFactor * sg_helperShowCornersTimeout;
+    REAL timeout = data.speedFactorF() * sg_helperShowCornersTimeout;
     findCorners(data);
     showCorner(data,leftCorner,timeout);
     showCorner(data,rightCorner,timeout);
@@ -2971,8 +2980,8 @@ void gHelper::showHit(gHelperData &data)
     }
 
     REAL frontHit = data.sensors.getSensor(FRONT)->hit;
-    bool wallClose = frontHit < data.turnSpeedFactor * sg_showHitDataRange;
-    REAL timeout = data.speedFactor * sg_showHitDataTimeout;
+    bool wallClose = frontHit < data.turnSpeedFactorF() * sg_showHitDataRange;
+    REAL timeout = data.speedFactorF() * sg_showHitDataTimeout;
 
     sg_helperShowHitFrontDistH.setValue(frontHit);
 
@@ -3005,7 +3014,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     eCoord hitPos = sensor->before_hit;
     REAL hitDistance = sensor->hit;
 
-    bool open = hitDistance > data.turnSpeedFactor * sg_showHitDataFreeRange;
+    bool open = hitDistance > data.turnSpeedFactorF() * sg_showHitDataFreeRange;
 
     if (open)
     {
@@ -3044,12 +3053,7 @@ void gHelper::Activate()
 
     if (!aliveCheck()) { return; }
     owner_->localCurrentTime = se_GameTime();
-    REAL speedFactor = (1/(*ownerSpeed));
-    REAL turnSpeedFactor = ((*ownerSpeed) * ownerTurnDelay);
-    REAL turnSpeedFactorPercent = (1/turnSpeedFactor);
-    REAL turnDistance = (turnSpeedFactor/100);
-
-    data_stored->Load(speedFactor, turnSpeedFactor, turnSpeedFactorPercent, turnDistance, 0, 0, 0);
+    
     enemies.detectEnemies();
 
     if (sg_helperSmartTurning)

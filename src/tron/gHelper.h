@@ -261,6 +261,7 @@ struct gHelperSensorsData
 struct gHelperData
 {
     gCycle *owner_;
+    REAL *ownerSpeed;
     gHelperSensorsData &sensors;
     REAL speedFactor;
     REAL turnSpeedFactor;
@@ -270,7 +271,17 @@ struct gHelperData
     REAL turnDir;
     REAL turnTime;
 
-    REAL speedFactor
+    REAL speedFactorF() {
+        return (1/(*ownerSpeed));
+    }
+    REAL turnSpeedFactorF();
+    
+    REAL turnSpeedFactorPercentF() {
+        (1/turnSpeedFactorF());
+    }
+    REAL turnDistanceF() {
+        return (turnSpeedFactorF()/100);
+    }
     void Load(  REAL a_speedFactor, REAL a_turnSpeedFactor,
                 REAL a_turnSpeedFactorPercent, REAL a_turnDistance, REAL a_thinkAgain,
                 REAL a_turnDir, REAL a_turnTime);
@@ -279,6 +290,7 @@ struct gHelperData
                 REAL a_turnSpeedFactorPercent, REAL a_turnDistance, REAL a_thinkAgain,
                 REAL a_turnDir, REAL a_turnTime);
 };
+
 
 class gTailHelper
 {

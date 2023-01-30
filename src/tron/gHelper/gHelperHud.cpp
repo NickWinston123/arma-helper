@@ -1,3 +1,4 @@
+#include "gHelperVar.h"
 #include "gHelperHud.h"
 #include "rFont.h"
 #include "../gHud.h"
@@ -5,6 +6,7 @@
 #include <vector>
 // HELPER HUD
 
+namespace helperConfig {
 bool sg_helperHud = false; // Helper Hud
 static tConfItem<bool> sg_helperHudConf("HELPER_HUD", sg_helperHud);
 bool sg_helperHudFreeze = false; // Helper Hud
@@ -15,7 +17,7 @@ REAL sg_helperHudY = -0.01; // Helper Hud Y Position
 static tConfItem<REAL> sg_helperHudYC("HELPER_HUD_Y", sg_helperHudY);
 REAL sg_helperHudSize = .06; // Size of Helper Hud
 static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
-
+}
 
 static std::map< std::string, gHelperHudBase * > * st_confMap = 0;
 gHelperHudBase::gHelperHudMap & gHelperHudBase::GetHelperHudMap()
@@ -37,7 +39,7 @@ gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
 
 #include <unordered_map>
 void gHelperHudBase::Render() {
-    if (!sg_helperHud)
+    if (!helperConfig::sg_helperHud)
         return;
 
     std::unordered_map<std::string, std::vector<gHelperHudBase*>> hudMap;
@@ -56,7 +58,7 @@ void gHelperHudBase::Render() {
         hudMap[parent].push_back(item);
     }
 
-    rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
+    rTextField hudDebug(helperConfig::sg_helperHudX - .15 * helperConfig::sg_helperHudSize / 2.0, helperConfig::sg_helperHudY, .15 * helperConfig::sg_helperHudSize, .3 * helperConfig::sg_helperHudSize);
     // Next, iterate through the hudMap and display parent items first, followed by their child items
     for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++) {
         if (iter->first != "") {

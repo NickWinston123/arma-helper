@@ -1,6 +1,4 @@
 #include "defs.h"
-extern REAL sg_helperHudY, sg_helperHudX, sg_helperHudSize;
-extern bool sg_helperHud, sg_helperHudFreeze;
 #ifndef ArmageTron_GHELPER_HUD
 #define ArmageTron_GHELPER_HUD
 #include "../gHud.h"
@@ -9,12 +7,13 @@ extern bool sg_helperHud, sg_helperHudFreeze;
 #include "tString.h"
 
 
+namespace helperConfig {
 extern bool sg_helperHud ;
 extern bool sg_helperHudFreeze ;
 extern REAL sg_helperHudX ;
 extern REAL sg_helperHudY ;
 extern REAL sg_helperHudSize ;
-
+}
 class gHelperHudBase
 {
 public:
@@ -64,7 +63,7 @@ public:
     virtual tString getValue()
     {
         tString valueStr;
-        !sg_helperHudFreeze ? valueStr << value : valueStr << lastValue;
+        !helperConfig::sg_helperHudFreeze ? valueStr << value : valueStr << lastValue;
         return valueStr;
     };
 
@@ -76,7 +75,7 @@ public:
     };
 
     virtual void setValue(T val) {
-        if (!sg_helperHud || sg_helperHudFreeze)
+        if (!helperConfig::sg_helperHud || helperConfig::sg_helperHudFreeze)
             return;
         value = val;
         setLastValue();
@@ -89,7 +88,7 @@ public:
 
     virtual bool valueSame() { return getLastValue() == getValue(); }
 
-    virtual void setLastValue() { if (sg_helperHudFreeze)
+    virtual void setLastValue() { if (helperConfig::sg_helperHudFreeze)
                                     return;
                                     lastValue = value; }
 

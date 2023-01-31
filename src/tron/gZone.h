@@ -177,6 +177,7 @@ public:
 
     void Destroy();
     bool destroyed_;
+    bool helperDestroyed_;
     tString             GetName() {return name_;}
     void                SetName(tString name) {name_ = name;}
     static int          FindFirst(tString name);
@@ -337,9 +338,15 @@ private:
     inline void SetFunctionNow( tFunction & f, REAL value ) const; //!< makes sure EvaluateFunctionNow() returns the given value
 
     void RemoveFromZoneList(void); //!< Removes the zone from the sg_Zones list if it's there
-
+public:
+    void HelperTrackedZonesManager(bool newZone = true);
+    void HelperTrackedZonesRemover();
 };
 
+#ifndef ArmageTron_GZone_Zones
+#define ArmageTron_GZone_Zones
+extern std::deque<gZone *> sg_HelperTrackedZones;
+#endif
 // all the following zones are hacks until the full zone system is in place
 
 //! win zone: lets players who enter win the round

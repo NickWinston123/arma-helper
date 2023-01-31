@@ -66,7 +66,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <algorithm>
 
 std::deque<gZone *> sg_Zones;
-
+std::deque<gZone *> sg_HelperTrackedZones;
 
 static bool sg_SwapWinDeath = false;
 static tSettingItem<bool> sg_SwitchWinDeathColorCONF("SWAP_WINZONE_DEATHZONE_COLORS", sg_SwapWinDeath);
@@ -417,10 +417,12 @@ void gZone::FindAll(tString object_id_str, bool byId, std::function<bool(gZone *
 gZone::gZone( eGrid * grid, const eCoord & pos, bool dynamicCreation, bool delayCreation)
 :eNetGameObject( grid, pos, eCoord( 0,0 ), NULL, true ), rotation_(1,0), lastCoord_(0), nextUpdate_(-1)
 {
+     //con << "GOT CREATION EVENT gZone 1" << "\n";
     // store creation time
     referenceTime_ = createTime_ = lastTime = 0;
 
     destroyed_ = false;
+    helperDestroyed_ = false;
     zoneInit_ = false;
     dynamicCreation_ = dynamicCreation;
     delayCreation_ = delayCreation;
@@ -476,6 +478,7 @@ gZone::gZone( eGrid * grid, const eCoord & pos, bool dynamicCreation, bool delay
     {
         this->AddToList();
         sg_Zones.push_back(this);
+        HelperTrackedZonesManager();
     }
 
     // initialize position functions
@@ -483,6 +486,29 @@ gZone::gZone( eGrid * grid, const eCoord & pos, bool dynamicCreation, bool delay
 
     //wrtl: Ok, this is the result of three hours of debugging, I hope it helps...
     eGameObject::pos = pos;
+}
+
+void gZone::HelperTrackedZonesRemover() {
+
+    std::deque<gZone *>::iterator pos_found =
+        std::find_if(
+            sg_HelperTrackedZones.begin(),
+            sg_HelperTrackedZones.end(),
+            std::bind2nd(
+                std::equal_to<gZone *>(),
+                this)
+        );
+    if(pos_found != sg_HelperTrackedZones.end())
+        sg_HelperTrackedZones.erase(pos_found);
+
+}
+
+void gZone::HelperTrackedZonesManager( bool newZone) {
+
+    if (!newZone)
+        this->helperDestroyed_ = true;
+     if (newZone)
+        sg_HelperTrackedZones.push_back(this);
 }
 
 
@@ -499,7 +525,9 @@ gZone::gZone( eGrid * grid, const eCoord & pos, bool dynamicCreation, bool delay
 gZone::gZone( nMessage & m )
 :eNetGameObject( m ), rotation_(1,0)
 {
+    //con << "GOT CREATION EVENT gZone 2" << "\n";
     destroyed_ = false;
+    helperDestroyed_ = false;
     zoneInit_ = false;
     dynamicCreation_ = false;
     delayCreation_ = false;
@@ -536,6 +564,8 @@ gZone::gZone( nMessage & m )
     {
         this->AddToList();
         sg_Zones.push_back(this);
+        HelperTrackedZonesManager();
+
     }
 
     // initialize position functions
@@ -563,6 +593,7 @@ void gZone::RemoveFromGame(void) {
 }
 
 void gZone::RemoveFromZoneList(void) {
+    HelperTrackedZonesRemover();
     std::deque<gZone *>::iterator pos_found =
         std::find_if(
             sg_Zones.begin(),
@@ -990,6 +1021,7 @@ void gZone::BounceOffPoint(eCoord dest, eCoord collide)
 
 void gZone::Collapse()
 {
+    con << "COLLAPSE EVENT\n";
     Vanish(-1);
     destroyed_ = true;
     SetReferenceTime();
@@ -1032,8 +1064,22 @@ static eLadderLogWriter sg_OnlineZoneWriter("ONLINE_ZONE", false);
 
 static eLadderLogWriter sg_zoneRouteStopWriter("ZONE_ROUTE_STOPPED", true);
 
+bool sg_ZoneClientTimestep = true;
+static tConfItem<bool> sg_ZoneClientTimestepConf("ZONE_CLIENT_TIMESTEP", sg_ZoneClientTimestep);
+
 bool gZone::Timestep( REAL time )
 {
+    // con << "GOT  Timestep" << "\n";
+
+    if (sn_GetNetState() == nCLIENT) {
+        if (this->destroyed_) {
+            HelperTrackedZonesRemover();
+        }
+
+        if (!sg_ZoneClientTimestep)
+            return false;
+    }
+
     if ((sn_GetNetState() != nCLIENT) && destroyed_)
     {
         //Keep the zone around on the server side so clients will sync
@@ -1922,11 +1968,11 @@ void gZone::OnNear( gZone *target, REAL time )
 bool gZone::DoCycleInteract( gCycle * target, REAL time )
 {
     SetReferenceTime();
-    
+
     REAL dt = time - referenceTime_;
-    
+
     eCoord dest(posx_(dt), posy_(dt));
-    
+
     //if(sg_ballRimStop)
     {
         // HACK: don't process cycle walls this time...
@@ -1961,7 +2007,7 @@ bool gZone::DoCycleInteract( gCycle * target, REAL time )
             return false;
         }
     }
-    
+
     //  calculate the bounce off. Source: gBallZoneHack
     eCoord p2 = target->Position();
     eCoord v2 = target->Direction()*target->Speed();
@@ -2001,7 +2047,7 @@ bool gZone::DoCycleInteract( gCycle * target, REAL time )
     eCoord new_v1 = base*-target->Speed();
     eCoord new_p1 = p1c + new_v1*(-t+0.01);
     new_v1 = new_v1*(1+sg_ballCycleBoost*target->GetAcceleration()/100);
-    
+
     //if(sg_ballRimStop)
     {
         s_zoneWallInteractionFound = false;
@@ -2025,7 +2071,7 @@ bool gZone::DoCycleInteract( gCycle * target, REAL time )
             else
             {
                 // Just set our velocity and let the wall bounce handle it
-                SetVelocity(new_v1);                    
+                SetVelocity(new_v1);
                 RequestSync();
                 return false;
             }
@@ -2040,7 +2086,7 @@ bool gZone::DoCycleInteract( gCycle * target, REAL time )
     this->lastImpactTime_ = 0;
 
     RequestSync();
-    
+
     return true;
 }
 
@@ -3490,6 +3536,7 @@ static tSettingItem< REAL > sg_collapseSpeedConfig( "FORTRESS_COLLAPSE_SPEED", s
 
 bool gBaseZoneHack::Timestep( REAL time )
 {
+    
     // no team?!? Get rid of this zone ASAP.
     if ( !team )
     {
@@ -3498,6 +3545,7 @@ bool gBaseZoneHack::Timestep( REAL time )
 
     if ( currentState_ == State_Conquering )
     {
+        //con << "ZONE IS GOING AWAY!!!!!!!!!!!!!\n";
         // let zone vanish
         SetReferenceTime();
 
@@ -3552,7 +3600,11 @@ bool gBaseZoneHack::Timestep( REAL time )
         REAL maxSpeed = 10 * ( 2 *  M_PI ) / sg_segments;
         REAL omega = .3 + conquered_ * conquered_ * maxSpeed;
         REAL omegaDot = 2 * conquered_ * conquest * maxSpeed;
-
+        // tString debug;
+        // debug << "maxSpeed = " << maxSpeed << "\n";
+        // debug << "omega = " << omega << "\n";
+        // debug << "omegaDot = " << omegaDot << "\n";
+        // con << debug;
         // determine the time since the last sync (exaggerate for smoother motion in local games)
         REAL timeStep = lastTime - lastSync_;
         if ( sn_GetNetState() != nSERVER )
@@ -4652,6 +4704,7 @@ gSumoZoneHack::~gSumoZoneHack( void )
 
 bool gSumoZoneHack::Timestep( REAL time )
 {
+    // con << " SUMO ZONE DETECTED.\n";
     if (currentState_ == State_Unspawned){
         currentState_ = State_Spawned;
         const REAL zoneSize = GetRadius();
@@ -9708,6 +9761,7 @@ static tConfItemFunc sg_CreateZone_c("SPAWN_ZONE",&sg_CreateZone_conf);
 std::map<REAL, std::set<gZone*> > gZone::delayedZones_;
 void gZone::Timesteps(REAL currentTime)
 {
+     //con << "GOT  Timesteps" << "\n";
     if (delayedZones_.empty()) return;
     eGrid *grid = eGrid::CurrentGrid();
     if (!grid) return;
@@ -9726,6 +9780,7 @@ void gZone::Timesteps(REAL currentTime)
                 {
                     Zone->AddToList();
                     sg_Zones.push_back(Zone);
+                    Zone->HelperTrackedZonesManager();
                     Zone->RequestSync();
                 }
             }

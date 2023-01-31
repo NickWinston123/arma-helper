@@ -212,6 +212,21 @@ private:
     bool pathInvalid;
 };
 
+class gZoneHelper
+{
+public:
+    // Constructor
+    gZoneHelper(gHelper* helper, gCycle *owner);
+    void Activate(gHelperData &data);
+
+
+    static gZoneHelper &Get(gHelper* helper, gCycle *owner);
+
+private:
+    gCycle *owner_; // Pointer to the owner cycle
+    gHelper *helper_;
+};
+
 struct gTurnData{
     public:
         int direction;
@@ -320,6 +335,7 @@ class gHelper {
     friend class gSmarterBot;
     friend class gPathHelper;
     friend class gTailHelper;
+    friend class gZoneHelper;
 
     public:
         static gHelper & Get( gCycle * cycle );
@@ -344,7 +360,7 @@ class gHelper {
         void showTailTracer(gHelperData &data);
 
         void autoBrake();
-        
+
         void showEnemyTail(gHelperData &data);
 
         void showTailPath(gHelperData &data);
@@ -356,6 +372,8 @@ class gHelper {
         eCoord closestCorner(eCoord center, REAL radius);
         static void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
                     eCoord start,eCoord end, REAL brightness = 1);
+
+        static void debugBox(REAL R, REAL G, REAL B, eCoord center, REAL radius, REAL timeout);
         ~gHelper();
     private:
         gCycle *owner_;
@@ -382,5 +400,6 @@ class gHelper {
         std::unique_ptr< gSmartTurning > smartTurning;
         std::unique_ptr< gPathHelper > pathHelper;
         std::unique_ptr< gTailHelper > tailHelper;
+        std::unique_ptr< gZoneHelper > zoneHelper;
 };
 #endif

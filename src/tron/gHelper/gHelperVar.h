@@ -73,6 +73,8 @@ namespace helperConfig {
     extern REAL se_pathBrightness ;
     extern REAL sg_pathHelperUpdateDistance ;
 
+    extern bool sg_zoneHelper;
+    
     extern bool sg_helperShowCorners ;
     extern bool sg_helperShowCornersPassed ;
     extern REAL sg_helperShowCornersPassedRange ;

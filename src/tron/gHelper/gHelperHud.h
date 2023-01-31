@@ -81,11 +81,11 @@ public:
         setLastValue();
     };
 
-    gHelperHudItem & operator<<(T val){
-
-        setValue(value+=val);
+    gHelperHudItem& operator<<(T val) {
+      setValue(val);
+      return *this;
     }
-
+   
     virtual bool valueSame() { return getLastValue() == getValue(); }
 
     virtual void setLastValue() { if (helperConfig::sg_helperHudFreeze)

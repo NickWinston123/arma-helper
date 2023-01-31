@@ -253,8 +253,20 @@ void helperConfigMenu() {
     helperConfigMenu.Enter();
 }
 
+void helperZoneMenu() {
+    uMenu helperZoneMenu("Zone Helper Settings");
+
+    uMenuItemToggle zoneHelper(&helperZoneMenu, "Zone Helper", "Enable or disable zone helper", sg_zoneHelper);
+    helperZoneMenu.Enter();
+}
+
 void helperExperimentalMenu(){
     uMenu helperExperimentalMenu("Experimental Settings");
+
+    uMenuItemFunction zoneMenu(&helperExperimentalMenu,
+                               "Zone Helper",
+                               "Zone Helper Settings",
+                               helperZoneMenu);
 
     uMenuItemToggle helperAI(&helperExperimentalMenu, "Helper AI", "Enable Helper AI", sg_helperAI);
 

@@ -151,6 +151,11 @@ static tConfItem<REAL> se_pathBrightnessC("HELPER_PATH_BRIGHTNESS", se_pathBrigh
 REAL sg_pathHelperUpdateDistance = 1;
 static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
 
+
+
+bool sg_zoneHelper = false;
+static tConfItem<bool> sg_zoneHelperC("HELPER_ZONE", sg_zoneHelper);
+
 bool sg_helperShowCorners = false;
 static tConfItem<bool> sg_helperShowCornersConf("HELPER_SHOW_CORNERS", sg_helperShowCorners);
 bool sg_helperShowCornersPassed = 0;
@@ -261,6 +266,8 @@ gHelperHudItem<eCoord> tailDirH("Tail Dir",eCoord(0,0));
 
 gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut",sg_helperDetectCut);
 gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug",tColoredString("None"),"Detect Cut");
+
+gHelperHudItem<tColoredString> zoneDebugH("Zone Debug",tColoredString("None"));
 
 
 gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy",tColoredString("None"), "Detect Cut");
@@ -434,6 +441,7 @@ gTailHelper &gTailHelper::Get(gHelper * helper, gCycle * owner)
     return *helper->tailHelper;
 }
 
+
 gPathHelper::gPathHelper(gHelper *helper, gCycle *owner)
     : helper_(helper),
       owner_(owner),
@@ -449,6 +457,7 @@ bool gPathHelper::targetExist()
 {
     return target != eCoord(0, 0) && targetCurrentFace_;
 }
+
 
 gPathHelper &gPathHelper::Get(gHelper *helper, gCycle *owner)
 {
@@ -2520,6 +2529,48 @@ bool gSmartTurning::CanMakeTurn(uActionPlayer *action)
     return owner_->CanMakeTurn((action == &gCycle::se_turnRight) ? 1 : -1);
 }
 
+
+void debugZone(gZone *zone){
+    gHelper::debugBox(zone->GetColor().r, zone->GetColor().g, zone->GetColor().b, zone->Position(), zone->GetRadius(), zone->Speed() > 0 ? .01 : 1/zone->Speed());
+}
+
+
+
+gZoneHelper::gZoneHelper(gHelper *helper, gCycle *owner)
+    : helper_(helper),
+      owner_(owner)
+      {
+        
+      }
+
+ gZoneHelper &gZoneHelper::Get(gHelper *helper, gCycle *owner)
+{
+    tASSERT(owner);
+
+    // create
+    if (helper->zoneHelper.get() == 0)
+        helper->zoneHelper.reset(new gZoneHelper(helper, owner));
+
+    return *helper->zoneHelper;
+}
+
+void gZoneHelper::Activate(gHelperData &data)
+{
+    tColoredString debug;
+    debug << "Zones size " << sg_HelperTrackedZones.size() << "\n"; 
+    for(std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
+    {
+        gZone *zone = *i;
+        if (!zone || zone->destroyed_)
+            continue;
+
+        debugZone(zone);
+    }
+    zoneDebugH << debug;
+
+}
+
+
 REAL gHelper::CurrentTime() {
     return sg_helperCurrentTimeLocal ? owner_->localCurrentTime : se_GameTime();
 }
@@ -2542,6 +2593,7 @@ gHelper::gHelper(gCycle *owner)
     gSmartTurning::Get(this, owner);
     gPathHelper::Get(this, owner);
     gTailHelper::Get(this, owner);
+    gZoneHelper::Get(this, owner);
 }
 
 gCycle* gHelper::getOwner() { return owner_; }
@@ -2591,6 +2643,21 @@ void gHelper::debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
     eDebugLine::Draw(start, startHeight, end, height);
 }
 
+void gHelper::debugBox(REAL R, REAL G, REAL B, eCoord center, REAL radius, REAL timeout)
+    {
+        REAL sg_helperBoxHeight = 1;
+        eCoord corner[3];
+        corner[0] = eCoord(center.x - (radius), center.y + (radius));
+        corner[1] = eCoord(center.x + (radius), center.y + (radius));
+        corner[2] = eCoord(center.x + (radius), center.y - (radius));
+        corner[3] = eCoord(center.x - (radius), center.y - (radius));
+
+        debugLine(R,G,B,sg_helperBoxHeight,timeout,corner[0],corner[1]);
+        debugLine(R,G,B,sg_helperBoxHeight,timeout,corner[1],corner[2]);
+        debugLine(R,G,B,sg_helperBoxHeight,timeout,corner[2],corner[3]);
+        debugLine(R,G,B,sg_helperBoxHeight,timeout,corner[3],corner[0]);
+    }
+
 // See how close two coordinates are, lower the threshold the more strict the comparison
 bool directionsAreClose(const eCoord &dir1, const eCoord &dir2, REAL threshold) {
 
@@ -2611,7 +2678,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     if (enemies.exist(target))
     {
-        closestEnemyH.setValue(target->Player()->GetColoredName());
+        closestEnemyH << (target->Player()->GetColoredName());
         REAL range = ((*ownerSpeed) * (ownerTurnDelay));
         REAL closeReact = (range + detectionRange);
 
@@ -2667,14 +2734,14 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
         if (enemyIsOnLeft){
             if (enemyIsFacingOurRight) {
                 relativeEnemyPos = enemydir.Turn(RIGHT);
-                enemydir = enemydir.Turn(RIGHT);
+                // enemydir = enemydir.Turn(RIGHT);
             } else {
 
             }
         } else if (enemyIsOnRight) {
             if (enemyIsFacingOurLeft) {
                 relativeEnemyPos = enemydir.Turn(LEFT);
-                enemydir = enemydir.Turn(LEFT);
+                // enemydir = enemydir.Turn(LEFT);
             } else {
 
             }
@@ -2686,8 +2753,8 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
         if (oppositeDirectionofEnemy && enemyIsAhead) {
             relativeEnemyPos = enemydir.Turn(ownerDir->Conj()).Turn(LEFT);
         } else {
-            relativeEnemyPos = relativeEnemyPos.Turn(ownerDir->Conj()).Turn(0, 1);
-            enemydir = enemydir.Turn(ownerDir->Conj()).Turn(0, 1);
+            relativeEnemyPos = relativeEnemyPos.Turn(ownerDir->Conj()).Turn(LEFT);
+            // enemydir = enemydir.Turn(ownerDir->Conj()).Turn(LEFT);
             if (sameDirectionAsEnemy)
                 //relativeEnemyPos = relativeEnemyPos.Turn(ownerDir->Conj()).Turn(LEFT);
                 //enemydir = enemydir.Turn(ownerDir->Conj()).Turn(LEFT);
@@ -2703,7 +2770,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
             enemydir.x *= -1;
         }
 
-        //detectCutdebugH.setValue(debug);
+        //detectCutdebugH << (debug);
 
         // now we can even assume the enemy is on our right side.
         // consider his ping and our reaction time
@@ -2922,7 +2989,7 @@ void gHelper::showHit(gHelperData &data)
     bool wallClose = frontHit < data.turnSpeedFactorF() * sg_showHitDataRange;
     REAL timeout = data.speedFactorF() * sg_showHitDataTimeout;
 
-    sg_helperShowHitFrontDistH.setValue(frontHit);
+    sg_helperShowHitFrontDistH << (frontHit);
 
     if (wallClose)
     {
@@ -2979,14 +3046,14 @@ gHelper& gHelper::Get( gCycle * cycle )
 bool gHelper::aliveCheck() {
     return owner_ && owner_->Alive() && owner_->Grid();
 }
-
+#include "../gZone.h"
 void gHelper::Activate()
 {
     REAL start = tRealSysTimeFloat();
-    ownerPosH.setValue(*ownerPos);
-    ownerDirH.setValue(*ownerDir);
-    tailPosH.setValue(owner_->tailPos);
-    tailDirH.setValue(owner_->tailDir);
+    ownerPosH << (*ownerPos);
+    ownerDirH << (*ownerDir);
+    tailPosH << (owner_->tailPos);
+    tailDirH << (owner_->tailDir);
 
     if (!aliveCheck()) { return; }
     owner_->localCurrentTime = se_GameTime();
@@ -3001,6 +3068,9 @@ void gHelper::Activate()
 
     if (sg_tailHelper)
         tailHelper->Activate(*data_stored);
+
+    if (sg_zoneHelper)
+        zoneHelper->Activate(*data_stored);
 
     if (sg_helperEnemyTracers)
         enemyTracers(*data_stored, sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
@@ -3046,7 +3116,7 @@ void gHelper::Activate()
 
     owner_->justCreated = false;
     REAL time = tRealSysTimeFloat() - start;
-    sg_helperActivateTimeH.setValue(time);
+    sg_helperActivateTimeH << (time);
 }
 
 

@@ -69,6 +69,7 @@ struct gRealColor {
     REAL r,g,b;
 
     gRealColor():r(1), g(1), b(1){}
+    gRealColor(REAL r_, REAL g_, REAL b_):r(r_), g(g_), b(b_){}
 
 };
 

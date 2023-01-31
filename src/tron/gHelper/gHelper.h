@@ -282,6 +282,7 @@ private:
         REAL &lastTurnDir; // -1 left , 1 right
         REAL &blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
         REAL &forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
+        REAL lastTailTurnTime;
         ePath path;
 };
 
@@ -370,8 +371,8 @@ class gHelper {
 
         gCycle *getOwner();
         eCoord closestCorner(eCoord center, REAL radius);
-        static void debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
-                    eCoord start,eCoord end, REAL brightness = 1);
+        static void debugLine(gRealColor color, REAL height, REAL timeout,
+                        eCoord start,eCoord end, REAL brightness = 1);
 
         static void debugBox(REAL R, REAL G, REAL B, eCoord center, REAL radius, REAL timeout);
         ~gHelper();

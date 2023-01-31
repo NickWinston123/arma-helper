@@ -3,6 +3,7 @@
 #include "rFont.h"
 #include "../gHud.h"
 #include "nConfig.h"
+#include "tString.h"
 #include <vector>
 // HELPER HUD
 
@@ -17,6 +18,9 @@ REAL sg_helperHudY = -0.01; // Helper Hud Y Position
 static tConfItem<REAL> sg_helperHudYC("HELPER_HUD_Y", sg_helperHudY);
 REAL sg_helperHudSize = .06; // Size of Helper Hud
 static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
+tString sg_helperHudIgnoreList = tString("");
+static tConfItem<tString> sg_helperHudIgnoreListConf("HELPER_HUD_IGNORE_LIST", sg_helperHudIgnoreList);
+
 }
 
 static std::map< std::string, gHelperHudBase * > * st_confMap = 0;
@@ -37,18 +41,22 @@ gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
     parent = parent_;
 }
 
-#include <unordered_map>
+#include <map>
 void gHelperHudBase::Render() {
     if (!helperConfig::sg_helperHud)
         return;
 
-    std::unordered_map<std::string, std::vector<gHelperHudBase*>> hudMap;
+    std::map<std::string, std::vector<gHelperHudBase*>> hudMap;
     gHelperHudMap &items = gHelperHudBase::GetHelperHudMap();
 
     // First, populate the hudMap with all items and their parent relationships
     for (auto iter = items.begin(); iter != items.end(); iter++) {
         gHelperHudBase *item = iter->second;
         std::string parent = item->getParent();
+        if (tIsInList(helperConfig::sg_helperHudIgnoreList,tString(item->getLabel()))){
+            continue;
+        }
+
         if (parent.empty()) {
             parent = "";
         }

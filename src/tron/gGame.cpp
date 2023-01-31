@@ -5343,6 +5343,9 @@ static uActionTooltip ingamemenuTooltip( ingamemenu, 1 );
 
 static eLadderLogWriter sg_gameTimeWriter("GAME_TIME", true);
 
+static bool sg_forceGamePause = false;
+static tSettingItem<bool> sg_forceGamePauseConf("FORCE_GAME_PAUSE", sg_forceGamePause);
+
 static bool sg_forcePlayerUpdate = false;
 static tSettingItem<bool> sg_forcePlayerUpdateConf("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
 
@@ -5356,15 +5359,22 @@ static REAL lastForcedUpdate = tSysTimeFloat();
 
 bool gGame::GameLoop(bool input){
 
-    if (sg_forcePlayerUpdate || sg_forceSyncAll) {
-        if (tSysTimeFloat() >= lastForcedUpdate + sg_forceClockDelay) {
+    if (sg_forceGamePause)
+        se_PauseGameTimer(true, eTIMER_PAUSE_GAME);
 
-            if (sg_forcePlayerUpdate){
-            ePlayerNetID::Update();
+    if (sg_forcePlayerUpdate || sg_forceSyncAll)
+    {
+        if (tSysTimeFloat() >= lastForcedUpdate + sg_forceClockDelay)
+        {
+
+            if (sg_forcePlayerUpdate)
+            {
+                ePlayerNetID::Update();
             }
 
-            if (sg_forceSyncAll) {
-            nNetObject::SyncAll();
+            if (sg_forceSyncAll)
+            {
+                nNetObject::SyncAll();
             }
             lastForcedUpdate = tSysTimeFloat();
         }

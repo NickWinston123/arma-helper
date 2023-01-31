@@ -91,6 +91,18 @@ public:
 
     // complex multiplication: turns this by angle given in a
     eCoord Turn(const eCoord &a) const{return eCoord(x*a.x-y*a.y,y*a.x+x*a.y);}
+
+    eCoord Turn(int dir) const {
+        if (dir == -1) { // LEFT
+            return Turn(eCoord(0, 1));
+        }
+        if (dir == 1) { // RIGHT
+            return Turn(eCoord(0, -1));
+        }
+        return *this;
+    }
+
+
     eCoord Turn(REAL a,REAL b) const{return Turn(eCoord(a,b));}
     // complex conjugation
     eCoord Conj() const{return eCoord(x,-y);}

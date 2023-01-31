@@ -59,6 +59,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
+static bool sg_AIBypass = false;
+static tConfItem<bool> sg_AIBypassConf("AI_BYPASS", sg_AIBypass);
+
+static bool sg_AIBasic = false;
+static tConfItem<bool> sg_AIBasicConf("AI_BASIC", sg_AIBasic);
+
 #ifdef DEBUG
 //#define TESTSTATE AI_PATH
 //#define TESTSTATE AI_TRACE
@@ -1441,6 +1447,10 @@ void gAIPlayer::ThinkSurvive(  ThinkData & data )
         EmergencySurvive( data );
 
 
+     if (sg_AIBasic && !helperAI){
+        data.thinkAgain = .5f;
+        return;
+        }
 
     if (nextStateChange > se_GameTime())
     {
@@ -2778,8 +2788,6 @@ void gAIPlayer::EmergencyCloseCombat( ThinkData & data )
 
 
 
-static bool sg_AIBypass = false;
-static tConfItem<bool> sg_AIBypassConf("AI_BYPASS", sg_AIBypass);
 
 void gAIPlayer::RightBeforeDeath(int triesLeft) // is called right before the vehicle gets destroyed.
 {
@@ -2820,7 +2828,7 @@ void gAIPlayer::RightBeforeDeath(int triesLeft) // is called right before the ve
     this->emergency = (triesLeft < 2);
 
     REAL speed=Object()->Speed();
-    REAL range=speed;
+    REAL range=speed + 100;
     eCoord dir=Object()->Direction();
     REAL  side = speed*delay;
 
@@ -2969,7 +2977,7 @@ REAL gAIPlayer::Think(){
 
     // first, find close eWalls and evade them.
     REAL speed=Object()->Speed();
-    REAL range=speed;
+    REAL range=speed+100;
     eCoord dir=Object()->Direction();
     REAL side=speed*delay;
 
@@ -3036,6 +3044,9 @@ REAL gAIPlayer::Think(){
         }
     }
 
+    if (sg_AIBasic && !helperAI){
+        state = AI_SURVIVE;
+    }
     //not the best solution, but still better than segfault...
     if(left.get() != 0 && right.get() != 0) {
         ThinkData data( front, *left, *right);

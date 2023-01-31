@@ -260,7 +260,7 @@ gHelperHudItem<eCoord> tailPosH("Tail Pos",eCoord(0,0));
 gHelperHudItem<eCoord> tailDirH("Tail Dir",eCoord(0,0));
 
 gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut",sg_helperDetectCut);
-// gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug",tColoredString("None"),"Detect Cut");
+gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug",tColoredString("None"),"Detect Cut");
 
 
 gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy",tColoredString("None"), "Detect Cut");
@@ -436,11 +436,11 @@ gTailHelper &gTailHelper::Get(gHelper * helper, gCycle * owner)
 
 gPathHelper::gPathHelper(gHelper *helper, gCycle *owner)
     : helper_(helper),
-        owner_(owner),
-        lastPath(helper_->CurrentTime() - 100),
-        lastTime(helper_->CurrentTime()),
-        nextTime(0),
-        pathInvalid(true)
+      owner_(owner),
+      lastPath(helper_->CurrentTime() - 100),
+      lastTime(helper_->CurrentTime()),
+      nextTime(0),
+      pathInvalid(true)
 {
 // Initialize any other member variables here
 }
@@ -1563,8 +1563,8 @@ front(front_), left(left_), right(right_) {}
 gHelperSensorsData::gHelperSensorsData(gCycle *owner) :
     owner_(owner),
     front_stored(new gSensor(owner_, owner_->Position(), owner_->Direction())),
-    left_stored(new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, 1)))),
-    right_stored(new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(0, -1))))
+    left_stored(new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(LEFT)))),
+    right_stored(new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(RIGHT))))
 {
 }
 
@@ -2591,6 +2591,14 @@ void gHelper::debugLine(REAL R, REAL G, REAL B, REAL height, REAL timeout,
     eDebugLine::Draw(start, startHeight, end, height);
 }
 
+// See how close two coordinates are, lower the threshold the more strict the comparison
+bool directionsAreClose(const eCoord &dir1, const eCoord &dir2, REAL threshold) {
+
+    //con << dir1.Dot(dir2) << " >= " << 1 - threshold << "\n";
+    return dir1.Dot(dir2) >= 1 - threshold;
+
+}
+
 
 void gHelper::detectCut(gHelperData &data, int detectionRange)
 {
@@ -2611,62 +2619,80 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
         if (!smartTurning->isClose(target->Position(), closeReact))
             return;
 
+        // now we are at the center of the coordinate system facing
+        // in direction (0,1).
         eCoord relativeEnemyPos = target->Position() - (*ownerPos);
         eCoord actualEnemyPos = target->Position();
         eCoord enemydir = target->Direction();
         REAL enemyspeed = target->Speed();
-        //tColoredString debug;
-        //debug << "relativeEnemyPos: " << relativeEnemyPos  << "\n" << "enemydir before: " << enemydir << "\n";
+        // tColoredString debug;
 
-        // now we are at the center of the coordinate system facing
-        // in direction (0,1).
         // 1 = facing direction
         // rules are symmetrical: exploit that.
 
+        //debug << "relativeEnemyPos " << relativeEnemyPos << "\n";
+
         eCoord relativeEnemyDir = enemydir;
-        relativeEnemyDir = relativeEnemyDir.Turn(ownerDir->Conj()).Turn(0, 1);
+        relativeEnemyDir = relativeEnemyDir.Turn(ownerDir->Conj()).Turn(LEFT);
+        //debug << "relativeEnemyDir " << relativeEnemyDir << "\n";
 
-        //bool sameDirectionAsEnemy = (relativeEnemyDir.x <= 0.0005 && relativeEnemyDir.y >= 1);
-        bool oppositeDirectionofEnemy = (relativeEnemyDir.x <= 0.0005 && relativeEnemyDir.y <= -1);
+        bool enemyIsAhead = relativeEnemyPos.Dot(*ownerDir) > 0;
+        bool enemyIsBehind = !enemyIsAhead;
+        //debug << "enemyIsAhead " << enemyIsAhead << "\n";
 
+        bool enemyIsOnLeft = relativeEnemyPos * (*ownerDir) > 0; //dot product greater than 0
+        bool enemyIsOnRight = !enemyIsOnLeft;
 
-        //enemyDrivingTowardsOurLeft / Right? EX:
-        /*
-        ............
-        -->......... (| is our cycle, --> is enemy cycle) passes enemyIsOnLeft_and_enemyIsFacingOurRight
-        .......|....
-OR
-        ............
-        .........<-- (| is our cycle, <-- is enemy cycle) passes enemyIsOnRight_and_enemyIsFacingOurLeft
-        ....|........
+        bool enemyIsFacingOurRight = directionsAreClose(enemydir, ownerDir->Turn(RIGHT),0.1);
+        bool enemyIsFacingOurLeft = directionsAreClose(enemydir, ownerDir->Turn(LEFT),0.1);
 
-        */
-        //Enemy is on our left side and driving toward our right
-        bool enemyIsOnLeft = relativeEnemyPos.y < 0;
-        bool enemyIsFacingOurRight = enemydir == ownerDir->Turn(0,-1);
-        bool enemyIsOnLeft_and_enemyIsFacingOurRight = enemyIsOnLeft && enemyIsFacingOurRight;
-        //Enemy is on our right side and driving toward our left
-        bool enemyIsOnRight = relativeEnemyPos.y < 0;
-        bool enemyIsFacingOurLeft = enemydir == ownerDir->Turn(0,1);
-        bool enemyIsOnRight_and_enemyIsFacingOurLeft = enemyIsOnRight && enemyIsFacingOurLeft;
+        //debug << "Enemy Dir " << enemydir << "\n";
+        //debug << "owner dir after conj " << ownerDir->Conj() << "\n";
 
-        // debug << "enemyDrivingDrivingTowardOurRight?: " << enemyIsOnLeft_and_enemyIsFacingOurRight << "\n";
-        // debug << "enemyDrivingDrivingTowardOurLeft?: " << enemyIsOnRight_and_enemyIsFacingOurLeft << "\n";
+        eCoord uTurn = ownerDir->Turn(LEFT).Turn(LEFT);
+        //debug << "owner dir after u-turn " << uTurn << "\n";
+        bool oppositeDirectionofEnemy = directionsAreClose(enemydir,uTurn,0.001);
+        bool sameDirectionAsEnemy = directionsAreClose(enemydir,*ownerDir,.001);
+
+        //debug << "sameDirectionAsEnemy " << sameDirectionAsEnemy << "\n";
+        //debug << "oppositeDirectionofEnemy " << oppositeDirectionofEnemy << "\n";
+
+        //debug << "enemyIsOnLeft ?" << enemyIsOnLeft << "\n";
+        //debug << "enemyIsOnRight ?" << enemyIsOnRight << "\n";
+
+        //debug << "enemyIsFacingOurLeft ?" << enemyIsFacingOurLeft << "\n";
+        //debug << "enemyIsFacingOurRight ?" << enemyIsFacingOurRight << "\n";
 
         // transform coordinates relative to us:
-        if (enemyIsOnLeft_and_enemyIsFacingOurRight) {
-            relativeEnemyPos = enemydir.Turn(0, -1);
-            enemydir = enemydir.Turn(0, -1);
-        } else if (enemyIsOnRight_and_enemyIsFacingOurLeft) {
-            relativeEnemyPos = enemydir.Turn(0, 1);
-            enemydir = enemydir.Turn(0, 1);
+        if (enemyIsOnLeft){
+            if (enemyIsFacingOurRight) {
+                relativeEnemyPos = enemydir.Turn(RIGHT);
+                enemydir = enemydir.Turn(RIGHT);
+            } else {
+
+            }
+        } else if (enemyIsOnRight) {
+            if (enemyIsFacingOurLeft) {
+                relativeEnemyPos = enemydir.Turn(LEFT);
+                enemydir = enemydir.Turn(LEFT);
+            } else {
+
+            }
         }
 
-        if (oppositeDirectionofEnemy) {
-            relativeEnemyPos = enemydir.Turn(ownerDir->Conj()).Turn(0, 1);
+        //debug << "relativeEnemyDirAFTER " << relativeEnemyDir << "\n";
+        //debug << "relativeEnemyPosAFTER " << relativeEnemyPos << "\n";
+
+        if (oppositeDirectionofEnemy && enemyIsAhead) {
+            relativeEnemyPos = enemydir.Turn(ownerDir->Conj()).Turn(LEFT);
         } else {
             relativeEnemyPos = relativeEnemyPos.Turn(ownerDir->Conj()).Turn(0, 1);
             enemydir = enemydir.Turn(ownerDir->Conj()).Turn(0, 1);
+            if (sameDirectionAsEnemy)
+                //relativeEnemyPos = relativeEnemyPos.Turn(ownerDir->Conj()).Turn(LEFT);
+                //enemydir = enemydir.Turn(ownerDir->Conj()).Turn(LEFT);
+            if (oppositeDirectionofEnemy)
+                return;
         }
 
         int side = LEFT;
@@ -2677,10 +2703,7 @@ OR
             enemydir.x *= -1;
         }
 
-        // debug << "sameDirectionAsEnemy: " << sameDirectionAsEnemy << "\n";
-        // debug << "Enemy Dir now: " << enemydir << "\n";
-        // debug << "RelEnemyPos now: " << relativeEnemyPos << "\n";
-        // detectCutdebugH.setValue(debug);
+        //detectCutdebugH.setValue(debug);
 
         // now we can even assume the enemy is on our right side.
         // consider his ping and our reaction time
@@ -2717,6 +2740,8 @@ OR
         else if (canCutEnemy)
         {
             debugLine(0, 1, 0, sg_helperDetectCutHeight, timeout, (*ownerPos), actualEnemyPos);
+        } else {
+
         }
     }
 }
@@ -2818,15 +2843,8 @@ void gHelper::showEnemyTail(gHelperData &data)
 
 void gHelper::showTailTracer(gHelperData &data)
 {
-    if (!aliveCheck())
-    {
+    if (!aliveCheck() || !owner_->tailMoving)
         return;
-    }
-
-    if (!owner_->tailMoving)
-    {
-        return;
-    }
 
     REAL distanceToTail = sg_helperShowTailTracerTimeoutMult * eCoord::F(*ownerDir, (*tailPos) - (*ownerPos));
     REAL timeout = fabs(distanceToTail) / sg_helperShowTailTracerDistanceMult * data.speedFactorF();
@@ -2897,10 +2915,8 @@ void gHelper::showCorners(gHelperData &data) {
 
 void gHelper::showHit(gHelperData &data)
 {
-    if (!aliveCheck()) { return; }
-    if (!drivingStraight()) {
+    if (!aliveCheck() || !drivingStraight())
         return;
-    }
 
     REAL frontHit = data.sensors.getSensor(FRONT)->hit;
     bool wallClose = frontHit < data.turnSpeedFactorF() * sg_showHitDataRange;
@@ -2926,9 +2942,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
 {
 
     if (recursion <= 0)
-    {
         return;
-    }
 
     recursion--;
     eCoord newDir = initDir.Turn(eCoord(0, sensorDir * -1));

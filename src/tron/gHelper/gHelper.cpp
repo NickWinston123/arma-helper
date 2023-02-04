@@ -273,9 +273,9 @@ gHelperHudItem<eCoord> tailPosH("Tail Pos",eCoord(0,0));
 gHelperHudItem<eCoord> tailDirH("Tail Dir",eCoord(0,0));
 
 gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut",sg_helperDetectCut);
-//gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug",tColoredString("None"),"Detect Cut");
+gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug",tColoredString("None"),"Detect Cut");
 
-//gHelperHudItem<tColoredString> zoneDebugH("Zone Debug",tColoredString("None"));
+gHelperHudItem<tColoredString> zoneDebugH("Zone Debug",tColoredString("None"));
 
 
 gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy",tColoredString("None"), "Detect Cut");
@@ -2513,6 +2513,8 @@ gZoneHelper::gZoneHelper(gHelper *helper, gCycle *owner)
 
 void gZoneHelper::Activate(gHelperData &data)
 {
+    if (sg_HelperTrackedZones.size() <= 0) 
+        return;
     tColoredString debug;
     debug << "Zones size " << sg_HelperTrackedZones.size() << "\n";
     for(std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
@@ -2623,14 +2625,11 @@ bool directionsAreClose(const eCoord &dir1, const eCoord &dir2, REAL threshold =
 
 }
 
-
-
-
 void gHelper::detectCut(gHelperData &data, int detectionRange)
 {
-    if (!aliveCheck()) 
+    if (!aliveCheck())
         return;
-    
+
     REAL timeout = data.speedFactorF() + sg_helperDetectCutTimeout;
     gCycle *enemy = enemies.closestEnemy;
 
@@ -2643,64 +2642,71 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     eCoord enemyPos = enemy->Position();
     eCoord enemyDir = enemy->Direction();
-    REAL enemyspeed = enemy->Speed();
+    REAL enemySpeed = enemy->Speed();
     eCoord ourPos = *ownerPos;
     eCoord ourDir = *ownerDir;
-    REAL ourSped = *ownerSpeed;
-
-    // transform our coordinates so we are 
+    REAL ourSpeed = *ownerSpeed;
+    // transform our coordinates so we are
     // now we are at the center of the coordinate system facing
     // in direction (0,1).
     eCoord relEnemyPos = enemyPos - ourPos;
     relEnemyPos = relEnemyPos.Turn(ourDir.Conj()).Turn(LEFT);
 
+    //     /*
+    //     .x left /right
+    //     .y up / down
+    //     */
+
     // eCoord relativeEnemyDir = enemy->Direction() - owner_->Direction();
-    // relativeEnemyDir = relativeEnemyDir.Turn(ourDir.Conj()).Turn(LEFT);
+    // relativeEnemyDir = relativeEnemyDir.Turn(*ownerDir.Conj()).Turn(LEFT);
 
-    // tColoredString debug;
-    // debug << "Enemy Lag " << enemy->Lag() << "\n";
-    // debug << "Enemy Pos " << enemyPos << "\n";
-    // debug << "Enemy Speed " << enemyspeed << "\n";
-    // debug << "Enemy Dir " << roundeCoord(enemyDir) << "\n";
-    // debug << "relEnemyPos " << roundeCoord(relEnemyPos) << "\n";
-    // debug << "relativeEnemyDir " << roundeCoord(relativeEnemyDir) << "\n";
+     //tColoredString debug;
+     //debug << "Enemy Lag " << enemy->Lag() << "\n";
+     //debug << "Enemy Pos " << enemy->pos << "\n";
+     //debug << "Enemy Speed " << enemySpeed << "\n";
+     //debug << "Enemy Dir " << roundeCoord(enemyDir) << "\n";
+     //debug << "relEnemyPos " << roundeCoord(relEnemyPos) << "\n";
 
-    //bool sameDirectionAsEnemy = directionsAreClose(enemyDir, ourDir, .001);
+    // bool sameDirectionAsEnemy = directionsAreClose(enemyDir, *ownerDir, .001);
     bool oppositeDirectionofEnemy = directionsAreClose(enemyDir, ourDir.Turn(LEFT).Turn(LEFT), 0.001);
     bool enemyIsOnLeft = relEnemyPos.x < 0;
     bool enemyIsOnRight = !enemyIsOnLeft;
     bool enemyIsFacingOurRight = directionsAreClose(enemyDir, ourDir.Turn(RIGHT), 0.1);
     bool enemyIsFacingOurLeft = directionsAreClose(enemyDir, ourDir.Turn(LEFT), 0.1);
-    // debug << "enemyIsFacingOurLeft ?" << enemyIsFacingOurLeft << "\n";
-    // debug << "enemyIsFacingOurRight ?" << enemyIsFacingOurRight << "\n";
-    // debug << "enemyIsOnLeft ?" << enemyIsOnLeft << "\n";
-    // debug << "enemyIsOnRight ?" << enemyIsOnRight << "\n";
+     //debug << "enemyIsFacingOurLeft ?" << enemyIsFacingOurLeft << "\n";
+     //debug << "enemyIsFacingOurRight ?" << enemyIsFacingOurRight << "\n";
+     //debug << "enemyIsOnLeft ?" << enemyIsOnLeft << "\n";
+     //debug << "enemyIsOnRight ?" << enemyIsOnRight << "\n";
 
     // rules are symmetrical: exploit that.
-    if (oppositeDirectionofEnemy) {
+    if (oppositeDirectionofEnemy)
+    {
         relEnemyPos.y *= -1;
-        //debug << "relEnemyPos.y " << roundeCoord(relEnemyPos) << "\n";
-    } else if (enemyIsOnLeft && enemyIsFacingOurRight) {
-        relEnemyPos = relEnemyPos.Turn(LEFT);
-        //debug << "enemyIsOnLeft " << roundeCoord(relEnemyPos) << "\n";
-    } else if (enemyIsOnRight && enemyIsFacingOurLeft) {
-        relEnemyPos = relEnemyPos.Turn(RIGHT);
-        //debug << "enemyIsOnRight " << roundeCoord(relEnemyPos) << "\n";
+         //debug << "relEnemyPos.y " << roundeCoord(relEnemyPos) << "\n";
     }
-    
+    else if (enemyIsOnLeft && enemyIsFacingOurRight)
+    {
+        relEnemyPos = relEnemyPos.Turn(LEFT);
+    }
+    else if (enemyIsOnRight && enemyIsFacingOurLeft)
+    {
+        relEnemyPos = relEnemyPos.Turn(RIGHT);
+    }
+
     // rules are symmetrical: exploit that.
-    if (relEnemyPos.x < 0) {
+    if (relEnemyPos.x < 0)
+    {
         relEnemyPos.x *= -1;
-        //debug << "relEnemyPos.x " << roundeCoord(relEnemyPos) << "\n";
+         //debug << "relEnemyPos.x " << roundeCoord(relEnemyPos) << "\n";
     }
 
     // now we can even assume the enemy is on our right side.
     // consider his ping and our reaction time
-    REAL enemydist = enemy->Lag() * enemyspeed;
+    REAL enemydist = enemy->Lag();// * enemySpeed;
 
-    enemydist += sg_helperDetectCutReact * enemyspeed;
+    enemydist += sg_helperDetectCutReact * enemySpeed;
 
-    REAL ourdist = sg_helperDetectCutReact * (*ownerSpeed);
+    REAL ourdist = sg_helperDetectCutReact * ourSpeed;
 
     // now we consider the worst case: we drive straight on,
     relEnemyPos.y -= ourdist;
@@ -2718,27 +2724,25 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // and then he turns left or right.
     relEnemyPos.x -= enemydist;
 
-    canCutUs = relEnemyPos.y * enemyspeed > relEnemyPos.x * (*ownerSpeed); // right ahead of us?
-    canCutEnemy = relEnemyPos.y * (*ownerSpeed) < -relEnemyPos.x * enemyspeed;
-    //debug << "canCutUs? " << canCutUs << " " << relEnemyPos.y * enemyspeed << " > " << relEnemyPos.x * (*ownerSpeed) << "\n";
-    //debug << "canCutEnemy? " << canCutEnemy << " " << relEnemyPos.y * (*ownerSpeed) << " < " << -relEnemyPos.x * enemyspeed << "\n";
+    canCutUs = relEnemyPos.y * enemySpeed > relEnemyPos.x * ourSpeed; // right ahead of us?
+    canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed;
+    // debug << "canCutUs? " << canCutUs << " " << relEnemyPos.y * enemySpeed << " > " << relEnemyPos.x * ourSpeed << "\n";
+    // debug << "canCutEnemy? " << canCutEnemy << " " << relEnemyPos.y * ourSpeed << " < " << -relEnemyPos.x * enemySpeed << "\n";
     if (canCutUs)
     {
-        debugLine(gRealColor(1, 0, 0), sg_helperDetectCutHeight, timeout, ourPos, enemyPos);
+        debugLine(gRealColor(1, 0, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
     }
     else if (canCutEnemy)
     {
-        //debug << "TURN " << (side == -1 ? "LEFT" : "RIGHT") << "\n";
-        debugLine(gRealColor(0, 1, 0), sg_helperDetectCutHeight, timeout, ourPos, enemyPos);
+       debugLine(gRealColor(0, 1, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
     }
     else
     {
-        debugLine(gRealColor(.4, .4, .4), sg_helperDetectCutHeight, timeout, ourPos, enemyPos);
+        debugLine(gRealColor(.4, .4, .4), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
     }
 
-    //detectCutdebugH << (debug);
-    }
-
+     //detectCutdebugH << (debug);
+}
 
     void gHelper::autoBrake()
     {

@@ -77,8 +77,10 @@ public:
     virtual void setValue(T val) {
         if (!helperConfig::sg_helperHud || helperConfig::sg_helperHudFreeze)
             return;
-        value = val;
-        setLastValue();
+        if (val != value){
+            value = val;
+            setLastValue();
+        }
     };
 
     gHelperHudItem& operator<<(T val) {

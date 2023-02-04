@@ -48,7 +48,7 @@ static void Debug(const std::string &sender, const std::string &description, T v
     float currentTime = tSysTimeFloat();
     bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < helperConfig::sg_helperDebugDelay;
 
-    if (spamProtection && (lastMessageIsSame && delayNotPassed))
+    if (spamProtection && (lastMessageIsSame || delayNotPassed))
     {
         return;
     }

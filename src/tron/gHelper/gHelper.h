@@ -137,7 +137,7 @@ struct gHelperData
     REAL turnSpeedFactorF();
 
     REAL turnSpeedFactorPercentF() {
-        (1/turnSpeedFactorF());
+        return (1/turnSpeedFactorF());
     }
     REAL turnDistanceF() {
         return (turnSpeedFactorF()/100);

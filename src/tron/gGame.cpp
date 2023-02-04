@@ -5360,7 +5360,7 @@ static REAL lastForcedUpdate = tSysTimeFloat();
 bool gGame::GameLoop(bool input){
 
     if (sg_forceGamePause)
-        se_PauseGameTimer(true, eTIMER_PAUSE_GAME);
+        se_PauseGameTimer();
 
     if (sg_forcePlayerUpdate || sg_forceSyncAll)
     {

@@ -7512,6 +7512,93 @@ static void sg_RespawnPlayer(std::istream &s)
 static tConfItemFunc sg_RespawnPlayer_conf("RESPAWN_PLAYER",&sg_RespawnPlayer);
 static tConfItemFunc sg_Respawn_conf("RESPAWN",&sg_RespawnPlayer);
 
+void teleportPlayer(gCycle* pGameObject, tString relabs, eCoord dir, eCoord ppos)
+{
+    if ((pGameObject) &&
+        (pGameObject->Alive()))
+    {
+        if (relabs == "rel")
+            ppos = ppos + pGameObject->Position();
+        else if (relabs == "dist")
+        {
+            eCoord pppos(pGameObject->Direction() * ppos.x);
+            if (ppos.y)
+            {
+                pppos = pppos + eCoord(pGameObject->Direction().Turn(0, -1) * ppos.y);
+            }
+            ppos = pGameObject->Position() + pppos;
+        }
+        // Jump to new position without creating walls
+        REAL time = pGameObject->LastTime();
+        pGameObject->TeleportTo(ppos, dir, time);
+    }
+}
+
+#define LEFT -1
+#define RIGHT 1
+static void sg_FLIP(std::istream &s)
+{
+	eGrid *grid = eGrid::CurrentGrid();
+	if( !grid || !SafeToSpawnObject() )
+	{
+		con << "Must be called while a grid exists!\n";
+		return;
+	}
+
+	tString params;
+	params.ReadLine( s, true );
+    con << "INPUT: " << params << "\n";
+	// first parse the line to get the params : <player name> <x> <y> <rel|abs> <dirx> <diry>
+	int pos = 0; //
+	tString firstPlayerStr = ePlayerNetID::FilterName(params.ExtractNonBlankSubString(pos));
+	ePlayerNetID *firstPlayer = 0;
+	firstPlayer = ePlayerNetID::FindPlayerByName(firstPlayerStr);
+
+	tString secondPlayerStr = ePlayerNetID::FilterName(params.ExtractNonBlankSubString(pos));
+	ePlayerNetID *secondPlayer = 0;
+	secondPlayer = ePlayerNetID::FindPlayerByName(secondPlayerStr);
+
+	const tString modeStr = params.ExtractNonBlankSubString(pos);
+    REAL mode;
+    if (modeStr == "")
+    {
+        mode = 1;
+    } else {
+        mode = atof(modeStr);
+    }
+
+	if(firstPlayerStr == "" || secondPlayerStr == "" || !secondPlayer || !firstPlayer)
+	{
+		con << "Usage: FLIP <player> <player>\n";
+		return;
+	}
+    gCycle *gFirstPlayer = dynamic_cast<gCycle *>(firstPlayer->Object());
+    gCycle *gSecondPlayer = dynamic_cast<gCycle *>(secondPlayer->Object());
+
+    if (!gFirstPlayer && gFirstPlayer->Alive() || !gSecondPlayer && gSecondPlayer->Alive())
+        return;
+
+    eCoord secondPlayerNewPos,SecondPlayerNewDir, firstPlayerNewPos, secondPlayerNewDir;
+    if (mode == 1) {
+        secondPlayerNewPos = gFirstPlayer->Position();
+        SecondPlayerNewDir = gFirstPlayer->Direction();
+
+        firstPlayerNewPos = gSecondPlayer->Position();
+        secondPlayerNewDir = gSecondPlayer->Direction();
+    } else if (mode == 2) {
+        firstPlayerNewPos = gFirstPlayer->Position().Turn(LEFT);
+        secondPlayerNewDir = gFirstPlayer->Direction().Turn(LEFT);
+        secondPlayerNewPos = gSecondPlayer->Position().Turn(RIGHT);
+        SecondPlayerNewDir = gSecondPlayer->Direction().Turn(RIGHT);
+    } else if (mode == 3) {
+        firstPlayerNewPos = gFirstPlayer->Position().Turn(RIGHT);
+        secondPlayerNewDir = gFirstPlayer->Direction().Turn(RIGHT);
+        secondPlayerNewPos = gSecondPlayer->Position().Turn(LEFT);
+        SecondPlayerNewDir = gSecondPlayer->Direction().Turn(LEFT);
+    }
+    gFirstPlayer->TeleportTo(firstPlayerNewPos, secondPlayerNewDir, gFirstPlayer->LastTime());
+    gSecondPlayer->TeleportTo(secondPlayerNewPos,SecondPlayerNewDir,gSecondPlayer->LastTime());
+}
 
 static void sg_TeleportPlayer(std::istream &s)
 {
@@ -7568,26 +7655,11 @@ static void sg_TeleportPlayer(std::istream &s)
 	ppos = eCoord(x * gArena::SizeMultiplier(),y * gArena::SizeMultiplier());
 
 	// let's teleport now ...
-	gCycle *pGameObject = dynamic_cast<gCycle *>(pPlayer->Object());
-	if ((pGameObject) &&
-		(pGameObject->Alive()))
-	{
-		if (relabs=="rel") ppos = ppos + pGameObject->Position();
-		else if( relabs == "dist" )
-		{
-			eCoord pppos( pGameObject->Direction() * ppos.x );
-			if( ppos.y )
-			{
-				pppos = pppos + eCoord( pGameObject->Direction().Turn(0, -1) * ppos.y );
-			}
-			ppos = pGameObject->Position() + pppos;
-		}
-		// Jump to new position without creating walls
-		REAL time = pGameObject->LastTime();
-		pGameObject->TeleportTo(ppos, dir, time);
-	}
+    gCycle *pGameObject = dynamic_cast<gCycle *>(pPlayer->Object());
+	teleportPlayer(pGameObject,relabs,dir, ppos);
 }
 
+static tConfItemFunc sg_FlipConf("FLIP",&sg_FLIP);
 static tConfItemFunc sg_TeleportPlayer_conf("TELEPORT_PLAYER",&sg_TeleportPlayer);
 static tConfItemFunc sg_Teleport_conf("TELEPORT",&sg_TeleportPlayer);
 

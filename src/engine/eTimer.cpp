@@ -507,6 +507,9 @@ void se_ResetGameTimer(REAL t){
         se_mainGameTimer->Reset(t);
 }
 
+void se_PauseGameTimer(){
+    se_mainGameTimer->pause(true);
+}
 void se_PauseGameTimer(bool p,  eTimerPauseSource source){
     static int pausedBySources = eTimerPauseSource::eTIMER_PAUSE_NONE;
     if(p)

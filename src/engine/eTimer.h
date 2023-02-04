@@ -101,6 +101,8 @@ enum eTimerPauseSource
 
 void se_PauseGameTimer(bool p, eTimerPauseSource source);
 
+void se_PauseGameTimer();
+
 REAL se_PredictTime();
 REAL se_Time();
 REAL se_AverageFrameTime();

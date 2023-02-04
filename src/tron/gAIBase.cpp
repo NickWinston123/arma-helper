@@ -1439,9 +1439,9 @@ void gAIPlayer::ThinkSurvive(  ThinkData & data )
 
     */
 
-    if (data.left.front.wallType == gSENSOR_RIM)
+    if (!sg_AIBasic && data.left.front.wallType == gSENSOR_RIM)
         EmergencySurvive( data, 1);
-    else if (data.right.front.wallType == gSENSOR_RIM)
+    else if (!sg_AIBasic && data.right.front.wallType == gSENSOR_RIM)
         EmergencySurvive( data, -1);
     else
         EmergencySurvive( data );
@@ -2372,7 +2372,7 @@ bool gAIPlayer::EmergencySurvive( ThinkData & data, int enemyevade, int prefered
         }
 
     // try to trap the enemy
-    if (character->properties[AI_LOOP] >= 10 && canTrapEnemy && !emergency)
+    if (!sg_AIBasic && character->properties[AI_LOOP] >= 10 && canTrapEnemy && !emergency)
         return false;
 
 
@@ -2435,6 +2435,7 @@ bool gAIPlayer::EmergencySurvive( ThinkData & data, int enemyevade, int prefered
     eCoord dir     = Object()->Direction();
 
     // find the closest enemy
+    if (!sg_AIBasic) {
     for (i=gameObjects.Len()-1;i>=0;i--){
         gCycle *other=dynamic_cast<gCycle *>(gameObjects(i));
 
@@ -2486,11 +2487,11 @@ bool gAIPlayer::EmergencySurvive( ThinkData & data, int enemyevade, int prefered
             }
         }
     }
-
+    }
     //  if (!target)
     //target = secondbest;
 
-    if (target && character->properties[AI_ENEMY] > 0)
+    if (!sg_AIBasic && target && character->properties[AI_ENEMY] > 0)
     {
         bool sdanger = false;
         for (i = DANGERLEVELS-1; i>=0; i--)
@@ -2579,7 +2580,7 @@ bool gAIPlayer::EmergencySurvive( ThinkData & data, int enemyevade, int prefered
                 }
         }
 
-        if (character->properties[AI_ENEMY] > 0)
+        if (!sg_AIBasic && character->properties[AI_ENEMY] > 0)
         {
             // imminent collision check
             REAL totalspeed = enemyspeed + Object()->Speed();
@@ -2660,7 +2661,7 @@ bool gAIPlayer::EmergencySurvive( ThinkData & data, int enemyevade, int prefered
 
 
     // switch to survival mode if we just trapped an enemy
-    if (canTrapEnemy)
+    if (!sg_AIBasic && canTrapEnemy)
     {
 #ifdef DEBUG
         if ( !tRecorder::IsRunning() )

@@ -960,16 +960,35 @@ public:
         }
         */
 #ifndef DEDICATED
-        uMenuItem::RenderBackground();
-        if (!sr_glOut)
-            return;
-        REAL r = rgb[0]/15.0;
-        REAL g = rgb[1]/15.0;
-        REAL b = rgb[2]/15.0;
-        se_MakeColorValid(r, g, b, 1.0f);
-        RenderEnd();
-        glColor3f(r, g, b);
-        glRectf(.8,-.8,.98,-.98);
+uMenuItem::RenderBackground();
+if (!sr_glOut)
+    return;
+REAL r = rgb[0]/15.0;
+REAL g = rgb[1]/15.0;
+REAL b = rgb[2]/15.0;
+se_MakeColorValid(r, g, b, 1.0f);
+RenderEnd();
+glColor3f(r, g, b);
+glRectf(.8,-.8,.98,-.98);
+
+int rgb1[3];
+rgb1[0] = r > 15 ? 15 - r : 15;
+rgb1[1] = g > 15 ? 15 - g : 15;
+rgb1[2] = b > 15 ? 15 - b : 15;
+REAL r1 = rgb1[0]/15.0;
+REAL g1 = rgb1[1]/15.0;
+REAL b1 = rgb1[2]/15.0;
+se_MakeColorValid(r1, g1, b1, 1.0f);
+glColor3f(r1, g1, b1);
+glRectf(.66,-.8,.84,-.98);
+
+REAL r2 = rgb[0]/15.0;
+REAL g2 = rgb[1]/15.0;
+REAL b2 = rgb[2]/15.0;
+se_MakeColorValid(r2, g2, b2, 1.0f);
+glColor3f(r2, g2, b2);
+glRectf(.48,-.8,.66,-.98);
+
 #endif
     }
 

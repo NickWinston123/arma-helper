@@ -1,0 +1,72 @@
+#include "defs.h"
+#include "../gHelper.h"
+#include "../../gCycle.h"
+#include "../gHelperUtilities.h"
+#ifndef ArmageTron_GHELPER_TURN
+#define ArmageTron_GHELPER_TURN
+
+class Sensor;
+// gTurnHelper is a class that manages emergency turning for a cycle in the game
+// using the chatbot logic to get a turn 
+class gTurnHelper
+{
+public:
+    // default constructor
+    gTurnHelper();
+
+    // constructor taking a gHelper and a gCycle as arguments
+    gTurnHelper(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner) {}
+
+    // returns a reference to the gTurnHelper instance for the given helper and owner
+    static gTurnHelper &Get(gHelper *helper, gCycle *owner);
+
+    // function to check if a specific turn is possible given rubber or space factors
+    bool canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceFactor = 0);
+
+    // function to make a turn if possible
+    bool makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFactor = 0);
+
+    // function to check if a turn can help the cycle survive a left or right turn given speed and rubber factors
+    void canSurviveTurn(gHelperData &data,
+                        REAL &canSurviveLeftTurn,
+                        REAL &canSurviveRightTurn,
+                        bool &closedIn,
+                        bool &blockedBySelf,
+                        REAL freeSpaceFactor = 0);
+                        
+
+    // performs the actual turn
+    int ActToTurn(uActionPlayer *action);
+
+    // displays a debugging message
+    template <class T>
+    void BotDebug(std::string description, T value = "");
+
+    // displays a debugging message without a value
+    void BotDebug(std::string description);
+
+    // calculates the distance between two sensors
+    REAL Distance(Sensor const &a, Sensor const &b);
+
+    // solve the turn required to escape the situation based on chatbot logic
+    // returns a pointer to the gTurnData object that stores the turn data
+    gTurnData *getTurn();
+
+    // solve the turn required to escape the situation based on AIBase logic
+    // returns a pointer to the gTurnData object that stores the turn data
+    gTurnData *getTurnAIBase() {};
+    
+
+private:
+    // pointer to the gTurnData object that stores the turn data
+    gTurnData* turnData;
+
+    // the owner of the chatbot
+    gCycle *owner_; 
+
+    // pointer to the gHelper instance
+    gHelper *helper_;
+};
+
+
+#endif

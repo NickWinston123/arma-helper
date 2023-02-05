@@ -71,6 +71,7 @@ gHelper::gHelper(gCycle *owner)
     tailPos = &owner_->tailPos;
     ownerSpeed = &owner_->verletSpeed_;
     enemies.owner_ = owner;
+    gTurnHelper::Get(this, owner_);
     gSmartTurning::Get(this, owner);
     gPathHelper::Get(this, owner);
     gTailHelper::Get(this, owner);

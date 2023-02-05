@@ -16,8 +16,7 @@ void debugZone(gZone *zone)
 gZoneHelper::gZoneHelper(gHelper *helper, gCycle *owner)
     : helper_(helper),
       owner_(owner)
-{
-}
+{}
 
 void gZoneHelper::Activate(gHelperData &data)
 {

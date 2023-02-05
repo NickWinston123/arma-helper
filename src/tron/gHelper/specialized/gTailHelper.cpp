@@ -20,42 +20,6 @@ gTailHelper::gTailHelper(gHelper *helper, gCycle *owner)
     updateTime = -100;
 }
 
-// std::vector<eCoord> gTailHelper::getPathToTail() {
-//     std::vector<eCoord> path;
-
-//     REAL delay = turnDelay + sg_tailHelperDelay;
-//     eCoord direction = (*tailPos - *ownerPos);  // Initial direction towards tail
-//     double dist = direction.Norm();
-//     int numSegments = (int)(dist / delay);
-
-//     // Get the angle between the tail direction and the initial direction
-//     double tailAngle = atan2(tailDir->y, tailDir->x);
-//     double initAngle = atan2(direction.y, direction.x);
-//     double deltaAngle = tailAngle - initAngle;
-
-//     // Divide the total angle by the number of segments to get the angle for each segment
-//     double segmentAngle = deltaAngle / numSegments;
-
-//     // Add the first point to the path
-//     path.push_back(*ownerPos);
-//     eCoord currentPos = *ownerPos;
-
-//     // Create a path of turns to the tail
-//     for (int i = 1; i < numSegments; i++) {
-//         double currentAngle = atan2(direction.y, direction.x);
-//         currentPos += direction*delay;
-//         path.push_back(currentPos);
-//         direction = eCoord(cos(currentAngle + segmentAngle), sin(currentAngle + segmentAngle));  // rotate direction by the segment angle
-//     }
-
-//     // Check if last segment is shorter than delay
-//     if ((*tailPos - currentPos).Norm() > 1e-6) {
-//         // Add the last point to the path
-//         path.push_back(*tailPos);
-//     }
-//     return path;
-// }
-
 std::vector<eCoord> gTailHelper::getPathToTail()
 {
     std::vector<eCoord> path;

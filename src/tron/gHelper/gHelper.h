@@ -6,6 +6,7 @@
 
 #include "gHelperVar.h"
 
+#include "specialized/gTurnHelper.h"
 #include "specialized/gSmartTurning.h"
 #include "specialized/gZoneHelper.h"
 #include "specialized/gPathHelper.h"
@@ -301,6 +302,9 @@ class gHelper {
         // Pointer to the gHelperRubberData object
         gHelperRubberData * rubberData;
 
+        // emergency turn object
+        std::unique_ptr<gTurnHelper> turnHelper;
+
         // Unique pointer to the gSmartTurning object
         std::unique_ptr< gSmartTurning > smartTurning;
 
@@ -312,5 +316,6 @@ class gHelper {
 
         // Unique pointer to the gZoneHelper object
         std::unique_ptr< gZoneHelper > zoneHelper;
+        
 };
 #endif

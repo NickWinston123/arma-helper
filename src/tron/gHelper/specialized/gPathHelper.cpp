@@ -221,13 +221,13 @@ void gPathHelper::RenderTurn(gHelperData &data)
             {
                 gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
                 if (sg_pathHelperShowTurnAct)
-                    helper_->smartTurning->makeTurnIfPossible(data, RIGHT, 1);
+                    helper_->turnHelper->makeTurnIfPossible(data, RIGHT, 1);
             }
             else if (lr == LEFT)
             {
                 gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
                 if (sg_pathHelperShowTurnAct)
-                    helper_->smartTurning->makeTurnIfPossible(data, LEFT, 1);
+                    helper_->turnHelper->makeTurnIfPossible(data, LEFT, 1);
             }
         }
     }

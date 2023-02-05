@@ -486,9 +486,10 @@ class gBaseZoneHack: public gZone
 
 								 //!< counts the zones belonging to the given team.
 		static void CountZonesOfTeam( eGrid const * grid, eTeam * otherTeam, int & count, gBaseZoneHack * & farthest );
-
+    public:
 		REAL conquered_;		 //!< conquest status; zero if it is free, 1 if it has been completely conquered by the enemy
 								 //!< time spend in the zone
+                                 	private:
 		REAL conquerer_[MAXCLIENTS+1];
 		int enemiesInside_;		 //!< count of enemies currently inside the zone
 
@@ -515,6 +516,7 @@ class gBaseZoneHack: public gZone
 			State_Conquering,	 //!< conquering in this frame
 			State_Conquered		 //!< conquered
 		};
+        public:
 		State currentState_;	 //!< the current state
 
 		REAL lastSync_;			 //!< time of the last sync request
@@ -542,6 +544,7 @@ class gSumoZoneHack: public gZone
 			State_Spawned	   //!< Team zones have been created
 
 		};
+        public:
 		State currentState_;	 //!< the current state
         void SetStateParsing(){currentState_=State_Parsing;}
         virtual void OnVanish();                     //!< called when the zone vanishes

@@ -1,5 +1,9 @@
 #include "defs.h"
 #include "tString.h"
+#define LEFT -1
+#define FRONT 0
+#define RIGHT 1
+#define BOTH 2 
 #ifndef ArmageTron_GHELPER_VAR
 #define ArmageTron_GHELPER_VAR
 namespace helperConfig {
@@ -74,6 +78,7 @@ namespace helperConfig {
     extern REAL sg_pathHelperUpdateDistance ;
 
     extern bool sg_zoneHelper;
+    extern bool sg_zoneHelperOwnerOnly;
     
     extern bool sg_helperShowCorners ;
     extern bool sg_helperShowCornersPassed ;

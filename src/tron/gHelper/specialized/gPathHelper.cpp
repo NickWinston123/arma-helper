@@ -135,21 +135,21 @@ void gPathHelper::RenderPath(gHelperData &data)
     eCoord last_c;
     eCoord owner_pos = owner_->pos; // get the current position of the owner
 
-    gHelper::debugLine(gRealColor(1, 1, 0), 0, data.speedFactorF(), owner_pos, path_.positions(0) + path_.offsets(0), se_pathBrightness);
+    gHelperUtility::debugLine(gRealColor(1, 1, 0), 0, data.speedFactorF(), owner_pos, path_.positions(0) + path_.offsets(0), se_pathBrightness);
 
     for (int i = path_.positions.Len() - 1; i >= 0; i--)
     {
         eCoord c = path_.positions(i) + path_.offsets(i);
         if (i != path_.positions.Len() - 1)
-            gHelper::debugLine(gRealColor(1, 0, 0), se_pathHeight, data.speedFactorF(), last_c, c, se_pathBrightness);
+            gHelperUtility::debugLine(gRealColor(1, 0, 0), se_pathHeight, data.speedFactorF(), last_c, c, se_pathBrightness);
         last_c = c;
     }
 
     if (path_.current >= 0 && path_.positions.Len() > 0)
     {
         eCoord c = path_.CurrentPosition();
-        gHelper::debugLine(gRealColor(1, 1, 0), se_pathHeight, data.speedFactorF(), c, c, 1);
-        gHelper::debugLine(gRealColor(1, 1, 0), (se_pathHeight * 2), data.speedFactorF(), c, c, se_pathBrightness);
+        gHelperUtility::debugLine(gRealColor(1, 1, 0), se_pathHeight, data.speedFactorF(), c, c, 1);
+        gHelperUtility::debugLine(gRealColor(1, 1, 0), (se_pathHeight * 2), data.speedFactorF(), c, c, se_pathBrightness);
     }
 }
 
@@ -219,13 +219,13 @@ void gPathHelper::RenderTurn(gHelperData &data)
             lr *= -1;
             if (lr == RIGHT)
             {
-                gHelper::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
+                gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
                 if (sg_pathHelperShowTurnAct)
                     helper_->smartTurning->makeTurnIfPossible(data, RIGHT, 1);
             }
             else if (lr == LEFT)
             {
-                gHelper::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
+                gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
                 if (sg_pathHelperShowTurnAct)
                     helper_->smartTurning->makeTurnIfPossible(data, LEFT, 1);
             }

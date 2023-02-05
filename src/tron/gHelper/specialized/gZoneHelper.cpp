@@ -10,7 +10,7 @@ gHelperHudItem<tColoredString> zoneDebugH("Zone Debug", tColoredString("None"));
 void debugZone(gZone *zone)
 {
     REAL zoneVelocity = zone->GetVelocity().Norm();
-    gHelper::debugBox(zone->GetColor().r, zone->GetColor().g, zone->GetColor().b, zone->Position(), zone->GetRadius(), zoneVelocity > 0 ? 1 / zoneVelocity : .005);
+    gHelperUtility::debugBox(gRealColor(zone->GetColor().r, zone->GetColor().g, zone->GetColor().b), zone->Position(), zone->GetRadius(), zoneVelocity > 0 ? 1 / zoneVelocity : .005);
 }
 
 gZoneHelper::gZoneHelper(gHelper *helper, gCycle *owner)

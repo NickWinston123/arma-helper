@@ -64,6 +64,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <functional>
 #include <algorithm>
 
+#include "gHelper/gHelperVar.h"
+
 #ifndef DEDICATED
 #define DONTDOIT
 #include "rRender.h"
@@ -686,16 +688,16 @@ class Sensor: public gSensor
             }
             if( fabs( rlLastTime - currentTime) > 1 )
             {
-                owner_->Act( &gCycle::se_turnRight, 1 );
+                owner_->ActTurnBot(RIGHT);
                 rlDir = -1;
             }
             else  if ( rlDir > 0 )
             {
                 if( CanMakeTurn( &gCycle::se_turnRight ) )
                 {
-                    owner_->Act( &gCycle::se_turnRight, 1 );
-                    owner_->Act( &gCycle::se_turnRight, 1 );
-                    owner_->Act( &gCycle::se_turnRight, 1 );
+                    owner_->ActTurnBot(RIGHT);
+                    owner_->ActTurnBot(RIGHT);
+                    owner_->ActTurnBot(RIGHT);
                     rlDir = -1;
                 }
             }
@@ -703,9 +705,9 @@ class Sensor: public gSensor
             {
                 if( CanMakeTurn( &gCycle::se_turnLeft ) )
                 {
-                    owner_->Act( &gCycle::se_turnLeft, 1 );
-                    owner_->Act( &gCycle::se_turnLeft, 1 );
-                    owner_->Act( &gCycle::se_turnLeft, 1 );
+                    owner_->ActTurnBot(LEFT);
+                    owner_->ActTurnBot(LEFT);
+                    owner_->ActTurnBot(LEFT);
                     rlDir = 1;
                 }
             }
@@ -850,13 +852,13 @@ class Sensor: public gSensor
                 turnedRecently_ = true;
                 if ( rightOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
                 {
-                    owner_->ActBot( &gCycle::se_turnRight, 1 );
-                    owner_->ActBot( &gCycle::se_turnRight, 1 );
+                    owner_->ActTurnBot(RIGHT);
+                    owner_->ActTurnBot(RIGHT);
                 }
                 else if ( leftOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
                 {
-                    owner_->ActBot( &gCycle::se_turnLeft, 1 );
-                    owner_->ActBot( &gCycle::se_turnLeft, 1 );
+                    owner_->ActTurnBot(LEFT);
+                    owner_->ActTurnBot(LEFT);
                 }
             }
 
@@ -871,13 +873,13 @@ class Sensor: public gSensor
                 turnedRecently_ = true;
                 if ( leftOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
                 {
-                    owner_->ActBot( &gCycle::se_turnLeft, 1 );
-                    owner_->ActBot( &gCycle::se_turnLeft, 1 );
+                    owner_->ActTurnBot(LEFT);
+                    owner_->ActTurnBot(LEFT);
                 }
                 else if ( rightOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
                 {
-                    owner_->ActBot( &gCycle::se_turnRight, 1 );
-                    owner_->ActBot( &gCycle::se_turnRight, 1 );
+                    owner_->ActTurnBot(RIGHT);
+                    owner_->ActTurnBot(RIGHT);
                 }
             }
 
@@ -3893,6 +3895,14 @@ ePlayerNetID* player;
     }
 }
 static tConfItemFunc se_cycleTurnConf("CYCLE_TURN", &se_cycleTurn);
+
+bool gCycle::ActTurn(int dir) {
+    return (dir == LEFT) ? Act(&gCycle::se_turnLeft, 1) : Act(&gCycle::se_turnRight, 1);
+}
+
+bool gCycle::ActTurnBot(int dir) {
+    return (dir == LEFT) ? ActBot(&gCycle::se_turnLeft, 1) : ActBot(&gCycle::se_turnRight, 1);
+}
 
 bool gCycle::ActBot(uActionPlayer *Act, REAL x)
 {
@@ -7534,8 +7544,6 @@ void teleportPlayer(gCycle* pGameObject, tString relabs, eCoord dir, eCoord ppos
     }
 }
 
-#define LEFT -1
-#define RIGHT 1
 static void sg_FLIP(std::istream &s)
 {
 	eGrid *grid = eGrid::CurrentGrid();

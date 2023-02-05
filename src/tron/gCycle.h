@@ -415,6 +415,9 @@ public:
     virtual bool Act(uActionPlayer *Act,REAL x);
     virtual bool ActBot(uActionPlayer *Act,REAL x);
 
+    virtual bool ActTurn(int dir);
+    virtual bool ActTurnBot(int dir);
+
     virtual bool DoTurn(int dir, bool botTurn);
     void DropWall( bool buildNew=true );                                    //!< Drops the current wall and builds a new one
 

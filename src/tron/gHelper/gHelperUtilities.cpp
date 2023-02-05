@@ -1,51 +1,42 @@
 #include "gHelperUtilities.h"
 #include "gHelperVar.h"
 #include "../gSensor.h"
+#include "eDebugLine.h"
 extern void sg_RubberValues( ePlayerNetID const * player, REAL speed, REAL & max, REAL & effectiveness );
 
 using namespace helperConfig;
 
-gCycle* gHelperEnemiesData::detectEnemies() {
-    allEnemies.clear();
-    closestEnemy = nullptr;
-    REAL closestEnemyDistanceSquared = 1212121212;
-    for (int i = 0; i < se_PlayerNetIDs.Len(); i++) {
-        auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
-        if (other != nullptr && other->Alive() && other->Team() != owner_->Team()) {
-            REAL positionDifference = st_GetDifference(other->Position(), owner_->Position());
-            if (positionDifference < closestEnemyDistanceSquared) {
-                closestEnemyDistanceSquared = positionDifference;
-                closestEnemy = other;
-            }
-            allEnemies.emplace(other);
-        }
+void gHelperUtility::debugLine(gRealColor color, REAL height, REAL timeout,
+                eCoord start,eCoord end, REAL brightness) {
+    if (timeout >= 6) {
+        timeout = 1;
     }
-    return closestEnemy;
+    REAL startHeight = height;
+    if (start == end) {
+        startHeight = 0;
+    }
+    eDebugLine::SetTimeout(timeout);
+    eDebugLine::SetColor(color.r * sg_helperBrightness * brightness, color.g * sg_helperBrightness * brightness, color.b * sg_helperBrightness* brightness);
+    eDebugLine::Draw(start, startHeight, end, height);
 }
 
+void gHelperUtility::debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout)
+    {
+        REAL sg_helperBoxHeight = 1;
+        eCoord corner[3];
+        corner[0] = eCoord(center.x - (radius), center.y + (radius));
+        corner[1] = eCoord(center.x + (radius), center.y + (radius));
+        corner[2] = eCoord(center.x + (radius), center.y - (radius));
+        corner[3] = eCoord(center.x - (radius), center.y - (radius));
 
-void gHelperRubberData::calculate() {
-    if (!helper_->aliveCheck()) { return; }
-
-    sg_RubberValues( owner_->Player(), owner_->verletSpeed_, rubberAvailable, rubberEffectiveness );
-    rubberTimeLeft = ( rubberAvailable - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
-    rubberUsedRatio = owner_->GetRubber()/rubberAvailable;
-    rubberFactor = owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTimeLeft );//* sg_helperSmartTurningRubberTimeMult );
-    //rubberFactor *= rubberFactorMult; For Editing value with a mult
-}
+        debugLine(color,sg_helperBoxHeight,timeout,corner[0],corner[1]);
+        debugLine(color,sg_helperBoxHeight,timeout,corner[1],corner[2]);
+        debugLine(color,sg_helperBoxHeight,timeout,corner[2],corner[3]);
+        debugLine(color,sg_helperBoxHeight,timeout,corner[3],corner[0]);
+    }
 
 
-bool gHelperEnemiesData::exist(gCycle* enemy) {
-    return bool(enemy) && enemy->Alive();
-}
 
-REAL gSmartTurningCornerData::getTimeUntilTurn(REAL speed) {
-    return distanceFromPlayer /= speed * .98f;
-}
-
-bool gSmartTurningCornerData::isInfront(eCoord pos, eCoord dir) {
-    return eCoord::F(dir, currentPos - pos) > 0;
-}
 
 gHelperSensors::gHelperSensors(gSensor* front_, gSensor* left_, gSensor* right_) :
     front(front_), left(left_), right(right_) {}
@@ -76,56 +67,56 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
         switch (dir)
         {
 
-        case LEFT:
-        {
+            case LEFT:
+            {
+                if (sg_helperSensorDiagonalMode)
+                    left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), sin(M_PI/4))), true);
+                else
+                    left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
 
-            if (sg_helperSensorDiagonalMode)
-                left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), sin(M_PI/4))), true);
-            else
-                left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
-
-            return left_stored;
-        }
-        case FRONT:
-        {
-            front_stored->detect(sg_helperSensorRange, start, owner_->Direction(), true);
-            return front_stored;
-        }
-        case RIGHT:
-        {
-            if (sg_helperSensorDiagonalMode)
-                right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), -sin(M_PI/4))), true);
-            else
-                right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
-            return right_stored;
-        }
+                return left_stored;
+            }
+            case FRONT:
+            {
+                front_stored->detect(sg_helperSensorRange, start, owner_->Direction(), true);
+                return front_stored;
+            }
+            case RIGHT:
+            {
+                if (sg_helperSensorDiagonalMode)
+                    right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), -sin(M_PI/4))), true);
+                else
+                    right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
+                return right_stored;
+            }
         }
     }
     else
     {
         switch (dir)
         {
-        case LEFT:
-        {
-            gSensor *left = new gSensor(owner_, start, owner_->Direction().Turn(eCoord(0, 1)));
-            left->detect(sg_helperSensorRange, true);
-            return left;
-        }
-        case FRONT:
-        {
-            gSensor *front = new gSensor(owner_, start, owner_->Direction());
-            front->detect(sg_helperSensorRange, true);
-            return front;
-        }
-        case RIGHT:
-        {
-            gSensor *right = new gSensor(owner_, start, owner_->Direction().Turn(eCoord(0, -1)));
-            right->detect(sg_helperSensorRange, true);
-            return right;
-        }
+            case LEFT:
+            {
+                gSensor *left = new gSensor(owner_, start, owner_->Direction().Turn(eCoord(0, 1)));
+                left->detect(sg_helperSensorRange, true);
+                return left;
+            }
+            case FRONT:
+            {
+                gSensor *front = new gSensor(owner_, start, owner_->Direction());
+                front->detect(sg_helperSensorRange, true);
+                return front;
+            }
+            case RIGHT:
+            {
+                gSensor *right = new gSensor(owner_, start, owner_->Direction().Turn(eCoord(0, -1)));
+                right->detect(sg_helperSensorRange, true);
+                return right;
+            }
         }
     }
 }
+
 
 gHelperData::gHelperData(gHelperSensorsData *sensors_, gCycle *owner)
     : sensors(*sensors_),
@@ -152,8 +143,6 @@ void gHelperData::Load(REAL a_speedFactor,
       turnTime = (a_turnTime);
       }
 
-
-
 gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL a_speedFactor,
                          REAL a_turnSpeedFactor, REAL a_turnSpeedFactorPercent,
                          REAL a_turnDistance, REAL a_thinkAgain, REAL a_turnDir,
@@ -167,4 +156,81 @@ gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL a_speedFactor,
       turnDir(a_turnDir),
       turnTime(a_turnTime)
 { }
+
+bool gHelperEnemiesData::exist(gCycle* enemy) {
+    return (enemy != nullptr) && enemy->Alive();
+}
+
+gCycle* gHelperEnemiesData::detectEnemies() {
+    allEnemies.clear();
+    closestEnemy = nullptr;
+    REAL closestEnemyDistanceSquared = 999999999;
+    for (int i = 0; i < se_PlayerNetIDs.Len(); i++) {
+        auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
+        if (other != nullptr && other->Alive() && other->Team() != owner_->Team()) {
+            REAL positionDifference = st_GetDifference(other->Position(), owner_->Position());
+            if (positionDifference < closestEnemyDistanceSquared) {
+                closestEnemyDistanceSquared = positionDifference;
+                closestEnemy = other;
+            }
+            allEnemies.emplace(other);
+        }
+    }
+    return closestEnemy;
+}
+
+
+REAL gSmartTurningCornerData::getTimeUntilTurn(REAL speed) {
+    return distanceFromPlayer /= speed * .98f;
+}
+
+bool gSmartTurningCornerData::isInfront(eCoord pos, eCoord dir) {
+    return eCoord::F(dir, currentPos - pos) > 0;
+}
+
+bool gSmartTurningCornerData::findCorner(gHelperData & data, const gSensor *sensor, gHelper *helper)
+{
+    if (!sensor->ehit)
+    {
+        exist = false;
+        return false;
+    }
+    lastCorner = this;
+
+    noticedTime = helper->CurrentTime();
+    exist = true;
+
+    type = sensor->type;
+    currentPos = *sensor->ehit->Point();
+    distanceFromPlayer = helper->ownerDir->Dot(currentPos - *helper->ownerPos);
+    turnTime = getTimeUntilTurn(*helper->ownerSpeed + helper->CurrentTime());
+    REAL secondEdgeDistance = helper->ownerDir->Dot(*sensor->ehit->Other()->Point() - *helper->ownerPos);
+
+    if (distanceFromPlayer < secondEdgeDistance)
+    {
+        distanceFromPlayer = secondEdgeDistance;
+        currentPos = *sensor->ehit->Other()->Point();
+    }
+
+    infront = isInfront(*helper->ownerPos, *helper->ownerDir);
+
+    if (lastPos != currentPos)
+    {
+        lastPos = currentPos;
+        ignoredTime = helper->CurrentTime();
+    }
+    return true;
+}
+
+
+void gHelperRubberData::calculate() {
+    if (!helper_->aliveCheck()) { return; }
+
+    sg_RubberValues( owner_->Player(), owner_->verletSpeed_, rubberAvailable, rubberEffectiveness );
+    rubberTimeLeft = ( rubberAvailable - owner_->GetRubber() )*rubberEffectiveness/owner_->verletSpeed_;
+    rubberUsedRatio = owner_->GetRubber()/rubberAvailable;
+    rubberFactor = owner_->verletSpeed_ * (  owner_->GetTurnDelay() - rubberTimeLeft );//* sg_helperSmartTurningRubberTimeMult );
+    //rubberFactor *= rubberFactorMult; For Editing value with a mult
+}
+
 

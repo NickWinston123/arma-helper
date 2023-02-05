@@ -102,16 +102,6 @@ struct SolveTurnData
 };
 
 class gAIPlayer;
-struct gHelperSensors
-{
-    gSensor* front;
-    gSensor* left;
-    gSensor* right;
-
-    gHelperSensors(gSensor* front_, gSensor* left_, gSensor* right_);
-};
-
-
 
 class gHelper {
     friend class gCycle;
@@ -137,7 +127,6 @@ class gHelper {
         void followTail();
         bool canSeeTarget(eCoord target,REAL passthrough);
 
-        bool findCorner(gHelperData &data, gSmartTurningCornerData &corner, const gSensor *sensor);
         void findCorners(gHelperData &data);
         void showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout);
         void showCorners(gHelperData &data);
@@ -147,19 +136,13 @@ class gHelper {
 
         void showEnemyTail(gHelperData &data);
 
-        void showTailPath(gHelperData &data);
-
         void showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir);
         bool isClose(eCoord pos, REAL closeFactor);
-
+        gSmartTurningCornerData * getCorner(int corner);
         gCycle *getOwner();
         eCoord closestCorner(eCoord center, REAL radius);
-        static void debugLine(gRealColor color, REAL height, REAL timeout,
-                        eCoord start,eCoord end, REAL brightness = 1);
-
-        static void debugBox(REAL R, REAL G, REAL B, eCoord center, REAL radius, REAL timeout);
         ~gHelper();
-    private:
+    public:
         gCycle *owner_;
         ePlayerNetID *player_;
         gAIPlayer *aiPlayer;
@@ -180,7 +163,7 @@ class gHelper {
         gHelperEnemiesData enemies;
     public:
         gHelperRubberData * rubberData;
-    private:
+        
         std::unique_ptr< gSmartTurning > smartTurning;
         std::unique_ptr< gPathHelper > pathHelper;
         std::unique_ptr< gTailHelper > tailHelper;

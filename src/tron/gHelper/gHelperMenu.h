@@ -113,7 +113,6 @@ void helperTailMenu () {
     uMenuItemReal tailPassthrough(&tailMenu, "Tail Passthrough", "Passthrough for displaying tail", sg_helperShowTailPassthrough,0, 10, 0.1);
     uMenuItemReal tailHeight(&tailMenu, "Tail Height", "Height for displaying tail", sg_helperShowTailHeight,0, 10, 0.1);
     uMenuItemReal tailTimeout(&tailMenu, "Tail Timeout", "Timeout for displaying tail", sg_helperShowTailTimeout,0, 10, 0.1);
-    uMenuItemToggle showTailPath(&tailMenu, "Show Tail Path", "Toggle display of tail path", sg_helperShowTailPath);
     uMenuItemToggle showTail(&tailMenu, "Show Tail", "Toggle display of tail", sg_helperShowTail);
 
     tailMenu.Enter();

@@ -110,7 +110,7 @@ void gTailHelper::Activate(gHelperData &data)
     eCoord lastPos = *ownerPos;
     for (int i = 0; i < path.size(); i++)
     {
-        gHelper::debugLine(gRealColor(1, 0, 0), 1, data.speedFactorF(), lastPos, path[i], sg_tailHelperBrightness);
+        gHelperUtility::debugLine(gRealColor(1, 0, 0), 1, data.speedFactorF(), lastPos, path[i], sg_tailHelperBrightness);
         lastPos = path[i];
     }
 }

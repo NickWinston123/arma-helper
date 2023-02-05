@@ -1,11 +1,17 @@
 #include "defs.h"
 #include "tString.h"
-#define LEFT -1
-#define FRONT 0
-#define RIGHT 1
-#define BOTH 2 
+
 #ifndef ArmageTron_GHELPER_VAR
 #define ArmageTron_GHELPER_VAR
+enum turnDirection
+{
+    NONE  = 0,
+    LEFT  = -1,
+    FRONT = 0,
+    RIGHT = 1,
+    BOTH  = 2
+};
+
 namespace helperConfig {
     extern bool sg_helper ;
     extern REAL sg_helperBrightness ;
@@ -79,7 +85,7 @@ namespace helperConfig {
 
     extern bool sg_zoneHelper;
     extern bool sg_zoneHelperOwnerOnly;
-    
+
     extern bool sg_helperShowCorners ;
     extern bool sg_helperShowCornersPassed ;
     extern REAL sg_helperShowCornersPassedRange ;
@@ -104,7 +110,6 @@ namespace helperConfig {
     extern REAL sg_helperEnemyTracersBrightness ;
 
     extern bool sg_helperShowTail ;
-    extern bool sg_helperShowTailPath ;
     extern REAL sg_helperShowTailHeight ;
     extern REAL sg_helperShowTailPassthrough ;
     extern REAL sg_helperShowTailTimeout ;

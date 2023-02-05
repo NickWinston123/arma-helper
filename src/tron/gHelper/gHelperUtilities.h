@@ -152,7 +152,7 @@ struct gSmartTurningCornerData
     bool exist;
     bool infront;
     void linkLastCorner(gSmartTurningCornerData* lastCorner_) {lastCorner = lastCorner_;}
-    // Returns the time until a turn will occur given a speed
+    // Returns the time until required a turn should occur given a speed
     REAL getTimeUntilTurn(REAL speed);
     
     // Checks if a position is in front of the direction vector

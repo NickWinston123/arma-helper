@@ -15,7 +15,7 @@ public:
     gTurnHelper();
 
     // constructor taking a gHelper and a gCycle as arguments
-    gTurnHelper(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner) {}
+    gTurnHelper(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner), turnData(new gTurnData()) {}
 
     // returns a reference to the gTurnHelper instance for the given helper and owner
     static gTurnHelper &Get(gHelper *helper, gCycle *owner);

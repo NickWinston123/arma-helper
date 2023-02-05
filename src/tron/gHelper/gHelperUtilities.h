@@ -185,11 +185,12 @@ struct gTurnData
 {
 public:
     int direction;
+    REAL turnTime;
     int numberOfTurns;
     bool exist;
     std::string reason;
     int noTurns;
-    gTurnData();
+    gTurnData() {}
 
     gTurnData(int direction_, int numberOfTurns_, std::string reason_) : direction(direction_),
                                                                          numberOfTurns(numberOfTurns_),

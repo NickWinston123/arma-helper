@@ -303,7 +303,7 @@ class gHelper {
         gHelperRubberData * rubberData;
 
         // emergency turn object
-        std::unique_ptr<gTurnHelper> turnHelper;
+        std::unique_ptr< gTurnHelper > turnHelper;
 
         // Unique pointer to the gSmartTurning object
         std::unique_ptr< gSmartTurning > smartTurning;

@@ -409,19 +409,17 @@ class Sensor: public gSensor
 
         virtual void PassEdge(const eWall *ww,REAL time,REAL a,int r)
         {
-             gSensor::PassEdge(ww,time,a,r);
 
-            // try{
-            //     gSensor::PassEdge(ww,time,a,r);
-            // }
-            // catch( eSensorFinished & e )
-            // {
-            //     if ( DoExtraDetectionStuff() )
-            //         throw;
-            // }
-            DoExtraDetectionStuff();
+            try{
+                gSensor::PassEdge(ww,time,a,r);
+            }
+            catch( eSensorFinished & e )
+            {
+                if ( DoExtraDetectionStuff() )
+                    throw;
+            }
         }
-
+        
         bool DoExtraDetectionStuff()
         {
             // move towards the beginning of a wall

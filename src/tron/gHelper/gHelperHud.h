@@ -76,6 +76,7 @@ public:
     virtual void setValue(T val) {
         if (!helperConfig::sg_helperHud || helperConfig::sg_helperHudFreeze)
             return;
+
         if (val != value){
             value = val;
             setLastValue();
@@ -86,12 +87,12 @@ public:
       setValue(val);
       return *this;
     }
-   
+
     virtual bool valueSame() { return getLastValue() == getValue(); }
 
     virtual void setLastValue() { if (helperConfig::sg_helperHudFreeze)
                                     return;
-                                    lastValue = value; }
+                                  lastValue = value; }
 
     virtual tString displayString()
     {
@@ -108,14 +109,14 @@ class gHelperHudItemRef : public gHelperHudItem<T>
 {
 public:
     gHelperHudItemRef(std::string label_, T &value_)
-        : gHelperHudItem<T>(label_, value_), valueRef(value_), gHelperHudBase(0, label_)
+        : gHelperHudItem<T>(label_, value_), valueRef(value_), lastValueRef(valueRef), gHelperHudBase(0, label_)
     {
         gHelperHudItem<T>::reference = true;
         setLastValue();
     }
 
     T &valueRef;
-    T lastValueRef;
+    T &lastValueRef;
 
     virtual tString getValue()
     {

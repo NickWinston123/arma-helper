@@ -241,7 +241,7 @@ void gPathHelper::FindPath(gHelperData &data)
                             owner_,
                             path_);
         pathUpdatedTime = helper_->CurrentTime();
-        pathUpdateTime = pathUpdatedTime - sg_pathHelperUpdateTime;
+        pathUpdateTime = pathUpdatedTime + sg_pathHelperUpdateTime;
         lastPos = target;
         HelperDebug::Debug("FindPath", "Updated path", "");
     }

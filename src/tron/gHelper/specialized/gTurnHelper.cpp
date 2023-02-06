@@ -253,12 +253,12 @@ int gTurnHelper::ActToTurn(uActionPlayer *action)
 template <class T>
 void gTurnHelper::BotDebug(std::string description, T value)
 {
-    HelperDebug::Debug("gTurnHelper", description, &value);
+    gHelperUtility::Debug("gTurnHelper", description, &value);
 }
 
 void gTurnHelper::BotDebug(std::string description)
 {
-    HelperDebug::Debug("gTurnHelper", description, "");
+    gHelperUtility::Debug("gTurnHelper", description, "");
 }
 
 

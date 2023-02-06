@@ -3457,5 +3457,5 @@ gAIPlayer::gAIPlayer(gHelper *helper, gCycle *cycle)
         character->properties[AI_DETECTTRACE] = 7;
         character->properties[AI_STATECHANGE] = 6;
 
-        HelperDebug::Debug("gAIPlayer", "Activating AI", "");
+        gHelperUtility::Debug("gAIPlayer", "Activating AI", "");
 }

@@ -4,18 +4,69 @@
 #include "../gCycle.h"
 #include "tDirectories.h"
 #include "tLocale.h"
+#include "tSystime.h"
 #include <unordered_set>
 #ifndef ArmageTron_GHELPER_UTILITIES
 #define ArmageTron_GHELPER_UTILITIES
 
 using namespace helperConfig;
 class gHelperUtility
-{   
+{
     public:
     static void debugLine(gRealColor color, REAL height, REAL timeout,
                     eCoord start,eCoord end, REAL brightness = 1);
 
     static void debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout);
+
+    template <typename T>
+    static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
+    {
+        if (!helperConfig::sg_helperDebug)
+        {
+            return;
+        }
+
+        if (tIsInList(helperConfig::sg_helperDebugIgnoreList, tString(sender)))
+        {
+            return;
+        }
+
+        bool lastMessageIsSame = (lastHelperDebugMessage == description && lastHelperDebugSender == sender);
+        float currentTime = tSysTimeFloat();
+        bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < helperConfig::sg_helperDebugDelay;
+
+        if (spamProtection && (lastMessageIsSame || delayNotPassed))
+        {
+            return;
+        }
+
+        lastHelperDebugMessageTimeStamp = currentTime;
+        lastHelperDebugSender = sender;
+
+        std::string debugMessage;
+
+        if (helperConfig::sg_helperDebugTimeStamp)
+        {
+            debugMessage += "[" + std::to_string(currentTime) + "] ";
+        }
+
+        debugMessage += "0xff8888HELPERDEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
+
+        if (spamProtection)
+        {
+            lastHelperDebugMessage = description;
+        }
+
+        if constexpr (std::is_same<T, std::string>::value) {
+            debugMessage += value + "\n";
+        } else if constexpr (std::is_pointer<T>::value) {
+            debugMessage += std::to_string(*value) + "\n";
+        } else {
+            debugMessage += std::to_string(value) + "\n";
+        }
+
+        con << debugMessage;
+    }
 
     // isClose checks if the distance between the owner cycle's position and the given position
     // is within a certain factor of closeness.
@@ -46,7 +97,7 @@ struct gHelperSensorsData
     gSensor* getSensor(int dir, bool newSensor = false);
     gSensor* getSensor(eCoord start, int dir, bool newSensor = false);
     gSensor* getSensor(eCoord start, eCoord dir, REAL detectRange = sg_helperSensorRange);
-}; 
+};
 
 struct gHelperData
 {
@@ -72,7 +123,7 @@ struct gHelperData
     REAL turnSpeedFactorPercentF() {
         return (1/turnSpeedFactorF());
     }
-    
+
     // calculates the distance based on the turn speed factor
     REAL turnDistanceF() {
         return (turnSpeedFactorF()/100);
@@ -141,7 +192,7 @@ struct gHelperEnemiesData
     bool exist(gCycle* enemy);
 
     // detectEnemies
-    // Detects all existing alive enemies and sets closestEnemy to the closest one. 
+    // Detects all existing alive enemies and sets closestEnemy to the closest one.
     // Clears the allEnemies set.
     // Output: returns a pointer to the closest detected enemy.
     gCycle* detectEnemies();
@@ -164,12 +215,12 @@ struct gSmartTurningCornerData
     void linkLastCorner(gSmartTurningCornerData* lastCorner_) {lastCorner = lastCorner_;}
     // Returns the time until required a turn should occur given a speed
     REAL getTimeUntilTurn(REAL speed);
-    
+
     // Checks if a position is in front of the direction vector
     bool isInfront(eCoord pos, eCoord dir);
     bool isInfront(eCoord pos, eCoord dir, eCoord posToCheck);
 
-    // Finds a corner based on the sensor data, updates relevant data in the 
+    // Finds a corner based on the sensor data, updates relevant data in the
     // gSmartTurningCornerData object, and returns a boolean indicating if the corner was found
     bool findCorner(gHelperData &data, const gSensor *sensor, gHelper *helper);
 };
@@ -186,7 +237,7 @@ struct gHelperRubberData
          rubberTimeLeft;
 
     gHelperRubberData(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner) {}
-    
+
     // Calculates and updates rubber related values the cycle
     // such as rubberAvailable, rubberEffectiveness, rubberFactor, rubberUsedRatio, and rubberTimeLeft.
     void calculate();
@@ -209,7 +260,7 @@ public:
                                                                          reason(reason_) {}
 
     gTurnData(bool) : exist(false) {}
-    
+
     void reset()
     {
         direction = (0);

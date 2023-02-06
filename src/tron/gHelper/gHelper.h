@@ -12,68 +12,6 @@
 #include "specialized/gPathHelper.h"
 #include "specialized/gTailHelper.h"
 
-static float lastHelperDebugMessageTimeStamp;
-static std::string lastHelperDebugMessage = "", lastHelperDebugSender = "";
-
-#ifndef ArmageTron_GHELPER_Debug
-#define ArmageTron_GHELPER_Debug
-#include "tSysTime.h"
-class HelperDebug
-{
-public:
-template <typename T>
-static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
-{
-    if (!helperConfig::sg_helperDebug)
-    {
-        return;
-    }
-
-    if (tIsInList(helperConfig::sg_helperDebugIgnoreList, tString(sender)))
-    {
-        return;
-    }
-
-    bool lastMessageIsSame = (lastHelperDebugMessage == description && lastHelperDebugSender == sender);
-    float currentTime = tSysTimeFloat();
-    bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < helperConfig::sg_helperDebugDelay;
-
-    if (spamProtection && (lastMessageIsSame || delayNotPassed))
-    {
-        return;
-    }
-
-    lastHelperDebugMessageTimeStamp = currentTime;
-    lastHelperDebugSender = sender;
-
-    std::string debugMessage;
-
-    if (helperConfig::sg_helperDebugTimeStamp)
-    {
-        debugMessage += "[" + std::to_string(currentTime) + "] ";
-    }
-
-    debugMessage += "0xff8888HELPERDEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
-
-    if (spamProtection)
-    {
-        lastHelperDebugMessage = description;
-    }
-
-    if constexpr (std::is_same<T, std::string>::value) {
-        debugMessage += value + "\n";
-    } else if constexpr (std::is_pointer<T>::value) {
-        debugMessage += std::to_string(*value) + "\n";
-    } else {
-        debugMessage += std::to_string(value) + "\n";
-    }
-
-    con << debugMessage;
-}
-
-};
-#endif
-
 class gAIPlayer;
 
 class gHelper {

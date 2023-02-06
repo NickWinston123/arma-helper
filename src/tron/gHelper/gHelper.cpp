@@ -672,7 +672,7 @@ void gHelper::Activate()
     {
         if (!aiCreated)
         {
-            HelperDebug::Debug("sg_helperAI", "Creating AI", "");
+            gHelperUtility::Debug("sg_helperAI", "Creating AI", "");
             aiPlayer = new gAIPlayer(this, owner_);
             aiCreated = true;
         }

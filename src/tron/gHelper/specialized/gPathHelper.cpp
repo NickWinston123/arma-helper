@@ -196,7 +196,7 @@ void gPathHelper::RenderTurn(gHelperData &data)
         // look how far ahead the target is:
         REAL ahead = eCoord::F(target - pos, owner_->Direction()) + eCoord::F(path_.CurrentOffset(), owner_->Direction());
 
-        HelperDebug::Debug("RenderTurn", "AHEAD = ", &ahead);
+        gHelperUtility::Debug("RenderTurn", "AHEAD = ", &ahead);
         if (ahead > sg_pathHelperShowTurnAhead)
         { // it is still before us. just wait a while.
           // mindist = ahead;
@@ -243,7 +243,7 @@ void gPathHelper::FindPath(gHelperData &data)
         pathUpdatedTime = helper_->CurrentTime();
         pathUpdateTime = pathUpdatedTime + sg_pathHelperUpdateTime;
         lastPos = target;
-        HelperDebug::Debug("FindPath", "Updated path", "");
+        gHelperUtility::Debug("FindPath", "Updated path", "");
     }
 
     if (!path_.Valid())

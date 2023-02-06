@@ -35,6 +35,7 @@ void gHelperUtility::debugBox(gRealColor color, eCoord center, REAL radius, REAL
         debugLine(color,sg_helperBoxHeight,timeout,corner[3],corner[0]);
     }
 
+
 // Function: isClose
 // Check if the distance between a point and the player is within a certain range.
 //

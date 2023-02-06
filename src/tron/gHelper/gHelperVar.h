@@ -12,6 +12,10 @@ enum turnDirection
     BOTH  = 2
 };
 
+
+static float lastHelperDebugMessageTimeStamp;
+static std::string lastHelperDebugMessage = "", lastHelperDebugSender = "";
+
 namespace helperConfig {
     extern bool sg_helper ;
     extern REAL sg_helperBrightness ;

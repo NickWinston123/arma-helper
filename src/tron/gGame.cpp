@@ -90,6 +90,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gRotation.h"
 #include "nSocket.h"
 
+#include "gHelper/gHelperVar.h"
 #include "gHelper/gHelperMenu.h"
 
 #ifdef KRAWALL_SERVER
@@ -3124,7 +3125,7 @@ void MainMenu(bool ingame){
                             "Helper Menu",
                                 "Helper Menu",
                                 &helperMenu);
-                                
+
     #endif
 
     uMenu Settings("$system_settings_menu_text");
@@ -3463,14 +3464,14 @@ void gGame::Verify()
 bool * sg_GetSpecs()
 {
     static bool isSpec[ MAXCLIENTS + 1 ]; std::fill_n(isSpec, MAXCLIENTS + 1, true);
-    
+
     for (int i=se_PlayerNetIDs.Len()-1;i>=0;--i)
     {
         ePlayerNetID * player = se_PlayerNetIDs(i);
         if( isSpec[ player->Owner() ] )
             isSpec[ player->Owner() ] = !( player->CurrentTeam() || ( player->NextTeam() && player->NextTeam()->PlayerMayJoin( player ) ) );
     }
-    
+
     return isSpec;
 }
 
@@ -3573,7 +3574,7 @@ static nDescriptor client_gs(311,client_gamestate_handler,"client_gamestate");
 
 void gGame::SyncState(unsigned short state){
     if (sn_GetNetState()==nSERVER){
-        
+
         //bool * isSpec = sg_GetSpecs();
 
         bool firsttime=true;
@@ -3906,10 +3907,10 @@ void gGame::StateUpdate(){
 
             // push all data
             if(sn_GetNetState()==nSERVER){
-                
+
                 // first determine which clients have players which are playing
                 bool * isSpec = sg_GetSpecs();
-                
+
                 bool goon=true;
                 double timeout=tSysTimeFloat()+sg_Timeout*.4;
                 while(goon && tSysTimeFloat()<timeout){
@@ -4220,7 +4221,7 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
         if (!p) {
             return;
         }
-        
+
         eGameObject *e = p->Object();
         //e checks if player is an actual game object ( spectaters are not )
         if (!e || e && !e->Alive()) {
@@ -5625,6 +5626,14 @@ bool gGame::GameLoop(bool input){
         // lastTime_gameloop=gtime;
 
 
+        if (helperConfig::sg_helperAI) {
+            for(int i=se_PlayerNetIDs.Len()-1;i>=0;i--)
+            {
+                gAIPlayer *ai = dynamic_cast<gAIPlayer*>(se_PlayerNetIDs(i));
+                if (ai && ai->helperAI)
+                    ai->Timestep(gtime + helperConfig::sg_helperAITime);
+            }
+        }
 
         if (sn_GetNetState()!=nCLIENT)
         {

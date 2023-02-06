@@ -677,11 +677,6 @@ void gHelper::Activate()
             aiPlayer = new gAIPlayer(owner_);
             aiCreated = true;
         }
-        else
-        {
-            if (aiPlayer != NULL)
-                aiPlayer->Timestep(se_GameTime() + sg_helperAITime);
-        }
     }
     REAL time = tRealSysTimeFloat() - start;
     sg_helperActivateTimeH << (time);

@@ -23,35 +23,6 @@ gSmartTurning::gSmartTurning(gHelper *helper, gCycle *owner)
 {
 }
 
-void gSmartTurning::Activate(gHelperData &data)
-{
-    if (sg_helperSmartTurningSurvive)
-    {
-        sg_helperSmartTurningOpposite = 0;
-        sg_helperSmartTurningPlan = 0;
-        smartTurningSurvive(data);
-    }
-
-    if (sg_helperSmartTurningOpposite)
-    {
-        sg_helperSmartTurningSurvive = 0;
-        sg_helperSmartTurningPlan = 0;
-        smartTurningOpposite(data);
-    }
-
-    if (sg_helperSmartTurningPlan)
-    {
-        sg_helperSmartTurningSurvive = 0;
-        sg_helperSmartTurningOpposite = 0;
-        smartTurningPlan(data);
-    }
-
-    if (sg_helperSmartTurningFollowTail)
-        followTail(data);
-
-    if (sg_helperSmartTurningFrontBot)
-        smartTurningFrontBot(data);
-}
 
 // Function: isClose
 // Check if the distance between a point and the player is within a certain range.
@@ -426,7 +397,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
         return;
     }
 
-    // Get the range to the front bot
+    // Get the distance from the front 
     REAL hitRange = data.sensors.getSensor(FRONT)->hit;
 
     // If the range to the front bot is within the sg_helperSmartTurningFrontBotThinkRange
@@ -473,6 +444,36 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
             }
         }
     }
+}
+
+void gSmartTurning::Activate(gHelperData &data)
+{
+    if (sg_helperSmartTurningSurvive)
+    {
+        sg_helperSmartTurningOpposite = 0;
+        sg_helperSmartTurningPlan = 0;
+        smartTurningSurvive(data);
+    }
+
+    if (sg_helperSmartTurningOpposite)
+    {
+        sg_helperSmartTurningSurvive = 0;
+        sg_helperSmartTurningPlan = 0;
+        smartTurningOpposite(data);
+    }
+
+    if (sg_helperSmartTurningPlan)
+    {
+        sg_helperSmartTurningSurvive = 0;
+        sg_helperSmartTurningOpposite = 0;
+        smartTurningPlan(data);
+    }
+
+    if (sg_helperSmartTurningFollowTail)
+        followTail(data);
+
+    if (sg_helperSmartTurningFrontBot)
+        smartTurningFrontBot(data);
 }
 
 gSmartTurning &gSmartTurning::Get(gHelper *helper, gCycle *owner)

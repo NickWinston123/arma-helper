@@ -6,13 +6,12 @@
 #include "tConfiguration.h"
 #include "tString.h"
 
-
 namespace helperConfig {
-extern bool sg_helperHud ;
-extern bool sg_helperHudFreeze ;
-extern REAL sg_helperHudX ;
-extern REAL sg_helperHudY ;
-extern REAL sg_helperHudSize ;
+extern bool sg_helperHud;
+extern bool sg_helperHudFreeze;
+extern REAL sg_helperHudX;
+extern REAL sg_helperHudY;
+extern REAL sg_helperHudSize;
 }
 class gHelperHudBase
 {

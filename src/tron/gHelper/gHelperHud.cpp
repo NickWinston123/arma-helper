@@ -23,6 +23,8 @@ static tConfItem<tString> sg_helperHudIgnoreListConf("HELPER_HUD_IGNORE_LIST", s
 
 }
 
+using namespace helperConfig;
+
 static std::map< std::string, gHelperHudBase * > * st_confMap = 0;
 gHelperHudBase::gHelperHudMap & gHelperHudBase::GetHelperHudMap()
 {
@@ -43,7 +45,7 @@ gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
 
 #include <map>
 void gHelperHudBase::Render() {
-    if (!helperConfig::sg_helperHud)
+    if (!sg_helperHud)
         return;
 
     std::map<std::string, std::vector<gHelperHudBase*>> hudMap;
@@ -53,7 +55,7 @@ void gHelperHudBase::Render() {
     for (auto iter = items.begin(); iter != items.end(); iter++) {
         gHelperHudBase *item = iter->second;
         std::string parent = item->getParent();
-        if (tIsInList(helperConfig::sg_helperHudIgnoreList,tString(item->getLabel()))){
+        if (tIsInList(sg_helperHudIgnoreList,tString(item->getLabel()))){
             continue;
         }
 
@@ -66,7 +68,7 @@ void gHelperHudBase::Render() {
         hudMap[parent].push_back(item);
     }
 
-    rTextField hudDebug(helperConfig::sg_helperHudX - .15 * helperConfig::sg_helperHudSize / 2.0, helperConfig::sg_helperHudY, .15 * helperConfig::sg_helperHudSize, .3 * helperConfig::sg_helperHudSize);
+    rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
     // Next, iterate through the hudMap and display parent items first, followed by their child items
     for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++) {
         if (iter->first != "") {

@@ -2953,7 +2953,7 @@ static gAISensor * sg_GetSensor( gAIPlayer const * ai, int currentDirectionNumbe
 }
 
 static REAL sg_AIMode = -1;
-static tConfItem<REAL> sg_AIModeConf("AI_MODE", sg_AIMode);
+static tConfItem<REAL> sg_AIModeConf("HELPER_AI_MODE", sg_AIMode);
 
 
 REAL gAIPlayer::Think(){
@@ -3176,7 +3176,7 @@ void gAIPlayer::ActOnData( ThinkDataBase & data )
 const REAL relax=25;
 
 static bool sg_AIForceThink = false;
-static tConfItem<bool> sg_AIForceThinkConf("AI_FORCE_THINK", sg_AIForceThink);
+static tConfItem<bool> sg_AIForceThinkConf("AI_HELPER_FORCE_THINK", sg_AIForceThink);
 
 void gAIPlayer::Timestep(REAL time){
     if (sg_AIBypass && !helperAI) return;
@@ -3193,10 +3193,14 @@ void gAIPlayer::Timestep(REAL time){
     //     character->properties[i] = 10;
     //     character->iq += 100;
     // }
-
-    // con << "Activate ? " << (bool(!helperAI && Object() && Object()->LastTime() < time - EPS) == false) << "\n";
+    // tColoredString debug;
+    // debug << "helperAI time " << time << "\n";
+    // debug << "should quit? " << bool( Object() && Object()->LastTime() < time - EPS ) << "\n";
+    // debug << Object()->LastTime() << " < " << time << " - " << EPS << " (" << time-EPS << ")" << "\n";
+    // con << debug;
+    // con << "Activate ? " << (bool(Object() && Object()->LastTime() < time - EPS) == false) << "\n";
     // don't think if the object is not up to date
-    if ( !helperAI && Object() && Object()->LastTime() < time - EPS )
+    if ( Object() && Object()->LastTime() < time - EPS )
         return;
 
     REAL ts=time-lastTime;
@@ -3208,10 +3212,10 @@ void gAIPlayer::Timestep(REAL time){
     concentration += 4*(character->properties[AI_REACTION]+1) * ts/relax;
     concentration=concentration/(1+ts/relax);
 
-    //con << nextTime << " < " << time << " ? " << bool(nextTime<time) << "\n";
+    // con << nextTime << " < " << time << " ? " << bool(nextTime<time) << "\n";
 
-    if (helperAI)
-        nextTime = bool(nextTime<time) ? nextTime :  time - (time*.005);
+    // if (helperAI)
+    //     nextTime = bool(nextTime<time) ? nextTime :  time - (time*.005);
 
     if (bool(Object()) && Object()->Alive() && ((nextTime<time) || (helperAI && sg_AIForceThink))){
         gRandomController random( randomizer_ );
@@ -3402,20 +3406,17 @@ static void sg_SetAIRoute(std::istream &s)
 
 static tConfItemFunc sg_SetAIRoute_conf("SET_AI_POSITION",&sg_SetAIRoute);
 
-gAIPlayer::gAIPlayer(gCycle *cycle) : character(new gAICharacter()),
-                                      lastPath(se_GameTime() - 100),
-                                      lastTime(se_GameTime()),
-                                      nextTime(0),
-                                      concentration(1),
-                                      log(NULL),
-                                      owner_(cycle),
-                                      helperAI(true)
+gAIPlayer::gAIPlayer(gCycle *cycle)
+    : character(new gAICharacter()),
+      lastPath(se_GameTime() - 100),
+      lastTime(se_GameTime()),
+      nextTime(0),
+      concentration(1),
+      log(NULL),
+      owner_(cycle),
+      helperAI(true)
 {
-        for (int i = 0; i < 13; i++)
-        {
-        character->properties[i] = 10;
-        character->iq += 100;
-        }
+        character->iq = 1000;
 
         ClearTarget();
         traceSide = 1;
@@ -3432,17 +3433,17 @@ gAIPlayer::gAIPlayer(gCycle *cycle) : character(new gAICharacter()),
         lazySideChange = 0;
         path.Clear();
 
-        character->properties[AI_REACTION] = 5;
-        character->properties[AI_EMERGENCY] = 500;
+        character->properties[AI_REACTION] = 10;
+        character->properties[AI_EMERGENCY] = 5;
         character->properties[AI_RANGE] = 500;
-        character->properties[AI_STATE_TRACE] = 1;
-        character->properties[AI_STATE_CLOSECOMBAT] = 101;
+        character->properties[AI_STATE_TRACE] = 5;
+        character->properties[AI_STATE_CLOSECOMBAT] = 20;
         character->properties[AI_STATE_PATH] = 10;
-        character->properties[AI_LOOP] = 2;
+        character->properties[AI_LOOP] = 4;
         character->properties[AI_ENEMY] = 10;
         character->properties[AI_TUNNEL] = 3;
-        character->properties[AI_DETECTTRACE] = 5;
-        character->properties[AI_STATECHANGE] = 0;
+        character->properties[AI_DETECTTRACE] = 7;
+        character->properties[AI_STATECHANGE] = 6;
 
         HelperDebug::Debug("gAIPlayer", "Activating AI", "");
 }

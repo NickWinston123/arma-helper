@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tRandom.h"
 #include "nObserver.h"
 #include "tReferenceHolder.h"
-
+#include "gHelper/gHelper.h"
 #include <vector>
 
 
@@ -63,12 +63,13 @@ class gAIPlayer: public ePlayerNetID{
     friend class gSmarterBot;
     tReproducibleRandomizer randomizer_;
 public:
-    gAIPlayer(gCycle* cycle);
+    gAIPlayer(gHelper *helper, gCycle *cycle);
     gAICharacter*           character; // our specification of abilities
 
     // for all offensive modes:
     nObserverPtr< gCycle >    target;  // the current victim
     gCycle *owner_;
+    gHelper *helper_;
     bool helperAI;
     // for pathfinding mode:
     ePath                   path;    // last found path to the victim

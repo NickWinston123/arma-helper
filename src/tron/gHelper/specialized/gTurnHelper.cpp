@@ -152,6 +152,10 @@ bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceF
     }
 }
 
+bool gTurnHelper::makeTurnIfPossible(int dir, REAL spaceFactor)
+{
+    return makeTurnIfPossible(*helper_->data_stored,dir,spaceFactor);
+}
 // This function checks if a turn is possible in the specified direction (dir)
 // by comparing the sensor hit value to a spaceFactor or the current rubberFactor
 // If the owner is not driving straight, return false

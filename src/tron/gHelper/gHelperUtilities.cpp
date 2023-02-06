@@ -7,7 +7,7 @@ extern void sg_RubberValues( ePlayerNetID const * player, REAL speed, REAL & max
 using namespace helperConfig;
 
 void gHelperUtility::debugLine(gRealColor color, REAL height, REAL timeout,
-                eCoord start,eCoord end, REAL brightness) {
+                                eCoord start,eCoord end, REAL brightness) {
     if (timeout >= 6) {
         timeout = 1;
     }

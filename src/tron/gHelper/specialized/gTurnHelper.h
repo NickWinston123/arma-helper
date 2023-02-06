@@ -24,6 +24,7 @@ public:
     bool canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceFactor = 0);
 
     // function to make a turn if possible
+    bool makeTurnIfPossible(int dir, REAL spaceFactor = 0);
     bool makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFactor = 0);
 
     // function to check if a turn can help the cycle survive a left or right turn given speed and rubber factors

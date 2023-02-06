@@ -150,7 +150,7 @@ static gAICharacter* BestIQ( int iq )
         // count the active AIs
         ePlayerNetID *p = se_PlayerNetIDs(i);
         gAIPlayer  *ai  = dynamic_cast<gAIPlayer*>(p);
-        if (ai && ai->Character() )
+        if (ai && ai->Character() && !ai->helperAI)
         {
             int index = ai->Character() - &(gAICharacter::s_Characters(0));
             inGame(index) = true;
@@ -1189,6 +1189,8 @@ void gAIPlayer::SetNumberOfAIs(int num, int minPlayers, int iq, int tries)
         // count the active AIs
         ePlayerNetID *p = se_PlayerNetIDs(i);
         gAIPlayer  *ai  = dynamic_cast<gAIPlayer*>(p);
+        if ( ai && ai->helperAI)
+            continue;
         if ( ai && !bool( ai->NextTeam() ) )
         {
             ai->RemoveFromGame();
@@ -1228,6 +1230,9 @@ void gAIPlayer::SetNumberOfAIs(int num, int minPlayers, int iq, int tries)
             // count the active AIs
             ePlayerNetID *p = se_PlayerNetIDs(i);
             gAIPlayer  *ai  = dynamic_cast<gAIPlayer*>(p);
+            if (ai && ai->helperAI){
+                continue;
+            }
             if (ai && ai->NextTeam() == sg_AITeam )
             {
                 //				int index = ((int)ai->character - (int)&gAICharacter::s_Characters(0))/sizeof(gAICharacter);
@@ -3168,9 +3173,15 @@ void gAIPlayer::ActOnData( ThinkDataBase & data )
     }
     tRecorder::Record( section, data );
 
+
     // execute turn
-    if ( data.turn )
-        Object()->Turn( data.turn );
+    if ( data.turn ) {
+        if (!helperAI) {
+            Object()->BotTurn( data.turn );
+        } else {
+            helper_->turnHelper->makeTurnIfPossible(data.turn < 0 ? LEFT : RIGHT);
+        }
+    }
 }
 
 const REAL relax=25;
@@ -3406,14 +3417,15 @@ static void sg_SetAIRoute(std::istream &s)
 
 static tConfItemFunc sg_SetAIRoute_conf("SET_AI_POSITION",&sg_SetAIRoute);
 
-gAIPlayer::gAIPlayer(gCycle *cycle)
-    : character(new gAICharacter()),
+gAIPlayer::gAIPlayer(gHelper *helper, gCycle *cycle)
+    : helper_(helper),
+      owner_(cycle),
+      character(new gAICharacter()),
       lastPath(se_GameTime() - 100),
       lastTime(se_GameTime()),
       nextTime(0),
       concentration(1),
       log(NULL),
-      owner_(cycle),
       helperAI(true)
 {
         character->iq = 1000;

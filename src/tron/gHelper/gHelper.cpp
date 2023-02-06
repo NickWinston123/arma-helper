@@ -231,7 +231,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     relEnemyPos.x -= enemydist;
 
     canCutUs = relEnemyPos.y * enemySpeed > relEnemyPos.x * ourSpeed; // right ahead of us? (and faster)
-    canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed; 
+    canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed;
 
     if (canCutUs)
     {
@@ -583,7 +583,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     // Decrement the recursion counter.
     recursion--;
 
-    // Get the direction of the new sensor by turning the initial direction by a specified angle in the opposite direction 
+    // Get the direction of the new sensor by turning the initial direction by a specified angle in the opposite direction
     // of the sensorDir.
     eCoord newDir = initDir.Turn(eCoord(0, sensorDir * -1));
 
@@ -674,7 +674,7 @@ void gHelper::Activate()
         if (!aiCreated)
         {
             HelperDebug::Debug("sg_helperAI", "Creating AI", "");
-            aiPlayer = new gAIPlayer(owner_);
+            aiPlayer = new gAIPlayer(this, owner_);
             aiCreated = true;
         }
     }

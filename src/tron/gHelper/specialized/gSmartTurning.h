@@ -11,18 +11,7 @@ class gSmartTurning
 public:
     // constructor to create an instance of gSmartTurning with a helper and an owner cycle
     gSmartTurning(gHelper *helper, gCycle *owner);
-    // function to get the instance of gSmartTurning
-    static gSmartTurning &Get(gHelper *helper, gCycle *owner);
 
-    // Activate function to activate the smart turning feature
-    void Activate(gHelperData &data);
-
-    // isClose checks if the distance between the owner cycle's position and the given position
-    // is within a certain factor of closeness.
-    // pos: the position to check the distance to
-    // closeFactor: the factor of closeness to compare the distance to
-    // Returns: true if the distance is within the closeFactor, false otherwise
-    bool isClose(eCoord pos, REAL closeFactor);
 
     // function to make the cycle survive by determining which turns are possible and blocking if required
     void smartTurningSurvive(gHelperData &data);
@@ -41,6 +30,14 @@ public:
 
     // function to make the cycle follow its tail
     void followTail(gHelperData &data);
+
+
+    // Activate function to activate the smart turning feature
+    void Activate(gHelperData &data);
+
+
+    // function to get the instance of gSmartTurning
+    static gSmartTurning &Get(gHelper *helper, gCycle *owner);
 
 private:
     // owner cycle

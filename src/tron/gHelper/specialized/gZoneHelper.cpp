@@ -22,6 +22,7 @@ void gZoneHelper::Activate(gHelperData &data)
 {
     if (sg_HelperTrackedZones.size() <= 0)
         return;
+        
     tColoredString debug;
     debug << "Zones size " << sg_HelperTrackedZones.size() << "\n";
     for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)

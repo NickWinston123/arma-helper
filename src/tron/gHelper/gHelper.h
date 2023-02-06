@@ -108,7 +108,7 @@ class gHelper {
         REAL CurrentTime();
 
         /**
-         * Detects cuts (collisions) in front of the cycle.
+         * Detects cuts (collisions) between owner and the closest enemy's cycle.
          *
          * @param data The `gHelperData` object to store the detection results.
          * @param detectionRange The range for detection, in units.
@@ -216,13 +216,6 @@ class gHelper {
          */
         void showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir);
 
-        /**
-         * isClose - Check if a point is close to another
-         * @param pos: position of the point
-         * @param closeFactor: value to determine proximity
-         * @return true if the point is close, false otherwise
-         */
-        bool isClose(eCoord pos, REAL closeFactor);
 
         /**
          * getCorner - Retrieve data for a specified corner

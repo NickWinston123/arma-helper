@@ -35,7 +35,20 @@ void gHelperUtility::debugBox(gRealColor color, eCoord center, REAL radius, REAL
         debugLine(color,sg_helperBoxHeight,timeout,corner[3],corner[0]);
     }
 
-
+// Function: isClose
+// Check if the distance between a point and the player is within a certain range.
+//
+// Parameters:
+// pos: The position to check distance to.
+// closeFactor: The maximum allowed distance to be considered close.
+//
+// Returns:
+// bool: True if the distance is within the closeFactor range, False otherwise.
+ bool gHelperUtility::isClose(gCycle *owner_, eCoord pos, REAL closeFactor)
+{
+    eCoord distanceToPos = owner_->pos - pos;
+    return distanceToPos.NormSquared() < closeFactor * closeFactor;
+}
 
 
 gHelperSensors::gHelperSensors(gSensor* front_, gSensor* left_, gSensor* right_) :
@@ -53,10 +66,10 @@ gSensor * gHelperSensorsData::getSensor(int dir, bool newSensor)
     return getSensor(owner_->Position(),dir, newSensor);
 }
 
-gSensor *gHelperSensorsData::getSensor(eCoord start, eCoord dir)
+gSensor *gHelperSensorsData::getSensor(eCoord start, eCoord dir, REAL detectRange)
 {
     gSensor * sensor = new gSensor(owner_,start, dir);
-    sensor->detect(sg_helperSensorRange);
+    sensor->detect(detectRange);
     return sensor;
 }
 
@@ -188,6 +201,10 @@ bool gSmartTurningCornerData::isInfront(eCoord pos, eCoord dir) {
     return eCoord::F(dir, currentPos - pos) > 0;
 }
 
+bool gSmartTurningCornerData::isInfront(eCoord pos, eCoord dir, eCoord posToCheck) {
+    return eCoord::F(dir, posToCheck - pos) > 0;
+}
+
 bool gSmartTurningCornerData::findCorner(gHelperData & data, const gSensor *sensor, gHelper *helper)
 {
     if (!sensor->ehit)
@@ -206,13 +223,19 @@ bool gSmartTurningCornerData::findCorner(gHelperData & data, const gSensor *sens
     turnTime = getTimeUntilTurn(*helper->ownerSpeed + helper->CurrentTime());
     REAL secondEdgeDistance = helper->ownerDir->Dot(*sensor->ehit->Other()->Point() - *helper->ownerPos);
 
-    if (distanceFromPlayer < secondEdgeDistance)
+    infront = isInfront(*helper->ownerPos, *helper->ownerDir);
+
+    if (distanceFromPlayer < secondEdgeDistance || !infront)
     {
-        distanceFromPlayer = secondEdgeDistance;
-        currentPos = *sensor->ehit->Other()->Point();
+        // other Corner Infront
+        if (isInfront(*helper->ownerPos, *helper->ownerDir, *sensor->ehit->Other()->Point())) {
+            distanceFromPlayer = secondEdgeDistance;
+            currentPos = *sensor->ehit->Other()->Point();
+            infront = true;
+        }
     }
 
-    infront = isInfront(*helper->ownerPos, *helper->ownerDir);
+
 
     if (lastPos != currentPos)
     {

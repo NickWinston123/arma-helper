@@ -1,5 +1,6 @@
 #include "defs.h"
 #include "gHelper.h"
+#include "gHelperVar.h"
 #include "../gCycle.h"
 #include "tDirectories.h"
 #include "tLocale.h"
@@ -7,6 +8,7 @@
 #ifndef ArmageTron_GHELPER_UTILITIES
 #define ArmageTron_GHELPER_UTILITIES
 
+using namespace helperConfig;
 class gHelperUtility
 {   
     public:
@@ -14,6 +16,13 @@ class gHelperUtility
                     eCoord start,eCoord end, REAL brightness = 1);
 
     static void debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout);
+
+    // isClose checks if the distance between the owner cycle's position and the given position
+    // is within a certain factor of closeness.
+    // pos: the position to check the distance to
+    // closeFactor: the factor of closeness to compare the distance to
+    // Returns: true if the distance is within the closeFactor, false otherwise
+    static bool isClose(gCycle * owner_, eCoord pos, REAL closeFactor);
 };
 
 struct gHelperSensors
@@ -36,7 +45,7 @@ struct gHelperSensorsData
     gHelperSensorsData(gCycle *owner);
     gSensor* getSensor(int dir, bool newSensor = false);
     gSensor* getSensor(eCoord start, int dir, bool newSensor = false);
-    gSensor* getSensor(eCoord start, eCoord dir);
+    gSensor* getSensor(eCoord start, eCoord dir, REAL detectRange = sg_helperSensorRange);
 }; 
 
 struct gHelperData
@@ -149,6 +158,7 @@ struct gSmartTurningCornerData
     REAL turnTime;
     REAL noticedTime;
     REAL ignoredTime;
+    REAL updatedTime;
     bool exist;
     bool infront;
     void linkLastCorner(gSmartTurningCornerData* lastCorner_) {lastCorner = lastCorner_;}
@@ -157,6 +167,7 @@ struct gSmartTurningCornerData
     
     // Checks if a position is in front of the direction vector
     bool isInfront(eCoord pos, eCoord dir);
+    bool isInfront(eCoord pos, eCoord dir, eCoord posToCheck);
 
     // Finds a corner based on the sensor data, updates relevant data in the 
     // gSmartTurningCornerData object, and returns a boolean indicating if the corner was found

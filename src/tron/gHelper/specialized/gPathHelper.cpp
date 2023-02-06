@@ -1,6 +1,6 @@
-#include "../../gSensor.h"
 #include "../../gCycle.h"
 #include "../../gWall.h"
+#include "../../gSensor.h"
 
 #include "../gHelperVar.h"
 #include "../gHelperUtilities.h"
@@ -11,10 +11,8 @@ using namespace helperConfig;
 gPathHelper::gPathHelper(gHelper *helper, gCycle *owner)
     : helper_(helper),
       owner_(owner),
-      lastPath(helper_->CurrentTime() - 100),
-      lastTime(helper_->CurrentTime()),
-      nextTime(0),
-      pathInvalid(true)
+      pathUpdatedTime(helper_->CurrentTime() - 100),
+      pathUpdateTime(0)
 {
     // Initialize any other member variables here
 }
@@ -95,14 +93,14 @@ bool gPathHelper::autoMode(gHelperData data)
 {
     gCycle *enemy = helper_->enemies.closestEnemy;
 
-    bool isClose = helper_->enemies.exist(enemy) && helper_->smartTurning->isClose(enemy->Position(), sg_pathHelperAutoCloseDistance + data.turnSpeedFactorF());
+    bool isClose = helper_->enemies.exist(enemy) && gHelperUtility::isClose(owner_, enemy->Position(), sg_pathHelperAutoCloseDistance + data.turnSpeedFactorF());
     if (isClose)
     {
         target = enemy->Position();
+
         if (!DistanceCheck(data))
-        {
             return false;
-        }
+
         owner_->FindCurrentFace();
         targetCurrentFace_ = enemy->CurrentFace();
         return true;
@@ -110,10 +108,10 @@ bool gPathHelper::autoMode(gHelperData data)
     else if (owner_->tailMoving)
     {
         target = owner_->tailPos;
+
         if (!DistanceCheck(data))
-        {
             return false;
-        }
+
         owner_->FindCurrentFace();
         targetCurrentFace_ = owner_->Grid()->FindSurroundingFace(target);
         return true;
@@ -124,7 +122,7 @@ bool gPathHelper::autoMode(gHelperData data)
 
 bool gPathHelper::UpdateTimeCheck(gHelperData &data)
 {
-    return lastPath < helper_->CurrentTime() - sg_pathHelperUpdateTime;
+    return pathUpdatedTime < pathUpdateTime;
 }
 
 void gPathHelper::RenderPath(gHelperData &data)
@@ -156,9 +154,7 @@ void gPathHelper::RenderPath(gHelperData &data)
 void gPathHelper::RenderTurn(gHelperData &data)
 {
     if (!path_.Valid())
-    {
         return;
-    }
 
     for (int z = 10; z >= 0; z--)
         path_.Proceed();
@@ -179,15 +175,14 @@ void gPathHelper::RenderTurn(gHelperData &data)
 
         eCoord intermediate = opos + owner_->Direction() * eCoord::F(odir, owner_->Direction());
 
-        gSensor p(owner_, opos, intermediate - opos);
-        p.detect(1.1f);
-        nogood = (p.hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+        // assigns a hit pointer to the memory location of the hit
+        REAL *hit = &data.sensors.getSensor(opos,intermediate - opos,1.1f)->hit;
+        nogood = (*hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
 
         if (!nogood)
         {
-            gSensor p(owner_, intermediate, pos - intermediate);
-            p.detect(1);
-            nogood = (p.hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+            REAL *hit = &data.sensors.getSensor(intermediate, pos - intermediate, 1)->hit;
+            nogood = (*hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
         }
 
     } while (goon && nogood);
@@ -216,19 +211,12 @@ void gPathHelper::RenderTurn(gHelperData &data)
                 lr += (side > 0 ? 1 : -1);
             }
 
-            lr *= -1;
-            if (lr == RIGHT)
-            {
-                gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(RIGHT)->before_hit, 1);
-                if (sg_pathHelperShowTurnAct)
-                    helper_->turnHelper->makeTurnIfPossible(data, RIGHT, 1);
-            }
-            else if (lr == LEFT)
-            {
-                gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(LEFT)->before_hit, 1);
-                if (sg_pathHelperShowTurnAct)
-                    helper_->turnHelper->makeTurnIfPossible(data, LEFT, 1);
-            }
+            // Comes in opposite, flip to fit turn direction mapping set in gHelper
+            lr *= -1; 
+
+            gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(lr)->before_hit, 1);
+            if (sg_pathHelperShowTurnAct)
+                helper_->turnHelper->makeTurnIfPossible(data, lr, 1);
         }
     }
 }
@@ -248,13 +236,12 @@ void gPathHelper::FindPath(gHelperData &data)
 
     if (targetCurrentFace_)
     {
-        // owner_->FindCurrentFace();
         eHalfEdge::FindPath(owner_->Position(), owner_->CurrentFace(),
                             target, targetCurrentFace_,
                             owner_,
                             path_);
-        // con << "Found updated path & " << lastPath << "\n";
-        lastPath = helper_->CurrentTime();
+        pathUpdatedTime = helper_->CurrentTime();
+        pathUpdateTime = pathUpdatedTime - sg_pathHelperUpdateTime;
         lastPos = target;
         HelperDebug::Debug("FindPath", "Updated path", "");
     }
@@ -262,7 +249,7 @@ void gPathHelper::FindPath(gHelperData &data)
     if (!path_.Valid())
     {
         targetCurrentFace_ = NULL;
-        lastPath = -100;
+        pathUpdatedTime = -100;
     }
 }
 
@@ -281,22 +268,23 @@ void gPathHelper::Activate(gHelperData &orig_data)
     if (!UpdateTimeCheck(orig_data))
         return;
 
-    gHelperData data = orig_data;
+    // Copy of data to limit global changes to helper data
+    //gHelperData data = orig_data;
 
     bool success = false;
     switch (sg_pathHelperMode)
     {
     case 0:
-        success = autoMode(data);
+        success = autoMode(orig_data);
         break;
     case 1:
-        success = tailMode(data);
+        success = tailMode(orig_data);
         break;
     case 2:
-        success = enemyMode(data);
+        success = enemyMode(orig_data);
         break;
     case 3:
-        success = cornerMode(data);
+        success = cornerMode(orig_data);
         break;
     default:
         // do nothing
@@ -306,7 +294,7 @@ void gPathHelper::Activate(gHelperData &orig_data)
     if (!success)
         return;
 
-    FindPath(data);
+    FindPath(orig_data);
 }
 
 gPathHelper &gPathHelper::Get(gHelper *helper, gCycle *owner)

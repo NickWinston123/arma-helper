@@ -142,20 +142,17 @@ bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceF
 
     // If the direction is LEFT, return whether the gap distance is greater than compareFactor
     if (dir == LEFT)
-    {
         return data.sensors.getSensor(LEFT)->hit > compareFactor;
-    }
     // If the direction is RIGHT, return whether the gap distance is greater than compareFactor
     else if (dir == RIGHT)
-    {
         return data.sensors.getSensor(RIGHT)->hit > compareFactor;
-    }
 }
 
 bool gTurnHelper::makeTurnIfPossible(int dir, REAL spaceFactor)
 {
     return makeTurnIfPossible(*helper_->data_stored,dir,spaceFactor);
 }
+
 // This function checks if a turn is possible in the specified direction (dir)
 // by comparing the sensor hit value to a spaceFactor or the current rubberFactor
 // If the owner is not driving straight, return false
@@ -167,9 +164,8 @@ bool gTurnHelper::makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFacto
         return false;
 
     if (canSurviveTurnSpecific(data, dir, spaceFactor))
-    {
         return owner_->ActTurnBot(dir);
-    }
+ 
     return false;
 }
 
@@ -179,9 +175,7 @@ void gTurnHelper::canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, RE
 {
     // If the player is not alive, return.
     if (!helper_->aliveCheck())
-    {
         return;
-    }
 
     // Calculate the rubber factor.
     helper_->rubberData->calculate();

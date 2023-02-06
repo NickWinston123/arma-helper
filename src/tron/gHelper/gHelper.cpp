@@ -11,6 +11,7 @@
 extern REAL sg_cycleBrakeDeplete;
 
 using namespace helperConfig;
+
 //HUD ITEMS
 gHelperHudItemRef<bool> sg_helperSmartTurningH("Smart Turning",sg_helperSmartTurning);
 gHelperHudItemRef<bool> sg_pathHelperH("Path Helper",sg_pathHelper);
@@ -147,6 +148,8 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     closestEnemyH << (enemy->Player()->GetColoredName());
 
+    // canCutUs: Can the enemy either turn left or right and over turn our cycle? or continue to drive in their current direction and cut our cycle
+    // canCutEnemy: Can the owner turn left or right and over turn the enemy? or continue to drive forward in our current direction and cut the enemy cycle
     bool canCutUs, canCutEnemy;
 
     // Get the position and direction of the enemy cycle
@@ -163,9 +166,19 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // Get the speed of our cycle
     REAL ourSpeed = *ownerSpeed;
 
-    // Transform our position and direction to be relative to the enemy cycle
+    // enemyPos - ourPos: enemy now becomes the center of our coordinate system at (0,0)
     eCoord relEnemyPos = enemyPos - ourPos;
+    // Transform relative position relative to direction of our cycle
     relEnemyPos = relEnemyPos.Turn(ourDir.Conj()).Turn(LEFT);
+
+    /*
+    Now our transformed relative coordinate system:
+    .x: How far left / right
+    .y: How far up / down
+    */
+
+    // Goal: Exploit symmetry along the x axis, put enemy on the right side of 
+    // our relative coordinate system ( so .x > 0 )
 
     // Check if the enemy is facing opposite direction of ours
     bool oppositeDirectionofEnemy = directionsAreClose(enemyDir, ourDir.Turn(LEFT).Turn(LEFT), 0.001);
@@ -208,7 +221,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // consider his ping and our reaction time
 
     // Calculate the enemy's distance with consideration of its lag and our reaction time
-    REAL enemydist = enemy->Lag();// * enemySpeed;
+    REAL enemydist = enemy->Lag();
 
     enemydist += sg_helperDetectCutReact * enemySpeed;
 
@@ -245,8 +258,6 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     {
         gHelperUtility::debugLine(gRealColor(.4, .4, .4), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
     }
-
-     //detectCutdebugH << (debug);
 }
 
 
@@ -254,10 +265,8 @@ void gHelper::autoBrake()
 {
     // Check if the cycle is still alive
     if (!aliveCheck())
-    {
         return;
-    }
-
+    
     // Get the current used braking percentage of the cycle ( always out of 1 )
     REAL brakeUsagePercent = owner_->GetBrakingReservoir();
 
@@ -290,9 +299,8 @@ void gHelper::enemyTracers(gHelperData & data, int detectionRange, REAL timeout)
 {
     // If the player is not alive, return from the function
     if (!aliveCheck())
-    {
         return;
-    }
+
     // Iterate over all enemies
     for (auto enemy = enemies.allEnemies.begin(); enemy != enemies.allEnemies.end(); ++enemy)
     {
@@ -300,16 +308,14 @@ void gHelper::enemyTracers(gHelperData & data, int detectionRange, REAL timeout)
         gCycle *other = *enemy;
         // If the enemy doesn't exist, skip to the next iteration
         if (!enemies.exist(other))
-        {
             continue;
-        }
 
         // Get the position of the enemy cycle
         eCoord enemyPos = other->Position();
         // Initialize RGB values for the tracer color
         REAL R = .1, G = .1, B = 0;
         // Check if the enemy is close to the player
-        bool isClose = smartTurning->isClose(enemyPos, detectionRange + data.turnSpeedFactorF());
+        bool isClose = gHelperUtility::isClose(owner_, enemyPos, detectionRange + data.turnSpeedFactorF());
         // Check if the enemy cycle is faster than the player cycle
         bool enemyFaster = ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
         // Check if the enemy cycle is a teammate
@@ -354,9 +360,8 @@ void gHelper::enemyTracers(gHelperData & data, int detectionRange, REAL timeout)
 void gHelper::showTail(gHelperData & data)
 {
     if (!aliveCheck() || owner_->tailMoving != true)
-    {
         return;
-    }
+
 
     REAL timeout = sg_helperShowTailTimeout * data.speedFactorF();
 
@@ -384,9 +389,8 @@ void gHelper::showEnemyTail(gHelperData & data)
 {
     // return if the current cycle is not alive
     if (!aliveCheck())
-    {
         return;
-    }
+
     // variables to store the distance to the tail and timeout
     REAL distanceToTail, timeout;
 
@@ -465,7 +469,7 @@ void gHelper::findCorners(gHelperData & data)
     rightCorner.findCorner(data, data.sensors.getSensor(RIGHT),this);
 }
 
-// Function: showCorner
+// Function: showCornergHelperUtiltiy::
 // Purpose: Visualizes the corner information.
 // Input: data - A reference to the gHelperData object containing all necessary data for the helper.
 //        corner - The corner information to be visualized.
@@ -479,7 +483,7 @@ void gHelper::showCorner(gHelperData & data, gSmartTurningCornerData & corner, R
         // Calculate the timeout based on speed factor
         timeout = data.speedFactorF() * sg_helperShowCornersTimeout;
         // Check if the corner is close to the vehicle
-        bool isClose = smartTurning->isClose(corner.currentPos, sg_helperShowCornersBoundary);
+        bool isClose = gHelperUtility::isClose(owner_, corner.currentPos, sg_helperShowCornersBoundary);
         // If the corner is close, visualize the corner
         if (isClose)
         {
@@ -496,9 +500,8 @@ void gHelper::showCorners(gHelperData & data)
 {
     // Check if the vehicle is alive and has a grid
     if (!aliveCheck())
-    {
         return;
-    }
+
     // Calculate the timeout based on speed factor
     REAL timeout = data.speedFactorF() * sg_helperShowCornersTimeout;
     // Find the corners
@@ -523,9 +526,8 @@ void gHelper::showHit(gHelperData & data)
 {
     // check if the owner is alive and driving straight
     if (!aliveCheck() || !drivingStraight())
-    {
         return;
-    }
+
 
     // get the front hit distance and check if it's close to the wall
     REAL frontHit = data.sensors.getSensor(FRONT)->hit;
@@ -539,9 +541,7 @@ void gHelper::showHit(gHelperData & data)
 
     // return if the wall is not close
     if (!wallClose)
-    {
         return;
-    }
 
     // get the front before hit position
     eCoord frontBeforeHit = data.sensors.getSensor(FRONT)->before_hit;
@@ -619,16 +619,15 @@ bool gHelper::aliveCheck()
 
 void gHelper::Activate()
 {
+    if (!aliveCheck())
+        return;
+
     REAL start = tRealSysTimeFloat();
     ownerPosH << roundeCoord(*ownerPos);
     ownerDirH << roundeCoord(*ownerDir);
     tailPosH << roundeCoord(owner_->tailPos);
     tailDirH << roundeCoord(owner_->tailDir);
 
-    if (!aliveCheck())
-    {
-        return;
-    }
     owner_->localCurrentTime = se_GameTime();
 
     enemies.detectEnemies();

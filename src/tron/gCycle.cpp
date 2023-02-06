@@ -2836,8 +2836,9 @@ bool gCycle::Timestep(REAL currentTime){
     }
     // no targets are given
     else if ( !currentDestination && pendingTurns.empty() )
-    {
-        bool activateChatbotForThisPlayer = bool(player) ? tIsInList(sg_chatBotEnabledForPlayers, player->pID+1) : false;
+    {   
+        bool chatFlagHackEnabled = se_toggleChatFlagAlways || se_toggleChatFlag;
+        bool activateChatbotForThisPlayer = bool(player) ? tIsInList(sg_chatBotEnabledForPlayers, player->pID+1) && !chatFlagHackEnabled : false;
         // chatting? activate chatbot
         if (playerIsMe &&
         ( ( activateChatbotForThisPlayer && sg_chatBotAlwaysActive ) ||
@@ -5725,6 +5726,10 @@ gCycle::gCycle(nMessage &m)
     m >> color_.r;
     m >> color_.g;
     m >> color_.b;
+
+    con << "gCycle m COLOR R " << color_.r << "\n";
+    con << "gCycle m COLOR G" << color_.b << "\n";
+    con << "gCycle m COLOR B " << color_.b << "\n";
 
     trailColor_ = color_;
 

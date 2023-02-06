@@ -5415,16 +5415,16 @@ public:
     }
 };
 
-static bool se_toggleChatFlag = false;
+bool se_toggleChatFlag = false;
 static tConfItem<bool> se_toggleChatFlagConf("CHAT_FLAG_TOGGLE", se_toggleChatFlag);
 
 tString se_toggleChatFlagEnabledPlayers("1,2,3,4");
 static tConfItem<tString> se_toggleChatFlagEnabledPlayersConf( "CHAT_FLAG_TOGGLE_ENABLED_PLAYERS", se_toggleChatFlagEnabledPlayers );
 
-static bool se_toggleChatFlagAlways = false;
+bool se_toggleChatFlagAlways = false;
 static tConfItem<bool> se_toggleChatFlagAlwaysConf("CHAT_FLAG_ALWAYS", se_toggleChatFlagAlways);
 
-static bool se_BlockChatFlags = false;
+bool se_BlockChatFlags = false;
 static tConfItem<bool> se_BlockChatFlagsConf("CHAT_FLAG_BLOCK", se_BlockChatFlags);
 
 void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
@@ -7632,6 +7632,10 @@ void ePlayerNetID::ReadSync(nMessage &m)
 
     nNetObject::ReadSync(m);
 
+    // con << "ePlayerNetID ReadSync COLOR R " << r << "\n";
+    // con << "ePlayerNetID ReadSync COLOR G" << b << "\n";
+    // con << "ePlayerNetID ReadSync COLOR B " << b << "\n";
+    // con << "\n";
     m.Read(r);
     m.Read(g);
     m.Read(b);
@@ -8765,65 +8769,76 @@ static void se_UniqueColor( ePlayer * l, ePlayerNetID * p )
     }
 }
 
-void getRainbowRGB(int iteration, int max, REAL &r,REAL &g,REAL &b)
-{
+void getRainbowRGB(int iteration, int max, gRealColor &color) {
     float inc = 6.0 / max;
-    float x = iteration * inc;
-    r = 0.0f;
-    g = 0.0f;
-    b = 0.0f;
-    if ((0 <= x && x <= 1) || (5 <= x && x <= 6))
-        r = 1.0f;
-    else if (4 <= x && x <= 5)
-        r = x - 4;
-    else if (1 <= x && x <= 2)
-        r = 1.0f - (x - 1);
-    if (1 <= x && x <= 3)
-        g = 1.0f;
-    else if (0 <= x && x <= 1)
-        g = x - 0;
-    else if (3 <= x && x <= 4)
-        g = 1.0f - (x - 3);
-    if (3 <= x && x <= 5)
-        b = 1.0f;
-    else if (2 <= x && x <= 3)
-        b = x - 2;
-    else if (5 <= x && x <= 6) {
-        b = 1.0f - (x - 5);
-    }
-    r *= 15;
-    b *= 15;
-    g *= 15;
-}
+    float x = fmod(iteration * inc, 6);
+    color.r = color.g = color.b = 0.0f;
 
+    switch ((int)x) {
+        case 0:
+            color.r = 1.0f;
+            color.g = x;
+            break;
+        case 1:
+            color.r = 1.0f - (x - 1);
+            color.g = 1.0f;
+            break;
+        case 2:
+            color.g = 1.0f;
+            color.b = x - 2;
+            break;
+        case 3:
+            color.g = 1.0f - (x - 3);
+            color.b = 1.0f;
+            break;
+        case 4:
+            color.r = x - 4;
+            color.b = 1.0f;
+            break;
+        case 5:
+            color.r = 1.0f;
+            color.b = 1.0f - (x - 5);
+            break;
+        default:
+            break;
+    }
+
+    color.r *= 15;
+    color.g *= 15;
+    color.b *= 15;
+}
 static int se_RandomizeColorRainbowMaxRange = 180;
 static tConfItem<int> se_RandomizeColorRainbowMaxRangeConf("PLAYER_RANDOM_COLOR_RAINBOW_MAX", se_RandomizeColorRainbowMaxRange);
 
 int rainbowIteration = 0;
 bool countUp = true;
-static void se_rainbowColor( ePlayer * l )
+
+static void se_rainbowColor(ePlayer *l)
 {
-    if (rainbowIteration >= se_RandomizeColorRainbowMaxRange) {
-        countUp = false;
-    }
-
-    if (rainbowIteration <= 0) {
-        countUp = true;
-    }
-
-    REAL r = 0, g = 0, b = 0;
-
-    getRainbowRGB(rainbowIteration,se_RandomizeColorRainbowMaxRange,r,g,b);
-
-    l->rgb[0] = r;
-    l->rgb[1] = g;
-    l->rgb[2] = b;
-
-    if (countUp) {
+    if (countUp)
+    {
         rainbowIteration++;
-    } else {
-        rainbowIteration--;
+        if (rainbowIteration >= se_RandomizeColorRainbowMaxRange)
+        {
+            countUp = false;
+            rainbowIteration = se_RandomizeColorRainbowMaxRange - 1;
+        }
     }
+    else
+    {
+        rainbowIteration--;
+        if (rainbowIteration <= 0)
+        {
+            countUp = true;
+            rainbowIteration = 0;
+        }
+    }
+    gRealColor color;
+    getRainbowRGB(rainbowIteration, se_RandomizeColorRainbowMaxRange, color);
+
+    l->rgb[0] = color.r;
+    l->rgb[1] = color.g;
+    l->rgb[2] = color.b;
 }
 
 //Gather all the rgb colors and put them in a nice list.
@@ -9514,10 +9529,10 @@ void ePlayerNetID::Update()
             ePlayer *local_p=ePlayer::PlayerConfig(i);
             tASSERT(local_p);
             tCONTROLLED_PTR(ePlayerNetID) &p=local_p->netPlayer;
-            bool in_game=ePlayer::PlayerIsInGame(i) || 
+            bool in_game=ePlayer::PlayerIsInGame(i) ||
             (local_p && local_p->ID() != 0 && (i <= (se_createPlayers) || (se_createPlayersSpecific >= 1 && i == se_createPlayersSpecific-1)));
 
-            
+
 
             if (!se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
             {
@@ -9548,21 +9563,25 @@ void ePlayerNetID::Update()
             if (bool(p) && in_game)  // update
             {
 
-                if (se_forceTeamname) {
-                    p->Chat(tString( "/teamname" ));
+                if (se_forceTeamname && sn_GetNetState() == nCLIENT &&
+                    (sn_Connections[0].version.Max() == 18 ||
+                     sn_Connections[0].version.Max() == 22))
+                {
+
+                    p->Chat(tString("/teamname"));
                 }
 
                 if (se_toggleChatFlag) {
-                    bool toggleThisPlayersChatFlag =  tIsInList(se_toggleChatFlagEnabledPlayers, p->pID+1);
-                    if (toggleThisPlayersChatFlag) {
-                    p->SetChatting( ePlayerNetID::ChatFlags_Chat, !p->IsChatting());
+                    //toggle This Players ChatFlag?
+                    if (tIsInList(se_toggleChatFlagEnabledPlayers, p->pID+1)) {
+                        p->SetChatting( ePlayerNetID::ChatFlags_Chat, !p->IsChatting());
                     }
                 }
 
                 if (se_toggleChatFlagAlways) {
                     p->SetChatting( ePlayerNetID::ChatFlags_Chat, true );
                 }
-                
+
                 p->favoriteNumberOfPlayersPerTeam=ePlayer::PlayerConfig(i)->favoriteNumberOfPlayersPerTeam;
                 p->nameTeamAfterMe=ePlayer::PlayerConfig(i)->nameTeamAfterMe;
 
@@ -10645,7 +10664,9 @@ void ePlayerNetID::Color( REAL&a_r, REAL&a_g, REAL&a_b ) const
         int r = this->r;
         int g = this->g;
         int b = this->b;
-
+    // con << "ePlayerNetID COLOR R " << this->r << "\n";
+    // con << "ePlayerNetID COLOR G " << this->b << "\n";
+    // con << "ePlayerNetID COLOR B " << this->b << "\n";
         // don't tolerate color overflow in a real team
         if ( currentTeam->NumPlayers() > 1 )
         {
@@ -10667,6 +10688,10 @@ void ePlayerNetID::Color( REAL&a_r, REAL&a_g, REAL&a_b ) const
         a_g = g/15.0;
         a_b = b/15.0;
     }
+    // con << "ePlayerNetID COLOR NEW R " << a_r << "\n";
+    // con << "ePlayerNetID COLOR NEW G " << a_b << "\n";
+    // con << "ePlayerNetID COLOR NEW B " << a_b << "\n";
+    // con << "\n";
 }
 
 void ePlayerNetID::TrailColor( REAL&a_r, REAL&a_g, REAL&a_b ) const

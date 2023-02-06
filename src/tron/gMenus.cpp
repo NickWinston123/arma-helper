@@ -963,6 +963,9 @@ public:
 uMenuItem::RenderBackground();
 if (!sr_glOut)
     return;
+
+ePlayerNetID *me = se_GetLocalPlayer();
+
 REAL r = rgb[0]/15.0;
 REAL g = rgb[1]/15.0;
 REAL b = rgb[2]/15.0;
@@ -972,12 +975,13 @@ glColor3f(r, g, b);
 glRectf(.8,-.8,.98,-.98);
 
 int rgb1[3];
-rgb1[0] = r > 15 ? 15 - r : 15;
-rgb1[1] = g > 15 ? 15 - g : 15;
-rgb1[2] = b > 15 ? 15 - b : 15;
-REAL r1 = rgb1[0]/15.0;
-REAL g1 = rgb1[1]/15.0;
-REAL b1 = rgb1[2]/15.0;
+// rgb1[0] = r > 15 ? 15 - r : 15;
+// rgb1[1] = g > 15 ? 15 - g : 15;
+// rgb1[2] = b > 15 ? 15 - b : 15;
+REAL r1 = rgb[0]/15.0;
+REAL g1 = rgb[1]/15.0;
+REAL b1 = rgb[2]/15.0;
+me->Color(r1,g1,b1);
 se_MakeColorValid(r1, g1, b1, 1.0f);
 glColor3f(r1, g1, b1);
 glRectf(.66,-.8,.84,-.98);
@@ -985,7 +989,8 @@ glRectf(.66,-.8,.84,-.98);
 REAL r2 = rgb[0]/15.0;
 REAL g2 = rgb[1]/15.0;
 REAL b2 = rgb[2]/15.0;
-se_MakeColorValid(r2, g2, b2, 1.0f);
+me->TrailColor(r2,g2,b2);
+se_MakeColorValid(r2, g2, b2, .5f);
 glColor3f(r2, g2, b2);
 glRectf(.48,-.8,.66,-.98);
 

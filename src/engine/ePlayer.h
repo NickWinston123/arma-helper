@@ -55,6 +55,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <utility>
 #include "eChat.h"
 
+extern bool se_toggleChatFlag, se_toggleChatFlagAlways, se_BlockChatFlags;
 
 #define PLAYER_CONFITEMS (30+MAX_INSTANT_CHAT)
 

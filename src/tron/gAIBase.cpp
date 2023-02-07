@@ -247,7 +247,7 @@ void gAITeam::BalanceWithAIs(bool balanceWithAIs)
                 for ( j=t->NumPlayers()-1; j>=0; --j )
                 {
                     gAIPlayer* player = dynamic_cast<gAIPlayer*>( t->Player( j ) );
-                    if ( player && !player->IsHuman() && ( !throwOut || !throwOut->Character() || !player->Character() || throwOut->Character()->iq > player->Character()->iq ) )
+                    if ( player && !player->helperAI && !player->IsHuman() && ( !throwOut || !throwOut->Character() || !player->Character() || throwOut->Character()->iq > player->Character()->iq ) )
                     {
                         throwOut = player;
                     }
@@ -3197,19 +3197,20 @@ void gAIPlayer::Timestep(REAL time){
         con << "NO CHARACTER!\n";
         return;
     }
-    // character = new gAICharacter();
 
-    // for (int i=0; i < 13; i++)
-    // {
-    //     character->properties[i] = 10;
-    //     character->iq += 100;
-    // }
+    if (helperAI) { // when our turning distrupts its waiting time
+        if (owner_->lastBotTurnTime < owner_->lastTurnTime) {
+            nextTime = 0;
+        }
+    }
+
     // tColoredString debug;
     // debug << "helperAI time " << time << "\n";
     // debug << "should quit? " << bool( Object() && Object()->LastTime() < time - EPS ) << "\n";
     // debug << Object()->LastTime() << " < " << time << " - " << EPS << " (" << time-EPS << ")" << "\n";
+    // debug << "Activate ? " << (bool(Object() && Object()->LastTime() < time - EPS) == false) << "\n";
     // con << debug;
-    // con << "Activate ? " << (bool(Object() && Object()->LastTime() < time - EPS) == false) << "\n";
+    
     // don't think if the object is not up to date
     if ( Object() && Object()->LastTime() < time - EPS )
         return;
@@ -3428,34 +3429,45 @@ gAIPlayer::gAIPlayer(gHelper *helper, gCycle *cycle)
       log(NULL),
       helperAI(true)
 {
-        character->iq = 1000;
+    character->iq = 1000;
 
-        ClearTarget();
-        traceSide = 1;
-        freeSide = 0;
-        log = NULL;
+    ClearTarget();
+    traceSide = 1;
+    freeSide = 0;
+    log = NULL;
 
-        route_.clear();
-        lastCoord_ = 0;
-        targetCurrentFace_ = 0;
+    route_.clear();
+    lastCoord_ = 0;
+    targetCurrentFace_ = 0;
 
-        lastTime = 0;
-        lastPath = 0;
-        lastChangeAttempt = 0;
-        lazySideChange = 0;
-        path.Clear();
+    lastTime = 0;
+    lastPath = 0;
+    lastChangeAttempt = 0;
+    lazySideChange = 0;
+    path.Clear();
 
-        character->properties[AI_REACTION] = 10;
-        character->properties[AI_EMERGENCY] = 5;
-        character->properties[AI_RANGE] = 500;
-        character->properties[AI_STATE_TRACE] = 5;
-        character->properties[AI_STATE_CLOSECOMBAT] = 20;
-        character->properties[AI_STATE_PATH] = 10;
-        character->properties[AI_LOOP] = 4;
-        character->properties[AI_ENEMY] = 10;
-        character->properties[AI_TUNNEL] = 3;
-        character->properties[AI_DETECTTRACE] = 7;
-        character->properties[AI_STATECHANGE] = 6;
+    character->properties[AI_REACTION] = 10;
+    character->properties[AI_EMERGENCY] = 5;
+    character->properties[AI_RANGE] = 500;
+    character->properties[AI_STATE_TRACE] = 5;
+    character->properties[AI_STATE_CLOSECOMBAT] = 20;
+    character->properties[AI_STATE_PATH] = 10;
+    character->properties[AI_LOOP] = 4;
+    character->properties[AI_ENEMY] = 10;
+    character->properties[AI_TUNNEL] = 3;
+    character->properties[AI_DETECTTRACE] = 7;
+    character->properties[AI_STATECHANGE] = 6;
 
-        gHelperUtility::Debug("gAIPlayer", "Activating AI", "");
+    gHelperUtility::Debug("gAIPlayer", "Activating AI", "");
+}
+
+gAIPlayer &gAIPlayer::Get(gHelper * helper, gCycle * cycle)
+{
+    tASSERT(cycle);
+
+    // create
+    if (helper->aiPlayer.get() == 0)
+        helper->aiPlayer.reset(new gAIPlayer(helper,cycle));
+
+    return *helper->aiPlayer;
 }

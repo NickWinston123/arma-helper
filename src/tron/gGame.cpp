@@ -5625,15 +5625,11 @@ bool gGame::GameLoop(bool input){
         //    else if (lastTime_gameloop>gtime+10)
         // lastTime_gameloop=gtime;
 
-
-        if (helperConfig::sg_helperAI) {
-            for(int i=se_PlayerNetIDs.Len()-1;i>=0;i--)
+        if (helperConfig::sg_helperAI)
+        {
+            if (HelperAI_Global && HelperAI_Global->Alive())
             {
-                gAIPlayer *ai = dynamic_cast<gAIPlayer*>(se_PlayerNetIDs(i));
-                if (ai && ai->helperAI) {
-                    ai->Timestep(gtime + helperConfig::sg_helperAITime);
-                    break;
-                }
+                HelperAI_Global->Timestep(gtime + helperConfig::sg_helperAITime);
             }
         }
 

@@ -419,7 +419,7 @@ class Sensor: public gSensor
                     throw;
             }
         }
-        
+
         bool DoExtraDetectionStuff()
         {
             // move towards the beginning of a wall
@@ -5725,9 +5725,9 @@ gCycle::gCycle(nMessage &m)
     m >> color_.g;
     m >> color_.b;
 
-    con << "gCycle m COLOR R " << color_.r << "\n";
-    con << "gCycle m COLOR G" << color_.b << "\n";
-    con << "gCycle m COLOR B " << color_.b << "\n";
+    // con << "gCycle m COLOR R " << color_.r << "\n";
+    // con << "gCycle m COLOR G" << color_.b << "\n";
+    // con << "gCycle m COLOR B " << color_.b << "\n";
 
     trailColor_ = color_;
 

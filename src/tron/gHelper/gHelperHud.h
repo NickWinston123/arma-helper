@@ -25,6 +25,7 @@ public:
     gHelperHudBase(int id_, std::string label_, std::string parent = "");
 
     virtual std::string getLabel() { return label; }
+    virtual tString getLabelStr() { return tString(label); }
     virtual std::string getParent() { return parent;}
     virtual tString getValue() { return tString("Default"); };
     virtual tString getLastValue() { return tString("Default"); }

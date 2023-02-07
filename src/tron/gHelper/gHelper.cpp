@@ -3,13 +3,13 @@
 #include "../gSensor.h"
 
 #include "../gAIBase.h"
-
+#include "gHelperVar.h"
 #include "gHelperHud.h"
 #include "gHelperUtilities.h"
 #include "specialized/gSmartTurning.h"
 
 extern REAL sg_cycleBrakeDeplete;
-
+gAIPlayer* HelperAI_Global = NULL;
 using namespace helperConfig;
 
 //HUD ITEMS
@@ -177,7 +177,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     .y: How far up / down
     */
 
-    // Goal: Exploit symmetry along the x axis, put enemy on the right side of 
+    // Goal: Exploit symmetry along the x axis, put enemy on the right side of
     // our relative coordinate system ( so .x > 0 )
 
     // Check if the enemy is facing opposite direction of ours
@@ -266,7 +266,7 @@ void gHelper::autoBrake()
     // Check if the cycle is still alive
     if (!aliveCheck())
         return;
-    
+
     // Get the current used braking percentage of the cycle ( always out of 1 )
     REAL brakeUsagePercent = owner_->GetBrakingReservoir();
 
@@ -673,8 +673,11 @@ void gHelper::Activate()
         if (!aiCreated)
         {
             gHelperUtility::Debug("sg_helperAI", "Creating AI", "");
-            aiPlayer = new gAIPlayer(this, owner_);
+            gAIPlayer::Get(this,owner_);
+            HelperAI_Global = aiPlayer.get();
             aiCreated = true;
+        } else if (!HelperAI_Global) {
+            HelperAI_Global = aiPlayer.get();
         }
     }
     REAL time = tRealSysTimeFloat() - start;

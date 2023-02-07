@@ -12,7 +12,6 @@ public:
     // constructor to create an instance of gSmartTurning with a helper and an owner cycle
     gSmartTurning(gHelper *helper, gCycle *owner);
 
-
     // function to make the cycle survive by determining which turns are possible and blocking if required
     void smartTurningSurvive(gHelperData &data);
 

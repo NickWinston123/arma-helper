@@ -64,6 +64,7 @@ class gAIPlayer: public ePlayerNetID{
     tReproducibleRandomizer randomizer_;
 public:
     gAIPlayer(gHelper *helper, gCycle *cycle);
+    static gAIPlayer &Get(gHelper *helper, gCycle *cycle);
     gAICharacter*           character; // our specification of abilities
 
     // for all offensive modes:
@@ -238,6 +239,10 @@ public:
         return false;
     }
 };
+
+
+
+extern tList<gAIPlayer> sg_HelperAI;
 
 static tReferenceHolder< gAIPlayer > sg_AIReferences;
 

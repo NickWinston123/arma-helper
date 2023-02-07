@@ -2,6 +2,7 @@
 #define ArmageTron_HELPER_H
 
 #include "../gStuff.h"
+
 #include "tString.h"
 
 #include "gHelperVar.h"
@@ -13,6 +14,7 @@
 #include "specialized/gTailHelper.h"
 
 class gAIPlayer;
+extern gAIPlayer* HelperAI_Global;  
 
 class gHelper {
     friend class gCycle;
@@ -30,13 +32,6 @@ class gHelper {
          */
         gHelper(gCycle *owner);
 
-        // function to get the instance of gSmartTurning
-        static gHelper &Get(gCycle *owner);
-
-        /**
-         * Activates the helper, setting up necessary data and pointers.
-         */
-        void Activate();
 
         /**
          * Returns the current time.
@@ -170,6 +165,15 @@ class gHelper {
          */
         eCoord closestCorner(eCoord center, REAL radius);
 
+
+        /**
+         * Activates the helper, setting up necessary data and pointers.
+         */
+        void Activate();
+
+        // function to get the instance of gHelper
+        static gHelper &Get(gCycle *owner);
+
         /**
          * Destructor for gHelper
          */
@@ -182,8 +186,6 @@ class gHelper {
         // Pointer to the player ePlayerNetID object
         ePlayerNetID *player_;
 
-        // Pointer to the AI player gAIPlayer object
-        gAIPlayer *aiPlayer;
 
         // Boolean flag indicating if the AI player was created
         bool aiCreated;
@@ -233,6 +235,9 @@ class gHelper {
         // Pointer to the gHelperRubberData object
         gHelperRubberData * rubberData;
 
+        // Pointer to the AI player gAIPlayer object
+        std::unique_ptr< gAIPlayer > aiPlayer;       
+        
         // emergency turn object
         std::unique_ptr< gTurnHelper > turnHelper;
 

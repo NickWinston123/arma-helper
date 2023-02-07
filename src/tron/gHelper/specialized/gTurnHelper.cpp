@@ -126,7 +126,7 @@ bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceF
 {
     // compareFactor is the value that the gap distance should be compared to
     REAL compareFactor;
-
+    REAL *hit = &data.sensors.getSensor(dir)->hit;
     // If spaceFactor > 0, it's used as the compareFactor
     if (spaceFactor > 0)
     {
@@ -140,12 +140,8 @@ bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceF
         compareFactor = helper_->rubberData->rubberFactor;
     }
 
-    // If the direction is LEFT, return whether the gap distance is greater than compareFactor
-    if (dir == LEFT)
-        return data.sensors.getSensor(LEFT)->hit > compareFactor;
-    // If the direction is RIGHT, return whether the gap distance is greater than compareFactor
-    else if (dir == RIGHT)
-        return data.sensors.getSensor(RIGHT)->hit > compareFactor;
+    // return whether the hit distance is greater than compareFactor
+    return *hit > compareFactor;
 }
 
 bool gTurnHelper::makeTurnIfPossible(int dir, REAL spaceFactor)

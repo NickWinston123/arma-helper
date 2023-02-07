@@ -58,6 +58,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../tron/gCycle.h"
 #include "../tron/gZone.h"
 #include "../tron/gGame.h"
+#include "../tron/gHelper/gHelperUtilities.h""
 #include "eGrid.h"
 #include <time.h>
 #include <climits>
@@ -5867,6 +5868,12 @@ static tConfItem<bool> se_disableCreateHardConf("DISABLE_CREATE_HARD", se_disabl
 
 ePlayerNetID::ePlayerNetID(int p):nNetObject(),listID(-1), teamListID(-1), timeCreated_( tSysTimeFloat() ), allowTeamChange_(false), registeredMachine_(0), pID(p)
 {
+
+    if (p < 0)  {
+        gHelperUtility::Debug("ePlayerNetID", "ePlayerNetID ID < 0. Ignoring, Probably local AI. ID:", p);
+        return;
+    }
+    
     flagOverrideChat = false;
     flagChatState = false;
 
@@ -5912,7 +5919,7 @@ ePlayerNetID::ePlayerNetID(int p):nNetObject(),listID(-1), teamListID(-1), timeC
         }
     }
 
-    se_PlayerNetIDs.Add(this,listID);
+    se_PlayerNetIDs.Add(this,listID);    
     object=NULL;
 
     gRacePlayer *racePlayer = new gRacePlayer(this);

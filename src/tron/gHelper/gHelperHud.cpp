@@ -5,7 +5,7 @@
 #include "nConfig.h"
 #include "tString.h"
 #include <vector>
-// HELPER HUD
+#include <map>
 
 namespace helperConfig {
 bool sg_helperHud = false; // Helper Hud
@@ -45,7 +45,6 @@ gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
     parent = parent_;
 }
 
-#include <map>
 void gHelperHudBase::Render() {
     if (!sg_helperHud)
         return;
@@ -56,17 +55,21 @@ void gHelperHudBase::Render() {
     // First, populate the hudMap with all items and their parent relationships
     for (auto iter = items.begin(); iter != items.end(); iter++) {
         gHelperHudBase *item = iter->second;
+        
         std::string parent = item->getParent();
-        if (tIsInList(sg_helperHudIgnoreList,tString(item->getLabel()))){
+
+        if (tIsInList(sg_helperHudIgnoreList,item->getLabelStr())){
             continue;
         }
 
         if (parent.empty()) {
             parent = "";
         }
+
         if (hudMap.find(parent) == hudMap.end()) {
             hudMap[parent] = std::vector<gHelperHudBase*>();
         }
+
         hudMap[parent].push_back(item);
     }
 

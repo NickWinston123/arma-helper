@@ -24,6 +24,7 @@ namespace helperConfig {
     extern bool sg_helperSensorDiagonalMode ;
 
     extern bool sg_helperDebug ;
+    extern bool sg_helperDebugSpamFilter;
     extern tString sg_helperDebugIgnoreList ;
     extern REAL sg_helperDebugDelay ;
     extern bool sg_helperDebugTimeStamp ;

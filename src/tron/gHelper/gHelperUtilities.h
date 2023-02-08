@@ -41,7 +41,7 @@ class gHelperUtility
         float currentTime = tSysTimeFloat();
         bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < helperConfig::sg_helperDebugDelay;
 
-        if (params->spamProtection && (lastMessageIsSame || delayNotPassed))
+        if (sg_helperDebugSpamFilter && params->spamProtection && (lastMessageIsSame || delayNotPassed))
         {
             return;
         }
@@ -74,7 +74,9 @@ class gHelperUtility
         } else if constexpr (std::is_pointer<T>::value) {
             debugMessage += std::to_string(*value) + "\n";
         } else {
-            debugMessage += std::to_string(value) + "\n";
+            tString str;
+            str << value;
+            debugMessage += (str) + "\n";
         }
         delete params;
         con << debugMessage;
@@ -84,9 +86,9 @@ class gHelperUtility
     static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
     {
         Debug(sender, description, value, new debugParams(false,spamProtection));
-    }   
-    
-    // Required to stop making empty strings printing as 0's 
+    }
+
+    // Required to stop making empty strings printing as 0's
     static void Debug(const std::string &sender, const std::string &description, bool spamProtection = true) {
         Debug(sender, description, "",  new debugParams(true,spamProtection));
     }

@@ -17,6 +17,8 @@ static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_SENSOR_DIAGONAL_M
 
 bool sg_helperDebug = false;
 static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
+bool sg_helperDebugSpamFilter = true;
+static tConfItem<bool> sg_helperDebugSpamFilterConf("HELPER_DEBUG_SPAM_FILTER", sg_helperDebugSpamFilter);
 tString sg_helperDebugIgnoreList = tString("");
 static tConfItem<tString> sg_helperDebugIgnoreListConf("HELPER_DEBUG_IGNORE_LIST", sg_helperDebugIgnoreList);
 REAL sg_helperDebugDelay = 0.15;
@@ -131,13 +133,6 @@ static tConfItem<REAL> se_pathBrightnessC("HELPER_PATH_BRIGHTNESS", se_pathBrigh
 REAL sg_pathHelperUpdateDistance = 1;
 static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
 
-
-
-bool sg_zoneHelper = false;
-static tConfItem<bool> sg_zoneHelperC("HELPER_ZONE", sg_zoneHelper);
-
-bool sg_zoneHelperOwnerOnly = false;
-static tConfItem<bool> sg_zoneHelperOwnerOnlyC("HELPER_ZONE_OWNER_ONLY", sg_zoneHelperOwnerOnly);
 
 bool sg_helperShowCorners = false;
 static tConfItem<bool> sg_helperShowCornersConf("HELPER_SHOW_CORNERS", sg_helperShowCorners);

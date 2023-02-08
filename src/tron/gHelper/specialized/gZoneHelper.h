@@ -5,6 +5,18 @@
 #ifndef ArmageTron_GHELPER_ZONEHELPER
 #define ArmageTron_GHELPER_ZONEHELPER
 
+class gZone;
+
+struct gZoneHitData {
+    eCoord intercept;
+
+    bool hitZone;
+    REAL hit;
+
+    gZoneHitData():hitZone(false) {}
+    gZoneHitData(eCoord intercept_,REAL hit_): hitZone(true), intercept(intercept_), hit(hit_) {}
+};
+
 class gZoneHelper
 {
 public:
@@ -12,10 +24,24 @@ public:
     gZoneHelper(gHelper *helper, gCycle *owner);
     void Activate(gHelperData &data);
 
+    eCoord closestCorner(gZone * zone);
+
+    void zoneTracer(gHelperData &data);
+
+    gZone* findClosestZone(gHelperData &data);
+
+    void showZones(gHelperData &data);
+
+    gZoneHitData* zoneIntersects(int dir, gZone *zone, gHelperData &data);
+
+    void renderSensorHit( gZoneHitData * zoneHit,gHelperData &data);
+    void zoneSensor(gHelperData &data);
+
     static gZoneHelper &Get(gHelper *helper, gCycle *owner);
 
 private:
     gCycle *owner_; // Pointer to the owner cycle
+    gZone *closestZone;
     gHelper *helper_;
 };
 #endif

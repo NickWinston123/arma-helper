@@ -99,35 +99,6 @@ bool gHelper::canSeeTarget(eCoord target, REAL passthrough) {
     return (sensor.hit >= passthrough);
 }
 
-
-// Returns the closest corner of the given center and radius to the owner's position
-// center: the center of the corners
-// radius: the distance from the center to the corners
-// Returns: the closest corner
-eCoord gHelper::closestCorner(eCoord center, REAL radius)
-{
-    // Define the 4 corners
-    eCoord corner[4];
-    corner[0] = eCoord(center.x - (radius), center.y + (radius));
-    corner[1] = eCoord(center.x + (radius), center.y + (radius));
-    corner[2] = eCoord(center.x + (radius), center.y - (radius));
-    corner[3] = eCoord(center.x - (radius), center.y - (radius));
-
-    // Calculate the difference between each corner and the owner's position
-    REAL positionDifference[4];
-    positionDifference[0] = st_GetDifference(corner[0], (*ownerPos));
-    positionDifference[1] = st_GetDifference(corner[1], (*ownerPos));
-    positionDifference[2] = st_GetDifference(corner[2], (*ownerPos));
-    positionDifference[3] = st_GetDifference(corner[3], (*ownerPos));
-
-    // Find the index of the minimum difference
-    int minIndex = std::min_element(positionDifference, positionDifference + 4) - positionDifference;
-
-    // Return the closest corner
-    return corner[minIndex];
-}
-
-
 void gHelper::detectCut(gHelperData &data, int detectionRange)
 {
     // Check if the object is still alive
@@ -144,7 +115,8 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     if (!enemies.exist(enemy))
         return;
 
-    closestEnemyH << (enemy->Player()->GetColoredName());
+    if (sg_helperHud)
+        closestEnemyH << (enemy->Player()->GetColoredName());
 
     // canCutUs: Can the enemy either turn left or right and over turn our cycle? or continue to drive in their current direction and cut our cycle
     // canCutEnemy: Can the owner turn left or right and over turn the enemy? or continue to drive forward in our current direction and cut the enemy cycle
@@ -534,8 +506,9 @@ void gHelper::showHit(gHelperData & data)
     // calculate the timeout value
     REAL timeout = data.speedFactorF() * sg_showHitDataTimeout;
 
+    if (sg_helperHud) 
     // write the front hit distance to the stream
-    sg_helperShowHitFrontDistH << (frontHit);
+        sg_helperShowHitFrontDistH << (frontHit);
 
     // return if the wall is not close
     if (!wallClose)
@@ -620,12 +593,14 @@ void gHelper::Activate()
     if (!aliveCheck())
         return;
 
-    REAL start = tRealSysTimeFloat();
-    ownerPosH << roundeCoord(*ownerPos);
-    ownerDirH << roundeCoord(*ownerDir);
-    tailPosH << roundeCoord(owner_->tailPos);
-    tailDirH << roundeCoord(owner_->tailDir);
-
+    REAL start;
+    if (sg_helperHud) {
+        start = tRealSysTimeFloat();
+        ownerPosH << roundeCoord(*ownerPos);
+        ownerDirH << roundeCoord(*ownerDir);
+        tailPosH << roundeCoord(owner_->tailPos);
+        tailDirH << roundeCoord(owner_->tailDir);
+    }
     owner_->localCurrentTime = se_GameTime();
 
     enemies.detectEnemies();
@@ -676,8 +651,11 @@ void gHelper::Activate()
             aiPlayer->Timestep(se_GameTime() + helperConfig::sg_helperAITime);
         }
     }
-    REAL time = tRealSysTimeFloat() - start;
-    sg_helperActivateTimeH << (time);
+
+    if (sg_helperHud) {
+        REAL time = tRealSysTimeFloat() - start;
+        sg_helperActivateTimeH << (time);
+    }
 
 }
 

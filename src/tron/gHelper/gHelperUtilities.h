@@ -9,6 +9,12 @@
 #ifndef ArmageTron_GHELPER_UTILITIES
 #define ArmageTron_GHELPER_UTILITIES
 
+struct debugParams {
+    bool emptyString;
+    bool spamProtection;
+    debugParams(bool empty, bool spamProtect = true): emptyString(empty), spamProtection(spamProtect) {}
+};
+
 using namespace helperConfig;
 class gHelperUtility
 {
@@ -19,7 +25,7 @@ class gHelperUtility
     static void debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout);
 
     template <typename T>
-    static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
+    static void Debug(const std::string &sender, const std::string &description, T value, debugParams *params)
     {
         if (!helperConfig::sg_helperDebug)
         {
@@ -35,7 +41,7 @@ class gHelperUtility
         float currentTime = tSysTimeFloat();
         bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < helperConfig::sg_helperDebugDelay;
 
-        if (spamProtection && (lastMessageIsSame || delayNotPassed))
+        if (params->spamProtection && (lastMessageIsSame || delayNotPassed))
         {
             return;
         }
@@ -52,20 +58,37 @@ class gHelperUtility
 
         debugMessage += "0xff8888HELPERDEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
 
-        if (spamProtection)
+        if (params->spamProtection)
         {
             lastHelperDebugMessage = description;
         }
 
-        if constexpr (std::is_same<T, std::string>::value) {
-            debugMessage += value + "\n";
+        if (params->emptyString) {
+            debugMessage += "\n";
+        } else if constexpr (std::is_same<T, std::string>::value) {
+            if (value == "") {
+                debugMessage += "\n";
+            } else {
+                debugMessage += value + "\n";
+            }
         } else if constexpr (std::is_pointer<T>::value) {
             debugMessage += std::to_string(*value) + "\n";
         } else {
             debugMessage += std::to_string(value) + "\n";
         }
-
+        delete params;
         con << debugMessage;
+    }
+
+    template <typename T>
+    static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
+    {
+        Debug(sender, description, value, new debugParams(false,spamProtection));
+    }   
+    
+    // Required to stop making empty strings printing as 0's 
+    static void Debug(const std::string &sender, const std::string &description, bool spamProtection = true) {
+        Debug(sender, description, "",  new debugParams(true,spamProtection));
     }
 
     // isClose checks if the distance between the owner cycle's position and the given position

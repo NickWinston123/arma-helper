@@ -584,6 +584,7 @@ gZone::gZone( nMessage & m )
 
 gZone::~gZone( void )
 {
+    HelperTrackedZonesRemover();
     RemoveFromZoneList();
 }
 

@@ -240,10 +240,6 @@ public:
     }
 };
 
-
-
-extern tList<gAIPlayer> sg_HelperAI;
-
 static tReferenceHolder< gAIPlayer > sg_AIReferences;
 
 // the AI team

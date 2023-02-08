@@ -5625,14 +5625,6 @@ bool gGame::GameLoop(bool input){
         //    else if (lastTime_gameloop>gtime+10)
         // lastTime_gameloop=gtime;
 
-        if (helperConfig::sg_helperAI)
-        {
-            if (HelperAI_Global && HelperAI_Global->Alive())
-            {
-                HelperAI_Global->Timestep(gtime + helperConfig::sg_helperAITime);
-            }
-        }
-
         if (sn_GetNetState()!=nCLIENT)
         {
             // simulate IAs

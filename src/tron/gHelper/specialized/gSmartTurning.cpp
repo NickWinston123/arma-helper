@@ -252,7 +252,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     if (!canSurviveLeftTurn && !canSurviveRightTurn)
     {
         if (this->blockTurn != BOTH)
-            gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING BOTH TURNS", "");
+            gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING BOTH TURNS");
 
         this->blockTurn = BOTH;
         return;
@@ -262,7 +262,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     if (!canSurviveLeftTurn)
     {
         if (this->blockTurn != LEFT)
-            gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS", "");
+            gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS");
 
         this->blockTurn = LEFT;
         return;
@@ -272,7 +272,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     if (!canSurviveRightTurn)
     {
         if (this->blockTurn != RIGHT)
-            gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN", "");
+            gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN");
 
         this->blockTurn = RIGHT;
         return;
@@ -284,7 +284,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
             // Store the last blocked turn for smartTurningSurviveTrace before clearing
             owner_->lastBlockedTurn = this->blockTurn;
             
-            gHelperUtility::Debug("SMART TURNING SURVIVE", "UNBLOCKING TURNS", "");
+            gHelperUtility::Debug("SMART TURNING SURVIVE", "UNBLOCKING TURNS");
 
             // Set the blockTurn to NONE to indicate that the player can now turn in either direction.
             this->blockTurn = NONE;

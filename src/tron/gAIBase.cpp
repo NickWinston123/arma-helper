@@ -3212,7 +3212,7 @@ void gAIPlayer::Timestep(REAL time){
     // con << debug;
     
     // don't think if the object is not up to date
-    if ( Object() && Object()->LastTime() < time - EPS )
+    if ( !helperAI && Object() && Object()->LastTime() < time - EPS )
         return;
 
     REAL ts=time-lastTime;
@@ -3457,17 +3457,7 @@ gAIPlayer::gAIPlayer(gHelper *helper, gCycle *cycle)
     character->properties[AI_TUNNEL] = 3;
     character->properties[AI_DETECTTRACE] = 7;
     character->properties[AI_STATECHANGE] = 6;
+    SetName( "HELPER AI" );
 
     gHelperUtility::Debug("gAIPlayer", "Activating AI", "");
-}
-
-gAIPlayer &gAIPlayer::Get(gHelper * helper, gCycle * cycle)
-{
-    tASSERT(cycle);
-
-    // create
-    if (helper->aiPlayer.get() == 0)
-        helper->aiPlayer.reset(new gAIPlayer(helper,cycle));
-
-    return *helper->aiPlayer;
 }

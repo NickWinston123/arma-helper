@@ -14,7 +14,6 @@
 #include "specialized/gTailHelper.h"
 
 class gAIPlayer;
-extern gAIPlayer* HelperAI_Global;  
 
 class gHelper {
     friend class gCycle;
@@ -186,10 +185,6 @@ class gHelper {
         // Pointer to the player ePlayerNetID object
         ePlayerNetID *player_;
 
-
-        // Boolean flag indicating if the AI player was created
-        bool aiCreated;
-
         // Pointer to the closest enemy gCycle object
         gCycle *closestEnemy;
 
@@ -236,7 +231,7 @@ class gHelper {
         gHelperRubberData * rubberData;
 
         // Pointer to the AI player gAIPlayer object
-        std::unique_ptr< gAIPlayer > aiPlayer;       
+        std::shared_ptr< gAIPlayer > aiPlayer;       
         
         // emergency turn object
         std::unique_ptr< gTurnHelper > turnHelper;

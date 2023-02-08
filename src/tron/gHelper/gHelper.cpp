@@ -9,7 +9,6 @@
 #include "specialized/gSmartTurning.h"
 
 extern REAL sg_cycleBrakeDeplete;
-gAIPlayer* HelperAI_Global = NULL;
 using namespace helperConfig;
 
 //HUD ITEMS
@@ -66,7 +65,6 @@ gHelper::gHelper(gCycle *owner)
         data_stored(new gHelperData(sensors_,owner_)),
         rubberData(new gHelperRubberData(this, owner_))
 {
-    aiCreated = false;
     ownerPos = &owner_->pos;
     ownerDir = &owner_->dir;
     tailPos = &owner_->tailPos;
@@ -670,18 +668,17 @@ void gHelper::Activate()
 
     if (sg_helperAI)
     {
-        if (!aiCreated)
+        if (aiPlayer.get() == 0)
         {
             gHelperUtility::Debug("sg_helperAI", "Creating AI", "");
-            gAIPlayer::Get(this,owner_);
-            HelperAI_Global = aiPlayer.get();
-            aiCreated = true;
-        } else if (!HelperAI_Global) {
-            HelperAI_Global = aiPlayer.get();
+            aiPlayer.reset(new gAIPlayer(this,owner_));
+        } else {
+            aiPlayer->Timestep(se_GameTime() + helperConfig::sg_helperAITime);
         }
     }
     REAL time = tRealSysTimeFloat() - start;
     sg_helperActivateTimeH << (time);
+
 }
 
 gHelper &gHelper::Get(gCycle * cycle)

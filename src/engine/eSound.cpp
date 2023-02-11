@@ -397,8 +397,8 @@ void eWavData::Load(){
 
     if (spec.format==AUDIO_S16SYS)
         samples=len>>1;
-    //	else if(spec.format==AUDIO_U8)
-    //		samples=len;
+    	else if(spec.format==AUDIO_U8)
+    		samples=len;
     else
     {
         // prepare error message
@@ -427,7 +427,7 @@ void eWavData::Load(){
         SDL_FreeWAV( data );
         data = cvt.buf;
         spec.format = AUDIO_S16SYS;
-        len    = len * cvt.len_mult;
+        len    = len * cvt.len_ratio;
 
         samples = len >> 1;
     }

@@ -89,6 +89,9 @@ void gZoneHelper::zoneSensor(gHelperData &data)
 
 void gZoneHelper::zoneIntersects(gHelperSensor * sensor) {
     gZone *zone = findClosestZone(sensor->owner_);
+    if (!zone)
+        return;
+        
     eCoord sensorDirection = sensor->Direction();
     eCoord zonePos = zone->Position();
     REAL zoneRadius = zone->GetRadius();

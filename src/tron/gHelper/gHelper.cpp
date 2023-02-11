@@ -69,7 +69,7 @@ gHelper::gHelper(gCycle *owner)
     if (sg_helperAI) {
         aiPlayer.reset(new gAIPlayer(this,owner_));
     }
-    
+
     ownerPos = &owner_->pos;
     ownerDir = &owner_->dir;
     tailPos = &owner_->tailPos;
@@ -220,7 +220,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     canCutUs = relEnemyPos.y * enemySpeed > relEnemyPos.x * ourSpeed; // right ahead of us? (and faster)
     canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed;
-
+    
     if (canCutUs)
     {
         gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
@@ -648,11 +648,8 @@ void gHelper::Activate()
 
     if (sg_helperAI)
     {
-        if (aiPlayer.get() == 0)
+        if (!(aiPlayer.get() == 0)))
         {
-            // gHelperUtility::Debug("sg_helperAI", "Creating AI", "");
-            // aiPlayer.reset(new gAIPlayer(this,owner_));
-        } else {
             aiPlayer->Timestep(se_GameTime() + helperConfig::sg_helperAITime);
         }
     }
@@ -677,9 +674,7 @@ gHelper &gHelper::Get(gCycle * cycle)
 
 gHelper::~gHelper()
 {
-
-delete sensors_;
-delete data_stored;
-delete rubberData;
-
+    delete sensors_;
+    delete data_stored;
+    delete rubberData;
 }

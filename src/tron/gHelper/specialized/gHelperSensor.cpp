@@ -12,7 +12,7 @@ void gHelperSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
         gSensor::PassEdge(ww,time,a,r);
     }
     catch( eSensorFinished & e )
-    {   
+    {
         if (sg_helperSensorsZoneDetection) {
             gZoneHelper::zoneIntersects(this);
         }

@@ -390,7 +390,7 @@ gTurnData* gTurnHelper::getTurn()
     REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
 
     // get extra time we get through rubber usage
-    helper_->rubberData->calculate();
+//    helper_->rubberData->calculate();
     REAL rubberTime = helper_->rubberData->rubberTimeLeft;
     REAL rubberRatio = helper_->rubberData->rubberUsedRatio;
 

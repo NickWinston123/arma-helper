@@ -405,6 +405,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
                         gHelperUtility::Debug("smartTurningFrontBot",
                                            "Turn made: " + std::string(turnData->direction == -1 ? "LEFT" : "RIGHT") + " Reason: " + (turnData->reason), "");
                         turnMade = true;
+                        turnData->noTurns = 0;
                     }
                 }
             } else if (turnData->noTurns > 100) {

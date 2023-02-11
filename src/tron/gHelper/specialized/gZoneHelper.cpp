@@ -69,7 +69,7 @@ void gZoneHelper::renderSensorHit( gZoneHitData * zoneHit,gHelperData &data){
 
 void gZoneHelper::zoneSensor(gHelperData &data)
 {
-    gZone *zone = findClosestZone(data);
+    gZone *zone = findClosestZone();
 
     if (!zone)
         return;
@@ -86,6 +86,40 @@ void gZoneHelper::zoneSensor(gHelperData &data)
     delete zoneHit;
 
 }
+
+void gZoneHelper::zoneIntersects(gHelperSensor * sensor) {
+    gZone *zone = findClosestZone(sensor->owner_);
+    eCoord sensorDirection = sensor->Direction();
+    eCoord zonePos = zone->Position();
+    REAL zoneRadius = zone->GetRadius();
+    eCoord toZone = zonePos - sensor->start_;
+    eCoord sensorDir = sensor->direction_;
+
+    REAL projection = toZone.Dot(sensorDirection) / sensorDirection.Norm();
+    eCoord nearestPoint = sensor->start_ + sensorDirection.GetNormalized() * projection;
+    REAL distanceToCenter = (nearestPoint - zonePos).Norm();
+
+    if (distanceToCenter > zoneRadius)
+    {
+        return;
+    }
+
+    // Check if the nearest point is inside the circle
+    if (distanceToCenter < zoneRadius)
+    {
+        sensor->before_hit = nearestPoint;
+        sensor->hit = (nearestPoint-sensor->start_).Norm();
+        return;
+    }
+
+    // Check if the nearest point is on the circle
+    eCoord toIntercept = (nearestPoint - zonePos).GetNormalized() * sqrt(zoneRadius * zoneRadius - distanceToCenter * distanceToCenter);
+    eCoord intercept = nearestPoint + toIntercept;
+    sensor->before_hit = intercept;
+    sensor->hit = (nearestPoint-sensor->start_).Norm();
+
+}
+
 gZoneHitData *gZoneHelper::zoneIntersects(int dir, gZone *zone,gHelperData &data)
 {
 
@@ -150,7 +184,7 @@ eCoord gZoneHelper::closestCorner(gZone * zone)
 
 void gZoneHelper::zoneTracer(gHelperData &data)
 {
-    gZone * zone = findClosestZone(data);
+    gZone * zone = findClosestZone();
     if (!zone)
         return;
 
@@ -160,7 +194,25 @@ void gZoneHelper::zoneTracer(gHelperData &data)
                                 owner_->Position(), closestCorner(zone), sg_helperZoneTracerBrightness);
 }
 
-gZone* gZoneHelper::findClosestZone(gHelperData &data)
+gZone* gZoneHelper::findClosestZone(eGameObject * owner_)
+{
+    gZone* closestZone = nullptr;
+    REAL closestZoneDistanceSquared = 999999999;
+    for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
+    {
+        gZone *zone = *i;
+        if (zone) {
+            REAL positionDifference = st_GetDifference(zone->Position(), owner_->Position());
+            if (positionDifference < closestZoneDistanceSquared) {
+                closestZoneDistanceSquared = positionDifference;
+                closestZone = zone;
+            }
+        }
+    }
+    return closestZone;
+}
+
+gZone* gZoneHelper::findClosestZone()
 {
     closestZone = nullptr;
     REAL closestZoneDistanceSquared = 999999999;

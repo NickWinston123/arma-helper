@@ -8,6 +8,9 @@ static tConfItem<bool> sg_helperConf("HELPER", sg_helper);
 REAL sg_helperBrightness = 1;
 static tConfItem<REAL> sg_helperBrightnessConf("HELPER_BRIGHTESS", sg_helperBrightness);
 
+bool sg_helperSensorsZoneDetection = false;
+static tConfItem<bool> sg_helperSensorsZoneDetectionC("HELPER_SENSORS_ZONE_DETECTION", sg_helperSensorsZoneDetection);
+
 REAL sg_helperSensorRange = 1000;
 static tConfItem<REAL> sg_helperSensorRangeConf("HELPER_SENSOR_RANGE", sg_helperSensorRange);
 bool sg_helperSensorLightUsageMode = false;

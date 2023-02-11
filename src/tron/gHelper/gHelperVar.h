@@ -20,6 +20,7 @@ namespace helperConfig {
     extern bool sg_helper ;
     extern REAL sg_helperBrightness ;
     extern REAL sg_helperSensorRange ;
+    extern bool sg_helperSensorsZoneDetection ;
     extern bool sg_helperSensorLightUsageMode ;
     extern bool sg_helperSensorDiagonalMode ;
 

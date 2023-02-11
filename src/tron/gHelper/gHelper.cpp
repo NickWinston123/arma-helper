@@ -69,6 +69,7 @@ gHelper::gHelper(gCycle *owner)
     if (sg_helperAI) {
         aiPlayer.reset(new gAIPlayer(this,owner_));
     }
+    
     ownerPos = &owner_->pos;
     ownerDir = &owner_->dir;
     tailPos = &owner_->tailPos;

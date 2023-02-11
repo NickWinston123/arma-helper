@@ -41,13 +41,13 @@ gSmartTurningCornerData *gHelper::getCorner(int dir)
 switch (dir)
 {
 case LEFT:
-    return &leftCorner;
+    return &data_stored->leftCorner;
     break;
 case RIGHT:
-    return &rightCorner;
+    return &data_stored->rightCorner;
     break;
 default:
-    return &leftCorner;
+    return &data_stored->leftCorner;
 }
 }
 
@@ -60,28 +60,33 @@ REAL gHelper::CurrentTime() {
 gHelper::gHelper(gCycle *owner)
     : owner_(owner),
         player_(owner->Player()),
+        data_stored(new gHelperData()),
         ownerWallLength(owner->ThisWallsLength()),
-        ownerTurnDelay(owner->GetTurnDelay()),
-        sensors_(new gHelperSensorsData(owner_)),
-        data_stored(new gHelperData(sensors_,owner_)),
-        rubberData(new gHelperRubberData(this, owner_))
+        ownerTurnDelay(owner->GetTurnDelay())
 {
     if (sg_helperAI) {
         aiPlayer.reset(new gAIPlayer(this,owner_));
     }
 
+    data_stored->ownerData.owner_ = owner_;
+    data_stored->sensors.owner_ = owner_;
+    data_stored->rubberData.owner_ = owner_;
+    data_stored->rubberData.helper_ = this;
+    data_stored->leftCorner.linkLastCorner(&data_stored->lastLeftCorner);
+    data_stored->rightCorner.linkLastCorner(&data_stored->lastRightCorner);
+
+
     ownerPos = &owner_->pos;
     ownerDir = &owner_->dir;
     tailPos = &owner_->tailPos;
     ownerSpeed = &owner_->verletSpeed_;
-    enemies.owner_ = owner;
+    data_stored->enemies.owner_ = owner;
     gTurnHelper::Get(this, owner_);
     gSmartTurning::Get(this, owner);
     gPathHelper::Get(this, owner);
     gTailHelper::Get(this, owner);
     gZoneHelper::Get(this, owner);
-    leftCorner.linkLastCorner(&lastLeftCorner);
-    rightCorner.linkLastCorner(&lastRightCorner);
+
 
 }
 
@@ -111,13 +116,13 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
         return;
 
     // timeout value = speed factor + sg_helperDetectCutTimeout
-    REAL timeout = data.speedFactorF() + sg_helperDetectCutTimeout;
+    REAL timeout = data.ownerData.speedFactorF() + sg_helperDetectCutTimeout;
 
     // Get the closest enemy
-    gCycle *enemy = enemies.closestEnemy;
+    gCycle *enemy = data.enemies.closestEnemy;
 
     // If there's no enemy, return
-    if (!enemies.exist(enemy))
+    if (!data.enemies.exist(enemy))
         return;
 
     if (sg_helperHud)
@@ -220,7 +225,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     canCutUs = relEnemyPos.y * enemySpeed > relEnemyPos.x * ourSpeed; // right ahead of us? (and faster)
     canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed;
-    
+
     if (canCutUs)
     {
         gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
@@ -277,12 +282,12 @@ void gHelper::enemyTracers(gHelperData & data, int detectionRange, REAL timeout)
         return;
 
     // Iterate over all enemies
-    for (auto enemy = enemies.allEnemies.begin(); enemy != enemies.allEnemies.end(); ++enemy)
+    for (auto enemy = data.enemies.allEnemies.begin(); enemy != data.enemies.allEnemies.end(); ++enemy)
     {
         // Get the current enemy cycle
         gCycle *other = *enemy;
         // If the enemy doesn't exist, skip to the next iteration
-        if (!enemies.exist(other))
+        if (!data.enemies.exist(other))
             continue;
 
         // Get the position of the enemy cycle
@@ -290,7 +295,7 @@ void gHelper::enemyTracers(gHelperData & data, int detectionRange, REAL timeout)
         // Initialize RGB values for the tracer color
         REAL R = .1, G = .1, B = 0;
         // Check if the enemy is close to the player
-        bool isClose = gHelperUtility::isClose(owner_, enemyPos, detectionRange + data.turnSpeedFactorF());
+        bool isClose = gHelperUtility::isClose(owner_, enemyPos, detectionRange + data.ownerData.turnSpeedFactorF());
         // Check if the enemy cycle is faster than the player cycle
         bool enemyFaster = ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
         // Check if the enemy cycle is a teammate
@@ -338,7 +343,7 @@ void gHelper::showTail(gHelperData & data)
         return;
 
 
-    REAL timeout = sg_helperShowTailTimeout * data.speedFactorF();
+    REAL timeout = sg_helperShowTailTimeout * data.ownerData.speedFactorF();
 
     if (canSeeTarget((*tailPos), sg_helperShowTailPassthrough))
     {
@@ -370,18 +375,18 @@ void gHelper::showEnemyTail(gHelperData & data)
     REAL distanceToTail, timeout;
 
     // loop over all enemies in the game
-    for (auto enemy = enemies.allEnemies.begin(); enemy != enemies.allEnemies.end(); ++enemy)
+    for (auto enemy = data.enemies.allEnemies.begin(); enemy != data.enemies.allEnemies.end(); ++enemy)
     {
         // get the cycle object
         gCycle *other = *enemy;
         // continue if the cycle doesn't exist or its tail is not moving
-        if (!enemies.exist(other) || !other->tailMoving)
+        if (!data.enemies.exist(other) || !other->tailMoving)
             continue;
 
         // calculate the distance to the tail
         distanceToTail = sg_helperShowEnemyTailDistanceMult * (eCoord::F(*ownerDir, (other->tailPos) - (*ownerPos)));
         // calculate the timeout
-        timeout = fabs(distanceToTail) / 10 * data.speedFactorF();
+        timeout = fabs(distanceToTail) / 10 * data.ownerData.speedFactorF();
         // draw a debug line to show the enemy's tail
         gHelperUtility::debugLine(
             gRealColor(other->color_.r, other->color_.g, other->color_.b),
@@ -425,7 +430,7 @@ void gHelper::showTailTracer(gHelperData & data)
     // calculates the distance between the object's position and its tail position
     REAL distanceToTail = sg_helperShowTailTracerTimeoutMult * eCoord::F(*ownerDir, (*tailPos) - (*ownerPos));
     // calculates the timeout for the debug line based on the distance and speed
-    REAL timeout = fabs(distanceToTail) / sg_helperShowTailTracerDistanceMult * data.speedFactorF();
+    REAL timeout = fabs(distanceToTail) / sg_helperShowTailTracerDistanceMult * data.ownerData.speedFactorF();
 
     // draws a debug line at the tail position with a specified height, color, and timeout
     gHelperUtility::debugLine(gRealColor(1, 1, 1), sg_helperShowTailTracerHeight, timeout * sg_helperShowTailTracerTimeoutMult, *tailPos, *tailPos);
@@ -439,9 +444,9 @@ void gHelper::showTailTracer(gHelperData & data)
 void gHelper::findCorners(gHelperData & data)
 {
     // Find the left corner
-    leftCorner.findCorner(data, data.sensors.getSensor(LEFT),this);
+    data.leftCorner.findCorner(data.sensors.getSensor(LEFT),this);
     // Find the right corner
-    rightCorner.findCorner(data, data.sensors.getSensor(RIGHT),this);
+    data.rightCorner.findCorner(data.sensors.getSensor(RIGHT),this);
 }
 
 // Function: showCornergHelperUtiltiy::
@@ -456,7 +461,7 @@ void gHelper::showCorner(gHelperData & data, gSmartTurningCornerData & corner, R
     if (corner.exist)
     {
         // Calculate the timeout based on speed factor
-        timeout = data.speedFactorF() * sg_helperShowCornersTimeout;
+        timeout = data.ownerData.speedFactorF() * sg_helperShowCornersTimeout;
         // Check if the corner is close to the vehicle
         bool isClose = gHelperUtility::isClose(owner_, corner.currentPos, sg_helperShowCornersBoundary);
         // If the corner is close, visualize the corner
@@ -478,13 +483,13 @@ void gHelper::showCorners(gHelperData & data)
         return;
 
     // Calculate the timeout based on speed factor
-    REAL timeout = data.speedFactorF() * sg_helperShowCornersTimeout;
+    REAL timeout = data.ownerData.speedFactorF() * sg_helperShowCornersTimeout;
     // Find the corners
     findCorners(data);
     // Visualize the left corner
-    showCorner(data, leftCorner, timeout);
+    showCorner(data, data.leftCorner, timeout);
     // Visualize the right corner
-    showCorner(data, rightCorner, timeout);
+    showCorner(data, data.rightCorner, timeout);
 }
 
 
@@ -506,10 +511,10 @@ void gHelper::showHit(gHelperData & data)
 
     // get the front hit distance and check if it's close to the wall
     REAL frontHit = data.sensors.getSensor(FRONT)->hit;
-    bool wallClose = frontHit < data.turnSpeedFactorF() * sg_showHitDataRange;
+    bool wallClose = frontHit < data.ownerData.turnSpeedFactorF() * sg_showHitDataRange;
 
     // calculate the timeout value
-    REAL timeout = data.speedFactorF() * sg_showHitDataTimeout;
+    REAL timeout = data.ownerData.speedFactorF() * sg_showHitDataTimeout;
 
     if (sg_helperHud)
     // write the front hit distance to the stream
@@ -569,7 +574,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     REAL hitDistance = sensor->hit;
 
     // Check if the hit distance is greater than a certain value.
-    bool open = hitDistance > data.turnSpeedFactorF() * sg_showHitDataFreeRange;
+    bool open = hitDistance > data.ownerData.turnSpeedFactorF() * sg_showHitDataFreeRange;
 
     // Draw a green line if the hit distance is greater than the specified value, indicating that the path is clear.
     if (open)
@@ -608,7 +613,7 @@ void gHelper::Activate()
     }
     owner_->localCurrentTime = se_GameTime();
 
-    enemies.detectEnemies();
+    data_stored->enemies.detectEnemies();
 
     if (sg_helperSmartTurning)
         smartTurning->Activate(*data_stored);
@@ -648,7 +653,7 @@ void gHelper::Activate()
 
     if (sg_helperAI)
     {
-        if (!(aiPlayer.get() == 0)))
+        if (!(aiPlayer.get() == 0))
         {
             aiPlayer->Timestep(se_GameTime() + helperConfig::sg_helperAITime);
         }
@@ -674,7 +679,5 @@ gHelper &gHelper::Get(gCycle * cycle)
 
 gHelper::~gHelper()
 {
-    delete sensors_;
     delete data_stored;
-    delete rubberData;
 }

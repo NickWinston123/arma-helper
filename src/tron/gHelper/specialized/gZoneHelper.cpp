@@ -63,7 +63,7 @@ void gZoneHelper::renderSensorHit( gZoneHitData * zoneHit,gHelperData &data){
     if (zoneHit->hitZone) {
         zoneHitH << zoneHit->hit;
         gHelperUtility::Debug("zoneSensor","SENSOR ZONE HIT, INTERCEPT: ", zoneHit->intercept);
-        gHelperUtility::debugLine(gRealColor(1,0,0), 1, data.speedFactorF() + 1, owner_->Position(), zoneHit->intercept);
+        gHelperUtility::debugLine(gRealColor(1,0,0), 1, data.ownerData.speedFactorF() + 1, owner_->Position(), zoneHit->intercept);
     }
 }
 
@@ -91,7 +91,7 @@ void gZoneHelper::zoneIntersects(gHelperSensor * sensor) {
     gZone *zone = findClosestZone(sensor->owner_);
     if (!zone)
         return;
-        
+
     eCoord sensorDirection = sensor->Direction();
     eCoord zonePos = zone->Position();
     REAL zoneRadius = zone->GetRadius();
@@ -193,7 +193,7 @@ void gZoneHelper::zoneTracer(gHelperData &data)
 
     // Draw the tracer line to the nearest corner of the zone
     gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_helperZoneTracerHeight,
-                                data.speedFactorF() *sg_helperZoneTracerTimeoutMult,
+                                data.ownerData.speedFactorF() *sg_helperZoneTracerTimeoutMult,
                                 owner_->Position(), closestCorner(zone), sg_helperZoneTracerBrightness);
 }
 

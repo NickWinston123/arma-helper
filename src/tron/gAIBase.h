@@ -58,6 +58,12 @@ typedef enum
 gAI_STATE;
 
 
+extern bool IsTrapped(const gCycle *trapped, const gCycle *other);
+extern bool CheckLoop(const gCycle *a, const gCycle *b,
+                      REAL bDist, int bSide, int dir,
+                      tArray<const gCycle*>& closedIn, int& winding,
+                      REAL aEndDist = 0, int aEndSides = 3, int aEndDir = 1 );
+
 class gAIPlayer: public ePlayerNetID{
     friend class gAITeam;
     friend class gSmarterBot;

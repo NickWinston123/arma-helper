@@ -7,6 +7,75 @@
 
 using namespace helperConfig;
 
+
+namespace helperConfig {
+
+    bool sg_helperSmartTurning = false;
+static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
+
+bool sg_helperSmartTurningFrontBot = false;
+static tConfItem<bool> sg_helperSmartTurningFrontBotConf("HELPER_SMART_TURNING_FRONT_BOT", sg_helperSmartTurningFrontBot);
+REAL sg_helperSmartTurningFrontBotThinkRange = 1;
+static tConfItem<REAL> sg_helperSmartTurningFrontBotThinkRangeConf("HELPER_SMART_TURNING_FRONT_BOT_THINK_RANGE", sg_helperSmartTurningFrontBotThinkRange);
+bool sg_helperSmartTurningFrontBotTurnOnce = true;
+static tConfItem<bool> sg_helperSmartTurningFrontBotTurnOnceConf("HELPER_SMART_TURNING_FRONT_BOT_TURN_ONCE", sg_helperSmartTurningFrontBotTurnOnce);
+
+REAL sg_helperSmartTurningFrontBotActivationRubber = 0.98;
+static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationRubberConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_RUBBER", sg_helperSmartTurningFrontBotActivationRubber);
+REAL sg_helperSmartTurningFrontBotActivationSpace = 1;
+static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationSpaceConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_SPACE", sg_helperSmartTurningFrontBotActivationSpace);
+REAL sg_helperSmartTurningFrontBotDisableTime = 0;
+static tConfItem<REAL> sg_helperSmartTurningFrontBotDisableTimeConf("HELPER_SMART_TURNING_FRONT_BOT_DISABLE_TIME", sg_helperSmartTurningFrontBotDisableTime);
+
+bool sg_helperSmartTurningClosedIn = true;
+static tConfItem<bool> sg_helperSmartTurningClosedInConf("HELPER_SMART_TURNING_CLOSED_IN", sg_helperSmartTurningClosedIn);
+
+bool sg_helperSmartTurningTrapped = true;
+static tConfItem<bool> sg_helperSmartTurningTrappedConf("HELPER_SMART_TURNING_TRAPPED", sg_helperSmartTurningTrapped);
+
+bool sg_helperSmartTurningAutoTrace = false;
+static tConfItem<bool> sg_helperSmartTurningAutoTraceConf("HELPER_SMART_TURNING_AUTO_TRACE", sg_helperSmartTurningAutoTrace);
+
+REAL sg_helperSmartTurningAutoTraceDistance = 1;
+static tConfItem<REAL> sg_helperSmartTurningAutoTraceDistanceConf("HELPER_SMART_TURNING_AUTO_TRACE_DISTANCE", sg_helperSmartTurningAutoTraceDistance);
+
+bool sg_helperSmartTurningSurvive = false;
+static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
+bool sg_helperSmartTurningSurviveTrace = false;
+static tConfItem<bool> sg_helperSmartTurningSurviveTraceConf("HELPER_SMART_TURNING_SURVIVE_TRACE", sg_helperSmartTurningSurviveTrace);
+REAL sg_helperSmartTurningSurviveTraceTurnTime = 0.02;
+static tConfItem<REAL> sg_helperSmartTurningSurviveTraceTurnTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_TIME", sg_helperSmartTurningSurviveTraceTurnTime);
+REAL sg_helperSmartTurningSurviveTraceActiveTime = 1;
+static tConfItem<REAL> sg_helperSmartTurningSurviveTraceActiveTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_ACTIVE_TIME", sg_helperSmartTurningSurviveTraceActiveTime);
+REAL sg_helperSmartTurningSurviveTraceCloseFactor = 1;
+static tConfItem<REAL> sg_helperSmartTurningSurviveTraceCloseFactorConf("HELPER_SMART_TURNING_SURVIVE_TRACE_CLOSE_FACTOR", sg_helperSmartTurningSurviveTraceCloseFactor);
+
+bool sg_helperSmartTurningOpposite = false;
+static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_OPPOSITE", sg_helperSmartTurningOpposite);
+
+REAL sg_helperSmartTurningClosedInMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
+REAL sg_helperSmartTurningRubberTimeMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningRubberTimeMultConf("HELPER_SMART_TURNING_RUBBERTIME_MULT", sg_helperSmartTurningRubberTimeMult);
+REAL sg_helperSmartTurningRubberFactorMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningRubberFactorMultConf("HELPER_SMART_TURNING_RUBBERFACTOR_MULT", sg_helperSmartTurningRubberFactorMult);
+
+REAL sg_helperSmartTurningSpace = 0;
+static tConfItem<REAL> sg_helperSmartTurningSpaceConf("HELPER_SMART_TURNING_SPACE", sg_helperSmartTurningSpace);
+
+bool sg_helperSmartTurningPlan = false;
+static tConfItem<bool> sg_helperSmartTurningPlanConf("HELPER_SMART_TURNING_PLAN", sg_helperSmartTurningPlan);
+
+
+bool sg_helperSmartTurningFollowTail = false;
+static tConfItem<bool> sg_helperSmartTurningFollowTailConf("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
+REAL sg_helperSmartTurningFollowTailDelayMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
+REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
+static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
+
+};
+
 // SmartTurning
 gSmartTurning::gSmartTurning(gHelper *helper, gCycle *owner)
     : helper_(helper),
@@ -32,24 +101,24 @@ void gSmartTurning::smartTurningPlan(gHelperData &data)
         return;
 
     // If there are no corners found, find them.
-    if (!helper_->leftCorner.exist && !helper_->rightCorner.exist)
+    if (!data.leftCorner.exist && !data.rightCorner.exist)
     {
         helper_->findCorners(data);
         return;
     }
 
     // Select the corner closest to the player.
-    gSmartTurningCornerData cornerToUse = helper_->leftCorner;
+    gSmartTurningCornerData cornerToUse = data.leftCorner;
     int dir = LEFT;
-    if (cornerToUse.exist && helper_->rightCorner.exist)
+    if (cornerToUse.exist && data.rightCorner.exist)
     {
-        bool useLeftCorner = cornerToUse.distanceFromPlayer < helper_->rightCorner.distanceFromPlayer ? true : false;
-        cornerToUse = useLeftCorner ? cornerToUse : helper_->rightCorner;
+        bool useLeftCorner = cornerToUse.distanceFromPlayer < data.rightCorner.distanceFromPlayer ? true : false;
+        cornerToUse = useLeftCorner ? cornerToUse : data.rightCorner;
         dir = useLeftCorner ? LEFT : RIGHT;
     }
-    else if (!cornerToUse.exist && helper_->rightCorner.exist)
+    else if (!cornerToUse.exist && data.rightCorner.exist)
     {
-        cornerToUse = helper_->rightCorner;
+        cornerToUse = data.rightCorner;
         dir = RIGHT;
     }
 
@@ -82,23 +151,23 @@ void gSmartTurning::followTail(gHelperData &data)
 {
     // If the cycle is not alive, or the tail is not moving, or the tail is not close to the cycle, return
     if (!helper_->aliveCheck() || !owner_->tailMoving ||
-       (!gHelperUtility::isClose(owner_, owner_->tailPos, data.turnSpeedFactorF() * 3)))
+       (!gHelperUtility::isClose(owner_, owner_->tailPos, data.ownerData.turnSpeedFactorF() * 3)))
         return;
 
 
     // Calculate the delay between turning actions
-    REAL delay = data.turnSpeedFactorF() * sg_helperSmartTurningFollowTailDelayMult;
+    REAL delay = data.ownerData.turnSpeedFactorF() * sg_helperSmartTurningFollowTailDelayMult;
 
     // Check if the cycle is driving straight
     bool drivingStraight = helper_->drivingStraight();
 
     // Check if the cycle can survive turning left or right
-    REAL canSurviveLeftTurn, canSurviveRightTurn;
-    bool closedIn, blockedBySelf;
-    helper_->turnHelper->canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningFollowTailFreeSpaceMult);
 
+    gSurviveData surviveData = helper_->turnHelper->canSurviveTurn(data, sg_helperSmartTurningFollowTailFreeSpaceMult);
+    if (!surviveData.exist)
+        return;
     // If the cycle is closed in or blocked by itself, return
-    if (closedIn || blockedBySelf)
+    if (surviveData.closedIn || surviveData.blockedBySelf)
         return;
 
     // Calculate the direction from the cycle to the tail
@@ -117,11 +186,11 @@ void gSmartTurning::followTail(gHelperData &data)
         rightSensor.detect(sg_helperSensorRange);
 
         // Check if the tail is to the right or left of the cycle
-        if (directionToTail * owner_->dir > 0 && canSurviveRightTurn && rightSensor.hit > .999999)
+        if (directionToTail * owner_->dir > 0 && surviveData.canSurviveRightTurn && rightSensor.hit > .999999)
         {
             turnDirection = RIGHT;
         }
-        else if (canSurviveLeftTurn && leftSensor.hit > .999999)
+        else if (surviveData.canSurviveLeftTurn && leftSensor.hit > .999999)
         {
             turnDirection = LEFT;
         }
@@ -150,7 +219,7 @@ void gSmartTurning::followTail(gHelperData &data)
 
     // If the turn direction is LEFT and the cycle can survive a left turn,
     // turn the cycle left and update the last tail turn time
-    if (canSurviveRightTurn && turnDirection == LEFT)
+    if (surviveData.canSurviveRightTurn && turnDirection == LEFT)
     {
         owner_->ActTurnBot(LEFT);
         lastTailTurnTime = helper_->CurrentTime();
@@ -158,7 +227,7 @@ void gSmartTurning::followTail(gHelperData &data)
 
     // If the turn direction is RIGHT and the cycle can survive a right turn,
     // turn the cycle right and update the last tail turn time
-    if (canSurviveLeftTurn && turnDirection == RIGHT)
+    if (surviveData.canSurviveLeftTurn && turnDirection == RIGHT)
     {
         owner_->ActTurnBot(RIGHT);
         lastTailTurnTime = helper_->CurrentTime();
@@ -170,23 +239,21 @@ void gSmartTurning::smartTurningOpposite(gHelperData &data)
     // If the cycle is not alive, return
     if (!helper_->aliveCheck())
         return;
-    
-    // Variables to store the result of the canSurviveTurn function
-    REAL canSurviveLeftTurn, canSurviveRightTurn;
-    bool closedIn, blockedBySelf;
 
     // Determine if the cycle can survive a turn to the left or right according to rubber and space
-    helper_->turnHelper->canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningSpace);
+    gSurviveData surviveData = helper_->turnHelper->canSurviveTurn(data, sg_helperSmartTurningSpace);
+    if (!surviveData.exist)
+        return;
 
     // Check if the cycle is closed in or blocked by itself
-    if ((closedIn) || (closedIn) && blockedBySelf)
+    if ((surviveData.closedIn) || (surviveData.closedIn) && surviveData.blockedBySelf)
     {
         // Skip the survive logic turn if the cycle is closed in or blocked by itself
         goto SKIP_FORCETURN;
     }
 
     // Check if the cycle can survive a right turn but not a left turn
-    if (!canSurviveLeftTurn && canSurviveRightTurn)
+    if (!surviveData.canSurviveLeftTurn && surviveData.canSurviveRightTurn)
     {
         // Set the force turn to RIGHT
         owner_->forceTurn = RIGHT;
@@ -196,7 +263,7 @@ void gSmartTurning::smartTurningOpposite(gHelperData &data)
         return;
     }
     // Check if the cycle can survive a left turn but not a right turn
-    else if (canSurviveLeftTurn && !canSurviveRightTurn)
+    else if (surviveData.canSurviveLeftTurn && !surviveData.canSurviveRightTurn)
     {
         // Set the force turn to LEFT
         owner_->forceTurn = LEFT;
@@ -228,13 +295,10 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     if (!helper_->aliveCheck() || !owner_->pendingTurns.empty())
         return;
 
-    // Variables to store the result of whether the player can survive a left or right turn.
-    REAL canSurviveLeftTurn, canSurviveRightTurn;
-    // Variables to store if the player is closed in or blocked by themselves.
-    bool closedIn, blockedBySelf;
-
     // Check if the player can survive a turn.
-    helper_->turnHelper->canSurviveTurn(data, canSurviveLeftTurn, canSurviveRightTurn, closedIn, blockedBySelf, sg_helperSmartTurningSpace);
+    gSurviveData surviveData = helper_->turnHelper->canSurviveTurn(data, sg_helperSmartTurningSpace);
+    if (!surviveData.exist)
+        return;
 
     // If the player has a turn ignore time set and it is not over, block both turns and return.
     if (owner_->turnIgnoreTime > owner_->localCurrentTime)
@@ -243,13 +307,15 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
         return;
     }
     // If the player is closed in or blocked by themselves and closedIn is set, unblock both turns and return.
-    if ((closedIn && sg_helperSmartTurningClosedIn) || (closedIn) && blockedBySelf)
+    if ( (sg_helperSmartTurningTrapped && surviveData.trapped)   ||
+         (sg_helperSmartTurningClosedIn && surviveData.closedIn) ||
+         (surviveData.closedIn) && surviveData.blockedBySelf)
     {
         goto UN_BLOCKTURN;
     }
 
     // If the player cannot survive either of the turn, block both turns.
-    if (!canSurviveLeftTurn && !canSurviveRightTurn)
+    if (!surviveData.canSurviveLeftTurn && !surviveData.canSurviveRightTurn)
     {
         if (this->blockTurn != BOTH)
             gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING BOTH TURNS");
@@ -259,7 +325,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     }
 
     // If the player cannot survive the left turn, block the left turn.
-    if (!canSurviveLeftTurn)
+    if (!surviveData.canSurviveLeftTurn)
     {
         if (this->blockTurn != LEFT)
             gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS");
@@ -269,7 +335,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     }
 
     // If the player cannot survive the right turn, block the right turn.
-    if (!canSurviveRightTurn)
+    if (!surviveData.canSurviveRightTurn)
     {
         if (this->blockTurn != RIGHT)
             gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN");
@@ -280,10 +346,10 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
 
     UN_BLOCKTURN:
         // Unblock the turns if the player can survive a turn.
-        if (this->blockTurn != NONE) {
+        // if (this->blockTurn != NONE) {
             // Store the last blocked turn for smartTurningSurviveTrace before clearing
             owner_->lastBlockedTurn = this->blockTurn;
-            
+
             gHelperUtility::Debug("SMART TURNING SURVIVE", "UNBLOCKING TURNS");
 
             // Set the blockTurn to NONE to indicate that the player can now turn in either direction.
@@ -292,7 +358,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
             // Check if the smartTurningSurviveTrace is enabled and call the function if it is.
             if (sg_helperSmartTurningSurviveTrace)
                 smartTurningSurviveTrace(data);
-        }
+        // }
 }
 
 
@@ -319,13 +385,20 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
         (owner_->lastTurnAttemptTime < owner_->lastTurnTime))
         return;
 
+    int lastBlockedDir = owner_->lastTurnAttemptDir;
+    if (lastBlockedDir == NONE)
+        return;
+        
     helper_->findCorners(data);
 
     // Get the direction of the last blocked turn attempt
-    int lastBlockedDir = owner_->lastTurnAttemptDir;
 
+    con << "SMART TURNING LAST lastBlockedDir " << lastBlockedDir << "\n";
     // Get the information about the blocked corner
     gSmartTurningCornerData* corner = helper_->getCorner(lastBlockedDir);
+    
+    if (!corner->exist)
+        return;
 
     // Calculate the time factor for the turn
     REAL turnTimeFactor = corner->getTimeUntilTurn(owner_->Speed());
@@ -336,8 +409,8 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
     // 3. The time since the last turn attempt is greater than a certain threshold
     // 4. The time until the turn is greater than 0
     // 5. The time until the turn is less than a certain threshold
-    if (corner->exist && gHelperUtility::isClose(owner_, corner->currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.turnSpeedFactorF()) &&
-        owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime / (10 * data.turnSpeedFactorF())) > corner->noticedTime &&
+    if (gHelperUtility::isClose(owner_, corner->currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.ownerData.turnSpeedFactorF()) &&
+        owner_->lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime / (10 * data.ownerData.turnSpeedFactorF())) > corner->noticedTime &&
         corner->getTimeUntilTurn(owner_->Speed()) > 0 &&
         (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime))
     {
@@ -376,14 +449,14 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
     REAL hitRange = data.sensors.getSensor(FRONT)->hit;
 
     // If the range to the front bot is within the sg_helperSmartTurningFrontBotThinkRange
-    if (hitRange <= (sg_helperSmartTurningFrontBotThinkRange * data.turnSpeedFactorF()) + data.lagFactorF())
+    if (hitRange <= (sg_helperSmartTurningFrontBotThinkRange * data.ownerData.turnSpeedFactorF()) + data.ownerData.lagFactorF())
     {
         // Calculate the rubber data
-        helper_->rubberData->calculate();
+        data.rubberData.calculate();
 
         // If the rubber used ratio is greater than or equal to sg_helperSmartTurningFrontBotActivationRubber
         // or the range to the front bot is less than or equal to sg_helperSmartTurningFrontBotActivationSpace
-        if (helper_->rubberData->rubberUsedRatio >= sg_helperSmartTurningFrontBotActivationRubber ||
+        if (data.rubberData.rubberUsedRatio >= sg_helperSmartTurningFrontBotActivationRubber ||
             hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
         {
             // Flag to check if a turn was made

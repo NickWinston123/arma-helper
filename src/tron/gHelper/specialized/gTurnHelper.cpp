@@ -2,6 +2,7 @@
 #include "gHelperSensor.h"
 #include "../../gCycle.h"
 #include "../../gWall.h"
+#include "../../gAIBase.h"
 
 #include "../gHelperVar.h"
 #include "../gHelperUtilities.h"
@@ -51,7 +52,8 @@ public:
             return true;
         default:
         // unless it is an enemy, follow his wall instead (uncomment for a nasty
-        // cowardy campbot) lrSuggestion *= -1;
+        // cowardy campbot)
+        lrSuggestion_ *= -1;
         case gSENSOR_SELF:
         {
             // determine whether we're hitting the front or back half of his wall
@@ -132,13 +134,13 @@ bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceF
     if (spaceFactor > 0)
     {
         // spaceFactor is multiplied by the turn speed factor
-        compareFactor = spaceFactor * data.turnSpeedFactorF();
+        compareFactor = spaceFactor * data.ownerData.turnSpeedFactorF();
     }
     else
     {
         // If spaceFactor <= 0, rubberFactor is calculated and used as compareFactor
-        helper_->rubberData->calculate();
-        compareFactor = helper_->rubberData->rubberFactor;
+        data.rubberData.calculate();
+        compareFactor = data.rubberData.rubberFactor;
     }
 
     // return whether the hit distance is greater than compareFactor
@@ -162,24 +164,26 @@ bool gTurnHelper::makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFacto
 
     if (canSurviveTurnSpecific(data, dir, spaceFactor))
         return owner_->ActTurnBot(dir);
- 
+
     return false;
 }
 
 
 // Function that checks if a turn can be survived by the player.
-void gTurnHelper::canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, REAL &canSurviveRightTurn, bool &closedIn, bool &blockedBySelf, REAL freeSpaceFactor)
+gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor)
 {
     // If the player is not alive, return.
     if (!helper_->aliveCheck())
-        return;
+        return gSurviveData(false);
+
+    gSurviveData surviveData;
 
     // Calculate the rubber factor.
-    helper_->rubberData->calculate();
+    data.rubberData.calculate();
 
     // Initialize the values to assume both turns are survivable.
-    canSurviveLeftTurn = true;
-    canSurviveRightTurn = true;
+    surviveData.canSurviveLeftTurn = true;
+    surviveData.canSurviveRightTurn = true;
 
     // Get the front, left and right sensors.
     gSensor *front = data.sensors.getSensor(FRONT);
@@ -189,35 +193,37 @@ void gTurnHelper::canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, RE
     // Initialize the variables to assume the turns can be survived.
     bool canTurnLeftRubber = true, canTurnRightRubber = true, canTurnLeftSpace = true, canTurnRightSpace = true;
     // Calculate the closed-in factor based on the turn speed factor and the closed-in mult.
-    REAL closedInFactor = data.turnSpeedFactorF() * sg_helperSmartTurningClosedInMult;
+    REAL closedInFactor = data.ownerData.turnSpeedFactorF() * sg_helperSmartTurningClosedInMult;
     // Check if the player is closed in on the front, left and right sides.
-    closedIn = (front->hit <= closedInFactor && left->hit <= closedInFactor && right->hit <= closedInFactor);
+    surviveData.closedIn = (front->hit <= closedInFactor && left->hit <= closedInFactor && right->hit <= closedInFactor);
     // Check if the player is blocked by itself on the front, left and right sides.
-    blockedBySelf = (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
+    surviveData.blockedBySelf = (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
+
+    surviveData.trapped =  IsTrapped(owner_, NULL);
 
     // If free space factor is greater than 0, check the free space factor.
     if (freeSpaceFactor > 0)
     {
         // If the left hit is less than the turn speed factor multiplied by the free space factor and the front and right hits are greater than the turn speed factor multiplied by the free space factor, the turn left cannot be survived.
-        if (left->hit < data.turnSpeedFactorF() * freeSpaceFactor && front->hit > data.turnSpeedFactorF() * freeSpaceFactor && right->hit > data.turnSpeedFactorF() * freeSpaceFactor)
+        if (left->hit < data.ownerData.turnSpeedFactorF() * freeSpaceFactor && front->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor && right->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor)
         {
             canTurnLeftSpace = false;
         }
         // If the right hit is less than the turn speed factor multiplied by the free space factor and the front and left hits are greater than the turn speed factor multiplied by the free space factor, the turn right cannot be survived.
-        if (right->hit < data.turnSpeedFactorF() * freeSpaceFactor && front->hit > data.turnSpeedFactorF() * freeSpaceFactor && left->hit > data.turnSpeedFactorF() * freeSpaceFactor)
+        if (right->hit < data.ownerData.turnSpeedFactorF() * freeSpaceFactor && front->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor && left->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor)
         {
             canTurnRightSpace = false;
         }
     }
 
     // If the left hit is less than the rubber factor, the turn left cannot be survived.
-    if (left->hit < helper_->rubberData->rubberFactor)
+    if (left->hit < data.rubberData.rubberFactor)
     {
         canTurnLeftRubber = false;
     }
 
     // If the right hit is less than the rubber factor, the turn right cannot be survived.
-    if (right->hit < helper_->rubberData->rubberFactor)
+    if (right->hit < data.rubberData.rubberFactor)
     {
         canTurnRightRubber = false;
     }
@@ -227,18 +233,20 @@ void gTurnHelper::canSurviveTurn(gHelperData &data, REAL &canSurviveLeftTurn, RE
     {
         // If the player is not closed in and both canTurnLeftRubber and canTurnLeftSpace are true,
         // then the left turn can be survived.
-        canSurviveLeftTurn = !closedIn ? canTurnLeftRubber && canTurnLeftSpace : canTurnLeftRubber;
+        surviveData.canSurviveLeftTurn = !surviveData.closedIn ? canTurnLeftRubber && canTurnLeftSpace : canTurnLeftRubber;
         // If the player is not closed in and both canTurnRightRubber and canTurnRightSpace are true,
         // then the right turn can be survived.
-        canSurviveRightTurn = !closedIn ? canTurnRightRubber && canTurnRightSpace : canTurnRightRubber;
+        surviveData.canSurviveRightTurn = !surviveData.closedIn ? canTurnRightRubber && canTurnRightSpace : canTurnRightRubber;
     }
     else
     {
         // If freeSpaceFactor is not greater than 0, calculate canSurviveLeftTurn and canSurviveRightTurn
         // based on canTurnLeftRubber and canTurnRightRubber.
-        canSurviveLeftTurn = canTurnLeftRubber;
-        canSurviveRightTurn = canTurnRightRubber;
+        surviveData.canSurviveLeftTurn = canTurnLeftRubber;
+        surviveData.canSurviveRightTurn = canTurnRightRubber;
     }
+    
+    return surviveData;
 }
 
 
@@ -391,8 +399,8 @@ gTurnData* gTurnHelper::getTurn()
 
     // get extra time we get through rubber usage
 //    helper_->rubberData->calculate();
-    REAL rubberTime = helper_->rubberData->rubberTimeLeft;
-    REAL rubberRatio = helper_->rubberData->rubberUsedRatio;
+    REAL rubberTime = helper_->data_stored->rubberData.rubberTimeLeft;
+    REAL rubberRatio = helper_->data_stored->rubberData.rubberUsedRatio;
 
     // these checks can hit our last wall and fail. Temporarily set it to NULL.
     tJUST_CONTROLLED_PTR<gNetPlayerWall> lastWall = owner_->getLastWall();

@@ -9,7 +9,197 @@
 #ifndef ArmageTron_GHELPER_UTILITIES
 #define ArmageTron_GHELPER_UTILITIES
 
+using namespace helperConfig;
 class gHelperSensor;
+
+
+
+struct gHelperEnemiesData
+{
+    gCycle* owner_;
+    std::unordered_set<gCycle*> allEnemies;
+    gCycle* closestEnemy;
+
+    // exist
+    // Returns true if the passed in enemy exists and is alive
+    // Input: enemy - the enemy to check if it exists and is alive
+    // Output: returns true if the passed in enemy exists and is alive, otherwise false
+    bool exist(gCycle* enemy);
+
+    // detectEnemies
+    // Detects all existing alive enemies and sets closestEnemy to the closest one.
+    // Clears the allEnemies set.
+    // Output: returns a pointer to the closest detected enemy.
+    gCycle* detectEnemies();
+};
+
+
+struct gSmartTurningCornerData
+{
+    gSmartTurningCornerData *lastCorner;
+    eCoord currentPos;
+    eCoord lastPos;
+    gSensorWallType type;
+    REAL distanceFromPlayer;
+    REAL turnTime;
+    REAL noticedTime;
+    REAL ignoredTime;
+    REAL updatedTime;
+    bool exist;
+    bool infront;
+    void linkLastCorner(gSmartTurningCornerData* lastCorner_) {lastCorner = lastCorner_;}
+    // Returns the time until required a turn should occur given a speed
+    REAL getTimeUntilTurn(REAL speed);
+
+    // Checks if a position is in front of the direction vector
+    bool isInfront(eCoord pos, eCoord dir);
+    bool isInfront(eCoord pos, eCoord dir, eCoord posToCheck);
+
+    // Finds a corner based on the sensor data, updates relevant data in the
+    // gSmartTurningCornerData object, and returns a boolean indicating if the corner was found
+    bool findCorner(const gHelperSensor *sensor, gHelper *helper);
+};
+
+
+struct gHelperRubberData
+{
+    gHelper *helper_;
+    gCycle *owner_;
+    REAL rubberAvailable,
+         rubberEffectiveness,
+         rubberFactor,
+         rubberUsedRatio,
+         rubberTimeLeft;
+
+    gHelperRubberData() {}
+    gHelperRubberData(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner) {}
+
+    // Calculates and updates rubber related values the cycle
+    // such as rubberAvailable, rubberEffectiveness, rubberFactor, rubberUsedRatio, and rubberTimeLeft.
+    void calculate();
+};
+
+struct gTurnData
+{
+public:
+    int direction;
+    REAL turnTime;
+    int numberOfTurns;
+    bool exist;
+    std::string reason;
+    int noTurns;
+    gTurnData() {}
+
+    gTurnData(int direction_, int numberOfTurns_, std::string reason_) : direction(direction_),
+                                                                         numberOfTurns(numberOfTurns_),
+                                                                         exist(true),
+                                                                         reason(reason_) {}
+
+    gTurnData(bool) : exist(false) {}
+
+    void reset()
+    {
+        direction = (0);
+        numberOfTurns = (0);
+        exist = (false);
+        reason = ("");
+    }
+
+    void set(bool)
+    {
+        noTurns++;
+        reset();
+    }
+
+    void set(int direction_, int numberOfTurns_, std::string reason_)
+    {
+        direction = (direction_);
+        numberOfTurns = (numberOfTurns_);
+        exist = true;
+        reason = (reason_);
+        noTurns = 0;
+    }
+};
+
+
+struct gHelperSensors
+{
+    gHelperSensor* front;
+    gHelperSensor* left;
+    gHelperSensor* right;
+
+    gHelperSensors(gHelperSensor* front_, gHelperSensor* left_, gHelperSensor* right_);
+};
+
+
+struct gHelperSensorsData
+{
+    gCycle *owner_;
+    gHelperSensor *front_stored;
+    gHelperSensor *left_stored;
+    gHelperSensor *right_stored;
+
+    gHelperSensorsData() {};
+    ~gHelperSensorsData();
+    gHelperSensorsData(gCycle *owner);
+    gHelperSensor* getSensor(int dir, bool newSensor = false);
+    gHelperSensor* getSensor(eCoord start, int dir, bool newSensor = false);
+    gHelperSensor* getSensor(eCoord start, eCoord dir, REAL detectRange = sg_helperSensorRange);
+};
+
+struct gHelperOwnerData {
+    gCycle *owner_;
+    // calculates the factor based on the owner's speed
+    REAL speedFactorF();
+
+    // calculates the factor based on the owner's turning speed
+    REAL turnSpeedFactorF();
+
+    // calculates the percentage based on the turn speed factor
+    REAL turnSpeedFactorPercentF() {
+        return (1/turnSpeedFactorF());
+    }
+    // lag factor
+    REAL lagFactorF();
+
+    // calculates the distance based on the turn speed factor
+    REAL turnDistanceF() {
+        return (turnSpeedFactorF()/100);
+    }
+
+    gHelperOwnerData() {}
+    gHelperOwnerData(gCycle *owner) : owner_(owner) {}
+
+};
+
+struct gHelperData
+{
+    gHelperData(){}
+
+    gHelperOwnerData ownerData;
+
+    // gSmartTurningCornerData object for the left corner
+    gSmartTurningCornerData leftCorner;
+
+    // gSmartTurningCornerData object for the right corner
+    gSmartTurningCornerData rightCorner;
+
+    // gSmartTurningCornerData object for the last left corner
+    gSmartTurningCornerData lastLeftCorner;
+
+    // gSmartTurningCornerData object for the last right corner
+    gSmartTurningCornerData lastRightCorner;
+
+    // gHelperEnemiesData object to store information about enemies
+    gHelperEnemiesData enemies;
+
+    // Pointer to the gHelperRubberData object
+    gHelperRubberData rubberData;
+
+    // Pointer to the gHelperSensorsData object
+    gHelperSensorsData sensors;
+
+};
 
 struct debugParams {
     bool emptyString;
@@ -103,70 +293,6 @@ class gHelperUtility
     static bool isClose(gCycle * owner_, eCoord pos, REAL closeFactor);
 };
 
-struct gHelperSensors
-{
-    gHelperSensor* front;
-    gHelperSensor* left;
-    gHelperSensor* right;
-
-    gHelperSensors(gHelperSensor* front_, gHelperSensor* left_, gHelperSensor* right_);
-};
-
-
-struct gHelperSensorsData
-{
-    gCycle *owner_;
-    gHelperSensor *front_stored;
-    gHelperSensor *left_stored;
-    gHelperSensor *right_stored;
-
-    ~gHelperSensorsData();
-    gHelperSensorsData(gCycle *owner);
-    gHelperSensor* getSensor(int dir, bool newSensor = false);
-    gHelperSensor* getSensor(eCoord start, int dir, bool newSensor = false);
-    gHelperSensor* getSensor(eCoord start, eCoord dir, REAL detectRange = sg_helperSensorRange);
-};
-
-struct gHelperData
-{
-    gCycle *owner_;
-    REAL *ownerSpeed;
-    gHelperSensorsData &sensors;
-    REAL speedFactor;
-    REAL turnSpeedFactor;
-    REAL turnSpeedFactorPercent;
-    REAL turnDistance;
-    REAL thinkAgain;
-    REAL turnDir;
-    REAL turnTime;
-
-    // calculates the factor based on the owner's speed
-    REAL speedFactorF() {
-        return (1/(*ownerSpeed));
-    }
-    // calculates the factor based on the owner's turning speed
-    REAL turnSpeedFactorF();
-
-    // calculates the percentage based on the turn speed factor
-    REAL turnSpeedFactorPercentF() {
-        return (1/turnSpeedFactorF());
-    }
-    // lag
-    REAL lagFactorF();
-
-    // calculates the distance based on the turn speed factor
-    REAL turnDistanceF() {
-        return (turnSpeedFactorF()/100);
-    }
-
-    void Load(  REAL a_speedFactor, REAL a_turnSpeedFactor,
-                REAL a_turnSpeedFactorPercent, REAL a_turnDistance, REAL a_thinkAgain,
-                REAL a_turnDir, REAL a_turnTime);
-    gHelperData(gHelperSensorsData *sensors,gCycle *owner);
-    gHelperData(gHelperSensorsData &sensors_, REAL a_speedFactor, REAL a_turnSpeedFactor,
-                REAL a_turnSpeedFactorPercent, REAL a_turnDistance, REAL a_thinkAgain,
-                REAL a_turnDir, REAL a_turnTime);
-};
 
 static void DebugLog(std::string message)
 {
@@ -208,110 +334,4 @@ static eCoord roundeCoord(eCoord coord, int precision = 1){
     return eCoord(customRound(coord.x,precision),customRound(coord.y,precision));
 }
 
-
-struct gHelperEnemiesData
-{
-    gCycle* owner_;
-    std::unordered_set<gCycle*> allEnemies;
-    gCycle* closestEnemy;
-
-    // exist
-    // Returns true if the passed in enemy exists and is alive
-    // Input: enemy - the enemy to check if it exists and is alive
-    // Output: returns true if the passed in enemy exists and is alive, otherwise false
-    bool exist(gCycle* enemy);
-
-    // detectEnemies
-    // Detects all existing alive enemies and sets closestEnemy to the closest one.
-    // Clears the allEnemies set.
-    // Output: returns a pointer to the closest detected enemy.
-    gCycle* detectEnemies();
-};
-
-
-struct gSmartTurningCornerData
-{
-    gSmartTurningCornerData *lastCorner;
-    eCoord currentPos;
-    eCoord lastPos;
-    gSensorWallType type;
-    REAL distanceFromPlayer;
-    REAL turnTime;
-    REAL noticedTime;
-    REAL ignoredTime;
-    REAL updatedTime;
-    bool exist;
-    bool infront;
-    void linkLastCorner(gSmartTurningCornerData* lastCorner_) {lastCorner = lastCorner_;}
-    // Returns the time until required a turn should occur given a speed
-    REAL getTimeUntilTurn(REAL speed);
-
-    // Checks if a position is in front of the direction vector
-    bool isInfront(eCoord pos, eCoord dir);
-    bool isInfront(eCoord pos, eCoord dir, eCoord posToCheck);
-
-    // Finds a corner based on the sensor data, updates relevant data in the
-    // gSmartTurningCornerData object, and returns a boolean indicating if the corner was found
-    bool findCorner(gHelperData &data, const gHelperSensor *sensor, gHelper *helper);
-};
-
-
-struct gHelperRubberData
-{
-    gHelper *helper_;
-    gCycle *owner_;
-    REAL rubberAvailable,
-         rubberEffectiveness,
-         rubberFactor,
-         rubberUsedRatio,
-         rubberTimeLeft;
-
-    gHelperRubberData(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner) {}
-
-    // Calculates and updates rubber related values the cycle
-    // such as rubberAvailable, rubberEffectiveness, rubberFactor, rubberUsedRatio, and rubberTimeLeft.
-    void calculate();
-};
-
-struct gTurnData
-{
-public:
-    int direction;
-    REAL turnTime;
-    int numberOfTurns;
-    bool exist;
-    std::string reason;
-    int noTurns;
-    gTurnData() {}
-
-    gTurnData(int direction_, int numberOfTurns_, std::string reason_) : direction(direction_),
-                                                                         numberOfTurns(numberOfTurns_),
-                                                                         exist(true),
-                                                                         reason(reason_) {}
-
-    gTurnData(bool) : exist(false) {}
-
-    void reset()
-    {
-        direction = (0);
-        numberOfTurns = (0);
-        exist = (false);
-        reason = ("");
-    }
-
-    void set(bool)
-    {
-        noTurns++;
-        reset();
-    }
-
-    void set(int direction_, int numberOfTurns_, std::string reason_)
-    {
-        direction = (direction_);
-        numberOfTurns = (numberOfTurns_);
-        exist = true;
-        reason = (reason_);
-        noTurns = 0;
-    }
-};
 #endif

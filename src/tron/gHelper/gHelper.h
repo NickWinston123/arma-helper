@@ -206,29 +206,8 @@ class gHelper {
         // Delay in the owner's turn
         REAL ownerTurnDelay;
 
-        // Pointer to the gHelperSensorsData object
-        gHelperSensorsData * sensors_;
-
         // Pointer to the stored gHelperData object
         gHelperData *data_stored;
-
-        // gSmartTurningCornerData object for the left corner
-        gSmartTurningCornerData leftCorner;
-
-        // gSmartTurningCornerData object for the right corner
-        gSmartTurningCornerData rightCorner;
-
-        // gSmartTurningCornerData object for the last left corner
-        gSmartTurningCornerData lastLeftCorner;
-
-        // gSmartTurningCornerData object for the last right corner
-        gSmartTurningCornerData lastRightCorner;
-
-        // gHelperEnemiesData object to store information about enemies
-        gHelperEnemiesData enemies;
-
-        // Pointer to the gHelperRubberData object
-        gHelperRubberData * rubberData;
 
         // Pointer to the AI player gAIPlayer object
         std::shared_ptr< gAIPlayer > aiPlayer;       

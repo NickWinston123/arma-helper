@@ -359,10 +359,10 @@ public:
 // return value: the number of open points this loop contains
 // (if this is >0, that usually means the space is wide open)
 //  or -1 if there is no loop.
-static bool CheckLoop(const gCycle *a, const gCycle *b,
+bool CheckLoop(const gCycle *a, const gCycle *b,
                       REAL bDist, int bSide, int dir,
                       tArray<const gCycle*>& closedIn, int& winding,
-                      REAL aEndDist = 0, int aEndSides = 3, int aEndDir = 1 )
+                      REAL aEndDist, int aEndSides, int aEndDir )
 {
     tASSERT(0<= bSide && 1 >= bSide);
     tASSERT(0<= dir && 1 >= dir);
@@ -530,9 +530,8 @@ static bool CheckLoop(const gCycle *a, const gCycle *b,
     }
 }
 
-
 // see if the given Cycle is trapped currently
-static bool IsTrapped(const gCycle *trapped, const gCycle *other)
+bool IsTrapped(const gCycle *trapped, const gCycle *other)
 {
     tArray<const gCycle*> closedIn;
     int winding = 0;
@@ -3210,7 +3209,7 @@ void gAIPlayer::Timestep(REAL time){
     // debug << Object()->LastTime() << " < " << time << " - " << EPS << " (" << time-EPS << ")" << "\n";
     // debug << "Activate ? " << (bool(Object() && Object()->LastTime() < time - EPS) == false) << "\n";
     // con << debug;
-    
+
     // don't think if the object is not up to date
     if ( !helperAI && Object() && Object()->LastTime() < time - EPS )
         return;

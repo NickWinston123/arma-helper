@@ -34,60 +34,6 @@ static tConfItem<bool> sg_helperAIc("HELPER_AI", sg_helperAI);
 REAL sg_helperAITime = 0;
 static tConfItem<REAL> sg_helperAITimec("HELPER_AI_TIME", sg_helperAITime);
 
-bool sg_helperSmartTurning = false;
-static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
-
-bool sg_helperSmartTurningFrontBot = false;
-static tConfItem<bool> sg_helperSmartTurningFrontBotConf("HELPER_SMART_TURNING_FRONT_BOT", sg_helperSmartTurningFrontBot);
-REAL sg_helperSmartTurningFrontBotThinkRange = 1;
-static tConfItem<REAL> sg_helperSmartTurningFrontBotThinkRangeConf("HELPER_SMART_TURNING_FRONT_BOT_THINK_RANGE", sg_helperSmartTurningFrontBotThinkRange);
-bool sg_helperSmartTurningFrontBotTurnOnce = true;
-static tConfItem<bool> sg_helperSmartTurningFrontBotTurnOnceConf("HELPER_SMART_TURNING_FRONT_BOT_TURN_ONCE", sg_helperSmartTurningFrontBotTurnOnce);
-
-REAL sg_helperSmartTurningFrontBotActivationRubber = 0.98;
-static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationRubberConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_RUBBER", sg_helperSmartTurningFrontBotActivationRubber);
-REAL sg_helperSmartTurningFrontBotActivationSpace = 1;
-static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationSpaceConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_SPACE", sg_helperSmartTurningFrontBotActivationSpace);
-REAL sg_helperSmartTurningFrontBotDisableTime = 0;
-static tConfItem<REAL> sg_helperSmartTurningFrontBotDisableTimeConf("HELPER_SMART_TURNING_FRONT_BOT_DISABLE_TIME", sg_helperSmartTurningFrontBotDisableTime);
-
-bool sg_helperSmartTurningClosedIn = true;
-static tConfItem<bool> sg_helperSmartTurningClosedInConf("HELPER_SMART_TURNING_CLOSEDIN", sg_helperSmartTurningClosedIn);
-
-
-bool sg_helperSmartTurningAutoTrace = false;
-static tConfItem<bool> sg_helperSmartTurningAutoTraceConf("HELPER_SMART_TURNING_AUTO_TRACE", sg_helperSmartTurningAutoTrace);
-
-REAL sg_helperSmartTurningAutoTraceDistance = 1;
-static tConfItem<REAL> sg_helperSmartTurningAutoTraceDistanceConf("HELPER_SMART_TURNING_AUTO_TRACE_DISTANCE", sg_helperSmartTurningAutoTraceDistance);
-
-bool sg_helperSmartTurningSurvive = false;
-static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
-bool sg_helperSmartTurningSurviveTrace = false;
-static tConfItem<bool> sg_helperSmartTurningSurviveTraceConf("HELPER_SMART_TURNING_SURVIVE_TRACE", sg_helperSmartTurningSurviveTrace);
-REAL sg_helperSmartTurningSurviveTraceTurnTime = 0.02;
-static tConfItem<REAL> sg_helperSmartTurningSurviveTraceTurnTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_TIME", sg_helperSmartTurningSurviveTraceTurnTime);
-REAL sg_helperSmartTurningSurviveTraceActiveTime = 1;
-static tConfItem<REAL> sg_helperSmartTurningSurviveTraceActiveTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_ACTIVE_TIME", sg_helperSmartTurningSurviveTraceActiveTime);
-REAL sg_helperSmartTurningSurviveTraceCloseFactor = 1;
-static tConfItem<REAL> sg_helperSmartTurningSurviveTraceCloseFactorConf("HELPER_SMART_TURNING_SURVIVE_TRACE_CLOSE_FACTOR", sg_helperSmartTurningSurviveTraceCloseFactor);
-
-bool sg_helperSmartTurningOpposite = false;
-static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_OPPOSITE", sg_helperSmartTurningOpposite);
-
-REAL sg_helperSmartTurningClosedInMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
-REAL sg_helperSmartTurningRubberTimeMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningRubberTimeMultConf("HELPER_SMART_TURNING_RUBBERTIME_MULT", sg_helperSmartTurningRubberTimeMult);
-REAL sg_helperSmartTurningRubberFactorMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningRubberFactorMultConf("HELPER_SMART_TURNING_RUBBERFACTOR_MULT", sg_helperSmartTurningRubberFactorMult);
-
-REAL sg_helperSmartTurningSpace = 0;
-static tConfItem<REAL> sg_helperSmartTurningSpaceConf("HELPER_SMART_TURNING_SPACE", sg_helperSmartTurningSpace);
-
-bool sg_helperSmartTurningPlan = false;
-static tConfItem<bool> sg_helperSmartTurningPlanConf("HELPER_SMART_TURNING_PLAN", sg_helperSmartTurningPlan);
-
 bool sg_helperAutoBrake = false;
 static tConfItem<bool> sg_helperAutoBrakeConf("HELPER_AUTO_BRAKE", sg_helperAutoBrake);
 bool sg_helperAutoBrakeDeplete = false;
@@ -96,13 +42,6 @@ REAL sg_helperAutoBrakeMin = 0;
 static tConfItem<REAL> sg_helperAutoBrakeMinConf("HELPER_AUTO_BRAKE_MIN", sg_helperAutoBrakeMin);
 REAL sg_helperAutoBrakeMax = 2;
 static tConfItem<REAL> sg_helperAutoBrakeMaxConf("HELPER_AUTO_BRAKE_MAX", sg_helperAutoBrakeMax);
-
-bool sg_helperSmartTurningFollowTail = false;
-static tConfItem<bool> sg_helperSmartTurningFollowTailConf("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
-REAL sg_helperSmartTurningFollowTailDelayMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
-REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
 
 bool sg_tailHelper = false;
 static tConfItem<bool> sg_tailHelperC("HELPER_TAIL", sg_tailHelper);

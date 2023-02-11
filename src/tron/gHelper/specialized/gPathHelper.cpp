@@ -26,26 +26,26 @@ bool gPathHelper::cornerMode(gHelperData data)
 {
     helper_->findCorners(data);
 
-    bool left = helper_->leftCorner.exist;
-    bool right = helper_->rightCorner.exist;
+    bool left = data.leftCorner.exist;
+    bool right = data.rightCorner.exist;
     bool both = left && right;
 
     eCoord position;
     if (left && !right)
     {
-        position = helper_->leftCorner.currentPos;
+        position = data.leftCorner.currentPos;
     }
     else if (!left && right)
     {
-        position = helper_->rightCorner.currentPos;
+        position = data.rightCorner.currentPos;
     }
     else if (both)
     {
         // Calculate the distance from the owner's position to the left corner
-        REAL leftDistance = eCoordDistance(owner_->Position(), helper_->leftCorner.currentPos);
+        REAL leftDistance = eCoordDistance(owner_->Position(), data.leftCorner.currentPos);
         // Calculate the distance from the owner's position to the right corner
-        REAL rightDistance = eCoordDistance(owner_->Position(), helper_->rightCorner.currentPos);
-        position = (leftDistance < rightDistance) ? helper_->leftCorner.currentPos : helper_->rightCorner.currentPos;
+        REAL rightDistance = eCoordDistance(owner_->Position(), data.rightCorner.currentPos);
+        position = (leftDistance < rightDistance) ? data.leftCorner.currentPos : helper_->data_stored->rightCorner.currentPos;
     }
 
     target = position;
@@ -75,9 +75,9 @@ bool gPathHelper::tailMode(gHelperData data)
 
 bool gPathHelper::enemyMode(gHelperData data)
 {
-    gCycle *enemy = helper_->enemies.closestEnemy;
+    gCycle *enemy = data.enemies.closestEnemy;
 
-    if (!helper_->enemies.exist(enemy))
+    if (!data.enemies.exist(enemy))
         return false;
 
     target = enemy->Position();
@@ -91,9 +91,9 @@ bool gPathHelper::enemyMode(gHelperData data)
 
 bool gPathHelper::autoMode(gHelperData data)
 {
-    gCycle *enemy = helper_->enemies.closestEnemy;
+    gCycle *enemy = data.enemies.closestEnemy;
 
-    bool isClose = helper_->enemies.exist(enemy) && gHelperUtility::isClose(owner_, enemy->Position(), sg_pathHelperAutoCloseDistance + data.turnSpeedFactorF());
+    bool isClose = data.enemies.exist(enemy) && gHelperUtility::isClose(owner_, enemy->Position(), sg_pathHelperAutoCloseDistance + data.ownerData.turnSpeedFactorF());
     if (isClose)
     {
         target = enemy->Position();
@@ -133,21 +133,21 @@ void gPathHelper::RenderPath(gHelperData &data)
     eCoord last_c;
     eCoord owner_pos = owner_->pos; // get the current position of the owner
 
-    gHelperUtility::debugLine(gRealColor(1, 1, 0), 0, data.speedFactorF(), owner_pos, path_.positions(0) + path_.offsets(0), se_pathBrightness);
+    gHelperUtility::debugLine(gRealColor(1, 1, 0), 0, data.ownerData.speedFactorF(), owner_pos, path_.positions(0) + path_.offsets(0), se_pathBrightness);
 
     for (int i = path_.positions.Len() - 1; i >= 0; i--)
     {
         eCoord c = path_.positions(i) + path_.offsets(i);
         if (i != path_.positions.Len() - 1)
-            gHelperUtility::debugLine(gRealColor(1, 0, 0), se_pathHeight, data.speedFactorF(), last_c, c, se_pathBrightness);
+            gHelperUtility::debugLine(gRealColor(1, 0, 0), se_pathHeight, data.ownerData.speedFactorF(), last_c, c, se_pathBrightness);
         last_c = c;
     }
 
     if (path_.current >= 0 && path_.positions.Len() > 0)
     {
         eCoord c = path_.CurrentPosition();
-        gHelperUtility::debugLine(gRealColor(1, 1, 0), se_pathHeight, data.speedFactorF(), c, c, 1);
-        gHelperUtility::debugLine(gRealColor(1, 1, 0), (se_pathHeight * 2), data.speedFactorF(), c, c, se_pathBrightness);
+        gHelperUtility::debugLine(gRealColor(1, 1, 0), se_pathHeight, data.ownerData.speedFactorF(), c, c, 1);
+        gHelperUtility::debugLine(gRealColor(1, 1, 0), (se_pathHeight * 2), data.ownerData.speedFactorF(), c, c, se_pathBrightness);
     }
 }
 
@@ -212,9 +212,9 @@ void gPathHelper::RenderTurn(gHelperData &data)
             }
 
             // Comes in opposite, flip to fit turn direction mapping set in gHelper
-            lr *= -1; 
+            lr *= -1;
 
-            gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(lr)->before_hit, 1);
+            gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.ownerData.speedFactorF() * 3, owner_->Position(), data.sensors.getSensor(lr)->before_hit, 1);
             if (sg_pathHelperShowTurnAct)
                 helper_->turnHelper->makeTurnIfPossible(data, lr, 1);
         }

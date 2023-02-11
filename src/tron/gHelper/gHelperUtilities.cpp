@@ -65,9 +65,9 @@ gHelperSensorsData::gHelperSensorsData(gCycle *owner) :
 
 gHelperSensorsData::~gHelperSensorsData()
 {
-    delete front_stored;
-    delete left_stored;
-    delete right_stored;
+    // delete front_stored;
+    // delete left_stored;
+    // delete right_stored;
 }
 
 
@@ -140,49 +140,18 @@ gHelperSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSens
     }
 }
 
-
-gHelperData::gHelperData(gHelperSensorsData *sensors_, gCycle *owner)
-    : sensors(*sensors_),
-      owner_(owner)
-{
-    ownerSpeed = &owner_->verletSpeed_;
+REAL gHelperOwnerData::turnSpeedFactorF() {
+    return ((owner_->verletSpeed_) * owner_->GetTurnDelay());
 }
 
-REAL gHelperData::turnSpeedFactorF() {
-    return ((*ownerSpeed) * owner_->GetTurnDelay());
-}
-
-REAL gHelperData::lagFactorF() {
+REAL gHelperOwnerData::lagFactorF() {
     return (owner_->Lag());
 }
 
-void gHelperData::Load(REAL a_speedFactor,
-                         REAL a_turnSpeedFactor, REAL a_turnSpeedFactorPercent,
-                         REAL a_turnDistance, REAL a_thinkAgain, REAL a_turnDir,
-                         REAL a_turnTime)
-    {
-      speedFactor = (a_speedFactor);
-      turnSpeedFactor = (a_turnSpeedFactor);
-      turnSpeedFactorPercent = (a_turnSpeedFactorPercent);
-      turnDistance = (a_turnDistance);
-      thinkAgain = (a_thinkAgain);
-      turnDir = (a_turnDir);
-      turnTime = (a_turnTime);
-      }
+REAL gHelperOwnerData::speedFactorF() {
+    return (1/(owner_->verletSpeed_));
+}
 
-gHelperData::gHelperData(gHelperSensorsData &sensors_, REAL a_speedFactor,
-                         REAL a_turnSpeedFactor, REAL a_turnSpeedFactorPercent,
-                         REAL a_turnDistance, REAL a_thinkAgain, REAL a_turnDir,
-                         REAL a_turnTime)
-    : sensors(sensors_),
-      speedFactor(a_speedFactor),
-      turnSpeedFactor(a_turnSpeedFactor),
-      turnSpeedFactorPercent(a_turnSpeedFactorPercent),
-      turnDistance(a_turnDistance),
-      thinkAgain(a_thinkAgain),
-      turnDir(a_turnDir),
-      turnTime(a_turnTime)
-{ }
 
 bool gHelperEnemiesData::exist(gCycle* enemy) {
     return (enemy != nullptr) && enemy->Alive();
@@ -219,7 +188,7 @@ bool gSmartTurningCornerData::isInfront(eCoord pos, eCoord dir, eCoord posToChec
     return eCoord::F(dir, posToCheck - pos) > 0;
 }
 
-bool gSmartTurningCornerData::findCorner(gHelperData & data, const gHelperSensor *sensor, gHelper *helper)
+bool gSmartTurningCornerData::findCorner(const gHelperSensor *sensor, gHelper *helper)
 {
     if (!sensor->ehit)
     {

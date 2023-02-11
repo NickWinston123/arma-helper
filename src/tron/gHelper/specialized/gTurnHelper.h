@@ -6,6 +6,18 @@
 #define ArmageTron_GHELPER_TURN
 
 class Sensor;
+
+struct gSurviveData {
+    bool canSurviveLeftTurn;
+    bool canSurviveRightTurn;
+    bool trapped;
+    bool closedIn;
+    bool blockedBySelf;
+    bool exist; 
+
+    gSurviveData(): exist(true) {};
+    gSurviveData(bool): exist(false) {};
+};
 // gTurnHelper is a class that manages emergency turning for a cycle in the game
 // using the chatbot logic to get a turn 
 class gTurnHelper
@@ -28,12 +40,8 @@ public:
     bool makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFactor = 0);
 
     // function to check if a turn can help the cycle survive a left or right turn given speed and rubber factors
-    void canSurviveTurn(gHelperData &data,
-                        REAL &canSurviveLeftTurn,
-                        REAL &canSurviveRightTurn,
-                        bool &closedIn,
-                        bool &blockedBySelf,
-                        REAL freeSpaceFactor = 0);
+    gSurviveData canSurviveTurn(gHelperData &data,
+                                REAL freeSpaceFactor = 0);
                         
 
     // performs the actual turn

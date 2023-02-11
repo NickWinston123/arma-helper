@@ -1,4 +1,5 @@
 #include "../../gSensor.h"
+#include "gHelperSensor.h"
 #include "../../gCycle.h"
 #include "../../gWall.h"
 

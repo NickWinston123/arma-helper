@@ -1,5 +1,6 @@
 #include "../../gZone.h"
 #include "../../gSensor.h"
+#include "gHelperSensor.h"
 
 #include "../gHelperVar.h"
 #include "../gHelperUtilities.h"
@@ -19,6 +20,9 @@ static tConfItem<bool> sg_helperZoneShowOwnerOnlyC("HELPER_ZONE_SHOW_OWNER_ONLY"
 
 bool sg_helperZoneShow = false;
 static tConfItem<bool> sg_helperZoneShowConf("HELPER_ZONE_SHOW", sg_helperZoneShow);
+
+REAL sg_helperZoneShowBonusRadius = 0;
+static tConfItem<REAL> sg_helperZoneShowBonusRadiusConf("HELPER_ZONE_SHOW_RADIUS_BONUS", sg_helperZoneShowBonusRadius);
 
 bool sg_helperZoneEnemyZonesColor = false;
 static tConfItem<bool> sg_helperZoneEnemyZonesColorConf("HELPER_ZONE_SHOW_ENEMY_RED", sg_helperZoneEnemyZonesColor);
@@ -46,7 +50,7 @@ gHelperHudItem<REAL> zoneHitH("Zone Hit", 0);
 
 void debugZone(gZone *zone, gRealColor color, REAL timeout)
 {
-    gHelperUtility::debugBox(color, zone->Position(), zone->GetRadius(), timeout);
+    gHelperUtility::debugBox(color, zone->Position(), zone->GetRadius()+sg_helperZoneShowBonusRadius, timeout);
 }
 
 gZoneHelper::gZoneHelper(gHelper *helper, gCycle *owner)
@@ -79,12 +83,13 @@ void gZoneHelper::zoneSensor(gHelperData &data)
     zoneHit = zoneIntersects(RIGHT, zone, data);
     renderSensorHit(zoneHit,data);
 
+    delete zoneHit;
 
 }
 gZoneHitData *gZoneHelper::zoneIntersects(int dir, gZone *zone,gHelperData &data)
 {
 
-    gSensor* sensor  = data.sensors.getSensor(dir,true);
+    gHelperSensor* sensor  = data.sensors.getSensor(dir,true);
     eCoord sensorDirection = sensor->Direction();
     eCoord zonePos = zone->Position();
     REAL zoneRadius = zone->GetRadius();
@@ -94,6 +99,7 @@ gZoneHitData *gZoneHelper::zoneIntersects(int dir, gZone *zone,gHelperData &data
     REAL projection = toZone.Dot(sensorDirection) / sensorDirection.Norm();
     eCoord nearestPoint = sensor->start_ + sensorDirection.GetNormalized() * projection;
     REAL distanceToCenter = (nearestPoint - zonePos).Norm();
+
     if (distanceToCenter > zoneRadius)
     {
         return new gZoneHitData();

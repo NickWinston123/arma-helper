@@ -2416,8 +2416,6 @@ nServerInfo* nServerInfo::GetRandomMaster()
         ++r;
     }
 
-    tASSERT( masterInfo );
-
     // store and return
     if(masterInfo)
     {

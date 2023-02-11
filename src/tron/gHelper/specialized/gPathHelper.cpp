@@ -1,7 +1,7 @@
 #include "../../gCycle.h"
 #include "../../gWall.h"
 #include "../../gSensor.h"
-
+#include "gHelperSensor.h"
 #include "../gHelperVar.h"
 #include "../gHelperUtilities.h"
 #include "gPathHelper.h"

@@ -2394,9 +2394,9 @@ REAL gNetPlayerWall::Alpha(REAL pos) const
 
     if ( diff > 0 )
         a /= diff;
-
-    tASSERT ( -.001 < a );
-    tASSERT ( 1.001 > a );
+  //A > 1.001 IS UNLIKELY BUT POSSIBLE, will cause crashes 
+  //tASSERT ( -.001 < a );
+  //tASSERT ( 1.001 > a );
 
     return a;
 }

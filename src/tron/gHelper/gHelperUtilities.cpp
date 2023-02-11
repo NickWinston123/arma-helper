@@ -2,6 +2,7 @@
 #include "gHelperVar.h"
 #include "../gSensor.h"
 #include "eDebugLine.h"
+#include "specialized/gHelperSensor.h"
 extern void sg_RubberValues( ePlayerNetID const * player, REAL speed, REAL & max, REAL & effectiveness );
 
 using namespace helperConfig;
@@ -52,29 +53,37 @@ void gHelperUtility::debugBox(gRealColor color, eCoord center, REAL radius, REAL
 }
 
 
-gHelperSensors::gHelperSensors(gSensor* front_, gSensor* left_, gSensor* right_) :
+gHelperSensors::gHelperSensors(gHelperSensor* front_, gHelperSensor* left_, gHelperSensor* right_) :
     front(front_), left(left_), right(right_) {}
 
 gHelperSensorsData::gHelperSensorsData(gCycle *owner) :
     owner_(owner),
-    front_stored(new gSensor(owner_, owner_->Position(), owner_->Direction())),
-    left_stored(new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(LEFT)))),
-    right_stored(new gSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(RIGHT))))
+    front_stored(new gHelperSensor(owner_, owner_->Position(), owner_->Direction())),
+    left_stored(new gHelperSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(LEFT)))),
+    right_stored(new gHelperSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(RIGHT))))
 {}
 
-gSensor * gHelperSensorsData::getSensor(int dir, bool newSensor)
+gHelperSensorsData::~gHelperSensorsData()
+{
+    delete front_stored;
+    delete left_stored;
+    delete right_stored;
+}
+
+
+gHelperSensor * gHelperSensorsData::getSensor(int dir, bool newSensor)
 {
     return getSensor(owner_->Position(),dir, newSensor);
 }
 
-gSensor *gHelperSensorsData::getSensor(eCoord start, eCoord dir, REAL detectRange)
+gHelperSensor *gHelperSensorsData::getSensor(eCoord start, eCoord dir, REAL detectRange)
 {
-    gSensor * sensor = new gSensor(owner_,start, dir);
+    gHelperSensor * sensor = new gHelperSensor(owner_,start, dir);
     sensor->detect(detectRange);
     return sensor;
 }
 
-gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
+gHelperSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
 {
     if (sg_helperSensorLightUsageMode && !newSensor)
     {
@@ -111,19 +120,19 @@ gSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
         {
             case LEFT:
             {
-                gSensor *left = new gSensor(owner_, start, owner_->Direction().Turn(eCoord(0, 1)));
+                gHelperSensor *left = new gHelperSensor(owner_, start, owner_->Direction().Turn(eCoord(0, 1)));
                 left->detect(sg_helperSensorRange, true);
                 return left;
             }
             case FRONT:
             {
-                gSensor *front = new gSensor(owner_, start, owner_->Direction());
+                gHelperSensor *front = new gHelperSensor(owner_, start, owner_->Direction());
                 front->detect(sg_helperSensorRange, true);
                 return front;
             }
             case RIGHT:
             {
-                gSensor *right = new gSensor(owner_, start, owner_->Direction().Turn(eCoord(0, -1)));
+                gHelperSensor *right = new gHelperSensor(owner_, start, owner_->Direction().Turn(eCoord(0, -1)));
                 right->detect(sg_helperSensorRange, true);
                 return right;
             }
@@ -141,6 +150,10 @@ gHelperData::gHelperData(gHelperSensorsData *sensors_, gCycle *owner)
 
 REAL gHelperData::turnSpeedFactorF() {
     return ((*ownerSpeed) * owner_->GetTurnDelay());
+}
+
+REAL gHelperData::lagFactorF() {
+    return (owner_->Lag());
 }
 
 void gHelperData::Load(REAL a_speedFactor,
@@ -206,7 +219,7 @@ bool gSmartTurningCornerData::isInfront(eCoord pos, eCoord dir, eCoord posToChec
     return eCoord::F(dir, posToCheck - pos) > 0;
 }
 
-bool gSmartTurningCornerData::findCorner(gHelperData & data, const gSensor *sensor, gHelper *helper)
+bool gSmartTurningCornerData::findCorner(gHelperData & data, const gHelperSensor *sensor, gHelper *helper)
 {
     if (!sensor->ehit)
     {

@@ -256,6 +256,8 @@
 		<Unit filename="src/tron/gHelper/gHelperVar.h" />
 		<Unit filename="src/tron/gHelper/gHelperHud.cpp" />
 		<Unit filename="src/tron/gHelper/gHelperHud.h" />
+		<Unit filename="src/tron/gHelper/gHelperSensor.cpp" />
+		<Unit filename="src/tron/gHelper/gHelperSensor.h" />
 		<Unit filename="src/tron/gHelper/specialized/gTurnHelper.cpp" />
 		<Unit filename="src/tron/gHelper/specialized/gTurnHelper.h" />
 		<Unit filename="src/tron/gHelper/specialized/gSmartTurning.cpp" />

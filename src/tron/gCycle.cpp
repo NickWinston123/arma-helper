@@ -2403,48 +2403,133 @@ static tConfItem<REAL> sr_filterCycleWallsMinGConf("FILTER_CYCLE_WALLS_MIN_G", s
 REAL sr_filterCycleWallsMinB = 0;
 static tConfItem<REAL> sr_filterCycleWallsMinBConf("FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB);
 
+REAL sr_filterCycleWallsMaxTotal = 100;
+static tConfItem<REAL> sr_filterCycleWallsMaxTotalConf("FILTER_CYCLE_WALLS_MAX_TOTAL", sr_filterCycleWallsMaxTotal);
+
 REAL sr_filterCycleWallsMinTotal = 0;
 static tConfItem<REAL> sr_filterCycleWallsMinTotalConf("FILTER_CYCLE_WALLS_MIN_TOTAL", sr_filterCycleWallsMinTotal);
 
-void removeDarkColors(REAL& r, REAL& g, REAL& b)
+
+bool sr_removeBlueColors = false;
+static tConfItem< bool > sr_removeBlueColorsConf( "FILTER_CYCLE_WALLS_BLUE", sr_removeBlueColors );
+
+void removeBlueColors(gRealColor &color)
 {
-    if (sr_filterCycleWallsMinR > 1) {
-        sr_filterCycleWallsMinR = 1;
-    }
-    if (sr_filterCycleWallsMinG > 1) {
-        sr_filterCycleWallsMinG = 1;
-    }
-    if (sr_filterCycleWallsMinB > 1) {
-        sr_filterCycleWallsMinB = 1;
-    }
-    if (sr_filterCycleWallsMinTotal > 1) {
-        sr_filterCycleWallsMinTotal = 1;
-    }
-
-    while (r < sr_filterCycleWallsMinR || g < sr_filterCycleWallsMinG || b < sr_filterCycleWallsMinB || ((r+g+b)/3 < sr_filterCycleWallsMinTotal ))
-    {
-        REAL currentTotal = (r + g + b)/3;
-
-        if ( r < sr_filterCycleWallsMinR || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
-            r += 0.1;
-        }
-
-        if ( g < sr_filterCycleWallsMinG || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
-            g += 0.1;
-        }
-
-        if ( b < sr_filterCycleWallsMinB || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
-            b += 0.1;
-        }
-
-        if (r > 1)
-            r = 1;
-        if (g > 1)
-            g = 1;
-        if (b > 1)
-            b = 1;
-    }
+// Check if the blue value of the color is too high
+if (color.b > 0)
+{
+// Reduce the blue value and increase the red and green values to make the color brighter and less blue
+color.b= 0;
+color.r = std::min(color.r + 0.3, 1.0);
+color.g = std::min(color.g + 0.3, 1.0);
 }
+}
+
+void removeDarkColors(REAL &r, REAL &g, REAL &b)
+{
+    if (r > 500 ) {
+        r = 0;
+    }
+    if (g > 500 ) {
+        g = 0;
+    }
+    if (b > 500 ) {
+        b = 0;
+    }
+    REAL currentTotal = (r + g + b) / 3;
+    if (r < sr_filterCycleWallsMinR)
+    {
+        r = sr_filterCycleWallsMinR;
+    }
+    else if (r > sr_filterCycleWallsMaxTotal)
+    {
+        r = 1 - ((r - sr_filterCycleWallsMaxTotal) / 15);
+    }
+
+    if (g < sr_filterCycleWallsMinG)
+    {
+        g = sr_filterCycleWallsMinG;
+    }
+    else if (g > sr_filterCycleWallsMaxTotal)
+    {
+        g = 1 - ((g - sr_filterCycleWallsMaxTotal) / 15);
+    }
+
+    if (b < sr_filterCycleWallsMinB)
+    {
+        b = sr_filterCycleWallsMinB;
+    }
+    else if (b > sr_filterCycleWallsMaxTotal)
+    {
+        b = 1 - ((b - sr_filterCycleWallsMaxTotal) / 15);
+    }
+
+    if (currentTotal < sr_filterCycleWallsMinTotal)
+    {
+        REAL totalDiff = sr_filterCycleWallsMinTotal - currentTotal;
+        r += totalDiff;
+        g += totalDiff;
+        b += totalDiff;
+    }
+    else if (currentTotal > sr_filterCycleWallsMaxTotal)
+    {
+        REAL totalDiff = currentTotal - sr_filterCycleWallsMaxTotal;
+        r = 1 - (totalDiff / 15);
+        g = 1 - (totalDiff / 15);
+        b = 1 - (totalDiff / 15);
+    }
+
+    if (r > 1)
+        r = 1;
+    if (g > 1)
+        g = 1;
+    if (b > 1)
+        b = 1;
+}
+
+// void filterColors(REAL &r, REAL &g, REAL &b)
+// {
+
+// }
+// void removeDarkColors(REAL& r, REAL& g, REAL& b)
+// {
+//     if (sr_filterCycleWallsMinR > 1) {
+//         sr_filterCycleWallsMinR = 1;
+//     }
+//     if (sr_filterCycleWallsMinG > 1) {
+//         sr_filterCycleWallsMinG = 1;
+//     }
+//     if (sr_filterCycleWallsMinB > 1) {
+//         sr_filterCycleWallsMinB = 1;
+//     }
+//     if (sr_filterCycleWallsMinTotal > 1) {
+//         sr_filterCycleWallsMinTotal = 1;
+//     }
+
+//     while (r < sr_filterCycleWallsMinR || g < sr_filterCycleWallsMinG || b < sr_filterCycleWallsMinB || ((r+g+b)/3 < sr_filterCycleWallsMinTotal ))
+//     {
+//         REAL currentTotal = (r + g + b)/3;
+
+//         if ( r < sr_filterCycleWallsMinR || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
+//             r += 0.1;
+//         }
+
+//         if ( g < sr_filterCycleWallsMinG || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
+//             g += 0.1;
+//         }
+
+//         if ( b < sr_filterCycleWallsMinB || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
+//             b += 0.1;
+//         }
+
+//         if (r > 1)
+//             r = 1;
+//         if (g > 1)
+//             g = 1;
+//         if (b > 1)
+//             b = 1;
+//     }
+// }
 
 bool sg_updateCycleColor = false;
 static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycleColor);
@@ -2457,6 +2542,9 @@ void gCycle::updateColor() {
         if (sr_filterCycleWalls) {
              removeDarkColors( color_.r, color_.g, color_.b );
              removeDarkColors( trailColor_.r, trailColor_.g, trailColor_.b);
+         }
+         if (sr_removeBlueColors){
+            removeBlueColors(color_);
          }
 }
 

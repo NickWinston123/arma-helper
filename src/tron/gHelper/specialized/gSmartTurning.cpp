@@ -1,7 +1,7 @@
 #include "../../gSensor.h"
 #include "../../gCycle.h"
 #include "../../gWall.h"
-
+#include "gHelperSensor.h"
 #include "../gHelperVar.h"
 #include "../gHelperUtilities.h"
 
@@ -111,9 +111,9 @@ void gSmartTurning::followTail(gHelperData &data)
         // The tail is behind the cycle, turn towards it
 
         // Check if there are walls to the left or right of the cycle
-        gSensor leftSensor(owner_, owner_->pos, owner_->dir.Turn(0, 1));
+        gHelperSensor leftSensor(owner_, owner_->pos, owner_->dir.Turn(0, 1));
         leftSensor.detect(sg_helperSensorRange);
-        gSensor rightSensor(owner_, owner_->pos, owner_->dir.Turn(0, -1));
+        gHelperSensor rightSensor(owner_, owner_->pos, owner_->dir.Turn(0, -1));
         rightSensor.detect(sg_helperSensorRange);
 
         // Check if the tail is to the right or left of the cycle
@@ -376,7 +376,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
     REAL hitRange = data.sensors.getSensor(FRONT)->hit;
 
     // If the range to the front bot is within the sg_helperSmartTurningFrontBotThinkRange
-    if (hitRange <= sg_helperSmartTurningFrontBotThinkRange * data.turnSpeedFactorF())
+    if (hitRange <= (sg_helperSmartTurningFrontBotThinkRange * data.turnSpeedFactorF()) + data.lagFactorF())
     {
         // Calculate the rubber data
         helper_->rubberData->calculate();

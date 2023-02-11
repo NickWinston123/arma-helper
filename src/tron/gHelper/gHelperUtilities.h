@@ -9,6 +9,8 @@
 #ifndef ArmageTron_GHELPER_UTILITIES
 #define ArmageTron_GHELPER_UTILITIES
 
+class gHelperSensor;
+
 struct debugParams {
     bool emptyString;
     bool spamProtection;
@@ -103,25 +105,26 @@ class gHelperUtility
 
 struct gHelperSensors
 {
-    gSensor* front;
-    gSensor* left;
-    gSensor* right;
+    gHelperSensor* front;
+    gHelperSensor* left;
+    gHelperSensor* right;
 
-    gHelperSensors(gSensor* front_, gSensor* left_, gSensor* right_);
+    gHelperSensors(gHelperSensor* front_, gHelperSensor* left_, gHelperSensor* right_);
 };
 
 
 struct gHelperSensorsData
 {
     gCycle *owner_;
-    gSensor *front_stored;
-    gSensor *left_stored;
-    gSensor *right_stored;
+    gHelperSensor *front_stored;
+    gHelperSensor *left_stored;
+    gHelperSensor *right_stored;
 
+    ~gHelperSensorsData();
     gHelperSensorsData(gCycle *owner);
-    gSensor* getSensor(int dir, bool newSensor = false);
-    gSensor* getSensor(eCoord start, int dir, bool newSensor = false);
-    gSensor* getSensor(eCoord start, eCoord dir, REAL detectRange = sg_helperSensorRange);
+    gHelperSensor* getSensor(int dir, bool newSensor = false);
+    gHelperSensor* getSensor(eCoord start, int dir, bool newSensor = false);
+    gHelperSensor* getSensor(eCoord start, eCoord dir, REAL detectRange = sg_helperSensorRange);
 };
 
 struct gHelperData
@@ -148,6 +151,8 @@ struct gHelperData
     REAL turnSpeedFactorPercentF() {
         return (1/turnSpeedFactorF());
     }
+    // lag
+    REAL lagFactorF();
 
     // calculates the distance based on the turn speed factor
     REAL turnDistanceF() {
@@ -247,7 +252,7 @@ struct gSmartTurningCornerData
 
     // Finds a corner based on the sensor data, updates relevant data in the
     // gSmartTurningCornerData object, and returns a boolean indicating if the corner was found
-    bool findCorner(gHelperData &data, const gSensor *sensor, gHelper *helper);
+    bool findCorner(gHelperData &data, const gHelperSensor *sensor, gHelper *helper);
 };
 
 

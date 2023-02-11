@@ -7,6 +7,7 @@
 #include "gHelperHud.h"
 #include "gHelperUtilities.h"
 #include "specialized/gSmartTurning.h"
+#include "specialized/gHelperSensor.h"
 
 extern REAL sg_cycleBrakeDeplete;
 using namespace helperConfig;
@@ -65,6 +66,9 @@ gHelper::gHelper(gCycle *owner)
         data_stored(new gHelperData(sensors_,owner_)),
         rubberData(new gHelperRubberData(this, owner_))
 {
+    if (sg_helperAI) {
+        aiPlayer.reset(new gAIPlayer(this,owner_));
+    }
     ownerPos = &owner_->pos;
     ownerDir = &owner_->dir;
     tailPos = &owner_->tailPos;
@@ -88,13 +92,13 @@ bool gHelper::drivingStraight() {
 
 /**
 * @brief Check if the target is visible from the owner's current position
-* This function uses a gSensor to detect if the target is visible from the owner's current position
+* This function uses a gHelperSensor to detect if the target is visible from the owner's current position
 * @param target The target coordinate to check visibility for
 * @param passthrough The minimum value of the sensor hit to be considered as visible
 * @return True if the target is visible, False otherwise
 */
 bool gHelper::canSeeTarget(eCoord target, REAL passthrough) {
-    gSensor sensor(owner_, (*ownerPos), target - (*ownerPos));
+    gHelperSensor sensor(owner_, (*ownerPos), target - (*ownerPos));
     sensor.detect(REAL(.98));
     return (sensor.hit >= passthrough);
 }
@@ -506,7 +510,7 @@ void gHelper::showHit(gHelperData & data)
     // calculate the timeout value
     REAL timeout = data.speedFactorF() * sg_showHitDataTimeout;
 
-    if (sg_helperHud) 
+    if (sg_helperHud)
     // write the front hit distance to the stream
         sg_helperShowHitFrontDistH << (frontHit);
 
@@ -559,7 +563,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     eCoord newDir = initDir.Turn(eCoord(0, sensorDir * -1));
 
     // Get the information of the sensor at the current position and direction.
-    gSensor *sensor = data.sensors.getSensor(currentPos, initDir);
+    gHelperSensor *sensor = data.sensors.getSensor(currentPos, initDir);
     eCoord hitPos = sensor->before_hit;
     REAL hitDistance = sensor->hit;
 
@@ -645,8 +649,8 @@ void gHelper::Activate()
     {
         if (aiPlayer.get() == 0)
         {
-            gHelperUtility::Debug("sg_helperAI", "Creating AI", "");
-            aiPlayer.reset(new gAIPlayer(this,owner_));
+            // gHelperUtility::Debug("sg_helperAI", "Creating AI", "");
+            // aiPlayer.reset(new gAIPlayer(this,owner_));
         } else {
             aiPlayer->Timestep(se_GameTime() + helperConfig::sg_helperAITime);
         }
@@ -672,4 +676,9 @@ gHelper &gHelper::Get(gCycle * cycle)
 
 gHelper::~gHelper()
 {
+
+delete sensors_;
+delete data_stored;
+delete rubberData;
+
 }

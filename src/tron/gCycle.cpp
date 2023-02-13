@@ -64,6 +64,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <functional>
 #include <algorithm>
 
+#include "gAINavigator.h"
+
 #include "gHelper/gHelperVar.h"
 
 #ifndef DEDICATED
@@ -352,6 +354,7 @@ static tSettingItem<REAL> sg_localBotDecayConf( "LOCAL_BOT_DECAY", sg_localBotDe
 static REAL sg_localBotEnemyPenalty = 0;
 static tSettingItem<REAL> sg_localBotEnemyPenaltyConf( "LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty );
 
+
 #ifdef DEBUGCHATBOT
 typedef tSettingItem<REAL> gChatBotSetting;
 typedef tSettingItem<bool> gChatBotSwitch;
@@ -363,31 +366,78 @@ typedef nSettingItem<bool> gChatBotSwitch;
 tString sg_chatBotEnabledForPlayers = tString("1,2,3,4");
 static tConfItem<tString> sg_chatBotEnabledForPlayersConf( "CHATBOT_ENALED_PLAYERS", sg_chatBotEnabledForPlayers );
 
-static bool sg_chatBotAlwaysActive = false;
+bool sg_chatBotAlwaysActive = false;
 static gChatBotSwitch sg_chatBotAlwaysActiveConf( "CHATBOT_ALWAYS_ACTIVE", sg_chatBotAlwaysActive );
 
-static REAL sg_chatBotNewWallBlindness = .3;
+REAL sg_chatBotNewWallBlindness = .3;
 static gChatBotSetting sg_chatBotNewWallBlindnessConf( "CHATBOT_NEW_WALL_BLINDNESS", sg_chatBotNewWallBlindness );
 
-static REAL sg_chatBotMinTimestep = .3;
+REAL sg_chatBotMinTimestep = .3;
 static gChatBotSetting sg_chatBotMinTimestepConf( "CHATBOT_MIN_TIMESTEP", sg_chatBotMinTimestep );
 
-static REAL sg_chatBotDelay = .5;
+REAL sg_chatBotDelay = .5;
 static gChatBotSetting sg_chatBotDelayConf( "CHATBOT_DELAY", sg_chatBotDelay );
 
-static REAL sg_chatBotRange = 1;
+REAL sg_chatBotRange = 1;
 static gChatBotSetting sg_chatBotRangeConf( "CHATBOT_RANGE", sg_chatBotRange );
 
-static REAL sg_chatBotDecay = .02;
+REAL sg_chatBotDecay = .02;
 static gChatBotSetting sg_chatBotDecayConf( "CHATBOT_DECAY", sg_chatBotDecay );
 
-static REAL sg_enemyChatbotTimePenalty = 30.0f;   //!< penalty for victim in chatbot mode
+REAL sg_enemyChatbotTimePenalty = 30.0f;   //!< penalty for victim in chatbot mode
 static tSettingItem<REAL> sg_enemyChatbotTimePenaltyConf( "ENEMY_CHATBOT_PENALTY", sg_enemyChatbotTimePenalty );
 
-static bool sg_chatBotControlByServer = false;
+bool sg_chatBotControlByServer = false;
 static tSettingItem<bool> sg_chatBotControlByServerConf("CHATBOT_CONTROLLED_BY_SERVER", sg_chatBotControlByServer);
 
 extern REAL sg_suicideTimeout;
+
+class gSmarterBot: public gAINavigator
+{
+    friend class gCycle;
+
+    REAL nextChatAI_;        //!< the next time the chat AI can be active
+    REAL timeOnChatAI_;      //!< the total time the player was on chat AI this round
+public:
+    gSmarterBot( gCycle * owner )
+            : gAINavigator( owner )
+            , nextChatAI_( 0 )
+            , timeOnChatAI_( 0 )
+    {
+        settings_.range = sg_chatBotRange;
+        settings_.newWallBlindness = sg_chatBotNewWallBlindness;
+    }
+
+    static gSmarterBot & Get( gCycle * cycle )
+    {
+        tASSERT( cycle );
+
+        // create
+        if ( cycle->smarterBot_.get() == 0 )
+            cycle->smarterBot_.reset( new gSmarterBot( cycle ) );
+
+        return *cycle->smarterBot_;
+    }
+
+    REAL Think( REAL minStep )
+    {
+        UpdatePaths();
+        EvaluationManager manager( GetPaths() );
+        manager.Evaluate( SuicideEvaluator( *Owner(), sg_chatBotMinTimestep*1.1 ), 1 );
+        manager.Evaluate( SuicideEvaluator( *Owner(), minStep ), 1 );
+        manager.Reset();
+        manager.Evaluate( SpaceEvaluator( *Owner() ), 1 );
+        manager.Evaluate( PlanEvaluator(), .1 );
+        CycleControllerAction controller;
+        return manager.Finish( controller, *Owner(), minStep );
+    }
+
+    void Activate( REAL currentTime )
+    {
+        REAL minTime = Think(0);
+    }
+};
+
 
 REAL chatBotNewWallBlindness, chatBotMinTimestep, chatBotDelay, chatBotRange, chatBotDecay, chatBotEnemyPenalty;
 class gCycleChatBot
@@ -2936,18 +2986,18 @@ bool gCycle::Timestep(REAL currentTime){
         bool chatFlagHackEnabled = se_toggleChatFlagAlways || se_toggleChatFlag;
 
         bool activateSmarterBotForThisPlayer = bool(player) && sg_smarterBot && tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
-        
-        bool activateLocalBotForThisPlayer = !activateSmarterBotForThisPlayer && bool(player) && sg_localBot && 
-                                             (sg_localBotAlwaysActive || player->IsChatting()) && 
+
+        bool activateLocalBotForThisPlayer = !activateSmarterBotForThisPlayer && bool(player) && sg_localBot &&
+                                             (sg_localBotAlwaysActive || player->IsChatting()) &&
                                             tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
 
-        bool activateChatbotForThisPlayer = !activateLocalBotForThisPlayer && 
+        bool activateChatbotForThisPlayer = !activateLocalBotForThisPlayer &&
                                             (bool(player) ? tIsInList(sg_chatBotEnabledForPlayers, player->pID + 1) && !chatFlagHackEnabled : false) &&
                                             (sg_chatBotAlwaysActive || player->IsChatting());
 
 
         bool activateChatbotControlByServer = !activateChatbotForThisPlayer && sg_chatBotControlByServer && sn_GetNetState() == nSERVER;
-        
+
         // chatting? activate chatbot
         if (playerIsMe &&
             activateChatbotForThisPlayer ||
@@ -2963,8 +3013,8 @@ bool gCycle::Timestep(REAL currentTime){
         }
 
         if (playerIsMe && activateSmarterBotForThisPlayer) {
-            // gSmarterBot &smarterBot = gSmarterBot::Get(this);
-            // smarterBot.Activate();
+            gSmarterBot &smarterBot = gSmarterBot::Get(this);
+            smarterBot.Activate(currentTime);
         }
         bool simulate=Alive();
 

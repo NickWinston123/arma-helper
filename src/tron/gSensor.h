@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eGrid.h"
 
 class eEdge;
-class gSensorFinished{};
+
 // sensor sent out to detect near eWalls
 class gSensor: public eSensor{
 public:
@@ -57,7 +57,7 @@ public:
     // ~gSensor(){
     //     // this->RemoveFromList();
     //     // grid->RemoveGameObjectInteresting(this);
-    
+
     // void DoRemoveFromGame() {}
     eCoord start_;
     eCoord direction_;

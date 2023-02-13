@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ePath.h"
 #include "gCycleMovement.h"
 #include "eSensor.h"
+
 #include "eGrid.h"
 class rModel;
 class gTextureCycle;
@@ -53,16 +54,14 @@ class gPlayerWall;
 class eTempEdge;
 struct gPredictPositionData;
 class gFlagZoneHack;
-class gSmarterBot;
 class gAIBot;
 
 
 typedef enum{gSENSOR_NONE,gSENSOR_RIM, gSENSOR_ENEMY,
              gSENSOR_TEAMMATE ,gSENSOR_SELF, gSENSOR_ZONE} gSensorWallType;
 
-#include "gAIBase.h"
 #include "gHelper/gHelper.h"
-#include "gHelper/specialized/gSmarterBot.h"
+class gSmarterBot;
 
 class eEdge;
 
@@ -199,8 +198,8 @@ class gCycle: public gCycleMovement
     friend class gHelper;
     std::unique_ptr< gHelper > helper_;
     
-    // friend class gSmarterBot;
-    // std::unique_ptr< gSmarterBot > smarterBot_;
+    friend class gSmarterBot;
+    std::unique_ptr< gSmarterBot > smarterBot_;
 
     bool dropWallRequested_; //!< flag indicating that someone requested a wall drop
 public:

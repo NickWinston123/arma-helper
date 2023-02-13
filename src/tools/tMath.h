@@ -50,4 +50,17 @@ inline bool good( REAL f )
     return isfinite( f );
 }
 
+//! returns the minumum of two values
+static inline REAL tMin(REAL a, REAL b)
+{
+    return a > b ? b : a;
+}
+
+//! returns the maximum of two values
+static inline REAL tMax(REAL a, REAL b)
+{
+    return a > b ? a : b;
+}
+
+
 #endif

@@ -199,8 +199,8 @@ class gCycle: public gCycleMovement
     friend class gHelper;
     std::unique_ptr< gHelper > helper_;
     
-    friend class gSmarterBot;
-    std::unique_ptr< gSmarterBot > smarterBot_;
+    // friend class gSmarterBot;
+    // std::unique_ptr< gSmarterBot > smarterBot_;
 
     bool dropWallRequested_; //!< flag indicating that someone requested a wall drop
 public:

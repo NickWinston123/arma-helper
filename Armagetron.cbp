@@ -245,6 +245,8 @@
 		<Unit filename="src/tron/gAIBase.h" />
 		<Unit filename="src/tron/gAICharacter.cpp" />
 		<Unit filename="src/tron/gAICharacter.h" />
+		<Unit filename="src/tron/gAINavigator.cpp" />
+		<Unit filename="src/tron/gAINavigator.h" />
 		<Unit filename="src/tron/gArena.cpp" />
 		<Unit filename="src/tron/gArena.h" />
 		<Unit filename="src/tron/gArmagetron.cpp" />

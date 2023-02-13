@@ -210,7 +210,7 @@ class gHelper {
         gHelperData *data_stored;
 
         // Pointer to the AI player gAIPlayer object
-        std::shared_ptr< gAIPlayer > aiPlayer;       
+        //std::shared_ptr< gAIPlayer > aiPlayer;       
         
         // emergency turn object
         std::unique_ptr< gTurnHelper > turnHelper;

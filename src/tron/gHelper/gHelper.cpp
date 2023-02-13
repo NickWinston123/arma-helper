@@ -66,7 +66,7 @@ gHelper::gHelper(gCycle *owner)
         ownerTurnDelay(owner->GetTurnDelay())
 {
     if (sg_helperAI) {
-        aiPlayer.reset(new gAIPlayer(this,owner_));
+        // aiPlayer.reset(new gAIPlayer(this,owner_));
     }
 
     data_stored->ownerData.owner_ = owner_;
@@ -655,10 +655,10 @@ void gHelper::Activate()
 
     if (sg_helperAI)
     {
-        if (!(aiPlayer.get() == 0))
-        {
-            aiPlayer->Timestep(se_GameTime() + helperConfig::sg_helperAITime);
-        }
+        // if (!(aiPlayer.get() == 0))
+        // {
+        //     aiPlayer->Timestep(se_GameTime() + helperConfig::sg_helperAITime);
+        // }
     }
 
     if (sg_helperHud) {

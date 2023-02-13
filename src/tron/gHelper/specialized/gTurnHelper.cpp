@@ -191,7 +191,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     // Check if the player is blocked by itself on the front, left and right sides.
     surviveData.blockedBySelf = (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
 
-    surviveData.trapped =  IsTrapped(owner_, NULL);
+    surviveData.trapped =  false;//IsTrapped(owner_, NULL);
 
     // If free space factor is greater than 0, check the free space factor.
     if (freeSpaceFactor > 0)
@@ -237,7 +237,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
         surviveData.canSurviveLeftTurn = canTurnLeftRubber;
         surviveData.canSurviveRightTurn = canTurnRightRubber;
     }
-    
+
     return surviveData;
 }
 

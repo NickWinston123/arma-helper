@@ -4326,9 +4326,9 @@ static void sg_RespawnAll(eGrid *grid, gArena & arena, bool respawn_all)
 }
 #endif
 
-static REAL sg_timestepMax = .2;
+REAL sg_timestepMax = .2;
 static tSettingItem<REAL> sg_timestepMaxConf( "TIMESTEP_MAX", sg_timestepMax );
-static int sg_timestepMaxCount = 10;
+int sg_timestepMaxCount = 10;
 static tSettingItem<int> sg_timestepMaxCountConf( "TIMESTEP_MAX_COUNT", sg_timestepMaxCount );
 
 void gGame::Timestep(REAL time,bool cam){
@@ -5631,7 +5631,7 @@ bool gGame::GameLoop(bool input){
             for(int i=se_PlayerNetIDs.Len()-1;i>=0;i--)
             {
                 gAIPlayer *ai = dynamic_cast<gAIPlayer*>(se_PlayerNetIDs(i));
-                if (ai && think && !ai->helperAI)
+                if (ai && think)// && !ai->helperAI)
                     ai->Timestep(gtime);
             }
 

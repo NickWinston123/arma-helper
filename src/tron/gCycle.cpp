@@ -1688,7 +1688,7 @@ void 	gCycle::SetWallsStayUpDelay	( REAL delay )
 }
 
 // how much rubber usage shortens the walls
-static REAL sg_cycleRubberWallShrink = 0;
+REAL sg_cycleRubberWallShrink = 0;
 static nSettingItemWatched<REAL>
 sg_cycleRubberWallShrinkConf("CYCLE_RUBBER_WALL_SHRINK",
                              sg_cycleRubberWallShrink,
@@ -2963,8 +2963,8 @@ bool gCycle::Timestep(REAL currentTime){
         }
 
         if (playerIsMe && activateSmarterBotForThisPlayer) {
-            gSmarterBot &smarterBot = gSmarterBot::Get(this);
-            smarterBot.Activate();
+            // gSmarterBot &smarterBot = gSmarterBot::Get(this);
+            // smarterBot.Activate();
         }
         bool simulate=Alive();
 

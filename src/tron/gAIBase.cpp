@@ -88,25 +88,6 @@ static void ClearAITeam()
     sg_AITeam = NULL;
 }
 
-// an instance of this class will prevent deterministic random lookups
-class gRandomController
-{
-public:
-    static gRandomController * random_;
-    gRandomController * lastRandom_;
-    tRandomizer & randomizer_;
-
-    gRandomController( tRandomizer & randomizer = tRandomizer::GetInstance() )
-            : lastRandom_( random_ ), randomizer_( randomizer )
-    {
-        random_ = this;
-    }
-
-    ~gRandomController()
-    {
-        random_ = lastRandom_;
-    }
-};
 
 gRandomController * gRandomController::random_ = 0;
 
@@ -124,7 +105,7 @@ REAL Random()
     }
 }
 
-static REAL Delay()
+REAL Delay()
 {
     REAL delay = sg_delayCycle * .9f;
 
@@ -552,38 +533,7 @@ bool IsTrapped(const gCycle *trapped, const gCycle *other)
     return false;
 }
 
-
-
-
-// data about a loop
-class gLoopData{
-public:
-    bool loop;                       // is there a loop?
-    int  winding;                    // in what direction does it go?
-    tArray<const gCycle*>closedIn;   // which cycles are closed in?
-
-    gLoopData():loop(false), winding(0){}
-    void AddCycle(const gCycle* c){closedIn[closedIn.Len()] = c;}
-};
-
-// hit data
-class gHitData{
-public:
-    const eHalfEdge*  edge;      // edge we hit
-    gSensorWallType   wallType;  // type of the wall hit
-    int               lr;        // does the wall go left or right?
-    REAL              distance;  // distance to the wall
-
-    // additional info if the wall that got hit is a cycle wall
-    gCycle         *otherCycle;    // the cylce that the hit wall belongs to
-    REAL            driveDistance; // the distance it had travelled when it was at the place we hit
-    int             windingNumber; // the winding number at the place hit
-
-    gHitData():edge(NULL), wallType(gSENSOR_NONE), otherCycle(NULL){}
-
-    bool Hit() const {return edge;}
-
-    void AddHit(const eCoord& origin, const eCoord& dir, const gSensor& sensor, int winding)
+    void gHitData::AddHit(const eCoord& origin, const eCoord& dir, const gSensor& sensor, int winding)
     {
         if (!sensor.ehit)
             return; // no hit, nothing to do
@@ -630,236 +580,130 @@ public:
             windingNumber  = w->WindingNumber() - winding;
         }
     }
-};
 
-// special sensor that scans a broader area (not just a raycast)
-class gAISensor{
-public:
-    // the raw data we collect:
 
-    const gCycle* cycle; // the cycle that sent out this sensor
 
-    bool     hit;       // whether a dangerous spot is hit
+bool gAISensor::Hit() const
+{
+    return hit;
+}
 
-    gHitData front;      // what happens in our front
-    gHitData sides[2];   // and on our sides
+void gAISensor::DetectLoop(const gHitData& hit, gLoopData loopData[2])
+{
+    gCycle *other = hit.otherCycle;
 
-    // what we make of it:
-    gLoopData frontLoop[2];   // does the front wall we hit cause us to be trapped if we turn left or right?
-    gLoopData sideLoop[2][2]; // do the two side walls cause us to be trapped if we turn/drive straight on?
-
-    REAL distance;            // distance to the closest wall
-
-    bool Hit() const
+    if (other)
     {
-        return hit;
-    }
-
-    void DetectLoop(const gHitData& hit, gLoopData loopData[2])
-    {
-        // avoid loops:
-        gCycle *other = hit.otherCycle;
-
-        if (other)
+        REAL    dist  = hit.driveDistance;
+        int otherSide = hit.lr < 0 ? 0 : 1;
+        for (int i=1; i>=0; i--)
         {
-            //	  if (other!= Object())
+            loopData[i].closedIn.SetLen(0);
+            loopData[i].loop = false;
+
+            int lr   = i+i-1;
+            int dir  = hit.lr * lr > 0 ? 1 : 0;
+            int winding = 0;
+            bool loop = CheckLoop(cycle, other,
+                                  dist, otherSide, dir,
+                                  loopData[i].closedIn, winding);
+
+            if (loop)
             {
-                REAL    dist  = hit.driveDistance;
-                int otherSide = hit.lr < 0 ? 0 : 1;
-                for (int i=1; i>=0; i--)
-                {
-                    loopData[i].closedIn.SetLen(0);
-                    loopData[i].loop = false;
+                winding += cycle->WindingNumber();
+                winding -= hit.windingNumber;
+                winding += lr;
 
-                    int lr   = i+i-1;
-                    int dir  = hit.lr * lr > 0 ? 1 : 0;
-                    int winding = 0;
-                    bool loop = CheckLoop(cycle, other,
-                                          dist, otherSide, dir,
-                                          loopData[i].closedIn, winding);
+                if (winding * lr > 0)
+                    loopData[i].loop = true;
 
-                    if (loop)
-                    {
-                        // complete the winding calculation: the target winding
-                        // is the one of this cycle:
-                        winding += cycle->WindingNumber();
-                        // and the source is the winding of the wall we hit
-                        winding -= hit.windingNumber;
-
-                        //		      if (dir == 0)
-                        //			winding -= lr * (Object()->Grid()->WindingNumber() >> 1);
-
-                        winding += lr;
-
-#ifdef DEBUG_X
-                        if (winding != 4 && winding != -4)
-                        {
-                            gRandomController noRandom;
-                            if (winding != 0)
-                                //			st_Breakpoint();
-
-                                winding = 0;
-                            CheckLoop(cycle, other,
-                                      dist, otherSide, dir,
-                                      loopData[i].closedIn, winding);
-
-                            winding += cycle->WindingNumber();
-                            winding -= hit.windingNumber;
-                            winding += lr;
-                        }
-#endif
-
-#ifdef DEBUG
-                        //		      con << "winding = " << winding << " ,direction = " << lr << "\n";
-#endif
-                        // if the winding continues the direction we would turn in,
-                        // we're trapped.
-                        if (winding * lr > 0)
-                            loopData[i].loop = true;
-
-                        loopData[i].winding = winding;
-                    }
-                }
+                loopData[i].winding = winding;
             }
         }
     }
+}
 
-    gAISensor(const gAIPlayer *ai, const gCycle* c,
-              const eCoord& start, const eCoord& dir,
-              REAL sideScan, // the amout of space we should scan left and right
-              REAL frontScan, // the total front scanning range
-              REAL corridorScan, // the corridor scanning range
-              int winding        // direction relative to the cycle's driving direction
-             )
-            :cycle(c), distance(frontScan*2)
+gAISensor::gAISensor(const gAIPlayer *ai, gCycle *c,
+                     const eCoord &start, const eCoord &dir,
+                     REAL sideScan,
+                     REAL frontScan,
+                     REAL corridorScan,
+                     int winding)
+    : cycle(c), distance(frontScan * 2)
+{
+    gAICharacter *character = ai->Character();
+
+    hit = false;
+    gCycle *cycle = const_cast<gCycle *>(this->cycle);
+
+    gSensor ahead(cycle, start, dir);
+
+    int count = 0;
+
+    do
     {
-        tASSERT(ai);
-        gAICharacter* character = ai->Character();
-        tASSERT(character);
-
-        hit = false;
-#ifdef DEBUG
-        eDebugLine::SetTimeout(.5);
-#endif
-        gCycle* cycle = const_cast<gCycle*>( this->cycle );
-
-        // detect straight ahead
-        gSensor ahead(cycle, start, dir);
-
-        int count = 0;
-
-        do{
-            ahead.detect(frontScan);
-            front.AddHit(start, dir, ahead, winding);
-            if (front.Hit())
-            {
-                hit = true;
-                distance = front.distance;
-                if (character->properties[AI_LOOP] > 3 + abs(winding) * 3)
-                    DetectLoop(front, frontLoop);
-            }
-        } while (!front.Hit() && count++ < character->properties[AI_RANGE]);
-
-        // adapt the corridor distance so the corridor is not looked for too far away
-        if (distance*.99f < corridorScan)
-            corridorScan = distance * .99f;
-        corridorScan -= sideScan * .02;
-        if (corridorScan < 0.1f)
-            corridorScan = 0.1f;
-
-        if (Random() * 10 < character->properties[AI_TUNNEL])
+        ahead.detect(frontScan);
+        front.AddHit(start, dir, ahead, winding);
+        if (front.Hit())
         {
-            // check the sides
-            eCoord lookTunnel = start + dir * corridorScan;
-
-            int i;
-
-            for (i = 1; i>=0; i--)
-            {
-                int lr       = i+i-1;
-                eCoord lrDir = dir.Turn(eCoord(.01f, -lr));
-
-                gSensor side(cycle, start, lrDir);
-                side.detect(sideScan*1.01f);
-                REAL thisSideScan = side.hit*.99f;
-
-                gSensor tunnel(cycle, lookTunnel, lrDir);
-                tunnel.detect(thisSideScan);
-                sides[i].AddHit(start, dir, tunnel, winding + lr);
-
-                gSensor parallel(cycle, start + lrDir * thisSideScan, dir);
-                parallel.detect(corridorScan);
-                sides[i].AddHit(start, dir, parallel, winding);
-
-                if (sides[i].Hit())
-                {
-                    if (character->properties[AI_LOOP] > 6 + abs(winding) * 3)
-                        DetectLoop(sides[i], sideLoop[i]);
-
-                    if (sideLoop[i][1-i].loop ||
-                            (character->properties[AI_TUNNEL] >= 10 &&
-                             sides[i].otherCycle &&
-                             sides[i].otherCycle->Team() != cycle->Team() &&
-                             sides[i].lr * (i+i-1) < 0 &&
-                             sides[i].otherCycle->GetDistance() < sides[i].driveDistance + sides[i].otherCycle->Speed() * 20)
-                       )
-                    {
-                        if (sides[i].distance < distance)
-                            distance = sides[i].distance;
-
-                        hit = true;
-                    }
-                }
-
-#ifdef DEBUG_X
-                {
-                    gRandomController noRandom;
-                    gSensor ahead(cycle, start, dir);
-                    ahead.detect(frontScan);
-
-                    gSensor side(cycle, start, lrDir);
-                    side.detect(sideScan*1.01f);
-                    REAL thisSideScan = side.hit*.99f;
-
-                    gSensor tunnel(cycle, lookTunnel, lrDir);
-                    tunnel.detect(thisSideScan);
-                    //	  sides[i].AddHit(start, dir, tunnel, winding + lr);
-
-                    gSensor parallel(cycle, start + lrDir * thisSideScan, dir);
-                    parallel.detect(corridorScan);
-                    // sides[i].AddHit(start, dir, parallel, winding);
-                }
-#endif
-
-            }
-        }
-        if (sides[1].otherCycle == sides[0].otherCycle && sides[0].otherCycle)
             hit = true;
-
-#ifdef DEBUGLINE
-        if (Hit())
-        {
-            eDebugLine::SetColor  (1, 1, 1);
-            eDebugLine::SetTimeout(1);
-            eDebugLine::Draw(start, .5, start + dir*distance, .5);
-
-            eDebugLine::SetColor  (1, .5, 1);
-            eDebugLine::Draw(start + dir*distance, .5, start + dir*distance, 1.5);
+            distance = front.distance;
+            if (character->properties[AI_LOOP] > 3 + abs(winding) * 3)
+                DetectLoop(front, frontLoop);
         }
-#endif
-#ifdef DEBUG
-        eDebugLine::SetTimeout(0);
-#endif
+    } while (!front.Hit() && count++ < character->properties[AI_RANGE]);
+
+    if (distance * .99f < corridorScan)
+        corridorScan = distance * .99f;
+    corridorScan -= sideScan * .02;
+    if (corridorScan < 0.1f)
+        corridorScan = 0.1f;
+
+    if (Random() * 10 < character->properties[AI_TUNNEL])
+    {
+        eCoord lookTunnel = start + dir * corridorScan;
+        int i;
+
+        for (i = 1; i >= 0; i--)
+        {
+            int lr = i + i - 1;
+            eCoord lrDir = dir.Turn(eCoord(.01f, -lr));
+
+            gSensor side(cycle, start, lrDir);
+            side.detect(sideScan * 1.01f);
+            REAL thisSideScan = side.hit * .99f;
+
+            gSensor tunnel(cycle, lookTunnel, lrDir);
+            tunnel.detect(thisSideScan);
+            sides[i].AddHit(start, dir, tunnel, winding + lr);
+
+            gSensor parallel(cycle, start + lrDir * thisSideScan, dir);
+            parallel.detect(corridorScan);
+            sides[i].AddHit(start, dir, parallel, winding);
+
+            if (sides[i].Hit())
+            {
+                if (character->properties[AI_LOOP] > 6 + abs(winding) * 3)
+                    DetectLoop(sides[i], sideLoop[i]);
+
+                if (sideLoop[i][1 - i].loop ||
+                    (character->properties[AI_TUNNEL] >= 10 &&
+                     sides[i].otherCycle &&
+                     sides[i].otherCycle->Team() != cycle->Team() &&
+                     sides[i].lr * (i + i - 1) < 0 &&
+                     sides[i].otherCycle->GetDistance() < sides[i].driveDistance + sides[i].otherCycle->Speed() * 20))
+                {
+                    if (sides[i].distance < distance)
+                        distance = sides[i].distance;
+
+                    hit = true;
+                }
+            }
+        }
     }
-
-};
-
-
-
-
-
-
-
+    if (sides[1].otherCycle == sides[0].otherCycle && sides[0].otherCycle)
+        hit = true;
+}
 
 gCycleMemoryEntry* gCycleMemory::Latest (int side)  const
 {
@@ -1071,6 +915,7 @@ gAIPlayer::gAIPlayer(nMessage &m) :
         log(NULL),
         helperAI(false)
 {
+    log = tNEW(gAILog);
 }
 
 
@@ -1084,6 +929,7 @@ gAIPlayer::gAIPlayer():
         log(NULL),
         helperAI(false)
 {
+    log = tNEW(gAILog);
     character = NULL;
     ClearTarget();
     traceSide = 1;
@@ -1418,6 +1264,33 @@ void gAIPlayer::SwitchToState(gAI_STATE nextState, REAL minTime)
     state           = nextState;
     nextStateChange = se_GameTime() + minTime;
 }
+bool gAIPlayer::Alive(){
+        return bool(Object()) && Object()->Alive();
+    }
+
+    gCycle *gAIPlayer::Object()
+    {
+        if (!helperAI)
+        {
+            eGameObject *go = ePlayerNetID::Object();
+            if (!go)
+            {
+                return NULL;
+            }
+            else
+            {
+                tASSERT(dynamic_cast<gCycle *>(go));
+                return static_cast<gCycle *>(go);
+            }
+        }
+        else
+        {
+            if (owner_)
+                return owner_;
+            else
+                return NULL;
+        }
+    }
 
 // state update functions:
 void gAIPlayer::ThinkSurvive(  ThinkData & data )
@@ -2178,69 +2051,6 @@ static void PretendFrontHit(const gAISensor& f, const gAISensor &corridor,
 #define TEAMLEVEL   3
 
 
-class gAILogEntry{
-public:
-    int sideDanger[DANGERLEVELS][2];
-    int frontDanger[DANGERLEVELS];
-    int turn;
-    int tries;
-    REAL time;
-};
-
-#define ENTRIES 10
-
-class gAILog{
-public:
-    gAILogEntry entries[ENTRIES+1];
-    int         current;
-    int         del;
-
-    gAILog():current(0), del(0){}
-
-    void DeleteEntry()
-    {
-        del = 1;
-        if (current > 0)
-            current--;
-    }
-
-    gAILogEntry& NextEntry()
-    {
-        del = 0;
-
-        if (current >= ENTRIES)
-        {
-            for (int i=1; i<ENTRIES; i++)
-                entries[i-1] = entries[i];
-        }
-        else
-            current++;
-
-        gAILogEntry& ret = entries[current-1];
-        ret.time = se_GameTime();
-        return ret;
-    }
-
-    void Print()
-    {
-#ifdef DEBUG
-        con << "Log:\n";
-        for (int i = current + del - 1; i>=0; i--)
-        {
-            for (int j=0; j < DANGERLEVELS; j++)
-            {
-                con << entries[i].sideDanger[j][0] << ' ';
-                con << entries[i].frontDanger[j]   << ' ';
-                con << entries[i].sideDanger[j][1] << "    ";
-            }
-            con << entries[i].turn << ", " << entries[i].tries << "\n";
-        }
-#ifndef DEDICATED
-        //		se_PauseGameTimer(true);
-#endif
-#endif
-    }
-};
 
 // emergency functions:
 bool gAIPlayer::EmergencySurvive( ThinkData & data, int enemyevade, int preferedSide)
@@ -2911,7 +2721,7 @@ void gAIPlayer::NewObject()         // called when we control a new object
     ClearTarget();
 }
 
-static gAISensor * sg_GetSensor( gAIPlayer const * ai, int currentDirectionNumber, gCycle const & object, int turn, REAL side, REAL range, REAL corridor, REAL & mindist )
+gAISensor * sg_GetSensor( gAIPlayer const * ai, int currentDirectionNumber, gCycle & object, int turn, REAL side, REAL range, REAL corridor, REAL & mindist )
 {
     // determine the current direction
     eGrid & grid = *object.Grid();
@@ -2930,6 +2740,52 @@ static gAISensor * sg_GetSensor( gAIPlayer const * ai, int currentDirectionNumbe
         // cast rays
         gAISensor * sensor = tNEW(gAISensor)(ai, &object,object.Position(),dir, side, range, corridor*.5f, turn );
         if ( !ret || sensor->distance > ret->distance )
+        {
+            if ( ret )
+            {
+                // calculate effective distance required to turn around in time
+                REAL dist = ret->distance - 1.2 * object.Speed() * Delay() * turns;
+                if ( mindist > dist )
+                    mindist = dist;
+            }
+
+            delete ret;
+            ret = sensor;
+        }
+        else
+        {
+            delete sensor;
+        }
+
+        // go on turning
+        grid.Turn( direction, turn );
+        dir = grid.GetDirection( direction );
+        ++turns;
+    }
+
+    return ret;
+}
+
+
+gAISensor * sg_GetSensor( int currentDirectionNumber, gCycle  & object, int turn, REAL side, REAL range, REAL corridor, REAL & mindist )
+{
+    // determine the current direction
+    eGrid & grid = *object.Grid();
+    eCoord origDir = grid.GetDirection( currentDirectionNumber );
+
+    // determine sensors
+    gAISensor * ret = 0;
+
+    // turn direction
+    int direction = currentDirectionNumber;
+    int turns = 1;
+    grid.Turn( direction, turn );
+    eCoord dir = grid.GetDirection( direction );
+    while ( !ret || ( turn * ( origDir * dir ) > .01 && currentDirectionNumber != direction ) )
+    {
+        // cast rays
+        gAISensor * sensor = tNEW(gAISensor)(&object, object.pos, dir, side, range, corridor*.5f, turn);
+if ( !ret || sensor->distance > ret->distance )
         {
             if ( ret )
             {
@@ -3111,14 +2967,14 @@ REAL gAIPlayer::Think(){
     return ret;
 }
 
-std::ostream & operator << ( std::ostream & s, gAIPlayer::ThinkDataBase const & data )
+std::ostream & operator << ( std::ostream & s, ThinkDataBase const & data )
 {
     s << data.turn << " " << data.thinkAgain;
 
     return s;
 }
 
-std::istream & operator >> ( std::istream & s, gAIPlayer::ThinkDataBase & data )
+std::istream & operator >> ( std::istream & s, ThinkDataBase & data )
 {
     s >> data.turn >> data.thinkAgain;
 
@@ -3428,12 +3284,12 @@ gAIPlayer::gAIPlayer(gHelper *helper, gCycle *cycle)
       log(NULL),
       helperAI(true)
 {
+    log = tNEW(gAILog);
     character->iq = 1000;
 
     ClearTarget();
     traceSide = 1;
     freeSide = 0;
-    log = NULL;
 
     route_.clear();
     lastCoord_ = 0;

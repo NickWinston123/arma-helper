@@ -315,6 +315,16 @@ extern REAL sg_cycleBrakeDeplete;
 #endif
 
 
+static bool sg_smarterBot = false;
+static tConfItem<bool> sg_smarterBotConf( "SMARTER_BOT", sg_smarterBot );
+
+tString sg_smarterBotEnableForPlayers("1,2,3,4");
+static tConfItem<tString> sg_smarterBotEnableForPlayersConf( "SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnableForPlayers );
+
+static bool sg_smarterBotAlwaysActive = false;
+static tConfItem<bool> sg_smarterBotAlwaysActiveConf( "SMARTER_BOT_ALWAYS_ACTIVE", sg_smarterBotAlwaysActive );
+
+
 static bool sg_localBot = false;
 static tConfItem<bool> sg_localBotConf( "LOCAL_BOT", sg_localBot );
 
@@ -660,9 +670,9 @@ class Sensor: public gSensor
 #endif
 
     // does the main thinking
-    void Activate( REAL currentTime )
+    void Activate( REAL currentTime, bool localBot = false )
     {
-        if (sg_localBot) {
+        if (localBot) {
         chatBotNewWallBlindness = sg_localBotNewWallBlindness;
         chatBotMinTimestep      = sg_localBotMinTimestep;
         chatBotDelay            = sg_localBotDelay;
@@ -1165,8 +1175,8 @@ next(NULL),list(NULL){
     braking  = flags & 0x01;
     chatting = flags & 0x02;
 
-    if(chatting && sg_chatBotControlByServer)
-        return;
+    // if(chatting && sg_chatBotControlByServer)
+    //     return;
 
     messageID = m.MessageID();
 
@@ -2922,25 +2932,40 @@ bool gCycle::Timestep(REAL currentTime){
     }
     // no targets are given
     else if ( !currentDestination && pendingTurns.empty() )
-    {   
+    {
         bool chatFlagHackEnabled = se_toggleChatFlagAlways || se_toggleChatFlag;
-        bool activateChatbotForThisPlayer = bool(player) ? tIsInList(sg_chatBotEnabledForPlayers, player->pID+1) && !chatFlagHackEnabled : false;
+
+        bool activateSmarterBotForThisPlayer = bool(player) && sg_smarterBot && tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
+        
+        bool activateLocalBotForThisPlayer = !activateSmarterBotForThisPlayer && bool(player) && sg_localBot && 
+                                             (sg_localBotAlwaysActive || player->IsChatting()) && 
+                                            tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
+
+        bool activateChatbotForThisPlayer = !activateLocalBotForThisPlayer && 
+                                            (bool(player) ? tIsInList(sg_chatBotEnabledForPlayers, player->pID + 1) && !chatFlagHackEnabled : false) &&
+                                            (sg_chatBotAlwaysActive || player->IsChatting());
+
+
+        bool activateChatbotControlByServer = !activateChatbotForThisPlayer && sg_chatBotControlByServer && sn_GetNetState() == nSERVER;
+        
         // chatting? activate chatbot
         if (playerIsMe &&
-        ( ( activateChatbotForThisPlayer && sg_chatBotAlwaysActive ) ||
-          ( sg_localBot && sg_localBotAlwaysActive && tIsInList(sg_localBotEnableForPlayers, player->pID+1)) ||
-          ( activateChatbotForThisPlayer && player->IsChatting() ) ||
-          ( sg_chatBotControlByServer && sn_GetNetState() == nSERVER )
-          ) )
-           {
-            gCycleChatBot & bot = gCycleChatBot::Get( this );
-            bot.Activate( currentTime );
+            activateChatbotForThisPlayer ||
+            activateLocalBotForThisPlayer)
+             //(activateChatbotControlByServer)))
+        {
+            gCycleChatBot &bot = gCycleChatBot::Get(this);
+            bot.Activate(currentTime, activateLocalBotForThisPlayer);
         }
-        else if ( chatBot_.get() )
+        else if (chatBot_.get())
         {
             chatBot_->nextChatAI_ = 0;
         }
 
+        if (playerIsMe && activateSmarterBotForThisPlayer) {
+            gSmarterBot &smarterBot = gSmarterBot::Get(this);
+            smarterBot.Activate();
+        }
         bool simulate=Alive();
 
         if ( !pendingTurns.empty() || currentDestination )

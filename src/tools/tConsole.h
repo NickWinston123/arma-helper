@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tString.h"
 #include "defs.h"
 #include "tLinkedList.h"
-
+#include "nNetwork.h"
 class tOutput;
 
 //! filter for console messages
@@ -86,6 +86,26 @@ public:
         s << x;
         return Print(s);
     }
+
+
+tColoredString nMessageToString(nMessage& msg) {
+    tColoredString s;
+    s << "Descriptor: " << msg.Descriptor() << "\n";
+    s << "Sender ID: " << msg.SenderID() << "\n";
+    s << "Message ID: " << msg.MessageID() << "\n";
+    s << "Data Length: " << msg.DataLen() << "\n";
+    s << "Data: ";
+    for (int i=0; i<msg.DataLen(); i++)
+        s << msg.Data(i) << " ";
+    s << "\n";
+    return s;
+}
+
+void nMessage(nMessage& msg) {
+    Print(nMessageToString(msg));
+}
+
+
 
     void CenterDisplay(tString s,REAL timeout=5,REAL r=1,REAL g=1,REAL b=1);
 

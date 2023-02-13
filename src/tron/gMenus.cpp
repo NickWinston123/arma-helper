@@ -343,6 +343,12 @@ static void sg_ScreenModeMenu()
      "$screen_colordepth_help",
      currentScreensetting.colorDepth);
 
+    uMenuItemSelection<REAL> b_t
+    (&screen_menu_mode,
+     "Brightness",
+     "Brightness",
+     currentScreensetting.brightness);
+
     uSelectEntry<rColorDepth> cd_16(cd_t,"$screen_colordepth_16_text","$screen_colordepth_16_help",ArmageTron_ColorDepth_16);
     uSelectEntry<rColorDepth> cd_d(cd_t,"$screen_colordepth_desk_text","$screen_colordepth_desk_help",ArmageTron_ColorDepth_Desktop);
     uSelectEntry<rColorDepth> cd_32(cd_t,"$screen_colordepth_32_text","$screen_colordepth_32_help",ArmageTron_ColorDepth_32);

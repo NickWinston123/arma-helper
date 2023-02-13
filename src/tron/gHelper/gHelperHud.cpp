@@ -55,7 +55,7 @@ void gHelperHudBase::Render() {
     // First, populate the hudMap with all items and their parent relationships
     for (auto iter = items.begin(); iter != items.end(); iter++) {
         gHelperHudBase *item = iter->second;
-        
+
         std::string parent = item->getParent();
 
         if (tIsInList(sg_helperHudIgnoreList,item->getLabelStr())){
@@ -74,7 +74,7 @@ void gHelperHudBase::Render() {
     }
 
     rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
-    
+
     // Next, iterate through the hudMap and display parent items first, followed by their child items
     for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++) {
         if (iter->first != "") {

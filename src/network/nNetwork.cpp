@@ -1507,20 +1507,33 @@ nMessage& nMessage::operator>> (bool &x){
 }
 
 
-void nMessage::Read(unsigned short &x){
-    if (End()){
+void nMessage::Write(const unsigned short &x)
+{
+    //con << x << "\n";
+    data[data.Len()]=x;
+}
+
+void nMessage::Read(unsigned short &x)
+{
+    if (End())
+    {
         tOutput o;
         st_Breakpoint();
         o.SetTemplateParameter(1, senderID);
         o << "$network_error_shortmessage";
         con << o;
         // sn_DisconnectUser(senderID, "$network_kill_error");
-        nReadError( false );
+        nReadError(false);
     }
     else
-        x=data(readOut++);
+    {
+        x = data(readOut++);
+        // if (readOut == data.Len())
+        // {
+        //     con.nMessage(*this);
+        // }
+    }
 }
-
 
 // **********************************************
 //  Basic communication classes: login
@@ -3000,7 +3013,7 @@ static bool sn_Listen( unsigned int & net_hostport, const tString& net_hostip )
 
                 // just for safety, wait a bit. Does not do much good.
                 tDelay(100000);
-                
+
                 continue;
             }
 
@@ -3459,7 +3472,7 @@ void sn_ConsoleOutString( tString & message,int client){
     {
         message = tColoredString::EscapeBadColors(message);
     }
-    
+
     // check if string is too long
     if ( message.Len() <= MTU )
     {
@@ -3510,7 +3523,7 @@ static nDescriptor client_cen_nd(9,client_cen_handler,"client_cen");
 // causes the connected clients to print a message in the center of the screeen
 void sn_CenterMessage(const tOutput &o,int client){
     tString message(o);
-    
+
     // Make sure string has valid color codes
     if(st_verifyColorCodeStrictly)
     {

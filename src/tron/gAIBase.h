@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
@@ -40,13 +40,209 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "nObserver.h"
 #include "tReferenceHolder.h"
 #include "gHelper/gHelper.h"
+
 #include <vector>
 
 
+
+#define DANGERLEVELS 4
+#define LOOPLEVEL   0
+#define SPACELEVEL  1
+#define TRAPLEVEL   2
+#define COLIDELEVEL 2
+#define TEAMLEVEL   3
+
+
+class gAIPlayer;
+struct ThinkData;
+struct ThinkDataBase;
 class gSensor;
-class gAISensor;
 class gAILog;
 class gAICharacter;
+
+extern REAL Delay();
+extern REAL Random();
+
+
+
+// an instance of this class will prevent deterministic random lookups
+class gRandomController
+{
+public:
+    static gRandomController * random_;
+    gRandomController * lastRandom_;
+    tRandomizer & randomizer_;
+
+    gRandomController( tRandomizer & randomizer = tRandomizer::GetInstance() )
+            : lastRandom_( random_ ), randomizer_( randomizer )
+    {
+        random_ = this;
+    }
+
+    ~gRandomController()
+    {
+        random_ = lastRandom_;
+    }
+};
+
+
+class gAILogEntry{
+public:
+    int sideDanger[DANGERLEVELS][2];
+    int frontDanger[DANGERLEVELS];
+    int turn;
+    int tries;
+    REAL time;
+};
+
+#define ENTRIES 10
+
+class gAILog{
+public:
+    gAILogEntry entries[ENTRIES+1];
+    int         current;
+    int         del;
+
+    gAILog():current(0), del(0){}
+
+    void DeleteEntry()
+    {
+        del = 1;
+        if (current > 0)
+            current--;
+    }
+
+    gAILogEntry& NextEntry()
+    {
+        del = 0;
+
+        if (current >= ENTRIES)
+        {
+            for (int i=1; i<ENTRIES; i++)
+                entries[i-1] = entries[i];
+        }
+        else
+            current++;
+
+        gAILogEntry& ret = entries[current-1];
+        ret.time = se_GameTime();
+        return ret;
+    }
+
+    void Print()
+    {
+#ifdef DEBUG
+        con << "Log:\n";
+        for (int i = current + del - 1; i>=0; i--)
+        {
+            for (int j=0; j < DANGERLEVELS; j++)
+            {
+                con << entries[i].sideDanger[j][0] << ' ';
+                con << entries[i].frontDanger[j]   << ' ';
+                con << entries[i].sideDanger[j][1] << "    ";
+            }
+            con << entries[i].turn << ", " << entries[i].tries << "\n";
+        }
+#ifndef DEDICATED
+        //		se_PauseGameTimer(true);
+#endif
+#endif
+    }
+};
+
+
+// data about a loop
+class gLoopData{
+public:
+    bool loop;                       // is there a loop?
+    int  winding;                    // in what direction does it go?
+    tArray<const gCycle*>closedIn;   // which cycles are closed in?
+
+    gLoopData():loop(false), winding(0){}
+    void AddCycle(const gCycle* c){closedIn[closedIn.Len()] = c;}
+};
+
+
+
+// hit data
+class gHitData{
+public:
+    const eHalfEdge*  edge;      // edge we hit
+    gSensorWallType   wallType;  // type of the wall hit
+    int               lr;        // does the wall go left or right?
+    REAL              distance;  // distance to the wall
+
+    // additional info if the wall that got hit is a cycle wall
+    gCycle         *otherCycle;    // the cylce that the hit wall belongs to
+    REAL            driveDistance; // the distance it had travelled when it was at the place we hit
+    int             windingNumber; // the winding number at the place hit
+
+    gHitData():edge(NULL), wallType(gSENSOR_NONE), otherCycle(NULL){}
+
+    bool Hit() const {return edge;}
+
+    void AddHit(const eCoord& origin, const eCoord& dir, const gSensor& sensor, int winding);
+};
+
+
+class gAISensor
+{
+public:
+    gCycle* cycle;
+    bool     hit;
+    gHitData front;
+    gHitData sides[2];
+    gLoopData frontLoop[2];
+    gLoopData sideLoop[2][2];
+    REAL distance;
+
+    bool Hit() const;
+    void DetectLoop(const gHitData& hit, gLoopData loopData[2]);
+
+    gAISensor(const gAIPlayer *ai, gCycle* c,
+              const eCoord& start, const eCoord& dir,
+              REAL sideScan,
+              REAL frontScan,
+              REAL corridorScan,
+              int winding
+             );
+
+    gAISensor( gCycle* c,
+               const eCoord & start,  const eCoord & dir,
+              REAL sideScan,
+              REAL frontScan,
+              REAL corridorScan,
+              int winding
+             );
+};
+extern gAISensor * sg_GetSensor( gAIPlayer const * ai, int currentDirectionNumber, gCycle const & object, int turn, REAL side, REAL range, REAL corridor, REAL & mindist );
+
+extern gAISensor * sg_GetSensor(int currentDirectionNumber, gCycle & object, int turn, REAL side, REAL range, REAL corridor, REAL & mindist );
+
+
+// data structure common to thinking functions
+struct ThinkDataBase
+{
+    int turn;                                   // direction to turn to
+    REAL thinkAgain;                            // when to think again
+
+    ThinkDataBase()
+            : turn(0), thinkAgain(0)
+    {
+    }
+};
+
+struct ThinkData : public ThinkDataBase
+{
+    gAISensor const & front;                    // sensors cast by upper level function
+    gAISensor const & left;
+    gAISensor const & right;
+
+    ThinkData( gAISensor const & a_front, gAISensor const & a_left, gAISensor const & a_right )
+            : front(a_front), left( a_left ), right( a_right )
+    {
+    }
+};
 
 typedef enum
 { AI_SURVIVE = 0,   // just try to stay alive
@@ -56,6 +252,7 @@ typedef enum
   AI_ROUTE          // follow a route (a set of coord)
 }
 gAI_STATE;
+
 
 
 extern bool IsTrapped(const gCycle *trapped, const gCycle *other);
@@ -85,8 +282,8 @@ public:
     // for route mode:
         std::vector<eCoord> route_;
         unsigned int lastCoord_;
-        tJUST_CONTROLLED_PTR<eFace> targetCurrentFace_; 
-	
+        tJUST_CONTROLLED_PTR<eFace> targetCurrentFace_;
+
     // for trace mode:
     int  traceSide;
     REAL lastChangeAttempt;
@@ -113,42 +310,18 @@ public:
     //  gCycle * Cycle(){return object;}
 
     // set trace side:
-    void SetTraceSide(int side);
+    virtual void SetTraceSide(int side);
 
 public:
     // state change:
     void SwitchToState(gAI_STATE nextState, REAL minTime=10);
-
-    // data structure common to thinking functions
-    struct ThinkDataBase
-    {
-        int turn;                                   // direction to turn to
-        REAL thinkAgain;                            // when to think again
-
-        ThinkDataBase()
-                : turn(0), thinkAgain(0)
-        {
-        }
-    };
-
-protected:
-struct ThinkData : public ThinkDataBase
-    {
-        gAISensor const & front;                    // sensors cast by upper level function
-        gAISensor const & left;
-        gAISensor const & right;
-
-        ThinkData( gAISensor const & a_front, gAISensor const & a_left, gAISensor const & a_right )
-                : front(a_front), left( a_left ), right( a_right )
-        {
-        }
-    };
 
     // state update functions:
     virtual void ThinkSurvive( ThinkData & data );
     virtual void ThinkTrace( ThinkData & data );
     virtual void ThinkPath( ThinkData & data );
     virtual void ThinkCloseCombat( ThinkData & data );
+
     virtual void ThinkRoute( ThinkData & data );
 
     // emergency functions:
@@ -200,35 +373,11 @@ public:
     // do some thinking. Return value: time to think again
     virtual REAL Think();
 
-    bool Alive(){
-        return bool(Object()) && Object()->Alive();
-    }
+    bool Alive();
 
     virtual bool IsHuman() const { return false; }
 
-    gCycle *Object()
-    {
-        if (!helperAI)
-        {
-            eGameObject *go = ePlayerNetID::Object();
-            if (!go)
-            {
-                return NULL;
-            }
-            else
-            {
-                tASSERT(dynamic_cast<gCycle *>(go));
-                return static_cast<gCycle *>(go);
-            }
-        }
-        else
-        {
-            if (owner_)
-                return owner_;
-            else
-                return NULL;
-        }
-    }
+    gCycle *Object();
 
     void Timestep(REAL time);
 

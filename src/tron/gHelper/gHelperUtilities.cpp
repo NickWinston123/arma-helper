@@ -76,6 +76,7 @@ gHelperSensor * gHelperSensorsData::getSensor(int dir, bool newSensor)
     return getSensor(owner_->Position(),dir, newSensor);
 }
 
+//DELETE AFTER DONE.
 gHelperSensor *gHelperSensorsData::getSensor(eCoord start, eCoord dir, REAL detectRange)
 {
     gHelperSensor * sensor = new gHelperSensor(owner_,start, dir);

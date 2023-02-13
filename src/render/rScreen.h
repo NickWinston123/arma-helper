@@ -72,6 +72,7 @@ public:
     bool				useSDL;
     bool				checkErrors;
     REAL				aspect;			// aspect ratio of pixels ( width/height )
+    REAL                brightness;
 
     rScreenSettings(rResolution r,
                     bool fs=true,

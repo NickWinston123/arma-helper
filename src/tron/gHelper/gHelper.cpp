@@ -32,6 +32,7 @@ gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit",sg_helperShowHit);
 gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist",1000,"Show Hit");
 
 gHelperHudItem<REAL> sg_helperActivateTimeH("Acivate Time",0);
+gHelperHudItem<REAL> sg_helperGameTimeH("Game Time",0);
 
 // gHelper::getCorner retrieves a pointer to the gSmartTurningCornerData instance for the given direction
 // dir: the direction (LEFT or RIGHT) to retrieve the gSmartTurningCornerData instance for
@@ -74,13 +75,13 @@ gHelper::gHelper(gCycle *owner)
     data_stored->rubberData.helper_ = this;
     data_stored->leftCorner.linkLastCorner(&data_stored->lastLeftCorner);
     data_stored->rightCorner.linkLastCorner(&data_stored->lastRightCorner);
-
+    data_stored->enemies.owner_ = owner;
 
     ownerPos = &owner_->pos;
     ownerDir = &owner_->dir;
     tailPos = &owner_->tailPos;
     ownerSpeed = &owner_->verletSpeed_;
-    data_stored->enemies.owner_ = owner;
+
     gTurnHelper::Get(this, owner_);
     gSmartTurning::Get(this, owner);
     gPathHelper::Get(this, owner);
@@ -610,6 +611,7 @@ void gHelper::Activate()
         ownerDirH << roundeCoord(*ownerDir);
         tailPosH << roundeCoord(owner_->tailPos);
         tailDirH << roundeCoord(owner_->tailDir);
+        sg_helperGameTimeH << se_GameTime();
     }
     owner_->localCurrentTime = se_GameTime();
 

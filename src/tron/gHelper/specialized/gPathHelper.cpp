@@ -176,13 +176,14 @@ void gPathHelper::RenderTurn(gHelperData &data)
         eCoord intermediate = opos + owner_->Direction() * eCoord::F(odir, owner_->Direction());
 
         // assigns a hit pointer to the memory location of the hit
-        REAL *hit = &data.sensors.getSensor(opos,intermediate - opos,1.1f)->hit;
-        nogood = (*hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
-
+        gHelperSensor* sensor = data.sensors.getSensor(opos,intermediate - opos,1.1f);
+        nogood = (sensor->hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+        delete sensor;
         if (!nogood)
         {
-            REAL *hit = &data.sensors.getSensor(intermediate, pos - intermediate, 1)->hit;
-            nogood = (*hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+            gHelperSensor* sensor = data.sensors.getSensor(intermediate, pos - intermediate, 1);
+            nogood = (sensor->hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
+            delete sensor;
         }
 
     } while (goon && nogood);

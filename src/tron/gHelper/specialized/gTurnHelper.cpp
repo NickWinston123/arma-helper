@@ -53,7 +53,7 @@ public:
         default:
         // unless it is an enemy, follow his wall instead (uncomment for a nasty
         // cowardy campbot)
-        lrSuggestion_ *= -1;
+        //lrSuggestion_ *= -1;
         case gSENSOR_SELF:
         {
             // determine whether we're hitting the front or back half of his wall
@@ -79,14 +79,6 @@ public:
             hitTime_ = playerWall->Time(wallAlpha);
             windingNumber_ = playerWall->WindingNumber();
 
-            // don't see new walls
-            if (hitTime_ > hitOwner_->LastTime() &&
-                hitOwner_ != owned)
-            {
-                ehit = NULL;
-                hit = 1E+40;
-                return false;
-            }
         }
         }
 
@@ -129,7 +121,7 @@ bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceF
 {
     // compareFactor is the value that the gap distance should be compared to
     REAL compareFactor;
-    REAL *hit = &data.sensors.getSensor(dir)->hit;
+    REAL hit = data.sensors.getSensor(dir)->hit;
     // If spaceFactor > 0, it's used as the compareFactor
     if (spaceFactor > 0)
     {
@@ -144,7 +136,7 @@ bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceF
     }
 
     // return whether the hit distance is greater than compareFactor
-    return *hit > compareFactor;
+    return hit > compareFactor;
 }
 
 bool gTurnHelper::makeTurnIfPossible(int dir, REAL spaceFactor)
@@ -393,7 +385,7 @@ gTurnData* gTurnHelper::getTurn()
         return turnData;
     }
 
-    // owner_->enemyInfluence.AddSensor( front, 0, owner_ );
+    owner_->enemyInfluence.AddSensor( front, 0, owner_ );
 
     REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
 

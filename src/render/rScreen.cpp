@@ -159,6 +159,7 @@ static tConfItem<rColorDepth> ltc("LAST_COLORDEPTH",lastSuccess.colorDepth);
 static tConfItem<rColorDepth> tzd("ZDEPTH",currentScreensetting.zDepth);
 static tConfItem<rColorDepth> ltzd("LAST_ZDEPTH",lastSuccess.zDepth);
 
+static tConfItem<REAL> r_screenBrightness("SCREEN_BRIGHTNESS", currentScreensetting.brightness);
 #ifdef DIRTY
 #ifdef SDL_OPENGL
 static tConfItem<bool> sdl("USE_SDL",currentScreensetting.useSDL);
@@ -466,25 +467,42 @@ static bool lowlevel_sr_InitDisplay(){
 
         switch (currentScreensetting.colorDepth)
         {
-        case ArmageTron_ColorDepth_16:
-            // parameters already set for this depth
-            break;
-        case ArmageTron_ColorDepth_Desktop:
-            {
-                fullCD     = desktopCD;
-                singleCD_R = desktopCD_R;
-                singleCD_G = desktopCD_G;
-                singleCD_B = desktopCD_B;
-            }
-            break;
-        case ArmageTron_ColorDepth_32:
-            singleCD_R	= 8;
-            singleCD_G	= 8;
-            singleCD_B	= 8;
-            fullCD		= 24;
-            zDepth		= 32;
-            break;
+            case ArmageTron_ColorDepth_16:
+                // parameters already set for this depth
+                break;
+            case ArmageTron_ColorDepth_Desktop:
+                {
+                    fullCD     = desktopCD;
+                    singleCD_R = desktopCD_R;
+                    singleCD_G = desktopCD_G;
+                    singleCD_B = desktopCD_B;
+                }
+                break;
+            case ArmageTron_ColorDepth_32:
+                singleCD_R	= 8;
+                singleCD_G	= 8;
+                singleCD_B	= 8;
+                fullCD		= 24;
+                zDepth		= 32;
+                break;
         }
+        
+        // adjust the color depth based on the brightness value
+        fullCD     += currentScreensetting.brightness;
+        singleCD_R += currentScreensetting.brightness;
+        singleCD_G += currentScreensetting.brightness;
+        singleCD_B += currentScreensetting.brightness;
+
+        // make sure the color depth values are within valid range
+        fullCD = fullCD > 32 ? 32 : fullCD;
+        fullCD = fullCD < 16 ? 16 : fullCD;
+        singleCD_R = singleCD_R > 8 ? 8 : singleCD_R;
+        singleCD_R = singleCD_R < 0 ? 0 : singleCD_R;
+        singleCD_G = singleCD_G > 8 ? 8 : singleCD_G;
+        singleCD_G = singleCD_G < 0 ? 0 : singleCD_G;
+        singleCD_B = singleCD_B > 8 ? 8 : singleCD_B;
+        singleCD_B = singleCD_B < 0 ? 0 : singleCD_B;
+
 
         switch ( currentScreensetting.zDepth )
         {

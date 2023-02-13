@@ -45,6 +45,7 @@ static tConfItem<REAL> sg_helperZoneTracerHeightConf("HELPER_ZONE_TRACER_HEIGHT"
 }
 
 gHelperHudItem<tColoredString> zoneDebugH("Zone Debug", tColoredString("None"));
+gHelperHudItem<tColoredString> zoneInfoH("Zone Info", tColoredString("None"));
 
 gHelperHudItem<REAL> zoneHitH("Zone Hit", 0);
 
@@ -258,6 +259,22 @@ void gZoneHelper::showZones(gHelperData &data)
     }
 }
 
+
+void gZoneHelper::zoneData(gHelperData &data)
+{
+    gZone * zone = findClosestZone();
+    if (!zone)
+        return;
+    gBaseZoneHack * fortZone = dynamic_cast<gBaseZoneHack *>(zone);
+    if (fortZone) {
+    tColoredString info;
+
+    info << "FORT ZONE " << " conquered " << fortZone->conquered_; 
+    info << "\n";
+    zoneInfoH << info;
+    }
+}
+
 void gZoneHelper::Activate(gHelperData &data)
 {
     if (sg_HelperTrackedZones.size() <= 0)
@@ -276,6 +293,8 @@ void gZoneHelper::Activate(gHelperData &data)
 
     if (sg_zoneHelperSensor)
         zoneSensor(data);
+
+    zoneData(data);
 }
 
 gZoneHelper &gZoneHelper::Get(gHelper *helper, gCycle *owner)

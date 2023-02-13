@@ -32,10 +32,11 @@ public:
     static gZone* findClosestZone(eGameObject * owner_);
 
     void showZones(gHelperData &data);
+    void zoneData(gHelperData &data);
 
     gZoneHitData* zoneIntersects(int dir, gZone *zone, gHelperData &data);
     static void zoneIntersects(gHelperSensor * sensor);
-    
+
     void renderSensorHit( gZoneHitData * zoneHit,gHelperData &data);
     void zoneSensor(gHelperData &data);
 

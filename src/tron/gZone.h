@@ -341,6 +341,7 @@ private:
 public:
     void HelperTrackedZonesManager(bool newZone = true);
     void HelperTrackedZonesRemover();
+    static void FilterZoneColor(gRealColor &color);
 };
 
 #ifndef ArmageTron_GZone_Zones

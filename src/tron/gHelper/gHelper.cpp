@@ -434,7 +434,7 @@ void gHelper::showTailTracer(gHelperData & data)
     REAL timeout = fabs(distanceToTail) / sg_helperShowTailTracerDistanceMult * data.ownerData.speedFactorF();
 
     // draws a debug line at the tail position with a specified height, color, and timeout
-    gHelperUtility::debugLine(gRealColor(1, 1, 1), sg_helperShowTailTracerHeight, timeout * sg_helperShowTailTracerTimeoutMult, *tailPos, *tailPos);
+    gHelperUtility::debugLine(gRealColor(1, 1, 1), sg_helperShowTailTracerHeight, timeout * sg_helperShowTailTracerTimeoutMult, *tailPos, *tailPos, sg_helperShowTailTracerBrightness);
 }
 
 

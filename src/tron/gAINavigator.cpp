@@ -478,6 +478,43 @@ gAINavigator::PathEvaluation::PathEvaluation() : veto( false ), score( 0 ), next
 void gAINavigator::PathEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const{}
 gAINavigator::PathEvaluator::~PathEvaluator(){}
 
+
+    gAINavigator::TailChaseEvaluator::TailChaseEvaluator( gCycle const & cycle ): cycle_( cycle )
+    {
+    }
+
+    void gAINavigator::TailChaseEvaluator::Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const
+    {
+        evaluation.score = 0;
+
+        // don't do anything if we're tunneling. Danger affot.
+        // if( path.left.owner == path.right.owner )
+        // {
+        // return;
+        // }
+
+        // total wall length
+        REAL len  = cycle_.ThisWallsLength();
+        if( len < 0 )
+        {
+            return;
+        }
+
+        if( path.left.owner == &cycle_ ) // && path.left.lr == 1 )
+        {
+            evaluation.score += 200 * path.left.hitDistance/len - 100;
+        }
+        if( path.right.owner == &cycle_ ) // && path.right.lr == -1 )
+        {
+            evaluation.score +=  200 * path.right.hitDistance/len - 100;
+        }
+        if ( evaluation.score < 0 )
+        {
+            evaluation.score = 0;
+        }
+    }
+
+
 //!@param path        the path to evaluate
 //!@param evaluation  place to store the result
 void gAINavigator::SuicideEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const

@@ -503,6 +503,30 @@ void gZone::HelperTrackedZonesRemover() {
 
 }
 
+
+bool sr_filterZones = false;
+static tConfItem< bool > sr_filterZonesConf( "FILTER_ZONES", sr_filterZones );
+
+REAL sr_filterZonesMinR = 0;
+static tConfItem<REAL> sr_filterZonesMinRConf("FILTER_ZONES_MIN_R", sr_filterZonesMinR);
+
+REAL sr_filterZonesMinG = 0;
+static tConfItem<REAL> sr_filterZonesMinGConf("FILTER_ZONES_MIN_G", sr_filterZonesMinG);
+
+REAL sr_filterZonesMinB = 0;
+static tConfItem<REAL> sr_filterZonesMinBConf("FILTER_ZONES_MIN_B", sr_filterZonesMinB);
+
+REAL sr_filterZonesMaxTotal = 100;
+static tConfItem<REAL> sr_filterZonesMaxTotalConf("FILTER_ZONES_MAX_TOTAL", sr_filterZonesMaxTotal);
+
+REAL sr_filterZonesMinTotal = 0;
+static tConfItem<REAL> sr_filterZonesMinTotalConf("FILTER_ZONES_MIN_TOTAL", sr_filterZonesMinTotal);
+
+void gZone::FilterZoneColor(gRealColor &color) {
+    con << "filtering\n";
+    se_removeDarkColors( color, sr_filterZonesMinR, sr_filterZonesMinG, sr_filterZonesMinB, sr_filterZonesMinTotal, sr_filterZonesMaxTotal);
+}
+
 void gZone::HelperTrackedZonesManager( bool newZone) {
 
     if (!newZone)
@@ -684,7 +708,11 @@ void gZone::ReadSync( nMessage & m )
         m >> color_.r;
         m >> color_.g;
         m >> color_.b;
+        if (sr_filterZones)
+            FilterZoneColor(color_);
         se_MakeColorValid(color_.r, color_.g, color_.b, 1.0f);
+
+
     }
 
     // read reference time and functions
@@ -745,6 +773,8 @@ static void CreateZone(tString zoneEffect, gZone *Zone, const REAL zoneSize, con
         zoneColor.r = (zoneColor.r>1.0)?1.0:zoneColor.r;
         zoneColor.g = (zoneColor.g>1.0)?1.0:zoneColor.g;
         zoneColor.b = (zoneColor.b>1.0)?1.0:zoneColor.b;
+        if (sr_filterZones)
+            gZone::FilterZoneColor(zoneColor);
         Zone->SetColor(zoneColor);
     }
     if (zoneInteractive)
@@ -1664,7 +1694,7 @@ static bool TriggerAimZone(gCycle * cycle, gZone * zone, REAL currentTime)
 
             if(s >= 0 && s <= 1 && t >= 0 && t <= 1) { return true; };
 
-            lpX = pX; lpY = pY;     
+            lpX = pX; lpY = pY;
         }
 #endif
 
@@ -2184,7 +2214,10 @@ void gZone::Render( const eCamera * cam )
         return;
     alpha *= sg_zoneAlpha * sg_zoneAlphaServer;
 
-        ModelMatrix();
+  //  if (sr_filterZones)
+      //  FilterZoneColor();
+
+    ModelMatrix();
     glPushMatrix();
 
     REAL seglen = 2 * M_PI / sg_zoneSegments * sg_zoneSegLength;
@@ -3538,7 +3571,7 @@ static tSettingItem< REAL > sg_collapseSpeedConfig( "FORTRESS_COLLAPSE_SPEED", s
 
 bool gBaseZoneHack::Timestep( REAL time )
 {
-    
+
     // no team?!? Get rid of this zone ASAP.
     if ( !team )
     {
@@ -7934,6 +7967,8 @@ static void sg_SpawnObjectZone(std::istream &s)
             zoneColor.r = (zoneColor.r>1.0)?1.0:zoneColor.r;
             zoneColor.g = (zoneColor.g>1.0)?1.0:zoneColor.g;
             zoneColor.b = (zoneColor.b>1.0)?1.0:zoneColor.b;
+            if (sr_filterZones)
+                gZone::FilterZoneColor(zoneColor);
             Zone->SetColor(zoneColor);
         }
 
@@ -9039,6 +9074,8 @@ void gRespawnZoneHack::OnVanish( void )
         gRespawnZoneHack *newResZone = new gRespawnZoneHack(grid, GetPosition(), deadPlayer_, true);
         newResZone->SetRadius(sg_cycleRespawnZoneRadius * gArena::SizeMultiplier());
         newResZone->SetExpansionSpeed(sg_cycleRespawnZoneGrowth);
+        if (sr_filterZones)
+            FilterZoneColor(GetColor());
         newResZone->SetColor(GetColor());
         newResZone->SetSpawnDirection(SpawnDirection());
     }
@@ -10236,7 +10273,8 @@ static void sg_SetZoneColor(std::istream &s,bool byId)
     zoneColor.r = fmin(1, (atof(zoneRedStr  ) / (styctcompat_se_SetZoneColor?1.f:15.f)));
     zoneColor.g = fmin(1, (atof(zoneGreenStr) / (styctcompat_se_SetZoneColor?1.f:15.f)));
     zoneColor.b = fmin(1, (atof(zoneBlueStr ) / (styctcompat_se_SetZoneColor?1.f:15.f)));
-
+    if (sr_filterZones)
+        gZone::FilterZoneColor(zoneColor);
     gZone::FindAll(object_id_str, byId, [zoneColor](gZone * zone)
     {
         {

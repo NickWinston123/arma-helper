@@ -170,7 +170,7 @@ gCycle* gHelperEnemiesData::detectEnemies() {
                 closestEnemyDistanceSquared = positionDifference;
                 closestEnemy = other;
             }
-            allEnemies.emplace(other);
+            allEnemies.insert(other);
         }
     }
     return closestEnemy;

@@ -151,6 +151,8 @@ bool sg_helperShowTailTracer = false;
 static tConfItem<bool> sg_helperShowTailTracerConf("HELPER_SHOW_TAIL_TRACER", sg_helperShowTailTracer);
 REAL sg_helperShowTailTracerHeight = 1;
 static tConfItem<REAL> sg_helperShowTailTracerHeightConf("HELPER_SHOW_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
+REAL sg_helperShowTailTracerBrightness = 1;
+static tConfItem<REAL> sg_helperShowTailTracerBrightnessConf("HELPER_SHOW_TAIL_TRACER_BRIGHTNESS", sg_helperShowTailTracerBrightness);
 REAL sg_helperShowTailTracerTimeoutMult = 1;
 static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf("HELPER_SHOW_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
 REAL sg_helperShowTailTracerDistanceMult = 10;

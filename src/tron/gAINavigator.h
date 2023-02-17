@@ -3,7 +3,7 @@
 *************************************************************************
 
 ArmageTron -- Just another Tron Lightcycle Game in 3D.
-Copyright (C) 2005  by 
+Copyright (C) 2005  by
 and the AA DevTeam (see the file AUTHORS(.txt) in the main source directory)
 
 **************************************************************************
@@ -21,7 +21,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-  
+
 ***************************************************************************
 
 */
@@ -44,7 +44,7 @@ public:
     {
         REAL newWallBlindness; //!< number of seconds new walls are invisible to the idler
         REAL range; //!< seconds to plan ahead
-        
+
         Settings();
     };
 
@@ -221,13 +221,25 @@ public:
         //! evaluate a path.
         virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
         ~SuicideEvaluator();
-        
+
         static void SetEmergency( bool emergency );
     private:
         gCycle const & cycle_;
         REAL   timeFrame_;
         static bool emergency_;
     };
+
+// likes to chase its own tail
+class TailChaseEvaluator: public PathEvaluator
+{
+public:
+    TailChaseEvaluator( gCycle const & cycle );
+
+    void Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const;
+private:
+    gCycle const & cycle_; //!< the owning cycle
+};
+
 
     //! simple evaluator: vetoes moves that trap self
     class TrapEvaluator: public PathEvaluator
@@ -239,7 +251,7 @@ public:
         //! evaluate a path.
         virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
         ~TrapEvaluator();
-        
+
         static void SetEmergency( bool emergency );
     private:
         gCycle const & cycle_;
@@ -326,20 +338,20 @@ public:
     public:
         FollowEvaluator( gCycle & cycle );
         ~FollowEvaluator();
-        
+
         //! return data of SolveTurn
         struct SolveTurnData
         {
             REAL turnTime;  //!< seconds to wait before we turn
             REAL quality;   //!< quality of the turn
             eCoord turnDir; //!< direction to drive in
-            
+
             SolveTurnData(): turnTime(0), quality(0){}
         };
-        
+
         //! determine when we need to turn in order to catch the target.
         void SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data );
-        
+
         //! set the target to follow
         void SetTarget( eCoord const & target, eCoord const & velocity );
 
@@ -359,7 +371,7 @@ public:
     {
     public:
         EvaluationManager( PathGroup & paths );
-        
+
         //! ways to combine new evaluation with previous results
         enum BlendMode
         {
@@ -368,7 +380,7 @@ public:
             BLEND_MAX,
             BLEND_MIN
         };
-        
+
         //! evaluate all paths using the evaluator
         void Evaluate( PathEvaluator const & evaluator, BlendMode mode = BLEND_ADD, REAL scale = 1.0, REAL offset = 0.0 );
 
@@ -388,7 +400,7 @@ public:
 
         int  bestPath_;  //!< best path
 
-        //! list of evaluations fitting to those in the 
+        //! list of evaluations fitting to those in the
         PathEvaluation evaluations_[ PathGroup::PATH_COUNT ];
     };
 

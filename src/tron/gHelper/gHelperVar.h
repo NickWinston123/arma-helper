@@ -129,6 +129,7 @@ namespace helperConfig {
 
     extern bool sg_helperShowTailTracer ;
     extern REAL sg_helperShowTailTracerHeight ;
+    extern REAL sg_helperShowTailTracerBrightness ;
     extern REAL sg_helperShowTailTracerTimeoutMult ;
     extern REAL sg_helperShowTailTracerDistanceMult ;
 

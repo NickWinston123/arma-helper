@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ArmageTron_floor_H
 
 #include "defs.h"
+struct gRealColor;
 
 class eFloor{
 public:
@@ -55,4 +56,5 @@ bool se_BlackSky();
 void se_FloorColor(REAL& r, REAL& g, REAL &b);
 
 void se_MakeColorValid(REAL& r, REAL & g, REAL& b, REAL f);
+void se_removeDarkColors(gRealColor &color, int min_r, int min_g, int min_b, int min_total, int max_total);
 #endif

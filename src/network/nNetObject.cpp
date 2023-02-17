@@ -1365,9 +1365,8 @@ void nNetObject::RequestSync(int user,bool ack){ // only for a single user
 
 
 void nNetObject::RequestSync(bool ack){
-    if (se_disableCreate) {
-    return;
-    }
+    if (se_disableCreate)
+        return;
     this->GetID();
 
 #ifdef nSIMULATE_PING

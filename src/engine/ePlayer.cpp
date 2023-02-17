@@ -1172,7 +1172,7 @@ static const tString& se_UserName()
     return ret;
 }
 
-ePlayer::ePlayer()
+ePlayer::ePlayer() : colorIteration(0)
 {
     nAuthentication::SetUserPasswordCallback(&PasswordCallback);
 #ifdef KRAWALL_SERVER
@@ -4825,7 +4825,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
             currentPlayerRGB(tString(s_orig));
         } else if (command == se_browserCommand) {
             con << "Launchin browser";
-            &gServerBrowser::BrowseMaster;
+            gServerBrowser::BrowseMaster();
         }
     }
     else
@@ -5866,13 +5866,15 @@ static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
 static bool se_disableCreateHard = false;
 static tConfItem<bool> se_disableCreateHardConf("DISABLE_CREATE_HARD", se_disableCreateHard);
 
-ePlayerNetID::ePlayerNetID(int p):nNetObject(),listID(-1), teamListID(-1), timeCreated_( tSysTimeFloat() ), allowTeamChange_(false), registeredMachine_(0), pID(p)
+ePlayerNetID::ePlayerNetID(int p, int owner):nNetObject(owner),listID(-1), teamListID(-1), timeCreated_( tSysTimeFloat() ), allowTeamChange_(false), registeredMachine_(0), pID(p)
 {
 
     // if (p < 0)  {
     //     gHelperUtility::Debug("ePlayerNetID", "ePlayerNetID ID < 0. Ignoring, Probably local AI. ID:", p);
     //     return;
     // }
+
+    //con << "object == 1 " << object  << "\n";
 
     flagOverrideChat = false;
     flagChatState = false;
@@ -5921,7 +5923,7 @@ ePlayerNetID::ePlayerNetID(int p):nNetObject(),listID(-1), teamListID(-1), timeC
 
     se_PlayerNetIDs.Add(this,listID);
     object=NULL;
-
+    //con << "object == 2 " << object  << "\n";
     gRacePlayer *racePlayer = new gRacePlayer(this);
 
     //sg_OutputOnlinePlayers();
@@ -5936,12 +5938,13 @@ ePlayerNetID::ePlayerNetID(int p):nNetObject(),listID(-1), teamListID(-1), timeC
     lastSync=tSysTimeFloat();
 
     RequestSync();
+    //con << "object == 3 " << object  << "\n";
     score=0;
     lastScore_=IMPOSSIBLY_LOW_SCORE;
     // rubberstatus=0;
 
     MyInitAfterCreation();
-
+    //con << "object == ? 4 " << object  << "\n";
     if(sn_GetNetState()==nSERVER)
         RequestSync();
 }
@@ -8705,6 +8708,155 @@ static int se_ColorDistance( int a[3], int b[3] )
     return distance;
 }
 
+
+
+#include <vector>
+#include <algorithm>
+
+
+static bool se_playerColoredName = false;
+static tConfItem<bool> se_playerColoredNameConf("PLAYER_COLORED_NAME", se_playerColoredName);
+
+static bool se_playerColoredNameShiftLeft = false;
+static tConfItem<bool> se_playerColoredNameShiftLeftConf("PLAYER_COLORED_NAME_SHIFT_LEFT", se_playerColoredNameShiftLeft);
+
+static bool se_playerColoredNameShift = false;
+static tConfItem<bool> se_playerColoredNameShiftConf("PLAYER_COLORED_NAME_SHIFT", se_playerColoredNameShift);
+
+static int se_playerColoredNameNumColors = 4;
+static tConfItem<int> se_playerColoredNameNumColorsConf("PLAYER_COLORED_NAME_NUMB_COLORS", se_playerColoredNameNumColors);
+
+static int se_playerColoredNamePatternInterval = 4;
+static tConfItem<int> se_playerColoredNamePatternIntervalConf("PLAYER_COLORED_NAME_PATTERN_INTERVAL", se_playerColoredNamePatternInterval);
+
+
+// Generates a patterned assortment of colors with a repeating pattern length based on the length of the player's name.
+// name: the player's name to use for determining the pattern length.
+// numColors: the number of colors to generate for the pattern.
+// returns: a vector of hexadecimal color codes representing the patterned assortment of colors.
+std::vector<std::string> se_randomPatternedColors(tString name, int numColors) {
+    std::vector<std::string> patternedColors;
+
+    int patternLength = std::max(1, name.Len()); // The pattern length is at least 1 and based on the player's name length
+
+    // Calculate the number of times the pattern needs to repeat to generate enough colors to fill the requested number of colors
+    int numRepeats = std::ceil(numColors / static_cast<float>(patternLength));
+
+    // Add the colors to the pattern
+    for (int i = 0; i < numRepeats; i++) {
+        for (int j = 0; j < patternLength; j++) {
+            float hue = j / static_cast<float>(patternLength);
+            float saturation = 0.5f;
+            float value = 0.8f;
+
+            // Convert HSV color to RGB color
+            float chroma = value * saturation;
+            float hue_ = hue * 6.0f;
+            float x = chroma * (1 - std::abs(std::fmod(hue_, 2) - 1));
+            float m = value - chroma;
+            float r_, g_, b_;
+            if (hue_ < 1) {
+                r_ = chroma; g_ = x; b_ = 0;
+            } else if (hue_ < 2) {
+                r_ = x; g_ = chroma; b_ = 0;
+            } else if (hue_ < 3) {
+                r_ = 0; g_ = chroma; b_ = x;
+            } else if (hue_ < 4) {
+                r_ = 0; g_ = x; b_ = chroma;
+            } else if (hue_ < 5) {
+                r_ = x; g_ = 0; b_ = chroma;
+            } else {
+                r_ = chroma; g_ = 0; b_ = x;
+            }
+            int r = static_cast<int>(std::round((r_ + m) * 255));
+            int g = static_cast<int>(std::round((g_ + m) * 255));
+            int b = static_cast<int>(std::round((b_ + m) * 255));
+
+            // Add the color to the pattern
+            std::stringstream ss;
+            ss << "0x" << std::hex << std::setfill('0') << std::setw(2) << r << std::setw(2) << g << std::setw(2) << b;
+            patternedColors.push_back(ss.str());
+        }
+    }
+
+    // Trim the pattern to the requested number of colors
+    patternedColors.resize(numColors);
+
+    return patternedColors;
+}
+
+
+// Generates a random pattern of colors every n iterations, and shifts the colors left or right on each iteration.
+// patternInterval: the interval (in number of iterations) at which to generate a new random pattern of colors.
+// shiftLeft: a boolean flag indicating whether to shift the colors to the left (true) or to the right (false) on each iteration.
+// numColors: the number of colors to include in each pattern.
+// returns: a vector of hexadecimal color codes representing the current pattern of colors.
+// Generates a random pattern of colors every n iterations, and shifts the colors left or right on each iteration.
+// patternInterval: the interval (in number of iterations) at which to generate a new random pattern of colors.
+// shiftLeft: a boolean flag indicating whether to shift the colors to the left (true) or to the right (false) on each iteration.
+// numColors: the number of colors to include in each pattern.
+// returns: a vector of hexadecimal color codes representing the current pattern of colors.
+std::vector<std::string> getPatternedColor(tString name, int colorIteration, int patternInterval, bool shiftLeft, int numColors)
+{
+    std::vector<std::string> pattern;
+
+    // Generate a new pattern of colors every patternInterval iterations
+    if (colorIteration % patternInterval == 0)
+    {
+        pattern.clear();
+        pattern = se_randomPatternedColors(name, numColors);
+    }
+
+    if (se_playerColoredNameShift)
+    {
+        // Shift the colors left or right depending on the shiftLeft flag
+        if (shiftLeft)
+        {
+            std::string firstColor = pattern[0];
+            for (int i = 0; i < pattern.size() - 1; i++)
+            {
+                pattern[i] = pattern[i + 1];
+            }
+            pattern[pattern.size() - 1] = firstColor;
+        }
+        else
+        {
+            std::string lastColor = pattern[pattern.size() - 1];
+            for (int i = pattern.size() - 1; i > 0; i--)
+            {
+                pattern[i] = pattern[i - 1];
+            }
+            pattern[0] = lastColor;
+        }
+    }
+
+    // Trim the pattern to the requested number of colors
+    pattern.resize(numColors);
+
+    return pattern;
+}
+
+static void se_colorName(ePlayer* l) {
+    tString ourName = tColoredString::RemoveColors(l->name);
+    tString tempName = ourName;
+    tString ourNewName;
+
+    // Get the current pattern of colors and apply it to the player's name
+    std::vector<std::string> pattern = getPatternedColor(ourName, l->colorIteration, se_playerColoredNamePatternInterval, se_playerColoredNameShiftLeft, se_playerColoredNameNumColors);
+    for (int i = 0; i < ourName.Len(); i++) {
+        int colorIndex = i % pattern.size();
+        ourNewName << pattern[colorIndex] << tempName[i];
+    }
+
+    // Increment the iteration counter
+    l->colorIteration++;
+
+    // Set the modified name to the player's name
+    l->name = ourNewName;
+}
+
+
+
 static int se_RandomizeColorRange = 32;
 static tConfItem<int> se_RandomizeColorRangeConf("PLAYER_RANDOM_COLOR_RANGE", se_RandomizeColorRange);
 
@@ -9537,7 +9689,9 @@ void ePlayerNetID::Update()
             tASSERT(local_p);
             tCONTROLLED_PTR(ePlayerNetID) &p=local_p->netPlayer;
             bool in_game=ePlayer::PlayerIsInGame(i) ||
-            (local_p && local_p->ID() != 0 && (i <= (se_createPlayers) || (se_createPlayersSpecific >= 1 && i == se_createPlayersSpecific-1)));
+            (local_p && local_p->ID() != 0 &&
+            (i <= (se_createPlayers) ||
+            (se_createPlayersSpecific >= 1 && i == se_createPlayersSpecific-1)));
 
 
 
@@ -9546,7 +9700,7 @@ void ePlayerNetID::Update()
                 // reset last time so idle time in the menus does not count as play time
                 lastTime = tSysTimeFloat();
 
-                p=tNEW(ePlayerNetID) (i);
+                p=tNEW(ePlayerNetID) (i);//,i);
                 //p->FindDefaultTeam();
 
                 p->SetDefaultTeam();
@@ -9570,6 +9724,9 @@ void ePlayerNetID::Update()
             if (bool(p) && in_game)  // update
             {
 
+                if (se_playerColoredName) {
+                    se_colorName(local_p);
+                }
                 if (se_forceTeamname && sn_GetNetState() == nCLIENT &&
                     (sn_Connections[0].version.Max() == 18 ||
                      sn_Connections[0].version.Max() == 22))
@@ -9666,7 +9823,7 @@ void ePlayerNetID::Update()
                 p->stealth_ = local_p->stealth;
 
                 // update name
-                tString newName( ePlayer::PlayerConfig(i)->Name() );
+                tString newName( ePlayer::PlayerConfig(i)->name );
 
                 if ( ::sn_GetNetState() != nCLIENT || newName != p->nameFromClient_ )
                 {
@@ -9676,7 +9833,7 @@ void ePlayerNetID::Update()
                 if (se_forceSync) {
                     p->RequestSync();
                 }
-                p->SetName( local_p->Name() );
+                p->SetName( local_p->name );
             }
         }
 

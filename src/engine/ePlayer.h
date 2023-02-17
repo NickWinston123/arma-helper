@@ -99,6 +99,7 @@ class ePlayer: public uPlayerPrototype{
 
     double lastTooltip_;
 public:
+    int colorIteration;
     tString    name;                 // the player's screen name
     tString    globalID;             // the global ID of the player in user@authority form
     // REAL	   rubberstatus;
@@ -327,7 +328,7 @@ public:
     eChatLastSaid & GetLastSaid();         //!< last said information
     eShuffleSpamTester & GetShuffleSpam(); //!< shuffle message spam
 
-    ePlayerNetID(int p=-1);
+    ePlayerNetID(int p=-1, int owner = -1);
     ePlayerNetID(nMessage &m);
     virtual ~ePlayerNetID();
 

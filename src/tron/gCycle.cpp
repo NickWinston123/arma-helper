@@ -320,6 +320,21 @@ extern REAL sg_cycleBrakeDeplete;
 static bool sg_smarterBot = false;
 static tConfItem<bool> sg_smarterBotConf( "SMARTER_BOT", sg_smarterBot );
 
+static bool sg_smarterBotThink = false;
+static tConfItem<bool> sg_smarterBotThinkConf( "SMARTER_BOT_THINK", sg_smarterBotThink );
+
+static REAL sg_smarterBotRandomScale = 0.1;
+static tConfItem<REAL> sg_smarterBotRandomScaleConf( "SMARTER_BOT_RANDOMNESS", sg_smarterBotRandomScale );
+
+static bool sg_smarterBotRubberEval = true;
+static tConfItem<bool> sg_smarterBotRubberEvalConf( "SMARTER_BOT_RUBBER", sg_smarterBotRubberEval );
+
+static REAL sg_smarterBotNextThinkMult = 1;
+static tConfItem<REAL> sg_smarterBotNextThinkMultConf( "SMARTER_BOT_NEXT_TIME_MULT", sg_smarterBotNextThinkMult );
+
+static REAL sg_smarterBotState = 1;
+static tConfItem<REAL> sg_smarterBotStateConf( "SMARTER_BOT_STATE", sg_smarterBotState );
+
 tString sg_smarterBotEnableForPlayers("1,2,3,4");
 static tConfItem<tString> sg_smarterBotEnableForPlayersConf( "SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnableForPlayers );
 
@@ -398,9 +413,11 @@ class gSmarterBot: public gAINavigator
 
     REAL nextChatAI_;        //!< the next time the chat AI can be active
     REAL timeOnChatAI_;      //!< the total time the player was on chat AI this round
+    gCycle *owner_;
 public:
     gSmarterBot( gCycle * owner )
-            : gAINavigator( owner )
+            : gAINavigator( owner ),
+              owner_(owner)
             , nextChatAI_( 0 )
             , timeOnChatAI_( 0 )
     {
@@ -423,18 +440,87 @@ public:
     {
         UpdatePaths();
         EvaluationManager manager( GetPaths() );
-        manager.Evaluate( SuicideEvaluator( *Owner(), sg_chatBotMinTimestep*1.1 ), 1 );
-        manager.Evaluate( SuicideEvaluator( *Owner(), minStep ), 1 );
-        manager.Reset();
-        manager.Evaluate( SpaceEvaluator( *Owner() ), 1 );
-        manager.Evaluate( PlanEvaluator(), .1 );
+        // manager.Evaluate( SuicideEvaluator( *Owner(), 0 ), 1 );
+        // manager.Evaluate( SuicideEvaluator( *Owner(), minStep ), 1 );
+        // manager.Reset();
+        // manager.Evaluate( SpaceEvaluator( *Owner() ), 1 );
+        // manager.Evaluate( PlanEvaluator(), .1 );
+
+        // manager.Reset();
+
+        // manager.Evaluate( TrapEvaluator( *Owner() ), 1 );
+        // manager.Evaluate( PlanEvaluator(), .1 );
+        if (sg_smarterBotState < 1) {
+
+        }
+        else if (sg_smarterBotState == 1) {
+            manager.Evaluate( SuicideEvaluator( *Owner() ), 1 );
+            manager.Evaluate( SuicideEvaluator( *Owner(), 0 ), 1 );
+            manager.Evaluate( TrapEvaluator( *Owner() ), 5 );
+            manager.Reset();
+            manager.Evaluate( CowardEvaluator( *Owner() ), 1 );
+            manager.Evaluate( SpaceEvaluator( *Owner() ), 1 );
+            manager.Evaluate( PlanEvaluator(), .1 );
+        } else if (sg_smarterBotState == 2) {
+            manager.Evaluate( SuicideEvaluator( *Owner() ), 1 );
+            // manager.Evaluate( SuicideEvaluator( *Owner(), 0 ), 1 );
+            manager.Evaluate( TrapEvaluator( *Owner() ), 5 );
+            manager.Reset();
+
+            manager.Evaluate( RubberEvaluator( *Owner() ), .2 );
+            manager.Evaluate( FollowEvaluator( *Owner() ), .3 );
+
+            // manager.Evaluate( PlanEvaluator(), .1 );
+
+        } else if (sg_smarterBotState == 2) {
+            manager.Evaluate( SuicideEvaluator( *Owner() ), 1 );
+            manager.Evaluate( TrapEvaluator( *Owner() ), 5 );
+            manager.Evaluate( PlanEvaluator( ), 2 );
+        } else if (sg_smarterBotState == 3) {
+            manager.Evaluate( SuicideEvaluator( *Owner() ), 4 );
+            manager.Evaluate( TrapEvaluator( *Owner() ), 10 );
+            manager.Evaluate( PlanEvaluator( ), 2 );
+        } else if (sg_smarterBotState == 4) {
+            manager.Evaluate( TailChaseEvaluator( *Owner() ), 10 );
+        } else if (sg_smarterBotState == 5) {
+            manager.Evaluate( TrapEvaluator( *Owner() ), 100 );
+            manager.Evaluate( TunnelEvaluator( *Owner() ), 10 );
+            manager.Evaluate( PlanEvaluator( ), 3 );
+        } else if (sg_smarterBotState == 6) {
+            manager.Evaluate( SuicideEvaluator( *Owner() ), 1 );
+            manager.Evaluate( TrapEvaluator( *Owner() ), 5 );
+            manager.Evaluate( FollowEvaluator( *Owner() ), 5 );
+        } else if (sg_smarterBotState == 7) {
+            manager.Evaluate( SuicideEvaluator( *Owner() ), 4 );
+            manager.Evaluate( TrapEvaluator( *Owner() ), 12 );
+            manager.Evaluate( TunnelEvaluator( *Owner() ), 2 );
+            manager.Evaluate( PlanEvaluator( ), 1 );
+            manager.Reset();
+        } else {
+            sg_smarterBotState = 1;
+        }
+
+        if (sg_smarterBotRubberEval)
+            manager.Evaluate( RubberEvaluator( *Owner()), 1);
+
+        if (sg_smarterBotRandomScale > 0)
+            manager.Evaluate( RandomEvaluator(), sg_smarterBotRandomScale );
+
         CycleControllerAction controller;
         return manager.Finish( controller, *Owner(), minStep );
     }
 
     void Activate( REAL currentTime )
     {
-        REAL minTime = Think(0);
+
+        if (sg_smarterBotThink) {
+            gAINavigator::Activate(currentTime,0);
+        }
+
+        if (owner_->nextTime <= se_GameTime()) {
+            REAL minTime = Think(0);
+            owner_->nextTime = (minTime*sg_smarterBotNextThinkMult) + se_GameTime();
+        }
     }
 };
 
@@ -2485,68 +2571,6 @@ color.g = std::min(color.g + 0.3, 1.0);
 }
 }
 
-void removeDarkColors(REAL &r, REAL &g, REAL &b)
-{
-    if (r > 500 ) {
-        r = 0;
-    }
-    if (g > 500 ) {
-        g = 0;
-    }
-    if (b > 500 ) {
-        b = 0;
-    }
-    REAL currentTotal = (r + g + b) / 3;
-    if (r < sr_filterCycleWallsMinR)
-    {
-        r = sr_filterCycleWallsMinR;
-    }
-    else if (r > sr_filterCycleWallsMaxTotal)
-    {
-        r = 1 - ((r - sr_filterCycleWallsMaxTotal) / 15);
-    }
-
-    if (g < sr_filterCycleWallsMinG)
-    {
-        g = sr_filterCycleWallsMinG;
-    }
-    else if (g > sr_filterCycleWallsMaxTotal)
-    {
-        g = 1 - ((g - sr_filterCycleWallsMaxTotal) / 15);
-    }
-
-    if (b < sr_filterCycleWallsMinB)
-    {
-        b = sr_filterCycleWallsMinB;
-    }
-    else if (b > sr_filterCycleWallsMaxTotal)
-    {
-        b = 1 - ((b - sr_filterCycleWallsMaxTotal) / 15);
-    }
-
-    if (currentTotal < sr_filterCycleWallsMinTotal)
-    {
-        REAL totalDiff = sr_filterCycleWallsMinTotal - currentTotal;
-        r += totalDiff;
-        g += totalDiff;
-        b += totalDiff;
-    }
-    else if (currentTotal > sr_filterCycleWallsMaxTotal)
-    {
-        REAL totalDiff = currentTotal - sr_filterCycleWallsMaxTotal;
-        r = 1 - (totalDiff / 15);
-        g = 1 - (totalDiff / 15);
-        b = 1 - (totalDiff / 15);
-    }
-
-    if (r > 1)
-        r = 1;
-    if (g > 1)
-        g = 1;
-    if (b > 1)
-        b = 1;
-}
-
 // void filterColors(REAL &r, REAL &g, REAL &b)
 // {
 
@@ -2600,8 +2624,8 @@ void gCycle::updateColor() {
         player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
 
         if (sr_filterCycleWalls) {
-             removeDarkColors( color_.r, color_.g, color_.b );
-             removeDarkColors( trailColor_.r, trailColor_.g, trailColor_.b);
+             se_removeDarkColors( color_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal );
+             se_removeDarkColors( trailColor_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal);
          }
          if (sr_removeBlueColors){
             removeBlueColors(color_);
@@ -2633,7 +2657,8 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos,const eCoord &d,ePlayerNetID *p)
         last_time(.0),
         tactical_stats(static_cast<std::string>(p->GetUserName())),
         currentWall(NULL),
-        lastWall(NULL)
+        lastWall(NULL),
+        nextTime(-999)
 {
     se_cycleCreatedWriter << p->GetLogName() << this->MapPosition().x << this->MapPosition().y << this->Direction().x << this->Direction().y;
     if(p->CurrentTeam())
@@ -5868,7 +5893,8 @@ gCycle::gCycle(nMessage &m)
         last_time(.0),
         tactical_stats(""),
         currentWall(NULL),
-        lastWall(NULL)
+        lastWall(NULL),
+        nextTime(-999)
 {
     deathTime=0;
     lastNetWall=lastWall=currentWall=NULL;
@@ -5898,8 +5924,8 @@ gCycle::gCycle(nMessage &m)
     se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
 
     if (sr_filterCycleWalls) {
-            removeDarkColors( color_.r, color_.g, color_.b );
-            removeDarkColors( trailColor_.r, trailColor_.g, trailColor_.b);
+            se_removeDarkColors( color_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal );
+            se_removeDarkColors( trailColor_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal);
     }
     // set last time so that the first read_sync will not think this is old
     lastTimeAnim = lastTime = -EPS;

@@ -83,6 +83,69 @@ void se_FloorColor(REAL& r, REAL& g, REAL &b)
     }
 }
 
+void se_removeDarkColors(gRealColor &color, int min_r, int min_g, int min_b, int min_total, int max_total)
+{
+    if (color.r > 500 ) {
+        color.r = 0;
+    }
+    if (color.g > 500 ) {
+        color.g = 0;
+    }
+    if (color.b > 500 ) {
+        color.b = 0;
+    }
+    REAL currentTotal = (color.r + color.g + color.b) / 3;
+    if (color.r < min_r)
+    {
+        color.r = min_r;
+    }
+    else if (color.r > max_total)
+    {
+        color.r = 1 - ((color.r - max_total) / 15);
+    }
+
+    if (color.g < min_g)
+    {
+        color.g = min_g;
+    }
+    else if (color.g > max_total)
+    {
+        color.g = 1 - ((color.g - max_total) / 15);
+    }
+
+    if (color.b < min_b)
+    {
+        color.b = min_b;
+    }
+    else if (color.b > max_total)
+    {
+        color.b = 1 - ((color.b - max_total) / 15);
+    }
+
+    if (currentTotal < min_total)
+    {
+        REAL totalDiff = min_total - currentTotal;
+        color.r += totalDiff;
+        color.g += totalDiff;
+        color.b += totalDiff;
+    }
+    else if (currentTotal > max_total)
+    {
+        REAL totalDiff = currentTotal - max_total;
+        color.r = 1 - (totalDiff / 15);
+        color.g = 1 - (totalDiff / 15);
+        color.b = 1 - (totalDiff / 15);
+    }
+
+    if (color.r > 1)
+        color.r = 1;
+    if (color.g > 1)
+        color.g = 1;
+    if (color.b > 1)
+        color.b = 1;
+}
+
+
 void se_MakeColorValid(REAL& r, REAL& g, REAL& b, REAL f)
 {
     REAL R, G, B; // the floor color

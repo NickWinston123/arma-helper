@@ -54,7 +54,7 @@ class gHelper {
          * @param detectionRange The range for detection, in units.
          * @param timeout Time after which the detection will stop.
          */
-        void enemyTracers(gHelperData &data, int detectionRange, REAL timeout);
+        void enemyTracers(gHelperData &data);
 
         /**
          * Shows the tail of the cycle.

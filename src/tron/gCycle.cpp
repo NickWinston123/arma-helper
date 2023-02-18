@@ -316,7 +316,6 @@ extern REAL sg_cycleBrakeDeplete;
 #endif
 #endif
 
-
 static bool sg_smarterBot = false;
 static tConfItem<bool> sg_smarterBotConf( "SMARTER_BOT", sg_smarterBot );
 
@@ -326,20 +325,174 @@ static tConfItem<bool> sg_smarterBotThinkConf( "SMARTER_BOT_THINK", sg_smarterBo
 static REAL sg_smarterBotRandomScale = 0.1;
 static tConfItem<REAL> sg_smarterBotRandomScaleConf( "SMARTER_BOT_RANDOMNESS", sg_smarterBotRandomScale );
 
-static bool sg_smarterBotRubberEval = true;
-static tConfItem<bool> sg_smarterBotRubberEvalConf( "SMARTER_BOT_RUBBER", sg_smarterBotRubberEval );
+static REAL sg_smarterBotRubberEval = 0;
+static tConfItem<REAL> sg_smarterBotRubberEvalConf( "SMARTER_BOT_RUBBER", sg_smarterBotRubberEval );
+
+static REAL sg_smarterBotSuicideEval = 0;
+static tConfItem<REAL> sg_smarterBotSuicideEvalConf( "SMARTER_BOT_SUICIDE", sg_smarterBotSuicideEval );
+
+static REAL sg_smarterBotTrapScale = 0;
+static tConfItem<REAL> sg_smarterBotTrapScaleConf( "SMARTER_BOT_TRAP", sg_smarterBotTrapScale );
+
+static REAL sg_smarterBotFollowScale = 0;
+static tConfItem<REAL> sg_smarterBotFollowScaleConf( "SMARTER_BOT_FOLLOW", sg_smarterBotFollowScale );
+
+static REAL sg_smarterBotPlanScale = 0;
+static tConfItem<REAL> sg_smarterBotPlanScaleConf( "SMARTER_BOT_PLAN", sg_smarterBotPlanScale );
+
+static REAL sg_smarterBotTailScale = 0;
+static tConfItem<REAL> sg_smarterBotTailScaleConf( "SMARTER_BOT_TAIL", sg_smarterBotTailScale );
+
+static REAL sg_smarterBotSpaceScale = 0;
+static tConfItem<REAL> sg_smarterBotSpaceScaleConf( "SMARTER_BOT_SPACE", sg_smarterBotSpaceScale );
 
 static REAL sg_smarterBotNextThinkMult = 1;
 static tConfItem<REAL> sg_smarterBotNextThinkMultConf( "SMARTER_BOT_NEXT_TIME_MULT", sg_smarterBotNextThinkMult );
 
-static REAL sg_smarterBotState = 1;
-static tConfItem<REAL> sg_smarterBotStateConf( "SMARTER_BOT_STATE", sg_smarterBotState );
+static int sg_smarterBotState = 1;
+static tConfItem<int> sg_smarterBotStateConf( "SMARTER_BOT_STATE", sg_smarterBotState );
 
 tString sg_smarterBotEnableForPlayers("1,2,3,4");
 static tConfItem<tString> sg_smarterBotEnableForPlayersConf( "SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnableForPlayers );
 
 static bool sg_smarterBotAlwaysActive = false;
 static tConfItem<bool> sg_smarterBotAlwaysActiveConf( "SMARTER_BOT_ALWAYS_ACTIVE", sg_smarterBotAlwaysActive );
+
+class gSmarterBot: public gAINavigator
+{
+    friend class gCycle;
+
+    REAL nextChatAI_;        //!< the next time the chat AI can be active
+    REAL timeOnChatAI_;      //!< the total time the player was on chat AI this round
+    gCycle *owner_;
+public:
+    gSmarterBot( gCycle * owner )
+            : gAINavigator( owner ),
+              owner_(owner)
+            , nextChatAI_( 0 )
+            , timeOnChatAI_( 0 )
+    {
+        settings_.range = sg_chatBotRange;
+        settings_.newWallBlindness = sg_chatBotNewWallBlindness;
+    }
+
+    static gSmarterBot & Get( gCycle * cycle )
+    {
+        tASSERT( cycle );
+
+        // create
+        if ( cycle->smarterBot_.get() == 0 )
+            cycle->smarterBot_.reset( new gSmarterBot( cycle ) );
+
+        return *cycle->smarterBot_;
+    }
+
+    REAL Think( REAL minStep )
+    {
+        UpdatePaths();
+        EvaluationManager manager( GetPaths() );
+        switch (sg_smarterBotState) {
+        case 0: {
+            break;
+        }
+        case 1: {
+            manager.Evaluate(SuicideEvaluator(*Owner()), 1);
+            manager.Evaluate(SuicideEvaluator(*Owner(), 0), 1);
+            manager.Evaluate(TrapEvaluator(*Owner()), 5);
+            manager.Reset();
+            manager.Evaluate(CowardEvaluator(*Owner()), 1);
+            manager.Evaluate(SpaceEvaluator(*Owner()), 1);
+            manager.Evaluate(PlanEvaluator(), .1);
+            break;
+        }
+        case 2: {
+            manager.Evaluate(SuicideEvaluator(*Owner()), 1);
+            manager.Evaluate(TrapEvaluator(*Owner()), 5);
+            manager.Reset();
+            manager.Evaluate(RubberEvaluator(*Owner()), .2);
+            manager.Evaluate(FollowEvaluator(*Owner()), .3);
+            break;
+        }
+        case 3: {
+            manager.Evaluate(SuicideEvaluator(*Owner()), 4);
+            manager.Evaluate(TrapEvaluator(*Owner()), 10);
+            manager.Evaluate(PlanEvaluator(), 2);
+            break;
+        }
+        case 4: {
+            manager.Evaluate(TailChaseEvaluator(*Owner()), 10);
+            break;
+        }
+        case 5: {
+            manager.Evaluate(SuicideEvaluator(*Owner()), 15);
+            manager.Evaluate(TrapEvaluator(*Owner()), 100);
+            manager.Evaluate(TunnelEvaluator(*Owner()), 10);
+            manager.Evaluate(PlanEvaluator(), 3);
+            break;
+        }
+        case 6: {
+            manager.Evaluate(SuicideEvaluator(*Owner()), 1);
+            manager.Evaluate(TrapEvaluator(*Owner()), 5);
+            manager.Evaluate(FollowEvaluator(*Owner()), 5);
+            break;
+        }
+        case 7: {
+            manager.Evaluate(SuicideEvaluator(*Owner()), 4);
+            manager.Evaluate(TrapEvaluator(*Owner()), 12);
+            manager.Evaluate(TunnelEvaluator(*Owner()), 2);
+            manager.Evaluate(PlanEvaluator(), 1);
+            manager.Reset();
+            break;
+        }
+        default: {
+            sg_smarterBotState = 1;
+            break;
+        }
+        }
+
+        manager.Reset();
+
+        if (sg_smarterBotSuicideEval > 0)
+            manager.Evaluate( SuicideEvaluator( *Owner()), sg_smarterBotSuicideEval);
+
+        if (sg_smarterBotRubberEval > 0)
+            manager.Evaluate( RubberEvaluator( *Owner()), sg_smarterBotRubberEval);
+
+        if (sg_smarterBotRandomScale > 0)
+            manager.Evaluate( RandomEvaluator(), sg_smarterBotRandomScale );
+
+        if (sg_smarterBotTrapScale > 0)
+            manager.Evaluate( TrapEvaluator( *Owner()), sg_smarterBotTrapScale );
+
+        if (sg_smarterBotFollowScale > 0)
+            manager.Evaluate( FollowEvaluator(*Owner()), sg_smarterBotFollowScale );
+
+        if (sg_smarterBotPlanScale > 0)
+            manager.Evaluate( PlanEvaluator(), sg_smarterBotPlanScale );
+
+        if (sg_smarterBotTailScale > 0)
+            manager.Evaluate( TailChaseEvaluator( *Owner() ), sg_smarterBotTailScale );
+
+        if (sg_smarterBotSpaceScale > 0)
+            manager.Evaluate( SpaceEvaluator( *Owner() ), sg_smarterBotSpaceScale );
+
+        CycleControllerAction controller;
+        return manager.Finish( controller, *Owner(), minStep );
+    }
+
+    void Activate( REAL currentTime )
+    {
+
+        if (sg_smarterBotThink) {
+            gAINavigator::Activate(currentTime,0);
+        }
+
+        if (owner_->nextTime <= se_GameTime()) {
+            REAL minTime = Think(0);
+            owner_->nextTime = (minTime*sg_smarterBotNextThinkMult) + se_GameTime();
+        }
+    }
+};
 
 
 static bool sg_localBot = false;
@@ -406,126 +559,8 @@ bool sg_chatBotControlByServer = false;
 static tSettingItem<bool> sg_chatBotControlByServerConf("CHATBOT_CONTROLLED_BY_SERVER", sg_chatBotControlByServer);
 
 extern REAL sg_suicideTimeout;
-
-class gSmarterBot: public gAINavigator
-{
-    friend class gCycle;
-
-    REAL nextChatAI_;        //!< the next time the chat AI can be active
-    REAL timeOnChatAI_;      //!< the total time the player was on chat AI this round
-    gCycle *owner_;
-public:
-    gSmarterBot( gCycle * owner )
-            : gAINavigator( owner ),
-              owner_(owner)
-            , nextChatAI_( 0 )
-            , timeOnChatAI_( 0 )
-    {
-        settings_.range = sg_chatBotRange;
-        settings_.newWallBlindness = sg_chatBotNewWallBlindness;
-    }
-
-    static gSmarterBot & Get( gCycle * cycle )
-    {
-        tASSERT( cycle );
-
-        // create
-        if ( cycle->smarterBot_.get() == 0 )
-            cycle->smarterBot_.reset( new gSmarterBot( cycle ) );
-
-        return *cycle->smarterBot_;
-    }
-
-    REAL Think( REAL minStep )
-    {
-        UpdatePaths();
-        EvaluationManager manager( GetPaths() );
-        // manager.Evaluate( SuicideEvaluator( *Owner(), 0 ), 1 );
-        // manager.Evaluate( SuicideEvaluator( *Owner(), minStep ), 1 );
-        // manager.Reset();
-        // manager.Evaluate( SpaceEvaluator( *Owner() ), 1 );
-        // manager.Evaluate( PlanEvaluator(), .1 );
-
-        // manager.Reset();
-
-        // manager.Evaluate( TrapEvaluator( *Owner() ), 1 );
-        // manager.Evaluate( PlanEvaluator(), .1 );
-        if (sg_smarterBotState < 1) {
-
-        }
-        else if (sg_smarterBotState == 1) {
-            manager.Evaluate( SuicideEvaluator( *Owner() ), 1 );
-            manager.Evaluate( SuicideEvaluator( *Owner(), 0 ), 1 );
-            manager.Evaluate( TrapEvaluator( *Owner() ), 5 );
-            manager.Reset();
-            manager.Evaluate( CowardEvaluator( *Owner() ), 1 );
-            manager.Evaluate( SpaceEvaluator( *Owner() ), 1 );
-            manager.Evaluate( PlanEvaluator(), .1 );
-        } else if (sg_smarterBotState == 2) {
-            manager.Evaluate( SuicideEvaluator( *Owner() ), 1 );
-            // manager.Evaluate( SuicideEvaluator( *Owner(), 0 ), 1 );
-            manager.Evaluate( TrapEvaluator( *Owner() ), 5 );
-            manager.Reset();
-
-            manager.Evaluate( RubberEvaluator( *Owner() ), .2 );
-            manager.Evaluate( FollowEvaluator( *Owner() ), .3 );
-
-            // manager.Evaluate( PlanEvaluator(), .1 );
-
-        } else if (sg_smarterBotState == 2) {
-            manager.Evaluate( SuicideEvaluator( *Owner() ), 1 );
-            manager.Evaluate( TrapEvaluator( *Owner() ), 5 );
-            manager.Evaluate( PlanEvaluator( ), 2 );
-        } else if (sg_smarterBotState == 3) {
-            manager.Evaluate( SuicideEvaluator( *Owner() ), 4 );
-            manager.Evaluate( TrapEvaluator( *Owner() ), 10 );
-            manager.Evaluate( PlanEvaluator( ), 2 );
-        } else if (sg_smarterBotState == 4) {
-            manager.Evaluate( TailChaseEvaluator( *Owner() ), 10 );
-        } else if (sg_smarterBotState == 5) {
-            manager.Evaluate( TrapEvaluator( *Owner() ), 100 );
-            manager.Evaluate( TunnelEvaluator( *Owner() ), 10 );
-            manager.Evaluate( PlanEvaluator( ), 3 );
-        } else if (sg_smarterBotState == 6) {
-            manager.Evaluate( SuicideEvaluator( *Owner() ), 1 );
-            manager.Evaluate( TrapEvaluator( *Owner() ), 5 );
-            manager.Evaluate( FollowEvaluator( *Owner() ), 5 );
-        } else if (sg_smarterBotState == 7) {
-            manager.Evaluate( SuicideEvaluator( *Owner() ), 4 );
-            manager.Evaluate( TrapEvaluator( *Owner() ), 12 );
-            manager.Evaluate( TunnelEvaluator( *Owner() ), 2 );
-            manager.Evaluate( PlanEvaluator( ), 1 );
-            manager.Reset();
-        } else {
-            sg_smarterBotState = 1;
-        }
-
-        if (sg_smarterBotRubberEval)
-            manager.Evaluate( RubberEvaluator( *Owner()), 1);
-
-        if (sg_smarterBotRandomScale > 0)
-            manager.Evaluate( RandomEvaluator(), sg_smarterBotRandomScale );
-
-        CycleControllerAction controller;
-        return manager.Finish( controller, *Owner(), minStep );
-    }
-
-    void Activate( REAL currentTime )
-    {
-
-        if (sg_smarterBotThink) {
-            gAINavigator::Activate(currentTime,0);
-        }
-
-        if (owner_->nextTime <= se_GameTime()) {
-            REAL minTime = Think(0);
-            owner_->nextTime = (minTime*sg_smarterBotNextThinkMult) + se_GameTime();
-        }
-    }
-};
-
-
 REAL chatBotNewWallBlindness, chatBotMinTimestep, chatBotDelay, chatBotRange, chatBotDecay, chatBotEnemyPenalty;
+
 class gCycleChatBot
 {
     gCycleChatBot();

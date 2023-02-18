@@ -349,7 +349,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
         if (this->blockTurn != NONE) {
             // Store the last blocked turn for smartTurningSurviveTrace before clearing
             owner_->lastBlockedTurn = this->blockTurn;
-        
+
             gHelperUtility::Debug("SMART TURNING SURVIVE", "UNBLOCKING TURNS");
 
             // Set the blockTurn to NONE to indicate that the player can now turn in either direction.
@@ -396,7 +396,7 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
     con << "SMART TURNING LAST lastBlockedDir " << lastBlockedDir << "\n";
     // Get the information about the blocked corner
     gSmartTurningCornerData* corner = helper_->getCorner(lastBlockedDir);
-    
+
     if (!corner->exist)
         return;
 

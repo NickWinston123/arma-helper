@@ -4717,27 +4717,30 @@ static bool IsLegalPlayerName( tString const & name )
 }
 
 #ifndef DEDICATED
-static bool se_enableChatCommands = true;
+bool se_enableChatCommands = true;
 static tConfItem<bool> se_enableChatCommandsConf( "LOCAL_CHAT_COMMANDS", se_enableChatCommands );
 
-static bool se_disablePlayersCommand = true;
+bool se_disablePlayersCommand = true;
 static tConfItem<bool> se_disablePlayersCommandConf( "LOCAL_DISABLE_PLAYERS", se_disablePlayersCommand );
 
 // our local commands (should always be lowercase)
-static tString se_consoleComand("/console");
+tString se_consoleComand("/console");
 static tConfItem<tString> se_consoleComandConf("LOCAL_CONSOLE_COMMAND", se_consoleComand);
 
-static tString se_colorsCommand("/colors");
+tString se_colorsCommand("/colors");
 static tConfItem<tString> se_colorsCommandConf("LOCAL_COLORS_COMMAND", se_colorsCommand);
 
-static tString se_infoCommand("/info");
+tString se_infoCommand("/info");
 static tConfItem<tString> se_infoCommandConf("LOCAL_INFO_COMMAND", se_infoCommand);
 
-static tString se_rgbCommand("/rgb");
+tString se_rgbCommand("/rgb");
 static tConfItem<tString> se_rgbCommandConf("LOCAL_RGB_COMMAND", se_rgbCommand);
 
-static tString se_browserCommand("/browser");
+tString se_browserCommand("/browser");
 static tConfItem<tString> se_browserCommandConf("LOCAL_BROWSER_COMMAND", se_browserCommand);
+
+tString se_speakCommand("/speak");
+static tConfItem<tString> se_speakCommandConf("LOCAL_SPEAK_COMMAND", se_speakCommand);
 #endif //if not dedicated
 
 void ePlayerNetID::Chat(const tString& s_orig)
@@ -4753,7 +4756,8 @@ void ePlayerNetID::Chat(const tString& s_orig)
         se_colorsCommand,
         se_infoCommand,
         se_rgbCommand,
-        se_browserCommand
+        se_browserCommand,
+        se_speakCommand
     };
 
     std::string chatString(s_orig);
@@ -4823,9 +4827,13 @@ void ePlayerNetID::Chat(const tString& s_orig)
         else if (command == se_rgbCommand)
         {
             currentPlayerRGB(tString(s_orig));
-        } else if (command == se_browserCommand) {
+        }
+        else if (command == se_browserCommand) {
             con << "Launchin browser";
             gServerBrowser::BrowseMaster();
+        }
+        else if (command == se_speakCommand) {
+            localSpeak(tString(s_orig));
         }
     }
     else
@@ -9307,6 +9315,20 @@ static void se_SavedColors(int savedColorsCount)
     }
 }
 
+void ePlayerNetID::localSpeak(tString s_orig)
+{
+    tString params;
+    params << s_orig;
+    int pos = 0; //
+
+    tString PlayerStr = params.ExtractNonBlankSubString(pos); // command
+            PlayerStr = params.ExtractNonBlankSubString(pos);
+
+    ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
+
+    if (p)
+        p->Chat(params.SubStr(pos+1));
+}
 
 // Allow us to change our current RGB easily.
 // Usage: /rgb with no parameters displays current rgb.

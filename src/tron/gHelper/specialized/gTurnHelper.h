@@ -41,7 +41,8 @@ public:
 
     // function to check if a turn can help the cycle survive a left or right turn given speed and rubber factors
     gSurviveData canSurviveTurn(gHelperData &data,
-                                REAL freeSpaceFactor = 0);
+                                REAL freeSpaceFactor = 0,
+                                bool driveStraight = true);
                         
 
     // performs the actual turn

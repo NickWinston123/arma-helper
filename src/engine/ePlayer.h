@@ -461,6 +461,7 @@ public:
     static void listPlayerInfo(tString s_orig);
     // Fast way to change / display current RGB
     static void currentPlayerRGB(tString s_orig);
+    static void localSpeak(tString s_orig);
     //Grab Stuff
     static tColoredString gatherPlayerInfo(ePlayerNetID * p);
     static tColoredString gatherPlayerColor(ePlayerNetID * p, bool showReset = true);

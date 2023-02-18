@@ -162,10 +162,10 @@ bool gTurnHelper::makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFacto
 
 
 // Function that checks if a turn can be survived by the player.
-gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor)
+gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor, bool driveStraight)
 {
     // If the player is not alive, return.
-    if (!helper_->aliveCheck())
+    if (!helper_->aliveCheck() || (driveStraight && helper_->drivingStraight()))
         return gSurviveData(false);
 
     gSurviveData surviveData;
@@ -177,10 +177,10 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     surviveData.canSurviveLeftTurn = true;
     surviveData.canSurviveRightTurn = true;
 
-    // Get the front, left and right sensors.
-    gSensor *front = data.sensors.getSensor(FRONT);
-    gSensor *left = data.sensors.getSensor(LEFT);
-    gSensor *right = data.sensors.getSensor(RIGHT);
+    // Get the left, front, and right sensors.
+    gSensor *left = data.sensors.getSensor(LEFT,true);
+    gSensor *front = data.sensors.getSensor(FRONT, true);
+    gSensor *right = data.sensors.getSensor(RIGHT,true);
 
     // Initialize the variables to assume the turns can be survived.
     bool canTurnLeftRubber = true, canTurnRightRubber = true, canTurnLeftSpace = true, canTurnRightSpace = true;
@@ -197,12 +197,16 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     if (freeSpaceFactor > 0)
     {
         // If the left hit is less than the turn speed factor multiplied by the free space factor and the front and right hits are greater than the turn speed factor multiplied by the free space factor, the turn left cannot be survived.
-        if (left->hit < data.ownerData.turnSpeedFactorF() * freeSpaceFactor && front->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor && right->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor)
+        if (left->hit < data.ownerData.turnSpeedFactorF() * freeSpaceFactor &&
+            front->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor &&
+            right->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor)
         {
             canTurnLeftSpace = false;
         }
         // If the right hit is less than the turn speed factor multiplied by the free space factor and the front and left hits are greater than the turn speed factor multiplied by the free space factor, the turn right cannot be survived.
-        if (right->hit < data.ownerData.turnSpeedFactorF() * freeSpaceFactor && front->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor && left->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor)
+        if (right->hit < data.ownerData.turnSpeedFactorF() * freeSpaceFactor &&
+            front->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor &&
+            left->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor)
         {
             canTurnRightSpace = false;
         }
@@ -237,7 +241,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
         surviveData.canSurviveLeftTurn = canTurnLeftRubber;
         surviveData.canSurviveRightTurn = canTurnRightRubber;
     }
-
+    delete left, front, right;
     return surviveData;
 }
 

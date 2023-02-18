@@ -276,7 +276,7 @@ void gHelper::autoBrake()
 
 
 // This function adds tracers to the position of enemies to make it easier for the player to see their position.
-void gHelper::enemyTracers(gHelperData & data, int detectionRange, REAL timeout)
+void gHelper::enemyTracers(gHelperData & data)
 {
     // If the player is not alive, return from the function
     if (!aliveCheck())
@@ -296,7 +296,7 @@ void gHelper::enemyTracers(gHelperData & data, int detectionRange, REAL timeout)
         // Initialize RGB values for the tracer color
         REAL R = .1, G = .1, B = 0;
         // Check if the enemy is close to the player
-        bool isClose = gHelperUtility::isClose(owner_, enemyPos, detectionRange + data.ownerData.turnSpeedFactorF());
+        bool isClose = gHelperUtility::isClose(owner_, enemyPos, sg_helperEnemyTracersDetectionRange + data.ownerData.turnSpeedFactorF());
         // Check if the enemy cycle is faster than the player cycle
         bool enemyFaster = ((other->Speed() > ((*ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
         // Check if the enemy cycle is a teammate
@@ -321,7 +321,7 @@ void gHelper::enemyTracers(gHelperData & data, int detectionRange, REAL timeout)
         }
 
         // Draw the tracer line on the screen
-        gHelperUtility::debugLine(gRealColor(R, G, B), sg_helperEnemyTracersHeight, timeout, (*ownerPos), enemyPos, sg_helperEnemyTracersBrightness);
+        gHelperUtility::debugLine(gRealColor(R, G, B), sg_helperEnemyTracersHeight, sg_helperEnemyTracersTimeout * data.ownerData.speedFactorF(), (*ownerPos), enemyPos, sg_helperEnemyTracersBrightness);
     }
 }
 
@@ -630,7 +630,7 @@ void gHelper::Activate()
         zoneHelper->Activate(*data_stored);
 
     if (sg_helperEnemyTracers)
-        enemyTracers(*data_stored, sg_helperEnemyTracersDetectionRange, sg_helperEnemyTracersTimeout);
+        enemyTracers(*data_stored);
 
     if (sg_helperDetectCut)
         detectCut(*data_stored, sg_helperDetectCutDetectionRange);

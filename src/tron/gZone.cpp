@@ -523,7 +523,7 @@ REAL sr_filterZonesMinTotal = 0;
 static tConfItem<REAL> sr_filterZonesMinTotalConf("FILTER_ZONES_MIN_TOTAL", sr_filterZonesMinTotal);
 
 void gZone::FilterZoneColor(gRealColor &color) {
-    con << "filtering\n";
+    // con << "filtering\n";
     se_removeDarkColors( color, sr_filterZonesMinR, sr_filterZonesMinG, sr_filterZonesMinB, sr_filterZonesMinTotal, sr_filterZonesMaxTotal);
 }
 

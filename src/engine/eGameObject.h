@@ -250,6 +250,7 @@ public:
 
     // kills everything:
     static void DeleteAll(eGrid *grid);
+    static void DeleteAllSafe(eGrid *grid);
 };
 
 // game object to be created on the heap

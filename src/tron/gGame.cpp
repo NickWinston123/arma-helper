@@ -1527,6 +1527,19 @@ void exit_game_objects(eGrid *grid){
     exit_game_grid(grid);
 }
 
+void clean_game_objects(eGrid *grid) {
+    eGameObject::DeleteAllSafe(grid);
+    gNetPlayerWall::ClearSafe();
+}
+
+static void sg_stateHack(std::istream &s)
+{
+    clean_game_objects(eGrid::CurrentGrid());
+    nNetObject::ClearAllDeleted();
+}
+
+static tConfItemFunc sg_stateHackConf("STATE_HACK", &sg_stateHack);
+
 /*REAL exponent(int i)
 {
     int abs = i;
@@ -4197,6 +4210,7 @@ static void respawnallenable(std::istream &s)
 {
     respawn_all = true;
 }
+
 static tConfItemFunc sg_respawnall_conf("RESPAWN_ALL", &respawnallenable);
 static tAccessLevelSetter sg_respawnallConfLevel( sg_respawnall_conf, tAccessLevel_Moderator );
 

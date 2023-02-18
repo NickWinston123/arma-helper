@@ -1537,7 +1537,7 @@ void eCamera::SwitchCenter(int d){
 }
 
 #include "tRandom.h"
-void eCamera::SpectatePlayer(ePlayerNetID& owner, const tString& s_orig)
+void eCamera::SpectatePlayer(ePlayerNetID &owner, const tString &s_orig)
 {
     if (!eGrid::CurrentGrid())
     {
@@ -1545,7 +1545,10 @@ void eCamera::SpectatePlayer(ePlayerNetID& owner, const tString& s_orig)
         return;
     }
 
-    ePlayer* localPlayer = ePlayer::PlayerConfig(0);
+    // ePlayer *test = se_GetEPlayer(&owner);
+    // con << "TEST EXIST ? " << bool(test) << "\n";
+    
+    ePlayer *localPlayer = ePlayer::PlayerConfig(0);
     if (!localPlayer || !localPlayer->cam)
     {
         return;
@@ -1560,25 +1563,32 @@ void eCamera::SpectatePlayer(ePlayerNetID& owner, const tString& s_orig)
     }
 
     // Find the player by name, if specified
-    ePlayerNetID* targetPlayer = nullptr;
+    ePlayerNetID *targetPlayer = nullptr;
     if (!targetPlayerName.empty())
     {
         targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
-        if (!targetPlayer || targetPlayer->Object()->GOID() == localPlayer->cam->center->GOID())
+        if (!targetPlayer || !targetPlayer->Object() ||
+            !targetPlayer->Object()->Alive() ||
+            targetPlayer->Object()->GOID() == localPlayer->cam->center->GOID())
         {
             con << "Player not found or already being spectated.\n";
+            return;
+        }
+        else if (!targetPlayer->Object()->Alive())
+        {
+            con << "Target player is not alive.\n";
             return;
         }
     }
     else
     {
         // Get a list of all eligible players (i.e., those that are not the current target)
-        std::vector<ePlayerNetID*> eligiblePlayers;
-        eGameObject* currentTarget = localPlayer->cam->center;
+        std::vector<ePlayerNetID *> eligiblePlayers;
+        eGameObject *currentTarget = localPlayer->cam->center;
         for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
         {
             ePlayerNetID *player = se_PlayerNetIDs[i];
-            if (!player || !player->Object())
+            if (!player || !player->Object() || !player->Object()->Alive())
             {
                 continue;
             }
@@ -1596,7 +1606,7 @@ void eCamera::SpectatePlayer(ePlayerNetID& owner, const tString& s_orig)
         }
 
         // Choose a random eligible player
-        tRandomizer& randomizer = tReproducibleRandomizer::GetInstance();
+        tRandomizer &randomizer = tReproducibleRandomizer::GetInstance();
         targetPlayer = eligiblePlayers[randomizer.Get(0, eligiblePlayers.size())];
     }
 

@@ -341,7 +341,7 @@ public:
     // If a player enters as spectator, they are still assumed to be on a team.
     // When a player is suspeded they are also on a team until the end of the round.
     bool CanRespawn() const { return currentTeam && suspended_ == 0 && ! spectating_; }
- 
+
     // chatting
     bool IsChatting() const { return chatting_; }
     void SetChatting ( ChatFlags flag, bool chatting );
@@ -402,7 +402,7 @@ public:
     // suspend the player from playing, forcing him to spectate
     void Suspend( int rounds = 5, tString reason = tString(""));
 #ifdef KRAWALL_SERVER
-    void Authenticate( tString const & authName, 
+    void Authenticate( tString const & authName,
                        tAccessLevel accessLevel = tAccessLevel_Authenticated,
                        ePlayerNetID const * admin = 0,
                        bool messages = true );    //!< make the authentification valid
@@ -462,7 +462,7 @@ public:
     // List the information of other players.
     static void listPlayerInfo(tString s_orig);
     // Fast way to change / display current RGB
-    static void currentPlayerRGB(tString s_orig);
+    static void currentPlayerRGB(ePlayerNetID &player,tString s_orig);
     static void localSpeak(tString s_orig);
     //Grab Stuff
     static tColoredString gatherPlayerInfo(ePlayerNetID * p);
@@ -845,7 +845,7 @@ ePlayerNetID & ePlayerNetID::SetUserName( tString const & userName )
 }
 
 ePlayerNetID *se_GetLocalPlayer();
-ePlayer *se_GetLocalPlayer(unsigned short owner);
+ePlayer *se_GetEPlayer(ePlayerNetID * targetPlayer);
 
 extern bool se_highlightMyName, se_tabCompletion, se_tabCompletionWithColors;
 

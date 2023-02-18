@@ -159,7 +159,7 @@ void gSmartTurning::followTail(gHelperData &data)
     REAL delay = data.ownerData.turnSpeedFactorF() * sg_helperSmartTurningFollowTailDelayMult;
 
     // Check if the cycle is driving straight
-    bool drivingStraight = helper_.drivingStraight();
+    //bool drivingStraight = helper_.drivingStraight();
 
     // Check if the cycle can survive turning left or right
 
@@ -527,7 +527,7 @@ void gSmartTurning::Activate(gHelperData &data)
 
 gSmartTurning &gSmartTurning::Get(gHelper &helper, gCycle &owner)
 {
-    tASSERT(helper);
+    tASSERT(&helper);
 
     // create
     if (helper.smartTurning.get() == 0)

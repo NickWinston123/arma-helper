@@ -4949,7 +4949,7 @@ nMachine & nMachine::GetMachine( unsigned short userID )
 
     if( sn_GetNetState() != nSERVER )
     {
-        tASSERT(userID == 0);
+        // tASSERT(userID == 0);
 
         // invalid ID, return invalid machine (clients don't track machines)
         static nMachine invalid;

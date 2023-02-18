@@ -81,7 +81,7 @@ void gTailHelper::Activate(gHelperData &data)
 
 gTailHelper &gTailHelper::Get(gHelper &helper, gCycle &owner)
 {
-    tASSERT(owner);
+    tASSERT(&owner);
     // create
     if (helper.tailHelper.get() == 0)
         helper.tailHelper.reset(new gTailHelper(helper, owner));

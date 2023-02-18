@@ -298,7 +298,7 @@ void gZoneHelper::Activate(gHelperData &data)
 
 gZoneHelper &gZoneHelper::Get(gHelper &helper, gCycle &owner)
 {
-    tASSERT(owner);
+    tASSERT(&owner);
 
     // create
     if (helper.zoneHelper.get() == 0)

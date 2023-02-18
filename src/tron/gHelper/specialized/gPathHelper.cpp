@@ -300,7 +300,7 @@ void gPathHelper::Activate(gHelperData &orig_data)
 
 gPathHelper &gPathHelper::Get(gHelper &helper, gCycle &owner)
 {
-    tASSERT(owner);
+    tASSERT(&owner);
 
     // create
     if (helper.pathHelper.get() == 0)

@@ -658,7 +658,7 @@ gTurnHelper::gTurnHelper(gHelper &helper, gCycle &owner) : helper_(helper),
 
 gTurnHelper &gTurnHelper::Get(gHelper &helper, gCycle &owner)
 {
-    tASSERT(helper);
+    tASSERT(&helper);
 
     // create
     if (helper.turnHelper.get() == 0)

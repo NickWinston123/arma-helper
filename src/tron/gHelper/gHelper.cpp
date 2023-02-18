@@ -660,7 +660,7 @@ void gHelper::Activate()
 
 gHelper &gHelper::Get(gCycle &cycle)
 {
-    tASSERT(cycle);
+    tASSERT(&cycle);
 
     // create
     if (cycle.helper_.get() == 0)

@@ -4835,7 +4835,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
         // Short handle for changing our RGB values.
         else if (command == se_rgbCommand)
         {
-            currentPlayerRGB(s_orig);
+            currentPlayerRGB(*this, s_orig);
         }
         else if (command == se_browserCommand)
         {
@@ -4915,19 +4915,22 @@ ePlayerNetID *se_GetLocalPlayer()
     return NULL;
 }
 
-// identify a local human player
-ePlayer *se_GetLocalPlayer(unsigned short owner)
+// identify a eplayer
+ePlayer *se_GetEPlayer(ePlayerNetID * targetPlayer)
 {
     // mark all players as wanting to log in
     for(int i=MAX_PLAYERS-1; i>=0; i--)
     {
-        ePlayer * lp = ePlayer::PlayerConfig(i);
-        ePlayerNetID * netPlayer = lp->netPlayer;
-        if ( lp && netPlayer && netPlayer->Owner() == sn_myNetID && netPlayer->IsHuman())
+        ePlayer * localPlayer = ePlayer::PlayerConfig(i);
+        ePlayerNetID * localNetPlayer = localPlayer->netPlayer;
+        if ( ePlayer::PlayerIsInGame(i) && localPlayer && localNetPlayer && targetPlayer &&
+             localNetPlayer->Object() && targetPlayer->Object() &&
+             localNetPlayer->Object()->GOID() == targetPlayer->Object()->GOID())
         {
-            return lp;
+            return localPlayer;
         }
     }
+    return NULL;
 }
 
 
@@ -9375,7 +9378,7 @@ void ePlayerNetID::localSpeak(tString s_orig)
 //        /rgb list would list your current saved colors.
 //        /rgb load 1 would load from line #1 in the list.
 //        /rgb clear would clear your current list of saved colors.
-void ePlayerNetID::currentPlayerRGB(tString s_orig)
+void ePlayerNetID::currentPlayerRGB(ePlayerNetID &player, tString s_orig)
 {
     if (s_orig.StrPos(" ") == -1)
     {

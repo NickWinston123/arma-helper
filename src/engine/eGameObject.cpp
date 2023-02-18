@@ -991,6 +991,20 @@ void eGameObject::DeleteAll(eGrid *grid){
     }
 }
 
+void eGameObject::DeleteAllSafe(eGrid *grid){
+    int i;
+    for(i=grid->gameObjects.Len()-1;i>=0;i--)
+    {
+        eGameObject* o = grid->gameObjects(i);
+        if (!o->Alive()) {
+            o->RemoveFromGame();
+        }
+#ifdef POWERPAK_DEB
+        if (pp_out) o->PPDisplay();
+#endif
+    }
+}
+
 eReferencableGameObject::eReferencableGameObject(eGrid *grid, const eCoord &p,const eCoord &d, eFace *currentface, bool autodelete)
 : eGameObject( grid, p, d, currentface, autodelete )
 {

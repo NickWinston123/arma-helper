@@ -266,6 +266,7 @@ public:
     bool InGrid()const{return inGrid;}
 
     static void Clear(); // delete all sg_netPlayerWalls.
+    static void ClearSafe(); // delete all sg_netPlayerWalls.
 
     void Check() const;
 

@@ -2300,6 +2300,33 @@ void gNetPlayerWall::Clear()
         sg_netPlayerWallsGridded.Remove( w, w->griddedid );
     }
 }
+void gNetPlayerWall::ClearSafe()
+{
+    int i;
+    for (i = sg_netPlayerWalls.Len() - 1; i >= 0; i--) {
+        gNetPlayerWall* w = sg_netPlayerWalls(i);
+
+        if (!w->inGrid) {
+            tControlledPTR< nNetObject > bounce(w);
+            w->ReleaseData();
+            sg_netPlayerWalls.Remove(w, w->id);
+
+            if (w->edge_)
+                w->edge_->Wall()->Insert();
+        }
+    }
+
+    for (i = sg_netPlayerWallsGridded.Len() - 1; i >= 0; i--) {
+        gNetPlayerWall* w = sg_netPlayerWallsGridded(i);
+
+        if (!w->inGrid) {
+            tControlledPTR< nNetObject > bounce(w);
+            w->ReleaseData();
+            sg_netPlayerWallsGridded.Remove(w, w->griddedid);
+        }
+    }
+}
+
 
 
 void gNetPlayerWall::Check() const

@@ -203,7 +203,6 @@ class gCycle: public gCycleMovement
     
     bool dropWallRequested_; //!< flag indicating that someone requested a wall drop
 public:
-    REAL nextTime;
     eCoord            lastGoodPosition_;    // the location of the last known good position
     eCoord            tailPos;
     eCoord            tailDir;

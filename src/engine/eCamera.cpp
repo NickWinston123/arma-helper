@@ -1536,6 +1536,74 @@ void eCamera::SwitchCenter(int d){
     }
 }
 
+#include "tRandom.h"
+void eCamera::SpectatePlayer(ePlayerNetID& owner, const tString& s_orig)
+{
+    if (!eGrid::CurrentGrid())
+    {
+        con << "Must be called while a grid exists!\n";
+        return;
+    }
+
+    ePlayer* localPlayer = ePlayer::PlayerConfig(0);
+    if (!localPlayer || !localPlayer->cam)
+    {
+        return;
+    }
+
+    // Extract the target player name from the input string
+    int pos = 0;
+    tString targetPlayerName = s_orig.ExtractNonBlankSubString(pos, 1);
+    if (!targetPlayerName.empty())
+    {
+        targetPlayerName = ePlayerNetID::FilterName(targetPlayerName);
+    }
+
+    // Find the player by name, if specified
+    ePlayerNetID* targetPlayer = nullptr;
+    if (!targetPlayerName.empty())
+    {
+        targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
+        if (!targetPlayer || targetPlayer->Object()->GOID() == localPlayer->cam->center->GOID())
+        {
+            con << "Player not found or already being spectated.\n";
+            return;
+        }
+    }
+    else
+    {
+        // Get a list of all eligible players (i.e., those that are not the current target)
+        std::vector<ePlayerNetID*> eligiblePlayers;
+        eGameObject* currentTarget = localPlayer->cam->center;
+        for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+        {
+            ePlayerNetID *player = se_PlayerNetIDs[i];
+            if (!player || !player->Object())
+            {
+                continue;
+            }
+
+            if (player->Object()->GOID() != currentTarget->GOID())
+            {
+                eligiblePlayers.push_back(player);
+            }
+        }
+
+        if (eligiblePlayers.empty())
+        {
+            con << "No eligible players to spectate.\n";
+            return;
+        }
+
+        // Choose a random eligible player
+        tRandomizer& randomizer = tReproducibleRandomizer::GetInstance();
+        targetPlayer = eligiblePlayers[randomizer.Get(0, eligiblePlayers.size())];
+    }
+
+    // Set the camera's center to the chosen player
+    localPlayer->cam->center = targetPlayer->Object();
+}
+
 void eCamera::Timestep(REAL ts){
     // find net player
     if (!netPlayer && localPlayer)
@@ -1794,7 +1862,7 @@ void eCamera::Timestep(REAL ts){
             {
                 turnSpeed += GLANCE_SPEED;
             }
-            
+
             eCoord cycleDir = CenterCycleDir();
             newdir=dir+cycleDir*(turnSpeed*ts);
 
@@ -1817,7 +1885,7 @@ void eCamera::Timestep(REAL ts){
                 }
 
                 newdir = newdir + normedLastDir*(wrongDirection*ts*turnSpeed*customTurnSpeed180);
-                
+
                 if ( glancingForward )
                 {
                     newdir = cycleDir;
@@ -2160,7 +2228,7 @@ void eCamera::SoundMix(Uint8 *dest,unsigned int len){
 void eCamera::SoundMixGameObject(Uint8 *dest,unsigned int len,eGameObject *go){
     if(!go)
         return;
-    
+
     eCoord vec((go->pos-pos).Turn(dir.Conj()));
     REAL dist_squared=vec.NormSquared()+(z-go->z)*(z-go->z);
 

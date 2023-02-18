@@ -365,10 +365,9 @@ static int sg_smarterBotState = 1;
 static tConfItem<int> sg_smarterBotStateConf( "SMARTER_BOT_STATE", sg_smarterBotState );
 
 gSmarterBot::gSmarterBot( gCycle * owner )
-        : gAINavigator( owner ),
-            owner_(owner)
+        : gAINavigator( owner )
+        , owner_(owner)
         , nextChatAI_( 0 )
-        , timeOnChatAI_( 0 )
 {
     settings_.range = owner_->Speed() * sg_smarterBotRange;
     settings_.newWallBlindness = 0;
@@ -491,12 +490,11 @@ void gSmarterBot::Activate( REAL currentTime )
         gAINavigator::Activate(currentTime,0);
     }
 
-    if (owner_->nextTime <= se_GameTime()) {
-        REAL minTime = Think(0);
-        owner_->nextTime = (minTime*sg_smarterBotNextThinkMult) + se_GameTime();
+    if (nextChatAI_ <= se_GameTime()) {
+        REAL nextThought = Think(0);
+        nextChatAI_ = (nextThought*sg_smarterBotNextThinkMult) + se_GameTime();
     }
 }
-
 
 tString sg_smarterBotEnableForPlayers("1,2,3,4");
 static tConfItem<tString> sg_smarterBotEnableForPlayersConf( "SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnableForPlayers );
@@ -2704,8 +2702,7 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos,const eCoord &d,ePlayerNetID *p)
         last_time(.0),
         tactical_stats(static_cast<std::string>(p->GetUserName())),
         currentWall(NULL),
-        lastWall(NULL),
-        nextTime(-999)
+        lastWall(NULL)
 {
     se_cycleCreatedWriter << p->GetLogName() << this->MapPosition().x << this->MapPosition().y << this->Direction().x << this->Direction().y;
     if(p->CurrentTeam())
@@ -3063,11 +3060,13 @@ bool gCycle::Timestep(REAL currentTime){
     {
         bool chatFlagHackEnabled = se_toggleChatFlagAlways || se_toggleChatFlag;
 
-        bool activateSmarterBotForThisPlayer = bool(player) && sg_smarterBot && tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
+        bool activateSmarterBotForThisPlayer = bool(player) && sg_smarterBot &&
+                                               (sg_smarterBotAlwaysActive || player->IsChatting()) &&
+                                               tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
 
         bool activateLocalBotForThisPlayer = !activateSmarterBotForThisPlayer && bool(player) && sg_localBot &&
                                              (sg_localBotAlwaysActive || player->IsChatting()) &&
-                                            tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
+                                             tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
 
         bool activateChatbotForThisPlayer = !activateLocalBotForThisPlayer &&
                                             (bool(player) ? tIsInList(sg_chatBotEnabledForPlayers, player->pID + 1) && !chatFlagHackEnabled : false) &&
@@ -5945,8 +5944,7 @@ gCycle::gCycle(nMessage &m)
         last_time(.0),
         tactical_stats(""),
         currentWall(NULL),
-        lastWall(NULL),
-        nextTime(-999)
+        lastWall(NULL)
 {
     deathTime=0;
     lastNetWall=lastWall=currentWall=NULL;

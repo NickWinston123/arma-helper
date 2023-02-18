@@ -439,7 +439,6 @@ class gSmarterBot: public gAINavigator
     friend class gCycle;
 
     REAL nextChatAI_;        //!< the next time the chat AI can be active
-    REAL timeOnChatAI_;      //!< the total time the player was on chat AI this round
     gCycle *owner_;
 
 public:

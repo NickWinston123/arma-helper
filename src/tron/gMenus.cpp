@@ -1071,10 +1071,10 @@ void sg_PlayerMenu(int Player){
 
     //Color Randomization in the player menu
     uMenuItemSelection<int> se_cr(&playerMenu,"$player_color_randomization_text","$player_color_randomization_help",p->colorRandomization);
-    se_cr.NewChoice("$player_color_randomization_none_text",   "$player_color_randomization_none_help",   COLORRANDOMIZATIONOFF);
-    se_cr.NewChoice("$player_color_randomization_random_text", "$player_color_randomization_random_help", COLORRANDOMIZATIONRANDOM);
-    se_cr.NewChoice("$player_color_randomization_unique_text", "$player_color_randomization_unique_help", COLORRANDOMIZATIONUNIQUE);
-    se_cr.NewChoice("$player_color_randomization_rainbow_text", "$player_color_randomization_rainbow_help", COLORRANDOMIZATIONRAINBOW);
+    se_cr.NewChoice("$player_color_randomization_none_text",   "$player_color_randomization_none_help",   ColorRandomization::OFF);
+    se_cr.NewChoice("$player_color_randomization_random_text", "$player_color_randomization_random_help", ColorRandomization::RANDOM);
+    se_cr.NewChoice("$player_color_randomization_unique_text", "$player_color_randomization_unique_help", ColorRandomization::UNIQUE);
+    se_cr.NewChoice("$player_color_randomization_rainbow_text", "$player_color_randomization_rainbow_help", ColorRandomization::RAINBOW);
 
     ArmageTron_color_menuitem B(&playerMenu,"$player_blue_text",
                                 "$player_blue_help",

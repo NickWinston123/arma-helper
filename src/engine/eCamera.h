@@ -172,6 +172,8 @@ private:
 public:
 #endif
 
+    static void SpectatePlayer(ePlayerNetID &owner, const tString& s_orig);
+
     virtual void Timestep(REAL ts);
 
     REAL Dist(){return distance;}

@@ -100,8 +100,8 @@ int tRandomizer::Get( int max )
 // *
 // *******************************************************************************************
 //!
-//!		@param	max	upper limit of the return value
-//!		@param	min	upper limit of the return value
+//!		@param	max	(exclusive) upper limit of the return value
+//!		@param	min	(inclusive) upper limit of the return value
 //!		@return		random integer value between min and max - 1
 //!
 // *******************************************************************************************

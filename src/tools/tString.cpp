@@ -2074,25 +2074,36 @@ tString tString::Reverse() const {
 //!
 // *******************************************************************************************
 
-tString tString::ExtractNonBlankSubString( int &pos ) const{
+tString tString::ExtractNonBlankSubString(int &pos, int numWordsToSkip) const {
     int currentPos = pos;
-    tASSERT( currentPos >= 0 );
+    tASSERT(currentPos >= 0);
 
     if (currentPos > Len())
         return tString("");
 
-    tString toReturn("");
+    // Skip the specified number of words
+    for (int i = 0; i < numWordsToSkip; i++) {
+        // Skip leading blanks
+        while (currentPos < Len() && isblank((*this)(currentPos))) {
+            currentPos++;
+        }
+        // Skip current word
+        while (currentPos < Len() && !isblank((*this)(currentPos))) {
+            currentPos++;
+        }
+    }
 
-    // first ignore leading blanks ...
+    // Extract the next non-blank substring
+    tString toReturn("");
     while (currentPos < Len() && isblank((*this)(currentPos))) {
         currentPos++;
     }
-    // then store the substring ...
     while (currentPos < Len() && !isblank((*this)(currentPos))) {
         toReturn << (*this)(currentPos++);
     }
+
     pos = currentPos;
-    return  toReturn;
+    return toReturn;
 }
 
 
@@ -2351,6 +2362,11 @@ bool tString::Contains(const char *tofind)
 {
     return Contains(tString(tofind));
 }
+
+bool tString::empty() const {
+    return Len() == 0 || (*this)[0] == '\0';
+}
+
 
 // **********************************************************************
 // *

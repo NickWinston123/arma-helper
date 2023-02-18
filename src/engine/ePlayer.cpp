@@ -4718,29 +4718,36 @@ static bool IsLegalPlayerName( tString const & name )
 
 #ifndef DEDICATED
 bool se_enableChatCommands = true;
-static tConfItem<bool> se_enableChatCommandsConf( "LOCAL_CHAT_COMMANDS", se_enableChatCommands );
+static tConfItem<bool> se_enableChatCommandsConf("LOCAL_CHAT_COMMANDS", se_enableChatCommands);
 
 bool se_disablePlayersCommand = true;
-static tConfItem<bool> se_disablePlayersCommandConf( "LOCAL_DISABLE_PLAYERS", se_disablePlayersCommand );
+static tConfItem<bool> se_disablePlayersCommandConf("LOCAL_CHAT_COMMAND_DISABLE_PLAYERS", se_disablePlayersCommand);
 
 // our local commands (should always be lowercase)
-static tString se_consoleComand("/console");
-static tConfItem<tString> se_consoleComandConf("LOCAL_CONSOLE_COMMAND", se_consoleComand);
+static tString se_consoleCommand("/console");
+static tConfItem<tString> se_consoleCommandConf("LOCAL_CHAT_COMMAND_CONSOLE", se_consoleCommand);
 
 static tString se_colorsCommand("/colors");
-static tConfItem<tString> se_colorsCommandConf("LOCAL_COLORS_COMMAND", se_colorsCommand);
+static tConfItem<tString> se_colorsCommandConf("LOCAL_CHAT_COMMAND_COLORS", se_colorsCommand);
 
 static tString se_infoCommand("/info");
-static tConfItem<tString> se_infoCommandConf("LOCAL_INFO_COMMAND", se_infoCommand);
+static tConfItem<tString> se_infoCommandConf("LOCAL_CHAT_COMMAND_INFO", se_infoCommand);
 
 static tString se_rgbCommand("/rgb");
-static tConfItem<tString> se_rgbCommandConf("LOCAL_RGB_COMMAND", se_rgbCommand);
+static tConfItem<tString> se_rgbCommandConf("LOCAL_CHAT_COMMAND_RGB", se_rgbCommand);
 
 static tString se_browserCommand("/browser");
-static tConfItem<tString> se_browserCommandConf("LOCAL_BROWSER_COMMAND", se_browserCommand);
+static tConfItem<tString> se_browserCommandConf("LOCAL_CHAT_COMMAND_BROWSER", se_browserCommand);
 
 static tString se_speakCommand("/speak");
-static tConfItem<tString> se_speakCommandConf("LOCAL_SPEAK_COMMAND", se_speakCommand);
+static tConfItem<tString> se_speakCommandConf("LOCAL_CHAT_COMMAND_SPEAK", se_speakCommand);
+
+static tString se_rebuildCommand("/rebuild");
+static tConfItem<tString> se_rebuildCommandConf("LOCAL_CHAT_COMMAND_REBUILD", se_rebuildCommand);
+
+static tString se_specCommand("/spec");
+static tConfItem<tString> se_specCommandConf("LOCAL_CHAT_COMMAND_SPEC", se_specCommand);
+
 #endif //if not dedicated
 
 void ePlayerNetID::Chat(const tString& s_orig)
@@ -4752,12 +4759,14 @@ void ePlayerNetID::Chat(const tString& s_orig)
 
     tString se_localChatCommands[] =
     {
-        se_consoleComand,
+        se_consoleCommand,
         se_colorsCommand,
         se_infoCommand,
         se_rgbCommand,
         se_browserCommand,
-        se_speakCommand
+        se_speakCommand,
+        se_rebuildCommand,
+        se_specCommand
     };
 
     std::string chatString(s_orig);
@@ -4792,7 +4801,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
     if (isLocalCommand && se_enableChatCommands && (s_orig.StartsWith("/")))
     {
         // check for direct console commands
-        if (command == se_consoleComand)
+        if (command == se_consoleCommand)
         {
             // direct commands are executed at owner level
             tCurrentAccessLevel level(tAccessLevel_Owner, true);
@@ -4809,12 +4818,12 @@ void ePlayerNetID::Chat(const tString& s_orig)
             }
             else
             {
-                std::stringstream s(static_cast<char const*>(params));
+                std::stringstream s(static_cast<char const *>(params));
                 tConfItemBase::LoadAll(s);
             }
         }
         // Short handle for grabbing player colors.
-        else if ((command == se_colorsCommand))
+        else if (command == se_colorsCommand)
         {
             listPlayerColors(s_orig);
         }
@@ -4828,12 +4837,23 @@ void ePlayerNetID::Chat(const tString& s_orig)
         {
             currentPlayerRGB(s_orig);
         }
-        else if (command == se_browserCommand) {
-            con << "Launchin browser";
+        else if (command == se_browserCommand)
+        {
             gServerBrowser::BrowseMaster();
         }
-        else if (command == se_speakCommand) {
+        else if (command == se_speakCommand)
+        {
             localSpeak(s_orig);
+        }
+        else if (command == se_rebuildCommand)
+        {
+            ePlayerNetID *p = se_GetLocalPlayer();
+            if (p)
+                p->CompleteRebuild();
+        }
+        else if (command == se_specCommand)
+        {
+            eCamera::SpectatePlayer(*this, s_orig);
         }
     }
     else
@@ -4893,6 +4913,21 @@ ePlayerNetID *se_GetLocalPlayer()
             return p;
     }
     return NULL;
+}
+
+// identify a local human player
+ePlayer *se_GetLocalPlayer(unsigned short owner)
+{
+    // mark all players as wanting to log in
+    for(int i=MAX_PLAYERS-1; i>=0; i--)
+    {
+        ePlayer * lp = ePlayer::PlayerConfig(i);
+        ePlayerNetID * netPlayer = lp->netPlayer;
+        if ( lp && netPlayer && netPlayer->Owner() == sn_myNetID && netPlayer->IsHuman())
+        {
+            return lp;
+        }
+    }
 }
 
 
@@ -9321,8 +9356,7 @@ void ePlayerNetID::localSpeak(tString s_orig)
     params << s_orig;
     int pos = 0;
 
-    tString PlayerStr = params.ExtractNonBlankSubString(pos); // command
-            PlayerStr = params.ExtractNonBlankSubString(pos);
+    tString PlayerStr = params.ExtractNonBlankSubString(pos,1);
 
     ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
 
@@ -9746,7 +9780,8 @@ void ePlayerNetID::Update()
             if (bool(p) && in_game)  // update
             {
 
-                if (se_playerColoredName) {
+                if (se_playerColoredName &&
+                    sn_Connections[0].version.Max() == 18) {
                     se_colorName(local_p);
                 }
                 if (se_forceTeamname && sn_GetNetState() == nCLIENT &&
@@ -9774,15 +9809,15 @@ void ePlayerNetID::Update()
                 //Color Customizations
                 switch(ePlayer::PlayerConfig(i)->colorRandomization)
                     {
-                        case COLORRANDOMIZATIONOFF:
+                        case ColorRandomization::OFF:
                             break;
-                        case COLORRANDOMIZATIONRANDOM:
+                        case ColorRandomization::RANDOM:
                             se_RandomizeColor(local_p);
                             break;
-                        case COLORRANDOMIZATIONUNIQUE:
+                        case ColorRandomization::UNIQUE:
                             se_UniqueColor(local_p,p);
                             break;
-                        case COLORRANDOMIZATIONRAINBOW:
+                        case ColorRandomization::RAINBOW:
                             se_rainbowColor(local_p);
                             break;
                         default:

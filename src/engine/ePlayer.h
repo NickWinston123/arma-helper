@@ -35,10 +35,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_PLAYERS 4
 
 //For Menu Color Settings
-#define COLORRANDOMIZATIONOFF 0
-#define COLORRANDOMIZATIONRANDOM 1
-#define COLORRANDOMIZATIONUNIQUE 2
-#define COLORRANDOMIZATIONRAINBOW 3
+enum ColorRandomization {
+    OFF = 0,
+    RANDOM = 1,
+    UNIQUE = 2,
+    RAINBOW = 3
+};
 
 #include "rSDL.h"
 
@@ -843,6 +845,8 @@ ePlayerNetID & ePlayerNetID::SetUserName( tString const & userName )
 }
 
 ePlayerNetID *se_GetLocalPlayer();
+ePlayer *se_GetLocalPlayer(unsigned short owner);
+
 extern bool se_highlightMyName, se_tabCompletion, se_tabCompletionWithColors;
 
 #endif

@@ -4724,22 +4724,22 @@ bool se_disablePlayersCommand = true;
 static tConfItem<bool> se_disablePlayersCommandConf( "LOCAL_DISABLE_PLAYERS", se_disablePlayersCommand );
 
 // our local commands (should always be lowercase)
-tString se_consoleComand("/console");
+static tString se_consoleComand("/console");
 static tConfItem<tString> se_consoleComandConf("LOCAL_CONSOLE_COMMAND", se_consoleComand);
 
-tString se_colorsCommand("/colors");
+static tString se_colorsCommand("/colors");
 static tConfItem<tString> se_colorsCommandConf("LOCAL_COLORS_COMMAND", se_colorsCommand);
 
-tString se_infoCommand("/info");
+static tString se_infoCommand("/info");
 static tConfItem<tString> se_infoCommandConf("LOCAL_INFO_COMMAND", se_infoCommand);
 
-tString se_rgbCommand("/rgb");
+static tString se_rgbCommand("/rgb");
 static tConfItem<tString> se_rgbCommandConf("LOCAL_RGB_COMMAND", se_rgbCommand);
 
-tString se_browserCommand("/browser");
+static tString se_browserCommand("/browser");
 static tConfItem<tString> se_browserCommandConf("LOCAL_BROWSER_COMMAND", se_browserCommand);
 
-tString se_speakCommand("/speak");
+static tString se_speakCommand("/speak");
 static tConfItem<tString> se_speakCommandConf("LOCAL_SPEAK_COMMAND", se_speakCommand);
 #endif //if not dedicated
 
@@ -4816,24 +4816,24 @@ void ePlayerNetID::Chat(const tString& s_orig)
         // Short handle for grabbing player colors.
         else if ((command == se_colorsCommand))
         {
-            listPlayerColors(tString(s_orig));
+            listPlayerColors(s_orig);
         }
         // Short handle for grabbing player information.
         else if (command == se_infoCommand)
         {
-            listPlayerInfo(tString(s_orig));
+            listPlayerInfo(s_orig);
         }
         // Short handle for changing our RGB values.
         else if (command == se_rgbCommand)
         {
-            currentPlayerRGB(tString(s_orig));
+            currentPlayerRGB(s_orig);
         }
         else if (command == se_browserCommand) {
             con << "Launchin browser";
             gServerBrowser::BrowseMaster();
         }
         else if (command == se_speakCommand) {
-            localSpeak(tString(s_orig));
+            localSpeak(s_orig);
         }
     }
     else
@@ -9319,7 +9319,7 @@ void ePlayerNetID::localSpeak(tString s_orig)
 {
     tString params;
     params << s_orig;
-    int pos = 0; //
+    int pos = 0;
 
     tString PlayerStr = params.ExtractNonBlankSubString(pos); // command
             PlayerStr = params.ExtractNonBlankSubString(pos);

@@ -322,6 +322,9 @@ static tConfItem<bool> sg_smarterBotConf( "SMARTER_BOT", sg_smarterBot );
 static bool sg_smarterBotThink = false;
 static tConfItem<bool> sg_smarterBotThinkConf( "SMARTER_BOT_THINK", sg_smarterBotThink );
 
+static REAL sg_smarterBotRange = 2;
+static tConfItem<REAL> sg_smarterBotRangeConf( "SMARTER_BOT_RANGE", sg_smarterBotRange );
+
 static REAL sg_smarterBotRandomScale = 0.1;
 static tConfItem<REAL> sg_smarterBotRandomScaleConf( "SMARTER_BOT_RANDOMNESS", sg_smarterBotRandomScale );
 
@@ -372,8 +375,8 @@ public:
             , nextChatAI_( 0 )
             , timeOnChatAI_( 0 )
     {
-        settings_.range = sg_chatBotRange;
-        settings_.newWallBlindness = sg_chatBotNewWallBlindness;
+        settings_.range = owner_->Speed() * sg_smarterBotRange;
+        settings_.newWallBlindness = 0;
     }
 
     static gSmarterBot & Get( gCycle * cycle )

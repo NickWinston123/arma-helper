@@ -47,9 +47,7 @@ struct gSmartTurningCornerData
     REAL updatedTime;
     bool exist;
     bool infront;
-    ~gSmartTurningCornerData(){
-        delete lastCorner;
-    }
+    ~gSmartTurningCornerData(){}
     void linkLastCorner(gSmartTurningCornerData* lastCorner_) {lastCorner = lastCorner_;}
     // Returns the time until required a turn should occur given a speed
     REAL getTimeUntilTurn(REAL speed);

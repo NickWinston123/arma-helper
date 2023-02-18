@@ -65,9 +65,6 @@ gHelper::gHelper(gCycle *owner)
         ownerWallLength(owner->ThisWallsLength()),
         ownerTurnDelay(owner->GetTurnDelay())
 {
-    if (sg_helperAI) {
-        // aiPlayer.reset(new gAIPlayer(this,owner_));
-    }
 
     data_stored->ownerData.owner_ = owner_;
     data_stored->sensors.owner_ = owner_;
@@ -613,6 +610,7 @@ void gHelper::Activate()
         tailDirH << roundeCoord(owner_->tailDir);
         sg_helperGameTimeH << se_GameTime();
     }
+    
     owner_->localCurrentTime = se_GameTime();
 
     data_stored->enemies.detectEnemies();
@@ -652,14 +650,6 @@ void gHelper::Activate()
 
     if (sg_helperAutoBrake)
         autoBrake();
-
-    if (sg_helperAI)
-    {
-        // if (!(aiPlayer.get() == 0))
-        // {
-        //     aiPlayer->Timestep(se_GameTime() + helperConfig::sg_helperAITime);
-        // }
-    }
 
     if (sg_helperHud) {
         REAL time = tRealSysTimeFloat() - start;

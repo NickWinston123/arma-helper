@@ -741,8 +741,9 @@ void gAINavigator::RubberEvaluator::Init( gCycle const & cycle, REAL maxTime )
 // * FollowEvaluator      *
 // *************************
 
-gAINavigator::FollowEvaluator::FollowEvaluator( gCycle & cycle ): cycle_( cycle ), blocker_( 0 ), blockedBySelf_( false )
+gAINavigator::FollowEvaluator::FollowEvaluator( gCycle & cycle, bool findTarget ): cycle_( cycle ), blocker_( 0 ), blockedBySelf_( false )
 {
+    gAINavigator::FollowEvaluator::FindTarget();
 }
 
 gAINavigator::FollowEvaluator::~FollowEvaluator()
@@ -831,6 +832,13 @@ public:
         }
     }
 };
+
+void gAINavigator::FollowEvaluator::FindTarget()
+{
+    gCycle *target = gHelperEnemiesData::getClosestEnemy(&cycle_);
+    if (target)
+        SetTarget(target->Position(), target->Direction() * target->Speed());
+}
 
 void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord const & velocity )
 {

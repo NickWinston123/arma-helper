@@ -6,6 +6,7 @@
 
 #include "../gHelperVar.h"
 #include "../gHelperUtilities.h"
+#include "../../gAINavigator.h"
 
 using namespace helperConfig;
 
@@ -644,6 +645,12 @@ gTurnData* gTurnHelper::getTurn()
 
     // BotDebug("NO TURN FOUND", noTurns);
     return turnData;
+}
+
+
+gTurnHelper::gTurnHelper(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner), turnData(new gTurnData())
+{
+
 }
 
 

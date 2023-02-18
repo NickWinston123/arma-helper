@@ -158,6 +158,22 @@ bool gHelperEnemiesData::exist(gCycle* enemy) {
     return (enemy != nullptr) && enemy->Alive();
 }
 
+gCycle * gHelperEnemiesData::getClosestEnemy(gCycle *owner_) {
+    gCycle * closestEnemy = nullptr;
+    REAL closestEnemyDistanceSquared = 999999999;
+    for (int i = 0; i < se_PlayerNetIDs.Len(); i++) {
+        auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
+        if (other != nullptr && other->Alive() && other->Team() != owner_->Team()) {
+            REAL positionDifference = st_GetDifference(other->Position(), owner_->Position());
+            if (positionDifference < closestEnemyDistanceSquared) {
+                closestEnemyDistanceSquared = positionDifference;
+                closestEnemy = other;
+            }
+        }
+    }
+    return closestEnemy;
+}
+
 gCycle* gHelperEnemiesData::detectEnemies() {
     allEnemies.clear();
     closestEnemy = nullptr;

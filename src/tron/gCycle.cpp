@@ -340,6 +340,9 @@ static tConfItem<REAL> sg_smarterBotTrapScaleConf( "SMARTER_BOT_TRAP", sg_smarte
 static REAL sg_smarterBotFollowScale = 0;
 static tConfItem<REAL> sg_smarterBotFollowScaleConf( "SMARTER_BOT_FOLLOW", sg_smarterBotFollowScale );
 
+static bool sg_smarterBotFollowFindTarget = true;
+static tConfItem<bool> sg_smarterBotFollowFindTargetConf( "SMARTER_BOT_FOLLOW_FIND_TARGET", sg_smarterBotFollowFindTarget );
+
 static REAL sg_smarterBotPlanScale = 0;
 static tConfItem<REAL> sg_smarterBotPlanScaleConf( "SMARTER_BOT_PLAN", sg_smarterBotPlanScale );
 
@@ -348,6 +351,12 @@ static tConfItem<REAL> sg_smarterBotTailScaleConf( "SMARTER_BOT_TAIL", sg_smarte
 
 static REAL sg_smarterBotSpaceScale = 0;
 static tConfItem<REAL> sg_smarterBotSpaceScaleConf( "SMARTER_BOT_SPACE", sg_smarterBotSpaceScale );
+
+static REAL sg_smarterBotCowardScale = 0;
+static tConfItem<REAL> sg_smarterBotCowardScaleConf( "SMARTER_BOT_COWARD", sg_smarterBotCowardScale );
+
+static REAL sg_smarterBotTunnelScale = 0;
+static tConfItem<REAL> sg_smarterBotTunnelScaleConf( "SMARTER_BOT_TUNNEL", sg_smarterBotTunnelScale );
 
 static REAL sg_smarterBotNextThinkMult = 1;
 static tConfItem<REAL> sg_smarterBotNextThinkMultConf( "SMARTER_BOT_NEXT_TIME_MULT", sg_smarterBotNextThinkMult );
@@ -467,9 +476,9 @@ public:
         if (sg_smarterBotTrapScale > 0)
             manager.Evaluate( TrapEvaluator( *Owner()), sg_smarterBotTrapScale );
 
-        if (sg_smarterBotFollowScale > 0)
-            manager.Evaluate( FollowEvaluator(*Owner()), sg_smarterBotFollowScale );
-
+        if (sg_smarterBotFollowScale > 0) {
+            manager.Evaluate( FollowEvaluator(*Owner(), sg_smarterBotFollowFindTarget), sg_smarterBotFollowScale );
+        }
         if (sg_smarterBotPlanScale > 0)
             manager.Evaluate( PlanEvaluator(), sg_smarterBotPlanScale );
 
@@ -478,6 +487,12 @@ public:
 
         if (sg_smarterBotSpaceScale > 0)
             manager.Evaluate( SpaceEvaluator( *Owner() ), sg_smarterBotSpaceScale );
+
+        if (sg_smarterBotCowardScale > 0)
+            manager.Evaluate( CowardEvaluator( *Owner() ), sg_smarterBotCowardScale );
+
+        if (sg_smarterBotTunnelScale > 0)
+            manager.Evaluate( TunnelEvaluator( *Owner() ), sg_smarterBotTunnelScale );
 
         CycleControllerAction controller;
         return manager.Finish( controller, *Owner(), minStep );
@@ -497,6 +512,8 @@ public:
     }
 };
 
+static REAL sg_lastTimeHackMult = 0;
+static tConfItem<REAL> sg_lastTimeHackMultConf( "LAST_TIME_HACK_ADD", sg_lastTimeHackMult );
 
 static bool sg_localBot = false;
 static tConfItem<bool> sg_localBotConf( "LOCAL_BOT", sg_localBot );
@@ -2929,6 +2946,10 @@ REAL gCycle::CalculatePredictPosition( gPredictPositionData & data )
 }
 
 bool gCycle::Timestep(REAL currentTime){
+
+    if (sg_lastTimeHackMult > 0)
+        this->lastTime += sg_lastTimeHackMult;
+        
     // clear out dangerous info when we're done
     gMaxSpaceAheadHitInfoClearer hitInfoClearer( maxSpaceHit_ );
 
@@ -3043,6 +3064,8 @@ bool gCycle::Timestep(REAL currentTime){
     {
         ret = gCycleMovement::Timestep(currentTime);
     }
+
+
     // no targets are given
     else if ( !currentDestination && pendingTurns.empty() )
     {
@@ -5168,7 +5191,6 @@ void gCycleWallsDisplayListManager::RenderAll( eCamera const * camera, gCycle * 
 
 bool sg_HideCycles = false;
 static tConfItem<bool> sg_HideCyclesConf("HIDE_CYCLES", sg_HideCycles);
-
 
 bool sg_HidePyramid = false;
 static tConfItem<bool> sg_HidePyramidConf("HIDE_PYRAMID", sg_HidePyramid);

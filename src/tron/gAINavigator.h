@@ -336,7 +336,7 @@ private:
     class FollowEvaluator: public PathEvaluator
     {
     public:
-        FollowEvaluator( gCycle & cycle );
+        FollowEvaluator( gCycle & cycle, bool findTarget = false);
         ~FollowEvaluator();
 
         //! return data of SolveTurn
@@ -352,6 +352,7 @@ private:
         //! determine when we need to turn in order to catch the target.
         void SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data );
 
+        void FindTarget();
         //! set the target to follow
         void SetTarget( eCoord const & target, eCoord const & velocity );
 
@@ -410,6 +411,7 @@ private:
     gAINavigator( gCycle * owner );
 
     // returns the controlled cycle
+    
     gCycle * Owner() const
     {
         return owner_;

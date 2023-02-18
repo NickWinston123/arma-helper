@@ -2,9 +2,11 @@
 #include "../gHelper.h"
 #include "../../gCycle.h"
 #include "../gHelperUtilities.h"
+
 #ifndef ArmageTron_GHELPER_TURN
 #define ArmageTron_GHELPER_TURN
 
+class gSmarterBot;
 class Sensor;
 
 struct gSurviveData {
@@ -27,8 +29,8 @@ public:
     gTurnHelper();
 
     // constructor taking a gHelper and a gCycle as arguments
-    gTurnHelper(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner), turnData(new gTurnData()) {}
-
+    gTurnHelper(gHelper *helper, gCycle *owner);
+    
     // returns a reference to the gTurnHelper instance for the given helper and owner
     static gTurnHelper &Get(gHelper *helper, gCycle *owner);
 
@@ -71,6 +73,7 @@ private:
     // pointer to the gTurnData object that stores the turn data
     gTurnData* turnData;
 
+    gSmarterBot* smarterBot;
     // the owner of the chatbot
     gCycle *owner_; 
 

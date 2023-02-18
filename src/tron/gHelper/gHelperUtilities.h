@@ -24,13 +24,14 @@ struct gHelperEnemiesData
     // Returns true if the passed in enemy exists and is alive
     // Input: enemy - the enemy to check if it exists and is alive
     // Output: returns true if the passed in enemy exists and is alive, otherwise false
-    bool exist(gCycle* enemy);
+    static bool exist(gCycle* enemy);
 
     // detectEnemies
     // Detects all existing alive enemies and sets closestEnemy to the closest one.
     // Clears the allEnemies set.
     // Output: returns a pointer to the closest detected enemy.
     gCycle* detectEnemies();
+    static gCycle* getClosestEnemy(gCycle *owner_);
 };
 
 

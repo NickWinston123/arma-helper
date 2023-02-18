@@ -409,6 +409,9 @@ static tConfItem<bool> fu("FIRST_USE",st_FirstUse);
 //static tConfItem<bool> fu("FIRST_USE","help_first_use",st_FirstUse);
 
 
+bool st_displayValue = true;
+static tConfItem<bool> st_displayValueConf("CONSOLE_DISPLAY_VALUE", st_displayValue);
+
 tAbortLoading::tAbortLoading( char const * command )
 : command_( command )
 {
@@ -609,6 +612,8 @@ void tConfItemBase::LoadLine(std::istream &s){
                                     mess << "(";
                                     mess << help;
                                     mess << ")\n";
+                                    if (st_displayValue)
+                                        mess << " -  Value: " << ci->getValue() << "\n";
                                     con << mess;
                                 }
                             }

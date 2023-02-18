@@ -310,6 +310,7 @@ public:
 
     virtual bool IsDefault() { return true; };
     virtual void displayChangedMsg() { con << tString("BASE ?");}
+    virtual tString getValue() { return tString("BASE ?");}
     virtual void SetDefault() {};
     virtual void ReadVal(std::istream &s)=0;
     virtual void WriteVal(std::ostream &s)=0;
@@ -408,6 +409,12 @@ public:
         o.SetTemplateParameter(3, defaultValue);
         o << "$config_value_was_changed";
         con << o;
+    }
+    virtual tString getValue()
+    {
+        tString val;
+        val << *target;
+        return val;
     }
     virtual bool IsDefault() { return *target == defaultValue; }
     virtual void SetDefault()
@@ -621,6 +628,13 @@ public:
         con << o;
     }
 
+    virtual tString getValue()
+    {
+        tString val;
+        val << *target;
+        return val;
+    }
+
     virtual void SetDefault()
     {
         tOutput o;
@@ -645,11 +659,19 @@ public:
     virtual void WriteVal(std::ostream &s);
     virtual void FetchVal(tString &val);
 
+    virtual tString getValue()
+    {
+        tString val;
+        val << "Function";
+        return val;
+    }
+    
     virtual bool Save();
 
     virtual bool CanSave(){
         return false;
     }
+    
 };
 
 // includes a single configuration file by name, searches in var and config directories

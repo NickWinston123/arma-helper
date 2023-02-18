@@ -9,11 +9,11 @@ class gTailHelper
 {
 public:
     // Constructor
-    gTailHelper(gHelper *helper, gCycle *owner);
+    gTailHelper(gHelper &helper, gCycle &owner);
 
     void Activate(gHelperData &data);
     std::vector<eCoord> getPathToTail();
-    static gTailHelper &Get(gHelper *helper, gCycle *owner);
+    static gTailHelper &Get(gHelper &helper, gCycle &owner);
 
 private:
     gCycle *owner_; // Pointer to the owner cycle

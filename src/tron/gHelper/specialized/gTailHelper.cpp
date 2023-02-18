@@ -7,9 +7,9 @@
 
 using namespace helperConfig;
 
-gTailHelper::gTailHelper(gHelper *helper, gCycle *owner)
-    : helper_(helper),
-      owner_(owner)
+gTailHelper::gTailHelper(gHelper &helper, gCycle &owner)
+    : helper_(&helper),
+      owner_(&owner)
 {
     ownerPos = &owner_->pos;
     ownerDir = &owner_->dir;
@@ -79,11 +79,11 @@ void gTailHelper::Activate(gHelperData &data)
     }
 }
 
-gTailHelper &gTailHelper::Get(gHelper *helper, gCycle *owner)
+gTailHelper &gTailHelper::Get(gHelper &helper, gCycle &owner)
 {
     tASSERT(owner);
     // create
-    if (helper->tailHelper.get() == 0)
-        helper->tailHelper.reset(new gTailHelper(helper, owner));
-    return *helper->tailHelper;
+    if (helper.tailHelper.get() == 0)
+        helper.tailHelper.reset(new gTailHelper(helper, owner));
+    return *helper.tailHelper;
 }

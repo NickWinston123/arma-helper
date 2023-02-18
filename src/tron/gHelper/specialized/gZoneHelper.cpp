@@ -54,17 +54,16 @@ void debugZone(gZone *zone, gRealColor color, REAL timeout)
     gHelperUtility::debugBox(color, zone->Position(), zone->GetRadius()+sg_helperZoneShowBonusRadius, timeout);
 }
 
-gZoneHelper::gZoneHelper(gHelper *helper, gCycle *owner)
+gZoneHelper::gZoneHelper(gHelper &helper, gCycle &owner)
     : helper_(helper),
-      owner_(owner),
-      closestZone(NULL)
+      owner_(owner)
 {}
 
 void gZoneHelper::renderSensorHit( gZoneHitData * zoneHit,gHelperData &data){
     if (zoneHit->hitZone) {
         zoneHitH << zoneHit->hit;
         gHelperUtility::Debug("zoneSensor","SENSOR ZONE HIT, INTERCEPT: ", zoneHit->intercept);
-        gHelperUtility::debugLine(gRealColor(1,0,0), 1, data.ownerData.speedFactorF() + 1, owner_->Position(), zoneHit->intercept);
+        gHelperUtility::debugLine(gRealColor(1,0,0), 1, data.ownerData.speedFactorF() + 1, owner_.Position(), zoneHit->intercept);
     }
 }
 
@@ -161,7 +160,7 @@ gZoneHitData *gZoneHelper::zoneIntersects(int dir, gZone *zone,gHelperData &data
 // Returns: the closest corner
 eCoord gZoneHelper::closestCorner(gZone * zone)
 {
-    eCoord ourPos = owner_->Position();
+    eCoord ourPos = owner_.Position();
     eCoord center = zone->Position();
     REAL radius = zone->GetRadius();
 
@@ -195,12 +194,12 @@ void gZoneHelper::zoneTracer(gHelperData &data)
     // Draw the tracer line to the nearest corner of the zone
     gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_helperZoneTracerHeight,
                                 data.ownerData.speedFactorF() *sg_helperZoneTracerTimeoutMult,
-                                owner_->Position(), closestCorner(zone), sg_helperZoneTracerBrightness);
+                                owner_.Position(), closestCorner(zone), sg_helperZoneTracerBrightness);
 }
 
 gZone* gZoneHelper::findClosestZone(eGameObject * owner_)
 {
-    gZone* closestZone = nullptr;
+    gZone *closestZone = nullptr;
     REAL closestZoneDistanceSquared = 999999999;
     for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
     {
@@ -218,13 +217,13 @@ gZone* gZoneHelper::findClosestZone(eGameObject * owner_)
 
 gZone* gZoneHelper::findClosestZone()
 {
-    closestZone = nullptr;
+    gZone *closestZone = nullptr;
     REAL closestZoneDistanceSquared = 999999999;
     for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
     {
         gZone *zone = *i;
         if (zone) {
-            REAL positionDifference = st_GetDifference(zone->Position(), owner_->Position());
+            REAL positionDifference = st_GetDifference(zone->Position(), owner_.Position());
             if (positionDifference < closestZoneDistanceSquared) {
                 closestZoneDistanceSquared = positionDifference;
                 closestZone = zone;
@@ -244,7 +243,7 @@ void gZoneHelper::showZones(gHelperData &data)
         if (!zone || zone->destroyed_)
             continue;
 
-        bool zoneIsOurs = zone->Team() == owner_->Team();
+        bool zoneIsOurs = zone->Team() == owner_.Team();
         if (!sg_helperZoneShowOwnerOnly || sg_helperZoneShowOwnerOnly && zoneIsOurs)
         {
             gRealColor color(zone->GetColor().r, zone->GetColor().g, zone->GetColor().b);
@@ -269,7 +268,7 @@ void gZoneHelper::zoneData(gHelperData &data)
     if (fortZone) {
     tColoredString info;
 
-    info << "FORT ZONE " << " conquered " << fortZone->conquered_; 
+    info << "FORT ZONE " << " conquered " << fortZone->conquered_;
     info << "\n";
     zoneInfoH << info;
     }
@@ -297,13 +296,13 @@ void gZoneHelper::Activate(gHelperData &data)
     zoneData(data);
 }
 
-gZoneHelper &gZoneHelper::Get(gHelper *helper, gCycle *owner)
+gZoneHelper &gZoneHelper::Get(gHelper &helper, gCycle &owner)
 {
     tASSERT(owner);
 
     // create
-    if (helper->zoneHelper.get() == 0)
-        helper->zoneHelper.reset(new gZoneHelper(helper, owner));
+    if (helper.zoneHelper.get() == 0)
+        helper.zoneHelper.reset(new gZoneHelper(helper, owner));
 
-    return *helper->zoneHelper;
+    return *helper.zoneHelper;
 }

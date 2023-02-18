@@ -21,7 +21,7 @@ class gZoneHelper
 {
 public:
     // Constructor
-    gZoneHelper(gHelper *helper, gCycle *owner);
+    gZoneHelper(gHelper &helper, gCycle &owner);
     void Activate(gHelperData &data);
 
     eCoord closestCorner(gZone * zone);
@@ -40,11 +40,11 @@ public:
     void renderSensorHit( gZoneHitData * zoneHit,gHelperData &data);
     void zoneSensor(gHelperData &data);
 
-    static gZoneHelper &Get(gHelper *helper, gCycle *owner);
+    static gZoneHelper &Get(gHelper &helper, gCycle &owner);
 
 private:
-    gCycle *owner_; // Pointer to the owner cycle
-    gZone *closestZone;
-    gHelper *helper_;
+    gCycle &owner_; // Pointer to the owner cycle
+    //gZone &closestZone;
+    gHelper &helper_;
 };
 #endif

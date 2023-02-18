@@ -205,7 +205,7 @@ bool gSmartTurningCornerData::isInfront(eCoord pos, eCoord dir, eCoord posToChec
     return eCoord::F(dir, posToCheck - pos) > 0;
 }
 
-bool gSmartTurningCornerData::findCorner(const gHelperSensor *sensor, gHelper *helper)
+bool gSmartTurningCornerData::findCorner(const gHelperSensor *sensor, gHelper &helper)
 {
     if (!sensor->ehit)
     {
@@ -214,21 +214,21 @@ bool gSmartTurningCornerData::findCorner(const gHelperSensor *sensor, gHelper *h
     }
     lastCorner = this;
 
-    noticedTime = helper->CurrentTime();
+    noticedTime = helper.CurrentTime();
     exist = true;
 
     type = sensor->type;
     currentPos = *sensor->ehit->Point();
-    distanceFromPlayer = helper->ownerDir->Dot(currentPos - *helper->ownerPos);
-    turnTime = getTimeUntilTurn(*helper->ownerSpeed + helper->CurrentTime());
-    REAL secondEdgeDistance = helper->ownerDir->Dot(*sensor->ehit->Other()->Point() - *helper->ownerPos);
+    distanceFromPlayer = helper.ownerDir.Dot(currentPos - helper.ownerPos);
+    turnTime = getTimeUntilTurn(helper.ownerSpeed + helper.CurrentTime());
+    REAL secondEdgeDistance = helper.ownerDir.Dot(*sensor->ehit->Other()->Point() - helper.ownerPos);
 
-    infront = isInfront(*helper->ownerPos, *helper->ownerDir);
+    infront = isInfront(helper.ownerPos, helper.ownerDir);
 
     if (distanceFromPlayer < secondEdgeDistance || !infront)
     {
         // other Corner Infront
-        if (isInfront(*helper->ownerPos, *helper->ownerDir, *sensor->ehit->Other()->Point())) {
+        if (isInfront(helper.ownerPos, helper.ownerDir, *sensor->ehit->Other()->Point())) {
             distanceFromPlayer = secondEdgeDistance;
             currentPos = *sensor->ehit->Other()->Point();
             infront = true;
@@ -240,7 +240,7 @@ bool gSmartTurningCornerData::findCorner(const gHelperSensor *sensor, gHelper *h
     if (lastPos != currentPos)
     {
         lastPos = currentPos;
-        ignoredTime = helper->CurrentTime();
+        ignoredTime = helper.CurrentTime();
     }
     return true;
 }

@@ -29,10 +29,10 @@ public:
     gTurnHelper();
 
     // constructor taking a gHelper and a gCycle as arguments
-    gTurnHelper(gHelper *helper, gCycle *owner);
-    
+    gTurnHelper(gHelper &helper, gCycle &owner);
+
     // returns a reference to the gTurnHelper instance for the given helper and owner
-    static gTurnHelper &Get(gHelper *helper, gCycle *owner);
+    static gTurnHelper &Get(gHelper &helper, gCycle &owner);
 
     // function to check if a specific turn is possible given rubber or space factors
     bool canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceFactor = 0);
@@ -62,23 +62,23 @@ public:
 
     // solve the turn required to escape the situation based on chatbot logic
     // returns a pointer to the gTurnData object that stores the turn data
-    gTurnData *getTurn();
+    gTurnData &getTurn();
 
     // solve the turn required to escape the situation based on AIBase logic
     // returns a pointer to the gTurnData object that stores the turn data
-    gTurnData *getTurnAIBase() {};
+    gTurnData &getTurnAIBase() {};
     
 
 private:
     // pointer to the gTurnData object that stores the turn data
-    gTurnData* turnData;
+    gTurnData &turnData;
 
-    gSmarterBot* smarterBot;
+    gSmarterBot &smarterBot;
     // the owner of the chatbot
-    gCycle *owner_; 
+    gCycle &owner_; 
 
     // pointer to the gHelper instance
-    gHelper *helper_;
+    gHelper &helper_;
 };
 
 

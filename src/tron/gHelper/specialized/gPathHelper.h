@@ -9,28 +9,28 @@ class gPathHelper
 {
 public:
     // Constructor
-    gPathHelper(gHelper *helper, gCycle *owner);
+    gPathHelper(gHelper &helper, gCycle &owner);
 
     bool targetExist();
 
     void FindPath(gHelperData &data);
 
-    bool autoMode(gHelperData orig_data);
-    bool enemyMode(gHelperData orig_data);
-    bool tailMode(gHelperData orig_data);
-    bool cornerMode(gHelperData orig_data);
+    bool autoMode(gHelperData &orig_data);
+    bool enemyMode(gHelperData &orig_data);
+    bool tailMode(gHelperData &orig_data);
+    bool cornerMode(gHelperData &orig_data);
     bool DistanceCheck(gHelperData &data);
     bool UpdateTimeCheck(gHelperData &data);
     void RenderPath(gHelperData &data);
     void RenderTurn(gHelperData &data);
 
     void Activate(gHelperData &data);
-    
-    static gPathHelper &Get(gHelper *helper, gCycle *owner);
+
+    static gPathHelper &Get(gHelper &helper, gCycle &owner);
 
 private:
-    gCycle *owner_; // Pointer to the owner cycle
-    gHelper *helper_;
+    gCycle &owner_; // Pointer to the owner cycle
+    gHelper &helper_;
 
     eCoord target;
     tJUST_CONTROLLED_PTR<eFace> targetCurrentFace_;

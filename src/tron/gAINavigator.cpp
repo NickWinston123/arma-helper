@@ -743,7 +743,8 @@ void gAINavigator::RubberEvaluator::Init( gCycle const & cycle, REAL maxTime )
 
 gAINavigator::FollowEvaluator::FollowEvaluator( gCycle & cycle, bool findTarget ): cycle_( cycle ), blocker_( 0 ), blockedBySelf_( false )
 {
-    gAINavigator::FollowEvaluator::FindTarget();
+    if (findTarget) 
+        gAINavigator::FollowEvaluator::FindTarget();
 }
 
 gAINavigator::FollowEvaluator::~FollowEvaluator()

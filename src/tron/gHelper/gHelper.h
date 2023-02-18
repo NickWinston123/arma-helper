@@ -29,7 +29,7 @@ class gHelper {
          *
          * @param owner Pointer to the `gCycle` object that this helper is associated with.
          */
-        gHelper(gCycle *owner);
+        gHelper(gCycle &owner);
 
 
         /**
@@ -154,7 +154,7 @@ class gHelper {
          * @param corner: integer representing the corner (0 for left, 1 for right)
          * @return data structure representing the corner
          */
-        gSmartTurningCornerData * getCorner(int corner);
+        gSmartTurningCornerData &getCorner(int corner);
 
         /**
          * closestCorner - Determine the closest corner to a specified point
@@ -171,7 +171,7 @@ class gHelper {
         void Activate();
 
         // function to get the instance of gHelper
-        static gHelper &Get(gCycle *owner);
+        static gHelper &Get(gCycle &owner);
 
         /**
          * Destructor for gHelper
@@ -179,26 +179,26 @@ class gHelper {
         ~gHelper();
 
         public:
-        // Pointer to the owner gCycle object
-        gCycle *owner_;
+        // Reference to the owner gCycle object
+        gCycle &owner_;
 
-        // Pointer to the player ePlayerNetID object
-        ePlayerNetID *player_;
+        // Reference to the player ePlayerNetID object
+        ePlayerNetID &player_;
 
-        // Pointer to the closest enemy gCycle object
-        gCycle *closestEnemy;
+        // Reference to the closest enemy gCycle object
+        gCycle &closestEnemy;
 
-        // Pointer to the owner position as an eCoord object
-        eCoord *ownerPos;
+        // Reference to the owner position as an eCoord object
+        eCoord &ownerPos;
 
-        // Pointer to the owner direction as an eCoord object
-        eCoord *ownerDir;
+        // Reference to the owner direction as an eCoord object
+        eCoord &ownerDir;
 
-        // Pointer to the tail position as an eCoord object
-        eCoord *tailPos;
+        // Reference to the tail position as an eCoord object
+        eCoord &tailPos;
 
-        // Pointer to the owner speed as a REAL
-        REAL *ownerSpeed;
+        // Reference to the owner speed as a REAL
+        REAL &ownerSpeed;
 
         // Length of the owner's wall
         REAL ownerWallLength;
@@ -206,8 +206,8 @@ class gHelper {
         // Delay in the owner's turn
         REAL ownerTurnDelay;
 
-        // Pointer to the stored gHelperData object
-        gHelperData *data_stored;
+        // Reference to the stored gHelperData object
+        gHelperData &data_stored;
 
         // emergency turn object
         std::unique_ptr< gTurnHelper > turnHelper;

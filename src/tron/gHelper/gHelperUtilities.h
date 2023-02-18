@@ -59,7 +59,7 @@ struct gSmartTurningCornerData
 
     // Finds a corner based on the sensor data, updates relevant data in the
     // gSmartTurningCornerData object, and returns a boolean indicating if the corner was found
-    bool findCorner(const gHelperSensor *sensor, gHelper *helper);
+    bool findCorner(const gHelperSensor *sensor, gHelper &helper);
 };
 
 

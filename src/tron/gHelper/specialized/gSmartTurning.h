@@ -10,7 +10,7 @@ class gSmartTurning
 {
 public:
     // constructor to create an instance of gSmartTurning with a helper and an owner cycle
-    gSmartTurning(gHelper *helper, gCycle *owner);
+    gSmartTurning(gHelper &helper, gCycle &owner);
 
     // function to make the cycle survive by determining which turns are possible and blocking if required
     void smartTurningSurvive(gHelperData &data);
@@ -36,17 +36,14 @@ public:
 
 
     // function to get the instance of gSmartTurning
-    static gSmartTurning &Get(gHelper *helper, gCycle *owner);
+    static gSmartTurning &Get(gHelper &helper, gCycle &owner);
 
 private:
     // owner cycle
-    gCycle *owner_;
+    gCycle &owner_;
 
     // helper
-    gHelper *helper_;
-
-    // data
-    gHelperData *data_;
+    gHelper &helper_;
 
     // time of the last turn attempt
     REAL &lastTurnAttemptTime;

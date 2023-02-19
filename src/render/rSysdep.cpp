@@ -302,7 +302,8 @@ static void SDL_SavePNG(SDL_Surface *image, tString filename){
 }
 #endif
 
-static void make_screenshot(){
+static void make_screenshot( bool save )
+{
 #ifndef DEDICATED
     // screenshot count
     static int number=0;
@@ -310,6 +311,9 @@ static void make_screenshot(){
 
     SDL_Surface *image;
     SDL_Surface *temp;
+
+if( save )
+{
     int idx;
     image = SDL_CreateRGBSurface(SDL_SWSURFACE, sr_screenWidth, sr_screenHeight,
                                  24, 0x0000FF, 0x00FF00, 0xFF0000 ,0);
@@ -328,6 +332,7 @@ static void make_screenshot(){
                + image->pitch*(sr_screenHeight - idx-1),
                3*sr_screenWidth); // Optionally, use the pitch of either surface here
     }
+}
 
     // save screenshot in unused slot
     bool done = false;
@@ -350,18 +355,35 @@ static void make_screenshot(){
             continue;
         }
 
+if( save )
+{
         // save image
         if(png_screenshot)
             SDL_SavePNG(image, tDirectories::Screenshot().GetWritePath( fileName ));
         else
             SDL_SaveBMP(temp, tDirectories::Screenshot().GetWritePath( fileName ) );
+}
+else
+{
+    --number;
+    std::cout << "Detected we're at screenshot " << number << "\n";
+}
         done = true;
     }
 
+if( save )
+{
     // cleanup
     SDL_FreeSurface(image);
     SDL_FreeSurface(temp);
+}
+
 #endif
+}
+
+static void make_screenshot()
+{
+    make_screenshot( true );
 }
 
 class PerformanceCounter
@@ -400,6 +422,9 @@ static tSettingItem<REAL> c_ffre( "FAST_FORWARD_MAXSTEP_REAL",
 static REAL sr_FF_MaxstepRel=1; // maximum step between rendered frames relative to end of FF mode
 static tSettingItem<REAL> c_ffr( "FAST_FORWARD_MAXSTEP_REL",
                                  sr_FF_MaxstepRel );
+
+float sr_brightness = 1.0f;
+static tConfItem<float> bconf( "BRIGHTNESS", sr_brightness );
 
 
 static double s_fastForwardTo=0;
@@ -563,6 +588,12 @@ void rSysDep::StopNetSyncThread()
     }
 }
 
+bool sr_useMaxFPS = true;
+static tConfItem< bool > sr_useMaxFPSConf( "USE_MAX_FPS", sr_useMaxFPS );
+
+int sr_maxFPS = 1000;
+static tConfItem< int > sr_maxFPSConf( "MAX_FPS", sr_maxFPS, []( const int & val ) { return(val > 0); }  );
+
 void rSysDep::SwapGL(){
     if ( s_benchmark )
     {
@@ -638,7 +669,43 @@ void rSysDep::SwapGL(){
         return;
     }
 
+    {
+        static bool checkScreenshot = true;
+        if( checkScreenshot )
+        {
+            make_screenshot( false );
+            checkScreenshot = false;
+        }
+    }
 
+    if( !sr_screenshotIsPlanned && ( sr_brightness > 1.01 || sr_brightness < 0.99 ) )
+    {
+        float brightness = sr_brightness;
+        
+        brightness_hack:
+        
+        if( sr_brightness > 1 )
+        {
+            glBlendFunc( GL_DST_COLOR, GL_ONE );
+            glColor3f( brightness-1, brightness-1, brightness-1 );
+        }
+        else
+        {
+            glBlendFunc( GL_ZERO, GL_SRC_COLOR );
+            glColor3f( brightness, brightness, brightness );
+        }
+        glEnable( GL_BLEND );
+        glBegin(GL_QUADS);
+        glVertex2d(-1, -1); glVertex2d(-1, 1); glVertex2d(1, 1); glVertex2d(1, -1);
+        glEnd();
+        
+        if( brightness > 1 )
+        {
+            brightness -= 1;
+            goto brightness_hack;
+        }
+    }
+    
     rPerFrameTask::DoPerFrameTasks();
 
     // unlock the mutex while waiting for the swap operation to finish
@@ -712,6 +779,31 @@ void rSysDep::SwapGL(){
         breakpoint();
     }
     //#endif
+
+    if( sr_useMaxFPS && !tRecorder::IsPlayingBack() )
+    {
+        /*
+        static int FPS, now_time, last_time = 0;
+        
+        now_time = SDL_GetTicks();
+        FPS = 1000 / sr_maxFPS;
+        
+        if( now_time < last_time + FPS )
+            SDL_Delay( last_time + FPS - now_time );
+        
+        last_time = SDL_GetTicks();
+        */
+        
+        static double FPS, now_time, last_time = 0;
+        
+        now_time = tRealSysTimeFloat();
+        FPS = 1.0 / sr_maxFPS;
+        
+        if( now_time < last_time + FPS )
+            SDL_Delay( round( 1000 * ( last_time + FPS - now_time ) ) );
+        
+        last_time = tRealSysTimeFloat();
+    }
 
     // store frame time for next frame
     // lastFrame = tRealSysTimeFloat();

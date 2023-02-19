@@ -68,11 +68,38 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 std::deque<gZone *> sg_Zones;
 std::deque<gZone *> sg_HelperTrackedZones;
 
+static const char * sz_knownZoneEffects[] = {
+    "win",
+    "death",
+    "fortress",
+    "target",
+    "object",
+    "blast",
+    "ball",
+    "soccergoal",
+    "soccerball",
+    "flag",
+    "koh",
+    "rubber",
+    "rubberadjust"
+    "ballTeam",
+    "deathTeam",
+    "acceleration",
+    "speed",
+    "teleport",
+    "zombie",
+    "zombieOwner",
+nullptr
+};
+
 static bool sg_SwapWinDeath = false;
 static tSettingItem<bool> sg_SwitchWinDeathColorCONF("SWAP_WINZONE_DEATHZONE_COLORS", sg_SwapWinDeath);
 
-static int sg_zoneAlphaToggle = 0;
+int sg_zoneAlphaToggle = 0;
 static tConfItem<int> sg_zoneAlphaToggleConf( "ZONE_ALPHA_TOGGLE", sg_zoneAlphaToggle );
+
+bool sg_zoneAlphaBlend = true;
+static tConfItem<bool> sg_zoneAlphaBlendingConf( "ZONE_ALPHA_BLEND", sg_zoneAlphaBlend );
 
 static int sg_zoneDeath = 1;
 static tSettingItem<int> sg_zoneDeathConf( "WIN_ZONE_DEATHS", sg_zoneDeath );
@@ -118,23 +145,156 @@ REAL sg_cycleZonesApproach = 2000.0;
 static tSettingItem<REAL>sg_cycleZoneApprochConf("CYCLE_ZONES_APPROCH", sg_cycleZonesApproach);
 static tSettingItem<REAL>sg_cycleZoneApproachConf("CYCLE_ZONES_APPROACH", sg_cycleZonesApproach);
 
-static int sg_zoneSegments = 11;
-static tConfItem<int> sg_zoneSegmentsConf( "ZONE_SEGMENTS", sg_zoneSegments );
+int sg_zoneSegments = 11;
+static tSettingItem<int> sg_zoneSegmentsConf( "ZONE_SEGMENTS", sg_zoneSegments );
 
-static REAL sg_zoneSegLength = .5;
-static tConfItem<REAL> sg_zoneSegLengthConf( "ZONE_SEG_LENGTH", sg_zoneSegLength );
+REAL sg_zoneSegLength = .5;
+static tSettingItem<REAL> sg_zoneSegLengthConf( "ZONE_SEG_LENGTH", sg_zoneSegLength );
 
-static REAL sg_zoneBottom = 0.0f;
-static tConfItem<REAL> sg_zoneBottomConf( "ZONE_BOTTOM", sg_zoneBottom );
+REAL sg_zoneBottom = 0.0f;
+static tSettingItem<REAL> sg_zoneBottomConf( "ZONE_BOTTOM", sg_zoneBottom );
 
-static REAL sg_zoneHeight = 5.0f;
-static tConfItem<REAL> sg_zoneHeightConf( "ZONE_HEIGHT", sg_zoneHeight );
-
-// FIXME: allow more zone types in a more flexible system later
-static REAL sg_zoneHeightFort = 1.0f;
-static tConfItem<REAL> sg_zoneHeightFortConf( "ZONE_HEIGHT_FORT", sg_zoneHeightFort );
-static REAL sg_zoneHeightKOH = 1.0f;
-static tConfItem<REAL> sg_zoneHeightKOHConf( "ZONE_HEIGHT_KOH", sg_zoneHeightKOH );
+REAL sg_zoneHeight = 5.0f;
+#if 0
+static tSettingItem<REAL> sg_zoneHeightConf( "ZONE_HEIGHT", sg_zoneHeight );
+#else
+std::map < std::string, float > sg_zoneHeights {
+    //{"fortress", 1.f},
+    //{"koh", 1.f},
+};
+static void sg_zoneHeightConfFunc( std::istream &s )
+{
+    if( s.eof() )
+    {
+        for(auto i=sg_zoneHeights.begin();i!=sg_zoneHeights.end();i++)
+        {
+            tString s("ZONE_HEIGHT");
+            s << " " << i->first;
+            
+            tOutput o;
+            o.SetTemplateParameter(1, s);
+            o.SetTemplateParameter(2, i->second);
+            o << "$config_message_info";
+            
+            con << o;
+        }
+        
+        tOutput o;
+        o.SetTemplateParameter(1, "ZONE_HEIGHT");
+        o.SetTemplateParameter(2, sg_zoneHeight);
+        o << "$config_message_info";
+        
+        con << o;
+    }
+    else
+    {
+        tString params; params.ReadLine( s, true );
+        int pos = 0;
+        
+        tString argv1 = params.ExtractNonBlankSubString(pos);
+        
+        if( argv1[0] == '-' || argv1[0] == '.' || ( argv1[0] >= '0' && argv1[0] <= '9' ) )
+        {
+            float v = atof(argv1);
+            
+            tOutput o;
+            o.SetTemplateParameter(1, "ZONE_HEIGHT");
+            o.SetTemplateParameter(2, sg_zoneHeight);
+            o.SetTemplateParameter(3, v);
+            o << "$config_value_changed";
+            
+            sg_zoneHeight = v;
+            
+            con << o;
+        }
+        else
+        {
+            std::stringstream st; st << argv1;
+            std::string effect; st >> effect;
+            
+            bool known = false;
+            for(auto i=sz_knownZoneEffects;(*i)!=nullptr;i++)
+            {
+                if( (*i) == effect )
+                {
+                    known = true;
+                    break;
+                }
+            }
+            
+            if( known )
+            {
+                auto heightval = sg_zoneHeights.find( effect );
+                
+                tString val = params.ExtractNonBlankSubString(pos);
+                
+                if( val == "" )
+                {
+                    tOutput o;
+                    o.SetTemplateParameter(1, argv1);
+                    if( heightval == sg_zoneHeights.end() )
+                        o.SetTemplateParameter(2, "<default>");
+                    else
+                        o.SetTemplateParameter(2, heightval->second);
+                    o << "$config_message_info";
+                    
+                    con << o;
+                }
+                else if( val[0] == 'd' || ( val[0] == '<' && val[1] == 'd' ) )
+                {
+                    if( heightval != sg_zoneHeights.end() )
+                    {
+                        tOutput o;
+                        o.SetTemplateParameter(1, argv1);
+                        o.SetTemplateParameter(2, heightval->second);
+                        o.SetTemplateParameter(3, "<default>");
+                        
+                        o << "$config_value_changed";
+                        
+                        con << o;
+                        
+                        sg_zoneHeights.erase( heightval );
+                    }
+                }
+                else
+                {
+                    //float v; s >> v;
+                    float v = atof(val);
+                    
+                    tString s("ZONE_HEIGHT");
+                    s << " " << effect;
+                    
+                    tOutput o;
+                    o.SetTemplateParameter(1, argv1);
+                    if( heightval == sg_zoneHeights.end() )
+                        o.SetTemplateParameter(2, "<default>");
+                    else
+                        o.SetTemplateParameter(2, heightval->second);
+                    o.SetTemplateParameter(3, v);
+                    
+                    o << "$config_value_changed";
+                    
+                    if( heightval == sg_zoneHeights.end() )
+                    {
+                        sg_zoneHeights[ effect ] = v;
+                    }
+                    else
+                    {
+                        heightval->second = v;
+                    }
+                    
+                    con << o;
+                }
+            }
+            else
+            {
+                con << "Unrecognized zone type \"" << effect << "\".\n";
+            }
+        }
+    }
+}
+static tConfItemFunc sg_zoneHeightConf( "ZONE_HEIGHT", &sg_zoneHeightConfFunc );
+#endif
 
 static bool sg_zoneNoFadeInSvr = false;
 static tConfItem<bool> sg_zoneNoFadeInSvrConf( "ZONE_NO_FADE_IN_SERVER", sg_zoneNoFadeInSvr );
@@ -2221,14 +2381,13 @@ void gZone::Render( const eCamera * cam )
     glPushMatrix();
 
     REAL seglen = 2 * M_PI / sg_zoneSegments * sg_zoneSegLength;
-
+    
     REAL r = Radius();
     REAL h = sg_zoneHeight;
-    if( effect_ == "fortress" || effect_ == "sumo" )
-        h = sg_zoneHeightFort;
-    else if( effect_ == "koh" )
-        h = sg_zoneHeightKOH;
-
+    auto hval = sg_zoneHeights.find( ( effect_ == "sumo" ) ? "fortress" : effect_ );
+    if( hval != sg_zoneHeights.end() )
+        h = hval->second;
+    
     GLfloat m[4][4]={{r*rotation_.x,r*rotation_.y,0,0},
                      {-r*rotation_.y,r*rotation_.x,0,0},
                      {0,0,h,0},
@@ -2238,8 +2397,15 @@ void gZone::Render( const eCamera * cam )
 
     glColor4f( color_.r ,color_.g,color_.b, alpha );
 
-    bool useAlpha = sr_alphaBlend ? !sg_zoneAlphaToggle : sg_zoneAlphaToggle;
+    //bool useAlpha = sr_alphaBlend ? !sg_zoneAlphaToggle : sg_zoneAlphaToggle;
+    bool useAlpha = sg_zoneAlphaBlend ? sg_zoneAlphaToggle : !sg_zoneAlphaToggle;
     static bool lastAlpha = useAlpha;
+    
+    if ( !sr_alphaBlend && useAlpha )
+    {
+        REAL a = alpha * 1.4;
+        glColor3f( color_.r * a ,color_.g * a, color_.b * a );
+    }
 
     static rDisplayList zoneList;
     if ( lastAlpha != useAlpha || !zoneList.Call() )
@@ -2293,6 +2459,52 @@ void gZone::Render( const eCamera * cam )
         glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
         glDepthMask(GL_TRUE);
     }
+
+    glPopMatrix();
+#endif
+}
+void gZone::Render2D(eCoord) const {
+#ifndef DEDICATED
+    REAL alpha = ( lastTime - createTime_ ) * .2f;
+    if ( alpha <= 0 )
+        return;
+
+    GLfloat m[4][4]={{rotation_.x,rotation_.y,0,0},
+                     {-rotation_.y,rotation_.x,0,0},
+                     {0,0,1,0},
+                     {pos.x,pos.y,0,1}};
+
+    ModelMatrix();
+    glPushMatrix();
+
+    glMultMatrixf(&m[0][0]);
+    //	glScalef(.5,.5,.5);
+
+    BeginLines();
+
+    REAL seglen = sg_zoneSegLength / 2;
+
+    glColor4f( color_.r ,color_.g,color_.b, alpha );
+
+    REAL r = Radius();
+    for ( int i = sg_zoneSegments - 1; i>=0; --i )
+    {
+        REAL a = i * 2 * 3.14159 / REAL( sg_zoneSegments );
+        REAL b = a + seglen;
+
+        REAL sa = r * sin(a);
+        REAL ca = r * cos(a);
+        REAL sb = r * sin(b);
+        REAL cb = r * cos(b);
+
+        glVertex2f(sa, ca);
+        glVertex2f(sb, cb);
+    }
+
+    RenderEnd();
+
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+    glDepthMask(GL_TRUE);
 
     glPopMatrix();
 #endif

@@ -634,6 +634,9 @@ tString sn_configurationSavedInVersion{"0.2.8"};
 tConfItem<tString> sn_configurationSavedInVersionConf("SAVED_IN_VERSION",sn_configurationSavedInVersion);
 }
 
+tString sg_playingBackVersion;
+extern void sg_MenusForVersion( tString version );
+
 int main(int argc,char **argv){
     //std::cout << "enter\n";
     //  net_test();
@@ -670,6 +673,7 @@ int main(int argc,char **argv){
                 tRecorder::ActivateProbablyDesyncedPlayback();
             }
 #endif
+            sg_MenusForVersion( version );
         }
 
         {

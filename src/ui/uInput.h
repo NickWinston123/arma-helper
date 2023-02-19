@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tConfiguration.h"
 #include "tLocale.h"
 #include "tSafePTR.h"
+#include "uMenu.h"
 
 #define uMAX_PLAYERS 4
 
@@ -291,6 +292,37 @@ public:
 
     static uPlayerPrototype* PlayerConfig(int i);
     static int Num();
+};
+
+class uMenuItemInput: uMenuItem{
+    uAction      *act;
+    int         ePlayer;
+    bool        active;
+public:
+    uMenuItemInput(uMenu *M,uAction *a,int p)
+            :uMenuItem(M,a->helpText),act(a),ePlayer(p),active(0){
+    }
+
+    virtual ~uMenuItemInput(){}
+
+    virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0);
+    
+    virtual void Enter(){
+        active=1;
+    }
+    
+    virtual bool ConsiderMenuActive(){return !active;}
+    
+#ifndef DEDICATED
+    virtual bool Event(SDL_Event &e);
+#endif
+    
+    virtual tString Help(){
+        tString ret;
+        ret << helpText << "\n";
+        ret << tOutput("$input_item_help");
+        return ret;
+    }
 };
 
 

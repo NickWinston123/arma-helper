@@ -186,6 +186,12 @@ REAL sg_delayCycleDoublebindBonus = 1.;
 static nSettingItemWatched<REAL> c_d_d_b("CYCLE_DELAY_DOUBLEBIND_BONUS",
         sg_delayCycleDoublebindBonus, nConfItemVersionWatcher::Group_Bumpy, 14 );
 
+REAL sg_delayCycleLimit = -1;
+#ifndef DEDICATED
+static tSettingItem<REAL> c_dl("CYCLE_DELAY_LIMIT",
+                              sg_delayCycleLimit);
+#endif
+
 // number of turns buffered exactly
 int sg_cycleTurnMemory = 3;
 static tConfItem<int> c_tm("CYCLE_TURN_MEMORY",
@@ -550,11 +556,13 @@ gEnemyInfluence::gEnemyInfluence()
     lastTime = -sg_suicideTimeout;
 }
 
+extern bool hud_showInteract;
+
 // add the result of the sensor scan to our data
 void gEnemyInfluence::AddSensor( const gSensor& sensor, REAL timePenalty, gCycleMovement * thisCycle )
 {
     // the client has no need for this, it does not execute AI code
-    if ( sn_GetNetState() == nCLIENT )
+    if ( !hud_showInteract && sn_GetNetState() == nCLIENT )
         return;
 
     // check if the sensor hit an enemy wall
@@ -587,7 +595,7 @@ void gEnemyInfluence::AddSensor( const gSensor& sensor, REAL timePenalty, gCycle
 void gEnemyInfluence::AddWall( const eWall * wall, eCoord const & pos, REAL timePenalty, gCycleMovement * thisCycle )
 {
     // the client has no need for this, it does not execute AI code
-    if ( sn_GetNetState() == nCLIENT )
+    if ( !hud_showInteract && sn_GetNetState() == nCLIENT )
         return;
 
     // see if it is a player wall
@@ -612,7 +620,7 @@ void gEnemyInfluence::AddWall( const eWall * wall, eCoord const & pos, REAL time
 void gEnemyInfluence::AddWall( const gPlayerWall * wall, REAL timeBuilt, REAL timePenalty, gCycleMovement * thisCycle )
 {
     // the client has no need for this, it does not execute AI code
-    if ( sn_GetNetState() == nCLIENT )
+    if ( !hud_showInteract && sn_GetNetState() == nCLIENT )
         return;
 
     if ( !wall )
@@ -1067,7 +1075,7 @@ bool gCycleMovement::CanMakeTurn( REAL time, int direction ) const
 REAL gCycleMovement::GetTurnDelay( void ) const
 {
     // the basic delay as it was before 0.2.8 looked like this:
-    REAL baseDelay   = sg_delayCycle*sg_delayCycleBonus/SpeedMultiplier();
+    REAL baseDelay   = fmax(sg_delayCycleLimit, sg_delayCycle)*sg_delayCycleBonus/SpeedMultiplier();
 
     // we're modifying it by a power law to make speed turns easier or harder:
     REAL speedFactor = verletSpeed_/(sg_speedCycle*SpeedMultiplier());
@@ -1079,8 +1087,9 @@ REAL gCycleMovement::GetTurnDelay( void ) const
 REAL gCycleMovement::GetTurnDelayDb( void ) const
 {
     // the basic delay as it was before 0.2.8 looked like this:
-    REAL baseDelay   = sg_delayCycle*(sg_delayDbCycleBonus)/SpeedMultiplier()*sg_delayCycleDoublebindBonus;
-
+    //REAL baseDelay   = sg_delayCycle*(sg_delayDbCycleBonus)/SpeedMultiplier()*sg_delayCycleDoublebindBonus;
+    REAL baseDelay   = fmax(sg_delayCycleLimit, sg_delayCycle)*(sg_delayDbCycleBonus)/SpeedMultiplier()*sg_delayCycleDoublebindBonus;
+    
     // we're modifying it by a power law to make speed turns easier or harder:
     REAL speedFactor = verletSpeed_/(sg_speedCycle*SpeedMultiplier());
 

@@ -146,7 +146,7 @@ static nSettingItem<bool> a_fcg
 
 
 //... hack for handling the hud map of 0.4 clients
-static bool stc_forbidHudMap = false;
+bool stc_forbidHudMap = false;
 static nSettingItem<bool> fcs("FORBID_HUD_MAP", stc_forbidHudMap);
 
 #ifndef DEDICATED
@@ -333,6 +333,7 @@ static void se_SetWatchedObject( eCamera * cam, eGameObject * obj )
         }
     }
 }
+
 
 void eCamera::MyInit(){
     if (localPlayer){
@@ -1493,6 +1494,13 @@ void eCamera::Render(){
 
 #endif
 
+static bool se_glanceSnap = false;
+static tSettingItem< bool > se_glanceSnapConf( "GLANCE_SNAP", se_glanceSnap );
+
+static bool se_holdGlancing = false;
+static tSettingItem< bool > se_holdGlancingConf( "GLANCE_HOLD", se_holdGlancing );
+
+
 void eCamera::SwitchCenter(int d){
     zNear = 0.01f;
 
@@ -1873,7 +1881,38 @@ void eCamera::Timestep(REAL ts){
                 turnSpeed += GLANCE_SPEED;
             }
 
+            if ( se_glanceSnap && ( glancingBack || glancingLeft || glancingRight ) )
+            {
+                turnSpeed += GLANCE_SPEED;
+            }
+
             eCoord cycleDir = CenterCycleDir();
+
+            if( se_holdGlancing )
+            {
+                static bool glancingLast = false;
+                static eCoord glancingPos;
+                if( !glancingLast )
+                {
+                    if( glancingBack || glancingLeft || glancingRight || glancingForward )
+                    {
+                        glancingPos = cycleDir;
+                        glancingLast = true;
+                    }
+                }
+                else
+                {
+                    if( glancingBack || glancingLeft || glancingRight || glancingForward )
+                    {
+                        cycleDir = glancingPos;
+                    }
+                    else
+                    {
+                        glancingLast = false;
+                    }
+                }
+            }
+
             newdir=dir+cycleDir*(turnSpeed*ts);
 
             // test if we're looking against the current driving direction

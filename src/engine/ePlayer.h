@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ArmageTron_PLAYER_H
 
 #ifndef MAX_INSTANT_CHAT
-#define MAX_INSTANT_CHAT 25
+#define MAX_INSTANT_CHAT 30
 #endif
 
 #define MAX_PLAYERS 4
@@ -39,7 +39,8 @@ enum ColorRandomization {
     OFF = 0,
     RANDOM = 1,
     UNIQUE = 2,
-    RAINBOW = 3
+    RAINBOW = 3,
+    CROSSFADE = 4,
 };
 
 #include "rSDL.h"
@@ -51,6 +52,7 @@ enum ColorRandomization {
 #include "eNetGameObject.h"
 #include "tCallbackString.h"
 #include "nSpamProtection.h"
+#include "../tron/gCycleMovement.h"
 
 #include <set>
 #include <list>
@@ -337,6 +339,9 @@ public:
     tArray<nTimeRolling> lastSaidTimes;
     //	void SetLastSaid(tString ls);
     unsigned short r,g,b; // our color
+
+    bool overrideColor;
+    gRealColor colorOverride;
 
     unsigned short pingCharity; // max ping you are willing to take over
 

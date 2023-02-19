@@ -356,6 +356,24 @@ public:
             :idnum(-1),description(desc),helpText(help),value(val){}
 };
 
+class uMenuItemDivider: public uMenuItem
+{
+    public:
+        uMenuItemDivider(uMenu *M)
+        : uMenuItem( M, tOutput() )
+        {
+        }
+
+        virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0)
+        {
+        }
+
+        virtual bool IsSelectable()
+        {
+            return false;
+        }
+};
+
 template<class T> class uMenuItemSelection:public uMenuItem{
 protected:
     tList<uSelectItem<T> >	choices;

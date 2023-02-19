@@ -353,11 +353,14 @@ void rTextField::FlushLine(int len,bool newline){
             glEnable(GL_TEXTURE_2D);
         }
         
-        if( sr_textShadow && (
+        if( sr_textShadow && blendColor_.a_ == 1.f && (
             ( color_.IsDark() && (sr_textShadow&1) ) ||
             (!color_.IsDark() && (sr_textShadow&2) )
         ))
         {
+            //RenderEnd(true);
+            //glEnable(GL_TEXTURE_2D);
+            
             int fakex = realx;
             REAL l,t;
             
@@ -393,6 +396,8 @@ void rTextField::FlushLine(int len,bool newline){
                         fakex++;
                     }
             #endif
+            
+            //RenderEnd(true);
         }
 
 

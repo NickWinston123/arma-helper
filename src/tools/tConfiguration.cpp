@@ -633,6 +633,16 @@ void tConfItemBase::LoadLine(std::istream &s){
     //  std::cout << line << " lines read.\n";
 }
 
+tConfItemBase *tConfItemBase::GetConfigItem(tString const &name) {
+    tConfItemMap & confmap = ConfItemMap();
+    tConfItemMap::iterator iter = confmap.find( name.ToUpper() );
+    if ( iter != confmap.end() ) {
+        return iter->second;
+    } else {
+        return 0;
+    }
+}
+
 tString tConfItemBase::FindConfigItem(tString name,int pos)
 {
     int currPos = 0;
@@ -792,8 +802,26 @@ static void st_SetCommandsAccessLevel(std::istream &s)
 static tConfItemFunc st_SetCommandsAccessLevelConf("SET_COMMANDS_ACCESSLEVEL", &st_SetCommandsAccessLevel);
 /** SET ALL ACCESS_LEVEL END **/
 
+tString st_configChanged( "config_changed.cfg" );
 void tConfItemBase::WriteChangedToFile()
 {
+    if( !st_configChanged.EndsWith(".cfg") )
+    {
+        st_configChanged << ".cfg";
+    }
+    
+    if( 
+        !tPath::IsValidPath( st_configChanged ) ||
+        st_configChanged.StartsWith("user") || 
+        st_configChanged.StartsWith("autoexec") || 
+        !st_configChanged.EndsWith(".cfg")
+    )
+    {
+        con << "Cowardly refusing to save file to " << st_configChanged << "\n";
+        st_configChanged = "config_changed.cfg";
+        return;
+    }
+    
     tConfItemMap & confmap = ConfItemMap();
     int sim_maxlen = -1;
 
@@ -805,7 +833,7 @@ void tConfItemBase::WriteChangedToFile()
     }
 
     std::ofstream w;
-    if ( tDirectories::Var().Open(w, "config_changed.cfg"))
+    if ( tDirectories::Var().Open(w, st_configChanged))
     {
         for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
         {
@@ -831,35 +859,69 @@ void tConfItemBase::WriteChangedToFile()
         }
     }
     w.close();
+    st_configChanged = "config_changed.cfg";
 }
 
+tString settingsDownloadCfg("server_settings.cfg");
 void tConfItemBase::DownloadSettings_Go(nMessage &m)
 {
+    static tString currentDownloadFile;
+    
     //  download the config if this is a client
     if (sn_GetNetState() == nCLIENT)
     {
+        if( settingsDownloadCfg.Len() > 1 )
+        {
+            if( !settingsDownloadCfg.EndsWith(".cfg") )
+            {
+                settingsDownloadCfg << ".cfg";
+            }
+            
+            if( 
+                !tPath::IsValidPath( settingsDownloadCfg ) ||
+                settingsDownloadCfg.StartsWith("user") || 
+                settingsDownloadCfg.StartsWith("autoexec") || 
+                !settingsDownloadCfg.EndsWith(".cfg")
+            )
+            {
+                con << "Cowardly refusing to save file to " << settingsDownloadCfg << "\n";
+                settingsDownloadCfg = "";
+                return;
+            }
+        }
+        
         tString m_title;
         m >> m_title;
         if ((m_title == "DOWNLOAD_BEGIN") && m.End())
         {
+            if( settingsDownloadCfg.Len() <= 1 ) return;
+            
             con << "Downloading config from server...\n";
 
             //  truncate the file for fresh settings
             std::ofstream o;
-            if ( tDirectories::Var().Open(o, "server_settings.cfg", std::ios::trunc) ) {}
+            if ( tDirectories::Var().Open(o, settingsDownloadCfg, std::ios::trunc) ) {}
             o.close();
+            
+            currentDownloadFile = settingsDownloadCfg;
+            
             return;
         }
         else if ((m_title == "DOWNLOAD_END") && m.End())
         {
-            con << "Download complete!\n";
+            if( settingsDownloadCfg.Len() > 1 )
+                con << "Download complete!\n";
+            
+            settingsDownloadCfg = "server_settings.cfg";
             return;
         }
         tString m_value;
         m >> m_value;
 
+        if( settingsDownloadCfg.Len() <= 1 ) return;
+
         std::ofstream o;
-        if (tDirectories::Var().Open(o, "server_settings.cfg", std::ios::app))
+        if (tDirectories::Var().Open(o, currentDownloadFile, std::ios::app))
         {
             o << m_title << " " << m_value << "\n";
         }
@@ -1402,11 +1464,11 @@ void st_LoadConfig( bool printChange )
 #ifdef DEDICATED
     tConfItemBase::printErrors=false;
 #endif
-
     tConfItemBase::printErrors=true;
     Load( config, "settings.cfg" );
 
     Load( var, "user.cfg" );
+    Load( var, "user_extended.cfg" );
 
 
 
@@ -1446,6 +1508,63 @@ static tAccessLevelSetter st_ReLoadConfigConfLevel( st_ReLoadConfigConf, tAccess
 static bool st_UserCfgSave = true;
 static tConfItem<bool> st_UserCfgSaveConf("CFG_USER_SAVE", st_UserCfgSave);
 
+extern std::map < std::string, float > sg_zoneHeights;
+extern REAL sg_zoneHeight, sg_zoneSegLength, sg_zoneBottom;
+extern int sg_zoneSegments, sg_zoneAlphaToggle;
+extern bool sg_zoneAlphaBlend;
+
+void st_GrabConfigInfo( std::map < tString, bool > * _saved, std::map < tString, tString > * _oldval, const char * ignore[] )
+{
+    std::ifstream i; 
+    tDirectories::Var().Open( i, "user_extended.cfg" );
+    
+    while( !i.eof() && i.good() )
+    {
+        tString line;
+
+        // read line from stream
+        line.ReadLine( i ); 
+        
+        int pos = 0;
+        
+        /// concatenate lines ending in a backslash
+        while ( line.Len() > 1 && line[line.Len()-2] == '\\' && i.good() && !i.eof() )
+        {
+            line[line.Len()-2] = '\0';
+
+            // unless it is a double backslash
+            if ( line.Len() > 2 && line[line.Len()-3] == '\\' )
+            {
+                break;
+            }
+
+            line.SetLen( line.Len()-1 );
+            tString rest;
+            rest.ReadLine( i );
+            line << rest;
+        }
+
+        if ( line.Len() <= 1 )
+            continue;
+        
+        tString cmd = line.ExtractNonBlankSubString(pos);
+        
+        if( ignore )
+        {
+            const char ** i = ignore;
+            while(*i)
+            {
+                if( cmd == *i ) break;
+                i++;
+            }
+            if(*i) continue;
+        }
+        
+        if(_saved) (*_saved) [ cmd ] = true;
+        if(_oldval) (*_oldval) [ cmd ] = line;
+    }
+}
+
 void st_SaveConfig()
 {
     // don't save while playing back
@@ -1466,12 +1585,137 @@ void st_SaveConfig()
         con << o;
         std::cerr << o;
     }
+    
+    if( !tRecorder::IsPlayingBack() )
+    {
+        std::map < tString, bool > saved {};
+        std::map < tString, tString > oldval {};
+        
+        static const char * ignoreList[] = {
+            "ZONE_ALPHA_BLEND",
+            "ZONE_ALPHA_TOGGLE",
+            "ZONE_BOTTOM",
+            "ZONE_HEIGHT",
+            "ZONE_SEGMENTS",
+            "ZONE_SEG_LENGTH",
+        0};
+        
+        st_GrabConfigInfo( &saved, &oldval, ignoreList );
+        
+        std::ofstream s;
+        if ( tDirectories::Var().Open( s, "user_extended.cfg", std::ios::out, true ) )
+        {
+            if( st_UserCfgSave )
+            {
+                int id, i;
+                
+                for(auto i=saved.begin();i!=saved.end();i++)
+                {
+                    auto ci = tConfItemBase::GetConfigItem(i->first);
+                    if(ci)
+                    {
+                        s << ci->GetTitle() << " ";
+                        ci->WriteVal(s);
+                        s << "\n";
+                    }
+                    else
+                    {
+                        s << oldval[ i->first ] << "\n";
+                    }
+                }
+                
+                for(id=0;id<4;++id)
+                {
+                    for(i=25; i<99; ++i)
+                    {
+                        tString confname; confname << "INSTANT_CHAT_STRING_" << id+1 << '_' <<  i+1;
+                        if( saved[ confname ] ) continue;
+                        auto ci = tConfItemBase::GetConfigItem(confname);
+                        if(ci)
+                        {
+                            s << ci->GetTitle() << " ";
+                            ci->WriteVal(s);
+                            s << "\n";
+                        }
+                    }
+                }
+                
+                s << "ZONE_ALPHA_BLEND" << " " << sg_zoneAlphaBlend << "\n";
+                s << "ZONE_ALPHA_TOGGLE" << " " << sg_zoneAlphaToggle << "\n";
+                
+                s << "ZONE_BOTTOM" << " " << sg_zoneBottom << "\n";
+                
+                s << "ZONE_HEIGHT" << " " << sg_zoneHeight << "\n";
+                for(auto i=sg_zoneHeights.begin();i!=sg_zoneHeights.end();i++)
+                {
+                    tString c("ZONE_HEIGHT");
+                    c << " " << i->first;
+                    c << " " << i->second;
+                    s << c << "\n";
+                }
+                
+                s << "ZONE_SEGMENTS" << " " << sg_zoneSegments << "\n";
+                s << "ZONE_SEG_LENGTH" << " " << sg_zoneSegLength << "\n";
+            }
+        }
+        else
+        {
+            tOutput o("$config_file_write_error");
+            con << o;
+            std::cerr << o;
+        }
+    }
+}
+
+tString st_AddToUserExt( tArray<tString> commands )
+{
+    tString out;
+    
+    if( tRecorder::IsPlayingBack() ) return out;
+    
+    std::map < tString, bool > saved {};
+    st_GrabConfigInfo( &saved, nullptr, nullptr );
+    
+    std::ofstream s;
+    tDirectories::Var().Open( s, "user_extended.cfg", std::ios::app, true );
+    
+    int pos = -1, savedi = 0;
+    
+    tString cmd;
+    while( commands[ ++pos ].Len() > 1 )
+    {
+        cmd = commands[ pos ].ToUpper();
+        auto ci = tConfItemBase::GetConfigItem( cmd );
+        if(ci)
+        {
+            if( !ci->Save() && !saved [ ci->GetTitle() ] )
+            {
+                s << ci->GetTitle() << " ";
+                ci->WriteVal(s);
+                s << "\n";
+                
+                ++savedi;
+            }
+            else
+            {
+                out << "Setting " << ci->GetTitle() << " will already be saved. Skipping...\n";
+            }
+        }
+        else
+        {
+            out << "Command " << cmd << " invalid.\n";
+        }
+    }
+    out << "Done, saved " << savedi << " / " << ( pos ) << " settings.\n";
+    
+    return out;
 }
 
 void st_LoadUserConfig()
 {
     const tPath& var = tDirectories::Var();
     Load(var, "user.cfg");
+    Load( var, "user_extended.cfg" );
 }
 
 void st_LoadConfig()

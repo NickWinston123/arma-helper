@@ -45,6 +45,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <sstream>
 #include <set>
 
+extern tString sg_playingBackVersion;
+
+static bool o28 = false, o29 = false;
+
+bool sg_ShowSpecialMenu() { return !(o28 || o29); }
+bool sg_ShowConfigMenu()  { return !(o28 || o29); }
+bool sg_ShowSBFilterItem(){ return !(o28 || o29); }
+
 static tConfItem<int>   tm0("TEXTURE_MODE_0",rTextureGroups::TextureMode[0]);
 static tConfItem<int>   tm1("TEXTURE_MODE_1",rTextureGroups::TextureMode[1]);
 static tConfItem<int>   tm2("TEXTURE_MODE_2",rTextureGroups::TextureMode[2]);
@@ -52,10 +60,16 @@ static tConfItem<int>   tm3("TEXTURE_MODE_3",rTextureGroups::TextureMode[3]);
 
 uMenu sg_screenMenu("$display_settings_menu");
 
-static uMenuItemFunction defaul
-(&sg_screenMenu,"$graphics_load_defaults_text",
+static uMenu defaul("Are you sure?");
+
+//uMenuItemSubmenu defaulm(&sg_screenMenu, &defaul, "$graphics_load_defaults_help");
+uMenuItemFunction defaulm(&sg_screenMenu, "$graphics_load_defaults_text", "$graphics_load_defaults_help", [](){ static bool b = false; if( !b ) { defaul.ReverseItems(); b = true; } defaul.Enter(); });
+
+static uMenuItemFunction defaul_ok
+(&defaul,"Apply Defaults",
  "$graphics_load_defaults_help",
- &sr_LoadDefaultConfig);
+ [](){ sr_LoadDefaultConfig(); defaul.Exit(); });
+ 
 uMenu screen_menu_detail("$detail_settings_menu");
 uMenu screen_menu_tweaks("$performance_tweaks_menu");
 uMenu screen_menu_prefs("$preferences_menu");
@@ -169,7 +183,8 @@ extern bool sg_axesIndicator;
 
 static tConfItem<bool> lm("LAG_O_METER",sr_laggometer);
 static tConfItem<bool> ai("AXES_INDICATOR",sg_axesIndicator);
-static tConfItem<bool> po("PREDICT_OBJECTS",sr_predictObjects);
+bool sg_predictObjectsCmd = false;
+static tConfItem<bool> po("PREDICT_OBJECTS",sg_predictObjectsCmd);
 static tConfItem<bool> t32("TEXTURES_HI",sr_texturesTruecolor);
 
 static tConfItem<bool> kwa("KEEP_WINDOW_ACTIVE",sr_keepWindowActive);
@@ -446,6 +461,11 @@ static uSelectEntry<int> mfdd(mfd,"$detail_floor_2tex_text",
                               "$detail_floor_2tex_help",
                               rFLOOR_TWOTEXTURE);
 
+extern bool sg_zoneAlphaBlend;
+uMenuItemToggle azbm
+(&screen_menu_detail,"Zone Alpha Blend:",
+ "$zone_alpha_toggle_help",sg_zoneAlphaBlend);
+
 static uMenuItemToggle  abm
 (&screen_menu_detail,"$detail_alpha_text",
  "$detail_alpha_help",
@@ -472,9 +492,15 @@ static tConfItem<bool> se_tabCompletionConf("TAB_COMPLETION", se_tabCompletion);
 static tConfItem<bool> se_tabCompletionColors("TAB_COMPLETION_WITH_COLORS", se_tabCompletionWithColors);
 static tConfItem<bool> se_autoComplColor("AUTO_COMPLETE_WITH_COLOR", se_tabCompletionWithColors);
 
+extern void sg_ColorMenu(), se_ForcePlayerColorMenu();
+
 void sg_SpecialMenu()
 {
     uMenu menu("$special_setup_menu_text");
+
+    uMenuItemFunction opc(&menu, "Override Players' Colors", "", se_ForcePlayerColorMenu);
+    
+    uMenuItemFunction cm(&menu, "My Color Configuration", "", sg_ColorMenu);
 
     uMenuItemToggle hlm(&menu, "$highlight_name_menu_text", "$highlight_name_menu_help", se_highlightMyName);
     uMenuItemToggle tcwc(&menu, "$tab_completion_with_colors_menu_text", "$tab_completion_with_colors_menu_help", se_tabCompletionWithColors);
@@ -486,14 +512,126 @@ void sg_SpecialMenu()
     menu.Enter();
 }
 
+
+class gMenuItemSubmenu: public uMenuItemSubmenu
+{
+    uMenu * submenu;
+public:
+    bool disabled;
+    
+    gMenuItemSubmenu(uMenu *M, uMenu *s, const tOutput& help):
+        uMenuItemSubmenu( M, s, help )
+    {
+        submenu = s;
+        this->disabled = false;
+    }
+    virtual ~gMenuItemSubmenu(){}
+
+    virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0)
+    {
+        if( disabled )
+        {
+            alpha *= 0.5;
+        }
+        
+        DisplayTextSpecial(x,y,submenu->title,selected,alpha,0);
+    }
+
+    virtual bool IsSelectable()
+    {
+        return !disabled;
+    }
+};
+
+
+extern tString settingsDownloadCfg, st_configChanged;
+extern nMessage * se_NewChatMessage( ePlayerNetID const * player, tString const & message );
+extern tString st_AddToUserExt( tArray<tString> commands );
+static tString sg_c_setting, sg_c_svr_sets, sg_c_svr_cfg_in;
 void sg_ConfigMenu()
 {
     uMenu menu("$config_setup_menu_text");
 
+    uMenu add_to_cfg("Add Persistant Setting Value");
+    
+    uMenuItemFunction atc_b(&add_to_cfg,
+        "Save",
+        "",
+        []()
+        {
+            tArray< tString > commands; commands.Insert( sg_c_setting );
+            
+            auto outln = st_AddToUserExt( commands ).Split("\n");
+            tString out;
+            
+            for(int i=0;i<outln.Len();++i)
+            {
+                if( outln[i].StartsWith("Done") )
+                {
+                    sg_c_setting = "";
+                    continue;
+                }
+                out << outln[i] << "\n";
+            }
+            
+            uMenu::Message( tString("Done"), tString( out ), 12 );
+        });
+    
+    uMenuItemString atc_s(&add_to_cfg,
+        "Setting",
+        "The setting to save",
+        sg_c_setting);
+    
+    uMenuItemSubmenu cm(&menu,&add_to_cfg,
+                        "persist setting to config that will be auto updated on change");
+
     uMenuItemFunction sac(&menu, "$config_save_all_text", "$config_save_all_help", &tConfItemBase::WriteAllToFile);
     uMenuItemFunction lac(&menu, "$config_load_all_text", "$config_load_all_help", &st_LoadConfig);
 
-    uMenuItemFunction scc(&menu, "$config_save_changed_text", "$config_save_changed_help", &tConfItemBase::WriteChangedToFile);
+    
+    
+
+    uMenu dlsets("Save Server Settings");
+    uMenuItemFunction gfs(&dlsets, "Save", "", [](){ se_NewChatMessage(se_GetLocalPlayer(), tString("/dlsettings"))->BroadCast(); });
+    uMenuItemString gfs_s(&dlsets,
+        "Filename",
+        "",
+        settingsDownloadCfg);
+
+
+    uMenu dlcfg("Download Public Config File");
+    uMenuItemFunction sfc(&dlcfg, "Download", "download public config from server", []()
+    {
+        tString cmd("/dlcfg ");
+        cmd << sg_c_svr_cfg_in;
+        
+        se_NewChatMessage(se_GetLocalPlayer(), cmd)->BroadCast();
+    });
+    uMenuItemString sfc_s(&dlcfg,
+        "Filename",
+        "",
+        sg_c_svr_cfg_in);
+
+
+    gMenuItemSubmenu dcsm( &menu, &dlcfg,  "" );
+    gMenuItemSubmenu dssm( &menu, &dlsets, "" );
+
+    if(!(
+        sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18 && se_GetLocalPlayer()
+    ))
+    {
+        dcsm.disabled = true;
+        dssm.disabled = true;
+    }
+    
+    uMenu sccM("$config_save_changed_text");
+    uMenuItemFunction sccf(&sccM, "Save", "", &tConfItemBase::WriteChangedToFile);
+    uMenuItemString scc_s(&sccM,
+        "Filename",
+        "",
+        st_configChanged);
+
+    uMenuItemSubmenu scc_m(&menu, &sccM, "$config_save_changed_help");
 
     /*
     uMenuItemFunction suc(&menu, "$config_user_save_text", "$config_user_save_help", &st_SaveConfig);
@@ -532,6 +670,27 @@ static ArmageTron_texmode_menuitem tmm3(&screen_menu_detail,
 uMenuItemToggle bpt2
 (&screen_menu_prefs,"$misc_recording_time_text",
  "$misc_recording_time_help",sr_RecordingTimeOut);
+
+
+class uMenuItemBrightness: public uMenuItemReal
+{
+public:
+    uMenuItemBrightness( uMenu * m, const tOutput &title, const tOutput &help, REAL &targ )
+        :uMenuItemReal( m, title, help, targ, 0, 4, 0.1)
+    {
+    };
+    
+    void Render(REAL x, REAL y, REAL alpha, bool selected)
+    {
+        DisplayText(x-.02,y,title,selected,alpha,1);
+        
+        tString s; s << roundf( target * 100 ) << "%";
+        DisplayText(x+.02,y,s,selected,alpha,-1);
+    }
+};
+
+extern float sr_brightness;
+uMenuItemBrightness brightnessConf( &screen_menu_prefs, "Brightness", "", sr_brightness );
 
 static uMenuItemToggle s2
 (&screen_menu_prefs,"$pref_highrim_text",
@@ -606,6 +765,50 @@ static uSelectEntry<rSysDep::rSwapMode> swapMode_100Hz(swapMode,"$swapmode_100hz
 static uSelectEntry<rSysDep::rSwapMode> swapMode_80Hz(swapMode,"$swapmode_80hz_text","$swapmode_80hz_help",rSysDep::rSwap_80Hz);
 static uSelectEntry<rSysDep::rSwapMode> swapMode_60Hz(swapMode,"$swapmode_60hz_text","$swapmode_60hz_help",rSysDep::rSwap_60Hz);
 */
+
+class uMenuItemFPS: public uMenuItemInt
+{
+public:
+    uMenuItemFPS( uMenu * m, const tOutput &title, const tOutput &help, int &targ )
+        :uMenuItemInt( m, title, help, targ, 1, 8000)
+    {
+    };
+    
+    virtual void LeftRight( int dir )
+    {
+        static int fps[] = {
+            24, 30, 40, 60, 120, 144, 240, 
+            300, 400, 500, 600, 800,
+            1000, 2000, 4000, 8000,
+        };
+        static const size_t fpses = ( sizeof(fps) / sizeof(int) );
+        
+        size_t curr = 0;
+        
+        int lastdiff = 9999999;
+        for(size_t i=0;i<fpses;++i)
+        {
+            int diff = abs( fps[i] - target );
+            if( diff > lastdiff )
+                break;
+            
+            curr = i;
+            lastdiff = diff;
+        }
+                
+        if( dir > 0 && curr < ( fpses - 1 ) )
+            target = fps[curr + 1];
+        else if( dir < 0 && curr > 0 )
+            target = fps[curr - 1];
+    };
+};
+
+extern int sr_maxFPS;
+uMenuItemFPS targetFPS
+(&screen_menu_tweaks,
+ "Target FPS",
+ "The framerate the game tries to keep at or around",
+sr_maxFPS);
 
 tCONFIG_ENUM( rSysDep::rSwapMode );
 
@@ -690,6 +893,11 @@ uMenuItemToggle hud10
 uMenuItemToggle hud11
 (&hud_prefs,"$pref_show24hour_text",
  "$pref_show24hour_help",show24hour);
+
+extern int simplemapmode;
+uMenuItemToggle hud12
+(&hud_prefs,"Show Minimap",
+ "",*(reinterpret_cast<bool *>(&simplemapmode)));
 
 uMenuItemToggle hud2
 (&hud_prefs,"$pref_showhud_text",
@@ -969,40 +1177,27 @@ public:
         }
         */
 #ifndef DEDICATED
-uMenuItem::RenderBackground();
-if (!sr_glOut)
-    return;
-
-ePlayerNetID *me = se_GetLocalPlayer();
-
-REAL r = rgb[0]/15.0;
-REAL g = rgb[1]/15.0;
-REAL b = rgb[2]/15.0;
-se_MakeColorValid(r, g, b, 1.0f);
-RenderEnd();
-glColor3f(r, g, b);
-glRectf(.8,-.8,.98,-.98);
-
-// int rgb1[3];
-// // rgb1[0] = r > 15 ? 15 - r : 15;
-// // rgb1[1] = g > 15 ? 15 - g : 15;
-// // rgb1[2] = b > 15 ? 15 - b : 15;
-// REAL r1 = rgb[0]/15.0;
-// REAL g1 = rgb[1]/15.0;
-// REAL b1 = rgb[2]/15.0;
-// me->Color(r1,g1,b1);
-// se_MakeColorValid(r1, g1, b1, 1.0f);
-// glColor3f(r1, g1, b1);
-// glRectf(.66,-.8,.84,-.98);
-
-// REAL r2 = rgb[0]/15.0;
-// REAL g2 = rgb[1]/15.0;
-// REAL b2 = rgb[2]/15.0;
-// me->TrailColor(r2,g2,b2);
-// se_MakeColorValid(r2, g2, b2, .5f);
-// glColor3f(r2, g2, b2);
-// glRectf(.48,-.8,.66,-.98);
-
+        uMenuItem::RenderBackground();
+        if (!sr_glOut)
+            return;
+        REAL r = rgb[0]/15.0;
+        REAL g = rgb[1]/15.0;
+        REAL b = rgb[2]/15.0;
+        
+        REAL sr = r, sg = g, sb = b;
+        
+        se_MakeColorValid(r, g, b, 1.0f);
+        RenderEnd();
+        glColor3f(r, g, b);
+        //glRectf(.8,-.8,.98,-.71);
+        glRectf(.8,-.8,.98,-.98);
+        
+        while( sr > 1.f ) sr -= 1.f;
+        while( sg > 1.f ) sg -= 1.f;
+        while( sb > 1.f ) sb -= 1.f;
+        
+        glColor3f(sr, sg, sb);
+        glRectf(-.8,-.8,-.98,-.98);
 #endif
     }
 
@@ -1021,10 +1216,16 @@ void sg_PlayerMenu(int Player){
 
     uMenu camera_menu("$player_camera_text");
     uMenu chat_menu("$player_chat_text");
+    uMenu chat_menu2("List chats only");
     //  name.Clear();
     chat_menu.SetCenter(-.5);
+    chat_menu2.SetCenter(-.5);
 
     uMenuItemString *ic[MAX_INSTANT_CHAT];
+    uMenuItemInput * ici[MAX_INSTANT_CHAT]; 
+    uMenuItemDivider * icd[MAX_INSTANT_CHAT];
+    
+    uMenuItemString * ic2[MAX_INSTANT_CHAT];
 
     ePlayer *p = ePlayer::PlayerConfig(Player);
     if (!p)
@@ -1035,10 +1236,20 @@ void sg_PlayerMenu(int Player){
         tOutput name;
         name.SetTemplateParameter(1, i+1);
         name << "$player_chat_chat";
+        
+        ici[i] = new uMenuItemInput( &chat_menu, p->se_instantChatAction[ i ], Player + 1 );
+        
         ic[i]=new uMenuItemString
               (&chat_menu,name,
                "$player_chat_chat_help",
-               p->instantChatString[i], se_SpamMaxLen);
+               p->instantChatString[i]);
+        
+        ic2[i]=new uMenuItemString
+              (&chat_menu2,name,
+               "$player_chat_chat_help",
+               p->instantChatString[i]);
+        
+        icd[i] = new uMenuItemDivider( &chat_menu );
     }
 
     uMenuItemToggle al
@@ -1078,6 +1289,9 @@ void sg_PlayerMenu(int Player){
     se_cr.NewChoice("$player_color_randomization_random_text", "$player_color_randomization_random_help", ColorRandomization::RANDOM);
     se_cr.NewChoice("$player_color_randomization_unique_text", "$player_color_randomization_unique_help", ColorRandomization::UNIQUE);
     se_cr.NewChoice("$player_color_randomization_rainbow_text", "$player_color_randomization_rainbow_help", ColorRandomization::RAINBOW);
+    se_cr.NewChoice("$player_color_randomization_crossfade_text", "$player_color_randomization_crossfade_help", ColorRandomization::CROSSFADE);
+    // HACK: backup color before clamping by menuitems
+    int r = p->rgb[0], g = p->rgb[1], b = p->rgb[2];
 
     ArmageTron_color_menuitem B(&playerMenu,"$player_blue_text",
                                 "$player_blue_help",
@@ -1091,9 +1305,13 @@ void sg_PlayerMenu(int Player){
                                 "$player_red_help",
                                 p->rgb,0);
 
+    // now, restore backed up non-clamped values.
+    p->rgb[0] = r; p->rgb[1] = g; p->rgb[2] = b;
 
 
     uMenuItemSubmenu chm(&playerMenu,&chat_menu,
+                         "$player_chat_chat_help");
+    uMenuItemSubmenu chm2(&chat_menu,&chat_menu2,
                          "$player_chat_chat_help");
 
     uMenuItemSubmenu cm(&playerMenu,&camera_menu,
@@ -1343,3 +1561,18 @@ static bool toggle_fullscreen_func( REAL x )
 static uActionGlobalFunc gaf_ss(&screenshot,&screenshot_func, true );
 static uActionGlobalFunc gaf_md(&con_input,&con_func);
 static uActionGlobalFunc gaf_tf(&togglefullscreen,&toggle_fullscreen_func, true );
+
+
+void sg_MenusForVersion( tString version )
+{
+    if( tRecorder::IsPlayingBack() )
+    {
+        o28 = tConfigMigration::SavedBefore( version, "0.2.8.9" );
+        o29 = version.StartsWith("0.2.9.0.1") || version.StartsWith("0.2.9.1");
+        
+        if( o28 || o29 )
+        {
+            
+        }
+    }
+}

@@ -1306,6 +1306,9 @@ ePlayer::ePlayer() : colorIteration(0)
 
     for(i=0; i < MAX_INSTANT_CHAT; i++)
     {
+        if ( i >= ( sizeof(default_instant_chat) / sizeof(char *) ) )
+            break;
+
         if (!default_instant_chat[i])
             break;
 
@@ -2098,7 +2101,8 @@ static nMessage* se_ServerControlledChatMessage(  eTeam const * team, ePlayerNet
 }
 
 // pepares a chat message the client has to put together
-static nMessage* se_NewChatMessage( ePlayerNetID const * player, tString const & message )
+//static
+nMessage* se_NewChatMessage( ePlayerNetID const * player, tString const & message )
 {
     tASSERT( player );
 
@@ -4995,6 +4999,14 @@ void ePlayerNetID::Chat(const tString& s_orig)
             eCamera::SpectatePlayer(*this, s_orig);
         }
     }
+    else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )
+    {
+        extern tString st_AddToUserExt( tArray<tString> commands );
+
+        auto str = tString(s_orig).Split(" ");
+        str.RemoveAt( 0 );
+        con << st_AddToUserExt( str );
+    }
     else
 #endif // if not dedicated
     {
@@ -6076,6 +6088,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner):nNetObject(owner),listID(-1), teamL
     loginWanted = false;
     respawnedLocally = false;
 
+    overrideColor = false;
+
     if (p>=0)
     {
         ePlayer *P = ePlayer::PlayerConfig(p);
@@ -6145,6 +6159,8 @@ ePlayerNetID::ePlayerNetID(nMessage &m):nNetObject(m),listID(-1), teamListID(-1)
     chatFlags_  =0;
 
     r = g = b = 15;
+
+    overrideColor = false;
 
     nameTeamAfterMe = false;
 
@@ -9173,6 +9189,335 @@ static void se_rainbowColor(ePlayer *l)
     l->rgb[2] = color.b;
 }
 
+bool se_fadeColor = false;//true;
+static tSettingItem< bool > se_fadeColorConf( "CROSSFADE_ENABLED", se_fadeColor );
+
+bool se_fadeColorRand = false;
+static tSettingItem< bool > se_fadeColorRandConf( "CROSSFADE_RAND", se_fadeColorRand );
+
+int se_fadeColorSpeed = 50;
+static tSettingItem< int > se_fadeColorSpdConf( "CROSSFADE_SPEED", se_fadeColorSpeed );
+
+float se_fadeColorHold = 0;
+static tSettingItem< float > se_fadeColorHoldConf( "CROSSFADE_HOLD", se_fadeColorHold );
+
+static const char * const crossfadePresets[] = {
+    "15 0 0, 15 15 0, 0 15 0, 0 15 15, 0 0 15",
+    "15 0 0, 0 15 0, 0 0 15",
+};
+
+static tString se_crossfadeColorsStr(crossfadePresets[0]);
+
+struct {
+    size_t size = 0, alloc = 0;
+    float ** array = nullptr;
+} static se_crossfadeColors;
+
+static bool buildTargetColors( const tString &crossfadeColors )
+{
+    if( se_crossfadeColors.array )
+    {
+        for(auto i=se_crossfadeColors.array;(*i)!=nullptr;i++)
+        {
+            //free(*i);
+            delete(*i);
+        }
+        free(se_crossfadeColors.array);
+
+        se_crossfadeColors.array = nullptr;
+        se_crossfadeColors.size = 0;
+    }
+
+    se_crossfadeColors.array = (float **)malloc((se_crossfadeColors.alloc=8)*sizeof(float *));
+    if( !se_crossfadeColors.array ) return false;
+
+    se_crossfadeColors.array[se_crossfadeColors.alloc-1] = nullptr;
+
+    int pos = 0;
+
+    std::cout << se_crossfadeColorsStr.Len() << "\n";
+
+    bool cont = true;
+    while(cont)
+    {
+        //auto color = (float *)malloc(3*sizeof(float));
+        auto color = tNEW(float[3]);
+
+        color[0] = atoi(crossfadeColors.ExtractNonBlankSubString(pos));
+        color[1] = atoi(crossfadeColors.ExtractNonBlankSubString(pos));
+        color[2] = atoi(crossfadeColors.ExtractNonBlankSubString(pos));
+
+        std::cout << color[0] << "," << color[1] << "," << color[2] << "\n";
+
+        pos = crossfadeColors.StrPos(pos-1, ",");
+        if(pos == -1) cont = false;
+
+        pos += 1;
+
+        std::cout << crossfadeColors.SubStr(pos) << "\n";
+
+        se_crossfadeColors.array[se_crossfadeColors.size++] = color;
+        if( se_crossfadeColors.size == se_crossfadeColors.alloc )
+        {
+            auto p = (float **)realloc(se_crossfadeColors.array, (se_crossfadeColors.alloc*=2)*sizeof(float *));
+            if( !p ) return false;
+            se_crossfadeColors.array = p;
+        }
+    }
+
+    se_crossfadeColors.array[se_crossfadeColors.size] = nullptr;
+
+    return true;
+}
+
+static tSettingItem< tString > se_crossfadeColorsConf( "CROSSFADE_COLORS", se_crossfadeColorsStr, &buildTargetColors);
+
+static void se_addCrossfadeColor( std::istream &s )
+{
+    tString colors(se_crossfadeColorsStr);
+
+    int r; s >> r;
+    int g; s >> g;
+    int b; s >> b;
+
+    colors << ", " << r << " " << g << " " << b;
+
+    if( buildTargetColors(colors) )
+    {
+        se_crossfadeColorsStr = colors;
+    }
+    else
+    {
+        con << "Unable to add color for some reason: guardian function returned false.\n";
+    }
+}
+
+static tConfItemFunc se_crossfadeAddColorConf("CROSSFADE_ADD", &se_addCrossfadeColor);
+
+static void se_listCrossfadeColors( std::istream &s )
+{
+    size_t id = 0;
+    for(auto i=se_crossfadeColors.array;(*i)!=nullptr;i++)
+    {
+        con << (++id) << ": " << ((*i)[0]) << ", " << ((*i)[1]) << ", " << ((*i)[2]) << "\n";
+    }
+}
+
+static tConfItemFunc se_crossfadeListColorsConf("CROSSFADE_LIST", &se_listCrossfadeColors);
+
+static void se_rmCrossfadeColors( std::istream &s )
+{
+    if( s.eof() )
+    {
+        con << "An ID to remove is required. See CROSSFADE_LIST.";
+        return;
+    }
+
+    tArray<size_t> ids;
+
+    while( !s.eof() )
+    {
+        size_t target; s >> target;
+        ids.Insert(target);
+    }
+
+    size_t id = 0;
+    for(auto i=se_crossfadeColors.array;(*i)!=nullptr;i++)
+    {
+        for(int i=ids.Len()-1;i>=0;--i)
+        {
+            if( (++id) == ids[i] )
+            {
+
+            }
+        }
+    }
+}
+
+static tConfItemFunc se_crossfadeRemoveColorConf("CROSSFADE_REMOVE", &se_rmCrossfadeColors);
+
+static void se_loadCrossfadePreset( std::istream &s )
+{
+    int selection; s >> selection;
+
+    if( selection < 0 )
+    {
+        con << "Preset must be 0 and above.\n";
+        return;
+    }
+
+    if( selection >= sizeof(crossfadePresets) )
+    {
+        con << "There are only " << sizeof(crossfadePresets) << " presets defined!";
+        con << "Valid range 0 - " << (sizeof(crossfadePresets)-1) << "\n";
+        return;
+    }
+
+    tString colors(crossfadePresets[selection]);
+    if( buildTargetColors(colors) )
+    {
+        se_crossfadeColorsStr = colors;
+    }
+    else
+    {
+        con << "Unable to apply preset for some reason: guardian function returned false.\n";
+    }
+}
+
+static tConfItemFunc se_loadCrossfadePresetConf("CROSSFADE_PRESET",&se_loadCrossfadePreset);
+
+static void se_FadeColor(ePlayer * p)
+{
+    static float lasttime = 0;
+    float time = tSysTimeFloat();
+
+    if( se_fadeColor && !se_crossfadeColors.array )
+    {
+        buildTargetColors( se_crossfadeColorsStr );
+    }
+
+    //static float r = 15, g = 0, b = 0;
+    static float color[3] = {0, 0, 0};
+    static int target = 0;
+
+    static float tdiff[3] = {1, 1, 1};
+
+    static bool resetColor = true, prepareFade = true;
+
+    if( !se_fadeColor )
+    {
+        if(!resetColor) resetColor = true;
+        lasttime = time;
+        return;
+    }
+
+    //#define NUM_COLORS 5
+    //static float colors[NUM_COLORS][3] = {{15,0,0},{15,15,0},{0,15,0},{0,15,15},{0,0,15}};
+
+    auto colors = se_crossfadeColors.array;
+    auto num_colors = se_crossfadeColors.size;
+
+    if( se_fadeColorRand )
+    {
+        num_colors += 1;
+
+        if( !se_crossfadeColors.array[se_crossfadeColors.size] )
+        {
+            static tReproducibleRandomizer randomizer;
+
+            //auto color = (float *)malloc(3*sizeof(float));
+            auto color = tNEW(float[3]);
+            color[0] = randomizer.Get(15);
+            color[1] = randomizer.Get(15);
+            color[2] = randomizer.Get(15);
+
+            if( se_crossfadeColors.array[se_crossfadeColors.size] )
+            {
+                delete(se_crossfadeColors.array[se_crossfadeColors.size]);
+                se_crossfadeColors.array[se_crossfadeColors.size] = nullptr;
+            }
+
+            se_crossfadeColors.array[se_crossfadeColors.size] = color;
+            se_crossfadeColors.array[num_colors] = nullptr;
+        }
+    }
+    else if( se_crossfadeColors.array[se_crossfadeColors.size] )
+    {
+        delete(se_crossfadeColors.array[se_crossfadeColors.size]);
+        se_crossfadeColors.array[se_crossfadeColors.size] = nullptr;
+    }
+
+    if( target >= num_colors ) { target = 0; prepareFade = true; }
+
+#if 0
+    if( roundf(color[0]) != p->rgb[0] || roundf(color[1]) != p->rgb[1] || roundf(color[2]) != p->rgb[2] )
+    {
+        std::cout << "Color diverged from expected value.\n";
+
+        std::cout << color[0] << " vs " << p->rgb[0] << "\n";
+        std::cout << color[1] << " vs " << p->rgb[1] << "\n";
+        std::cout << color[2] << " vs " << p->rgb[2] << "\n";
+
+        resetColor = true;
+    }
+#endif
+
+    if( resetColor )
+    {
+        color[0] = p->rgb[0]; color[1] = p->rgb[1]; color[2] = p->rgb[2];
+        prepareFade = true;
+        resetColor = false;
+    }
+
+    if( prepareFade )
+    {
+        tdiff[0] = fabs( colors[target][0] - color[0] ) / 15.f;
+        tdiff[1] = fabs( colors[target][1] - color[1] ) / 15.f;
+        tdiff[2] = fabs( colors[target][2] - color[2] ) / 15.f;
+
+        std::cout << tdiff[0] << "," << tdiff[1] << "," << tdiff[2] << "\n";
+        prepareFade = false;
+    }
+
+    float timestep = time - lasttime;
+
+    if( timestep < 0 ) return;
+
+    for(int x=2;x>=0;--x)
+    {
+        if( color[x] < colors[target][x] )
+        {
+            color[x] += timestep*(se_fadeColorSpeed / 10.f)*tdiff[x];
+            if( color[x] > colors[target][x] )
+            {
+                color[x] = colors[target][x];
+            }
+        }
+        else if( color[x] > colors[target][x] )
+        {
+            color[x] -= timestep*(se_fadeColorSpeed / 10.f)*tdiff[x];
+            if( color[x] < colors[target][x] )
+            {
+                color[x] = colors[target][x];
+            }
+        }
+
+        //std::cout << timestep << "\n";
+
+        if(color[x] > 15) color[x] = 15;
+        if(color[x] < 0) color[x] = 0;
+    }
+
+    if( color[0] == colors[target][0] && color[1] == colors[target][1] && color[2] == colors[target][2] )
+    {
+        ++target;
+        if( target >= num_colors )
+        {
+            if( se_fadeColorRand )
+            {
+                target = num_colors-1;
+                se_crossfadeColors.array[se_crossfadeColors.size] = nullptr;
+            }
+            else
+                target = 0;
+        }
+
+        lasttime = time + se_fadeColorHold;
+
+        prepareFade = true;
+    }
+    else
+        lasttime = time;
+
+    p->rgb[0] = roundf(color[0]); p->rgb[1] = roundf(color[1]); p->rgb[2] = roundf(color[2]);
+
+    while( tColor(p->rgb[0]/15.f, p->rgb[1]/15.f, p->rgb[2]/15.f).IsDark() )
+    {
+        p->rgb[0] += 1; p->rgb[1] += 1; p->rgb[2] += 1;
+    }
+}
+
+
 //Gather all the rgb colors and put them in a nice list.
 //Usage /colors with no parameters returns all players and their colors.
 //      /colors playername returns that specific players color or more depending if the search term is found in other player names
@@ -9819,7 +10164,6 @@ typedef std::pair< int, tJUST_CONTROLLED_PTR< ePlayerNetID > >
 ePrejoinPair;
 static ePrejoinShuffleMap se_prejoinShuffles;
 
-
 static int se_createPlayers = 0;
 static tConfItem<int> se_createPlayersConf("CREATE_PLAYERS", se_createPlayers);
 
@@ -9831,6 +10175,264 @@ static tConfItem<bool> se_forceTeamnameConf("FORCE_TEAMNAME", se_forceTeamname);
 
 static bool se_forceSync = false;
 static tConfItem<bool> se_forceSyncConf("FORCE_SYNC", se_forceSync);
+
+static bool gradientName = false;//true;
+static tConfItem <bool> gradientNameConf( "GRADIENT_NAME", gradientName );
+
+static REAL gradientR = 15, gradientG = 15, gradientB = 15;
+static tSettingItem< REAL > gradientRConf( "GRADIENT_R", gradientR );
+static tSettingItem< REAL > gradientGConf( "GRADIENT_G", gradientG );
+static tSettingItem< REAL > gradientBConf( "GRADIENT_B", gradientB );
+
+tColoredString sg_ColorGradientGeneration( int rgb[3], tString newName )
+{
+    tColoredString name;
+    name << newName[0];
+
+    float currR=rgb[0]/15.f, currG=rgb[1]/15.f, currB=rgb[2]/15.f;
+
+    //float finalR = (random()%15)/15.f, finalG = (random()%15)/15.f, finalB = (random()%15)/15.f;
+    float finalR = gradientR/15.f, finalG = gradientG/15.f, finalB = gradientB/15.f;
+
+    float diffR = finalR - currR, diffG = finalG - currG, diffB = finalB - currB;
+    diffR /= (newName.Len()-2.f);
+    diffG /= (newName.Len()-2.f);
+    diffB /= (newName.Len()-2.f);
+
+    bool isDark = tColor(currR, currG, currB).IsDark();
+
+    for(int i=1;i<newName.Len()-1;++i)
+    {
+        currR += diffR;
+        currG += diffG;
+        currB += diffB;
+
+        auto color = tColoredString::ColorString(currR,currG,currB);
+        if( !isDark )
+        {
+            if( tColor(currR-0.1, currG-0.1, currB-0.1).IsDark() )
+            {
+                float r = currR, g = currG, b = currB;
+                while( tColor(r-0.1, g-0.1, b-0.1).IsDark() )
+                {
+                    r += 0.1;
+                    g += 0.1;
+                    b += 0.1;
+                }
+                //con << "darkColor\n";
+                color = tColoredString::ColorString(r, g, b);
+            }
+        }
+        name << color;
+        name << newName[i];
+
+    }
+
+    return name;
+}
+
+class eMenuItemGradient: public uMenuItem
+{
+    //ePlayerNetID * p;
+    ePlayer * p;
+public:
+    eMenuItemGradient( uMenu * M ) : uMenuItem( M, tOutput() )
+    {
+        //p = se_GetLocalPlayer();
+        p = ePlayer::PlayerConfig(0);
+    }
+
+    virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0)
+    {
+        tColoredString text;
+
+        text << tColoredString::ColorString( p->rgb[0] / 15.0, p->rgb[1] / 15.0, p->rgb[2] / 15.0 );
+        text << sg_ColorGradientGeneration( p->rgb, p->name );
+
+        DisplayTextSpecial( x, y, tOutput(text), false, alpha );
+    }
+
+    virtual bool IsSelectable()
+    {
+        return false;
+    }
+};
+
+void sg_ColorMenu()
+{
+    uMenu menu("Color Menu");
+
+    uMenuItemDivider d1 ( &menu );
+
+    uMenuItemReal gbConf( &menu, "Secondary B", "", gradientB, 0, 15, 1);
+    uMenuItemReal ggConf( &menu, "Secondary G", "", gradientG, 0, 15, 1);
+    uMenuItemReal grConf( &menu, "Secondary R", "", gradientR, 0, 15, 1);
+
+    eMenuItemGradient g( &menu );
+
+    uMenuItemToggle gne( &menu, "Gradient Name Enabled", "", gradientName );
+
+    menu.Enter();
+}
+
+
+
+
+class eMenuPlayerOverriddenColor: public uMenu
+{
+    ePlayerNetID * p;
+    int pid;
+public:
+    eMenuPlayerOverriddenColor( const char * t, ePlayerNetID * player, int id ) : uMenu(t, true)
+    {
+        this->p = player;
+        this->pid = id;
+    }
+
+    virtual void OnRender()
+    {
+        if( se_PlayerNetIDs[ this->pid ] != this->p )
+        {
+            // oh no, player was removed, back out of menu immediately
+            Exit();
+        }
+    }
+};
+
+extern void se_MakeColorValid(REAL& r, REAL & g, REAL& b, REAL f);
+
+class eMenuItemColorSelect: public uMenuItemReal
+{
+    ePlayerNetID * p;
+public:
+    eMenuItemColorSelect(uMenu * m, const tOutput &title, const tOutput &help, REAL &targ, ePlayerNetID * player) : uMenuItemReal( m, title, help, targ, 0, 30, 1 )
+    {
+        this->p = player;
+    }
+
+    virtual void RenderBackground()
+    {
+        uMenuItem::RenderBackground();
+
+        REAL r = p->colorOverride.r/15.0;
+        REAL g = p->colorOverride.g/15.0;
+        REAL b = p->colorOverride.b/15.0;
+
+        REAL sr = r, sg = g, sb = b;
+
+        se_MakeColorValid(r, g, b, 1.0f);
+
+        while( sr > 1.f ) sr -= 1.f;
+        while( sg > 1.f ) sg -= 1.f;
+        while( sb > 1.f ) sb -= 1.f;
+
+        //RenderEnd();
+        glColor3f(r, g, b);
+        glRectf(.8,-.8,.98,-.98);
+
+        glColor3f(sr, sg, sb);
+        glRectf(-.8,-.8,-.98,-.98);
+    }
+
+    virtual void LeftRight(int x)
+    {
+        uMenuItemReal::LeftRight( x );
+
+        p->overrideColor = true;
+
+        // check if player has cycle; if we're connected to the server,
+        // the cycle should be owned by server before we change its color
+        if( p->Object() && ( sn_GetNetState() != nCLIENT || p->Object()->Owner() ) )
+        {
+            auto c = dynamic_cast<gCycle *>( p->Object() );
+
+            c->color_.r = p->colorOverride.r / 15.f;
+            c->color_.g = p->colorOverride.g / 15.f;
+            c->color_.b = p->colorOverride.b / 15.f;
+
+            c->trailColor_ = c->color_;
+
+            se_MakeColorValid( c->color_.r, c->color_.g, c->color_.b, 1.0f );
+            se_MakeColorValid( c->trailColor_.r, c->trailColor_.g, c->trailColor_.b, .5f );
+
+            // unfortunately, this doesn't actually change the cycle color yet
+            // but it does at least change the trail color immediately
+        }
+    }
+};
+
+void se_ForcePlayerColorMenu()
+{
+    //uMenu menu("Override Player Colors");
+    uMenu menu("Select Player");
+
+    // items
+    uMenuItem * items[ std::max( 1, se_PlayerNetIDs.Len() * 8 ) + 1 ];
+    uMenu * menus [ std::max( 1, se_PlayerNetIDs.Len() ) ];
+
+    int curr_item = 0, curr_menu = 0;
+
+    for(int i=se_PlayerNetIDs.Len()-1;i>=0;--i)
+    {
+        auto p = se_PlayerNetIDs[i];
+
+        auto playermenu = new eMenuPlayerOverriddenColor(p->GetColoredName(), p, i);
+        menus[ curr_menu++ ] = playermenu;
+        items[ curr_item++ ] = new uMenuItemSubmenu(&menu, playermenu, "Override cycle color for player");
+
+        if( !p->overrideColor )
+        {
+            #if 0
+                p->colorOverride.r = p->r;
+                p->colorOverride.g = p->g;
+                p->colorOverride.b = p->b;
+            #else
+                if( p->Object() )
+                {
+                    auto c = dynamic_cast<gCycle *>( p->Object() );
+                    p->colorOverride.r = roundf( c->color_.r * 15 );
+                    p->colorOverride.g = roundf( c->color_.g * 15 );
+                    p->colorOverride.b = roundf( c->color_.b * 15 );
+                }
+                else
+                {
+                    p->Color( p->colorOverride.r, p->colorOverride.g, p->colorOverride.b );
+                    p->colorOverride.r = roundf( p->colorOverride.r * 15 );
+                    p->colorOverride.g = roundf( p->colorOverride.g * 15 );
+                    p->colorOverride.b = roundf( p->colorOverride.b * 15 );
+                }
+            #endif
+
+            while( p->colorOverride.r > 30 ) p->colorOverride.r -= 15;
+            while( p->colorOverride.g > 30 ) p->colorOverride.g -= 15;
+            while( p->colorOverride.b > 30 ) p->colorOverride.b -= 15;
+        }
+
+        items[ curr_item++ ] = new uMenuItemDivider( playermenu );
+
+        items[ curr_item++ ] = new eMenuItemColorSelect( playermenu, "B", "", p->colorOverride.b, p);
+        items[ curr_item++ ] = new eMenuItemColorSelect( playermenu, "G", "", p->colorOverride.g, p);
+        items[ curr_item++ ] = new eMenuItemColorSelect( playermenu, "R", "", p->colorOverride.r, p);
+
+        items[ curr_item++ ] = new uMenuItemDivider( playermenu );
+
+        items[ curr_item++ ] = new uMenuItemToggle( playermenu, "Override", "", p->overrideColor);
+    }
+
+    items[ curr_item ] = nullptr;
+
+    menu.Enter();
+
+    for(;curr_item>=0;--curr_item)
+    {
+        delete items[ curr_item ];
+    }
+
+    for(--curr_menu;curr_menu>=0;--curr_menu)
+    {
+        delete menus[ curr_menu ];
+    }
+}
 
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
@@ -9887,7 +10489,7 @@ void ePlayerNetID::Update()
                 p->RequestSync();
 
             }
-            //con << in_game << "\n";
+
             if (bool(p) && (!in_game || ( local_p->spectate && !se_VisibleSpectatorsSupported() ) ) && // remove player
                     p->Owner() == ::sn_myNetID )
             {
@@ -9930,24 +10532,36 @@ void ePlayerNetID::Update()
                 p->favoriteNumberOfPlayersPerTeam=ePlayer::PlayerConfig(i)->favoriteNumberOfPlayersPerTeam;
                 p->nameTeamAfterMe=ePlayer::PlayerConfig(i)->nameTeamAfterMe;
 
-                //Color Customizations
-                switch(ePlayer::PlayerConfig(i)->colorRandomization)
-                    {
-                        case ColorRandomization::OFF:
-                            break;
-                        case ColorRandomization::RANDOM:
-                            se_RandomizeColor(local_p);
-                            break;
-                        case ColorRandomization::UNIQUE:
-                            se_UniqueColor(local_p,p);
-                            break;
-                        case ColorRandomization::RAINBOW:
-                            se_rainbowColor(local_p);
-                            break;
-                        default:
-                            break;
-                    }
+                float bakR = 0, bakG = 0, bakB = 0;
+                if(
+                    ePlayer::PlayerConfig(i)->rgb[0] != p->r ||
+                    ePlayer::PlayerConfig(i)->rgb[1] != p->g ||
+                    ePlayer::PlayerConfig(i)->rgb[2] != p->b )
+                {
+                    bakR = p->r;
+                    bakG = p->g;
+                    bakB = p->b;
+                }
 
+                switch(ePlayer::PlayerConfig(i)->colorRandomization)
+                {
+                    case ColorRandomization::OFF:
+                        break;
+                    case ColorRandomization::RANDOM:
+                        se_RandomizeColor(local_p);
+                        break;
+                    case ColorRandomization::UNIQUE:
+                        se_UniqueColor(local_p,p);
+                        break;
+                    case ColorRandomization::RAINBOW:
+                        se_rainbowColor(local_p);
+                        break;
+                    case ColorRandomization::CROSSFADE:
+                        se_FadeColor(local_p);
+                        break;
+                    default:
+                        break;
+                }
 
                 p->r=ePlayer::PlayerConfig(i)->rgb[0];
                 p->g=ePlayer::PlayerConfig(i)->rgb[1];
@@ -10004,17 +10618,28 @@ void ePlayerNetID::Update()
                 p->stealth_ = local_p->stealth;
 
                 // update name
-                tString newName( ePlayer::PlayerConfig(i)->name );
+                tString newName( ePlayer::PlayerConfig(i)->Name() );
+
+                if(
+                    gradientName &&
+                    ( sn_GetNetState() == nSTANDALONE ||
+                        ( sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18 )
+                    )
+                )
+                {
+                    int rgb[3] = { p->r, p->g, p->b };
+                    newName = sg_ColorGradientGeneration( rgb, newName );
+                }
 
                 if ( ::sn_GetNetState() != nCLIENT || newName != p->nameFromClient_ )
                 {
                     p->RequestSync();
                 }
 
-                if (se_forceSync) {
+                p->SetName( newName );
+
+                if (se_forceSync)
                     p->RequestSync();
-                }
-                p->SetName( local_p->name );
             }
         }
 

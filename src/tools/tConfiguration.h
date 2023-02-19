@@ -290,6 +290,7 @@ public:
     static void WriteAllLevelsToFile();
     static void WriteChangedToFile();
     static tString FindConfigItem(tString name,int pos = 0);    //! Returns the config name of the searching string name
+    static tConfItemBase *GetConfigItem(tString const &name);
     static void SetAllAccessLevel(int newLevel);
 
     static void DownloadSettings_Go(nMessage &m);
@@ -644,6 +645,21 @@ public:
         o << "$config_value_changed";
         con << o;
         *target = defaultValue;
+    }
+};
+
+class tSettingItemLine:public tConfItemLine{
+public:
+    tSettingItemLine(const char *title,const char *help,tString &s)
+            :tConfItemBase(title,help),tConfItemLine(title,help,s){}
+
+    tSettingItemLine(const char *title, tString &s)
+            :tConfItemBase(title),tConfItemLine(title,s){}
+
+    virtual ~tSettingItemLine() = default;
+
+    bool Save() override{
+        return false;
     }
 };
 

@@ -3008,6 +3008,8 @@ void sg_DisplayVersionInfo() {
 
 void sg_StartupPlayerMenu();
 
+extern bool sg_ShowSpecialMenu(), sg_ShowConfigMenu();
+
 void MainMenu(bool ingame){
     //	update_settings();
 
@@ -3134,12 +3136,18 @@ void MainMenu(bool ingame){
                            "$special_setup_menu_text",
                             "$special_setup_menu_help",
                                 &sg_SpecialMenu);
-    uMenuItemFunction hm(&MainMenu,
-                            "Helper Menu",
-                                "Helper Menu",
-                                &helperMenu);
 
+    uMenuItemFunction hm(&MainMenu,
+                         "Helper Menu",
+                         "Helper Menu",
+                           helperMenu);
+
+
+if( !sg_ShowConfigMenu() ) { MainMenu.RemoveItem(&cfm); }
+if( !sg_ShowSpecialMenu() ) {MainMenu.RemoveItem(&spm); }
     #endif
+
+
 
     uMenu Settings("$system_settings_menu_text");
 

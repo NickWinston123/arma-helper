@@ -31,7 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tInitExit.h"
 #include "tConfiguration.h"
 #include "rConsole.h"
-#include "uMenu.h"
 #include "tSysTime.h"
 
 bool su_mouseGrab = false;
@@ -367,18 +366,8 @@ static char const * keyname(int sym){
     return "";
 }
 
-class uMenuItemInput: uMenuItem{
-    uAction      *act;
-    int         ePlayer;
-    bool        active;
-public:
-    uMenuItemInput(uMenu *M,uAction *a,int p)
-            :uMenuItem(M,a->helpText),act(a),ePlayer(p),active(0){
-    }
 
-    virtual ~uMenuItemInput(){}
-
-    virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0){
+void uMenuItemInput::Render(REAL x,REAL y,REAL alpha,bool selected){
         DisplayText(REAL(x-.02),y,act->description,selected,alpha,1);
 
         if (active)
@@ -410,18 +399,12 @@ public:
         }
     }
 
-    virtual void Enter(){
-        active=1;
-    }
-
-    virtual bool ConsiderMenuActive(){return !active;}
-
 #define MTHRESH 5
 #define MREL    2
 
 #ifndef DEDICATED
 
-    virtual bool Event(SDL_Event &e){
+bool uMenuItemInput::Event(SDL_Event &e){
         int sym=-1;
         switch (e.type){
         case SDL_MOUSEMOTION:
@@ -502,13 +485,6 @@ public:
     }
 #endif
 
-    virtual tString Help(){
-        tString ret;
-        ret << helpText << "\n";
-        ret << tOutput("$input_item_help");
-        return ret;
-    }
-};
 
 namespace
 {

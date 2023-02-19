@@ -28,9 +28,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // I don't know if these includes are needed, I'm brute-forcing it :) - Dave
 #include "gMenus.h"
 #include "ePlayer.h"
+#include "eTeam.h"
 #include "rScreen.h"
 #include "nConfig.h"
 #include "rConsole.h"
+#include "gHudMap.h"
 #include "tToDo.h"
 #include "rGL.h"
 #include "eTimer.h"
@@ -54,6 +56,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 REAL subby_SpeedGaugeSize=.175, subby_SpeedGaugeLocX=0.0, subby_SpeedGaugeLocY=-0.9;
 REAL subby_BrakeGaugeSize=.175, subby_BrakeGaugeLocX=0.48, subby_BrakeGaugeLocY=-0.9;
 REAL subby_RubberGaugeSize=.175, subby_RubberGaugeLocX=-0.48, subby_RubberGaugeLocY=-0.9;
+bool subby_RubberMeterColorChange = true;
 bool subby_ShowHUD=true, subby_ShowSpeedFastest=true, subby_ShowScore=true, subby_ShowAlivePeople=true, subby_ShowPing=true, subby_ShowSpeedMeter=true, subby_ShowBrakeMeter=true, subby_ShowRubberMeter=true;
 bool showTime=false;
 bool show24hour=false;
@@ -64,6 +67,9 @@ REAL subby_PingLocX=.80, subby_PingLocY=-0.95, subby_PingSize =.13;
 
 bool showPosition = true;
 REAL subby_CoordLocX = -0.557, subby_CoordLoxY = -0.75, subby_CoordSize = 0.13;
+
+bool hud_showInteract = true;
+REAL hud_InteractLocX=-0.6, hud_InteractLocY=-0.95, hud_InteractSize =.10;
 
 REAL max_player_speed=0;
 
@@ -117,6 +123,12 @@ void GLmeter_subby(float value,float max, float locx, float locy, float size, co
 
     	RenderEnd();*/
 
+#if 1
+    glEnable( GL_LINE_SMOOTH );
+    glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
+    glLineWidth( 2 );
+#endif
+
     glDisable(GL_TEXTURE_2D);
     Color(r,g, b);
     BeginLines();
@@ -124,6 +136,10 @@ void GLmeter_subby(float value,float max, float locx, float locy, float size, co
     Vertex(-x*size+locx,y*size+locy,0);
     RenderEnd();
 
+#if 1
+    glDisable( GL_LINE_SMOOTH );
+    glLineWidth( 1 );
+#endif
 
     rTextField min_t(-size-(0.1*size)+locx,locy,.12*size,.24*size);
     rTextField max_t(+size+(0.1*size)+locx,locy,.12*size,.24*size);
@@ -413,7 +429,10 @@ static void display_hud_subby( ePlayer* player ){
                         if(subby_ShowRubberMeter)
                         {
                             static gGLMeter meter[MAX_PLAYERS];
+                        if(!subby_RubberMeterColorChange)
                             meter[player->ID()].Display(h->GetRubber(),sg_rubberCycle,subby_RubberGaugeLocX,subby_RubberGaugeLocY,subby_RubberGaugeSize," Rubber Used");
+                        else
+                            meter[player->ID()].Display(h->GetRubber(),sg_rubberCycle,subby_RubberGaugeLocX,subby_RubberGaugeLocY,subby_RubberGaugeSize," Rubber Used", true, false, (h->GetRubber()/sg_rubberCycle), 1-(h->GetRubber()/sg_rubberCycle), 0);
                             if ( gCycle::RubberMalusActive() )
                             {
                                 static gGLMeter meter2[MAX_PLAYERS];
@@ -451,6 +470,57 @@ static void display_hud_subby( ePlayer* player ){
                                 speed_fastest << messageColor << message;
                             }
                         }
+
+                        if( hud_showInteract )
+                        {
+                            static float lastTimes[MAX_PLAYERS] = {0};
+                            float & lastTime = lastTimes[player->ID()];
+                            
+                            static tColoredString messageColor("0x58bf90");
+                            
+                            static tColoredString messages[MAX_PLAYERS];
+                            tColoredString & message = messages[player->ID()];
+                            
+                            //static rDisplayList dispList;
+                            
+                            if( se_GameTime() > 0 && ( tSysTimeFloat() - lastTime ) > 0.2 )
+                            {
+                                message.Clear();
+                                
+                                //dispList.Clear();
+                                
+                                //rDisplayListFiller filler( dispList );
+                                
+                                lastTime = tSysTimeFloat();
+                                
+                                
+                                auto hunter = h->GetPlayerHuntedBy();
+                                
+                                
+                                
+                                /*tColoredString message,messageColor;
+                                messageColor << "0xbf9d50";*/
+
+                                sprintf(fasteststring,"%.1f",max);
+                                message << "  Interact: ";
+                                if( hunter )
+                                {
+                                    message << hunter->GetName();
+                                    message.RemoveHex();
+                                }
+                                else 
+                                {
+                                    message << "0x808080<SUICIDE>";
+                                }
+                            }
+                            
+                            float size = hud_InteractSize;
+                            int length = message.Len();
+                            
+                            rTextField meter(hud_InteractLocX-((.15*size*(length-1.5))/2.0),hud_InteractLocY,.15*size,.3*size);
+                            meter << messageColor << message;
+                        }
+                        // */
 
                         if(subby_ShowScore){
                             static gTextCache <REAL,REAL>cacheArray[MAX_PLAYERS];
@@ -531,6 +601,7 @@ static void display_hud_subby( ePlayer* player ){
 
 }
 
+
 static void display_fps_subby()
 {
     if (!(se_mainGameTimer &&
@@ -579,6 +650,65 @@ static void display_fps_subby()
     if(sr_FPSOut){
         c2 << "0xffffffFPS: " <<fps;
     }
+    
+    //if( sr_TeamNumCount )
+    {
+        static tString output("0");
+        static REAL lasttime = 0;
+        
+        if( tSysTimeFloat() - lasttime > 0.32 )
+        {
+            lasttime = tSysTimeFloat();
+            
+            eTeam * myTeam = se_GetLocalPlayer()?se_GetLocalPlayer()->CurrentTeam():0x0;
+            
+            output = "";
+            
+            if( myTeam )
+            {
+                // list players own team first
+                
+                int alive = 0;
+                for(int i=myTeam->players.Len()-1;i>=0;--i)
+                {
+                    if( myTeam->players(i)->Object() && myTeam->players(i)->Object()->Alive() )
+                    {
+                        ++alive;
+                    }
+                }
+                
+                output << alive;
+            }
+            
+            for(int t=eTeam::teams.Len()-1;t>=0;--t)
+            {
+                if( myTeam && myTeam == eTeam::teams(t) ) continue;
+                
+                int total = 0, alive = 0;
+                for(int i=eTeam::teams(t)->players.Len()-1;i>=0;--i)
+                {
+                    ++total;
+                    if( eTeam::teams(t)->players(i)->Object() && eTeam::teams(t)->players(i)->Object()->Alive() )
+                    {
+                        ++alive;
+                    }
+                }
+                
+                if( total == 0 ) continue;
+                
+                if(output[0] != '\0')
+                {
+                     output << "v";
+                }
+                
+                output << alive;
+            }
+            
+        }
+        
+        c2 << "\n0x808080" << output;
+    }
+    
     // Show the time
     if(showTime) {
         static int lastTime=0;
@@ -630,6 +760,43 @@ static void display_fps_subby()
 
 }
 
+
+int simplemapmode = 1;
+static tConfItem<int> simplemapmode_con("HUD_MAP", simplemapmode);
+
+extern bool stc_forbidHudMap;
+
+static void drawMinimap()
+{
+    if(stc_forbidHudMap) return;
+    
+    sr_ResetRenderState(true);
+
+    if(simplemapmode & 1)
+    {
+        gHudMapDrawConf c;
+        
+        c.cycleSize = 5;
+        c.border = 10;
+        
+        c.x = .5; c.y = -1;
+        c.w = .5; c.h = .5 * sr_screenWidth / sr_screenHeight;
+        c.rw = .25 * sr_screenWidth; c.rh = .25 * sr_screenWidth;
+        c.ix = 1; c.iy = 1; // iy was 0
+        
+        DrawMap( c );
+    }
+    
+    if(simplemapmode & 2)
+    {
+        DrawMap(true, true, true,
+                5.5, 10,
+                -1, -1, 2, 2,
+                sr_screenWidth, sr_screenHeight, .5, .5);
+    }
+}
+
+
 static void display_hud_subby_all()
 {
     sr_ResetRenderState(true);
@@ -651,6 +818,8 @@ static void display_hud_subby_all()
         // delegate
         display_hud_subby( player );
     }
+    
+    drawMinimap();
 }
 
 static rPerFrameTask dfps(&display_hud_subby_all);

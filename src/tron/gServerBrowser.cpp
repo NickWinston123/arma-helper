@@ -328,6 +328,8 @@ void gServerBrowser::BrowseLAN()
     nServerInfo::SetCreator(cback);
 }
 
+extern bool sg_ShowSBFilterItem();
+
 void gServerBrowser::BrowseServers()
 {
     //nServerInfo::CalcScoreAll();
@@ -341,6 +343,8 @@ void gServerBrowser::BrowseServers()
 
     gServerStartMenuItem start(&browser);
     gServerFilterMenuItem filter(&browser);
+    
+    if( !sg_ShowSBFilterItem() ) browser.RemoveItem( &filter );
 
     /*
       while (nServerInfo::DoQueryAll(sg_simultaneous));
@@ -453,7 +457,7 @@ void gServerMenu::Update()
     nServerInfo::CalcScoreAll();
     nServerInfo::Sort( nServerInfo::PrimaryKey( sortKey_ ) );
 
-    int mi = 2;
+    int mi = sg_ShowSBFilterItem() ? 2 : 1;
     gServerInfo *run = gServerInfo::GetFirstServer();
 	bool oneFound = false; //so we can display all if none were found
 

@@ -163,7 +163,7 @@ public:
     void SwitchView();
     void SwitchCenter(int d);
     bool Act(uActionCamera *act,REAL x);
-
+    
 #ifndef DEDICATED
     void Render();
     void SoundMix(unsigned char *dest,unsigned int len);
@@ -202,7 +202,7 @@ public:
     */
 
     static void s_Timestep(eGrid *grid, REAL time);
-
+    
 private:
     //! make sure CenterPos() + dirFromTarget() is visible from pos
     bool Bound( REAL ratio, eCoord & pos, eCoord const & dirFromTarget, REAL & hitCache );

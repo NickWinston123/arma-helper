@@ -202,6 +202,9 @@ public:												// public methods
         return name;
     }
 
+    bool overrideColor;
+    gRealColor colorOverride;
+
     tColoredString GetColoredName(void) const;
 
     virtual void PrintName(tString &s) const;					// print out an understandable name in to s

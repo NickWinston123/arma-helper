@@ -444,6 +444,8 @@ public:
 	void TeleportTo(eCoord dest, eCoord dir, REAL time);
     void SetWallBuilding(bool build);
 
+    ePlayerNetID * GetPlayerHuntedBy();
+
 #ifndef DEDICATED
     virtual void Render(const eCamera *cam);
 

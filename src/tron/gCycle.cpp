@@ -329,7 +329,7 @@ gSmarterBot::gSmarterBot( gCycle * owner )
         , nextChatAI_( 0 )
         , player_(owner->netPlayer_)
         , local_player(ePlayer::gCycleToLocalPlayer(owner))
-        
+
 
 {
     settings_.range = owner_->Speed() * local_player->sg_smarterBotRange;
@@ -2359,6 +2359,8 @@ private:
 };
 #endif
 
+bool overrideColorGlobal = false;
+
 void gCycle::MyInitAfterCreation(){
 // create wall renderer
 #ifndef DEDICATED
@@ -2436,6 +2438,30 @@ void gCycle::MyInitAfterCreation(){
         se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
         se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
 
+    }
+
+    {
+        if( player && player->CurrentTeam() && player->CurrentTeam()->overrideColor )
+        {
+            player->Color( color_.r, color_.g, color_.b );
+
+            trailColor_ = color_;
+
+            se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
+            se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
+        }
+
+        if( player && player->overrideColor )
+        {
+            color_.r = player->colorOverride.r / 15.f;
+            color_.g = player->colorOverride.g / 15.f;
+            color_.b = player->colorOverride.b / 15.f;
+
+            trailColor_ = color_;
+
+            se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
+            se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
+        }
     }
 
     // load model and texture
@@ -2674,7 +2700,7 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos,const eCoord &d,ePlayerNetID *p)
         netPlayer_(p)
 {
     eGameObject::number_of_gCycles++;
-    
+
     se_cycleCreatedWriter << p->GetLogName() << this->MapPosition().x << this->MapPosition().y << this->Direction().x << this->Direction().y;
     if(p->CurrentTeam())
         se_cycleCreatedWriter << Team()->Name().Filter();
@@ -3606,7 +3632,26 @@ static bool sg_suicideMessage = true;
 static tSettingItem< bool > sg_suicideMessageConf( "SUICIDE_MESSAGE", sg_suicideMessage );
 
 bool sg_localDeath = true;
-static tConfItem< bool > sg_localDeathConf( "LOCAL_DEATH", sg_localDeath );
+static tSettingItem< bool > sg_localDeathConf( "LOCAL_DEATH", sg_localDeath );
+
+ePlayerNetID * gCycle::GetPlayerHuntedBy()
+{
+    ePlayerNetID * hunter = nullptr;
+
+    ePlayerNetID const * constHunter = enemyInfluence.GetEnemy();
+    hunter = Player();
+
+    // cast away const the safe way
+    if ( constHunter && constHunter->Object() )
+        hunter = constHunter->Object()->Player();
+
+    // only take it if it is not too old
+    if ( LastTime() - enemyInfluence.GetTime() > sg_suicideTimeout )
+        hunter = NULL;
+
+    return hunter;
+}
+
 void gCycle::KillAt( const eCoord& deathPos){
     // don't kill invulnerable cycles
     if ( !Vulnerable() )
@@ -3634,8 +3679,9 @@ void gCycle::KillAt( const eCoord& deathPos){
         hunter = Player();
 
 
-    if (!Alive() || sn_GetNetState()==nCLIENT && Owner() != sn_myNetID )
+    if ( !Alive() || sn_GetNetState()==nCLIENT && Owner() != sn_myNetID )
         return;
+
     if( sn_GetNetState() == nCLIENT )
     {
         if( sg_localDeath && !ID() )
@@ -5168,6 +5214,11 @@ static tConfItem<REAL> sg_renderCycleWheelsHeightConf("RENDER_WHEELS_HEIGHT", sg
 REAL sg_cycleRenderPos2 = 0.73;
 static tConfItem<REAL> sg_cycleRenderPos2Conf("RENDER_POS2", sg_cycleRenderPos2);
 
+extern bool sg_predictObjectsCmd;
+
+static bool sg_predictObjectsDead = false;
+static tConfItem<bool> sg_PredictObjectsDeadConf("PREDICT_OBJECTS_WHEN_DEAD", sg_predictObjectsDead);
+
 void gCycle::Render(const eCamera *cam){
     /*
     // for use when there's rendering problems on one specific occasion
@@ -5178,6 +5229,18 @@ void gCycle::Render(const eCamera *cam){
         st_Breakpoint();
     }
     */
+
+    if( sg_predictObjectsDead )
+    {
+        sr_predictObjects = sg_predictObjectsCmd;
+    }
+    else
+    {
+        if( sg_predictObjectsCmd && (cam->Player() != this->Player()) )
+        {
+            sr_predictObjects = ( cam->Player()->Object() && cam->Player()->Object()->Alive() );
+        }
+    }
 
     //  check whether to display other players or not
     if (sg_HideCycles && (cam->Player() != this->Player()))
@@ -5652,8 +5715,11 @@ static REAL fadeOutNameAfter = 5.0f;	/* 0: never show, < 0 always show */
 //static int fadeOutNameMode = 1;			// 0: never show, 1: show for fadeOutNameAfter, 2: always show
 static bool showOwnName = false;		// show name on own cycle?
 
+static REAL fadeoutAlpha = 0.7f;
+
 static tSettingItem< bool > sg_showOwnName( "SHOW_OWN_NAME", showOwnName );
 static tSettingItem< REAL > sg_fadeOutNameAfter( "FADEOUT_NAME_DELAY", fadeOutNameAfter );
+static tSettingItem< REAL > sg_fadeOutOpacityAfter( "FADEOUT_NAME_OPACITY", fadeoutAlpha );
 
 // show colored names on cycles?
 static bool sg_showColoredName = true;
@@ -5667,7 +5733,7 @@ void gCycle::RenderName( const eCamera* cam ) {
     float modelviewMatrix[16], projectionMatrix[16];
     float x, y, z, w;
     float xp, yp, wp;
-    float alpha = 0.75;
+    float alpha = fadeoutAlpha;
 
     if (fadeOutNameAfter == 0) return; /* XXX put that in ::Render() */
     if ( !cam->RenderingMain() ) return; // no name in mirrored image
@@ -5722,8 +5788,8 @@ void gCycle::RenderName( const eCamera* cam ) {
             doname = false;
         } else if (now - timeCameIntoView > fadeOutNameAfter - 1) {
             /* start to fade out */
-            alpha = 0.75 - (now - timeCameIntoView -
-                            (fadeOutNameAfter - 1)) * 0.75;
+            alpha = fadeoutAlpha - (now - timeCameIntoView -
+                            (fadeOutNameAfter - 1)) * fadeoutAlpha;
         }
     }
 

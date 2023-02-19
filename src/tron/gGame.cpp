@@ -1529,13 +1529,13 @@ void exit_game_objects(eGrid *grid){
 
 void clean_game_objects(eGrid *grid) {
     eGameObject::DeleteAllSafe(grid);
-    gNetPlayerWall::ClearSafe();
+    //gNetPlayerWall::ClearSafe();
 }
 
 static void sg_stateHack(std::istream &s)
 {
     clean_game_objects(eGrid::CurrentGrid());
-    nNetObject::ClearAllDeleted();
+   // nNetObject::ClearAllDeleted();
 }
 
 static tConfItemFunc sg_stateHackConf("STATE_HACK", &sg_stateHack);

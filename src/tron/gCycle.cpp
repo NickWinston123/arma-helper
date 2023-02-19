@@ -319,57 +319,20 @@ extern REAL sg_cycleBrakeDeplete;
 static bool sg_smarterBot = false;
 static tConfItem<bool> sg_smarterBotConf( "SMARTER_BOT", sg_smarterBot );
 
-static bool sg_smarterBotThink = false;
-static tConfItem<bool> sg_smarterBotThinkConf( "SMARTER_BOT_THINK", sg_smarterBotThink );
+gSmarterBot::~gSmarterBot(){
 
-static REAL sg_smarterBotRange = 2;
-static tConfItem<REAL> sg_smarterBotRangeConf( "SMARTER_BOT_RANGE", sg_smarterBotRange );
-
-static REAL sg_smarterBotRandomScale = 0.1;
-static tConfItem<REAL> sg_smarterBotRandomScaleConf( "SMARTER_BOT_RANDOMNESS", sg_smarterBotRandomScale );
-
-static REAL sg_smarterBotRubberEval = 0;
-static tConfItem<REAL> sg_smarterBotRubberEvalConf( "SMARTER_BOT_RUBBER", sg_smarterBotRubberEval );
-
-static REAL sg_smarterBotSuicideEval = 0;
-static tConfItem<REAL> sg_smarterBotSuicideEvalConf( "SMARTER_BOT_SUICIDE", sg_smarterBotSuicideEval );
-
-static REAL sg_smarterBotTrapScale = 0;
-static tConfItem<REAL> sg_smarterBotTrapScaleConf( "SMARTER_BOT_TRAP", sg_smarterBotTrapScale );
-
-static REAL sg_smarterBotFollowScale = 0;
-static tConfItem<REAL> sg_smarterBotFollowScaleConf( "SMARTER_BOT_FOLLOW", sg_smarterBotFollowScale );
-
-static bool sg_smarterBotFollowFindTarget = true;
-static tConfItem<bool> sg_smarterBotFollowFindTargetConf( "SMARTER_BOT_FOLLOW_FIND_TARGET", sg_smarterBotFollowFindTarget );
-
-static REAL sg_smarterBotPlanScale = 0;
-static tConfItem<REAL> sg_smarterBotPlanScaleConf( "SMARTER_BOT_PLAN", sg_smarterBotPlanScale );
-
-static REAL sg_smarterBotTailScale = 0;
-static tConfItem<REAL> sg_smarterBotTailScaleConf( "SMARTER_BOT_TAIL", sg_smarterBotTailScale );
-
-static REAL sg_smarterBotSpaceScale = 0;
-static tConfItem<REAL> sg_smarterBotSpaceScaleConf( "SMARTER_BOT_SPACE", sg_smarterBotSpaceScale );
-
-static REAL sg_smarterBotCowardScale = 0;
-static tConfItem<REAL> sg_smarterBotCowardScaleConf( "SMARTER_BOT_COWARD", sg_smarterBotCowardScale );
-
-static REAL sg_smarterBotTunnelScale = 0;
-static tConfItem<REAL> sg_smarterBotTunnelScaleConf( "SMARTER_BOT_TUNNEL", sg_smarterBotTunnelScale );
-
-static REAL sg_smarterBotNextThinkMult = 1;
-static tConfItem<REAL> sg_smarterBotNextThinkMultConf( "SMARTER_BOT_NEXT_TIME_MULT", sg_smarterBotNextThinkMult );
-
-static int sg_smarterBotState = 1;
-static tConfItem<int> sg_smarterBotStateConf( "SMARTER_BOT_STATE", sg_smarterBotState );
+}
 
 gSmarterBot::gSmarterBot( gCycle * owner )
         : gAINavigator( owner )
         , owner_(owner)
         , nextChatAI_( 0 )
+        , player_(owner->netPlayer_)
+        , local_player(ePlayer::gCycleToLocalPlayer(owner))
+        
+
 {
-    settings_.range = owner_->Speed() * sg_smarterBotRange;
+    settings_.range = owner_->Speed() * local_player->sg_smarterBotRange;
     settings_.newWallBlindness = 0;
 }
 
@@ -386,9 +349,12 @@ gSmarterBot& gSmarterBot::Get( gCycle * cycle )
 
 REAL gSmarterBot::Think( REAL minStep )
 {
+    if (!local_player)
+        return 5;
+
     UpdatePaths();
     EvaluationManager manager( GetPaths() );
-    switch (sg_smarterBotState) {
+    switch (local_player->sg_smarterBotState) {
     case 0: {
         break;
     }
@@ -442,42 +408,42 @@ REAL gSmarterBot::Think( REAL minStep )
         break;
     }
     default: {
-        sg_smarterBotState = 1;
+        local_player->sg_smarterBotState = 1;
         break;
     }
     }
 
     manager.Reset();
 
-    if (sg_smarterBotSuicideEval > 0)
-        manager.Evaluate( SuicideEvaluator( *Owner()), sg_smarterBotSuicideEval);
+    if (local_player->sg_smarterBotSuicideEval > 0)
+        manager.Evaluate( SuicideEvaluator( *Owner()), local_player->sg_smarterBotSuicideEval);
 
-    if (sg_smarterBotRubberEval > 0)
-        manager.Evaluate( RubberEvaluator( *Owner()), sg_smarterBotRubberEval);
+    if (local_player->sg_smarterBotRubberEval > 0)
+        manager.Evaluate( RubberEvaluator( *Owner()), local_player->sg_smarterBotRubberEval);
 
-    if (sg_smarterBotRandomScale > 0)
-        manager.Evaluate( RandomEvaluator(), sg_smarterBotRandomScale );
+    if (local_player->sg_smarterBotRandomScale > 0)
+        manager.Evaluate( RandomEvaluator(), local_player->sg_smarterBotRandomScale );
 
-    if (sg_smarterBotTrapScale > 0)
-        manager.Evaluate( TrapEvaluator( *Owner()), sg_smarterBotTrapScale );
+    if (local_player->sg_smarterBotTrapScale > 0)
+        manager.Evaluate( TrapEvaluator( *Owner()), local_player->sg_smarterBotTrapScale );
 
-    if (sg_smarterBotFollowScale > 0) {
-        manager.Evaluate( FollowEvaluator(*Owner(), sg_smarterBotFollowFindTarget), sg_smarterBotFollowScale );
+    if (local_player->sg_smarterBotFollowScale > 0) {
+        manager.Evaluate( FollowEvaluator(*Owner(), local_player->sg_smarterBotFollowFindTarget,local_player->sg_smarterBotFollowTarget), local_player->sg_smarterBotFollowScale );
     }
-    if (sg_smarterBotPlanScale > 0)
-        manager.Evaluate( PlanEvaluator(), sg_smarterBotPlanScale );
+    if (local_player->sg_smarterBotPlanScale > 0)
+        manager.Evaluate( PlanEvaluator(), local_player->sg_smarterBotPlanScale );
 
-    if (sg_smarterBotTailScale > 0)
-        manager.Evaluate( TailChaseEvaluator( *Owner() ), sg_smarterBotTailScale );
+    if (local_player->sg_smarterBotTailScale > 0)
+        manager.Evaluate( TailChaseEvaluator( *Owner() ), local_player->sg_smarterBotTailScale );
 
-    if (sg_smarterBotSpaceScale > 0)
-        manager.Evaluate( SpaceEvaluator( *Owner() ), sg_smarterBotSpaceScale );
+    if (local_player->sg_smarterBotSpaceScale > 0)
+        manager.Evaluate( SpaceEvaluator( *Owner() ), local_player->sg_smarterBotSpaceScale );
 
-    if (sg_smarterBotCowardScale > 0)
-        manager.Evaluate( CowardEvaluator( *Owner() ), sg_smarterBotCowardScale );
+    if (local_player->sg_smarterBotCowardScale > 0)
+        manager.Evaluate( CowardEvaluator( *Owner() ), local_player->sg_smarterBotCowardScale );
 
-    if (sg_smarterBotTunnelScale > 0)
-        manager.Evaluate( TunnelEvaluator( *Owner() ), sg_smarterBotTunnelScale );
+    if (local_player->sg_smarterBotTunnelScale > 0)
+        manager.Evaluate( TunnelEvaluator( *Owner() ), local_player->sg_smarterBotTunnelScale );
 
     CycleControllerAction controller;
     return manager.Finish( controller, *Owner(), minStep );
@@ -485,14 +451,16 @@ REAL gSmarterBot::Think( REAL minStep )
 
 void gSmarterBot::Activate( REAL currentTime )
 {
+    if (!local_player)
+        return;
 
-    if (sg_smarterBotThink) {
+    if (local_player->sg_smarterBotThink) {
         gAINavigator::Activate(currentTime,0);
     }
 
     if (nextChatAI_ <= se_GameTime()) {
         REAL nextThought = Think(0);
-        nextChatAI_ = (nextThought*sg_smarterBotNextThinkMult) + se_GameTime();
+        nextChatAI_ = (nextThought*local_player->sg_smarterBotNextThinkMult) + se_GameTime();
     }
 }
 
@@ -2702,8 +2670,11 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos,const eCoord &d,ePlayerNetID *p)
         last_time(.0),
         tactical_stats(static_cast<std::string>(p->GetUserName())),
         currentWall(NULL),
-        lastWall(NULL)
+        lastWall(NULL),
+        netPlayer_(p)
 {
+    eGameObject::number_of_gCycles++;
+    
     se_cycleCreatedWriter << p->GetLogName() << this->MapPosition().x << this->MapPosition().y << this->Direction().x << this->Direction().y;
     if(p->CurrentTeam())
         se_cycleCreatedWriter << Team()->Name().Filter();
@@ -2742,9 +2713,9 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos,const eCoord &d,ePlayerNetID *p)
 }
 
 gCycle::~gCycle(){
-#ifdef DEBUG
+
     con << "deleting cycle...\n";
-#endif
+
     // clear the destination list
 
     //Search the list for zones that could be referencing us
@@ -2781,6 +2752,7 @@ gCycle::~gCycle(){
         delete wheelTex;
         delete bodyTex;
     }
+    eGameObject::number_of_gCycles--;
 #ifdef DEBUG
     con << "Deleted cycle.\n";
 #endif
@@ -5944,8 +5916,10 @@ gCycle::gCycle(nMessage &m)
         last_time(.0),
         tactical_stats(""),
         currentWall(NULL),
-        lastWall(NULL)
+        lastWall(NULL),
+        netPlayer_(NULL)
 {
+    eGameObject::number_of_gCycles++;
     deathTime=0;
     lastNetWall=lastWall=currentWall=NULL;
     windingNumberWrapped_ = windingNumber_ = Grid()->DirectionWinding(dirDrive);

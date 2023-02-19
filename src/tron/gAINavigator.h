@@ -336,7 +336,7 @@ private:
     class FollowEvaluator: public PathEvaluator
     {
     public:
-        FollowEvaluator( gCycle & cycle, bool findTarget = false);
+        FollowEvaluator( gCycle & cycle, bool findTarget = false, tString target = tString(""));
         ~FollowEvaluator();
 
         //! return data of SolveTurn
@@ -353,6 +353,7 @@ private:
         void SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data );
 
         void FindTarget();
+        void SetDesiredTarget(tString target);
         //! set the target to follow
         void SetTarget( eCoord const & target, eCoord const & velocity );
 
@@ -411,7 +412,7 @@ private:
     gAINavigator( gCycle * owner );
 
     // returns the controlled cycle
-    
+
     gCycle * Owner() const
     {
         return owner_;
@@ -440,10 +441,13 @@ class gSmarterBot: public gAINavigator
 
     REAL nextChatAI_;        //!< the next time the chat AI can be active
     gCycle *owner_;
+    ePlayerNetID *player_;
+    ePlayer *local_player;
+
 
 public:
     gSmarterBot(gCycle *owner);
-
+    ~gSmarterBot();
     static gSmarterBot& Get(gCycle *cycle);
 
     REAL Think(REAL minStep);

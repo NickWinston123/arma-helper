@@ -56,6 +56,9 @@ class eGameObject{
 
     // a list of all active gameobjects
     int id;
+
+
+
 #define GO ((eGameObject *)NULL)
 #define GO_I ((int *)NULL)
 
@@ -85,6 +88,7 @@ protected:
     // (the latter may be useful if there exists other pointers to
     // the object)
 public:
+    static int number_of_gCycles;
     REAL localCurrentTime;
     REAL lastTurnAttemptTime;
     REAL lastTurnAttemptDir;
@@ -167,7 +171,7 @@ public:
     virtual void PassEdge( const eWall *w,REAL time,REAL a,int recursion=1 );
 
     virtual void HitZone (eGameObject *zone,REAL time);
-    
+
     // what length multiplicator does driving along the given wall get when it is the given distance away?
     virtual REAL PathfindingModifier( const eWall *w ) const { return 1 ;}
 

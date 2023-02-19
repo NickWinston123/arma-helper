@@ -59,7 +59,7 @@ enum ColorRandomization {
 
 extern bool se_toggleChatFlag, se_toggleChatFlagAlways, se_BlockChatFlags;
 
-#define PLAYER_CONFITEMS (30+MAX_INSTANT_CHAT)
+#define PLAYER_CONFITEMS (60+MAX_INSTANT_CHAT)
 
 extern bool se_disableCreate;
 // maximal length of chat message
@@ -88,6 +88,7 @@ class uAction;
 class tOutput;
 class eTeam;
 class eVoter;
+class gCycle;
 
 class ePlayer: public uPlayerPrototype{
     friend class eMenuItemChat;
@@ -116,6 +117,25 @@ public:
 
     bool 		nameTeamAfterMe; // player prefers to call his team after his name
     int			favoriteNumberOfPlayersPerTeam;
+
+
+    //Smarter bot
+    bool sg_smarterBotThink;
+    REAL sg_smarterBotRange;
+    REAL sg_smarterBotRandomScale;
+    REAL sg_smarterBotRubberEval;
+    REAL sg_smarterBotSuicideEval;
+    REAL sg_smarterBotTrapScale;
+    REAL sg_smarterBotFollowScale;
+    bool sg_smarterBotFollowFindTarget;
+    tString sg_smarterBotFollowTarget;
+    REAL sg_smarterBotPlanScale;
+    REAL sg_smarterBotTailScale;
+    REAL sg_smarterBotSpaceScale;
+    REAL sg_smarterBotCowardScale;
+    REAL sg_smarterBotTunnelScale;
+    REAL sg_smarterBotNextThinkMult;
+    int sg_smarterBotState;
 
     eCamMode startCamera;
     bool     allowCam[10];
@@ -149,6 +169,7 @@ public:
 
     static ePlayer * PlayerConfig(int p);
     static ePlayer *NetToLocalPlayer(ePlayerNetID *player);
+    static ePlayer  *gCycleToLocalPlayer(gCycle *owner);
 
     static bool PlayerIsInGame(int p);
     static bool PlayerIsInGame(ePlayerNetID *p);
@@ -465,7 +486,7 @@ public:
     static void listPlayerInfo(tString s_orig);
     // Fast way to change / display current RGB
     static void currentPlayerRGB(ePlayerNetID &player,tString s_orig);
-    static void localSpeak(tString s_orig);
+    static void localSpeak(ePlayerNetID &player, tString s_orig);
     //Grab Stuff
     static tColoredString gatherPlayerInfo(ePlayerNetID * p);
     static tColoredString gatherPlayerColor(ePlayerNetID * p, bool showReset = true);

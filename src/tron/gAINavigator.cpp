@@ -741,15 +741,32 @@ void gAINavigator::RubberEvaluator::Init( gCycle const & cycle, REAL maxTime )
 // * FollowEvaluator      *
 // *************************
 
-gAINavigator::FollowEvaluator::FollowEvaluator( gCycle & cycle, bool findTarget ): cycle_( cycle ), blocker_( 0 ), blockedBySelf_( false )
+gAINavigator::FollowEvaluator::FollowEvaluator( gCycle & cycle, bool findTarget, tString target ): cycle_( cycle ), blocker_( 0 ), blockedBySelf_( false )
 {
-    if (findTarget) 
+    if (findTarget && target.empty()) 
         gAINavigator::FollowEvaluator::FindTarget();
+    else if (findTarget)
+    {
+        SetDesiredTarget(target);
+    }
 }
 
 gAINavigator::FollowEvaluator::~FollowEvaluator()
 {
 }
+
+void gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
+{
+    ePlayerNetID *player = ePlayerNetID::FindPlayerByName(target);
+    
+    if (player && player->Object())
+    {
+        gCycle* cycle = dynamic_cast<gCycle *>(player->Object());
+        if (cycle)
+            SetTarget(cycle->Position(), cycle->Direction() * cycle->Speed());
+    }
+}
+
 
 //!@ param direction            direction to turn in
 //!@ param targetVelocity       velocity of the target

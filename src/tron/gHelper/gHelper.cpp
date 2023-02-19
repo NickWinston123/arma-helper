@@ -28,6 +28,8 @@ gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug",tColoredString
 gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy",tColoredString("None"), "Detect Cut");
 gHelperHudItem<tColoredString> cutTurnDirectionH("Cut Turn Dir",tColoredString("0xdd0000None"), "Detect Cut");
 
+gHelperHudItem<tColoredString> helperDebugH("Debug",tColoredString("0xdd0000None"));
+
 gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit",sg_helperShowHit);
 gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist",1000,"Show Hit");
 
@@ -596,6 +598,7 @@ bool gHelper::aliveCheck()
     return &owner_ && owner_.Alive() && owner_.Grid();
 }
 
+#include "../gWall.h"
 void gHelper::Activate()
 {
     if (!aliveCheck())
@@ -604,6 +607,11 @@ void gHelper::Activate()
     REAL start;
     if (sg_helperHud) {
         start = tRealSysTimeFloat();
+        tColoredString debug;
+        debug << "gCycles: " << eGameObject::number_of_gCycles << "\n";
+        debug << "Walls: " << sg_netPlayerWalls.Len() << "\n";
+        debug << "eGameObjects: " << eGrid::CurrentGrid()->gameObjects.Len() << "\n";
+        helperDebugH << debug;
         ownerPosH << roundeCoord(ownerPos);
         ownerDirH << roundeCoord(ownerDir);
         tailPosH << roundeCoord(tailPos);

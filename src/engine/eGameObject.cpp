@@ -309,7 +309,7 @@ rerun:
             // look for the best way out
             do
             {
-                run = run->Next();   
+                run = run->Next();
                 if (run == in) // never leave through the edge we entered
                     continue;
 
@@ -861,7 +861,7 @@ void eGameObject::TimestepThisWrapper(eGrid * grid, REAL currentTime, eGameObjec
                     REAL rubber = p->GetRubber();
                     rubber += (p->Speed()*timestep);
                     p->SetRubber(rubber);
-                    
+
                     if(rubber >= sg_rubberCycle) p->KillAt(c->pos);
                     else p->RequestSync();
                 }
@@ -990,18 +990,22 @@ void eGameObject::DeleteAll(eGrid *grid){
 #endif
     }
 }
-
-void eGameObject::DeleteAllSafe(eGrid *grid){
+int eGameObject::number_of_gCycles = 0;
+void eGameObject::DeleteAllSafe(eGrid *grid)
+{
     int i;
-    for(i=grid->gameObjects.Len()-1;i>=0;i--)
+    for (i = grid->gameObjects.Len() - 1; i >= 0; i--)
     {
-        eGameObject* o = grid->gameObjects(i);
-        if (!o->Alive()) {
-            o->RemoveFromGame();
+        eGameObject *o = grid->gameObjects(i);
+        gCycle *cycle = dynamic_cast<gCycle *>(o);
+        if (cycle)
+        {
+             if (!cycle->Alive())
+            {
+                o->RemoveFromGame();
+                o->RemoveFromListsAll();
+            }
         }
-#ifdef POWERPAK_DEB
-        if (pp_out) o->PPDisplay();
-#endif
     }
 }
 

@@ -220,10 +220,11 @@ protected:
     tList<eFace, false, true>       faces;
 
     // objects
+    public:
     tList<eGameObject> gameObjects;
     tList<eGameObject> gameObjectsInactive;
     tList<eGameObject> gameObjectsInteresting;
-
+    protected:
     // cameras
     tList<eCamera>     cameras;
     tList<eCamera>     subcameras;

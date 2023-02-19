@@ -1154,6 +1154,27 @@ ePlayer * ePlayer::NetToLocalPlayer(ePlayerNetID *player)
     //  return (ePlayer*)P;
 }
 
+ePlayer *ePlayer::gCycleToLocalPlayer(gCycle *owner)
+{
+    for (int i = MAX_PLAYERS - 1; i >= 0; i--)
+    {
+        ePlayer *lp = ePlayer::PlayerConfig(i);
+        if (lp && lp->netPlayer)
+        {
+            ePlayerNetID *netPlayer = lp->netPlayer;
+            if (netPlayer)
+            {
+                gCycle *cycle = dynamic_cast<gCycle *>(netPlayer->Object());
+                if (cycle && cycle == owner)
+                    return lp;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+
 void   ePlayer::StoreConfitem(tConfItemBase *c)
 {
     tASSERT(CurrentConfitem < PLAYER_CONFITEMS);
@@ -1357,6 +1378,119 @@ ePlayer::ePlayer() : colorIteration(0)
     StoreConfitem(tNEW(tConfItem<int>) (confname,
                                          "$player_random_color_help",
                                          colorRandomization));
+
+    //sg_smarterBotThink
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_THINK";
+    sg_smarterBotThink = false;
+    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot Think", sg_smarterBotThink));
+
+    // sg_smarterBotRange
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_RANGE";
+    sg_smarterBotRange = 2;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Range", sg_smarterBotRange));
+
+
+    // sg_smarterBotRandomScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_RANDOMNESS";
+    sg_smarterBotRandomScale = 0;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Randomness", sg_smarterBotRandomScale));
+
+
+    // sg_smarterBotRubberEval
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_RUBBER";
+    sg_smarterBotRubberEval = 1;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Rubber", sg_smarterBotRubberEval));
+
+
+    // sg_smarterBotSuicideEval
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_SUICIDE";
+    sg_smarterBotSuicideEval = 50;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Suicide", sg_smarterBotSuicideEval));
+
+
+    // sg_smarterBotTrapScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_TRAP";
+    sg_smarterBotTrapScale = 1;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Trap", sg_smarterBotTrapScale));
+
+
+    // sg_smarterBotFollowScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW";
+    sg_smarterBotFollowScale = 0;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Follow", sg_smarterBotFollowScale));
+
+
+    // sg_smarterBotFollowFindTarget
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_TARGET";
+    sg_smarterBotFollowFindTarget = true;
+    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot Follow Target", sg_smarterBotFollowFindTarget));
+
+
+    // sg_smarterBotFollowTarget
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_SET_TARGET";
+    sg_smarterBotFollowTarget = tString("");
+    StoreConfitem(tNEW(tConfItemLine) (confname, "Smarter Bot Follow Set Target", sg_smarterBotFollowTarget));
+
+
+    // sg_smarterBotPlanScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_PLAN";
+    sg_smarterBotPlanScale = 0;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Plan", sg_smarterBotPlanScale));
+
+
+    // sg_smarterBotTailScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_TAIL";
+    sg_smarterBotTailScale = 0;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Tail", sg_smarterBotTailScale));
+
+
+    // sg_smarterBotSpaceScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_SPACE";
+    sg_smarterBotSpaceScale = 1;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Space", sg_smarterBotSpaceScale));
+
+
+    // sg_smarterBotCowardScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_COWARD";
+    sg_smarterBotCowardScale = 0.25;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Coward", sg_smarterBotCowardScale));
+
+
+    // sg_smarterBotTunnelScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_TUNNEL";
+    sg_smarterBotTunnelScale = 3;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Tunnel", sg_smarterBotTunnelScale));
+
+
+    // sg_smarterBotNextThinkMult
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_NEXT_TIME_MULT";
+    sg_smarterBotNextThinkMult = 0.25;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Next Time Mult", sg_smarterBotNextThinkMult));
+
+
+    // sg_smarterBotState
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_STATE";
+    sg_smarterBotState = 5;
+    StoreConfitem(tNEW(tConfItem<int>) (confname, "Smarter Bot State", sg_smarterBotState));
+
+
+
 #endif
 
     tRandomizer & randomizer = tRandomizer::GetInstance();
@@ -4850,7 +4984,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
         }
         else if (command == se_speakCommand)
         {
-            localSpeak(s_orig);
+            localSpeak(*this,s_orig);
         }
         else if (command == se_rebuildCommand)
         {
@@ -9310,7 +9444,7 @@ static void se_SavedColors(int savedColorsCount)
             params.ReadLine(s);
             int pos = 0;
 
-            if (params.Filter() != "")
+            if (!params.Filter().empty())
                 colors.Insert(params);
         }
     }
@@ -9319,7 +9453,7 @@ static void se_SavedColors(int savedColorsCount)
     for (int index = 0; index <= savedColorsCount; index++)
     {
         tString currentLine = colors[index];
-        if (currentLine != "")
+        if (!currentLine.empty())
         {
             int pos = 0;
             tString Name = currentLine.ExtractNonBlankSubString(pos);
@@ -9346,7 +9480,7 @@ static void se_SavedColors(int savedColorsCount)
     }
 }
 
-void ePlayerNetID::localSpeak(tString s_orig)
+void ePlayerNetID::localSpeak(ePlayerNetID &player, tString s_orig)
 {
     tString params;
     params << s_orig;
@@ -9356,7 +9490,7 @@ void ePlayerNetID::localSpeak(tString s_orig)
 
     ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
 
-    if (p)
+    if (p && player.Owner() == p->Owner())
         p->Chat(params.SubStr(pos+1));
 }
 
@@ -9560,7 +9694,7 @@ void ePlayerNetID::currentPlayerRGB(ePlayerNetID &player, tString s_orig)
             {
                 se_UniqueColor(me, p);
             }
-            
+
         }
 
         // Not really checking if the strings passed parameters are numbers,

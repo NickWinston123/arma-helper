@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include "tRecording.h"
 #include "tToDo.h"
 #include "tException.h"
+#include "tConfiguration.h"
 
 #ifndef DEDICATED
 #include "rRender.h"
@@ -158,7 +159,7 @@ void uMenu::MenuNowActive(bool flag)
     }
     else
     {
-        SDL_ShowCursor(currentScreensetting.fullscreen?SDL_FALSE:SDL_TRUE);
+        SDL_ShowCursor( SDL_FALSE );
 #if SDL_VERSION_ATLEAST(2,0,0)
         SDL_SetRelativeMouseMode(currentScreensetting.fullscreen?SDL_TRUE:SDL_FALSE);
 #endif

@@ -148,8 +148,10 @@ public:
 #endif
 
     static ePlayer * PlayerConfig(int p);
+    static ePlayer *NetToLocalPlayer(ePlayerNetID *player);
 
     static bool PlayerIsInGame(int p);
+    static bool PlayerIsInGame(ePlayerNetID *p);
 
     // veto function for tooltips that require a controllable game object
     static bool VetoActiveTooltip(int player);
@@ -845,7 +847,6 @@ ePlayerNetID & ePlayerNetID::SetUserName( tString const & userName )
 }
 
 ePlayerNetID *se_GetLocalPlayer();
-ePlayer *se_GetEPlayer(ePlayerNetID * targetPlayer);
 
 extern bool se_highlightMyName, se_tabCompletion, se_tabCompletionWithColors;
 

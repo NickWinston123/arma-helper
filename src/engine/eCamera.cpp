@@ -1547,8 +1547,8 @@ void eCamera::SpectatePlayer(ePlayerNetID &owner, const tString &s_orig)
 
     // ePlayer *test = se_GetEPlayer(&owner);
     // con << "TEST EXIST ? " << bool(test) << "\n";
-    
-    ePlayer *localPlayer = ePlayer::PlayerConfig(0);
+
+    ePlayer *localPlayer = ePlayer::NetToLocalPlayer(&owner);
     if (!localPlayer || !localPlayer->cam)
     {
         return;

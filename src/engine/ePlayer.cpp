@@ -1147,6 +1147,13 @@ ePlayer * ePlayer::PlayerConfig(int p)
     //  return (ePlayer*)P;
 }
 
+
+ePlayer * ePlayer::NetToLocalPlayer(ePlayerNetID *player)
+{
+    return PlayerConfig(player->pID);
+    //  return (ePlayer*)P;
+}
+
 void   ePlayer::StoreConfitem(tConfItemBase *c)
 {
     tASSERT(CurrentConfitem < PLAYER_CONFITEMS);
@@ -4847,9 +4854,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
         }
         else if (command == se_rebuildCommand)
         {
-            ePlayerNetID *p = se_GetLocalPlayer();
-            if (p)
-                p->CompleteRebuild();
+            CompleteRebuild();
         }
         else if (command == se_specCommand)
         {
@@ -4915,23 +4920,6 @@ ePlayerNetID *se_GetLocalPlayer()
     return NULL;
 }
 
-// identify a eplayer
-ePlayer *se_GetEPlayer(ePlayerNetID * targetPlayer)
-{
-    // mark all players as wanting to log in
-    for(int i=MAX_PLAYERS-1; i>=0; i--)
-    {
-        ePlayer * localPlayer = ePlayer::PlayerConfig(i);
-        ePlayerNetID * localNetPlayer = localPlayer->netPlayer;
-        if ( ePlayer::PlayerIsInGame(i) && localPlayer && localNetPlayer && targetPlayer &&
-             localNetPlayer->Object() && targetPlayer->Object() &&
-             localNetPlayer->Object()->GOID() == targetPlayer->Object()->GOID())
-        {
-            return localPlayer;
-        }
-    }
-    return NULL;
-}
 
 
 static tString sg_AdminName("Admin");
@@ -5658,6 +5646,11 @@ rViewport * ePlayer::PlayerViewport(int p)
 bool ePlayer::PlayerIsInGame(int p)
 {
     return PlayerViewport(p) && PlayerConfig(p);
+}
+
+bool ePlayer::PlayerIsInGame(ePlayerNetID *p)
+{
+    ePlayer::PlayerIsInGame(p->pID);
 }
 
 // veto function for tooltips that require a controllable game object
@@ -9419,19 +9412,16 @@ void ePlayerNetID::currentPlayerRGB(ePlayerNetID &player, tString s_orig)
             correctParameters = true;
             random = true;
 
-            // For now everyone gets random colors.
-            for (int i = 0; i < MAX_PLAYERS; ++i)
-            {
-                bool in_game = ePlayer::PlayerIsInGame(i);
-                ePlayer* me = ePlayer::PlayerConfig(i);
-                tASSERT(me);
-                tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
+            bool in_game = ePlayer::PlayerIsInGame(&player);
+            ePlayer *me = ePlayer::NetToLocalPlayer(&player);
+            tASSERT(me);
+            tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
 
-                if (bool(p) && in_game)
-                {
-                    se_RandomizeColor(me);
-                }
+            if (bool(p) && in_game)
+            {
+                se_RandomizeColor(me);
             }
+
         }
         else if (passedString[1] == "help")
         {
@@ -9561,19 +9551,16 @@ void ePlayerNetID::currentPlayerRGB(ePlayerNetID &player, tString s_orig)
             correctParameters = true;
             unique = true;
 
-            // Also everyone gets unique colors if sent.
-            for (int i = 0; i < MAX_PLAYERS; ++i)
-            {
-                bool in_game = ePlayer::PlayerIsInGame(i);
-                ePlayer* me = ePlayer::PlayerConfig(i);
-                tASSERT(me);
-                tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
+            bool in_game = ePlayer::PlayerIsInGame(&player);
+            ePlayer* me = ePlayer::NetToLocalPlayer(&player);
+            tASSERT(me);
+            tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
 
-                if (bool(p) && in_game)
-                {
-                    se_UniqueColor(me, p);
-                }
+            if (bool(p) && in_game)
+            {
+                se_UniqueColor(me, p);
             }
+            
         }
 
         // Not really checking if the strings passed parameters are numbers,

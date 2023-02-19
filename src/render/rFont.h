@@ -181,6 +181,7 @@ public:
     static tColor const & GetBlendColor( void );	//!< Gets color all other colors are multiplied with
     static void GetBlendColor( tColor & blendColor );	//!< Gets color all other colors are multiplied with
 
+    static float GetTextLength (const char * str, float height, bool stripColors=false, bool useNewline=true, float *resultingHeight=0); //!< Predict the dimenstions of a string
 private:
     inline void WriteChar(unsigned char c); //!< writes a single character as it is, no automatic newline breaking
 };

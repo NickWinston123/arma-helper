@@ -414,6 +414,8 @@ public:
         active=1;
     }
 
+    virtual bool ConsiderMenuActive(){return !active;}
+
 #define MTHRESH 5
 #define MREL    2
 

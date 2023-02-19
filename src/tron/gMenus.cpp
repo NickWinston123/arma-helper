@@ -328,16 +328,17 @@ static void sg_ScreenModeMenu()
         su_mouseGrab);
 
 
-    /* massive troll 
+    /* massive troll
     uMenuItemSelection<rColorDepth> zd_t
     (&screen_menu_mode,
      "$screen_zdepth_text",
      "$screen_zdepth_help",
      currentScreensetting.zDepth);
-    */
+
     uSelectEntry<rColorDepth> zd_16(zd_t,"$screen_zdepth_16_text","$screen_zdepth_16_help",ArmageTron_ColorDepth_16);
     uSelectEntry<rColorDepth> zd_d(zd_t,"$screen_zdepth_desk_text","$screen_zdepth_desk_help",ArmageTron_ColorDepth_Desktop);
     uSelectEntry<rColorDepth> zd_32(zd_t,"$screen_zdepth_32_text","$screen_zdepth_32_help",ArmageTron_ColorDepth_32);
+    */
 
     uMenuItemSelection<rColorDepth> cd_t
     (&screen_menu_mode,

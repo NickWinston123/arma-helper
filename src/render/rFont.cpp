@@ -748,3 +748,26 @@ void rTextField::SetBlendColor( tColor const & blendColor )
 tColor rTextField::defaultColor_;
 tColor rTextField::blendColor_;
 
+#ifndef DEDICATED
+//! @param str the string to be used
+//! @param height the height of one character
+//! @param stripColors should colors be recognized?
+//! @param useNewline should newlines be recognized (and the longest line be found)?
+//! @param resultingHeight address to store the number of lines (height times the number of newlines+1)
+//! @returns the width of the string if it was printed
+float rTextField::GetTextLength( const char * str, float height, bool stripColors, bool useNewline, float *resultingHeight )
+{
+    int len;
+    if(stripColors)
+    {
+        tString colorlessstr = tColoredString::RemoveColors(str);
+        len = colorlessstr.Len();
+    }
+    else
+    {
+        len = strlen(str);
+    }
+    return (height*(rCWIDTH_NORMAL/rCHEIGHT_NORMAL)*rTextField::AspectWidthMultiplier()*len);
+}
+#endif
+

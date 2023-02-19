@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rSysdep.h"
 #include "rScreen.h"
 #include "rViewport.h"
+#include "tRecorder.h"
 #include "tString.h"
 #include "math.h"
 #include "uInputQueue.h"
@@ -144,6 +145,27 @@ bool uMenu::MenuActive()
 static rNoAutoDisplayAtNewlineCallback su_noNewline( uMenu::MenuActive );
 // static rSmallConsoleCallback su_smallConsole( su_InMenu );
 
+void uMenu::MenuNowActive(bool flag)
+{
+    su_inMenu = flag;
+#ifndef DEDICATED
+    if(flag)
+    {
+#if SDL_VERSION_ATLEAST(2,0,0)
+        SDL_SetRelativeMouseMode(SDL_FALSE);
+#endif
+        SDL_ShowCursor(SDL_TRUE);
+    }
+    else
+    {
+        SDL_ShowCursor(currentScreensetting.fullscreen?SDL_FALSE:SDL_TRUE);
+#if SDL_VERSION_ATLEAST(2,0,0)
+        SDL_SetRelativeMouseMode(currentScreensetting.fullscreen?SDL_TRUE:SDL_FALSE);
+#endif
+    }
+#endif
+}
+
 void uMenu::OnEnter(){
 #ifndef DEDICATED
     bool localRepeat = false;
@@ -161,7 +183,7 @@ void uMenu::OnEnter(){
     su_ClearKeys();
 
     uCallbackMenuEnter::MenuEnter();
-    su_inMenu = true;
+    MenuNowActive(true);
 
     if (items.Len()<=0)
         return;
@@ -171,13 +193,25 @@ void uMenu::OnEnter(){
     REAL lastt=0;
     REAL ts=0;
 
+    int mouseX, mouseY;
+    tCoord click, last;
+    tCoord mouse;
+
+    bool mouseEvent = true; // When any event happens that should lock auto-scrolling
+    bool mouseClick = false; // For when the user clicked somewhere
+    int mouseClickItem = -1;
+    bool lastMouse = false; // Whether last navigation was by mouse
+    bool dragScrolling = false;
+
+
 #ifndef DEDICATED
+    SDL_GetMouseState(&mouseX, &mouseY);
     lastkey=tSysTimeFloat();
     static const REAL timeout=0;
 #endif
 
     // inverted logic (0 = last item! prev(0) = top most item)
-    selected = GetPrevSelectable(0);
+    SetSelected(GetPrevSelectable(0));
 
     while (!exitFlag && !quickexit && !exitToMain){
         st_DoToDo();
@@ -194,6 +228,14 @@ void uMenu::OnEnter(){
             selected = 0;
         if ( selected >= items.Len())
             selected = items.Len()-1;
+
+        if(mouseClickItem != -1)
+        {
+            // process mouse clicks before everything else
+            mouseEvent = true;
+            items[mouseClickItem]->OnClick(mouse, (selected == mouseClickItem));
+            mouseClickItem = -1;
+        }
 
 #ifndef DEDICATED
         {
@@ -215,11 +257,75 @@ void uMenu::OnEnter(){
                     localRepeat = s_globalRepeat = true;
                     memcpy( &tEventRepeat, &tEvent, sizeof( SDL_Event ) );
                     nextrepeat = tSysTimeFloat() + repeatdelay;
+                    lastMouse = false;
                     break;
                 case SDL_KEYUP:
                     localRepeat = s_globalRepeat = false;
                     repeatrate = repeatrateStart;
+                    lastMouse = false;
                     break;
+                
+                case SDL_MOUSEMOTION:
+                    mouseEvent = true;
+                    if(click.y)
+                    {
+                        tCoord diff = click - tCoord(tEvent.button.x, tEvent.button.y);
+                        // don't scroll for micro mouse movements, could have been accidental
+                        if(diff.Norm() > 5)
+                        {
+                            REAL scroll = (last.y-tEvent.button.y)/(REAL(sr_screenHeight)/2.f);
+                            yOffset += scroll;
+                            last = tCoord(tEvent.button.x, tEvent.button.y);
+                            dragScrolling = true;
+                        }
+                    }
+                    break;
+                case SDL_MOUSEBUTTONDOWN: 
+#if !SDL_VERSION_ATLEAST(2,0,0)
+                    switch(tEvent.button.button)
+                    {
+                        case SDL_BUTTON_WHEELUP:
+                        case SDL_BUTTON_WHEELDOWN:
+                        case SDL_BUTTON_X1:
+                        case SDL_BUTTON_X2:
+                            continue;
+                    }
+#endif
+                    click = last = tCoord(tEvent.button.x, tEvent.button.y);
+                    break;
+                case SDL_MOUSEBUTTONUP: 
+#if !SDL_VERSION_ATLEAST(2,0,0)
+                    switch(tEvent.button.button)
+                    {
+                        case SDL_BUTTON_WHEELUP:
+                            yOffset -= 1/6.f;
+                            lastMouse=mouseEvent=true;
+                            continue;
+                        case SDL_BUTTON_WHEELDOWN:
+                            yOffset += 1/6.f;
+                            lastMouse=mouseEvent=true;
+                            continue;
+                        case SDL_BUTTON_X1:
+                        case SDL_BUTTON_X2:
+                            // not sure what's causing this when scrolling under SDL1
+                            continue;
+                    }
+#endif
+                    if(!dragScrolling) // not a mouse click if we were scrolling
+                    {
+                        mouseClick = mouseEvent = true;
+                    }
+                    dragScrolling = false;
+                    click = last = tCoord(0,0);
+                    break;
+#if SDL_VERSION_ATLEAST(2,0,0)
+                case SDL_MOUSEWHEEL:
+                    lastMouse = true;
+                    mouseEvent = true;
+                    
+                    yOffset -= tEvent.wheel.y/6.f;
+                    break;
+#endif
                 }
 
                 this->HandleEvent( tEvent );
@@ -244,8 +350,20 @@ void uMenu::OnEnter(){
             }
         }
 
+        if( tRecorder::IsRunning() )
+        {
+            // no mouse in recordings for now
+            mouseEvent = false;
+        }
+
         // we're about to render, last chance to make changes to the menu
         OnRender();
+
+        SDL_GetMouseState(&mouseX, &mouseY);
+        mouse.x = REAL(mouseX-(sr_screenWidth *0.5))/(sr_screenWidth * 0.5);
+        mouse.y = REAL(mouseY-(sr_screenHeight*0.5))/(sr_screenHeight*-0.5);
+
+        //std::cout << mouse << ";\n";
 
         // clamp cursor
         if (selected < 0 )
@@ -267,6 +385,8 @@ void uMenu::OnEnter(){
 
         REAL ysel=YPos(selected);
 
+if(!lastMouse) // only scroll automatically from keyboard input
+{
         if (ysel<menuBot+border)
             yOffset+=(menuBot+border-ysel)*6*ts;
 
@@ -278,12 +398,15 @@ void uMenu::OnEnter(){
 
         if (ysel>menuTop-smallborder)
             yOffset+=(menuTop-smallborder-ysel);
-
+}
+if(!dragScrolling) // don't clamp position while scrolling via dragging
+{
         if (YPos(0)>menuBot+smallborder)
             yOffset+=menuBot+smallborder-YPos(0);
 
         if (YPos(menuentries-1)<menuTop-smallborder)
             yOffset+=menuTop-smallborder-YPos(menuentries-1);
+}
 
 #ifndef DEDICATED
         sr_ResetRenderState(true);
@@ -297,7 +420,9 @@ void uMenu::OnEnter(){
             items[selected]->Render(center,YPos(selected),1,true);
 
             for (int i=items.Len()-1;i>=0;i--)
-                if (i!=selected){
+            {
+                if( mouseEvent || i != selected )
+                {
                     REAL y=YPos(i);
                     REAL alpha=1;
                     const REAL b=.1;
@@ -309,9 +434,61 @@ void uMenu::OnEnter(){
                     {
                         rTextField::SetDefaultColor( tColor(1,1,1,1) );
                         rTextField::SetBlendColor( tColor(1,1,1,1) );
-                        items[i]->Render(center,y,alpha,false);
+
+                        if(mouseEvent && items[i]->InTriggerArea(mouse, center, y))
+                        {
+                            if( i != selected && items[i]->HoverSelect(mouse, center, y) )
+                            {
+                                SetSelected(i);
+                                lastMouse = true;
+                                lastkey = tSysTimeFloat();
+                                
+                                items[i]->Render(center,y,alpha,true);
+                            }
+                            
+                            if(mouseClick)
+                            {
+                                mouseClickItem = i;
+                            }
+                        }
+                        
+                        if(selected != i)
+                        {
+                            items[i]->Render(center,y,alpha,false);
+                        }
                     }
                 }
+            }
+            for(int i=widgets.Len()-1;i>=0;i--)
+            {
+                if( mouseEvent )
+                {
+                    if( widgets[i]->InTriggerArea( mouse, yOffset ) )
+                    {
+                        if(!widgets[i]->mouseOver)
+                        {
+                            widgets[i]->OnMouseOver(mouse);
+                            widgets[i]->mouseOver = true;
+                        }
+                        if(mouseClick)
+                        {
+                            // make sure a menu item isn't triggered at the same time
+                            mouseClickItem = -1;
+                            
+                            widgets[i]->OnClick(mouse);
+                        }
+                    }
+                    else if(widgets[i]->mouseOver)
+                    {
+                        widgets[i]->OnMouseOut(mouse);
+                        widgets[i]->mouseOver = false;
+                    }
+                }
+                
+                rTextField::SetDefaultColor( tColor(1,1,1,1) );
+                rTextField::SetBlendColor( tColor(1,1,1,1) );
+                widgets[i]->Render( yOffset );
+            }
 
             rTextField::SetDefaultColor( tColor(1,1,1,1) );
             rTextField::SetBlendColor( tColor(1,1,1,1) );
@@ -342,6 +519,10 @@ void uMenu::OnEnter(){
                 c.SetWidth(static_cast<int>((1.9f-items[selected]->SpaceRight())/c.GetCWidth()));
                 c << items[selected]->Help();
             }
+            
+            // reset mouse flags
+            mouseEvent = false;
+            mouseClick = false;
         }
         else
 #endif
@@ -359,7 +540,7 @@ void uMenu::OnEnter(){
     s_globalRepeat = false;
 
     uCallbackMenuLeave::MenuLeave();
-    su_inMenu = false;
+    MenuNowActive(false);
 }
 
 void uMenu::HandleEvent( SDL_Event event )
@@ -390,7 +571,7 @@ void uMenu::HandleEvent( SDL_Event event )
                     else
                         selected=items.Len()-1;
                 }*/
-                selected = GetNextSelectable(selected);
+                SetSelected(GetNextSelectable(selected));
                 break;
 
             case(SDLK_DOWN):
@@ -403,7 +584,7 @@ void uMenu::HandleEvent( SDL_Event event )
                     else
                         selected=0;
                 }*/
-                selected = GetPrevSelectable(selected);
+                SetSelected(GetPrevSelectable(selected));
                 break;
 
             case(SDLK_LEFT):
@@ -419,7 +600,7 @@ void uMenu::HandleEvent( SDL_Event event )
                                     s_globalRepeat = false;
                 try
         {
-                    su_inMenu = false;
+                    MenuNowActive(false);
                     items[selected]->Enter();
                 }
                 catch (tException const & e)
@@ -445,7 +626,7 @@ void uMenu::HandleEvent( SDL_Event event )
                 }
 #endif
 
-                su_inMenu = true;
+                MenuNowActive(items[selected]->ConsiderMenuActive());
 
                 s_globalRepeat = false;
                 lastkey=tSysTimeFloat();
@@ -465,8 +646,15 @@ void uMenu::HandleEvent( SDL_Event event )
         }
     }
 
-    su_inMenu = true;
+    MenuNowActive(items[selected]->ConsiderMenuActive());
 #endif
+}
+
+void uMenu::SetSelected( int s )
+{
+    if( selected >= 0 && selected < items.Len() ) items[selected]->Deselect();
+    selected = s;
+    if( selected >= 0 && selected < items.Len() ) items[selected]->Select();
 }
 
 int uMenu::GetPrevSelectable(int start)
@@ -593,6 +781,103 @@ void uMenu::OnRender()
 }
 
 // *****************************************************
+
+void uMenuWidget::Render( REAL yOffset )
+{
+#ifndef DEDICATED
+    if(this->height == 0) return;
+    
+    rTextField::SetDefaultColor( tColor(1,1,1,1) );
+    if(selected)
+    {
+        // copied from uMenuItem::SetColor
+        REAL time=tSysTimeFloat()*10;
+        REAL intensity = 1+.3*cos(time);
+        rTextField::SetDefaultColor( tColor(.8,.3,.3,1) );
+        rTextField::SetBlendColor( tColor(intensity,intensity,intensity,1) );
+    }
+    
+    this->width = rTextField::GetTextLength(text, height, false);
+    DisplayTextAutoWidth( pos.x, pos.y+(AffectedByScroll()?yOffset:0)+0.04, text, height, textAlign );
+#endif
+}
+
+bool uMenuWidget::InTriggerArea( tCoord mouse, REAL yOffset )
+{
+    REAL th = (height/2) - (height*0.088f), tw = width/2;
+    REAL ah = (-(AffectedByScroll()?yOffset:0))-0.0088f;
+    REAL aw = (tw*textAlign);
+    return (
+        mouse.y > pos.y-ah-th && mouse.y < pos.y-ah+th && 
+        mouse.x > pos.x-aw-tw && mouse.x < pos.x-aw+tw
+    );
+}
+
+// *****************************************************
+
+bool uMenuItem::InTriggerArea(tCoord mouse, REAL myX, REAL myY, const char * text)
+{
+    myY -= 0.04;
+    REAL th = (text_height/2) - (6.f/sr_screenHeight);
+    REAL tw = 1;
+#ifndef DEDICATED
+    if(strlen(text) > 0)
+    {
+        tw = (rTextField::GetTextLength(text, text_height, true)/2)+0.02;
+    }
+#endif
+    return (
+        mouse.y > myY-th && mouse.y < myY+th && 
+        mouse.x > myX-tw && mouse.x < myX+tw 
+    );
+}
+bool uMenuItemSubmenu::InTriggerArea(tCoord mouse, REAL myX, REAL myY)
+{
+    return uMenuItem::InTriggerArea(mouse, myX, myY, submenu->title);
+}
+bool uMenuItemAction::InTriggerArea(tCoord mouse, REAL myX, REAL myY)
+{
+    return uMenuItem::InTriggerArea(mouse, myX, myY, name_);
+}
+bool uMenuItemExit::InTriggerArea(tCoord mouse, REAL myX, REAL myY)
+{
+    const char * text = t;
+    return uMenuItem::InTriggerArea(mouse, myX, myY, text);
+}
+
+void uMenuItem::OnClick( tCoord mouse, bool selected )
+{
+    if(!selected) return;
+
+    try
+    {
+        menu->MenuNowActive(false);
+        Enter();
+    }
+    catch(tException const & e)
+    {
+        uMenu::SetIdle(NULL);
+
+        // inform user of generic errors
+        tConsole::Message( e.GetName(), e.GetDescription(), 20 );
+    }
+#ifdef _MSC_VER
+#pragma warning ( disable : 4286 )
+    // GRR. Visual C++ dones not handle generic exceptions with the above general statement.
+    // A specialized version is needed. The best part: it warns about the code below being redundant.
+    catch ( tGenericException const & e )
+    {
+        try
+        {
+            tConsole::Message( e.GetName(), e.GetDescription(), 20 );
+        }
+        catch (...)
+        {
+        }
+    }
+#endif
+    menu->MenuNowActive(this->ConsiderMenuActive());
+}
 
 // *******************************************************************************************
 // *
@@ -726,37 +1011,30 @@ void uMenuItemToggle::Enter(){
 uMenuItemInt::uMenuItemInt
 (uMenu *m,const char *tit,const char *help,int &targ,
  int mi,int ma,int step)
-        :uMenuItem(m,help),title(tit),target(targ),Min(mi),Max(ma),
-        Step(step){
-    if (target<Min) target=Min;
-    if (target>Max) target=Max;
+        :uMenuItemSelection<int>(m,tit,help,targ),
+            title(tit),target(targ),Min(mi),Max(ma),Step(step)
+{
+    for(int i=Min;i<=Max;i+=step)
+    {
+        tString s; s << i;
+        uMenuItemSelection<int>::NewChoice(s,"",i);
+    }
 }
 #endif
 
 uMenuItemInt::uMenuItemInt
 (uMenu *m,const tOutput &tit,const tOutput &help,int &targ,
  int mi,int ma,int step)
-        :uMenuItem(m,help),title(tit),target(targ),Min(mi),Max(ma),
-        Step(step){
-    if (target<Min) target=Min;
-    if (target>Max) target=Max;
+        :uMenuItemSelection<int>(m,tit,help,targ),
+            title(tit),target(targ),Min(mi),Max(ma),Step(step)
+{
+    for(int i=Min;i<=Max;i+=step)
+    {
+        tString s; s << i;
+        uMenuItemSelection<int>::NewChoice(s,"",i);
+    }
 }
 
-
-void uMenuItemInt::LeftRight(int dir){
-    target+=dir*Step;
-    if (target<Min) target=Min;
-    if (target>Max) target=Max;
-}
-
-void uMenuItemInt::Render(REAL x,REAL y,REAL alpha,
-                          bool selected){
-    DisplayText(x-.02,y,title,selected,alpha,1);
-
-    tString s;
-    s << target;
-    DisplayText(x+.02,y,s,selected,alpha,-1);
-}
 
 // *****************************************
 //               Float Choose
@@ -766,36 +1044,44 @@ void uMenuItemInt::Render(REAL x,REAL y,REAL alpha,
 uMenuItemReal::uMenuItemReal
 (uMenu *m,const char *tit,const char *help,REAL &targ,
  REAL mi,REAL ma,REAL step)
-        :uMenuItem(m,help),title(tit),target(targ),Min(mi),Max(ma),
-        Step(step){
-    if (target<Min) target=Min;
-    if (target>Max) target=Max;
+        :uMenuItemSelection<REAL>(m,tit,help,targ),
+            title(tit),target(targ),Min(mi),Max(ma),Step(step)
+{
+#ifndef DEDICATED
+    tString s; s << step;
+    int prec = 0, dec = s.StrPos(".");
+    if(dec > 0) prec = s.Len() - dec - 2;
+    
+    for(REAL i=Min;i<=Max;i+=step)
+    {
+        std::ostringstream val;
+        val << std::setprecision(prec) << i;
+        
+        uMenuItemSelection<REAL>::NewChoice(val.str().c_str(),"",i);
+    }
+#endif
 }
 #endif
 
 uMenuItemReal::uMenuItemReal
 (uMenu *m,const tOutput &tit,const tOutput &help,REAL &targ,
  REAL mi,REAL ma,REAL step)
-        :uMenuItem(m,help),title(tit),target(targ),Min(mi),Max(ma),
-        Step(step){
-    if (target<Min) target=Min;
-    if (target>Max) target=Max;
-}
-
-
-void uMenuItemReal::LeftRight(int dir){
-    target+=dir*Step;
-    if (target<Min) target=Min;
-    if (target>Max) target=Max;
-}
-
-void uMenuItemReal::Render(REAL x,REAL y,REAL alpha,
-                          bool selected){
-    DisplayText(x-.02,y,title,selected,alpha,1);
-
-    tString s;
-    s << target;
-    DisplayText(x+.02,y,s,selected,alpha,-1);
+        :uMenuItemSelection<REAL>(m,tit,help,targ),
+            title(tit),target(targ),Min(mi),Max(ma),Step(step)
+{
+#ifndef DEDICATED
+    tString s; s << step;
+    int prec = 0, dec = s.StrPos(".");
+    if(dec > 0) prec = s.Len() - dec - 2;
+    
+    for(REAL i=Min;i<=Max;i+=step)
+    {
+        std::ostringstream val;
+        val << std::setprecision(prec) << i;
+        
+        uMenuItemSelection<REAL>::NewChoice(val.str().c_str(),"",i);
+    }
+#endif
 }
 
 
@@ -1478,6 +1764,7 @@ bool uMenu::Message(const tOutput& message, const tOutput& interpretation, REAL 
     rSysDep::SwapGL();
 
     REAL timeout = tSysTimeFloat() + to;
+    double ignoreInput = tSysTimeFloat() + .5;
     SDL_Event tEvent;
 
     // catch some keyboard input
@@ -1505,7 +1792,9 @@ bool uMenu::Message(const tOutput& message, const tOutput& interpretation, REAL 
                  (to < 0 || tSysTimeFloat() < timeout)){
             //while(  !quickexit && ( !su_GetSDLInput(tEvent) || tEvent.type!=SDL_KEYDOWN) &&
             //        (to < 0 || tSysTimeFloat() < timeout)){
-            if ( su_GetSDLInput(tEvent) && tEvent.type==SDL_KEYDOWN) {
+            if ( su_GetSDLInput(tEvent) ) {
+                switch(tEvent.type) {
+                case SDL_KEYDOWN:
                 switch (tEvent.key.keysym.sym) {
                 case SDLK_UP:
                     if (offset > 0)
@@ -1520,8 +1809,47 @@ bool uMenu::Message(const tOutput& message, const tOutput& interpretation, REAL 
                 default:
                     break;
                 }
-                break;
+                case SDL_MOUSEBUTTONUP:
+                {
+#if !SDL_VERSION_ATLEAST(2,0,0)
+                    int scrollAmount = 0;
+                    switch(tEvent.button.button)
+                    {
+                        case SDL_BUTTON_WHEELUP: scrollAmount = 4; break;
+                        case SDL_BUTTON_WHEELDOWN: scrollAmount = -4; break;
+                        case SDL_BUTTON_X1: case SDL_BUTTON_X2: continue;
+                    }
+                    if(scrollAmount == 0) break;
+#else
+                    break;
+                }
+                case SDL_MOUSEWHEEL:
+                {
+                    int scrollAmount = tEvent.wheel.y*4;
+#endif
+                    if( scrollAmount > 0 && ((unsigned)scrollAmount) > offset )
+                    {
+                        // don't scroll up just to wrap
+                        scrollAmount = offset;
+                    }
+                    offset -= scrollAmount;
+                    continue;
+                }
+                default:
+                    goto keepDispMsg;
+                }
+                if( tSysTimeFloat() > ignoreInput )
+                {
+                    // exit on any key
+                    break;
+                }
+                else
+                {
+                    // esc may have been pressed in error
+                    ret = true;
+                }
             }
+            keepDispMsg:
             if ( sr_glOut )
             {
                 sr_ResetRenderState(true);

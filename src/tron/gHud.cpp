@@ -58,8 +58,8 @@ REAL subby_BrakeGaugeSize=.175, subby_BrakeGaugeLocX=0.48, subby_BrakeGaugeLocY=
 REAL subby_RubberGaugeSize=.175, subby_RubberGaugeLocX=-0.48, subby_RubberGaugeLocY=-0.9;
 bool subby_RubberMeterColorChange = true;
 bool subby_ShowHUD=true, subby_ShowSpeedFastest=true, subby_ShowScore=true, subby_ShowAlivePeople=true, subby_ShowPing=true, subby_ShowSpeedMeter=true, subby_ShowBrakeMeter=true, subby_ShowRubberMeter=true;
-bool showTime=false;
-bool show24hour=false;
+bool hudShowTime=false;
+bool hudShowTime24hour=false;
 REAL subby_ScoreLocX=-0.95, subby_ScoreLocY=-0.85, subby_ScoreSize =.13;
 REAL subby_FastestLocX=-0.2, subby_FastestLocY=-0.95, subby_FastestSize =.13;
 REAL subby_AlivePeopleLocX=.45, subby_AlivePeopleLocY=-0.95, subby_AlivePeopleSize =.13;
@@ -602,6 +602,67 @@ static void display_hud_subby( ePlayer* player ){
 }
 
 
+#include <ctime>
+#include <cstdio>
+
+std::string getTimeString(bool showTime24hour)
+{
+    static int lastTime = 0;
+    static char theTime[13 * 3];
+    struct tm* thisTime;
+    time_t rawtime;
+
+    time(&rawtime);
+    thisTime = localtime(&rawtime);
+
+    if (thisTime->tm_min != lastTime)
+    {
+        char h[13];
+        char m[13];
+        char ampm[13] = " ";
+
+        lastTime = thisTime->tm_min;
+
+        if (thisTime->tm_min < 10)
+        {
+            sprintf(m, "0%d", thisTime->tm_min);
+        }
+        else
+        {
+            sprintf(m, "%d", thisTime->tm_min);
+        }
+
+        if (showTime24hour)
+        {
+            sprintf(h, "%d", thisTime->tm_hour);
+        }
+        else
+        {
+            int newhour;
+
+            if (thisTime->tm_hour > 12)
+            {
+                newhour = thisTime->tm_hour - 12;
+                sprintf(ampm, "%s", "PM");
+            }
+            else
+            {
+                newhour = thisTime->tm_hour;
+                if (newhour == 0)
+                    newhour = 12;
+                sprintf(ampm, "%s", "AM");
+            }
+            sprintf(h, "%d", newhour);
+        }
+
+        sprintf(theTime, "%s:%s %s", h, m, ampm);
+    }
+
+    return std::string(theTime);
+}
+
+
+
 static void display_fps_subby()
 {
     if (!(se_mainGameTimer &&
@@ -710,50 +771,12 @@ static void display_fps_subby()
     }
     
     // Show the time
-    if(showTime) {
-        static int lastTime=0;
-        static char theTime[13*3];
-        float size =.15;
-        struct tm* thisTime;
-        time_t rawtime;
+    if (hudShowTime)
+    {
+        float size = .15;
+        std::string theTime = getTimeString(hudShowTime24hour);
 
-        time ( &rawtime );
-        thisTime = localtime ( &rawtime );
-
-        if(thisTime->tm_min != lastTime) {
-            char h[13];
-            char m[13];
-            char ampm[13] = " ";
-
-            lastTime = thisTime->tm_min;
-
-            if(thisTime->tm_min < 10) {
-                sprintf(m, "0%d", thisTime->tm_min);
-            } else {
-                sprintf(m, "%d", thisTime->tm_min);
-            }
-
-            if(show24hour) {
-                sprintf(h, "%d", thisTime->tm_hour);
-            } else {
-                int newhour;
-
-                if(thisTime->tm_hour > 12) {
-                    newhour = thisTime->tm_hour-12;
-                    sprintf(ampm,"%s","PM");
-                } else {
-                    newhour = thisTime->tm_hour;
-                    if(newhour == 0) newhour = 12;
-                    sprintf(ampm,"%s","AM");
-                }
-                sprintf(h, "%d", newhour);
-            }
-
-            sprintf(theTime, "%s:%s %s",h,m,ampm);
-        }
-
-        // float timesize = subby_ScoreSize; // -((.15*timesize*(10-1.5))/2.0)
-        rTextField the_time(.9-.2*rTextField::AspectWidthMultiplier(),.9,.15*size*rTextField::AspectWidthMultiplier(), .3*size);
+        rTextField the_time(.9 - .2 * rTextField::AspectWidthMultiplier(), .9, .15 * size * rTextField::AspectWidthMultiplier(), .3 * size);
 
         the_time << "0xffffff" << theTime;
     }

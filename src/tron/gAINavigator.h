@@ -336,7 +336,7 @@ private:
     class FollowEvaluator: public PathEvaluator
     {
     public:
-        FollowEvaluator( gCycle & cycle, bool findTarget = false, tString target = tString(""));
+        FollowEvaluator( gCycle & cycle);
         ~FollowEvaluator();
 
         //! return data of SolveTurn
@@ -352,10 +352,11 @@ private:
         //! determine when we need to turn in order to catch the target.
         void SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data );
 
-        void FindTarget();
-        void SetDesiredTarget(tString target);
+        bool FindTarget();
+        bool SetDesiredTarget(tString target);
         //! set the target to follow
         void SetTarget( eCoord const & target, eCoord const & velocity );
+        void SetTarget( eGameObject * object );
 
         virtual void Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const;
 

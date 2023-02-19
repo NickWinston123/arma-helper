@@ -33,7 +33,7 @@ gHelperHudItem<tColoredString> helperDebugH("Debug",tColoredString("0xdd0000None
 gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit",sg_helperShowHit);
 gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist",1000,"Show Hit");
 
-gHelperHudItem<REAL> sg_helperActivateTimeH("Acivate Time",0);
+gHelperHudItem<REAL> sg_helperActivateTimeH("Active Time",0);
 gHelperHudItem<REAL> sg_helperGameTimeH("Game Time",0);
 
 // gHelper::getCorner retrieves a pointer to the gSmartTurningCornerData instance for the given direction

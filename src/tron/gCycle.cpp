@@ -213,6 +213,24 @@ static REAL sg_GetSyncIntervalSelf( gCycle* cycle )
         return sg_syncIntervalEnemy * 10;
 }
 
+bool sr_filterCycleWalls = false;
+static tConfItem< bool > sr_filterCycleWallsConf( "FILTER_CYCLE_WALLS", sr_filterCycleWalls );
+
+REAL sr_filterCycleWallsMinR = 0;
+static tConfItem<REAL> sr_filterCycleWallsMinRConf("FILTER_CYCLE_WALLS_MIN_R", sr_filterCycleWallsMinR);
+
+REAL sr_filterCycleWallsMinG = 0;
+static tConfItem<REAL> sr_filterCycleWallsMinGConf("FILTER_CYCLE_WALLS_MIN_G", sr_filterCycleWallsMinG);
+
+REAL sr_filterCycleWallsMinB = 0;
+static tConfItem<REAL> sr_filterCycleWallsMinBConf("FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB);
+
+REAL sr_filterCycleWallsMaxTotal = 100;
+static tConfItem<REAL> sr_filterCycleWallsMaxTotalConf("FILTER_CYCLE_WALLS_MAX_TOTAL", sr_filterCycleWallsMaxTotal);
+
+REAL sr_filterCycleWallsMinTotal = 0;
+static tConfItem<REAL> sr_filterCycleWallsMinTotalConf("FILTER_CYCLE_WALLS_MIN_TOTAL", sr_filterCycleWallsMinTotal);
+
 // moviepack hack
 //static bool moviepack_hack=false;       // do we use it?
 //static tSettingItem<bool> ump("MOVIEPACK_HACK",moviepack_hack);
@@ -428,7 +446,7 @@ REAL gSmarterBot::Think( REAL minStep )
         manager.Evaluate( TrapEvaluator( *Owner()), local_player->sg_smarterBotTrapScale );
 
     if (local_player->sg_smarterBotFollowScale > 0) {
-        manager.Evaluate( FollowEvaluator(*Owner(), local_player->sg_smarterBotFollowFindTarget,local_player->sg_smarterBotFollowTarget), local_player->sg_smarterBotFollowScale );
+        manager.Evaluate( FollowEvaluator(*Owner()), local_player->sg_smarterBotFollowScale );
     }
     if (local_player->sg_smarterBotPlanScale > 0)
         manager.Evaluate( PlanEvaluator(), local_player->sg_smarterBotPlanScale );
@@ -2461,6 +2479,11 @@ void gCycle::MyInitAfterCreation(){
 
             se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
             se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
+
+            if (sr_filterCycleWalls) {
+                se_removeDarkColors( color_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal );
+                se_removeDarkColors( trailColor_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal);
+            }
         }
     }
 
@@ -2575,25 +2598,6 @@ void gCycle::MyInitAfterCreation(){
     }
 #endif
 }
-
-bool sr_filterCycleWalls = false;
-static tConfItem< bool > sr_filterCycleWallsConf( "FILTER_CYCLE_WALLS", sr_filterCycleWalls );
-
-REAL sr_filterCycleWallsMinR = 0;
-static tConfItem<REAL> sr_filterCycleWallsMinRConf("FILTER_CYCLE_WALLS_MIN_R", sr_filterCycleWallsMinR);
-
-REAL sr_filterCycleWallsMinG = 0;
-static tConfItem<REAL> sr_filterCycleWallsMinGConf("FILTER_CYCLE_WALLS_MIN_G", sr_filterCycleWallsMinG);
-
-REAL sr_filterCycleWallsMinB = 0;
-static tConfItem<REAL> sr_filterCycleWallsMinBConf("FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB);
-
-REAL sr_filterCycleWallsMaxTotal = 100;
-static tConfItem<REAL> sr_filterCycleWallsMaxTotalConf("FILTER_CYCLE_WALLS_MAX_TOTAL", sr_filterCycleWallsMaxTotal);
-
-REAL sr_filterCycleWallsMinTotal = 0;
-static tConfItem<REAL> sr_filterCycleWallsMinTotalConf("FILTER_CYCLE_WALLS_MIN_TOTAL", sr_filterCycleWallsMinTotal);
-
 
 bool sr_removeBlueColors = false;
 static tConfItem< bool > sr_removeBlueColorsConf( "FILTER_CYCLE_WALLS_BLUE", sr_removeBlueColors );

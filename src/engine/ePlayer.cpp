@@ -58,6 +58,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../tron/gCycle.h"
 #include "../tron/gZone.h"
 #include "../tron/gGame.h"
+#include "../tron/gHud.h"
 #include "../tron/gHelper/gHelperUtilities.h"
 #include "eGrid.h"
 #include <time.h>
@@ -1306,7 +1307,7 @@ ePlayer::ePlayer() : colorIteration(0)
 
     for(i=0; i < MAX_INSTANT_CHAT; i++)
     {
-        if ( i >= ( sizeof(default_instant_chat) / sizeof(char *) ) )
+        if ( i >= static_cast<int>(sizeof(default_instant_chat) / sizeof(char *)) )
             break;
 
         if (!default_instant_chat[i])
@@ -1435,6 +1436,12 @@ ePlayer::ePlayer() : colorIteration(0)
     confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_TARGET";
     sg_smarterBotFollowFindTarget = true;
     StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot Follow Target", sg_smarterBotFollowFindTarget));
+
+    // sg_smarterBotFollowBlockLogic
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_BLOCKED_LOGIC";
+    sg_smarterBotFollowBlockLogic = true;
+    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot blocked by self logic", sg_smarterBotFollowBlockLogic));
 
 
     // sg_smarterBotFollowTarget
@@ -4893,6 +4900,9 @@ static tConfItem<tString> se_rebuildCommandConf("LOCAL_CHAT_COMMAND_REBUILD", se
 static tString se_specCommand("/spec");
 static tConfItem<tString> se_specCommandConf("LOCAL_CHAT_COMMAND_SPEC", se_specCommand);
 
+static tString se_activeStatusCommand("/afk");
+static tConfItem<tString> se_activeStatusCommandConf("LOCAL_CHAT_COMMAND_ACTIVE_STATUS", se_activeStatusCommand);
+
 #endif //if not dedicated
 
 void ePlayerNetID::Chat(const tString& s_orig)
@@ -4911,7 +4921,8 @@ void ePlayerNetID::Chat(const tString& s_orig)
         se_browserCommand,
         se_speakCommand,
         se_rebuildCommand,
-        se_specCommand
+        se_specCommand,
+        se_activeStatusCommand
     };
 
     std::string chatString(s_orig);
@@ -4997,6 +5008,10 @@ void ePlayerNetID::Chat(const tString& s_orig)
         else if (command == se_specCommand)
         {
             eCamera::SpectatePlayer(*this, s_orig);
+        }
+        else if (command == se_activeStatusCommand)
+        {
+            activeStatus(*this, s_orig);
         }
     }
     else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )
@@ -6051,16 +6066,15 @@ static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
 static bool se_disableCreateHard = false;
 static tConfItem<bool> se_disableCreateHardConf("DISABLE_CREATE_HARD", se_disableCreateHard);
 
-ePlayerNetID::ePlayerNetID(int p, int owner):nNetObject(owner),listID(-1), teamListID(-1), timeCreated_( tSysTimeFloat() ), allowTeamChange_(false), registeredMachine_(0), pID(p)
+ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
+                                               teamListID(-1),
+                                               timeCreated_(tSysTimeFloat()),
+                                               allowTeamChange_(false),
+                                               registeredMachine_(0),
+                                               pID(p),
+                                               timeSinceLastChat_(0),
+                                               joinedTime_(getTimeString(false))
 {
-
-    // if (p < 0)  {
-    //     gHelperUtility::Debug("ePlayerNetID", "ePlayerNetID ID < 0. Ignoring, Probably local AI. ID:", p);
-    //     return;
-    // }
-
-    //con << "object == 1 " << object  << "\n";
-
     flagOverrideChat = false;
     flagChatState = false;
 
@@ -6110,7 +6124,7 @@ ePlayerNetID::ePlayerNetID(int p, int owner):nNetObject(owner),listID(-1), teamL
 
     se_PlayerNetIDs.Add(this,listID);
     object=NULL;
-    //con << "object == 2 " << object  << "\n";
+
     gRacePlayer *racePlayer = new gRacePlayer(this);
 
     //sg_OutputOnlinePlayers();
@@ -6125,22 +6139,25 @@ ePlayerNetID::ePlayerNetID(int p, int owner):nNetObject(owner),listID(-1), teamL
     lastSync=tSysTimeFloat();
 
     RequestSync();
-    //con << "object == 3 " << object  << "\n";
+
     score=0;
     lastScore_=IMPOSSIBLY_LOW_SCORE;
     // rubberstatus=0;
 
     MyInitAfterCreation();
-    //con << "object == ? 4 " << object  << "\n";
+
     if(sn_GetNetState()==nSERVER)
         RequestSync();
 }
 
-
-
-
-ePlayerNetID::ePlayerNetID(nMessage &m):nNetObject(m),listID(-1), teamListID(-1), timeCreated_( tSysTimeFloat() )
-    , allowTeamChange_(false), registeredMachine_(0)
+ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
+                                          listID(-1),
+                                          teamListID(-1),
+                                          timeCreated_(tSysTimeFloat()),
+                                          allowTeamChange_(false),
+                                          registeredMachine_(0),
+                                          timeSinceLastChat_(0),
+                                          joinedTime_(getTimeString(false))
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -6195,18 +6212,22 @@ void ePlayerNetID::Activity()
     if (sn_GetNetState() != nSERVER && Owner() != ::sn_myNetID)
         return;
 
+    if (!se_toggleChatFlag && !se_toggleChatFlagAlways) 
+        chatting_ = false;
+
     if (chatting_ || disconnected)
     {
+        
 #ifdef DEBUG
         con << *this << " showed activity and lost chat status.\n";
 #endif
         RequestSync();
+    } else {
+        //timeSinceLastChat_ = tSysTimeFloat();
     }
 
     disconnected = false;
-    if (!se_toggleChatFlag && !se_toggleChatFlagAlways) {
-        chatting_ = false;
-    }
+
     // store time
     this->lastActivity_ = tSysTimeFloat();
 }
@@ -9586,7 +9607,6 @@ tColoredString ePlayerNetID::gatherPlayerColor(ePlayerNetID* p, bool showReset)
     }
 }
 
-
 /*
 List player information.
 Displays:
@@ -9652,7 +9672,7 @@ void ePlayerNetID::listPlayerInfo(tString s_orig)
 tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID * p)
 {
     tColoredString listinfo;
-    listinfo << "Results for " << p->GetColoredName() << "0xRESETT: \n";
+    listinfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n";
 
     ///Status. Includes player type, spectating or playing, and if the player is chatting.
     listinfo << "Status: ";
@@ -9676,10 +9696,10 @@ tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID * p)
         {
             gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
 
-            listinfo <<  "Position: x: " << pCycle->MapPosition().x << ", y: " << pCycle->MapPosition().y  << "\n";
+            listinfo <<  "Position: x: " << pCycle->Position().x << ", y: " << pCycle->Position().y  << "\n";
 
             //Had trouble converting the direction to an angle, will have to visit this later
-            listinfo << "Map Direction: " << "x: " << pCycle->MapDirection().x << ", y: " << pCycle->MapDirection().y << "\n";
+            listinfo << "Map Direction: " << "x: " << pCycle->Direction().x << ", y: " << pCycle->Direction().y << "\n";
             listinfo << "Speed: " << pCycle->verletSpeed_  << "\n";
             listinfo << "Rubber: " << pCycle->GetRubber() << "/" << sg_rubberCycle << "\n";
         }
@@ -9837,6 +9857,29 @@ void ePlayerNetID::localSpeak(ePlayerNetID &player, tString s_orig)
 
     if (p && player.Owner() == p->Owner())
         p->Chat(params.SubStr(pos+1));
+}
+
+void ePlayerNetID::activeStatus(ePlayerNetID &player, tString s_orig)
+{
+    tString params;
+    params << s_orig;
+    int pos = 0;
+
+    tString PlayerStr = params.ExtractNonBlankSubString(pos,1);
+
+    ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
+
+    if (!p)
+        return;
+
+    tColoredString listInfo;
+    listInfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n";
+
+    listInfo << "Status: " << "\n";
+    listInfo << "Last Activity: " << p->LastActivity() << "\n";
+    listInfo << "Chatting For " << p->ChattingTime() <<  "\n";
+    listInfo << "Joined: " << p->joinedTime_ << "\n";
+    con << listInfo;
 }
 
 // Allow us to change our current RGB easily.
@@ -11199,9 +11242,10 @@ void ePlayerNetID::SetChatting ( ChatFlags flag, bool chatting )
     if ( chatting )
     {
         chatFlags_ |= flag;
-        if ( !chatting_ )
+        if ( !chatting_ ) {
             this->RequestSync();
-
+            timeSinceLastChat_ = tSysTimeFloat();
+        }
         chatting_ = true;
     }
     else
@@ -11209,9 +11253,9 @@ void ePlayerNetID::SetChatting ( ChatFlags flag, bool chatting )
         chatFlags_ &= ~flag;
         if ( 0 == chatFlags_ )
         {
-            if ( chatting_ )
+            if ( chatting_ ) {
                 this->RequestSync();
-
+            }
             chatting_ = false;
         }
     }
@@ -13323,6 +13367,11 @@ nMachine & ePlayerNetID::DoGetMachine( void ) const
 REAL ePlayerNetID::LastActivity( void ) const
 {
     return tSysTimeFloat() - lastActivity_;
+}
+
+REAL ePlayerNetID::ChattingTime( void ) const
+{
+    return chatting_ ? tSysTimeFloat() - timeSinceLastChat_ : 0 ;
 }
 
 // *******************************************************************************

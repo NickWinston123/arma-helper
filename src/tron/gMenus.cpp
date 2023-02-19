@@ -834,8 +834,8 @@ static tConfItem<bool> showp("HUD_SHOW_PING",subby_ShowPing);
 static tConfItem<bool> showsm("HUD_SHOW_SPEED",subby_ShowSpeedMeter);
 static tConfItem<bool> showbm("HUD_SHOW_BRAKE",subby_ShowBrakeMeter);
 static tConfItem<bool> showrm("HUD_SHOW_RUBBER",subby_ShowRubberMeter);
-static tConfItem<bool> showtim("HUD_SHOW_TIME",showTime);
-static tConfItem<bool> show24("HUD_SHOW_TIME_24",show24hour);
+static tConfItem<bool> showtim("HUD_SHOW_TIME",hudShowTime);
+static tConfItem<bool> show24("HUD_SHOW_TIME_24",hudShowTime24hour);
 static tConfItem<bool> showpos("HUD_SHOW_POSITION",showPosition);
 
 static tConfItem<REAL> scorex("HUD_SCORE_LOCX",subby_ScoreLocX);
@@ -888,11 +888,11 @@ uMenuItemToggle hud9
 
 uMenuItemToggle hud10
 (&hud_prefs,"$pref_showtime_text",
- "$pref_showtime_help",showTime);
+ "$pref_showtime_help",hudShowTime);
 
 uMenuItemToggle hud11
 (&hud_prefs,"$pref_show24hour_text",
- "$pref_show24hour_help",show24hour);
+ "$pref_show24hour_help",hudShowTime24hour);
 
 extern int simplemapmode;
 uMenuItemToggle hud12

@@ -129,6 +129,7 @@ public:
     REAL sg_smarterBotSuicideEval;
     REAL sg_smarterBotTrapScale;
     REAL sg_smarterBotFollowScale;
+    bool sg_smarterBotFollowBlockLogic;
     bool sg_smarterBotFollowFindTarget;
     tString sg_smarterBotFollowTarget;
     REAL sg_smarterBotPlanScale;
@@ -299,6 +300,8 @@ private:
     bool			spectating_; //!< are we currently spectating? Spectators don't get assigned to teams.
     bool			stealth_; //!< does this player want to hide his/her identity?
     bool			chatting_;   //!< are we currently chatting?
+    std::string     joinedTime_;
+    REAL            timeSinceLastChat_;
     int				chatFlags_;  //!< different types of reasons for beeing chatting
     bool			allowTeamChange_; //!< allow team changes even if ALLOW_TEAM_CHANGE is disabled?
 
@@ -461,7 +464,7 @@ public:
 
     void Activity(); // call it if this player just showed some activity.
     REAL LastActivity() const; //!< returns how long the last activity of this player was ago
-
+    REAL ChattingTime() const;
     eNetGameObject *Object() const;
 
     //void SetRubber(ePlayerNetID *player, REAL rubber);
@@ -492,6 +495,7 @@ public:
     // Fast way to change / display current RGB
     static void currentPlayerRGB(ePlayerNetID &player,tString s_orig);
     static void localSpeak(ePlayerNetID &player, tString s_orig);
+    static void activeStatus(ePlayerNetID &player, tString s_orig);
     //Grab Stuff
     static tColoredString gatherPlayerInfo(ePlayerNetID * p);
     static tColoredString gatherPlayerColor(ePlayerNetID * p, bool showReset = true);

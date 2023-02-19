@@ -741,30 +741,32 @@ void gAINavigator::RubberEvaluator::Init( gCycle const & cycle, REAL maxTime )
 // * FollowEvaluator      *
 // *************************
 
-gAINavigator::FollowEvaluator::FollowEvaluator( gCycle & cycle, bool findTarget, tString target ): cycle_( cycle ), blocker_( 0 ), blockedBySelf_( false )
+gAINavigator::FollowEvaluator::FollowEvaluator( gCycle & cycle ): cycle_( cycle ), blocker_( 0 ), blockedBySelf_( false )
 {
-    if (findTarget && target.empty()) 
+    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle);
+
+    if (local_p && local_p->sg_smarterBotFollowFindTarget && local_p->sg_smarterBotFollowTarget.empty() ||
+       (local_p->sg_smarterBotFollowFindTarget && !SetDesiredTarget(local_p->sg_smarterBotFollowTarget)) )
         gAINavigator::FollowEvaluator::FindTarget();
-    else if (findTarget)
-    {
-        SetDesiredTarget(target);
-    }
 }
 
 gAINavigator::FollowEvaluator::~FollowEvaluator()
 {
 }
 
-void gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
+bool gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
 {
-    ePlayerNetID *player = ePlayerNetID::FindPlayerByName(target);
-    
+    ePlayerNetID *player = ePlayerNetID::FindPlayerByName(target,(ePlayerNetID *)0,false);
+
     if (player && player->Object())
     {
         gCycle* cycle = dynamic_cast<gCycle *>(player->Object());
-        if (cycle)
+        if (cycle) {
             SetTarget(cycle->Position(), cycle->Direction() * cycle->Speed());
+            return true;
+        }
     }
+    return false;
 }
 
 
@@ -851,11 +853,19 @@ public:
     }
 };
 
-void gAINavigator::FollowEvaluator::FindTarget()
+bool gAINavigator::FollowEvaluator::FindTarget()
 {
     gCycle *target = gHelperEnemiesData::getClosestEnemy(&cycle_);
-    if (target)
-        SetTarget(target->Position(), target->Direction() * target->Speed());
+    if (target) {
+        SetTarget(target);
+        return true;
+    }
+    return false;
+}
+
+void gAINavigator::FollowEvaluator::SetTarget( eGameObject * object )
+{
+    SetTarget(object->Position(), object->Direction() * object->Speed());
 }
 
 void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord const & velocity )
@@ -872,7 +882,7 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
 
     if( sensor.type != gSENSOR_NONE )
     {
-        if( sensor.lastOwnEHit )
+        if( sensor.lastOwnEHit && ePlayer::gCycleToLocalPlayer(&cycle_)->sg_smarterBotFollowBlockLogic)
         {
             gPlayerWall const * ownWall = dynamic_cast< gPlayerWall const * >( sensor.lastOwnEHit->GetWall() );
             if ( ownWall )
@@ -910,7 +920,7 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
                 follow.Normalize();
 
                 // hah, but if we're faster than the other guy, try to overtake him.
-                if( blocker_->Speed() < cycle_.Speed() )
+                if( blocker_->Speed() + blocker_->Lag() < cycle_.Speed() )
                 {
                     follow *= -1;
                 }

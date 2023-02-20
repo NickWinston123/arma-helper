@@ -408,3 +408,59 @@ double tRealSysTimeFloat ()
     tAdvanceFrameSys( timeRealStart, timeRealRelative );
     return ( timeRealRelative.seconds + timeRealRelative.microseconds*1E-6 ) * st_timeFactor;
 }
+
+std::string getTimeString(bool showTime24hour)
+{
+    static int lastTime = 0;
+    static char theTime[13 * 3];
+    struct tm* thisTime;
+    time_t rawtime;
+
+    time(&rawtime);
+    thisTime = localtime(&rawtime);
+
+    if (thisTime->tm_min != lastTime)
+    {
+        char h[13];
+        char m[13];
+        char ampm[13] = " ";
+
+        lastTime = thisTime->tm_min;
+
+        if (thisTime->tm_min < 10)
+        {
+            sprintf(m, "0%d", thisTime->tm_min);
+        }
+        else
+        {
+            sprintf(m, "%d", thisTime->tm_min);
+        }
+
+        if (showTime24hour)
+        {
+            sprintf(h, "%d", thisTime->tm_hour);
+        }
+        else
+        {
+            int newhour;
+
+            if (thisTime->tm_hour > 12)
+            {
+                newhour = thisTime->tm_hour - 12;
+                sprintf(ampm, "%s", "PM");
+            }
+            else
+            {
+                newhour = thisTime->tm_hour;
+                if (newhour == 0)
+                    newhour = 12;
+                sprintf(ampm, "%s", "AM");
+            }
+            sprintf(h, "%d", newhour);
+        }
+
+        sprintf(theTime, "%s:%s %s", h, m, ampm);
+    }
+
+    return std::string(theTime);
+}

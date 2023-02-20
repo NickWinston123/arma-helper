@@ -29,8 +29,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef ARMAGETRON_HUD_H
 #define ARMAGETRON_HUD_H
 
-std::string getTimeString(bool hudShowTime24hour);
-
 class gGLMeter
 {
 public:

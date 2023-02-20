@@ -20,19 +20,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
 
 #ifndef ArmageTron_SysTime_H
 #define ArmageTron_SysTime_H
-
+#include <string>
 bool tTimerIsAccurate();                      //! returns true if a timer with more than millisecond accuracy is available
 double tSysTimeFloat();                       //! returns the current frame's time ( from the playback )
 double tRealSysTimeFloat();                   //! returns the current frame's time ( from the real system )
 void tAdvanceFrame( int usecdelay = 0);       //! andvances one frame: updates the system time
 void tDelay( int usecdelay );                 //! delays for the specified number of microseconds
 void tDelayForce( int usecdelay );            //! delays for the specified number of microseconds, even when playing back
-
+std::string getTimeString(bool hudShowTime24hour = false);
 #endif

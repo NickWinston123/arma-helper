@@ -203,88 +203,100 @@ struct gHelperData
 
 };
 
-struct debugParams {
-    bool emptyString;
-    bool spamProtection;
-    debugParams(bool empty, bool spamProtect = true): emptyString(empty), spamProtection(spamProtect) {}
-};
-
 using namespace helperConfig;
 class gHelperUtility
 {
-    public:
+public:
     static void debugLine(gRealColor color, REAL height, REAL timeout,
-                    eCoord start,eCoord end, REAL brightness = 1);
+                          eCoord start, eCoord end, REAL brightness = 1);
 
     static void debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout);
 
     template <typename T>
-    static void Debug(const std::string &sender, const std::string &description, T value, debugParams *params)
+    static void Message(const std::string &label, const std::string &sender,
+                        const std::string &description, T value, bool showTimeStamp = true,
+                        bool emptyString = false, bool spamProtection = false, bool showTime = true)
     {
-        if (!helperConfig::sg_helperDebug)
+
+        if (spamProtection)
         {
-            return;
-        }
+            static std::string lastMessage;
+            static std::string lastSender;
+            static float lastMessageTimeStamp = 0;
 
-        if (tIsInList(helperConfig::sg_helperDebugIgnoreList, tString(sender)))
-        {
-            return;
-        }
+            bool lastMessageIsSame = (lastMessage == description && lastSender == sender);
+            float currentTime = tSysTimeFloat();
+            bool delayNotPassed = (currentTime - lastMessageTimeStamp) < sg_helperDebugDelay;
 
-        bool lastMessageIsSame = (lastHelperDebugMessage == description && lastHelperDebugSender == sender);
-        float currentTime = tSysTimeFloat();
-        bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < helperConfig::sg_helperDebugDelay;
-
-        if (sg_helperDebugSpamFilter && params->spamProtection && (lastMessageIsSame || delayNotPassed))
-        {
-            return;
-        }
-
-        lastHelperDebugMessageTimeStamp = currentTime;
-        lastHelperDebugSender = sender;
-
-        std::string debugMessage;
-
-        if (helperConfig::sg_helperDebugTimeStamp)
-        {
-            debugMessage += "[" + std::to_string(currentTime) + "] ";
-        }
-
-        debugMessage += "0xff8888HELPERDEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
-
-        if (params->spamProtection)
-        {
-            lastHelperDebugMessage = description;
-        }
-
-        if (params->emptyString) {
-            debugMessage += "\n";
-        } else if constexpr (std::is_same<T, std::string>::value) {
-            if (value == "") {
-                debugMessage += "\n";
-            } else {
-                debugMessage += value + "\n";
+            if (lastMessageIsSame || delayNotPassed)
+            {
+                return;
             }
-        } else if constexpr (std::is_pointer<T>::value) {
-            debugMessage += std::to_string(*value) + "\n";
-        } else {
+
+            lastMessageTimeStamp = currentTime;
+            lastSender = sender;
+            lastMessage = description;
+        }
+
+        tString message;
+        if (showTimeStamp)
+        {
+            message << (showTime ? getTimeString(false) + " ": "[" + std::to_string(tSysTimeFloat()) + "] ");
+        }
+
+
+        message << label << " [" << sender << "]: " << description << " ";
+
+        if (emptyString)
+        {
+            message << "\n";
+        }
+        else if constexpr (std::is_same<T, std::string>::value)
+        {
+            if (value == "")
+            {
+                message << "\n";
+            }
+            else
+            {
+                message << value + "\n";
+            }
+        }
+        else if constexpr (std::is_pointer<T>::value)
+        {
+            message << std::to_string(*value) + "\n";
+        }
+        else
+        {
             tString str;
             str << value;
-            debugMessage += (str) + "\n";
+            message << str + "\n";
         }
-        delete params;
-        con << debugMessage;
+
+        con << message;
+
     }
 
     template <typename T>
     static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
     {
-        Debug(sender, description, value, new debugParams(false,spamProtection));
+        Message("HELPERDEBUG", sender, description, value, true, false, spamProtection, false);
     }
 
-    // Required to stop making empty strings printing as 0's
-    static void Debug(const std::string &sender, const std::string &description, bool spamProtection = true) {
-        Debug(sender, description, "",  new debugParams(true,spamProtection));
+    static void Debug(const std::string &sender, const std::string &description, bool spamProtection = true)
+    {
+        Message("HELPERDEBUG", sender, description, "", true, true, spamProtection, false);
+    }
+
+    template <typename T>
+    static void Message(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
+    {
+        Message("HELPERDEBUG", sender, description, value, true, false, spamProtection, true);
+    }
+
+    static void Message(const std::string &sender, const std::string &description, bool spamProtection = true)
+    {
+        Message("HELPERDEBUG", sender, description, "", true, true, spamProtection, true);
     }
 
     // isClose checks if the distance between the owner cycle's position and the given position
@@ -292,9 +304,8 @@ class gHelperUtility
     // pos: the position to check the distance to
     // closeFactor: the factor of closeness to compare the distance to
     // Returns: true if the distance is within the closeFactor, false otherwise
-    static bool isClose(gCycle * owner_, eCoord pos, REAL closeFactor);
+    static bool isClose(gCycle *owner_, eCoord pos, REAL closeFactor);
 };
-
 
 static void DebugLog(std::string message)
 {

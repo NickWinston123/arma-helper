@@ -5379,12 +5379,18 @@ static REAL sg_forceClockDelay = 0.5;
 static tConfItem<REAL> sg_forceClockDelayConf("FORCE_CLOCK_DELAY", sg_forceClockDelay);
 
 static REAL lastForcedUpdate = tSysTimeFloat();
+static REAL nextWatchCheck = tSysTimeFloat();
 
 bool gGame::GameLoop(bool input){
 
     if (sg_forceGamePause)
         se_PauseGameTimer();
 
+    if (se_watchActiveStatus && nextWatchCheck <= tSysTimeFloat()){
+        ePlayerNetID::watchPlayerStatus();
+        nextWatchCheck = tSysTimeFloat() + se_watchActiveStatusTime;
+    }
+        
     if (sg_forcePlayerUpdate || sg_forceSyncAll)
     {
         if (tSysTimeFloat() >= lastForcedUpdate + sg_forceClockDelay)

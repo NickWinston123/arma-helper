@@ -2743,9 +2743,9 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos,const eCoord &d,ePlayerNetID *p)
 }
 
 gCycle::~gCycle(){
-
+    #ifdef DEBUG
     con << "deleting cycle...\n";
-
+    #endif
     // clear the destination list
 
     //Search the list for zones that could be referencing us

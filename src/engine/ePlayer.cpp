@@ -1084,28 +1084,6 @@ void ePlayerNetID::PoliceMenu()
     menu.Enter();
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #ifndef DEDICATED
 
 static char const * default_instant_chat[]=
@@ -4991,7 +4969,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
         // Short handle for changing our RGB values.
         else if (command == se_rgbCommand)
         {
-            currentPlayerRGB(*this, s_orig);
+            currentPlayerRGB(s_orig);
         }
         else if (command == se_browserCommand)
         {
@@ -4999,7 +4977,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
         }
         else if (command == se_speakCommand)
         {
-            localSpeak(*this,s_orig);
+            localSpeak(s_orig);
         }
         else if (command == se_rebuildCommand)
         {
@@ -5007,11 +4985,11 @@ void ePlayerNetID::Chat(const tString& s_orig)
         }
         else if (command == se_specCommand)
         {
-            eCamera::SpectatePlayer(*this, s_orig);
+            eCamera::SpectatePlayer(*this,s_orig);
         }
         else if (command == se_activeStatusCommand)
         {
-            activeStatus(*this, s_orig);
+            activeStatus(s_orig);
         }
     }
     else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )
@@ -5623,6 +5601,12 @@ static tConfItem<bool> se_toggleChatFlagAlwaysConf("CHAT_FLAG_ALWAYS", se_toggle
 bool se_BlockChatFlags = false;
 static tConfItem<bool> se_BlockChatFlagsConf("CHAT_FLAG_BLOCK", se_BlockChatFlags);
 
+bool se_watchActiveStatus = false;
+static tConfItem<bool> se_watchActiveStatusConf("WATCH_ACTIVE_STATUS", se_watchActiveStatus);
+
+int se_watchActiveStatusTime = 30; // seconds
+static tConfItem<int> se_watchActiveStatusTimeConf("WATCH_ACTIVE_STATUS_TIME", se_watchActiveStatusTime);
+
 void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
 {
     for(int i=se_PlayerNetIDs.Len()-1; i>=0; i--)
@@ -6073,7 +6057,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                registeredMachine_(0),
                                                pID(p),
                                                timeSinceLastChat_(0),
-                                               joinedTime_(getTimeString(false))
+                                               createTime_(getTimeString(false)),
+                                               lastWatchStatus(playerWatchStatus::ACTIVE)
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -6150,6 +6135,52 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
         RequestSync();
 }
 
+
+tColoredString playerWatchStatusToStr(playerWatchStatus status)
+{
+    switch (status)
+    {
+    case UNSET:
+        return tColoredString("0x808080unset");
+    case INACTIVE:
+        return tColoredString("0xffb3b3inactive");
+    case ACTIVE:
+        return tColoredString("0xb3ffb3active");
+    default:
+        return tColoredString("0xff0000error?");
+    }
+}
+
+
+void ePlayerNetID::watchPlayerStatus()
+{
+    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; i--)
+    {
+        ePlayerNetID *p = se_PlayerNetIDs[i];
+        if (!p)
+            continue;
+
+        playerWatchStatus status = (p->LastActivity() >= se_watchActiveStatusTime) ? playerWatchStatus::INACTIVE : playerWatchStatus::ACTIVE;
+
+        if (p->lastWatchStatus == status)
+            continue;
+
+        p->lastWatchStatus = status;
+
+        tString message;
+        REAL chattingTime = p->ChattingTime();
+
+        message << getTimeString() << " | 0xe6e6faWatch Status0xRESETT: " << p->GetColoredName();
+        message << " 0xRESETTis now " << playerWatchStatusToStr(p->lastWatchStatus);
+        message << "0xRESETT. (" << chattingTime << " seconds)";
+        if (chattingTime == 0)
+            message << " - Last chat: " << p->ChattingTime(false) << " seconds ago.";
+        message << "\n";
+        con << message;
+    }
+}
+
+
 ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           listID(-1),
                                           teamListID(-1),
@@ -6157,7 +6188,8 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           allowTeamChange_(false),
                                           registeredMachine_(0),
                                           timeSinceLastChat_(0),
-                                          joinedTime_(getTimeString(false))
+                                          createTime_(getTimeString(false)),
+                                          lastWatchStatus(playerWatchStatus::ACTIVE)
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -6212,19 +6244,20 @@ void ePlayerNetID::Activity()
     if (sn_GetNetState() != nSERVER && Owner() != ::sn_myNetID)
         return;
 
-    if (!se_toggleChatFlag && !se_toggleChatFlagAlways) 
+    if (!se_toggleChatFlag && !se_toggleChatFlagAlways)
         chatting_ = false;
 
     if (chatting_ || disconnected)
     {
-        
+
 #ifdef DEBUG
         con << *this << " showed activity and lost chat status.\n";
 #endif
         RequestSync();
-    } else {
-        //timeSinceLastChat_ = tSysTimeFloat();
-    }
+    } 
+
+    if (chatting_)
+        timeSinceLastChat_ = tSysTimeFloat();
 
     disconnected = false;
 
@@ -7915,6 +7948,7 @@ void ePlayerNetID::ReadSync(nMessage &m)
             bool newChat = ( ( flags & 1 ) != 0 );
             bool newSpectate = ( ( flags & 2 ) != 0 );
             bool newStealth = ( ( flags & 4 ) != 0 );
+            
 
             if ( chatting_ != newChat || spectating_ != newSpectate || newStealth != stealth_ )
                 lastActivity_ = tSysTimeFloat();
@@ -9065,10 +9099,10 @@ static void se_colorName(ePlayer* l) {
     l->name = ourNewName;
 }
 
-
-
 static int se_RandomizeColorRange = 32;
 static tConfItem<int> se_RandomizeColorRangeConf("PLAYER_RANDOM_COLOR_RANGE", se_RandomizeColorRange);
+
+
 
 //This seems more random.
 static void se_RandomizeColor(ePlayer * l)
@@ -9845,7 +9879,7 @@ static void se_SavedColors(int savedColorsCount)
     }
 }
 
-void ePlayerNetID::localSpeak(ePlayerNetID &player, tString s_orig)
+void ePlayerNetID::localSpeak(tString s_orig)
 {
     tString params;
     params << s_orig;
@@ -9855,11 +9889,11 @@ void ePlayerNetID::localSpeak(ePlayerNetID &player, tString s_orig)
 
     ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
 
-    if (p && player.Owner() == p->Owner())
+    if (p && this->Owner() == p->Owner())
         p->Chat(params.SubStr(pos+1));
 }
 
-void ePlayerNetID::activeStatus(ePlayerNetID &player, tString s_orig)
+void ePlayerNetID::activeStatus(tString s_orig)
 {
     tString params;
     params << s_orig;
@@ -9867,7 +9901,11 @@ void ePlayerNetID::activeStatus(ePlayerNetID &player, tString s_orig)
 
     tString PlayerStr = params.ExtractNonBlankSubString(pos,1);
 
-    ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
+    ePlayerNetID *p;
+    if (!PlayerStr.empty())
+        p = ePlayerNetID::FindPlayerByName(PlayerStr);
+    else 
+        p = this;
 
     if (!p)
         return;
@@ -9875,10 +9913,10 @@ void ePlayerNetID::activeStatus(ePlayerNetID &player, tString s_orig)
     tColoredString listInfo;
     listInfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n";
 
-    listInfo << "Status: " << "\n";
+    listInfo << "Status: "        << "\n";
     listInfo << "Last Activity: " << p->LastActivity() << "\n";
-    listInfo << "Chatting For " << p->ChattingTime() <<  "\n";
-    listInfo << "Joined: " << p->joinedTime_ << "\n";
+    listInfo << "Chatting For: "  << p->ChattingTime() << "\n";
+    listInfo << "Created: "       << p->createTime_    << "\n";
     con << listInfo;
 }
 
@@ -9893,7 +9931,7 @@ void ePlayerNetID::activeStatus(ePlayerNetID &player, tString s_orig)
 //        /rgb list would list your current saved colors.
 //        /rgb load 1 would load from line #1 in the list.
 //        /rgb clear would clear your current list of saved colors.
-void ePlayerNetID::currentPlayerRGB(ePlayerNetID &player, tString s_orig)
+void ePlayerNetID::currentPlayerRGB( tString s_orig )
 {
     if (s_orig.StrPos(" ") == -1)
     {
@@ -9934,8 +9972,8 @@ void ePlayerNetID::currentPlayerRGB(ePlayerNetID &player, tString s_orig)
             correctParameters = true;
             random = true;
 
-            bool in_game = ePlayer::PlayerIsInGame(&player);
-            ePlayer *me = ePlayer::NetToLocalPlayer(&player);
+            bool in_game = ePlayer::PlayerIsInGame(this);
+            ePlayer *me = ePlayer::NetToLocalPlayer(this);
             tASSERT(me);
             tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
 
@@ -10073,8 +10111,8 @@ void ePlayerNetID::currentPlayerRGB(ePlayerNetID &player, tString s_orig)
             correctParameters = true;
             unique = true;
 
-            bool in_game = ePlayer::PlayerIsInGame(&player);
-            ePlayer* me = ePlayer::NetToLocalPlayer(&player);
+            bool in_game = ePlayer::PlayerIsInGame(this);
+            ePlayer *me = ePlayer::NetToLocalPlayer(this);
             tASSERT(me);
             tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
 
@@ -11238,13 +11276,12 @@ void ePlayerNetID::SetChatting ( ChatFlags flag, bool chatting )
         chatting = false;
     }
     */
-
     if ( chatting )
     {
         chatFlags_ |= flag;
         if ( !chatting_ ) {
+            
             this->RequestSync();
-            timeSinceLastChat_ = tSysTimeFloat();
         }
         chatting_ = true;
     }
@@ -13369,9 +13406,14 @@ REAL ePlayerNetID::LastActivity( void ) const
     return tSysTimeFloat() - lastActivity_;
 }
 
-REAL ePlayerNetID::ChattingTime( void ) const
+REAL ePlayerNetID::ChattingTime( bool current ) const
 {
-    return chatting_ ? tSysTimeFloat() - timeSinceLastChat_ : 0 ;
+                     // timeSinceLastChat_ will not remain after chat
+                     // so information can be used even if not current
+    if (current)
+        return chatting_ ? tSysTimeFloat() - timeSinceLastChat_ : 0;
+    else
+        return tSysTimeFloat() - timeSinceLastChat_;
 }
 
 // *******************************************************************************

@@ -59,6 +59,14 @@ enum ColorRandomization {
 #include <utility>
 #include "eChat.h"
 
+extern bool se_watchActiveStatus;
+extern int se_watchActiveStatusTime;
+enum playerWatchStatus {
+    UNSET = 0,
+    INACTIVE = 1,
+    ACTIVE = 2
+};
+
 extern bool se_toggleChatFlag, se_toggleChatFlagAlways, se_BlockChatFlags;
 
 #define PLAYER_CONFITEMS (60+MAX_INSTANT_CHAT)
@@ -264,8 +272,10 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
+    playerWatchStatus lastWatchStatus;
     typedef std::set< eTeam * > eTeamSet;
     bool respawnedLocally;
+    static void watchPlayerStatus();
 private:
 
     int listID;                          // ID in the list of all players
@@ -300,7 +310,7 @@ private:
     bool			spectating_; //!< are we currently spectating? Spectators don't get assigned to teams.
     bool			stealth_; //!< does this player want to hide his/her identity?
     bool			chatting_;   //!< are we currently chatting?
-    std::string     joinedTime_;
+    std::string     createTime_;
     REAL            timeSinceLastChat_;
     int				chatFlags_;  //!< different types of reasons for beeing chatting
     bool			allowTeamChange_; //!< allow team changes even if ALLOW_TEAM_CHANGE is disabled?
@@ -464,7 +474,7 @@ public:
 
     void Activity(); // call it if this player just showed some activity.
     REAL LastActivity() const; //!< returns how long the last activity of this player was ago
-    REAL ChattingTime() const;
+    REAL ChattingTime( bool current = true) const; //!< returns how long the player has been chatting
     eNetGameObject *Object() const;
 
     //void SetRubber(ePlayerNetID *player, REAL rubber);
@@ -489,13 +499,16 @@ public:
     static void  ResetScore();  // resets the ranking list
 
     // List the colors of other players.
-    static void listPlayerColors(tString s_orig);
+    void listPlayerColors(tString s_orig);
     // List the information of other players.
-    static void listPlayerInfo(tString s_orig);
+    void listPlayerInfo(tString s_orig);
     // Fast way to change / display current RGB
-    static void currentPlayerRGB(ePlayerNetID &player,tString s_orig);
-    static void localSpeak(ePlayerNetID &player, tString s_orig);
-    static void activeStatus(ePlayerNetID &player, tString s_orig);
+    void currentPlayerRGB(tString s_orig);
+    // Quick way to speak as another local player
+    void localSpeak(tString s_orig);
+    // List active status of players (chatting time, activity, etc)
+    void activeStatus(tString s_orig);
+
     //Grab Stuff
     static tColoredString gatherPlayerInfo(ePlayerNetID * p);
     static tColoredString gatherPlayerColor(ePlayerNetID * p, bool showReset = true);

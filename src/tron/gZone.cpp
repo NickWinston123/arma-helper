@@ -577,7 +577,9 @@ void gZone::FindAll(tString object_id_str, bool byId, std::function<bool(gZone *
 gZone::gZone( eGrid * grid, const eCoord & pos, bool dynamicCreation, bool delayCreation)
 :eNetGameObject( grid, pos, eCoord( 0,0 ), NULL, true ), rotation_(1,0), lastCoord_(0), nextUpdate_(-1)
 {
-     con << "GOT CREATION EVENT gZone 1" << "\n";
+    #ifdef DEBUG
+    con << "GOT CREATION EVENT gZone 1" << "\n";
+    #endif
     // store creation time
     referenceTime_ = createTime_ = lastTime = 0;
 
@@ -709,7 +711,9 @@ void gZone::HelperTrackedZonesManager( bool newZone) {
 gZone::gZone( nMessage & m )
 :eNetGameObject( m ), rotation_(1,0)
 {
+    #ifdef DEBUG
     con << "GOT CREATION EVENT gZone 2" << "\n";
+    #endif
     // con.nMessage(m);;
     destroyed_ = false;
     helperDestroyed_ = false;

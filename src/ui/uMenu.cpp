@@ -198,7 +198,7 @@ void uMenu::OnEnter(){
     tCoord click, last;
     tCoord mouse;
 
-    bool mouseEvent = true; // When any event happens that should lock auto-scrolling
+    static bool mouseEvent = false; // When any event happens that should lock auto-scrolling
     bool mouseClick = false; // For when the user clicked somewhere
     int mouseClickItem = -1;
     bool lastMouse = false; // Whether last navigation was by mouse

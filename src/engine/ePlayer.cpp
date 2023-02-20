@@ -6174,7 +6174,7 @@ void ePlayerNetID::watchPlayerStatus()
         message << " 0xRESETTis now " << playerWatchStatusToStr(p->lastWatchStatus);
         message << "0xRESETT. (" << chattingTime << " seconds)";
         if (chattingTime == 0)
-            message << " - Last chat: " << p->ChattingTime(false) << " seconds ago.";
+            message << " - Last chat activity: " << p->ChattingTime(false) << " seconds ago.";
         message << "\n";
         con << message;
     }
@@ -9910,13 +9910,19 @@ void ePlayerNetID::activeStatus(tString s_orig)
     if (!p)
         return;
 
+    REAL chattingTime = p->ChattingTime();
+
     tColoredString listInfo;
     listInfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n";
-
     listInfo << "Status: "        << "\n";
     listInfo << "Last Activity: " << p->LastActivity() << "\n";
-    listInfo << "Chatting For: "  << p->ChattingTime() << "\n";
+    listInfo << "Chatting For: "  << chattingTime << "\n";
+
+    if (chattingTime == 0)
+        listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.";
+
     listInfo << "Created: "       << p->createTime_    << "\n";
+
     con << listInfo;
 }
 
@@ -11279,9 +11285,9 @@ void ePlayerNetID::SetChatting ( ChatFlags flag, bool chatting )
     if ( chatting )
     {
         chatFlags_ |= flag;
-        if ( !chatting_ ) {
-            
+        if ( !chatting_ ) {            
             this->RequestSync();
+            timeSinceLastChat_ = tSysTimeFloat();
         }
         chatting_ = true;
     }
@@ -13408,7 +13414,7 @@ REAL ePlayerNetID::LastActivity( void ) const
 
 REAL ePlayerNetID::ChattingTime( bool current ) const
 {
-                     // timeSinceLastChat_ will not remain after chat
+                     // timeSinceLastChat_ will remain after chat
                      // so information can be used even if not current
     if (current)
         return chatting_ ? tSysTimeFloat() - timeSinceLastChat_ : 0;

@@ -145,6 +145,7 @@ public:
     REAL sg_smarterBotSpaceScale;
     REAL sg_smarterBotCowardScale;
     REAL sg_smarterBotTunnelScale;
+    REAL sg_smarterBotSpeedScale;
     REAL sg_smarterBotNextThinkMult;
     int sg_smarterBotState;
 

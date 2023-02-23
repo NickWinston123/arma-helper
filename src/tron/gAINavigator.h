@@ -281,6 +281,19 @@ private:
         gCycle const & cycle_;
     };
 
+    //! cowardly evaluator: try to move backwards on enemy walls
+    class SpeedEvaluator: public PathEvaluator
+    {
+    public:
+        explicit SpeedEvaluator( gCycle const & cycle );
+        ~SpeedEvaluator();
+
+        //! evaluate a path.
+        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
+    private:
+        gCycle const & cycle_;
+    };
+
     //! tunnel evaluator: avoids tunneling between walls of different cycles
     class TunnelEvaluator: public PathEvaluator
     {

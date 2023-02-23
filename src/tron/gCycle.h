@@ -57,6 +57,9 @@ class gFlagZoneHack;
 class gAIBot;
 
 
+extern bool sg_smarterBotTeam;
+extern bool sg_smarterBotTeamOwner;
+
 typedef enum{gSENSOR_NONE,gSENSOR_RIM, gSENSOR_ENEMY,
              gSENSOR_TEAMMATE ,gSENSOR_SELF, gSENSOR_ZONE} gSensorWallType;
 

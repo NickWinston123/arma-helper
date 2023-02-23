@@ -337,6 +337,12 @@ extern REAL sg_cycleBrakeDeplete;
 static bool sg_smarterBot = false;
 static tConfItem<bool> sg_smarterBotConf( "SMARTER_BOT", sg_smarterBot );
 
+bool sg_smarterBotTeam = false; // absolute unit
+static tConfItem<bool> sg_smarterBotTeamConf( "SMARTER_BOT_TEAM", sg_smarterBotTeam );
+
+bool sg_smarterBotTeamOwner = false; // absolute unit
+static tConfItem<bool> sg_smarterBotTeamOwnerConf( "SMARTER_BOT_TEAM_OWNER", sg_smarterBotTeamOwner );
+
 gSmarterBot::~gSmarterBot(){
 
 }
@@ -462,6 +468,9 @@ REAL gSmarterBot::Think( REAL minStep )
 
     if (local_player->sg_smarterBotTunnelScale > 0)
         manager.Evaluate( TunnelEvaluator( *Owner() ), local_player->sg_smarterBotTunnelScale );
+
+    if (local_player->sg_smarterBotSpeedScale > 0)
+        manager.Evaluate( SpeedEvaluator( *Owner() ), local_player->sg_smarterBotSpeedScale );
 
     CycleControllerAction controller;
     return manager.Finish( controller, *Owner(), minStep );

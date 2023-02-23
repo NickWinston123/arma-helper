@@ -52,6 +52,11 @@ void gHelperUtility::debugBox(gRealColor color, eCoord center, REAL radius, REAL
     return distanceToPos.NormSquared() < closeFactor * closeFactor;
 }
 
+ bool gHelperUtility::isClose(gCycle *owner_, gCycle *enemy_, REAL closeFactor)
+{
+    return isClose(owner_, enemy_->Position(), closeFactor);
+}
+
 
 gHelperSensors::gHelperSensors(gHelperSensor* front_, gHelperSensor* left_, gHelperSensor* right_) :
     front(front_), left(left_), right(right_) {}

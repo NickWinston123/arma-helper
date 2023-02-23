@@ -1462,6 +1462,12 @@ ePlayer::ePlayer() : colorIteration(0)
     confname << "SMARTER_BOT_" << id+1 << "_TUNNEL";
     sg_smarterBotTunnelScale = 3;
     StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Tunnel", sg_smarterBotTunnelScale));
+   
+    // sg_smarterBotSpeedScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_SPEED";
+    sg_smarterBotSpeedScale = 3;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Speed", sg_smarterBotSpeedScale));
 
 
     // sg_smarterBotNextThinkMult
@@ -9915,13 +9921,12 @@ void ePlayerNetID::activeStatus(tString s_orig)
     tColoredString listInfo;
     listInfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n";
     listInfo << "Status: "        << "\n";
+    listInfo << "Created: "       << p->createTime_    << "\n";
     listInfo << "Last Activity: " << p->LastActivity() << "\n";
     listInfo << "Chatting For: "  << chattingTime << "\n";
 
     if (chattingTime == 0)
-        listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.";
-
-    listInfo << "Created: "       << p->createTime_    << "\n";
+        listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.\n";
 
     con << listInfo;
 }

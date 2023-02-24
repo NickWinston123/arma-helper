@@ -60,6 +60,26 @@ REAL gHelper::CurrentTime() {
 }
 
 
+void gHelper::turningBot(gHelperData &data){
+    data.rubberData.calculate();
+    if ( (sg_helperTurningBotActivationRubber > 0 && data.rubberData.rubberUsedRatio + data.ownerData.lagFactorF() >= sg_helperTurningBotActivationRubber) ||
+         (sg_helperTurningBotActivationSpace  > 0 && data.sensors.getSensor(FRONT)->hit <= sg_helperTurningBotActivationSpace)
+       )
+    {
+        int direction = owner_.lastBotTurnDir;
+
+        // if (direction == -999)
+            direction = data.sensors.getSensor(LEFT,true)->hit > data.sensors.getSensor(RIGHT,true)->hit ? LEFT : RIGHT;
+        // else
+        //     direction = direction * -1;
+
+        for (int i = 0; i < sg_helperTurningBotTurns; i++) {
+            owner_.ActTurnBot(direction);
+        }
+    }
+}
+
+
 gHelper::gHelper(gCycle &owner)
     :   owner_(owner),
         player_(*(owner.Player())),
@@ -658,6 +678,9 @@ void gHelper::Activate()
 
     if (sg_helperAutoBrake)
         autoBrake();
+
+    if (sg_helperTurningBot)
+        turningBot(data_stored);
 
     if (sg_helperHud) {
         REAL time = tRealSysTimeFloat() - start;

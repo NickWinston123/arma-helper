@@ -116,6 +116,11 @@ namespace helperConfig {
     extern REAL sg_helperEnemyTracersTimeout ;
     extern REAL sg_helperEnemyTracersBrightness ;
 
+    extern bool sg_helperTurningBot;
+    extern REAL sg_helperTurningBotActivationSpace;
+    extern REAL sg_helperTurningBotActivationRubber;
+    extern int sg_helperTurningBotTurns;
+
     extern bool sg_helperShowTail ;
     extern REAL sg_helperShowTailHeight ;
     extern REAL sg_helperShowTailPassthrough ;

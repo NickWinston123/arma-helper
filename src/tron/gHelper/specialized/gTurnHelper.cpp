@@ -152,8 +152,8 @@ bool gTurnHelper::makeTurnIfPossible(int dir, REAL spaceFactor)
 // Return the result of the call to ActTurnBot (i.e., if the turn was successfully made)
 bool gTurnHelper::makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFactor)
 {
-    if (!helper_.drivingStraight())
-        return false;
+    // if (!helper_.drivingStraight())
+    //     return false;
 
     if (canSurviveTurnSpecific(data, dir, spaceFactor))
         return owner_.ActTurnBot(dir);

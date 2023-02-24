@@ -91,6 +91,16 @@ static tConfItem<REAL> sg_traceTimeoutConf("HELPER_SHOW_CORNERS_TIMEOUT", sg_hel
 REAL sg_helperShowCornersHeight = 1;
 static tConfItem<REAL> sg_helperShowCornersHeightConf("HELPER_SHOW_CORNERS_HEIGHT", sg_helperShowCornersHeight);
 
+
+bool sg_helperTurningBot = false;
+static tConfItem<bool> sg_helperTurningBotConf("HELPER_TURNING_BOT", sg_helperTurningBot);
+REAL sg_helperTurningBotActivationSpace = 0;
+static tConfItem<REAL> sg_helperTurningBotActivationSpaceConf("HELPER_TURNING_BOT_SPACE", sg_helperTurningBotActivationSpace);
+REAL sg_helperTurningBotActivationRubber = 0.9;
+static tConfItem<REAL> sg_helperTurningBotActivationRubberConf("HELPER_TURNING_BOT_RUBBER", sg_helperTurningBotActivationRubber);
+int sg_helperTurningBotTurns = 1;
+static tConfItem<int> sg_helperTurningBotTurnsConf("HELPER_TURNING_BOT_TURNS", sg_helperTurningBotTurns);
+
 bool sg_helperDetectCut = false;
 static tConfItem<bool> sg_helperDetectCutConf("HELPER_DETECT_CUT", sg_helperDetectCut);
 REAL sg_helperDetectCutDetectionRange = 150;
@@ -102,6 +112,8 @@ static tConfItem<REAL> sg_helperDetectCutHeightConf("HELPER_DETECT_CUT_HEIGHT", 
 REAL sg_helperDetectCutReact = .2; // .005 ?
 static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg_helperDetectCutReact);
 bool sg_helperEnemyTracers = false;
+
+
 
 static tConfItem<bool> sg_helperEnemyTracersConf("HELPER_SHOW_ENEMY_TRACERS", sg_helperEnemyTracers);
 REAL sg_helperEnemyTracersHeight = 0;

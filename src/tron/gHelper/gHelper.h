@@ -165,6 +165,7 @@ class gHelper {
         eCoord closestCorner(eCoord center, REAL radius);
 
 
+        void turningBot(gHelperData &data);
         /**
          * Activates the helper, setting up necessary data and pointers.
          */

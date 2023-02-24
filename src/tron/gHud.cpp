@@ -71,6 +71,9 @@ REAL subby_CoordLocX = -0.557, subby_CoordLoxY = -0.75, subby_CoordSize = 0.13;
 bool hud_showInteract = true;
 REAL hud_InteractLocX=-0.6, hud_InteractLocY=-0.95, hud_InteractSize =.10;
 
+bool sg_TeamNumCount = false;
+
+
 REAL max_player_speed=0;
 
 namespace
@@ -651,7 +654,7 @@ static void display_fps_subby()
         c2 << "0xffffffFPS: " <<fps;
     }
     
-    //if( sr_TeamNumCount )
+    if( sg_TeamNumCount )
     {
         static tString output("0");
         static REAL lasttime = 0;

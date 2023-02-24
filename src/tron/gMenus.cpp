@@ -164,10 +164,13 @@ public:
     ~ArmageTron_texmode_menuitem(){}
 };
 
+extern bool sg_TeamNumCount;
+
 static tConfItem<bool>    ab("ALPHA_BLEND",sr_alphaBlend);
 static tConfItem<bool>    ss("SMOOTH_SHADING",sr_smoothShading);
 static tConfItem<bool>    to("TEXT_OUT",sr_textOut);
 static tConfItem<bool>    fps("SHOW_FPS",sr_FPSOut);
+static tConfItem<bool>    sta("SHOW_TEAMS_ALIVE",sg_TeamNumCount);
 static tConfItem<bool>    pbt("SHOW_RECORDING_TIME",sr_RecordingTimeOut);
 // tConfItem<> ("",&);
 static tConfItem<int> fm("FLOOR_MIRROR",sr_floorMirror);
@@ -705,6 +708,10 @@ static uMenuItemToggle ls2
 (&screen_menu_prefs,"$pref_lowersky_text",
  "$pref_lowersky_help",
  sr_lowerSky);
+
+uMenuItemToggle rtnc2
+(&screen_menu_prefs,"Show Teams Alive Count:",
+ "",sg_TeamNumCount);
 
 uMenuItemToggle fps2
 (&screen_menu_prefs,"$misc_fps_text",

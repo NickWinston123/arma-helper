@@ -178,6 +178,8 @@ REAL sg_showHitDataHeightFront = 1;
 static tConfItem<REAL> sg_showHitDataHeightFrontConf("HELPER_SHOW_HIT_HEIGHT_FRONT", sg_showHitDataHeightFront);
 REAL sg_showHitDataHeightSides = 2;
 static tConfItem<REAL> sg_showHitDataHeightSidesConf("HELPER_SHOW_HIT_HEIGHT_SIDES", sg_showHitDataHeightSides);
+REAL sg_showHitDataBrightness = 1;
+static tConfItem<REAL> sg_showHitDataBrightnessConf("HELPER_SHOW_HIT_BRIGHTNESS", sg_showHitDataBrightness);
 REAL sg_showHitDataRange = 1;
 static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE", sg_showHitDataRange);
 REAL sg_showHitDataFreeRange = 1;

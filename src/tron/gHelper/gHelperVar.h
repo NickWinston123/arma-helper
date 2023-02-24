@@ -142,6 +142,7 @@ namespace helperConfig {
     extern REAL sg_showHitDataHeight ;
     extern REAL sg_showHitDataHeightFront ;
     extern REAL sg_showHitDataHeightSides ;
+    extern REAL sg_showHitDataBrightness ;
     extern REAL sg_showHitDataRange ;
     extern REAL sg_showHitDataFreeRange ;
     extern int sg_showHitDataRecursion ;

@@ -554,14 +554,14 @@ void gHelper::showHit(gHelperData &data)
     if (sg_helperShowHitStartAtHitPos)
     {
         // draw debug lines from the front before hit position in the left and right directions
-        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, LEFT);
-        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, RIGHT);
+        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion-1, LEFT);
+        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion-1, RIGHT);
     }
     else
     {
         // draw debug lines from the owner's current position in the left and right directions
-        showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT);
-        showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT);
+        showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion-1, LEFT);
+        showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion-1, RIGHT);
     }
 }
 
@@ -599,12 +599,12 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     // Draw a green line if the hit distance is greater than the specified value, indicating that the path is clear.
     if (open)
     {
-        gHelperUtility::debugLine(gRealColor(0, 1, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos);
+        gHelperUtility::debugLine(gRealColor(0, 1, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
     }
     // Draw a red line if the hit distance is smaller than the specified value, indicating an obstacle in the way.
     else
     {
-        gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos);
+        gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
     }
 
     // Recursively call the function to visualize multiple sensor hits.

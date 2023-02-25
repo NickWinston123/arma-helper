@@ -139,6 +139,14 @@ bool gAINavigator::Sensor::DoExtraDetectionStuff()
         hitTime_       = playerWall->Time( wallAlpha );
         windingNumber_ = playerWall->WindingNumber();
 
+        // don't see new walls
+        if ( hitTime_ > hitOwner_->LastTime() - ai_.settings_.newWallBlindness && hitOwner_ != owned )
+        {
+            ehit = NULL;
+            hit = 1.01;
+            return false;
+        }
+
         // don't see vanishing walls
         {
             // TODO: this is a bit wrong in the face of diagonals and quantizized driving directions.
@@ -160,7 +168,7 @@ bool gAINavigator::Sensor::DoExtraDetectionStuff()
             if( !playerWall->IsDangerous( wallAlpha, ai_.owner_->LastTime() + timeToHit ) )
             {
                 // wall will be gone until we get there. ignore.
-	            ehit = nullptr;
+	        ehit = nullptr;
                 hit = 1.01;
                 return false;
             }
@@ -479,15 +487,15 @@ gAINavigator::PathEvaluator::~PathEvaluator(){}
     {
         evaluation.score = 0;
 
+        // don't do anything if we're tunneling. Danger affot.
+        // if( path.left.owner == path.right.owner )
+        // {
+        // return;
+        // }
+
         // total wall length
         REAL len  = cycle_.ThisWallsLength();
-        if( len < 0 || !cycle_.tailMoving )
-        {
-            return;
-        }
-
-        //don't do anything if we're tunneling. Danger affot.
-        if( path.left.owner == path.right.owner && path.left.distance < 5 && path.right.distance < 5 )
+        if( len < 0 )
         {
             return;
         }
@@ -535,20 +543,6 @@ void gAINavigator::SuicideEvaluator::Evaluate( Path const & path, PathEvaluation
 }
 
 bool gAINavigator::SuicideEvaluator::emergency_ = false;
-
-bool onOurTeam(gCycle *owner,gCycle *other)
-{
-    ePlayer *otherPlayer = ePlayer::gCycleToLocalPlayer(other);
-    bool onTeam = owner->Team() == other->Team();
-
-    if (sg_smarterBotTeam)
-        onTeam = onTeam && otherPlayer != NULL;
-    else if (sg_smarterBotTeamOwner)
-        onTeam = onTeam && otherPlayer == ePlayer::PlayerConfig(0);
-
-    return onTeam;
-}
-
 
 void gAINavigator::SuicideEvaluator::SetEmergency( bool emergency )
 {
@@ -614,33 +608,9 @@ void gAINavigator::CowardEvaluator::Evaluate( Path const & path, PathEvaluation 
             {
                 evaluation.score = 0;
             }
-            if( path.right.owner && path.right.owner->Alive() && path.right.owner->Team() != cycle_.Team() && path.right.lr == 1 )
+            if( path.right.owner && path.right.owner->Alive() && path.right.owner->Team() != cycle_.Team() && path.right.lr == -1 )
             {
                 evaluation.score = 0;
-            }
-        }
-    }
-}
-
-gAINavigator::SpeedEvaluator::SpeedEvaluator(gCycle const & cycle ): cycle_( cycle ){}
-
-gAINavigator::SpeedEvaluator::~SpeedEvaluator(){}
-
-void gAINavigator::SpeedEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
-{
-    evaluation.score = 0;
-    if( path.left.owner || path.right.owner )
-    {
-        bool closeFactor = cycle_.Speed() * 0.5;
-        //bool isClose = gHelperUtility(cycle_,enemy,)
-        {
-            if(  path.left.owner && path.left.owner->Alive() && path.left.owner->Speed() < cycle_.Speed() ) // && !onOurTeam(cycle_, path.left.owner)
-            {
-                evaluation.score = 100;
-            }
-            if( path.right.owner && path.right.owner->Alive() && path.right.owner->Speed() < cycle_.Speed() )
-            {
-                evaluation.score = 100;
             }
         }
     }
@@ -691,7 +661,7 @@ gAINavigator::SpaceEvaluator::~SpaceEvaluator(){}
 //!@param evaluation  place to store the result
 void gAINavigator::PlanEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
 {
-    evaluation.score = Adjust( path.followedSince/3.0 ); // 3 -> 2 ( a little stronger )
+    evaluation.score = Adjust( path.followedSince/3.0 );
 }
 
 gAINavigator::PlanEvaluator::~PlanEvaluator(){}
@@ -754,8 +724,8 @@ void gAINavigator::RubberEvaluator::Init( gCycle const & cycle, REAL maxTime )
     maxRubber_  = maxTime * speed;
 
     // account for inevitable loss
-    rubberLeft_  = rubberLeft + maxRubber_;
-    rubberLeft_ -= cycle.Lag();
+    rubberLeft_ = rubberLeft + maxRubber_;
+
     if( maxRubber_ > rubberLeft )
     {
         maxRubber_ = rubberLeft;
@@ -790,9 +760,9 @@ bool gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
 
     if (player && player->Object())
     {
-        gCycle* c = dynamic_cast<gCycle *>(player->Object());
-        if (c && !onOurTeam(&cycle_,c)) {
-            SetTarget(c->Position(), c->Direction() * c->Speed());
+        gCycle* cycle = dynamic_cast<gCycle *>(player->Object());
+        if (cycle) {
+            SetTarget(cycle->Position(), cycle->Direction() * cycle->Speed());
             return true;
         }
     }
@@ -806,13 +776,13 @@ bool gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
 //!@ param data                 solution filled in
 void gAINavigator::FollowEvaluator::SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data )
 {
-    eCoord velocityDifference = (cycle_.Speed()-cycle_.Lag()) * cycle_.Direction() - targetVelocity;
+    eCoord velocityDifference = cycle_.Speed() * cycle_.Direction() - targetVelocity;
 
     // get the velocity after the turn
     int winding = cycle_.WindingNumber();
     cycle_.Grid()->Turn( winding, direction );
     data.turnDir = cycle_.Grid()->GetDirection( winding );
-    eCoord turnVelocityDifference = data.turnDir * (cycle_.Speed()-cycle_.Lag()) * GetTurnSpeedFactor() - targetVelocity;
+    eCoord turnVelocityDifference = data.turnDir * cycle_.Speed() * GetTurnSpeedFactor() - targetVelocity;
 
     // some little algebra to solve velocityDifference * turnTime + turnVelocityDifference * Quality == targetPosition
     REAL determinant = turnVelocityDifference * velocityDifference;
@@ -886,8 +856,7 @@ public:
 bool gAINavigator::FollowEvaluator::FindTarget()
 {
     gCycle *target = gHelperEnemiesData::getClosestEnemy(&cycle_);
-    if (target && !onOurTeam(&cycle_,target)) {
-
+    if (target) {
         SetTarget(target);
         return true;
     }
@@ -1340,7 +1309,7 @@ void gAINavigator::UpdatePaths()
     REAL lookahead = settings_.range;  // seconds to plan ahead
 
     // cylce data
-    REAL speed = owner_->Speed() - owner_->Lag();
+    REAL speed = owner_->Speed();
     eCoord dir = owner_->Direction();
     eCoord pos = owner_->Position();
 
@@ -1909,4 +1878,31 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
         minTime = owner_->GetTurnDelay();
 
     return minTime;
+}
+
+
+
+
+gAINavigator::SpeedEvaluator::SpeedEvaluator(gCycle const & cycle ): cycle_( cycle ){}
+
+gAINavigator::SpeedEvaluator::~SpeedEvaluator(){}
+
+void gAINavigator::SpeedEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+{
+    evaluation.score = 0;
+    if( path.left.owner || path.right.owner )
+    {
+        bool closeFactor = cycle_.Speed() * 0.5;
+        //bool isClose = gHelperUtility(cycle_,enemy,)
+        {
+            if(  path.left.owner && path.left.owner->Alive() && path.left.owner->Speed() < cycle_.Speed() ) // && !onOurTeam(cycle_, path.left.owner)
+            {
+                evaluation.score = 100;
+            }
+            if( path.right.owner && path.right.owner->Alive() && path.right.owner->Speed() < cycle_.Speed() )
+            {
+                evaluation.score = 100;
+            }
+        }
+    }
 }

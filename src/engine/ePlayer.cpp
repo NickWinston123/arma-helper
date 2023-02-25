@@ -1462,7 +1462,7 @@ ePlayer::ePlayer() : colorIteration(0)
     confname << "SMARTER_BOT_" << id+1 << "_TUNNEL";
     sg_smarterBotTunnelScale = 3;
     StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Tunnel", sg_smarterBotTunnelScale));
-   
+
     // sg_smarterBotSpeedScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id+1 << "_SPEED";
@@ -6260,7 +6260,7 @@ void ePlayerNetID::Activity()
         con << *this << " showed activity and lost chat status.\n";
 #endif
         RequestSync();
-    } 
+    }
 
     if (chatting_)
         timeSinceLastChat_ = tSysTimeFloat();
@@ -7954,7 +7954,7 @@ void ePlayerNetID::ReadSync(nMessage &m)
             bool newChat = ( ( flags & 1 ) != 0 );
             bool newSpectate = ( ( flags & 2 ) != 0 );
             bool newStealth = ( ( flags & 4 ) != 0 );
-            
+
 
             if ( chatting_ != newChat || spectating_ != newSpectate || newStealth != stealth_ )
                 lastActivity_ = tSysTimeFloat();
@@ -9910,7 +9910,7 @@ void ePlayerNetID::activeStatus(tString s_orig)
     ePlayerNetID *p;
     if (!PlayerStr.empty())
         p = ePlayerNetID::FindPlayerByName(PlayerStr);
-    else 
+    else
         p = this;
 
     if (!p)
@@ -9983,11 +9983,14 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
             correctParameters = true;
             random = true;
 
-            bool in_game = ePlayer::PlayerIsInGame(this);
-            ePlayer *me = ePlayer::NetToLocalPlayer(this);
+            // bool in_game = ePlayer::PlayerIsInGame(this);
+            // ePlayer *me = ePlayer::NetToLocalPlayer(this);
+            // tASSERT(me);
+            // tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
+            bool in_game = ePlayer::PlayerIsInGame(0);
+            ePlayer *me = ePlayer::PlayerConfig(0);
             tASSERT(me);
             tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
-
             if (bool(p) && in_game)
             {
                 se_RandomizeColor(me);
@@ -10122,11 +10125,13 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
             correctParameters = true;
             unique = true;
 
-            bool in_game = ePlayer::PlayerIsInGame(this);
-            ePlayer *me = ePlayer::NetToLocalPlayer(this);
-            tASSERT(me);
+            // bool in_game = ePlayer::PlayerIsInGame(this);
+            // ePlayer *me = ePlayer::NetToLocalPlayer(this);
+            // tASSERT(me);
+            // tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
+            bool in_game = ePlayer::PlayerIsInGame(0);
+            ePlayer *me = ePlayer::PlayerConfig(0);
             tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
-
             if (bool(p) && in_game)
             {
                 se_UniqueColor(me, p);
@@ -11290,7 +11295,7 @@ void ePlayerNetID::SetChatting ( ChatFlags flag, bool chatting )
     if ( chatting )
     {
         chatFlags_ |= flag;
-        if ( !chatting_ ) {            
+        if ( !chatting_ ) {
             this->RequestSync();
             timeSinceLastChat_ = tSysTimeFloat();
         }

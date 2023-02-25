@@ -12,6 +12,47 @@
 extern REAL sg_cycleBrakeDeplete;
 using namespace helperConfig;
 
+namespace helperConfig{
+bool sg_helperShowHit = false;
+static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT",
+                                            sg_helperShowHit);
+REAL sg_showHitDataHeight = 1;
+static tConfItem<REAL> sg_showHitDataHeightConf("HELPER_SHOW_HIT_HEIGHT",
+                                                sg_showHitDataHeight);
+REAL sg_showHitDataHeightFront = 1;
+static tConfItem<REAL> sg_showHitDataHeightFrontConf("HELPER_SHOW_HIT_HEIGHT_FRONT",
+                                                     sg_showHitDataHeightFront);
+REAL sg_showHitDataHeightSides = 2;
+static tConfItem<REAL> sg_showHitDataHeightSidesConf("HELPER_SHOW_HIT_HEIGHT_SIDES",
+                                                     sg_showHitDataHeightSides);
+REAL sg_showHitDataBrightness = 1;
+static tConfItem<REAL> sg_showHitDataBrightnessConf("HELPER_SHOW_HIT_BRIGHTNESS",
+                                                     sg_showHitDataBrightness);
+REAL sg_showHitDataRange = 1;
+static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE",
+                                               sg_showHitDataRange);
+REAL sg_showHitDataFreeRange = 1;
+static tConfItem<REAL> sg_showHitDataFreeRangeConf("HELPER_SHOW_HIT_OPEN_RANGE",
+                                                   sg_showHitDataFreeRange);
+int sg_showHitDataRecursion = 1;
+static tConfItem<int> sg_showHitDataRecursionConf("HELPER_SHOW_HIT_RECURSION",
+                                                  sg_showHitDataRecursion);
+bool sg_helperShowHitFrontLine = false;
+static tConfItem<bool> sg_helperShowHitFrontLineConf("HELPER_SHOW_HIT_FRONT_LINE",
+                                                     sg_helperShowHitFrontLine);
+
+REAL sg_helperShowHitFrontLineHeight = 2;
+static tConfItem<REAL> sg_helperShowHitFrontLineHeightConf("HELPER_SHOW_HIT_FRONT_LINE_HEIGHT",
+                                                          sg_helperShowHitFrontLineHeight);
+REAL sg_showHitDataTimeout = 1;
+static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT",
+                                                 sg_showHitDataTimeout);
+
+bool sg_helperShowHitStartAtHitPos = true;
+static tConfItem<bool> sg_helperShowHitStartAtHitPosConf("HELPER_SHOW_HIT_START_AT_HIT_POS",
+                                                         sg_helperShowHitStartAtHitPos);
+}
+
 //HUD ITEMS
 gHelperHudItemRef<bool> sg_helperSmartTurningH("Smart Turning",sg_helperSmartTurning);
 gHelperHudItemRef<bool> sg_pathHelperH("Path Helper",sg_pathHelper);
@@ -54,11 +95,9 @@ default:
 }
 }
 
-
 REAL gHelper::CurrentTime() {
     return sg_helperCurrentTimeLocal ? owner_.localCurrentTime : se_GameTime();
 }
-
 
 void gHelper::turningBot(gHelperData &data){
     data.rubberData.calculate();
@@ -536,8 +575,8 @@ void gHelper::showHit(gHelperData &data)
     // calculate the timeout value
     REAL timeout = data.ownerData.speedFactorF() * sg_showHitDataTimeout;
 
-    if (sg_helperHud)
     // write the front hit distance to the stream
+    if (sg_helperHud)
         sg_helperShowHitFrontDistH << (frontHit);
 
     // return if the wall is not close
@@ -548,20 +587,24 @@ void gHelper::showHit(gHelperData &data)
     eCoord frontBeforeHit = data.sensors.getSensor(FRONT)->before_hit;
 
     // draw a line from the owner's current position to the front before hit position
-    gHelperUtility::debugLine(gRealColor(1, .5, 0), sg_showHitDataHeightFront, timeout, (ownerPos), frontBeforeHit);
+    gHelperUtility::debugLine(gRealColor(1, .5, 0), sg_showHitDataHeightFront, timeout, ownerPos, frontBeforeHit);
+
+    if (sg_helperShowHitFrontLine){
+        gHelperUtility::debugLine(gRealColor(1, .5, 0), sg_helperShowHitFrontLineHeight, timeout, frontBeforeHit, frontBeforeHit);
+    }
 
     // check if the start position is at the hit position or not
     if (sg_helperShowHitStartAtHitPos)
     {
         // draw debug lines from the front before hit position in the left and right directions
-        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion-1, LEFT);
-        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion-1, RIGHT);
+        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, LEFT);
+        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, RIGHT);
     }
     else
     {
         // draw debug lines from the owner's current position in the left and right directions
-        showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion-1, LEFT);
-        showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion-1, RIGHT);
+        showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT);
+        showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT);
     }
 }
 

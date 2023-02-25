@@ -920,7 +920,7 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
                 follow.Normalize();
 
                 // hah, but if we're faster than the other guy, try to overtake him.
-                if( blocker_->Speed() + blocker_->Lag() < cycle_.Speed() )
+                if( blocker_->Speed() + blocker_->Lag() < cycle_.Speed() + cycle_.Lag()) 
                 {
                     follow *= -1;
                 }

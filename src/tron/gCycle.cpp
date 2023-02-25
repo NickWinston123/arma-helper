@@ -371,6 +371,18 @@ gSmarterBot& gSmarterBot::Get( gCycle * cycle )
     return *cycle->smarterBot_;
 }
 
+void gSmarterBot::Survive(gCycle *owner)
+{
+    gSmarterBot &bot = gSmarterBot::Get(owner);
+    bot.gAINavigator::Activate(se_GameTime(),0);
+    bot.UpdatePaths();
+    EvaluationManager manager( bot.GetPaths() );
+    manager.Evaluate( SuicideEvaluator( *(bot.Owner())), 10);
+    manager.Evaluate( SpaceEvaluator( *(bot.Owner())), 20);
+    CycleControllerAction controller;
+    manager.Finish( controller, *(bot.Owner()), 0 );
+}
+
 REAL gSmarterBot::Think( REAL minStep )
 {
     if (!local_player)
@@ -470,7 +482,7 @@ REAL gSmarterBot::Think( REAL minStep )
         manager.Evaluate( TunnelEvaluator( *Owner() ), local_player->sg_smarterBotTunnelScale );
 
     if (local_player->sg_smarterBotSpeedScale > 0)
-        manager.Evaluate( SpeedEvaluator( *Owner() ), local_player->sg_smarterBotSpeedScale );
+        manager.Evaluate( SpeedEvaluator(*Owner()), local_player->sg_smarterBotSpeedScale );
 
     CycleControllerAction controller;
     return manager.Finish( controller, *Owner(), minStep );

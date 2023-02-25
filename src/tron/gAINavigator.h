@@ -461,11 +461,12 @@ class gSmarterBot: public gAINavigator
 
 public:
     gSmarterBot(gCycle *owner);
-    ~gSmarterBot();
-    static gSmarterBot& Get(gCycle *cycle);
+    static void Survive(gCycle *owner);
 
     REAL Think(REAL minStep);
-
     void Activate(REAL currentTime);
+
+    static gSmarterBot& Get(gCycle *cycle);
+    ~gSmarterBot();
 };
 #endif

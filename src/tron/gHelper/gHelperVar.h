@@ -148,6 +148,8 @@ namespace helperConfig {
     extern int sg_showHitDataRecursion ;
     extern REAL sg_showHitDataTimeout ;
 
+    extern bool sg_helperShowHitFrontLine;
+    extern REAL sg_helperShowHitFrontLineHeight;
     extern bool sg_helperShowHitStartAtHitPos ;
     extern bool sg_helperCurrentTimeLocal ;
 

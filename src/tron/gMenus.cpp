@@ -69,7 +69,7 @@ static uMenuItemFunction defaul_ok
 (&defaul,"Apply Defaults",
  "$graphics_load_defaults_help",
  [](){ sr_LoadDefaultConfig(); defaul.Exit(); });
- 
+
 uMenu screen_menu_detail("$detail_settings_menu");
 uMenu screen_menu_tweaks("$performance_tweaks_menu");
 uMenu screen_menu_prefs("$preferences_menu");
@@ -502,7 +502,7 @@ void sg_SpecialMenu()
     uMenu menu("$special_setup_menu_text");
 
     uMenuItemFunction opc(&menu, "Override Players' Colors", "", se_ForcePlayerColorMenu);
-    
+
     uMenuItemFunction cm(&menu, "My Color Configuration", "", sg_ColorMenu);
 
     uMenuItemToggle hlm(&menu, "$highlight_name_menu_text", "$highlight_name_menu_help", se_highlightMyName);
@@ -521,7 +521,7 @@ class gMenuItemSubmenu: public uMenuItemSubmenu
     uMenu * submenu;
 public:
     bool disabled;
-    
+
     gMenuItemSubmenu(uMenu *M, uMenu *s, const tOutput& help):
         uMenuItemSubmenu( M, s, help )
     {
@@ -536,7 +536,7 @@ public:
         {
             alpha *= 0.5;
         }
-        
+
         DisplayTextSpecial(x,y,submenu->title,selected,alpha,0);
     }
 
@@ -556,17 +556,17 @@ void sg_ConfigMenu()
     uMenu menu("$config_setup_menu_text");
 
     uMenu add_to_cfg("Add Persistant Setting Value");
-    
+
     uMenuItemFunction atc_b(&add_to_cfg,
         "Save",
         "",
         []()
         {
             tArray< tString > commands; commands.Insert( sg_c_setting );
-            
+
             auto outln = st_AddToUserExt( commands ).Split("\n");
             tString out;
-            
+
             for(int i=0;i<outln.Len();++i)
             {
                 if( outln[i].StartsWith("Done") )
@@ -576,23 +576,23 @@ void sg_ConfigMenu()
                 }
                 out << outln[i] << "\n";
             }
-            
+
             uMenu::Message( tString("Done"), tString( out ), 12 );
         });
-    
+
     uMenuItemString atc_s(&add_to_cfg,
         "Setting",
         "The setting to save",
         sg_c_setting);
-    
+
     uMenuItemSubmenu cm(&menu,&add_to_cfg,
                         "persist setting to config that will be auto updated on change");
 
     uMenuItemFunction sac(&menu, "$config_save_all_text", "$config_save_all_help", &tConfItemBase::WriteAllToFile);
     uMenuItemFunction lac(&menu, "$config_load_all_text", "$config_load_all_help", &st_LoadConfig);
 
-    
-    
+
+
 
     uMenu dlsets("Save Server Settings");
     uMenuItemFunction gfs(&dlsets, "Save", "", [](){ se_NewChatMessage(se_GetLocalPlayer(), tString("/dlsettings"))->BroadCast(); });
@@ -607,7 +607,7 @@ void sg_ConfigMenu()
     {
         tString cmd("/dlcfg ");
         cmd << sg_c_svr_cfg_in;
-        
+
         se_NewChatMessage(se_GetLocalPlayer(), cmd)->BroadCast();
     });
     uMenuItemString sfc_s(&dlcfg,
@@ -626,7 +626,7 @@ void sg_ConfigMenu()
         dcsm.disabled = true;
         dssm.disabled = true;
     }
-    
+
     uMenu sccM("$config_save_changed_text");
     uMenuItemFunction sccf(&sccM, "Save", "", &tConfItemBase::WriteChangedToFile);
     uMenuItemString scc_s(&sccM,
@@ -682,11 +682,11 @@ public:
         :uMenuItemReal( m, title, help, targ, 0, 4, 0.1)
     {
     };
-    
+
     void Render(REAL x, REAL y, REAL alpha, bool selected)
     {
         DisplayText(x-.02,y,title,selected,alpha,1);
-        
+
         tString s; s << roundf( target * 100 ) << "%";
         DisplayText(x+.02,y,s,selected,alpha,-1);
     }
@@ -780,29 +780,29 @@ public:
         :uMenuItemInt( m, title, help, targ, 1, 8000)
     {
     };
-    
+
     virtual void LeftRight( int dir )
     {
         static int fps[] = {
-            24, 30, 40, 60, 120, 144, 240, 
+            24, 30, 40, 60, 120, 144, 240,
             300, 400, 500, 600, 800,
             1000, 2000, 4000, 8000,
         };
         static const size_t fpses = ( sizeof(fps) / sizeof(int) );
-        
+
         size_t curr = 0;
-        
+
         int lastdiff = 9999999;
         for(size_t i=0;i<fpses;++i)
         {
             int diff = abs( fps[i] - target );
             if( diff > lastdiff )
                 break;
-            
+
             curr = i;
             lastdiff = diff;
         }
-                
+
         if( dir > 0 && curr < ( fpses - 1 ) )
             target = fps[curr + 1];
         else if( dir < 0 && curr > 0 )
@@ -1190,19 +1190,19 @@ public:
         REAL r = rgb[0]/15.0;
         REAL g = rgb[1]/15.0;
         REAL b = rgb[2]/15.0;
-        
+
         REAL sr = r, sg = g, sb = b;
-        
+
         se_MakeColorValid(r, g, b, 1.0f);
         RenderEnd();
         glColor3f(r, g, b);
         //glRectf(.8,-.8,.98,-.71);
         glRectf(.8,-.8,.98,-.98);
-        
+
         while( sr > 1.f ) sr -= 1.f;
         while( sg > 1.f ) sg -= 1.f;
         while( sb > 1.f ) sb -= 1.f;
-        
+
         glColor3f(sr, sg, sb);
         glRectf(-.8,-.8,-.98,-.98);
 #endif
@@ -1229,9 +1229,9 @@ void sg_PlayerMenu(int Player){
     chat_menu2.SetCenter(-.5);
 
     uMenuItemString *ic[MAX_INSTANT_CHAT];
-    uMenuItemInput * ici[MAX_INSTANT_CHAT]; 
+    uMenuItemInput * ici[MAX_INSTANT_CHAT];
     uMenuItemDivider * icd[MAX_INSTANT_CHAT];
-    
+
     uMenuItemString * ic2[MAX_INSTANT_CHAT];
 
     ePlayer *p = ePlayer::PlayerConfig(Player);
@@ -1243,19 +1243,19 @@ void sg_PlayerMenu(int Player){
         tOutput name;
         name.SetTemplateParameter(1, i+1);
         name << "$player_chat_chat";
-        
+
         ici[i] = new uMenuItemInput( &chat_menu, p->se_instantChatAction[ i ], Player + 1 );
-        
+
         ic[i]=new uMenuItemString
               (&chat_menu,name,
                "$player_chat_chat_help",
                p->instantChatString[i]);
-        
+
         ic2[i]=new uMenuItemString
               (&chat_menu2,name,
                "$player_chat_chat_help",
                p->instantChatString[i]);
-        
+
         icd[i] = new uMenuItemDivider( &chat_menu );
     }
 
@@ -1576,10 +1576,10 @@ void sg_MenusForVersion( tString version )
     {
         o28 = tConfigMigration::SavedBefore( version, "0.2.8.9" );
         o29 = version.StartsWith("0.2.9.0.1") || version.StartsWith("0.2.9.1");
-        
+
         if( o28 || o29 )
         {
-            
+
         }
     }
 }

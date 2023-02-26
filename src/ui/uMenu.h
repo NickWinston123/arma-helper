@@ -34,8 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tString.h"
 #include "tCallback.h"
 #include "tLocale.h"
-#include "../engine/eCoord.h"
-#define tCoord eCoord
 
 #include "rSDL.h"
 #ifndef DEDICATED
@@ -47,15 +45,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "defs.h"
 
 class uMenuItem;
-class uMenuWidget;
 
 class uMenu{
     friend class uMenuItem;
-    friend class uMenuWidget;
 
 protected:
     tList<uMenuItem>      items;
-    tList<uMenuWidget>    widgets;
     static FUNCPTR       idle;
 
     REAL menuTop;
@@ -97,10 +92,7 @@ public:
     void SetBot(REAL b) {menuBot=b;spaceBelow=1+menuBot;}
     REAL GetTop() const {return menuTop;}
     REAL GetBot() const {return menuBot;}
-    void SetSelected(int s);
-    int GetSelected() const {return selected;}
-    int GetNextSelectable(int start);
-    int GetPrevSelectable(int start);
+    void SetSelected(int s) {selected = s;}
     int  NumItems()         {return items.Len();}
     uMenuItem* Item(int i)  { return items[i]; }
     void AddItem(uMenuItem* item);
@@ -133,10 +125,6 @@ public:
 
     //! returns whether there is currently an active menu
     static bool MenuActive();
-
-    //! triggered when the menu becomes active
-    static void MenuNowActive(bool flag);
-
 protected:
     //! handles a key press
     virtual void HandleEvent( SDL_Event event );
@@ -147,55 +135,12 @@ protected:
     //! marks the menu for exit
     virtual void OnExit();
 
+    int GetNextSelectable(int start);
+    int GetPrevSelectable(int start);
+
+
     //! called every frame before the menu is rendered
     virtual void OnRender();
-};
-
-
-// *****************************************************
-
-class uMenuWidget
-{
-    friend class uMenu;
-    
-    int idnum;
-protected:
-    uMenu * menu;
-    
-    bool selected;
-    bool mouseOver;
-    
-    REAL width, height;
-    tCoord pos;
-    int textAlign;
-    
-    tString text;
-    
-public:
-    uMenuWidget(uMenu * menu)
-        :idnum(-1),menu(menu)
-    {
-        this->selected = this->mouseOver = false;
-        this->textAlign = 0;
-        menu->widgets.Add(this,idnum);
-    }
-    virtual ~uMenuWidget()
-    {
-        if( menu && idnum >= 0 )
-            menu->widgets.Remove(this,idnum);
-    }
-    
-    int GetID(){return idnum;}
-    
-    virtual bool AffectedByScroll(){return true;}
-    
-    virtual void Render( REAL yOffset );
-    
-    virtual bool InTriggerArea( tCoord mouse, REAL yOffset );
-    
-    virtual void OnMouseOver(tCoord ){this->selected = true;}
-    virtual void OnClick(tCoord ){};
-    virtual void OnMouseOut(tCoord ){this->selected = false;}
 };
 
 
@@ -248,15 +193,11 @@ public:
         menu->GenericBackground();
     }
 
-    virtual bool ConsiderMenuActive(){return true;}
-
     // if the user presses left/right on menuitem
     virtual void LeftRight(int ){} //lr=-1:left lr=+1: right
     virtual void LeftRightRelease(){}
 
     virtual void Enter(){} // if the user presses enter/space on menu
-
-    virtual void OnClick(tCoord mouse, bool selected); // if the user clicks on this item
 
     virtual bool Event(SDL_Event &){return false;} // if the key c is
     // pressed,mouse moved ...
@@ -266,14 +207,7 @@ public:
 
     int GetID(){return idnum;}
 
-    virtual bool InTriggerArea(tCoord mouse, REAL myX, REAL myY){return InTriggerArea(mouse,myX,myY,"");}
-    virtual bool InTriggerArea(tCoord mouse, REAL myX, REAL myY, const char * text);
-
     virtual bool IsSelectable(){return true;};
-    virtual bool HoverSelect(tCoord ,REAL ,REAL ){return IsSelectable();}
-
-    virtual void Select() {}   // called when this item is selected and ready to set
-    virtual void Deselect() {} // called when this item is deselected
 
 protected:
     void SetColor( bool selected, REAL alpha );            //!< Sets the color of text output for this menuitem
@@ -302,7 +236,6 @@ public:
     virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0){
         DisplayTextSpecial(x,y,tString(t),selected,alpha);
     }
-    virtual bool InTriggerArea(tCoord mouse, REAL myX, REAL myY);
 
     virtual void Enter(){menu->Exit();}
     // if the user presses enter/space on menu
@@ -311,38 +244,6 @@ public:
 // *****************************************************
 // Selection
 // *****************************************************
-
-class uSelectChange: public uMenuWidget
-{
-    int dir;
-    REAL center;
-    uMenuItem * item_;
-public:
-    uSelectChange( uMenu * menu, uMenuItem * i, int d )
-        :uMenuWidget(menu),
-            dir(d),item_(i)
-    {
-        this->text = tString((dir>0)?">":"<");
-        this->height = 0.11f;
-        this->pos = tCoord(2,2);
-    }
-    
-    void SetPos(REAL x,REAL y){center=x;pos.y=y;}
-    
-    virtual void Render(REAL )
-    {
-        uMenuWidget::Render(REAL(0));
-        
-        this->pos.x = ((this->width/2)*this->dir)-0.005+center;
-    }
-    
-    virtual void OnClick(tCoord )
-    {
-        item_->LeftRight(this->dir);
-    }
-    
-    virtual bool AffectedByScroll(){return false;}
-};
 
 template<class T> class uSelectItem{
 public:
@@ -380,8 +281,6 @@ protected:
     tOutput               	title;
     int                   	select;
     T *                   	target;
-    uSelectChange * prevButton;
-    uSelectChange * nextButton;
 public:
 #ifdef SLOPPYLOCALE
     uMenuItemSelection(uMenu *m,
@@ -432,12 +331,6 @@ public:
             if (choices(i)->value==*target)
                 select=i;
 
-        if(selected)
-        {
-            if(this->prevButton) this->prevButton->SetPos(x,y-0.04);
-            if(this->nextButton) this->nextButton->SetPos(x,y-0.04);
-        }
-
         DisplayText(REAL(x-.02),y,title,selected,alpha,1);
         if (choices.Len()>0)
             DisplayText(REAL(x+.02),y,choices(select)->description,selected,alpha,-1);
@@ -449,27 +342,6 @@ public:
         ret << "\n";
         ret << choices(select)->helpText;
         return ret;
-    }
-
-    virtual void OnClick(tCoord ,bool ){}
-
-    virtual void Select()
-    {
-        this->prevButton = tNEW(uSelectChange)(menu,this,-1);
-        this->nextButton = tNEW(uSelectChange)(menu,this, 1);
-    }
-    virtual void Deselect()
-    {
-        if(this->prevButton)
-        {
-            delete this->prevButton;
-            this->prevButton = nullptr;
-        }
-        if(this->nextButton)
-        {
-            delete this->nextButton;
-            this->nextButton = nullptr;
-        }
     }
 
 };
@@ -508,38 +380,54 @@ public:
 //               Integer Choose
 // *****************************************
 
-class uMenuItemInt: public uMenuItemSelection<int>
-{
+class uMenuItemInt:public uMenuItem{
 protected:
     tOutput title;
     int &target;
     int Min,Max;
     int Step;
 public:
+    /*
+      uMenuItemInt(uMenu *m,const char *tit,
+      const char *help,int &targ,
+      int mi,int ma,int step=1);
+    */
     uMenuItemInt(uMenu *m,const tOutput &title,
                  const tOutput &help,int &targ,
                  int mi,int ma,int step=1);
 
     ~uMenuItemInt(){}
+
+    virtual void LeftRight(int);
+
+    virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0);
 };
 
 // *****************************************
 //               Float Choose
 // *****************************************
 
-class uMenuItemReal: public uMenuItemSelection<REAL>
-{
+class uMenuItemReal:public uMenuItem{
 protected:
     tOutput title;
     REAL &target;
     REAL Min,Max;
     REAL Step;
 public:
+    /*
+      uMenuItemInt(uMenu *m,const char *tit,
+      const char *help,int &targ,
+      int mi,int ma,int step=1);
+    */
     uMenuItemReal(uMenu *m,const tOutput &title,
                  const tOutput &help,REAL &targ,
                  REAL mi,REAL ma,REAL step=1);
 
     ~uMenuItemReal(){}
+
+    virtual void LeftRight(int);
+
+    virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0);
 };
 
 // *****************************************************
@@ -585,6 +473,8 @@ class uMenuItemColorLine: public uMenuItemString
         uMenuItemColorLine(uMenu *M, tString &c, int maxLength = 1024 ):
                         uMenuItemString(M,"$player_name_text","$player_name_help",c, maxLength) {}
         virtual ~uMenuItemColorLine(){}
+
+        virtual bool Event(SDL_Event &e);
 };
 
 class uMenuItemStringWithHistory : protected uMenuItemString {
@@ -618,7 +508,6 @@ public:
     virtual ~uMenuItemSubmenu(){}
 
     virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0);
-    virtual bool InTriggerArea(tCoord mouse, REAL myX, REAL myY);
 
     virtual void Enter();
 };
@@ -636,7 +525,6 @@ public:
     virtual ~uMenuItemAction(){}
 
     virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0);
-    virtual bool InTriggerArea(tCoord mouse, REAL myX, REAL myY);
 
     virtual void Enter() = 0;
 protected:

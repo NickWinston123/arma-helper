@@ -10359,7 +10359,7 @@ void sg_ColorMenu()
 {
     uMenu menu("Color Menu");
 
-    uMenuItemDivider d1 ( &menu );
+    //uMenuItemDivider d1 ( &menu );
 
     uMenuItemReal gbConf( &menu, "Secondary B", "", gradientB, 0, 15, 1);
     uMenuItemReal ggConf( &menu, "Secondary G", "", gradientG, 0, 15, 1);
@@ -10505,13 +10505,13 @@ void se_ForcePlayerColorMenu()
             while( p->colorOverride.b > 30 ) p->colorOverride.b -= 15;
         }
 
-        items[ curr_item++ ] = new uMenuItemDivider( playermenu );
+        //items[ curr_item++ ] = new uMenuItemDivider( playermenu );
 
         items[ curr_item++ ] = new eMenuItemColorSelect( playermenu, "B", "", p->colorOverride.b, p);
         items[ curr_item++ ] = new eMenuItemColorSelect( playermenu, "G", "", p->colorOverride.g, p);
         items[ curr_item++ ] = new eMenuItemColorSelect( playermenu, "R", "", p->colorOverride.r, p);
 
-        items[ curr_item++ ] = new uMenuItemDivider( playermenu );
+        //items[ curr_item++ ] = new uMenuItemDivider( playermenu );
 
         items[ curr_item++ ] = new uMenuItemToggle( playermenu, "Override", "", p->overrideColor);
     }

@@ -306,17 +306,17 @@ public:
     virtual ~uMenuItemInput(){}
 
     virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0);
-    
+
     virtual void Enter(){
         active=1;
     }
-    
+
     virtual bool ConsiderMenuActive(){return !active;}
-    
+
 #ifndef DEDICATED
     virtual bool Event(SDL_Event &e);
 #endif
-    
+
     virtual tString Help(){
         tString ret;
         ret << helpText << "\n";

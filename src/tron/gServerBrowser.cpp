@@ -143,8 +143,6 @@ protected:
     virtual bool Event( SDL_Event& event );
 
     virtual void RenderBackground();
-    
-    virtual bool InTriggerArea( tCoord mouse, REAL myX, REAL myY );
 
     virtual bool DisplayHelp( bool display, REAL y, REAL alpha )
     {
@@ -168,8 +166,6 @@ public:
         menu->Item(menu->NumItems()-2)->RenderBackground();
     };
     virtual bool Event( SDL_Event& event );
-    
-    virtual bool InTriggerArea( tCoord mouse, REAL myX, REAL myY );
     
     
 private:
@@ -208,24 +204,6 @@ public:
 
     gServerStartMenuItem(gServerMenu *men);
     virtual ~gServerStartMenuItem();
-};
-
-class gBrowserBackButton: public uMenuWidget
-{
-public:
-    gBrowserBackButton(gServerMenu * menu)
-        :uMenuWidget(menu)
-    {
-        this->pos = tCoord(-0.88, 0.8);
-        this->text = tString("<-");
-        this->height = .11f;
-    }
-    virtual bool AffectedByScroll(){return false;}
-    
-    virtual void OnClick( tCoord mouse )
-    {
-        menu->Exit();
-    }
 };
 
 
@@ -328,8 +306,6 @@ void gServerBrowser::BrowseLAN()
     nServerInfo::SetCreator(cback);
 }
 
-extern bool sg_ShowSBFilterItem();
-
 void gServerBrowser::BrowseServers()
 {
     //nServerInfo::CalcScoreAll();
@@ -339,12 +315,8 @@ void gServerBrowser::BrowseServers()
 
     gServerMenu browser("Server Browser");
 
-    gBrowserBackButton back(&browser);
-
     gServerStartMenuItem start(&browser);
     gServerFilterMenuItem filter(&browser);
-    
-    if( !sg_ShowSBFilterItem() ) browser.RemoveItem( &filter );
 
     /*
       while (nServerInfo::DoQueryAll(sg_simultaneous));
@@ -457,7 +429,7 @@ void gServerMenu::Update()
     nServerInfo::CalcScoreAll();
     nServerInfo::Sort( nServerInfo::PrimaryKey( sortKey_ ) );
 
-    int mi = sg_ShowSBFilterItem() ? 2 : 1;
+    int mi = 2;
     gServerInfo *run = gServerInfo::GetFirstServer();
 	bool oneFound = false; //so we can display all if none were found
 
@@ -806,33 +778,6 @@ void gServerMenuItem::Render(REAL x,REAL y,REAL alpha, bool selected)
                            tString(""), tString(""), tString(""));
 
     }
-#endif
-}
-
-bool gBrowserMenuItem::InTriggerArea(tCoord mouse, REAL myX, REAL myY)
-{
-#ifndef DEDICATED
-    myY -= (24.f/sr_screenHeight);
-    myY = myY*shrink + displace;
-    return ( mouse.y > myY-(text_height/2) && mouse.y < myY+(text_height/2) );
-#else
-    return false;
-#endif
-}
-
-bool gServerFilterMenuItem::InTriggerArea(tCoord mouse, REAL myX, REAL myY)
-{
-#ifndef DEDICATED
-    myY -= (24.f/sr_screenHeight);
-    myY = myY*shrink + displace;
-    tString text; text << description << "   " << *content;
-    REAL width = (rTextField::GetTextLength(text, 0.11f, true)/2);
-    return ( 
-        mouse.x > -0.9f && mouse.x < -(0.9f-width) &&
-        mouse.y > myY-(text_height/2) && mouse.y < myY+(text_height/2)
-    );
-#else
-    return false;
 #endif
 }
 

@@ -330,8 +330,7 @@ static void welcome(){
             timeout = tSysTimeFloat() + 6;
 
             uInputProcessGuard inputProcessGuard;
-            while((!su_GetSDLInput(tEvent) ||
-                ( tEvent.type!=SDL_KEYDOWN && tEvent.type!=SDL_MOUSEBUTTONUP )) &&
+            while ((!su_GetSDLInput(tEvent) || tEvent.type!=SDL_KEYDOWN) &&
                     tSysTimeFloat() < timeout)
             {
                 if ( sr_glOut )

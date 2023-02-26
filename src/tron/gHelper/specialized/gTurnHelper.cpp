@@ -132,8 +132,8 @@ bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceF
     else
     {
         // If spaceFactor <= 0, rubberFactor is calculated and used as compareFactor
-        data.rubberData.calculate();
-        compareFactor = data.rubberData.rubberFactor;
+        // data.rubberData.calculate();
+        compareFactor = data.rubberData.rubberFactorF();
     }
 
     // return whether the hit distance is greater than compareFactor
@@ -172,8 +172,8 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     gSurviveData surviveData;
 
     // Calculate the rubber factor.
-    data.rubberData.calculate();
-
+    // data.rubberData.calculate();
+    REAL rubberFactor = data.rubberData.rubberFactorF();
     // Initialize the values to assume both turns are survivable.
     surviveData.canSurviveLeftTurn = true;
     surviveData.canSurviveRightTurn = true;
@@ -214,13 +214,13 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     }
 
     // If the left hit is less than the rubber factor, the turn left cannot be survived.
-    if (left->hit < data.rubberData.rubberFactor)
+    if (left->hit < rubberFactor)
     {
         canTurnLeftRubber = false;
     }
 
     // If the right hit is less than the rubber factor, the turn right cannot be survived.
-    if (right->hit < data.rubberData.rubberFactor)
+    if (right->hit < rubberFactor)
     {
         canTurnRightRubber = false;
     }

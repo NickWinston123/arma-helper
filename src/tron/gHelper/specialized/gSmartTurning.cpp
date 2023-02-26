@@ -21,9 +21,9 @@ bool sg_helperSmartTurningFrontBotTurnOnce = true;
 static tConfItem<bool> sg_helperSmartTurningFrontBotTurnOnceConf("HELPER_SMART_TURNING_FRONT_BOT_TURN_ONCE", sg_helperSmartTurningFrontBotTurnOnce);
 
 REAL sg_helperSmartTurningFrontBotActivationRubber = 0.98;
-static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationRubberConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_RUBBER", sg_helperSmartTurningFrontBotActivationRubber);
+static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationRubberConf("HELPER_SMART_TURNING_FRONT_BOT_RUBBER", sg_helperSmartTurningFrontBotActivationRubber);
 REAL sg_helperSmartTurningFrontBotActivationSpace = 1;
-static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationSpaceConf("HELPER_SMART_TURNING_FRONT_BOT_ACTIVATION_SPACE", sg_helperSmartTurningFrontBotActivationSpace);
+static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationSpaceConf("HELPER_SMART_TURNING_FRONT_BOT_SPACE", sg_helperSmartTurningFrontBotActivationSpace);
 REAL sg_helperSmartTurningFrontBotDisableTime = 0;
 static tConfItem<REAL> sg_helperSmartTurningFrontBotDisableTimeConf("HELPER_SMART_TURNING_FRONT_BOT_DISABLE_TIME", sg_helperSmartTurningFrontBotDisableTime);
 
@@ -451,16 +451,16 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
     // If the range to the front bot is within the sg_helperSmartTurningFrontBotThinkRange
     if (hitRange <= sg_helperSmartTurningFrontBotThinkRange * data.ownerData.turnSpeedFactorF())
     {
-        // Calculate the rubber data
-        data.rubberData.calculate();
+        // // Calculate the rubber data
+        // data.rubberData.calculate();
 
         // If the rubber used ratio is greater than or equal to sg_helperSmartTurningFrontBotActivationRubber
         // or the range to the front bot is less than or equal to sg_helperSmartTurningFrontBotActivationSpace
-        if ((data.rubberData.rubberUsedRatio + data.ownerData.lagFactorF()) >= sg_helperSmartTurningFrontBotActivationRubber ||
-            hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
+        if ((sg_helperSmartTurningFrontBotActivationRubber > 0 && data.rubberData.rubberUsedRatioF() + data.ownerData.lagFactorF()) >= sg_helperSmartTurningFrontBotActivationRubber ||
+            sg_helperSmartTurningFrontBotActivationSpace > 0 && hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
         {
-            // Flag to check if a turn was made
-            bool turnMade = true;
+            // // Flag to check if a turn was made
+            // bool turnMade = true;
 
             gSmarterBot::Survive(&owner_);
 
@@ -488,11 +488,11 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
             //                           "Failed to find turn in " + std::to_string(turnData.noTurns) + " tries!", "");
             // }
             // If smartTurningFrontBotDisableTime is greater than 0 and a turn has been made
-            if (sg_helperSmartTurningFrontBotDisableTime > 0 && turnMade)
-            {
-                // Set the turnIgnoreTime for the owner
-                owner_.turnIgnoreTime = helper_.CurrentTime() + (sg_helperSmartTurningFrontBotDisableTime);
-            }
+            // if (sg_helperSmartTurningFrontBotDisableTime > 0 && turnMade)
+            // {
+            //     // Set the turnIgnoreTime for the owner
+            //     owner_.turnIgnoreTime = helper_.CurrentTime() + (sg_helperSmartTurningFrontBotDisableTime);
+            // }
         }
     }
 }

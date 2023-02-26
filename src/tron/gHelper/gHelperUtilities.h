@@ -68,10 +68,36 @@ struct gHelperRubberData
     gHelper *helper_;
     gCycle *owner_;
     REAL rubberAvailable,
-         rubberEffectiveness,
-         rubberFactor,
-         rubberUsedRatio,
-         rubberTimeLeft;
+        rubberEffectiveness,
+        rubberFactor,
+        rubberUsedRatio,
+        rubberTimeLeft;
+
+    REAL rubberAvailableF()
+    {
+        calculate();
+        return rubberAvailable;
+    }
+    REAL rubberEffectivenessF()
+    {
+        calculate();
+        return rubberEffectiveness;
+    }
+    REAL rubberFactorF()
+    {
+        calculate();
+        return rubberFactor;
+    }
+    REAL rubberUsedRatioF()
+    {
+        calculate();
+        return rubberUsedRatio;
+    }
+    REAL rubberTimeLeftF()
+    {
+        calculate();
+        return rubberTimeLeft;
+    }
 
     gHelperRubberData() {}
     gHelperRubberData(gHelper *helper, gCycle *owner) : helper_(helper), owner_(owner) {}

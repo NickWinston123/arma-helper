@@ -6,17 +6,17 @@ bool sg_helper = false;
 static tConfItem<bool> sg_helperConf("HELPER", sg_helper);
 
 REAL sg_helperBrightness = 1;
-static tConfItem<REAL> sg_helperBrightnessConf("HELPER_BRIGHTESS", sg_helperBrightness);
+static tConfItem<REAL> sg_helperBrightnessConf("HELPER_CONF_BRIGHTESS", sg_helperBrightness);
 
 bool sg_helperSensorsZoneDetection = false;
-static tConfItem<bool> sg_helperSensorsZoneDetectionC("HELPER_SENSORS_ZONE_DETECTION", sg_helperSensorsZoneDetection);
+static tConfItem<bool> sg_helperSensorsZoneDetectionC("HELPER_CONF_SENSORS_ZONE_DETECTION", sg_helperSensorsZoneDetection);
 
 REAL sg_helperSensorRange = 1000;
-static tConfItem<REAL> sg_helperSensorRangeConf("HELPER_SENSOR_RANGE", sg_helperSensorRange);
+static tConfItem<REAL> sg_helperSensorRangeConf("HELPER_CONF_SENSOR_RANGE", sg_helperSensorRange);
 bool sg_helperSensorLightUsageMode = false;
-static tConfItem<bool> sg_helperSensorLightUsageModeConf("HELPER_SENSOR_LIGHT_USAGE_MODE", sg_helperSensorLightUsageMode);
+static tConfItem<bool> sg_helperSensorLightUsageModeConf("HELPER_CONF_SENSOR_LIGHT_USAGE_MODE", sg_helperSensorLightUsageMode);
 bool sg_helperSensorDiagonalMode = false;
-static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_SENSOR_DIAGONAL_MODE", sg_helperSensorDiagonalMode);
+static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_CONF_SENSOR_DIAGONAL_MODE", sg_helperSensorDiagonalMode);
 
 bool sg_helperDebug = false;
 static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
@@ -35,101 +35,101 @@ REAL sg_helperAITime = 0;
 static tConfItem<REAL> sg_helperAITimec("HELPER_AI_TIME", sg_helperAITime);
 
 bool sg_helperAutoBrake = false;
-static tConfItem<bool> sg_helperAutoBrakeConf("HELPER_AUTO_BRAKE", sg_helperAutoBrake);
+static tConfItem<bool> sg_helperAutoBrakeConf("HELPER_SELF_AUTO_BRAKE", sg_helperAutoBrake);
 bool sg_helperAutoBrakeDeplete = false;
-static tConfItem<bool> sg_helperAutoBrakeDepleteConf("HELPER_AUTO_BRAKE_DEPLETE", sg_helperAutoBrakeDeplete);
+static tConfItem<bool> sg_helperAutoBrakeDepleteConf("HELPER_SELF_AUTO_BRAKE_DEPLETE", sg_helperAutoBrakeDeplete);
 REAL sg_helperAutoBrakeMin = 0;
-static tConfItem<REAL> sg_helperAutoBrakeMinConf("HELPER_AUTO_BRAKE_MIN", sg_helperAutoBrakeMin);
+static tConfItem<REAL> sg_helperAutoBrakeMinConf("HELPER_SELF_AUTO_BRAKE_MIN", sg_helperAutoBrakeMin);
 REAL sg_helperAutoBrakeMax = 2;
-static tConfItem<REAL> sg_helperAutoBrakeMaxConf("HELPER_AUTO_BRAKE_MAX", sg_helperAutoBrakeMax);
+static tConfItem<REAL> sg_helperAutoBrakeMaxConf("HELPER_SELF_AUTO_BRAKE_MAX", sg_helperAutoBrakeMax);
 
 bool sg_tailHelper = false;
-static tConfItem<bool> sg_tailHelperC("HELPER_TAIL", sg_tailHelper);
+static tConfItem<bool> sg_tailHelperC("HELPER_SELF_TAIL", sg_tailHelper);
 REAL sg_tailHelperBrightness = 1;
-static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
+static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_SELF_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
 REAL sg_tailHelperDelay = 0;
-static tConfItem<REAL> sg_tailHelperDelayC("HELPER_TAIL_DELAY", sg_tailHelperDelay);
+static tConfItem<REAL> sg_tailHelperDelayC("HELPER_SELF_TAIL_DELAY", sg_tailHelperDelay);
 REAL sg_tailHelperUpdateTime = 1;
-static tConfItem<REAL> sg_tailHelperUpdateTimeC("HELPER_TAIL_UPDATE_TIME", sg_tailHelperUpdateTime);
+static tConfItem<REAL> sg_tailHelperUpdateTimeC("HELPER_SELF_TAIL_UPDATE_TIME", sg_tailHelperUpdateTime);
 
 bool sg_pathHelper = false;
-static tConfItem<bool> sg_pathHelperC("HELPER_PATH", sg_pathHelper);
+static tConfItem<bool> sg_pathHelperC("HELPER_SELF_PATH", sg_pathHelper);
 bool sg_pathHelperRenderPath = false;
-static tConfItem<bool> sg_pathHelperRenderPathC("HELPER_PATH_RENDER", sg_pathHelperRenderPath);
+static tConfItem<bool> sg_pathHelperRenderPathC("HELPER_SELF_PATH_RENDER", sg_pathHelperRenderPath);
 bool sg_pathHelperShowTurn = false;
-static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_PATH_RENDER_TURN", sg_pathHelperShowTurn);
+static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_SELF_PATH_RENDER_TURN", sg_pathHelperShowTurn);
 bool sg_pathHelperShowTurnAct = false;
-static tConfItem<bool> sg_pathHelperShowTurnActC("HELPER_PATH_RENDER_TURN_ACT", sg_pathHelperShowTurnAct);
+static tConfItem<bool> sg_pathHelperShowTurnActC("HELPER_SELF_PATH_RENDER_TURN_ACT", sg_pathHelperShowTurnAct);
 REAL sg_pathHelperShowTurnAhead = 0;
-static tConfItem<REAL> sg_pathHelperShowTurnAheadC("HELPER_PATH_RENDER_TURN_AHEAD", sg_pathHelperShowTurnAhead);
+static tConfItem<REAL> sg_pathHelperShowTurnAheadC("HELPER_SELF_PATH_RENDER_TURN_AHEAD", sg_pathHelperShowTurnAhead);
 int sg_pathHelperMode = 0;
-static tConfItem<int> sg_pathHelperModeC("HELPER_PATH_MODE", sg_pathHelperMode);
+static tConfItem<int> sg_pathHelperModeC("HELPER_SELF_PATH_MODE", sg_pathHelperMode);
 REAL sg_pathHelperAutoCloseDistance = 150;
-static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC("HELPER_PATH_AUTO_CLOSE_DISTANCE", sg_pathHelperAutoCloseDistance);
+static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC("HELPER_SELF_PATH_AUTO_CLOSE_DISTANCE", sg_pathHelperAutoCloseDistance);
 REAL sg_pathHelperUpdateTime = -1000;
-static tConfItem<REAL> sg_pathHelperUpdateTimeC("HELPER_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
+static tConfItem<REAL> sg_pathHelperUpdateTimeC("HELPER_SELF_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
 REAL se_pathHeight = 1;
-static tConfItem<REAL> se_pathHeightC("HELPER_PATH_HEIGHT", se_pathHeight);
+static tConfItem<REAL> se_pathHeightC("HELPER_SELF_PATH_HEIGHT", se_pathHeight);
 REAL se_pathBrightness = 1;
-static tConfItem<REAL> se_pathBrightnessC("HELPER_PATH_BRIGHTNESS", se_pathBrightness);
+static tConfItem<REAL> se_pathBrightnessC("HELPER_SELF_PATH_BRIGHTNESS", se_pathBrightness);
 REAL sg_pathHelperUpdateDistance = 1;
-static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
+static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_SELF_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
 
 
 bool sg_helperShowCorners = false;
-static tConfItem<bool> sg_helperShowCornersConf("HELPER_SHOW_CORNERS", sg_helperShowCorners);
+static tConfItem<bool> sg_helperShowCornersConf("HELPER_SELF_SHOW_CORNERS", sg_helperShowCorners);
 bool sg_helperShowCornersPassed = 0;
-static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_SHOW_CORNERS_PASSED",sg_helperShowCornersPassed);
+static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_SELF_SHOW_CORNERS_PASSED",sg_helperShowCornersPassed);
 REAL sg_helperShowCornersPassedRange = 1;
-static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
+static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_SELF_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
 REAL sg_helperShowCornersBoundary = 10;
-static tConfItem<REAL> sg_showTraceDatacornerRangeConf("HELPER_SHOW_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
+static tConfItem<REAL> sg_showTraceDatacornerRangeConf("HELPER_SELF_SHOW_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
 REAL sg_helperShowCornersBoundaryPassed = 2.5;
-static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_SHOW_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
+static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_SELF_SHOW_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
 REAL sg_helperShowCornersTimeout = 1;
-static tConfItem<REAL> sg_traceTimeoutConf("HELPER_SHOW_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
+static tConfItem<REAL> sg_traceTimeoutConf("HELPER_SELF_SHOW_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
 REAL sg_helperShowCornersHeight = 1;
-static tConfItem<REAL> sg_helperShowCornersHeightConf("HELPER_SHOW_CORNERS_HEIGHT", sg_helperShowCornersHeight);
+static tConfItem<REAL> sg_helperShowCornersHeightConf("HELPER_SELF_SHOW_CORNERS_HEIGHT", sg_helperShowCornersHeight);
 
 
 bool sg_helperTurningBot = false;
-static tConfItem<bool> sg_helperTurningBotConf("HELPER_TURNING_BOT", sg_helperTurningBot);
+static tConfItem<bool> sg_helperTurningBotConf("HELPER_SELF_TURNING_BOT", sg_helperTurningBot);
 REAL sg_helperTurningBotActivationSpace = 0;
-static tConfItem<REAL> sg_helperTurningBotActivationSpaceConf("HELPER_TURNING_BOT_SPACE", sg_helperTurningBotActivationSpace);
+static tConfItem<REAL> sg_helperTurningBotActivationSpaceConf("HELPER_SELF_TURNING_BOT_SPACE", sg_helperTurningBotActivationSpace);
 REAL sg_helperTurningBotActivationRubber = 0.9;
-static tConfItem<REAL> sg_helperTurningBotActivationRubberConf("HELPER_TURNING_BOT_RUBBER", sg_helperTurningBotActivationRubber);
+static tConfItem<REAL> sg_helperTurningBotActivationRubberConf("HELPER_SELF_TURNING_BOT_RUBBER", sg_helperTurningBotActivationRubber);
 int sg_helperTurningBotTurns = 1;
-static tConfItem<int> sg_helperTurningBotTurnsConf("HELPER_TURNING_BOT_TURNS", sg_helperTurningBotTurns);
+static tConfItem<int> sg_helperTurningBotTurnsConf("HELPER_SELF_TURNING_BOT_TURNS", sg_helperTurningBotTurns);
 
 bool sg_helperDetectCut = false;
-static tConfItem<bool> sg_helperDetectCutConf("HELPER_DETECT_CUT", sg_helperDetectCut);
+static tConfItem<bool> sg_helperDetectCutConf("HELPER_ENEMY_DETECT_CUT", sg_helperDetectCut);
 REAL sg_helperDetectCutDetectionRange = 150;
-static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf("HELPER_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
+static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf("HELPER_ENEMY_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
 REAL sg_helperDetectCutTimeout = .001;
-static tConfItem<REAL> sg_helperDetectCutTimeoutConf("HELPER_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
+static tConfItem<REAL> sg_helperDetectCutTimeoutConf("HELPER_ENEMY_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
 REAL sg_helperDetectCutHeight = 0;
-static tConfItem<REAL> sg_helperDetectCutHeightConf("HELPER_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
+static tConfItem<REAL> sg_helperDetectCutHeightConf("HELPER_ENEMY_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
 REAL sg_helperDetectCutReact = .2; // .005 ?
-static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_DETECT_CUT_REACT", sg_helperDetectCutReact);
+static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_ENEMY_DETECT_CUT_REACT", sg_helperDetectCutReact);
 bool sg_helperEnemyTracers = false;
 
 
 
-static tConfItem<bool> sg_helperEnemyTracersConf("HELPER_SHOW_ENEMY_TRACERS", sg_helperEnemyTracers);
+static tConfItem<bool> sg_helperEnemyTracersConf("HELPER_ENEMY_TRACERS", sg_helperEnemyTracers);
 REAL sg_helperEnemyTracersHeight = 0;
-static tConfItem<REAL> sg_helperEnemyTracersHeightConf("HELPER_SHOW_ENEMY_TRACERS_HEIGHT", sg_helperEnemyTracersHeight);
+static tConfItem<REAL> sg_helperEnemyTracersHeightConf("HELPER_ENEMY_TRACERS_HEIGHT", sg_helperEnemyTracersHeight);
 REAL sg_helperEnemyTracersDetectionRange = 150;
-static tConfItem<REAL> sg_helperEnemyTracersDetectionRangeConf("HELPER_SHOW_ENEMY_TRACERS_DETECTION_RANGE", sg_helperEnemyTracersDetectionRange);
+static tConfItem<REAL> sg_helperEnemyTracersDetectionRangeConf("HELPER_ENEMY_TRACERS_DETECTION_RANGE", sg_helperEnemyTracersDetectionRange);
 REAL sg_helperEnemyTracersSpeedMult = 1.5;
-static tConfItem<REAL> sg_helperEnemyTracersSpeedMultConf("HELPER_SHOW_ENEMY_TRACERS_SPEED_MULT", sg_helperEnemyTracersSpeedMult);
+static tConfItem<REAL> sg_helperEnemyTracersSpeedMultConf("HELPER_ENEMY_TRACERS_SPEED_MULT", sg_helperEnemyTracersSpeedMult);
 REAL sg_helperEnemyTracersPassthrough = 1;
-static tConfItem<REAL> sg_helperEnemyTracersPassthroughConf("HELPER_SHOW_ENEMY_TRACERS_PASSTHROUGH", sg_helperEnemyTracersPassthrough);
+static tConfItem<REAL> sg_helperEnemyTracersPassthroughConf("HELPER_ENEMY_TRACERS_PASSTHROUGH", sg_helperEnemyTracersPassthrough);
 REAL sg_helperEnemyTracersDelayMult = 1;
-static tConfItem<REAL> sg_helperEnemyTracersDelayMultConf("HELPER_SHOW_ENEMY_TRACERS_DELAY_MULT", sg_helperEnemyTracersDelayMult);
+static tConfItem<REAL> sg_helperEnemyTracersDelayMultConf("HELPER_ENEMY_TRACERS_DELAY_MULT", sg_helperEnemyTracersDelayMult);
 REAL sg_helperEnemyTracersTimeout = 0.01;
-static tConfItem<REAL> sg_helperEnemyTracersTimeoutConf("HELPER_SHOW_ENEMY_TRACERS_TIMEOUT", sg_helperEnemyTracersTimeout);
+static tConfItem<REAL> sg_helperEnemyTracersTimeoutConf("HELPER_ENEMY_TRACERS_TIMEOUT", sg_helperEnemyTracersTimeout);
 REAL sg_helperEnemyTracersBrightness = 1;
-static tConfItem<REAL> sg_helperEnemyTracersBrightnessConf("HELPER_SHOW_ENEMY_TRACERS_BRIGHTNESS", sg_helperEnemyTracersBrightness);
+static tConfItem<REAL> sg_helperEnemyTracersBrightnessConf("HELPER_ENEMY_TRACERS_BRIGHTNESS", sg_helperEnemyTracersBrightness);
 
 bool sg_helperShowTail = false;
 static tConfItem<bool> sg_helperShowTailConf("HELPER_SHOW_TAIL", sg_helperShowTail);
@@ -149,26 +149,26 @@ static tConfItem<int> sg_helperTestModeConf("HELPER_TEST_MODE", sg_helperTestMod
 
 
 bool sg_helperShowEnemyTail = false;
-static tConfItem<bool> sg_helperShowEnemyTailConf("HELPER_SHOW_ENEMY_TAIL", sg_helperShowEnemyTail);
+static tConfItem<bool> sg_helperShowEnemyTailConf("HELPER_ENEMY_TAIL", sg_helperShowEnemyTail);
 REAL sg_helperShowEnemyTailHeight = 1;
-static tConfItem<REAL> sg_helperShowEnemyTailHeightConf("HELPER_SHOW_ENEMY_TAIL_HEIGHT", sg_helperShowEnemyTailHeight);
+static tConfItem<REAL> sg_helperShowEnemyTailHeightConf("HELPER_ENEMY_TAIL_HEIGHT", sg_helperShowEnemyTailHeight);
 REAL sg_helperShowEnemyTailDistanceMult = 1;
-static tConfItem<REAL> sg_helperShowEnemyTailDistanceMultConf("HELPER_SHOW_ENEMY_TAIL_DISTANCE_MULT", sg_helperShowEnemyTailDistanceMult);
+static tConfItem<REAL> sg_helperShowEnemyTailDistanceMultConf("HELPER_ENEMY_TAIL_DISTANCE_MULT", sg_helperShowEnemyTailDistanceMult);
 REAL sg_helperShowEnemyTailTimeoutMult = 1;
-static tConfItem<REAL> sg_helperShowEnemyTailTimeoutMultConf("HELPER_SHOW_ENEMY_TAIL_TIMEOUT_MULT", sg_helperShowEnemyTailTimeoutMult);
+static tConfItem<REAL> sg_helperShowEnemyTailTimeoutMultConf("HELPER_ENEMY_TAIL_TIMEOUT_MULT", sg_helperShowEnemyTailTimeoutMult);
 REAL sg_helperShowEnemyTailBrightness = 1;
-static tConfItem<REAL> sg_helperShowEnemyTailBrightnessConf("HELPER_SHOW_ENEMY_TAIL_BRIGHTNESS", sg_helperShowEnemyTailBrightness);
+static tConfItem<REAL> sg_helperShowEnemyTailBrightnessConf("HELPER_ENEMY_TAIL_BRIGHTNESS", sg_helperShowEnemyTailBrightness);
 
 bool sg_helperShowTailTracer = false;
-static tConfItem<bool> sg_helperShowTailTracerConf("HELPER_SHOW_TAIL_TRACER", sg_helperShowTailTracer);
+static tConfItem<bool> sg_helperShowTailTracerConf("HELPER_SELF_TAIL_TRACER", sg_helperShowTailTracer);
 REAL sg_helperShowTailTracerHeight = 1;
-static tConfItem<REAL> sg_helperShowTailTracerHeightConf("HELPER_SHOW_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
+static tConfItem<REAL> sg_helperShowTailTracerHeightConf("HELPER_SELF_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
 REAL sg_helperShowTailTracerBrightness = 1;
-static tConfItem<REAL> sg_helperShowTailTracerBrightnessConf("HELPER_SHOW_TAIL_TRACER_BRIGHTNESS", sg_helperShowTailTracerBrightness);
+static tConfItem<REAL> sg_helperShowTailTracerBrightnessConf("HELPER_SELF_TAIL_TRACER_BRIGHTNESS", sg_helperShowTailTracerBrightness);
 REAL sg_helperShowTailTracerTimeoutMult = 1;
-static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf("HELPER_SHOW_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
+static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf("HELPER_SELF_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
 REAL sg_helperShowTailTracerDistanceMult = 10;
-static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf("HELPER_SHOW_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
+static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf("HELPER_SELF_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
 
 
 bool sg_helperCurrentTimeLocal = true; // Determines if the helper uses its own internal clock or the games to sync actions

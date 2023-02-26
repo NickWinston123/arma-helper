@@ -5615,23 +5615,25 @@ static tConfItem<int> se_watchActiveStatusTimeConf("WATCH_ACTIVE_STATUS_TIME", s
 
 void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
 {
-    for(int i=se_PlayerNetIDs.Len()-1; i>=0; i--)
+    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; i--)
     {
         ePlayerNetID *p = se_PlayerNetIDs[i];
-        if (p->Owner()==sn_myNetID && p->pID >= 0)
+        if (p->Owner() == sn_myNetID && p->pID >= 0)
         {
-            if (se_toggleChatFlag){
-                break;
+            if (se_toggleChatFlag)
+                continue;
+                
+            if (se_BlockChatFlags)
+            {
+                p->SetChatting(flag, false);
+                continue;
             }
 
-            if (!se_BlockChatFlags) {
-                p->SetChatting( flag, cs );
-            } else {
-                p->SetChatting( flag, false );
-            }
+            p->SetChatting(flag, cs);
         }
     }
 }
+
 
 static ePlayer * se_chatterPlanned=NULL;
 static ePlayer * se_chatter =NULL;
@@ -10264,8 +10266,8 @@ static ePrejoinShuffleMap se_prejoinShuffles;
 static int se_createPlayers = 0;
 static tConfItem<int> se_createPlayersConf("CREATE_PLAYERS", se_createPlayers);
 
-static int se_createPlayersSpecific = 0;
-static tConfItem<int> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC", se_createPlayersSpecific);
+static tString se_createPlayersSpecific = tString("");
+static tConfItem<tString> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC", se_createPlayersSpecific);
 
 static bool se_forceTeamname = false;
 static tConfItem<bool> se_forceTeamnameConf("FORCE_TEAMNAME", se_forceTeamname);
@@ -10570,9 +10572,7 @@ void ePlayerNetID::Update()
             bool in_game=ePlayer::PlayerIsInGame(i) ||
             (local_p && local_p->ID() != 0 &&
             (i <= (se_createPlayers) ||
-            (se_createPlayersSpecific >= 1 && i == se_createPlayersSpecific-1)));
-
-
+            (se_createPlayersSpecific != "" && tIsInList(se_createPlayersSpecific,i+1))));
 
             if (!se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
             {
@@ -10607,6 +10607,7 @@ void ePlayerNetID::Update()
                     sn_Connections[0].version.Max() == 18) {
                     se_colorName(local_p);
                 }
+
                 if (se_forceTeamname && sn_GetNetState() == nCLIENT &&
                     (sn_Connections[0].version.Max() == 18 ||
                      sn_Connections[0].version.Max() == 22))
@@ -10618,7 +10619,7 @@ void ePlayerNetID::Update()
                 if (se_toggleChatFlag) {
                     //toggle This Players ChatFlag?
                     if (tIsInList(se_toggleChatFlagEnabledPlayers, p->pID+1)) {
-                        p->SetChatting( ePlayerNetID::ChatFlags_Chat, !p->IsChatting());
+                        p->chatting_ = !p->chatting_;
                     }
                 }
 

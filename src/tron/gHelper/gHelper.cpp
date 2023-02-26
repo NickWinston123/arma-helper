@@ -100,8 +100,9 @@ REAL gHelper::CurrentTime() {
 }
 
 void gHelper::turningBot(gHelperData &data){
-    data.rubberData.calculate();
-    if ( (sg_helperTurningBotActivationRubber > 0 && data.rubberData.rubberUsedRatio + data.ownerData.lagFactorF() >= sg_helperTurningBotActivationRubber) ||
+    //data.rubberData.calculate();
+    REAL rubberUsedRatio = data.rubberData.rubberUsedRatioF();
+    if ( (sg_helperTurningBotActivationRubber > 0 && rubberUsedRatio + data.ownerData.lagFactorF() >= sg_helperTurningBotActivationRubber) ||
          (sg_helperTurningBotActivationSpace  > 0 && data.sensors.getSensor(FRONT)->hit <= sg_helperTurningBotActivationSpace)
        )
     {

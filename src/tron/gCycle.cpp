@@ -374,13 +374,14 @@ gSmarterBot& gSmarterBot::Get( gCycle * cycle )
 void gSmarterBot::Survive(gCycle *owner)
 {
     gSmarterBot &bot = gSmarterBot::Get(owner);
-    bot.gAINavigator::Activate(se_GameTime(),0);
-    bot.UpdatePaths();
-    EvaluationManager manager( bot.GetPaths() );
-    manager.Evaluate( SuicideEvaluator( *(bot.Owner())), 10);
-    manager.Evaluate( SpaceEvaluator( *(bot.Owner())), 20);
-    CycleControllerAction controller;
-    manager.Finish( controller, *(bot.Owner()), 0 );
+    if (&bot)
+        bot.gAINavigator::Activate(se_GameTime(),0);
+    // bot.UpdatePaths();
+    // EvaluationManager manager( bot.GetPaths() );
+    // manager.Evaluate( SuicideEvaluator( *(bot.Owner())), 10);
+    // manager.Evaluate( SpaceEvaluator( *(bot.Owner())), 20);
+    // CycleControllerAction controller;
+    // manager.Finish( controller, *(bot.Owner()), 0 );
 }
 
 REAL gSmarterBot::Think( REAL minStep )
@@ -3058,14 +3059,14 @@ bool gCycle::Timestep(REAL currentTime){
         }
     }
 
-    bool playerAlive =  bool(player) && Alive();
-    bool playerIsMe = playerAlive && player->IsHuman() && player->Owner() == sn_myNetID;
+    bool playerExist =  bool(player);
+    bool playerIsMe = playerExist && player->IsHuman() && player->Owner() == sn_myNetID;
     if (helperConfig::sg_helper && playerIsMe && player->pID == 0) {
           gHelper &helper = gHelper::Get( *this );
        helper.Activate();
     }
 
-    if (sg_updateCycleColor && playerAlive ) //&& player->pID == 0
+    if (sg_updateCycleColor && playerExist ) //&& player->pID == 0
     {
         this->updateColor();
     }
@@ -5226,8 +5227,8 @@ void gCycleWallsDisplayListManager::RenderAll( eCamera const * camera, gCycle * 
 bool sg_HideCycles = false;
 static tConfItem<bool> sg_HideCyclesConf("HIDE_CYCLES", sg_HideCycles);
 
-bool sg_HidePyramid = false;
-static tConfItem<bool> sg_HidePyramidConf("HIDE_PYRAMID", sg_HidePyramid);
+bool sg_chatFlagHide = false;
+static tConfItem<bool> sg_chatFlagHideConf("CHAT_FLAG_HIDE", sg_chatFlagHide);
 
 
 REAL sg_renderCycleOffset = 0; // -0.76 for true position
@@ -5482,7 +5483,7 @@ void gCycle::Render(const eCamera *cam){
                     alpha = timeout - se_GameTime();
                 }
             }
-            if (sg_HidePyramid && player->Owner() == sn_myNetID) {
+            if (sg_chatFlagHide && player->Owner() == sn_myNetID) {
                 renderPyramid = false;
             }
             if ( renderPyramid )

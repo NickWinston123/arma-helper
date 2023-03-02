@@ -185,8 +185,7 @@ gCycle* gHelperEnemiesData::detectEnemies() {
     REAL closestEnemyDistanceSquared = 999999999;
     for (int i = 0; i < se_PlayerNetIDs.Len(); i++) {
         auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
-        auto ourPlayer = ePlayerNetID::gCycleToNetPlayer(owner_);
-        if (other != nullptr && other->Alive() && se_PlayerNetIDs[i]->pID != ourPlayer->pID) {
+        if (other != nullptr && other->Alive() && se_PlayerNetIDs[i]->pID != owner_->Player()->pID) {
             REAL positionDifference = st_GetDifference(other->Position(), owner_->Position());
             if (positionDifference < closestEnemyDistanceSquared) {
                 closestEnemyDistanceSquared = positionDifference;

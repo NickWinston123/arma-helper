@@ -1153,6 +1153,22 @@ ePlayer *ePlayer::gCycleToLocalPlayer(gCycle *owner)
     return NULL;
 }
 
+ePlayerNetID *ePlayerNetID::gCycleToNetPlayer(gCycle *owner)
+{
+    for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+    {
+        {
+            ePlayerNetID *netPlayer = se_PlayerNetIDs[i];
+            if (netPlayer)
+            {
+                gCycle *cycle = dynamic_cast<gCycle *>(netPlayer->Object());
+                if (cycle && cycle == owner)
+                    return netPlayer;
+            }
+        }
+    }
+    return NULL;
+}
 
 void   ePlayer::StoreConfitem(tConfItemBase *c)
 {
@@ -5622,7 +5638,7 @@ void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
         {
             if (se_toggleChatFlag)
                 continue;
-                
+
             if (se_BlockChatFlags)
             {
                 p->SetChatting(flag, false);

@@ -273,10 +273,11 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
-    playerWatchStatus lastWatchStatus;
     typedef std::set< eTeam * > eTeamSet;
     bool respawnedLocally;
+    playerWatchStatus lastWatchStatus;
     static void watchPlayerStatus();
+    static ePlayerNetID  *gCycleToNetPlayer(gCycle *owner);
 private:
 
     int listID;                          // ID in the list of all players

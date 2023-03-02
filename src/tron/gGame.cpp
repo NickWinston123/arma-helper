@@ -5372,6 +5372,9 @@ static tSettingItem<bool> sg_forceGamePauseConf("FORCE_GAME_PAUSE", sg_forceGame
 static bool sg_forcePlayerUpdate = false;
 static tSettingItem<bool> sg_forcePlayerUpdateConf("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
 
+static bool sg_forcePlayerRebuild = false;
+static tSettingItem<bool> sg_forcePlayerRebuildConf("FORCE_PLAYER_ZREBUILD", sg_forcePlayerRebuild);
+
 static bool sg_forceSyncAll = false;
 static tSettingItem<bool> sg_forceSyncAllConf("FORCE_SYNC_ALL", sg_forceSyncAll);
 
@@ -5391,20 +5394,20 @@ bool gGame::GameLoop(bool input){
         nextWatchCheck = tSysTimeFloat() + se_watchActiveStatusTime;
     }
         
-    if (sg_forcePlayerUpdate || sg_forceSyncAll)
+    if (sg_forcePlayerUpdate || sg_forceSyncAll || sg_forcePlayerRebuild)
     {
         if (tSysTimeFloat() >= lastForcedUpdate + sg_forceClockDelay)
         {
 
             if (sg_forcePlayerUpdate)
-            {
                 ePlayerNetID::Update();
-            }
+
+            if (sg_forcePlayerRebuild)
+                ePlayerNetID::CompleteRebuild();
 
             if (sg_forceSyncAll)
-            {
                 nNetObject::SyncAll();
-            }
+
             lastForcedUpdate = tSysTimeFloat();
         }
     }

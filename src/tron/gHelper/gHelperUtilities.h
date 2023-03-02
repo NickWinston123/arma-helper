@@ -112,6 +112,7 @@ struct gTurnData
 public:
     int direction;
     REAL turnTime;
+    REAL nextTime;
     int numberOfTurns;
     bool exist;
     std::string reason;

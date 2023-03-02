@@ -456,8 +456,9 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
 
         // If the rubber used ratio is greater than or equal to sg_helperSmartTurningFrontBotActivationRubber
         // or the range to the front bot is less than or equal to sg_helperSmartTurningFrontBotActivationSpace
-        if ((sg_helperSmartTurningFrontBotActivationRubber > 0 && data.rubberData.rubberUsedRatioF() + data.ownerData.lagFactorF()) >= sg_helperSmartTurningFrontBotActivationRubber ||
-            sg_helperSmartTurningFrontBotActivationSpace > 0 && hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
+        if ( (sg_helperSmartTurningFrontBotActivationRubber > 0 && data.rubberData.rubberUsedRatioF() + data.ownerData.lagFactorF() >= sg_helperSmartTurningFrontBotActivationRubber) ||
+             (sg_helperSmartTurningFrontBotActivationSpace > 0 && hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
+           )
         {
             // // Flag to check if a turn was made
             // bool turnMade = true;

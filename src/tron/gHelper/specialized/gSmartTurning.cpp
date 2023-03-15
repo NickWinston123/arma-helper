@@ -27,9 +27,6 @@ static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationSpaceConf("HELPER_
 REAL sg_helperSmartTurningFrontBotDisableTime = 0;
 static tConfItem<REAL> sg_helperSmartTurningFrontBotDisableTimeConf("HELPER_SMART_TURNING_FRONT_BOT_DISABLE_TIME", sg_helperSmartTurningFrontBotDisableTime);
 
-bool sg_helperSmartTurningClosedIn = true;
-static tConfItem<bool> sg_helperSmartTurningClosedInConf("HELPER_SMART_TURNING_CLOSED_IN", sg_helperSmartTurningClosedIn);
-
 bool sg_helperSmartTurningTrapped = true;
 static tConfItem<bool> sg_helperSmartTurningTrappedConf("HELPER_SMART_TURNING_TRAPPED", sg_helperSmartTurningTrapped);
 
@@ -53,6 +50,8 @@ static tConfItem<REAL> sg_helperSmartTurningSurviveTraceCloseFactorConf("HELPER_
 bool sg_helperSmartTurningOpposite = false;
 static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_OPPOSITE", sg_helperSmartTurningOpposite);
 
+bool sg_helperSmartTurningClosedIn = true;
+static tConfItem<bool> sg_helperSmartTurningClosedInConf("HELPER_SMART_TURNING_CLOSEDIN", sg_helperSmartTurningClosedIn);
 REAL sg_helperSmartTurningClosedInMult = 1;
 static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
 REAL sg_helperSmartTurningRubberTimeMult = 1;
@@ -246,7 +245,7 @@ void gSmartTurning::smartTurningOpposite(gHelperData &data)
         return;
 
     // Check if the cycle is closed in or blocked by itself
-    if ((surviveData.closedIn) || (surviveData.closedIn) && surviveData.blockedBySelf)
+    if ((sg_helperSmartTurningClosedIn && surviveData.closedIn) || (surviveData.closedIn) && surviveData.blockedBySelf)
     {
         // Skip the survive logic turn if the cycle is closed in or blocked by itself
         goto SKIP_FORCETURN;

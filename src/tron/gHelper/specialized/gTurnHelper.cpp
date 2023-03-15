@@ -188,7 +188,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     // Calculate the closed-in factor based on the turn speed factor and the closed-in mult.
     REAL closedInFactor = data.ownerData.turnSpeedFactorF() * sg_helperSmartTurningClosedInMult;
     // Check if the player is closed in on the front, left and right sides.
-    surviveData.closedIn = (front->hit <= closedInFactor && left->hit <= closedInFactor && right->hit <= closedInFactor);
+    surviveData.closedIn = (front->hit <= closedInFactor && (left->hit <= closedInFactor || right->hit <= closedInFactor));
     // Check if the player is blocked by itself on the front, left and right sides.
     surviveData.blockedBySelf = (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
 

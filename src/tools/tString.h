@@ -112,10 +112,12 @@ public:
     int StrPos( const char * tofind ) const;        //!< Get the position of a substring within this string.
     int StrPos( int start, const char * tofind ) const; //!< Get the position of a substring within this string.
 
+    int StrPosReverse(const tString& tofind) const;
+
     //Get a substring within a string...
     tString SubStr( const int start, int len) const;
     tString SubStr( const int start ) const;
-
+    
     //toInt as getInt is funky...
     int toInt( const int pos ) const;
     int toInt() const;

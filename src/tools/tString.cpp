@@ -402,6 +402,20 @@ void tString::SetPos(int l, bool cut){
 
 
 
+int tString::StrPosReverse(const tString& tofind) const
+{
+    int len = tofind.Len();
+    if (len > Len())
+        return -1;
+
+    for (int i = Len() - len; i >= 0; i--) {
+        if (SubStr(i, len) == tofind)
+            return i;
+    }
+
+    return -1;
+}
+
 //added by me (Tank Program)
 //sees if a string starts with another string
 //created for remote admin...

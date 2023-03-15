@@ -506,41 +506,69 @@ int tConfItemBase::EatWhitespace(std::istream &s){
 
     return c;
 }
+#include <regex>
 
-void tConfItemBase::LoadLine(std::istream &s){
-    if(!s.eof() && s.good()){
+bool tConfItemBase::applyValueToMatchedConfigs(const std::string &pattern, tConfItemBase::tConfItemMap &confmap, const std::string &valueStr)
+{
+    std::regex re(pattern);
+    bool matched = false;
+
+    for (auto &item : confmap)
+    {
+        tString title = item.second->GetTitle();
+        std::string title_str(title);
+        std::string pattern_str(pattern);
+        std::smatch match;
+
+        if (std::regex_search(title_str, match, re) && match[0].length() == title_str.length())
+        {
+            std::istringstream valueStream(valueStr);
+            item.second->ReadVal(valueStream);
+            matched = true;
+        }
+    }
+
+    return matched;
+}
+
+void tConfItemBase::LoadLine(std::istream &s)
+{
+    if (!s.eof() && s.good())
+    {
         tString name;
         s >> name;
 
         // make name uppercase:
-        tToUpper( name );
+        tToUpper(name);
 
-        bool found=false;
+        bool found = false;
 
-        if (name[0]=='#'){ // comment. ignore rest of line
-            char c=' ';
-            while(c!='\n' && s.good() && !s.eof()) c=s.get();
-            found=true;
+        if (name[0] == '#')
+        { // comment. ignore rest of line
+            char c = ' ';
+            while (c != '\n' && s.good() && !s.eof())
+                c = s.get();
+            found = true;
         }
 
-        if (strlen(name)==0) // ignore empty lines
-            found=true;
+        if (strlen(name) == 0) // ignore empty lines
+            found = true;
 
-        tConfItemMap & confmap = ConfItemMap();
-        tConfItemMap::iterator iter = confmap.find( name );
-        if ( iter != confmap.end() )
+        tConfItemMap &confmap = ConfItemMap();
+        tConfItemMap::iterator iter = confmap.find(name);
+        if (iter != confmap.end())
         {
-            tConfItemBase * ci = (*iter).second;
+            tConfItemBase *ci = (*iter).second;
 
-            bool cb=ci->changed;
-            ci->changed=false;
+            bool cb = ci->changed;
+            ci->changed = false;
 
 #ifdef DEBUG
             con << "Current level: " << tCurrentAccessLevel::GetAccessLevel() << "\n";
             con << "Required level: " << ci->requiredLevel << "\n";
 #endif
 
-            if ( ci->requiredLevel >= tCurrentAccessLevel::GetAccessLevel() )
+            if (ci->requiredLevel >= tCurrentAccessLevel::GetAccessLevel())
             {
                 ci->setLevel = tCurrentAccessLevel::GetAccessLevel();
 
@@ -551,7 +579,7 @@ void tConfItemBase::LoadLine(std::istream &s){
                 }
                 else
                 {
-                    ci->changed=cb;
+                    ci->changed = cb;
                 }
             }
             else
@@ -559,23 +587,45 @@ void tConfItemBase::LoadLine(std::istream &s){
                 tString discard;
                 discard.ReadLine(s);
 
-                con << tOutput( "$access_level_error",
-                                name,
-                                tCurrentAccessLevel::GetName( ci->requiredLevel ),
-                                tCurrentAccessLevel::GetName( tCurrentAccessLevel::GetAccessLevel() )
-                    );
+                con << tOutput("$access_level_error",
+                               name,
+                               tCurrentAccessLevel::GetName(ci->requiredLevel),
+                               tCurrentAccessLevel::GetName(tCurrentAccessLevel::GetAccessLevel()));
                 return;
             }
 
-            found=true;
+            found = true;
         }
 
-        if (!found){
-            // eat rest of input line
-            tString rest;
-            rest.ReadLine( s );
+        if (!found)
+        {
+            // Store the current position of the input stream
+            std::istream::pos_type pos = s.tellg();
 
-            if (printErrors)
+            // Read the rest of the input line into a string
+            tString rest;
+            rest.ReadLine(s);
+
+            bool wildcardMatched = false;
+            if (name.Contains("*"))
+            {
+                s.clear();
+                s.seekg(pos);
+
+                std::string pattern(name);
+                std::string replaced_pattern;
+                std::regex_replace(std::back_inserter(replaced_pattern), pattern.begin(), pattern.end(), std::regex("\\*"), "[^_]*"); // Replace * with [^_]*
+
+                tString replaced_pattern_tstr(replaced_pattern);  
+                tToUpper(replaced_pattern_tstr);                      
+                replaced_pattern = std::string(replaced_pattern_tstr);
+
+                replaced_pattern = "^" + replaced_pattern + "$";
+                std::string valueStr(rest); 
+                wildcardMatched = tConfItemBase::applyValueToMatchedConfigs(replaced_pattern, confmap, valueStr);
+            }
+
+            if (printErrors && !wildcardMatched)
             {
                 tOutput o;
                 o.SetTemplateParameter(1, name);
@@ -584,31 +634,32 @@ void tConfItemBase::LoadLine(std::istream &s){
 
                 if (printChange)
                 {
-                    int sim_maxlen=-1;
+                    int sim_maxlen = -1;
 
-                    for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
+                    for (tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end(); ++iter)
                     {
-                        tConfItemBase * ci = (*iter).second;
-                        if (strstr(ci->title,name) &&
-                                static_cast<int>(strlen(ci->title)) > sim_maxlen)
-                            sim_maxlen=strlen(ci->title);
+                        tConfItemBase *ci = (*iter).second;
+                        if (strstr(ci->title, name) &&
+                            static_cast<int>(strlen(ci->title)) > sim_maxlen)
+                            sim_maxlen = strlen(ci->title);
                     }
 
-                    if (sim_maxlen>0 && printChange ){
-                        int len = name.Len()-1;
+                    if (sim_maxlen > 0 && printChange)
+                    {
+                        int len = name.Len() - 1;
                         int printMax = 1 + 3 * len * len * len;
                         con << tOutput("$config_command_other");
-                        for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
+                        for (tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end(); ++iter)
                         {
-                            tConfItemBase * ci = (*iter).second;
-                            if (strstr(ci->title,name))
+                            tConfItemBase *ci = (*iter).second;
+                            if (strstr(ci->title, name))
                             {
-                                tString help ( ci->help );
-                                if ( --printMax > 0 )
+                                tString help(ci->help);
+                                if (--printMax > 0)
                                 {
                                     tString mess;
                                     mess << ci->title;
-                                    mess.SetPos( sim_maxlen+2, false );
+                                    mess.SetPos(sim_maxlen + 2, false);
                                     mess << "(";
                                     mess << help;
                                     mess << ")\n";
@@ -618,7 +669,7 @@ void tConfItemBase::LoadLine(std::istream &s){
                                 }
                             }
                         }
-                        if (printMax <= 0 )
+                        if (printMax <= 0)
                             con << tOutput("$config_command_more");
                     }
                 }
@@ -809,11 +860,11 @@ void tConfItemBase::WriteChangedToFile()
     {
         st_configChanged << ".cfg";
     }
-    
-    if( 
+
+    if(
         !tPath::IsValidPath( st_configChanged ) ||
-        st_configChanged.StartsWith("user") || 
-        st_configChanged.StartsWith("autoexec") || 
+        st_configChanged.StartsWith("user") ||
+        st_configChanged.StartsWith("autoexec") ||
         !st_configChanged.EndsWith(".cfg")
     )
     {
@@ -821,7 +872,7 @@ void tConfItemBase::WriteChangedToFile()
         st_configChanged = "config_changed.cfg";
         return;
     }
-    
+
     tConfItemMap & confmap = ConfItemMap();
     int sim_maxlen = -1;
 
@@ -866,7 +917,7 @@ tString settingsDownloadCfg("server_settings.cfg");
 void tConfItemBase::DownloadSettings_Go(nMessage &m)
 {
     static tString currentDownloadFile;
-    
+
     //  download the config if this is a client
     if (sn_GetNetState() == nCLIENT)
     {
@@ -876,11 +927,11 @@ void tConfItemBase::DownloadSettings_Go(nMessage &m)
             {
                 settingsDownloadCfg << ".cfg";
             }
-            
-            if( 
+
+            if(
                 !tPath::IsValidPath( settingsDownloadCfg ) ||
-                settingsDownloadCfg.StartsWith("user") || 
-                settingsDownloadCfg.StartsWith("autoexec") || 
+                settingsDownloadCfg.StartsWith("user") ||
+                settingsDownloadCfg.StartsWith("autoexec") ||
                 !settingsDownloadCfg.EndsWith(".cfg")
             )
             {
@@ -889,29 +940,29 @@ void tConfItemBase::DownloadSettings_Go(nMessage &m)
                 return;
             }
         }
-        
+
         tString m_title;
         m >> m_title;
         if ((m_title == "DOWNLOAD_BEGIN") && m.End())
         {
             if( settingsDownloadCfg.Len() <= 1 ) return;
-            
+
             con << "Downloading config from server...\n";
 
             //  truncate the file for fresh settings
             std::ofstream o;
             if ( tDirectories::Var().Open(o, settingsDownloadCfg, std::ios::trunc) ) {}
             o.close();
-            
+
             currentDownloadFile = settingsDownloadCfg;
-            
+
             return;
         }
         else if ((m_title == "DOWNLOAD_END") && m.End())
         {
             if( settingsDownloadCfg.Len() > 1 )
                 con << "Download complete!\n";
-            
+
             settingsDownloadCfg = "server_settings.cfg";
             return;
         }
@@ -1515,18 +1566,18 @@ extern bool sg_zoneAlphaBlend;
 
 void st_GrabConfigInfo( std::map < tString, bool > * _saved, std::map < tString, tString > * _oldval, const char * ignore[] )
 {
-    std::ifstream i; 
+    std::ifstream i;
     tDirectories::Var().Open( i, "user_extended.cfg" );
-    
+
     while( !i.eof() && i.good() )
     {
         tString line;
 
         // read line from stream
-        line.ReadLine( i ); 
-        
+        line.ReadLine( i );
+
         int pos = 0;
-        
+
         /// concatenate lines ending in a backslash
         while ( line.Len() > 1 && line[line.Len()-2] == '\\' && i.good() && !i.eof() )
         {
@@ -1546,9 +1597,9 @@ void st_GrabConfigInfo( std::map < tString, bool > * _saved, std::map < tString,
 
         if ( line.Len() <= 1 )
             continue;
-        
+
         tString cmd = line.ExtractNonBlankSubString(pos);
-        
+
         if( ignore )
         {
             const char ** i = ignore;
@@ -1559,7 +1610,7 @@ void st_GrabConfigInfo( std::map < tString, bool > * _saved, std::map < tString,
             }
             if(*i) continue;
         }
-        
+
         if(_saved) (*_saved) [ cmd ] = true;
         if(_oldval) (*_oldval) [ cmd ] = line;
     }
@@ -1585,12 +1636,12 @@ void st_SaveConfig()
         con << o;
         std::cerr << o;
     }
-    
+
     if( !tRecorder::IsPlayingBack() )
     {
         std::map < tString, bool > saved {};
         std::map < tString, tString > oldval {};
-        
+
         static const char * ignoreList[] = {
             "ZONE_ALPHA_BLEND",
             "ZONE_ALPHA_TOGGLE",
@@ -1599,16 +1650,16 @@ void st_SaveConfig()
             "ZONE_SEGMENTS",
             "ZONE_SEG_LENGTH",
         0};
-        
+
         st_GrabConfigInfo( &saved, &oldval, ignoreList );
-        
+
         std::ofstream s;
         if ( tDirectories::Var().Open( s, "user_extended.cfg", std::ios::out, true ) )
         {
             if( st_UserCfgSave )
             {
                 int id, i;
-                
+
                 for(auto i=saved.begin();i!=saved.end();i++)
                 {
                     auto ci = tConfItemBase::GetConfigItem(i->first);
@@ -1623,7 +1674,7 @@ void st_SaveConfig()
                         s << oldval[ i->first ] << "\n";
                     }
                 }
-                
+
                 for(id=0;id<4;++id)
                 {
                     for(i=25; i<99; ++i)
@@ -1639,12 +1690,12 @@ void st_SaveConfig()
                         }
                     }
                 }
-                
+
                 s << "ZONE_ALPHA_BLEND" << " " << sg_zoneAlphaBlend << "\n";
                 s << "ZONE_ALPHA_TOGGLE" << " " << sg_zoneAlphaToggle << "\n";
-                
+
                 s << "ZONE_BOTTOM" << " " << sg_zoneBottom << "\n";
-                
+
                 s << "ZONE_HEIGHT" << " " << sg_zoneHeight << "\n";
                 for(auto i=sg_zoneHeights.begin();i!=sg_zoneHeights.end();i++)
                 {
@@ -1653,7 +1704,7 @@ void st_SaveConfig()
                     c << " " << i->second;
                     s << c << "\n";
                 }
-                
+
                 s << "ZONE_SEGMENTS" << " " << sg_zoneSegments << "\n";
                 s << "ZONE_SEG_LENGTH" << " " << sg_zoneSegLength << "\n";
             }
@@ -1670,17 +1721,17 @@ void st_SaveConfig()
 tString st_AddToUserExt( tArray<tString> commands )
 {
     tString out;
-    
+
     if( tRecorder::IsPlayingBack() ) return out;
-    
+
     std::map < tString, bool > saved {};
     st_GrabConfigInfo( &saved, nullptr, nullptr );
-    
+
     std::ofstream s;
     tDirectories::Var().Open( s, "user_extended.cfg", std::ios::app, true );
-    
+
     int pos = -1, savedi = 0;
-    
+
     tString cmd;
     while( commands[ ++pos ].Len() > 1 )
     {
@@ -1693,7 +1744,7 @@ tString st_AddToUserExt( tArray<tString> commands )
                 s << ci->GetTitle() << " ";
                 ci->WriteVal(s);
                 s << "\n";
-                
+
                 ++savedi;
             }
             else
@@ -1707,7 +1758,7 @@ tString st_AddToUserExt( tArray<tString> commands )
         }
     }
     out << "Done, saved " << savedi << " / " << ( pos ) << " settings.\n";
-    
+
     return out;
 }
 

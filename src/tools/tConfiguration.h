@@ -252,6 +252,7 @@ public:
     static tConfItemMap & ConfItemMap();
 public:
 
+    static bool applyValueToMatchedConfigs(const std::string& pattern, tConfItemBase::tConfItemMap& confmap, const std::string& valueStr);
     // static tConfItemBase* s_ConfItemAnchor;
     //static tConfItemBase* Anchor(){return dynamic_cast<tConfItemBase *>(s_ConfItemAnchor);}
     static bool printChange; //!< if set, setting changes are printed to the console and, if printErrors is set as well, suggestions of typo fixes are given.

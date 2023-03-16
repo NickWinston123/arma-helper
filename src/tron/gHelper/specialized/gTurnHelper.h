@@ -48,7 +48,7 @@ public:
                         
 
     // performs the actual turn
-    int ActToTurn(uActionPlayer *action);
+    static int ActToTurn(uActionPlayer *action);
 
     // displays a debugging message
     template <class T>

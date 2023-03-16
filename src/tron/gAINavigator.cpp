@@ -920,7 +920,7 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
                 follow.Normalize();
 
                 // hah, but if we're faster than the other guy, try to overtake him.
-                if( blocker_->Speed() + blocker_->Lag() < cycle_.Speed() + cycle_.Lag()) 
+                if( blocker_->Speed() + blocker_->Lag() < cycle_.Speed() + cycle_.Lag())
                 {
                     follow *= -1;
                 }
@@ -1535,6 +1535,17 @@ void gAINavigator::UpdatePaths()
     }
 }
 
+void displayTurn(int dir, int numberOfTurns, std::string reason){
+    // Log the direction of the turn made
+    gHelperUtility::Debug("smartTurningFrontBot",
+                          std::to_string(numberOfTurns) +  " Turn(s) made: " + std::string(dir == -1 ? "LEFT" : "RIGHT") + " Reason: " + (reason), "");
+}
+
+void displayTurnAct(uActionPlayer *action, int numberOfTurns, std::string reason){
+    displayTurn(gTurnHelper::ActToTurn(action), numberOfTurns, reason);
+}
+
+
 //! does the main thinking at the current time, knowing the next thought can't be sooner than minstep
 REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish * wish )
 {
@@ -1612,13 +1623,15 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
             turnedRecently_ = true;
             if ( rightOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
             {
-                owner_->Act( &gCycle::se_turnRight, 1 );
-                owner_->Act( &gCycle::se_turnRight, 1 );
+                owner_->ActBot( &gCycle::se_turnRight, 1 );
+                owner_->ActBot( &gCycle::se_turnRight, 1 );
+                displayTurn(1,2,"override rim hugging rightOpen > rubberTime");
             }
             else
             {
-                owner_->Act( &gCycle::se_turnLeft, 1 );
-                owner_->Act( &gCycle::se_turnLeft, 1 );
+                owner_->ActBot( &gCycle::se_turnLeft, 1 );
+                owner_->ActBot( &gCycle::se_turnLeft, 1 );
+                displayTurn(-1,2,"override rim hugging rightOpen < rubberTime");
             }
         }
 
@@ -1632,13 +1645,15 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
             turnedRecently_ = true;
             if ( leftOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
             {
-                owner_->Act( &gCycle::se_turnLeft, 1 );
-                owner_->Act( &gCycle::se_turnLeft, 1 );
+                owner_->ActBot( &gCycle::se_turnLeft, 1 );
+                owner_->ActBot( &gCycle::se_turnLeft, 1 );
+                displayTurn(-1,2,"override rim hugging leftOpen > rubberTime");
             }
             else
             {
-                owner_->Act( &gCycle::se_turnRight, 1 );
-                owner_->Act( &gCycle::se_turnRight, 1 );
+                owner_->ActBot( &gCycle::se_turnRight, 1 );
+                owner_->ActBot( &gCycle::se_turnRight, 1 );
+                displayTurn(1,2,"override rim hugging leftOpen > rubberTime");
             }
         }
 
@@ -1673,9 +1688,11 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
                     else
                     {
                         // double back
-                        owner_->Act( &gCycle::se_turnRight, 1 );
-                        owner_->Act( &gCycle::se_turnRight, 1 );
-                        owner_->Act( &gCycle::se_turnRight, 1 );
+                        owner_->ActBot( &gCycle::se_turnRight, 1 );
+                        owner_->ActBot( &gCycle::se_turnRight, 1 );
+                        owner_->ActBot( &gCycle::se_turnRight, 1 );
+
+                        displayTurn(1,3,"wish turn - leftOpen < wish->minDistance");
                         return owner_->GetTurnDelay() * 3;
                     }
                 }
@@ -1703,9 +1720,10 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
                     else
                     {
                         // double back
-                        owner_->Act( &gCycle::se_turnLeft, 1 );
-                        owner_->Act( &gCycle::se_turnLeft, 1 );
-                        owner_->Act( &gCycle::se_turnLeft, 1 );
+                        owner_->ActBot( &gCycle::se_turnLeft, 1 );
+                        owner_->ActBot( &gCycle::se_turnLeft, 1 );
+                        owner_->ActBot( &gCycle::se_turnLeft, 1 );
+                        displayTurn(-1,3,"wish turn - rightOpen < wish->minDistance");
                         return owner_->GetTurnDelay() * 3;
                     }
                 }
@@ -1752,7 +1770,8 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
                 return owner_->GetNextTurn( -bestDir ) - owner_->LastTime();
             }
 
-            owner_->Act( bestAction, 1 );
+            owner_->ActBot( bestAction, 1 );
+            displayTurnAct(bestAction,1,"wish turn - best action - desired turn");
             return Owner()->GetTurnDelay();
         }
 
@@ -1793,7 +1812,8 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
                     return owner_->GetNextTurn( -bestDir ) - owner_->LastTime();
                 }
 
-                owner_->Act( bestAction, 1 );
+                owner_->ActBot( bestAction, 1 );
+                displayTurnAct(bestAction,1,"best action - frontOpen < bestOpen ");
             }
 
             brake = false;
@@ -1845,13 +1865,15 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
                             return owner_->GetNextTurn( bestDir ) - owner_->LastTime();
                         }
 
-                        owner_->Act( otherAction, 1 );
+                        owner_->ActBot( otherAction, 1 );
+                        displayTurnAct(otherAction,1,"other action - otherHit > bestForward.hit");
 
                         // there needs to be space ahead to finish the maneuver correctly
                         if ( maxMoveOn < speed * owner_->GetTurnDelay() )
                         {
                             // there isn't. oh well, turn into the wrong direction completely, see if I care
-                            owner_->Act( otherAction, 1 );
+                            owner_->ActBot( otherAction, 1 );
+                            displayTurnAct(otherAction,1,"other action - (dont care) maxMoveOn < speed");
                             wait = true;
                         }
                     }
@@ -1859,8 +1881,9 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
 
                 if ( !wait )
                 {
-                    owner_->Act( bestAction, 1 );
-                    owner_->Act( bestAction, 1 );
+                    owner_->ActBot( bestAction, 1 );
+                    owner_->ActBot( bestAction, 1 );
+                    displayTurnAct(bestAction,2,"bestAction - !wait");
                 }
 
                 minMoveOn = maxMoveOn = moveOn = 0;
@@ -1868,7 +1891,7 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
         }
 
         // execute brake command
-        owner_->Act( &gCycle::s_brake, brake ? 1 : -1 );
+        owner_->ActBot( &gCycle::s_brake, brake ? 1 : -1 );
     }
 
     REAL space = moveOn;

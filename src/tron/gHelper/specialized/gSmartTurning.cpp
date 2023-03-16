@@ -392,7 +392,7 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
 
     // Get the direction of the last blocked turn attempt
 
-    con << "SMART TURNING LAST lastBlockedDir " << lastBlockedDir << "\n";
+    //con << "SMART TURNING LAST lastBlockedDir " << lastBlockedDir << "\n";
     // Get the information about the blocked corner
     gSmartTurningCornerData& corner = helper_.getCorner(lastBlockedDir);
 
@@ -450,49 +450,13 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
     // If the range to the front bot is within the sg_helperSmartTurningFrontBotThinkRange
     if (hitRange <= sg_helperSmartTurningFrontBotThinkRange * data.ownerData.turnSpeedFactorF())
     {
-        // // Calculate the rubber data
-        // data.rubberData.calculate();
-
         // If the rubber used ratio is greater than or equal to sg_helperSmartTurningFrontBotActivationRubber
         // or the range to the front bot is less than or equal to sg_helperSmartTurningFrontBotActivationSpace
         if ( (sg_helperSmartTurningFrontBotActivationRubber > 0 && data.rubberData.rubberUsedRatioF() + data.ownerData.lagFactorF() >= sg_helperSmartTurningFrontBotActivationRubber) ||
              (sg_helperSmartTurningFrontBotActivationSpace > 0 && hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
            )
         {
-            // // Flag to check if a turn was made
-            // bool turnMade = true;
-
             gSmarterBot::Survive(&owner_);
-
-            // // Get the turn data from the emergency turn object
-            // gTurnData &turnData = helper_.turnHelper->getTurn();
-
-            // // If the turn data exists and the number of turns is greater than 0
-            // if (turnData.exist && turnData.numberOfTurns > 0)
-            // {
-            //     // Loop through the number of turns
-            //     for (int i = 0; i < turnData.numberOfTurns; i++)
-            //     {
-            //         // Try to make the turn in the specified direction (left or right)
-            //         if (helper_.turnHelper->makeTurnIfPossible(data, turnData.direction, 0))
-            //         {
-            //             // Log the direction of the turn made
-            //             gHelperUtility::Debug("smartTurningFrontBot",
-            //                                   "Turn made: " + std::string(turnData.direction == -1 ? "LEFT" : "RIGHT") + " Reason: " + (turnData.reason), "");
-            //             turnMade = true;
-            //             turnData.noTurns = 0;
-            //         }
-            //     }
-            // } else if (turnData.noTurns > 100) {
-            //     gHelperUtility::Debug("smartTurningFrontBot",
-            //                           "Failed to find turn in " + std::to_string(turnData.noTurns) + " tries!", "");
-            // }
-            // If smartTurningFrontBotDisableTime is greater than 0 and a turn has been made
-            // if (sg_helperSmartTurningFrontBotDisableTime > 0 && turnMade)
-            // {
-            //     // Set the turnIgnoreTime for the owner
-            //     owner_.turnIgnoreTime = helper_.CurrentTime() + (sg_helperSmartTurningFrontBotDisableTime);
-            // }
         }
     }
 }

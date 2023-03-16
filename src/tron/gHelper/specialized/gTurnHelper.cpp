@@ -242,7 +242,9 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
         surviveData.canSurviveLeftTurn = canTurnLeftRubber;
         surviveData.canSurviveRightTurn = canTurnRightRubber;
     }
-    delete left, front, right;
+    delete left;
+    delete front;
+    delete right;
     return surviveData;
 }
 

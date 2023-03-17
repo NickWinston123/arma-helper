@@ -672,7 +672,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
         gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
 
         // Only care when enemyis driving toward us, or same direction
-        if (!(enemyData.oppositeDirectionofEnemy || !enemyData.enemyIsFacingOurLeft && !enemyData.enemyIsFacingOurRight))
+        if (( enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight ))
             return;
 
         open = open && ( (enemyData.canCutEnemy) || sensorDir != enemyData.enemySide);

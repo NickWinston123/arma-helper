@@ -671,12 +671,14 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     if (firstRun && sg_helperDetectCut) {
         gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
 
-        // Only care when enemyis driving toward us, or same direction
-        if (( enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight ))
-            return;
+        // Only care when enemy is driving toward us, or same direction        
+        if (!(enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight)) {
+            open = open && (enemyData.canCutEnemy || sensorDir != enemyData.enemySide);
+        }
 
-        open = open && ( (enemyData.canCutEnemy) || sensorDir != enemyData.enemySide);
     }
+
+
 
     // Draw a green line if the hit distance is greater than the specified value, indicating that the path is clear.
     if (open)

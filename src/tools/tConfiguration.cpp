@@ -531,7 +531,7 @@ bool tConfItemBase::applyValueToMatchedConfigs(const std::string &pattern, tConf
     return matched;
 }
 
-void tConfItemBase::LoadLine(std::istream &s)
+void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
 {
     if (!s.eof() && s.good())
     {
@@ -607,7 +607,7 @@ void tConfItemBase::LoadLine(std::istream &s)
             rest.ReadLine(s);
 
             bool wildcardMatched = false;
-            if (name.Contains("*"))
+            if (wildCardEnabled && name.Contains("*"))
             {
                 s.clear();
                 s.seekg(pos);
@@ -1250,6 +1250,55 @@ static bool s_VetoRecording( tString const & line )
     return s_Veto( line, vetos ) || s_VetoPlayback( line );
 }
 
+void tConfItemBase::LoadAllFromMenu(std::istream &s){
+    tCurrentAccessLevel levelResetter;
+    
+    try{
+
+    while(!s.eof() && s.good())
+    {
+        tString line;
+
+        // read line from stream
+        line.ReadLine( s );
+
+        /// concatenate lines ending in a backslash
+        while ( line.Len() > 1 && line[line.Len()-2] == '\\' && s.good() && !s.eof() )
+        {
+            line[line.Len()-2] = '\0';
+
+            // unless it is a double backslash
+            if ( line.Len() > 2 && line[line.Len()-3] == '\\' )
+            {
+                break;
+            }
+
+            line.SetLen( line.Len()-1 );
+            tString rest;
+            rest.ReadLine( s );
+            line << rest;
+        }
+
+        if ( line.Len() <= 1 )
+            continue;
+
+        //        std::cout << line << '\n';
+
+        // process line
+        // line << '\n';
+        if ( !tRecorder::IsPlayingBack() || s_VetoPlayback( line ) )
+        {
+            std::stringstream str(static_cast< char const * >( line ) );
+            tConfItemBase::LoadLine(str, true);
+        }
+    }
+    }
+    catch( tAbortLoading const & e )
+    {
+        // loading was aborted
+        con << e.GetDescription() << "\n";
+    }
+}
 
 //! @param s        stream to read from
 //! @param record   set to true if the configuration is to be recorded and played back. That's usually only required if s is a file stream.

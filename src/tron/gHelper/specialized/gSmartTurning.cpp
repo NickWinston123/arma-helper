@@ -353,8 +353,8 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
 
             // Set the blockTurn to NONE to indicate that the player can now turn in either direction.
             this->blockTurn = NONE;
-
         }
+        
         // Check if the smartTurningSurviveTrace is enabled and call the function if it is.
         if (sg_helperSmartTurningSurviveTrace)
             smartTurningSurviveTrace(data);

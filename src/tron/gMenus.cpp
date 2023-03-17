@@ -981,7 +981,7 @@ public:
 
             // pass the console command to the configuration system
             std::stringstream s(&((*content)[0]));
-            tConfItemBase::LoadAll( s, false );
+            tConfItemBase::LoadAllFromMenu( s );
 
             MyMenu()->Exit();
             return true;

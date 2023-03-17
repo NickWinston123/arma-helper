@@ -279,11 +279,12 @@ public:
 
     static int EatWhitespace(std::istream &s); // eat whitespace from stream; return: first non-whitespace char
 
+    static void LoadAllFromMenu(std::istream &s);
     static void ExportAll();
     static void SaveAll(std::ostream &s, bool all=false);
     static void LoadAll(std::istream &s, bool record = false );  //! loads configuration from stream
     static void LoadAll(std::ifstream &s, bool record = false );  //! loads configuration from file
-    static void LoadLine(std::istream &s); //! loads one configuration line
+    static void LoadLine(std::istream &s, bool wildCardEnabled = false); //! loads one configuration line
     static bool LoadPlayback( bool print = false ); //! loads configuration from playback
     static void DocAll(std::ostream &s);
     static int AccessLevel(std::istream &s); //! Returns access level needed for command. -1 if command not found.
@@ -619,7 +620,7 @@ public:
     virtual void ReadVal(std::istream &s);
     virtual void WriteVal(std::ostream &s);
     virtual bool IsDefault() { return *target == defaultValue; }
-    
+
     virtual void displayChangedMsg()
     {
         tOutput o;
@@ -682,13 +683,13 @@ public:
         val << "Function";
         return val;
     }
-    
+
     virtual bool Save();
 
     virtual bool CanSave(){
         return false;
     }
-    
+
 };
 
 // includes a single configuration file by name, searches in var and config directories

@@ -47,6 +47,7 @@ public:
 
     // extra additions
     int     Get(int min, int max)                   ;   //!< returns a random integer between min and max - 1
+    REAL    GetFloat(REAL min, REAL max)                   ;   //!< returns a random integer between min and max - 1
 
     static tRandomizer & GetInstance()              ;   //!< returns the standard randomizer
 protected:

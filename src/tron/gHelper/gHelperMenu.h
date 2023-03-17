@@ -71,7 +71,7 @@ void helperCornersMenu() {
 void helperShowHitMenu() {
     uMenu showHitMenu("Show Hit Settings");
 
-    uMenuItemToggle showHitStartAtHitPos(&showHitMenu, "Start at Hit Pos", "If sg_helperHudSize, left and right sensors will start at the coordinates the front sensor hits", sg_helperShowHitStartAtHitPos);
+    uMenuItemInt showHitStartAtHitPos(&showHitMenu, "Start at Hit Pos", "Position where calculation for debug lines begins. 0 - At front hit point, 1 - At owners position, 2 - Both ", sg_helperShowHitStartPos,0, 2, 1);
 
     uMenuItemReal showHitHeight(&showHitMenu, "Hit Height", "Height for displaying hit", sg_showHitDataHeight,0, 5, .1);
     uMenuItemReal showHitHeightFront(&showHitMenu, "Hit Height (Front)", "Height for displaying hit in front", sg_showHitDataHeightFront,0, 5, 0.1);
@@ -150,7 +150,7 @@ void helperSelfMenu()
 {
     uMenu helperSelfMenu("Self");
     uMenuItemFunction autoBrakeMenu(&helperSelfMenu, sg_helperAutoBrake ? "0x00dd00Auto Brake" : "0xdd0000Auto Brake", "Settings for Auto Brake", &helperAutoBrakeMenu);
-    
+
     uMenuItemFunction cornersMenu(&helperSelfMenu, "Corners", "Settings for Corners", &helperCornersMenu);
     uMenuItemFunction showHitMenu(&helperSelfMenu, sg_helperShowHit ? "0x00dd00Show Hit" : "0xdd0000Show Hit", "Settings for Show Hit", &helperShowHitMenu);
     uMenuItemFunction tailMenu(&helperSelfMenu, sg_helperShowTail ? "0x00dd00Tail" : "0xdd0000Tail", "Settings for Tail", &helperTailMenu);

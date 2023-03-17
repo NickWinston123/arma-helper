@@ -42,6 +42,8 @@ REAL sg_helperAutoBrakeMin = 0;
 static tConfItem<REAL> sg_helperAutoBrakeMinConf("HELPER_SELF_AUTO_BRAKE_MIN", sg_helperAutoBrakeMin);
 REAL sg_helperAutoBrakeMax = 2;
 static tConfItem<REAL> sg_helperAutoBrakeMaxConf("HELPER_SELF_AUTO_BRAKE_MAX", sg_helperAutoBrakeMax);
+REAL sg_helperAutoBrakeRandomness = 0;
+static tConfItem<REAL> sg_helperAutoBrakeRandomnessConf("HELPER_SELF_AUTO_BRAKE_RANDOMNESS", sg_helperAutoBrakeRandomness);
 
 bool sg_tailHelper = false;
 static tConfItem<bool> sg_tailHelperC("HELPER_SELF_TAIL", sg_tailHelper);

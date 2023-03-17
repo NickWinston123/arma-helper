@@ -48,9 +48,9 @@ REAL sg_showHitDataTimeout = 1;
 static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT",
                                                  sg_showHitDataTimeout);
 
-bool sg_helperShowHitStartAtHitPos = true;
-static tConfItem<bool> sg_helperShowHitStartAtHitPosConf("HELPER_SHOW_HIT_START_AT_HIT_POS",
-                                                         sg_helperShowHitStartAtHitPos);
+int sg_helperShowHitStartPos = 0;
+static tConfItem<int> sg_helperShowHitStartPosConf("HELPER_SHOW_HIT_START_POS",
+                                                         sg_helperShowHitStartPos);
 }
 
 //HUD ITEMS
@@ -307,6 +307,22 @@ void gHelper::autoBrake()
     if (!aliveCheck())
         return;
 
+    REAL min = sg_helperAutoBrakeMin;
+    REAL max = sg_helperAutoBrakeMax;
+
+    if (sg_helperAutoBrakeRandomness > 0)
+    {
+        tRandomizer &randomizer = tReproducibleRandomizer::GetInstance();
+        REAL random = randomizer.GetFloat(0.0, 1.0); // Get a random REAL between 0 and 1
+
+        //Aproach 1
+        // min += (random*sg_helperAutoBrakeRandomness);
+        // max += (random*sg_helperAutoBrakeRandomness);
+
+        // Approach 2
+        if (random < sg_helperAutoBrakeRandomness)
+            return;
+    }
     // Get the current used braking percentage of the cycle ( always out of 1 )
     REAL brakeUsagePercent = owner_.GetBrakingReservoir();
 
@@ -319,14 +335,14 @@ void gHelper::autoBrake()
 
     // Check if the cycle is already braking and the used brake percentage is below the minimum brake limit
     // and brake depletion is enabled
-    if (owner_.GetBraking() && brakeUsagePercent <= sg_helperAutoBrakeMin && cycleBrakeDeplete)
+    if (owner_.GetBraking() && brakeUsagePercent <= min && cycleBrakeDeplete)
     {
         // Stop braking
         owner_.ActBot(&gCycle::s_brake, -1);
     }
 
     // Check if the cycle is not braking and the used brake percentage is above the maximum brake limit
-    if (!owner_.GetBraking() && brakeUsagePercent >= sg_helperAutoBrakeMax)
+    if (!owner_.GetBraking() && brakeUsagePercent >= max)
     {
         // brake
         owner_.ActBot(&gCycle::s_brake, 1);
@@ -595,18 +611,28 @@ void gHelper::showHit(gHelperData &data)
     }
 
     // check if the start position is at the hit position or not
-    if (sg_helperShowHitStartAtHitPos)
+    switch (sg_helperShowHitStartPos)
     {
-        // draw debug lines from the front before hit position in the left and right directions
-        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, LEFT);
-        showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, RIGHT);
+        case 2:
+            // draw debug lines from the owner's current position in the left and right directions
+            showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT);
+            showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT);
+            // fall through 
+        case 0:
+            // draw debug lines from the front before hit position in the left and right directions
+            showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, LEFT);
+            showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, RIGHT);
+            break;
+        case 1:
+            // draw debug lines from the owner's current position in the left and right directions
+            showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT);
+            showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT);
+            break;
+        default:
+            break;
     }
-    else
-    {
-        // draw debug lines from the owner's current position in the left and right directions
-        showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT);
-        showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT);
-    }
+
+
 }
 
 // gHelper::showHitDebugLines

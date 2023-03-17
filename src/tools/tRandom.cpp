@@ -74,6 +74,14 @@ REAL tRandomizer::Get( void )
     return a / b;
 }
 
+REAL tRandomizer::GetFloat(REAL min, REAL max)
+{
+    REAL range = max - min;
+    REAL randomValue = min + (range * Get()); // Get() returns a value between 0 and 1
+    return randomValue;
+}
+
+
 // *******************************************************************************************
 // *
 // *	Get

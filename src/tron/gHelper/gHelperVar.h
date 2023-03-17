@@ -67,6 +67,7 @@ namespace helperConfig {
     extern bool sg_helperAutoBrakeDeplete ;
     extern REAL sg_helperAutoBrakeMin ;
     extern REAL sg_helperAutoBrakeMax ;
+    extern REAL sg_helperAutoBrakeRandomness ;
 
     extern bool sg_helperSmartTurningFollowTail ;
     extern REAL sg_helperSmartTurningFollowTailDelayMult ;
@@ -150,7 +151,7 @@ namespace helperConfig {
 
     extern bool sg_helperShowHitFrontLine;
     extern REAL sg_helperShowHitFrontLineHeight;
-    extern bool sg_helperShowHitStartAtHitPos ;
+    extern int sg_helperShowHitStartPos ;
     extern bool sg_helperCurrentTimeLocal ;
 
 }

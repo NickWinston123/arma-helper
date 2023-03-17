@@ -181,7 +181,7 @@ gCycle * gHelperEnemiesData::getClosestEnemy(gCycle *owner_) {
 
 gCycle* gHelperEnemiesData::detectEnemies() {
     allEnemies.clear();
-    closestEnemy = nullptr;
+    closestEnemy.owner_ = nullptr;
     REAL closestEnemyDistanceSquared = 999999999;
     for (int i = 0; i < se_PlayerNetIDs.Len(); i++) {
         auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
@@ -189,12 +189,13 @@ gCycle* gHelperEnemiesData::detectEnemies() {
             REAL positionDifference = st_GetDifference(other->Position(), owner_->Position());
             if (positionDifference < closestEnemyDistanceSquared) {
                 closestEnemyDistanceSquared = positionDifference;
-                closestEnemy = other;
+                closestEnemy.owner_ = other;
+                closestEnemy.faster = other->Speed() > owner_->Speed();
             }
             allEnemies.insert(other);
         }
     }
-    return closestEnemy;
+    return closestEnemy.owner_;
 }
 
 

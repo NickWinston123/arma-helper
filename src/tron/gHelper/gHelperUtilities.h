@@ -12,13 +12,21 @@
 using namespace helperConfig;
 class gHelperSensor;
 
+struct gHelperClosestEnemyData
+{
+    gCycle* owner_;
 
+    int enemySide;
+    bool canCutEnemy, canCutUs;
+    bool dangerous;
+    bool faster;
+};
 
 struct gHelperEnemiesData
 {
     gCycle* owner_;
     std::unordered_set<gCycle*> allEnemies;
-    gCycle* closestEnemy;
+    gHelperClosestEnemyData closestEnemy;
 
     // exist
     // Returns true if the passed in enemy exists and is alive

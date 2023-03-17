@@ -146,7 +146,7 @@ class gHelper {
          * @param recursion: number of times the function has been called recursively
          * @param sensorDir: direction of the sensor being used
          */
-        void showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir);
+        void showHitDebugLines(eCoord pos, eCoord dir, REAL timeout, gHelperData &data, int recursion, int sensorDir, bool firstRun = false);
 
 
         /**

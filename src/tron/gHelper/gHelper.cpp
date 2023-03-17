@@ -179,7 +179,8 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     REAL timeout = data.ownerData.speedFactorF() + sg_helperDetectCutTimeout;
 
     // Get the closest enemy
-    gCycle *enemy = data.enemies.closestEnemy;
+    gCycle *enemy = data.enemies.closestEnemy.owner_;
+    gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
 
     // If there's no enemy, return
     if (!data.enemies.exist(enemy))
@@ -190,7 +191,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     // canCutUs: Can the enemy either turn left or right and over turn our cycle? or continue to drive in their current direction and cut our cycle
     // canCutEnemy: Can the owner turn left or right and over turn the enemy? or continue to drive forward in our current direction and cut the enemy cycle
-    bool canCutUs, canCutEnemy;
+    // bool canCutUs, canCutEnemy;
 
     // Get the position and direction of the enemy cycle
     eCoord enemyPos = enemy->Position();
@@ -283,14 +284,15 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // and then he turns left or right.
     relEnemyPos.x -= enemydist;
 
-    canCutUs = relEnemyPos.y * enemySpeed > relEnemyPos.x * ourSpeed; // right ahead of us? (and faster)
-    canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed;
+    enemyData.enemySide = (enemyIsOnLeft ? LEFT : RIGHT);
+    enemyData.canCutUs = relEnemyPos.y * enemySpeed > relEnemyPos.x * ourSpeed; // right ahead of us? (and faster)
+    enemyData.canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed;
 
-    if (canCutUs)
+    if (enemyData.canCutUs)
     {
         gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
     }
-    else if (canCutEnemy)
+    else if (enemyData.canCutEnemy)
     {
         gHelperUtility::debugLine(gRealColor(0, 1, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
     }
@@ -615,18 +617,18 @@ void gHelper::showHit(gHelperData &data)
     {
         case 2:
             // draw debug lines from the owner's current position in the left and right directions
-            showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT);
-            showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT);
+            showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT,true);
+            showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT,true);
             // fall through 
         case 0:
             // draw debug lines from the front before hit position in the left and right directions
-            showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, LEFT);
-            showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, RIGHT);
+            showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, LEFT,true);
+            showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, RIGHT,true);
             break;
         case 1:
             // draw debug lines from the owner's current position in the left and right directions
-            showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT);
-            showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT);
+            showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT,true);
+            showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT,true);
             break;
         default:
             break;
@@ -645,7 +647,7 @@ void gHelper::showHit(gHelperData &data)
 //   data: The data structure that holds all the helper data.
 //   recursion: The number of times the function will recurse to visualize multiple sensor hits.
 //   sensorDir: The direction of the sensors, either left or right.
-void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout, gHelperData &data, int recursion, int sensorDir)
+void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout, gHelperData &data, int recursion, int sensorDir, bool firstRun)
 {
     // If the recursion limit is reached, exit the function.
     if (recursion <= 0)
@@ -665,6 +667,9 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
 
     // Check if the hit distance is greater than a certain value.
     bool open = hitDistance > data.ownerData.turnSpeedFactorF() * sg_showHitDataFreeRange;
+
+    if (firstRun && sg_helperDetectCut)
+        open = open && ( !(data.enemies.closestEnemy.canCutUs) || sensorDir != data.enemies.closestEnemy.enemySide);
 
     // Draw a green line if the hit distance is greater than the specified value, indicating that the path is clear.
     if (open)

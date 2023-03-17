@@ -75,7 +75,7 @@ bool gPathHelper::tailMode(gHelperData &data)
 
 bool gPathHelper::enemyMode(gHelperData &data)
 {
-    gCycle *enemy = data.enemies.closestEnemy;
+    gCycle *enemy = data.enemies.closestEnemy.owner_;
 
     if (!data.enemies.exist(enemy))
         return false;
@@ -91,7 +91,7 @@ bool gPathHelper::enemyMode(gHelperData &data)
 
 bool gPathHelper::autoMode(gHelperData &data)
 {
-    gCycle *enemy = data.enemies.closestEnemy;
+    gCycle *enemy = data.enemies.closestEnemy.owner_;
 
     bool isClose = data.enemies.exist(enemy) && gHelperUtility::isClose(&owner_, enemy->Position(), sg_pathHelperAutoCloseDistance + data.ownerData.turnSpeedFactorF());
     if (isClose)

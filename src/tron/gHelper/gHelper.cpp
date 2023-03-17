@@ -222,32 +222,32 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // our relative coordinate system ( so .x > 0 )
 
     // Check if the enemy is facing opposite direction of ours
-    bool oppositeDirectionofEnemy = directionsAreClose(enemyDir, ourDir.Turn(LEFT).Turn(LEFT), 0.001);
+    enemyData.oppositeDirectionofEnemy = directionsAreClose(enemyDir, ourDir.Turn(LEFT).Turn(LEFT), 0.001);
 
     // Check if the enemy is on the left side of us
-    bool enemyIsOnLeft = relEnemyPos.x < 0;
+    enemyData.enemyIsOnLeft = relEnemyPos.x < 0;
 
     // Check if the enemy is on the right side of us
-    bool enemyIsOnRight = !enemyIsOnLeft;
+    enemyData.enemyIsOnRight = !enemyData.enemyIsOnLeft;
 
     // Check if the enemy is facing right direction of ours
-    bool enemyIsFacingOurRight = directionsAreClose(enemyDir, ourDir.Turn(RIGHT), 0.1);
+    enemyData.enemyIsFacingOurRight = directionsAreClose(enemyDir, ourDir.Turn(RIGHT), 0.1);
 
     // Check if the enemy is facing left direction of ours
-    bool enemyIsFacingOurLeft = directionsAreClose(enemyDir, ourDir.Turn(LEFT), 0.1);
+    enemyData.enemyIsFacingOurLeft = directionsAreClose(enemyDir, ourDir.Turn(LEFT), 0.1);
 
     // If the enemy is facing opposite direction of ours, flip the relative position
-    if (oppositeDirectionofEnemy)
+    if (enemyData.oppositeDirectionofEnemy)
     {
         relEnemyPos.y *= -1;
     }
     // If the enemy is facing right direction of ours and on the left side, rotate the relative position
-    else if (enemyIsOnLeft && enemyIsFacingOurRight)
+    else if (enemyData.enemyIsOnLeft && enemyData.enemyIsFacingOurRight)
     {
         relEnemyPos = relEnemyPos.Turn(LEFT);
     }
     // If the enemy is facing left direction of ours and on the right side, rotate the relative position
-    else if (enemyIsOnRight && enemyIsFacingOurLeft)
+    else if (enemyData.enemyIsOnRight && enemyData.enemyIsFacingOurLeft)
     {
         relEnemyPos = relEnemyPos.Turn(RIGHT);
     }
@@ -284,7 +284,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // and then he turns left or right.
     relEnemyPos.x -= enemydist;
 
-    enemyData.enemySide = (enemyIsOnLeft ? LEFT : RIGHT);
+    enemyData.enemySide = (enemyData.enemyIsOnLeft ? LEFT : RIGHT);
     enemyData.canCutUs = relEnemyPos.y * enemySpeed > relEnemyPos.x * ourSpeed; // right ahead of us? (and faster)
     enemyData.canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed;
 
@@ -619,7 +619,7 @@ void gHelper::showHit(gHelperData &data)
             // draw debug lines from the owner's current position in the left and right directions
             showHitDebugLines(ownerPos, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT,true);
             showHitDebugLines(ownerPos, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT,true);
-            // fall through 
+            // fall through
         case 0:
             // draw debug lines from the front before hit position in the left and right directions
             showHitDebugLines(frontBeforeHit, owner_.Direction(), timeout, data, sg_showHitDataRecursion, LEFT,true);
@@ -668,8 +668,15 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     // Check if the hit distance is greater than a certain value.
     bool open = hitDistance > data.ownerData.turnSpeedFactorF() * sg_showHitDataFreeRange;
 
-    if (firstRun && sg_helperDetectCut)
-        open = open && ( !(data.enemies.closestEnemy.canCutUs) || sensorDir != data.enemies.closestEnemy.enemySide);
+    if (firstRun && sg_helperDetectCut) {
+        gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
+
+        // Only care when enemyis driving toward us, or same direction
+        if (!(enemyData.oppositeDirectionofEnemy || !enemyData.enemyIsFacingOurLeft && enemyData.enemyIsFacingOurRight))
+            return;
+
+        open = open && ( (enemyData.canCutEnemy) || sensorDir != enemyData.enemySide);
+    }
 
     // Draw a green line if the hit distance is greater than the specified value, indicating that the path is clear.
     if (open)

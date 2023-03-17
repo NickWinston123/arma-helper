@@ -159,6 +159,10 @@ REAL gHelperOwnerData::speedFactorF() {
 }
 
 
+bool gHelperClosestEnemyData::faster(gCycle *helperOwner) {
+    return  owner_->Speed() > helperOwner->Speed();
+}
+
 bool gHelperEnemiesData::exist(gCycle* enemy) {
     return (enemy != nullptr) && enemy->Alive();
 }
@@ -190,7 +194,6 @@ gCycle* gHelperEnemiesData::detectEnemies() {
             if (positionDifference < closestEnemyDistanceSquared) {
                 closestEnemyDistanceSquared = positionDifference;
                 closestEnemy.owner_ = other;
-                closestEnemy.faster = other->Speed() > owner_->Speed();
             }
             allEnemies.insert(other);
         }
@@ -199,7 +202,7 @@ gCycle* gHelperEnemiesData::detectEnemies() {
 }
 
 
-REAL gSmartTurningCornerData::getTimeUntilTurn(REAL speed) {
+REAL    gSmartTurningCornerData::getTimeUntilTurn(REAL speed) {
     return distanceFromPlayer /= speed * .98f;
 }
 

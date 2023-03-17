@@ -19,8 +19,14 @@ struct gHelperClosestEnemyData
     int enemySide;
     bool canCutEnemy, canCutUs;
     bool dangerous;
-    bool faster;
+
+    bool enemyIsFacingOurLeft,enemyIsFacingOurRight;
+    bool enemyIsOnLeft, enemyIsOnRight;
+    bool oppositeDirectionofEnemy;
+
+    bool faster(gCycle *helperOwner);
 };
+
 
 struct gHelperEnemiesData
 {

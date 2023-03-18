@@ -63,7 +63,7 @@ gAINavigator::Wish::Wish( gAINavigator const & idler )
 // *************************
 
 gAINavigator::Sensor::Sensor(gAINavigator & ai,const eCoord &start,const eCoord &d)
-: gSensor(ai.Owner(),start,d)
+: gHelperSensor(ai.Owner(),start,d)
 , ai_( ai )
 , hitOwner_( 0 )
 , hitTime_ ( 0 )
@@ -87,7 +87,7 @@ void gAINavigator::Sensor::PassEdge(const eWall *ww, REAL time, REAL a, int r)
 {
     try
     {
-        gSensor::PassEdge(ww, time, a, r);
+        gHelperSensor::PassEdge(ww, time, a, r);
     }
     catch (eSensorFinished &e)
     {

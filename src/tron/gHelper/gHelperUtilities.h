@@ -257,7 +257,7 @@ public:
     static void debugLine(gRealColor color, REAL height, REAL timeout,
                           eCoord start, eCoord end, REAL brightness = 1);
 
-    static void debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout);
+    static void debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout, REAL height = 1);
 
 
     template <typename T>

@@ -38,7 +38,7 @@ public:
     static void zoneIntersects(gHelperSensor * sensor);
 
     void renderSensorHit( gZoneHitData * zoneHit,gHelperData &data);
-    void zoneSensor(gHelperData &data);
+    // void zoneSensor(gHelperData &data);
 
     static gZoneHelper &Get(gHelper &helper, gCycle &owner);
 

@@ -21,19 +21,18 @@ void gHelperUtility::debugLine(gRealColor color, REAL height, REAL timeout,
     eDebugLine::Draw(start, startHeight, end, height);
 }
 
-void gHelperUtility::debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout)
+void gHelperUtility::debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout, REAL height)
     {
-        REAL sg_helperBoxHeight = 1;
         eCoord corner[3];
         corner[0] = eCoord(center.x - (radius), center.y + (radius));
         corner[1] = eCoord(center.x + (radius), center.y + (radius));
         corner[2] = eCoord(center.x + (radius), center.y - (radius));
         corner[3] = eCoord(center.x - (radius), center.y - (radius));
 
-        debugLine(color,sg_helperBoxHeight,timeout,corner[0],corner[1]);
-        debugLine(color,sg_helperBoxHeight,timeout,corner[1],corner[2]);
-        debugLine(color,sg_helperBoxHeight,timeout,corner[2],corner[3]);
-        debugLine(color,sg_helperBoxHeight,timeout,corner[3],corner[0]);
+        debugLine(color,height,timeout,corner[0],corner[1]);
+        debugLine(color,height,timeout,corner[1],corner[2]);
+        debugLine(color,height,timeout,corner[2],corner[3]);
+        debugLine(color,height,timeout,corner[3],corner[0]);
     }
 
 
@@ -175,7 +174,7 @@ gCycle * gHelperEnemiesData::getClosestEnemy(gCycle *owner_, bool ignoreLocal, b
         if (other != nullptr && other->Alive() && se_PlayerNetIDs[i]->pID != owner_->Player()->pID) {
             bool isLocal = ePlayer::NetToLocalPlayer(se_PlayerNetIDs[i]) != nullptr;
             bool isOwner = se_PlayerNetIDs[i]->pID == 0;
-            
+
             if (ignoreLocal && isLocal || ignoreOwner && isOwner)
                 continue;
 
@@ -184,7 +183,7 @@ gCycle * gHelperEnemiesData::getClosestEnemy(gCycle *owner_, bool ignoreLocal, b
                 closestEnemyDistanceSquared = positionDifference;
                 closestEnemy = other;
             }
-            
+
         }
     }
     return closestEnemy;

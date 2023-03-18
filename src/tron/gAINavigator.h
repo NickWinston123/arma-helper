@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define ArmageTron_AI_NAVIGATOR_H
 
 #include "gSensor.h"
+#include "gHelper/specialized/gHelperSensor.h"
 #include "eCoord.h"
 
 class gCycle;
@@ -64,7 +65,7 @@ public:
     };
 
     // sensor with additional data
-    class Sensor: public gSensor
+    class Sensor: public gHelperSensor
     {
     public:
         Sensor(gAINavigator & ai,const eCoord &start,const eCoord &d);

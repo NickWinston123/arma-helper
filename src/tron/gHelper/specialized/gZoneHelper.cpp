@@ -12,14 +12,17 @@ namespace helperConfig {
 bool sg_zoneHelper = false;
 static tConfItem<bool> sg_zoneHelperC("HELPER_ZONE", sg_zoneHelper);
 
-bool sg_zoneHelperSensor = false;
-static tConfItem<bool> sg_zoneHelperSensorC("HELPER_ZONE_SENSOR", sg_zoneHelperSensor);
+// bool sg_zoneHelperSensor = false;
+// static tConfItem<bool> sg_zoneHelperSensorC("HELPER_ZONE_SENSOR", sg_zoneHelperSensor);
 
 bool sg_helperZoneShowOwnerOnly = false;
 static tConfItem<bool> sg_helperZoneShowOwnerOnlyC("HELPER_ZONE_SHOW_OWNER_ONLY", sg_helperZoneShowOwnerOnly);
 
 bool sg_helperZoneShow = false;
 static tConfItem<bool> sg_helperZoneShowConf("HELPER_ZONE_SHOW", sg_helperZoneShow);
+
+REAL sg_helperZoneShowHeight = 1;
+static tConfItem<REAL> sg_helperZoneShowHeightConf("HELPER_ZONE_SHOW_HEIGHT", sg_helperZoneShowHeight);
 
 REAL sg_helperZoneShowBonusRadius = 0;
 static tConfItem<REAL> sg_helperZoneShowBonusRadiusConf("HELPER_ZONE_SHOW_RADIUS_BONUS", sg_helperZoneShowBonusRadius);
@@ -51,7 +54,7 @@ gHelperHudItem<REAL> zoneHitH("Zone Hit", 0);
 
 void debugZone(gZone *zone, gRealColor color, REAL timeout)
 {
-    gHelperUtility::debugBox(color, zone->Position(), zone->GetRadius()+sg_helperZoneShowBonusRadius, timeout);
+    gHelperUtility::debugBox(color, zone->Position(), zone->GetRadius()+sg_helperZoneShowBonusRadius, timeout, sg_helperZoneShowHeight);
 }
 
 gZoneHelper::gZoneHelper(gHelper &helper, gCycle &owner)
@@ -67,25 +70,25 @@ void gZoneHelper::renderSensorHit( gZoneHitData * zoneHit,gHelperData &data){
     }
 }
 
-void gZoneHelper::zoneSensor(gHelperData &data)
-{
-    gZone *zone = findClosestZone();
+// void gZoneHelper::zoneSensor(gHelperData &data)
+// {
+//     gZone *zone = findClosestZone();
 
-    if (!zone)
-        return;
+//     if (!zone)
+//         return;
 
-    gZoneHitData * zoneHit = zoneIntersects(LEFT, zone, data);
-    renderSensorHit(zoneHit,data);
+//     gZoneHitData * zoneHit = zoneIntersects(LEFT, zone, data);
+//     renderSensorHit(zoneHit,data);
 
-    zoneHit = zoneIntersects(FRONT, zone, data);
-    renderSensorHit(zoneHit,data);
+//     zoneHit = zoneIntersects(FRONT, zone, data);
+//     renderSensorHit(zoneHit,data);
 
-    zoneHit = zoneIntersects(RIGHT, zone, data);
-    renderSensorHit(zoneHit,data);
+//     zoneHit = zoneIntersects(RIGHT, zone, data);
+//     renderSensorHit(zoneHit,data);
 
-    delete zoneHit;
+//     delete zoneHit;
 
-}
+// }
 
 void gZoneHelper::zoneIntersects(gHelperSensor * sensor) {
     gZone *zone = findClosestZone(sensor->owner_);
@@ -290,8 +293,8 @@ void gZoneHelper::Activate(gHelperData &data)
     if (sg_helperZoneTracer)
         zoneTracer(data);
 
-    if (sg_zoneHelperSensor)
-        zoneSensor(data);
+    // if (sg_zoneHelperSensor)
+    //     zoneSensor(data);
 
     zoneData(data);
 }

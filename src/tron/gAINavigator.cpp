@@ -718,7 +718,7 @@ void gAINavigator::RubberEvaluator::Init( gCycle const & cycle, REAL maxTime )
 {
     // compensate for the addition of rubber in the stored sensor distances
     REAL rubberGranted, rubberEffectiveness;
-    REAL speed = cycle.Speed();
+    REAL speed = (cycle.Speed()+cycle.Lag());
     sg_RubberValues( cycle.Player(), speed, rubberGranted, rubberEffectiveness );
     REAL rubberLeft = ( rubberGranted - cycle.GetRubber() )*rubberEffectiveness;
     maxRubber_  = maxTime * speed;
@@ -855,7 +855,7 @@ public:
 
 bool gAINavigator::FollowEvaluator::FindTarget()
 {
-    gCycle *target = gHelperEnemiesData::getClosestEnemy(&cycle_);
+    gCycle *target = gHelperEnemiesData::getClosestEnemy(&cycle_,sg_smarterBotTeam,sg_smarterBotTeamOwner);
     if (target) {
         SetTarget(target);
         return true;
@@ -865,7 +865,8 @@ bool gAINavigator::FollowEvaluator::FindTarget()
 
 void gAINavigator::FollowEvaluator::SetTarget( eGameObject * object )
 {
-    SetTarget(object->Position(), object->Direction() * object->Speed());
+    SetTarget(object->Position(), 
+              object->Direction() * (object->Speed() + object->Lag()));
 }
 
 void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord const & velocity )
@@ -920,7 +921,7 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
                 follow.Normalize();
 
                 // hah, but if we're faster than the other guy, try to overtake him.
-                if( blocker_->Speed() + blocker_->Lag() < cycle_.Speed() + cycle_.Lag())
+                if( blocker_->Speed() + blocker_->Lag() < cycle_.Speed())
                 {
                     follow *= -1;
                 }

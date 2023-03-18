@@ -50,6 +50,7 @@ namespace helperConfig {
 
     extern bool sg_helperSmartTurningSurvive ;
     extern bool sg_helperSmartTurningSurviveTrace ;
+    extern bool sg_helperSmartTurningSurviveTraceTurnOnce ;
     extern REAL sg_helperSmartTurningSurviveTraceTurnTime ;
     extern REAL sg_helperSmartTurningSurviveTraceActiveTime ;
     extern REAL sg_helperSmartTurningSurviveTraceCloseFactor ;

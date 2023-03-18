@@ -3379,8 +3379,6 @@ void gCycleMovement::ApplyAcceleration( REAL dt )
 
 bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
 {
-    if ( turns == 0 )
-        turns = 1;
 
     if (dir >  1) dir =  1;
     if (dir < -1) dir = -1;
@@ -3391,7 +3389,7 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
     if (helperSmartTurning && !botTurn && (Owner() == ::sn_myNetID && Player() && Player()->IsHuman())) {
         playerIsMe = true;
         bool ignoreTurn = false;
-        //this->helper->Activate();
+
         currentTime = this->localCurrentTime;
 
         //Ignored turns
@@ -3408,17 +3406,20 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
         if (ignoreTurn) {
             this->lastTurnAttemptTime = currentTime;
             this->lastTurnAttemptDir = dir;
-            this->blockTurn = 0;
+            // this->blockTurn = 0;
             return false;
         }
 
         if (this->forceTurn != 0) {
             dir = this->forceTurn;
-            this->forceTurn = 0;
+            // this->forceTurn = 0;
         }
 
     }
 
+    if ( turns == 0 )
+        turns = 1;
+        
     REAL nextTurnTime = GetNextTurn( dir );
     if ( nextTurnTime <= lastTime )
     {

@@ -40,6 +40,8 @@ bool sg_helperSmartTurningSurvive = false;
 static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
 bool sg_helperSmartTurningSurviveTrace = false;
 static tConfItem<bool> sg_helperSmartTurningSurviveTraceConf("HELPER_SMART_TURNING_SURVIVE_TRACE", sg_helperSmartTurningSurviveTrace);
+bool sg_helperSmartTurningSurviveTraceTurnOnce = false;
+static tConfItem<bool> sg_helperSmartTurningSurviveTraceTurnOnceConf("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_ONCE", sg_helperSmartTurningSurviveTraceTurnOnce);
 REAL sg_helperSmartTurningSurviveTraceTurnTime = 0.02;
 static tConfItem<REAL> sg_helperSmartTurningSurviveTraceTurnTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_TIME", sg_helperSmartTurningSurviveTraceTurnTime);
 REAL sg_helperSmartTurningSurviveTraceActiveTime = 1;
@@ -67,11 +69,11 @@ static tConfItem<bool> sg_helperSmartTurningPlanConf("HELPER_SMART_TURNING_PLAN"
 
 
 bool sg_helperSmartTurningFollowTail = false;
-static tConfItem<bool> sg_helperSmartTurningFollowTailConf("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
+// static tConfItem<bool> sg_helperSmartTurningFollowTailConf("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
 REAL sg_helperSmartTurningFollowTailDelayMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
+// static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
 REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
-static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
+// static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
 
 };
 
@@ -380,11 +382,13 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
     // Return if the bot is not alive or not driving straight
     // Return if the last turn attempt was more recent than the last successful turn
     if (!helper_.aliveCheck() ||
-        !helper_.drivingStraight() ||
+        // !helper_.drivingStraight() ||
+       (sg_helperSmartTurningSurviveTraceTurnOnce && owner_.lastBotTurnTime > owner_.lastTurnTime) ||
         (owner_.lastTurnAttemptTime < owner_.lastTurnTime))
         return;
 
     int lastBlockedDir = owner_.lastTurnAttemptDir;
+
     if (lastBlockedDir == NONE)
         return;
 
@@ -395,23 +399,35 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
     //con << "SMART TURNING LAST lastBlockedDir " << lastBlockedDir << "\n";
     // Get the information about the blocked corner
     gSmartTurningCornerData& corner = helper_.getCorner(lastBlockedDir);
-
+    
     if (!corner.exist)
         return;
 
+    // con << "lastBlockedDir " << lastBlockedDir << "\n";
     // Calculate the time factor for the turn
     REAL turnTimeFactor = corner.getTimeUntilTurn(owner_.Speed());
 
+    // con << "turnTimeFactor " << turnTimeFactor << "\n";
     // If the following conditions are met, try to make a turn:
     // 1. The corner exists
     // 2. The bot is close enough to the corner
     // 3. The time since the last turn attempt is greater than a certain threshold
     // 4. The time until the turn is greater than 0
     // 5. The time until the turn is less than a certain threshold
+
+    // con << "Corner detected: " << corner.currentPos.x << ", " << corner.currentPos.y << "\n";
+    // con << "Close factor: " << sg_helperSmartTurningSurviveTraceCloseFactor << "\n";
+    // con << "Turn speed factor: " << data.ownerData.turnSpeedFactorF() << "\n";
+    // con << "Last turn attempt time: " << owner_.lastTurnAttemptTime << "\n";
+    // con << "Active time: " << sg_helperSmartTurningSurviveTraceActiveTime << "\n";
+    // con << "Noticed time: " << corner.noticedTime << "\n";
+    // con << "Time until turn: " << corner.getTimeUntilTurn(owner_.Speed()) << "\n";
+    // con << "Turn time factor: " << turnTimeFactor << "\n";
+    
     if (gHelperUtility::isClose(&owner_, corner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.ownerData.turnSpeedFactorF()) &&
-        owner_.lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime / (10 * data.ownerData.turnSpeedFactorF())) > corner.noticedTime &&
-        corner.getTimeUntilTurn(owner_.Speed()) > 0 &&
-        (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime))
+        // owner_.lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime / (10 * data.ownerData.turnSpeedFactorF())) > corner.noticedTime &&
+        corner.getTimeUntilTurn(owner_.Speed()) > 0)// &&
+        //(turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime))
     {
         // Attempt to make a turn in the direction of the blocked attempt
         if (helper_.turnHelper->makeTurnIfPossible(data, lastBlockedDir, 1))
@@ -484,8 +500,8 @@ void gSmartTurning::Activate(gHelperData &data)
         smartTurningPlan(data);
     }
 
-    if (sg_helperSmartTurningFollowTail)
-        followTail(data);
+    // if (sg_helperSmartTurningFollowTail)
+    //     followTail(data);
 
     if (sg_helperSmartTurningFrontBot)
         smartTurningFrontBot(data);

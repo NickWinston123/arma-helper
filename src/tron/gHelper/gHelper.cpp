@@ -671,8 +671,11 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     if (firstRun && sg_helperDetectCut) {
         gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
 
+        int enemyside = enemyData.enemySide;
+        // bool sameSide = sensorDir == enemyData.enemySide;
+        //  || sameSide && enemyData.canCutUs
         // Only care when enemy is driving toward us, or same direction        
-        if (!(enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight)) {
+        if ( !( enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight )) {
             open = open && (enemyData.canCutEnemy || sensorDir != enemyData.enemySide);
         }
 

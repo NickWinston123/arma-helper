@@ -912,8 +912,132 @@ uMenuItemToggle hud2
 
 static tConfItem<bool> WRAP("WRAP_MENU",uMenu::wrap);
 
-static void ConTabCompletition(tString &strString, int &curserPos, bool changeLast)
-{
+#include <deque>
+#include <algorithm>
+
+static tString Simplify(const tString &str) {
+    return str.ToLower();
+}
+
+static void ShowPossibilities(const std::deque<tString> &results, const tString &word) {
+    if (results.size() > 30) {
+        con << "Too many results found. Type further characters.\n";
+    } else {
+        con << "Possibilities:\n";
+        int len = word.Len();
+        for (const auto &result : results) {
+            int pos = result.ToLower().StrPos(word.ToLower());
+            con << result.SubStr(0, pos)
+                << "0xff8888"
+                << result.SubStr(pos, len)
+                << "0xffffff"
+                << result.SubStr(pos + len)
+                << " ";
+        }
+        con << "\n";
+    }
+}
+
+static void FindConfigItems(const tString &word, std::deque<tString> &results) {
+    tConfItemBase::tConfItemMap const &itemsMap = tConfItemBase::GetConfItemMap();
+    for (const auto &entry : itemsMap) {
+        tConfItemBase *item = entry.second;
+        if (item->GetTitle().ToLower().StartsWith(word.ToLower())) {
+            results.push_back(item->GetTitle());
+        }
+    }
+}
+
+static tString FindClosestMatch(const tString &word, const std::deque<tString> &items) {
+    tString closestMatch;
+    int maxCommonPrefix = 0;
+    for (const auto &itemName : items) {
+        int commonPrefix = 0;
+        for (int i = 0; i < itemName.Len() && i < word.Len(); ++i) {
+            if (tolower(itemName(i)) == tolower(word(i))) {
+                commonPrefix++;
+            } else {
+                break;
+            }
+        }
+        if (commonPrefix > maxCommonPrefix) {
+            maxCommonPrefix = commonPrefix;
+            closestMatch = itemName;
+        }
+    }
+    return closestMatch;
+}
+
+static void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast) {
+    static tString oldString;
+    static int cfgPos;
+    static int lastPos;
+    static bool showResults; // Added a new variable to track whether to show the results
+    if (changeLast) {
+        strString = oldString;
+        cfgPos++;
+        cursorPos = lastPos;
+    } else {
+        oldString = strString;
+        lastPos = cursorPos;
+        cfgPos = 0;
+        showResults = true; // Set showResults to true when a new string is typed
+    }
+
+    tArray<tString> msgsExt = strString.Split(" ");
+    tString newString;
+    int cusPos = 0;
+
+    for (int i = 0; i < msgsExt.Len(); i++) {
+        tString word = msgsExt[i];
+
+        cusPos += word.Len() - 1;
+
+        if (cusPos == cursorPos) {
+            // Find possible words
+            tString simplifiedWord = Simplify(word);
+            std::deque<tString> results;
+            FindConfigItems(simplifiedWord, results);
+
+            if (results.size() > 1) {
+                // Use cfgPos to select the next match in the list
+                tString match = results.at(cfgPos % results.size());
+
+                if (match == simplifiedWord) {
+                    if (showResults) {
+                        ShowPossibilities(results, word);
+                        showResults = false; 
+                    }
+                    cursorPos = cusPos + 1;
+                } else {
+                    if (showResults) {
+                        ShowPossibilities(results, word);
+                        showResults = false; 
+                    }
+                    word = match;
+                    cursorPos = cusPos + match.Len() + 1;
+                }
+            } else if (!results.empty()) {
+                word = results.front() + " ";
+                cursorPos = cusPos + word.Len() + 1;
+            } else {
+                cfgPos = -1;
+            }
+        }
+
+        cusPos++;
+
+        if ((i + 1) == msgsExt.Len())
+            newString << word;
+        else
+            newString << word << " ";
+    }
+
+    strString = newString;
+}
+
+/*
+static void ConTabCompletition(tString &strString, int &curserPos, bool changeLast) {
     static tString oldString;
     static int cfgPos;
     static int lastPos;
@@ -960,7 +1084,7 @@ static void ConTabCompletition(tString &strString, int &curserPos, bool changeLa
     strString = newString;
     curserPos = newString.Len();
 }
-
+*/
 class gMemuItemConsole: uMenuItemStringWithHistory{
 public:
     gMemuItemConsole(uMenu *M,tString &c):

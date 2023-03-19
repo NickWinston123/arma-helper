@@ -917,7 +917,7 @@ static tConfItem<bool> WRAP("WRAP_MENU",uMenu::wrap);
 
 
 REAL sg_consoleTabCompletionMaxPossibilities = 50;
-static tConfItem< REAL > sg_consoleTabCompletionMaxPossibilitiesConf("CONSOLE_TAB_COMPLETION_MAX_POSIBILITIES",sg_consoleTabCompletionMaxPossibilities);
+static tConfItem< REAL > sg_consoleTabCompletionMaxPossibilitiesConf("CONSOLE_TAB_COMPLETION_MAX_POSSIBILITIES",sg_consoleTabCompletionMaxPossibilities);
 
 
 static tString Simplify(const tString &str) {

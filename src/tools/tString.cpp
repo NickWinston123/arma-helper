@@ -402,20 +402,6 @@ void tString::SetPos(int l, bool cut){
 
 
 
-int tString::StrPosReverse(const tString& tofind) const
-{
-    int len = tofind.Len();
-    if (len > Len())
-        return -1;
-
-    for (int i = Len() - len; i >= 0; i--) {
-        if (SubStr(i, len) == tofind)
-            return i;
-    }
-
-    return -1;
-}
-
 //added by me (Tank Program)
 //sees if a string starts with another string
 //created for remote admin...
@@ -926,7 +912,7 @@ int tString::Compare( const char* other ) const
         return 1;
     if(strcmp( *this, other ) == 0)
        return 0;
-    else 
+    else
        return strcmp( *this, other );
 }
 
@@ -2678,4 +2664,66 @@ tString htmlentities(tString str)
     }
 
     return ret;
+}
+
+
+size_t tString::Find(char ch, size_t start_pos) const {
+    std::string this_str(*this); // Convert tString to std::string
+    size_t pos = this_str.find(ch, start_pos);
+    return pos;
+}
+
+tString& tString::Insert(size_t pos, const tString& str) {
+    std::string this_str(*this); // Convert tString to std::string
+    std::string insert_str(str); // Convert tString str to std::string
+    this_str.insert(pos, insert_str);
+    *this = tString(this_str.c_str()); // Assign the modified std::string back to tString
+    return *this;
+}
+
+size_t tString::FindFirstOf(char ch, size_t start_pos) const {
+    std::string this_str(*this); // Convert tString to std::string
+    size_t pos = this_str.find_first_of(ch, start_pos);
+    return pos;
+}
+
+size_t tString::FindLastOf(char ch, size_t start_pos) const {
+    std::string this_str(*this); // Convert tString to std::string
+    size_t pos = this_str.find_last_of(ch, start_pos);
+    return pos;
+}
+
+size_t tString::FindStr(const tString& substring, size_t start_pos) const {
+    std::string this_str(*this); // Convert tString to std::string
+    std::string search_str(substring); // Convert tString substring to std::string
+    size_t found_pos = this_str.find(search_str, start_pos);
+    return found_pos;
+}
+
+tString& tString::Erase(size_t pos, size_t len) {
+    std::string this_str(*this); // Convert tString to std::string
+    this_str.erase(pos, len);
+    *this = tString(this_str); // Assign the modified std::string back to tString
+    return *this;
+}
+
+
+
+
+
+char tString::at(size_t pos) const {
+    if (pos < Len()) {
+        return (*this)(pos);
+    } else {
+        throw std::out_of_range("tString::At: position out of range");
+    }
+}
+
+
+char* tString::Begin() {
+    return &(*this)(0);
+}
+
+const char* tString::Begin() const {
+    return &(*this)(0);
 }

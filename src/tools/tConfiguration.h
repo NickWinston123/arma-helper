@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <ctype.h>
 #include <string>
 #include <map>
+#include <deque>
 #include <functional>
 
 // Define this to disable compiling the new interface
@@ -291,6 +292,7 @@ public:
     static void WriteAllToFile();
     static void WriteAllLevelsToFile();
     static void WriteChangedToFile();
+    static std::deque<tString> GetCommands(void);
     static tString FindConfigItem(tString name,int pos = 0);    //! Returns the config name of the searching string name
     static tConfItemBase *GetConfigItem(tString const &name);
     static void SetAllAccessLevel(int newLevel);

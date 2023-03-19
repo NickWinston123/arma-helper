@@ -693,6 +693,18 @@ tConfItemBase *tConfItemBase::GetConfigItem(tString const &name) {
         return 0;
     }
 }
+std::deque<tString> tConfItemBase::GetCommands(){
+    std::deque<tString> ret;
+    tConfItemMap & confmap = ConfItemMap();
+    for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
+    {
+        tConfItemBase * ci = (*iter).second;
+
+        ret.push_back(ci->title.ToLower());
+    }
+    return ret;
+}
+
 
 tString tConfItemBase::FindConfigItem(tString name,int pos)
 {

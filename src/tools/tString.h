@@ -111,13 +111,21 @@ public:
     int StrPos( int start, const tString &tofind ) const; //!< Get the position of a substring within this string.
     int StrPos( const char * tofind ) const;        //!< Get the position of a substring within this string.
     int StrPos( int start, const char * tofind ) const; //!< Get the position of a substring within this string.
+    size_t Find(char ch, size_t start_pos)  const; //!< Get the position of a substring within this string.
+    size_t FindStr(const tString& substring, size_t start_pos = 0) const;
+    tString& Erase(size_t pos, size_t len = std::string::npos);
+    char* Begin(); // Add this line for the Begin function
+    const char* Begin() const; // Add this line for the const version of Begin function
 
-    int StrPosReverse(const tString& tofind) const;
+    tString& Insert(size_t pos, const tString& str);
+    size_t FindFirstOf(char ch, size_t start_pos) const;
+    size_t FindLastOf(char ch, size_t start_pos) const;
+    char at(size_t pos) const;
 
     //Get a substring within a string...
     tString SubStr( const int start, int len) const;
     tString SubStr( const int start ) const;
-    
+
     //toInt as getInt is funky...
     int toInt( const int pos ) const;
     int toInt() const;

@@ -915,13 +915,20 @@ static tConfItem<bool> WRAP("WRAP_MENU",uMenu::wrap);
 #include <deque>
 #include <algorithm>
 
+
+REAL sg_consoleTabCompletionMaxPossibilities = 50;
+static tConfItem< REAL > sg_consoleTabCompletionMaxPossibilitiesConf("CONSOLE_TAB_COMPLETION_MAX_POSIBILITIES",sg_consoleTabCompletionMaxPossibilities);
+
+
 static tString Simplify(const tString &str) {
     return str.ToLower();
 }
 
 static void ShowPossibilities(const std::deque<tString> &results, const tString &word) {
-    if (results.size() > 30) {
-        con << "Too many results found. Type further characters.\n";
+    if (results.size() > sg_consoleTabCompletionMaxPossibilities) {
+        con << "Too many results found (" << results.size() 
+            << " > " << sg_consoleTabCompletionMaxPossibilities 
+            << "). Type more characters.\n";
     } else {
         con << "Possibilities:\n";
         int len = word.Len();

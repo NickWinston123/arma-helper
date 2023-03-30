@@ -209,7 +209,7 @@ gCycle* gHelperEnemiesData::detectEnemies() {
 }
 
 
-REAL    gSmartTurningCornerData::getTimeUntilTurn(REAL speed) {
+REAL gSmartTurningCornerData::getTimeUntilTurn(REAL speed) {
     return distanceFromPlayer /= speed * .98f;
 }
 
@@ -250,8 +250,6 @@ bool gSmartTurningCornerData::findCorner(const gHelperSensor *sensor, gHelper &h
             infront = true;
         }
     }
-
-
 
     if (lastPos != currentPos)
     {

@@ -671,17 +671,12 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     if (firstRun && sg_helperDetectCut) {
         gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
 
-        int enemyside = enemyData.enemySide;
-        // bool sameSide = sensorDir == enemyData.enemySide;
-        //  || sameSide && enemyData.canCutUs
         // Only care when enemy is driving toward us, or same direction        
         if ( !( enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight )) {
             open = open && (enemyData.canCutEnemy || sensorDir != enemyData.enemySide);
         }
 
     }
-
-
 
     // Draw a green line if the hit distance is greater than the specified value, indicating that the path is clear.
     if (open)
@@ -710,15 +705,18 @@ void gHelper::Activate()
 {
     if (!aliveCheck())
         return;
-
+        
     REAL start;
+
     if (sg_helperHud) {
         start = tRealSysTimeFloat();
+
         tColoredString debug;
         debug << "gCycles: " << eGameObject::number_of_gCycles << "\n";
         debug << "Walls: " << sg_netPlayerWalls.Len() << "\n";
         debug << "eGameObjects: " << eGrid::CurrentGrid()->gameObjects.Len() << "\n";
-        helperDebugH << debug;
+
+        helperDebugH << debug;        
         ownerPosH << roundeCoord(ownerPos);
         ownerDirH << roundeCoord(ownerDir);
         tailPosH << roundeCoord(tailPos);
@@ -770,8 +768,7 @@ void gHelper::Activate()
         turningBot(data_stored);
 
     if (sg_helperHud) {
-        REAL time = tRealSysTimeFloat() - start;
-        sg_helperActivateTimeH << (time);
+        sg_helperActivateTimeH << (tRealSysTimeFloat() - start);
     }
 
 }

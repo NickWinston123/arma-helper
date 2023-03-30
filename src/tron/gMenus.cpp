@@ -1043,55 +1043,6 @@ static void ConTabCompletition(tString &strString, int &cursorPos, bool changeLa
     strString = newString;
 }
 
-/*
-static void ConTabCompletition(tString &strString, int &curserPos, bool changeLast) {
-    static tString oldString;
-    static int cfgPos;
-    static int lastPos;
-    if(changeLast)
-    {
-        strString = oldString;
-        cfgPos++;
-        curserPos = lastPos;
-    }
-    else
-    {
-        oldString = strString;
-        lastPos = curserPos;
-        cfgPos = 0;
-    }
-
-    tArray<tString> msgsExt = strString.Split(" ");
-    tString newString;
-    int cusPos = 0;
-
-    for(int i = 0; i < msgsExt.Len(); i++)
-    {
-        tString word = msgsExt[i];
-
-        cusPos += word.Len() - 1;
-
-        if (cusPos == curserPos)
-        {
-            tString found_command = tConfItemBase::FindConfigItem(word.Filter(),cfgPos);
-            if (found_command != "")
-                word = found_command + " ";
-            else
-                cfgPos = -1;
-        }
-
-        cusPos++;
-
-        if ((i + 1) == msgsExt.Len())
-            newString << word;
-        else
-            newString << word << " ";
-    }
-
-    strString = newString;
-    curserPos = newString.Len();
-}
-*/
 class gMemuItemConsole: uMenuItemStringWithHistory{
 public:
     gMemuItemConsole(uMenu *M,tString &c):

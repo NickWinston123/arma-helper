@@ -762,7 +762,7 @@ bool gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
     {
         gCycle* cycle = dynamic_cast<gCycle *>(player->Object());
         if (cycle) {
-            SetTarget(cycle->Position(), cycle->Direction() * cycle->Speed());
+            SetTarget(cycle);
             return true;
         }
     }

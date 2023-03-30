@@ -76,6 +76,8 @@ namespace helperConfig {
 
     extern bool sg_tailHelper ;
     extern REAL sg_tailHelperBrightness ;
+    extern REAL sg_tailHelperHeight ;
+    extern REAL sg_tailHelperGridSize;
     extern REAL sg_tailHelperDelay ;
     extern REAL sg_tailHelperUpdateTime ;
 

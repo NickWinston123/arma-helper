@@ -19,41 +19,92 @@ gTailHelper::gTailHelper(gHelper &helper, gCycle &owner)
     turnDelay = owner_->GetTurnDelay();
     updateTime = -100;
 }
+#include <queue>
+#include <unordered_map>
+#include <tuple>
+
+struct eCoordHash {
+    std::size_t operator()(const eCoord& coord) const
+    {
+        return std::hash<double>{}(coord.x) ^ std::hash<double>{}(coord.y);
+    }
+};
+
+struct eCoordEqual {
+    bool operator()(const eCoord& lhs, const eCoord& rhs) const
+    {
+        return lhs.x == rhs.x && lhs.y == rhs.y;
+    }
+};
+
+struct CompareDist {
+    bool operator()(const std::tuple<int, eCoord>& lhs, const std::tuple<int, eCoord>& rhs) const {
+        return std::get<0>(lhs) > std::get<0>(rhs);
+    }
+};
+
+
+// Manhattan distance heuristic
+int manhattanDist(const eCoord& a, const eCoord& b)
+{
+    return abs(a.x - b.x) + abs(a.y - b.y);
+}
 
 std::vector<eCoord> gTailHelper::getPathToTail()
 {
     std::vector<eCoord> path;
+    std::priority_queue<std::tuple<int, eCoord>, std::vector<std::tuple<int, eCoord>>, CompareDist> pq;
+    std::unordered_map<eCoord, eCoord, eCoordHash, eCoordEqual> prev;
 
-    eCoord direction = (*tailPos - *ownerPos); // Initial direction towards tail
-    double dist = direction.Norm();
-    int numSegments = (int)(dist / sg_tailHelperDelay);
+    eCoord startPos = discretize(*ownerPos,sg_tailHelperGridSize);
+    eCoord targetPos = discretize(*tailPos,sg_tailHelperGridSize);
 
-    // align initial direction with the grid
-    double angle = atan2(direction.y, direction.x);
-    angle = round(angle / (M_PI / 2)) * (M_PI / 2);
-    direction = eCoord(cos(angle), sin(angle));
+    int initialDist = manhattanDist(startPos, targetPos);
+    pq.push(std::make_tuple(initialDist, startPos));
+    prev[startPos] = startPos;
 
-    direction.Normalize();
+    std::array<eCoord, 4> directions = {
+        eCoord(1, 0),
+        eCoord(0, 1),
+        eCoord(-1, 0),
+        eCoord(0, -1)
+    };
 
-    // Add the first point to the path
-    path.push_back(*ownerPos);
-    eCoord currentPos = *ownerPos;
-
-    // Create a path of 90-degree turns to the tail
-    for (int i = 1; i < numSegments; i++)
+    while (!pq.empty())
     {
-        double segmentAngle = atan2(direction.y, direction.x);
-        currentPos += direction * sg_tailHelperDelay;
-        path.push_back(currentPos);
-        direction = eCoord(cos(segmentAngle + (i % 2 == 1 ? M_PI / 2 : -M_PI / 2)), sin(segmentAngle + (i % 2 == 1 ? M_PI / 2 : -M_PI / 2))); // rotate direction by 90 degrees
+        eCoord current = std::get<1>(pq.top());
+        pq.pop();
+
+        if (current == targetPos)
+        {
+            break;
+        }
+
+        for (const eCoord& dir : directions)
+        {
+            eCoord next = current + dir;
+            if (prev.find(next) == prev.end())
+            {
+                int dist = manhattanDist(next, targetPos);
+                pq.push(std::make_tuple(dist, next));
+                prev[next] = current;
+            }
+        }
     }
 
-    // Check if last segment is shorter than delay
-    if ((*tailPos - currentPos).Norm() > 1e-6)
+    if (prev.find(targetPos) == prev.end())
     {
-        // Add the last point to the path
-        path.push_back(*tailPos);
+        return path; // Path not found
     }
+
+    // Reconstruct path
+    for (eCoord pos = targetPos; pos != startPos; pos = prev[pos])
+    {
+        path.push_back(pos);
+    }
+
+    std::reverse(path.begin(), path.end());
+
     return path;
 }
 
@@ -74,7 +125,7 @@ void gTailHelper::Activate(gHelperData &data)
     eCoord lastPos = *ownerPos;
     for (int i = 0; i < path.size(); i++)
     {
-        gHelperUtility::debugLine(gRealColor(1, 0, 0), 1, data.ownerData.speedFactorF(), lastPos, path[i], sg_tailHelperBrightness);
+        gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_tailHelperHeight, data.ownerData.speedFactorF(), lastPos, path[i], sg_tailHelperBrightness);
         lastPos = path[i];
     }
 }

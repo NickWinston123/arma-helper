@@ -381,11 +381,16 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
 {
     // Return if the bot is not alive or not driving straight
     // Return if the last turn attempt was more recent than the last successful turn
-    if (!helper_.aliveCheck() ||
-        // !helper_.drivingStraight() ||
-       (sg_helperSmartTurningSurviveTraceTurnOnce && owner_.lastBotTurnTime > owner_.lastTurnTime) ||
-        (owner_.lastTurnAttemptTime < owner_.lastTurnTime))
+    bool aliveCheck = helper_.aliveCheck();
+    bool lastTurnAttemptCheck = (sg_helperSmartTurningSurviveTraceTurnOnce && owner_.lastBotTurnTime > owner_.lastTurnTime) || (owner_.lastTurnAttemptTime < owner_.lastTurnTime);
+
+    if (!aliveCheck || lastTurnAttemptCheck)
+    {
+        gHelperUtility::Debug("SMART TURNING TRACE", "CONDITIONS NOT MET",
+            "aliveCheck: " + std::to_string(aliveCheck) +
+            ", lastTurnAttemptCheck: " + std::to_string(lastTurnAttemptCheck));
         return;
+    }
 
     int lastBlockedDir = owner_.lastTurnAttemptDir;
 

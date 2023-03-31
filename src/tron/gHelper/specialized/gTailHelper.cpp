@@ -50,6 +50,14 @@ int manhattanDist(const eCoord& a, const eCoord& b)
     return abs(a.x - b.x) + abs(a.y - b.y);
 }
 
+REAL angleBetween(const eCoord &a, const eCoord &b)
+{
+    REAL dotProduct = a * b;
+    REAL lenA = a.Norm();
+    REAL lenB = b.Norm();
+    return acos(dotProduct / (lenA * lenB));
+}
+
 std::vector<eCoord> gTailHelper::getPathToTail()
 {
     std::vector<eCoord> path;

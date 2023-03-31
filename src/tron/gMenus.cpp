@@ -926,8 +926,8 @@ static tString Simplify(const tString &str) {
 
 static void ShowPossibilities(const std::deque<tString> &results, const tString &word) {
     if (results.size() > sg_consoleTabCompletionMaxPossibilities) {
-        con << "Too many results found (" << results.size() 
-            << " > " << sg_consoleTabCompletionMaxPossibilities 
+        con << "Too many results found (" << results.size()
+            << " > " << sg_consoleTabCompletionMaxPossibilities
             << "). Type more characters.\n";
     } else {
         con << "Possibilities:\n";
@@ -1013,13 +1013,13 @@ static void ConTabCompletition(tString &strString, int &cursorPos, bool changeLa
                 if (match == simplifiedWord) {
                     if (showResults) {
                         ShowPossibilities(results, word);
-                        showResults = false; 
+                        showResults = false;
                     }
                     cursorPos = cusPos + 1;
                 } else {
                     if (showResults) {
                         ShowPossibilities(results, word);
-                        showResults = false; 
+                        showResults = false;
                     }
                     word = match;
                     cursorPos = cusPos + match.Len() + 1;
@@ -1372,6 +1372,11 @@ void sg_PlayerMenu(int Player){
      "$player_num_per_team_help",
      p->favoriteNumberOfPlayersPerTeam, 1, 16, 1);
 
+    uMenuItemToggle pgn
+    (&playerMenu,"Gradient Name",
+     "Enable Gradient Name",
+     p->sg_gradientName);
+
     //Color Randomization in the player menu
     uMenuItemSelection<int> se_cr(&playerMenu,"$player_color_randomization_text","$player_color_randomization_help",p->colorRandomization);
     se_cr.NewChoice("$player_color_randomization_none_text",   "$player_color_randomization_none_help",   ColorRandomization::OFF);
@@ -1379,6 +1384,7 @@ void sg_PlayerMenu(int Player){
     se_cr.NewChoice("$player_color_randomization_unique_text", "$player_color_randomization_unique_help", ColorRandomization::UNIQUE);
     se_cr.NewChoice("$player_color_randomization_rainbow_text", "$player_color_randomization_rainbow_help", ColorRandomization::RAINBOW);
     se_cr.NewChoice("$player_color_randomization_crossfade_text", "$player_color_randomization_crossfade_help", ColorRandomization::CROSSFADE);
+
     // HACK: backup color before clamping by menuitems
     int r = p->rgb[0], g = p->rgb[1], b = p->rgb[2];
 

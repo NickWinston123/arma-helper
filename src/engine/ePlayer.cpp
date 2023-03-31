@@ -1487,6 +1487,13 @@ ePlayer::ePlayer() : colorIteration(0)
     sg_smarterBotState = 5;
     StoreConfitem(tNEW(tConfItem<int>) (confname, "Smarter Bot State", sg_smarterBotState));
 
+    // sg_smarterBotState
+    confname.Clear();
+    confname << "GRADIENT_NAME_" << id+1;
+    sg_gradientName = false;
+    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Gradient Name", sg_gradientName));
+
+
 
 
 #endif
@@ -5608,8 +5615,14 @@ static tConfItem<tString> se_toggleChatFlagEnabledPlayersConf( "CHAT_FLAG_TOGGLE
 bool se_toggleChatFlagAlways = false;
 static tConfItem<bool> se_toggleChatFlagAlwaysConf("CHAT_FLAG_ALWAYS", se_toggleChatFlagAlways);
 
+tString se_toggleChatFlagAlwaysEnabledPlayers("1,2,3,4");
+static tConfItem<tString> se_toggleChatFlagAlwaysEnabledPlayersConf( "CHAT_FLAG_ALWAYS_ENABLED_PLAYERS", se_toggleChatFlagAlwaysEnabledPlayers );
+
 bool se_BlockChatFlags = false;
 static tConfItem<bool> se_BlockChatFlagsConf("CHAT_FLAG_BLOCK", se_BlockChatFlags);
+
+tString se_BlockChatFlagsEnabledPlayers("1,2,3,4");
+static tConfItem<tString> se_BlockChatFlagsEnabledPlayersConf( "CHAT_FLAG_BLOCK_ENABLED_PLAYERS", se_BlockChatFlagsEnabledPlayers );
 
 bool se_watchActiveStatus = false;
 static tConfItem<bool> se_watchActiveStatusConf("WATCH_ACTIVE_STATUS", se_watchActiveStatus);
@@ -5629,8 +5642,10 @@ void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
 
             if (se_BlockChatFlags)
             {
-                p->SetChatting(flag, false);
-                continue;
+                if (tIsInList(se_BlockChatFlagsEnabledPlayers, p->pID+1)) {
+                    p->SetChatting(flag, false);
+                    continue;
+                }
             }
 
             p->SetChatting(flag, cs);
@@ -10279,8 +10294,6 @@ static tConfItem<bool> se_forceTeamnameConf("FORCE_TEAMNAME", se_forceTeamname);
 static bool se_forceSync = false;
 static tConfItem<bool> se_forceSyncConf("FORCE_SYNC", se_forceSync);
 
-static bool gradientName = false;//true;
-static tConfItem <bool> gradientNameConf( "GRADIENT_NAME", gradientName );
 
 static REAL gradientR = 15, gradientG = 15, gradientB = 15;
 static tSettingItem< REAL > gradientRConf( "GRADIENT_R", gradientR );
@@ -10373,7 +10386,7 @@ void sg_ColorMenu()
 
     eMenuItemGradient g( &menu );
 
-    uMenuItemToggle gne( &menu, "Gradient Name Enabled", "", gradientName );
+    //uMenuItemToggle gne( &menu, "Gradient Name Enabled", "", gradientName );
 
     menu.Enter();
 }
@@ -10616,9 +10629,9 @@ void ePlayerNetID::Update()
                     (sn_Connections[0].version.Max() == 18 ||
                      sn_Connections[0].version.Max() == 22))
                 {
-
-                    p->Chat(tString("/teamname"));
+                    p->Chat(tString("/teamname ") + tString(local_p->teamname));
                 }
+
 
                 if (se_toggleChatFlag) {
                     //toggle This Players ChatFlag?
@@ -10628,7 +10641,9 @@ void ePlayerNetID::Update()
                 }
 
                 if (se_toggleChatFlagAlways) {
-                    p->SetChatting( ePlayerNetID::ChatFlags_Chat, true );
+                    if (tIsInList(se_toggleChatFlagAlwaysEnabledPlayers, p->pID+1)) {
+                        p->SetChatting( ePlayerNetID::ChatFlags_Chat, true );
+                    }
                 }
 
                 p->favoriteNumberOfPlayersPerTeam=ePlayer::PlayerConfig(i)->favoriteNumberOfPlayersPerTeam;
@@ -10723,7 +10738,7 @@ void ePlayerNetID::Update()
                 tString newName( ePlayer::PlayerConfig(i)->Name() );
 
                 if(
-                    gradientName &&
+                    local_p->sg_gradientName &&
                     ( sn_GetNetState() == nSTANDALONE ||
                         ( sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18 )
                     )

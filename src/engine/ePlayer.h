@@ -148,6 +148,8 @@ public:
     REAL sg_smarterBotSpeedScale;
     REAL sg_smarterBotNextThinkMult;
     int sg_smarterBotState;
+    
+    bool sg_gradientName;
 
     eCamMode startCamera;
     bool     allowCam[10];

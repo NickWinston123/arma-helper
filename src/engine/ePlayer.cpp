@@ -4903,6 +4903,9 @@ static tConfItem<tString> se_specCommandConf("LOCAL_CHAT_COMMAND_SPEC", se_specC
 static tString se_activeStatusCommand("/afk");
 static tConfItem<tString> se_activeStatusCommandConf("LOCAL_CHAT_COMMAND_ACTIVE_STATUS", se_activeStatusCommand);
 
+static tString se_reverseCommand("/rev");
+static tConfItem<tString> se_reverseCommandConf("LOCAL_CHAT_COMMAND_REVERSE", se_reverseCommand);
+
 #endif //if not dedicated
 
 void ePlayerNetID::Chat(const tString& s_orig)
@@ -4922,7 +4925,8 @@ void ePlayerNetID::Chat(const tString& s_orig)
         se_speakCommand,
         se_rebuildCommand,
         se_specCommand,
-        se_activeStatusCommand
+        se_activeStatusCommand,
+        se_reverseCommand
     };
 
     std::string chatString(s_orig);
@@ -5012,6 +5016,12 @@ void ePlayerNetID::Chat(const tString& s_orig)
         else if (command == se_activeStatusCommand)
         {
             activeStatus(s_orig);
+        }
+        else if (command == se_reverseCommand)
+        {   
+            tString s_modified(s_orig);
+            s_modified.RemoveSubStr(0, se_reverseCommand.Len());
+            Chat(s_modified.Reverse());
         }
     }
     else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )

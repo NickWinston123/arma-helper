@@ -356,7 +356,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
             // Set the blockTurn to NONE to indicate that the player can now turn in either direction.
             this->blockTurn = NONE;
         }
-        
+
         // Check if the smartTurningSurviveTrace is enabled and call the function if it is.
         if (sg_helperSmartTurningSurviveTrace)
             smartTurningSurviveTrace(data);
@@ -404,7 +404,7 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
     //con << "SMART TURNING LAST lastBlockedDir " << lastBlockedDir << "\n";
     // Get the information about the blocked corner
     gSmartTurningCornerData& corner = helper_.getCorner(lastBlockedDir);
-    
+
     if (!corner.exist)
         return;
 
@@ -428,11 +428,11 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
     // con << "Noticed time: " << corner.noticedTime << "\n";
     // con << "Time until turn: " << corner.getTimeUntilTurn(owner_.Speed()) << "\n";
     // con << "Turn time factor: " << turnTimeFactor << "\n";
-    
+
     if (gHelperUtility::isClose(&owner_, corner.currentPos, sg_helperSmartTurningSurviveTraceCloseFactor * data.ownerData.turnSpeedFactorF()) &&
-        // owner_.lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime / (10 * data.ownerData.turnSpeedFactorF())) > corner.noticedTime &&
-        corner.getTimeUntilTurn(owner_.Speed()) > 0)// &&
-        //(turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime))
+        owner_.lastTurnAttemptTime + (sg_helperSmartTurningSurviveTraceActiveTime / (10 * data.ownerData.turnSpeedFactorF())) > corner.noticedTime &&
+        corner.getTimeUntilTurn(owner_.Speed()) > 0 &&
+        (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime))
     {
         // Attempt to make a turn in the direction of the blocked attempt
         if (helper_.turnHelper->makeTurnIfPossible(data, lastBlockedDir, 1))

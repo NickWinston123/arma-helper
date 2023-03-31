@@ -4897,14 +4897,17 @@ static tConfItem<tString> se_speakCommandConf("LOCAL_CHAT_COMMAND_SPEAK", se_spe
 static tString se_rebuildCommand("/rebuild");
 static tConfItem<tString> se_rebuildCommandConf("LOCAL_CHAT_COMMAND_REBUILD", se_rebuildCommand);
 
-static tString se_specCommand("/spec");
-static tConfItem<tString> se_specCommandConf("LOCAL_CHAT_COMMAND_SPEC", se_specCommand);
+static tString se_watchCommand("/watch");
+static tConfItem<tString> se_watchCommandConf("LOCAL_CHAT_COMMAND_SPEC", se_watchCommand);
 
 static tString se_activeStatusCommand("/afk");
 static tConfItem<tString> se_activeStatusCommandConf("LOCAL_CHAT_COMMAND_ACTIVE_STATUS", se_activeStatusCommand);
 
 static tString se_reverseCommand("/rev");
 static tConfItem<tString> se_reverseCommandConf("LOCAL_CHAT_COMMAND_REVERSE", se_reverseCommand);
+
+static tString se_spectateCommand("/spec");
+static tConfItem<tString> se_spectateCommandConf("LOCAL_CHAT_COMMAND_SPECTATE", se_spectateCommand);
 
 #endif //if not dedicated
 
@@ -4924,9 +4927,10 @@ void ePlayerNetID::Chat(const tString& s_orig)
         se_browserCommand,
         se_speakCommand,
         se_rebuildCommand,
-        se_specCommand,
+        se_watchCommand,
         se_activeStatusCommand,
-        se_reverseCommand
+        se_reverseCommand,
+        se_spectateCommand
     };
 
     std::string chatString(s_orig);
@@ -5009,7 +5013,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
         {
             CompleteRebuild();
         }
-        else if (command == se_specCommand)
+        else if (command == se_watchCommand)
         {
             eCamera::SpectatePlayer(*this,s_orig);
         }
@@ -5018,10 +5022,15 @@ void ePlayerNetID::Chat(const tString& s_orig)
             activeStatus(s_orig);
         }
         else if (command == se_reverseCommand)
-        {   
+        {
             tString s_modified(s_orig);
             s_modified.RemoveSubStr(0, se_reverseCommand.Len());
             Chat(s_modified.Reverse());
+        } 
+        else if (command == se_spectateCommand)
+        {
+            ePlayer::NetToLocalPlayer(this)->spectate = true;
+            CompleteRebuild();
         }
     }
     else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )
@@ -10199,11 +10208,16 @@ tString sg_ExtractColorCodes(const tString& str)
 static REAL se_playerRandomColorNameShiftAmount = 1;
 static tConfItem<REAL> se_playerRandomColorNameShiftAmountConf("PLAYER_COLOR_NAME_RANDOMIZATION_SHIFT_AMOUNT", se_playerRandomColorNameShiftAmount);
 
+static int se_playerRandomColorNameShiftBounceInterval = 0; // 0 = off
+static tConfItem<int> se_playerRandomColorNameShiftBounceIntervalConf("PLAYER_COLOR_NAME_RANDOMIZATION_BOUNCE_INTERVAL", se_playerRandomColorNameShiftBounceInterval);
+
 static int se_playerRandomColorNameStartMode = 1;
 static tConfItem<int> se_playerRandomColorNameStartModeConf("PLAYER_COLOR_NAME_RANDOMIZATION_SHIFT_START_MODE", se_playerRandomColorNameStartMode);
 
 tColoredString sg_ShiftColors(const tColoredString& original, int shift)
 {
+
+
     tColoredString shifted;
     tString nameWithoutColors = tColoredString::RemoveColors(original);
     tString colorCodes = sg_ExtractColorCodes(original);
@@ -10218,7 +10232,6 @@ tColoredString sg_ShiftColors(const tColoredString& original, int shift)
         shifted << colorCodes.SubStr(colorIndex, 8);
         shifted << nameWithoutColors[j];
     }
-
     return shifted;
 }
 
@@ -10528,6 +10541,7 @@ void se_ForcePlayerColorMenu()
 }
 
 static tColoredString lastColoredName;
+static int currentShift = 0, shiftIter = 0;
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
 {
@@ -10730,12 +10744,23 @@ void ePlayerNetID::Update()
                     case ColorNameRandomization::SHIFT_NAME:{
                         if (newName != p->GetName() || lastColoredName.empty()) {
                             int rgb[3] = {p->r, p->g, p->b};
+
                             lastColoredName = se_playerRandomColorNameStartMode == 1 ?
                                                 sg_RainbowNameGeneration(newName) :
                                                 sg_ColorGradientGeneration(rgb, newName);
                         }
 
-                        newName = sg_ShiftColors(lastColoredName,se_playerRandomColorNameShiftAmount);
+                        if (currentShift == 0 || 
+                            (!(se_playerRandomColorNameShiftBounceInterval > 0) && currentShift != se_playerRandomColorNameShiftAmount) )
+                            currentShift = se_playerRandomColorNameShiftAmount;
+                            
+
+                        if (se_playerRandomColorNameShiftBounceInterval > 0 &&
+                            shiftIter % se_playerRandomColorNameShiftBounceInterval == 0) 
+                            currentShift = currentShift * -1;
+                            
+                        newName = sg_ShiftColors(lastColoredName,currentShift);
+                        shiftIter++;
                         lastColoredName = newName;
                         break;
                     }

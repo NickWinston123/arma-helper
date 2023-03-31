@@ -23,11 +23,31 @@
 #include "tResourceManager.h"
 #include "tRecorder.h"
 #include "tConfiguration.h"
-
+#include "rScreen.h"
 #include "gGame.h"
 
 #include "tConfiguration.h"
 #include "gGame.h"
+#include "eDebugLine.h"
+static REAL sr_highRimCap = 2;
+static tConfItem<REAL> sr_highRimCapConf( "HIGH_RIM_CAP", sr_highRimCap );
+
+static bool sr_renderRimLines = false;
+static tConfItem<bool> sr_renderRimLinesConf( "RENDER_RIM_LINES", sr_renderRimLines );
+
+static REAL sr_renderRimLinesHeight = 4;
+static tConfItem<REAL> sr_renderRimLinesHeightConf( "RENDER_RIM_LINES_HEIGHT", sr_renderRimLinesHeight );
+
+void debugRim(gRealColor color, REAL height, REAL timeout,
+                                eCoord start,eCoord end, REAL brightness) {
+    REAL startHeight = height;
+    if (start == end) {
+        startHeight = 0;
+    }
+    eDebugLine::SetTimeout(timeout);
+    eDebugLine::SetColor(color.r * sg_helperBrightness * brightness, color.g * sg_helperBrightness * brightness, color.b * sg_helperBrightness* brightness);
+    eDebugLine::Draw(start, startHeight, end, height);
+}
 
 // This fixes stupid crappy OS-wannabe Windoze
 // Someday, autoconf-ize this stuff...
@@ -1091,12 +1111,16 @@ ePoint * gParser::DrawRim( eGrid * grid, ePoint * start, eCoord const & stop, RE
     REAL length = (stop-(*start)).Norm();
     REAL rimTextureStop = rimTexture + length;
 
+    if (sr_highRim && h > sr_highRimCap)
+        h = sr_highRimCap;
     // create wall
     tJUST_CONTROLLED_PTR< gWallRim > newWall = tNEW( gWallRim )(grid, rimTexture, rimTextureStop, h);
 
     // update rim texture
     rimTexture = rimTextureStop;
 
+    if (sr_renderRimLines)
+       debugRim(gRealColor(1,0,0),sr_renderRimLinesHeight,999999999,*start,stop,10000);
     // draw line with wall
     return grid->DrawLine( start, stop, newWall, 0 );
 }

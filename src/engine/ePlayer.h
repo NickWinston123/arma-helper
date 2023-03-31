@@ -43,6 +43,14 @@ enum ColorRandomization {
     CROSSFADE = 4,
 };
 
+//For Menu Color Settings
+enum ColorNameRandomization {
+    OFF_NAME = 0,
+    GRADIENT_NAME = 1,
+    RAINBOW_NAME = 2,
+    SHIFT_NAME = 3,
+};
+
 #include "rSDL.h"
 
 #include "uInput.h"
@@ -148,8 +156,7 @@ public:
     REAL sg_smarterBotSpeedScale;
     REAL sg_smarterBotNextThinkMult;
     int sg_smarterBotState;
-    
-    bool sg_gradientName;
+
 
     eCamMode startCamera;
     bool     allowCam[10];
@@ -162,6 +169,7 @@ public:
     int rgb[3]; // our color
 
     int colorRandomization; // The players color randomization
+    int colorNameRandomization; // The players name color randomization
 
     tString instantChatString[MAX_INSTANT_CHAT];
     // instant chat macros
@@ -280,6 +288,7 @@ public:
     playerWatchStatus lastWatchStatus;
     static void watchPlayerStatus();
     static ePlayerNetID  *gCycleToNetPlayer(gCycle *owner);
+    int lastsyncedColor[3] = {0, 0, 0};
 private:
 
     int listID;                          // ID in the list of all players

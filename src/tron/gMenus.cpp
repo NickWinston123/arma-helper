@@ -1372,10 +1372,13 @@ void sg_PlayerMenu(int Player){
      "$player_num_per_team_help",
      p->favoriteNumberOfPlayersPerTeam, 1, 16, 1);
 
-    uMenuItemToggle pgn
-    (&playerMenu,"Gradient Name",
-     "Enable Gradient Name",
-     p->sg_gradientName);
+
+    //Color Randomization in the player menu
+    uMenuItemSelection<int> se_cnr(&playerMenu,"Gradient Name","Gradient Name",p->colorNameRandomization);
+    se_cnr.NewChoice("None",   "No color name randomization",   ColorNameRandomization::OFF_NAME);
+    se_cnr.NewChoice("Gradient", "Gradient name randomization", ColorNameRandomization::GRADIENT_NAME);
+    se_cnr.NewChoice("Rainbow", "Rainbow name randomization", ColorNameRandomization::RAINBOW_NAME);
+    se_cnr.NewChoice("Shift", "Shift name randomization", ColorNameRandomization::SHIFT_NAME);
 
     //Color Randomization in the player menu
     uMenuItemSelection<int> se_cr(&playerMenu,"$player_color_randomization_text","$player_color_randomization_help",p->colorRandomization);

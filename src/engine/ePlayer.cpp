@@ -76,6 +76,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 int se_lastSaidMaxEntries = 8;
 
+
+static bool se_forceSync = false;
+static tConfItem<bool> se_forceSyncConf("FORCE_SYNC", se_forceSync);
+
+static bool se_forceSyncOverride = false;
+static tConfItem<bool> se_forceSyncOverrideConf("FORCE_SYNC_OVERRIDE", se_forceSyncOverride);
+
+
 // call on commands that only work on the server; quit if it returns true
 bool se_NeedsServer(char const * command, std::istream & s, bool strict )
 {
@@ -1130,7 +1138,6 @@ ePlayer * ePlayer::PlayerConfig(int p)
 ePlayer * ePlayer::NetToLocalPlayer(ePlayerNetID *player)
 {
     return PlayerConfig(player->pID);
-    //  return (ePlayer*)P;
 }
 
 ePlayer *ePlayer::gCycleToLocalPlayer(gCycle *owner)
@@ -1359,11 +1366,17 @@ ePlayer::ePlayer() : colorIteration(0)
                                         rgb[0]));
 
     confname.Clear();
-    confname << "PLAYER_RANDOM_COLOR_"<< id+1;
+    confname << "PLAYER_COLOR_RANDOMIZATION_" << id+1;
     colorRandomization=0;
     StoreConfitem(tNEW(tConfItem<int>) (confname,
                                          "$player_random_color_help",
                                          colorRandomization));
+    confname.Clear();
+    confname << "PLAYER_COLOR_NAME_RANDOMIZATION_" << id+1;
+    colorNameRandomization=0;
+    StoreConfitem(tNEW(tConfItem<int>) (confname,
+                                         "$player_random_color_help",
+                                         colorNameRandomization));
 
     //sg_smarterBotThink
     confname.Clear();
@@ -1486,14 +1499,6 @@ ePlayer::ePlayer() : colorIteration(0)
     confname << "SMARTER_BOT_" << id+1 << "_STATE";
     sg_smarterBotState = 5;
     StoreConfitem(tNEW(tConfItem<int>) (confname, "Smarter Bot State", sg_smarterBotState));
-
-    // sg_smarterBotState
-    confname.Clear();
-    confname << "GRADIENT_NAME_" << id+1;
-    sg_gradientName = false;
-    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Gradient Name", sg_gradientName));
-
-
 
 
 #endif
@@ -7619,12 +7624,26 @@ void ePlayerNetID::CreateVoter()
             voter->PlayerChanged();
     }
 }
-
+static int iteraton = 0;
 void ePlayerNetID::WriteSync(nMessage &m)
 {
     lastSync=tSysTimeFloat();
     nNetObject::WriteSync(m);
-    m.Write(r);
+    if (se_forceSyncOverride)
+    {
+        // int currentColor[3] = { this->r, this->g, this->b };
+        // if (std::equal(std::begin(currentColor), std::end(currentColor), std::begin(lastsyncedColor)))
+        // {
+            iteraton += 1;
+            int val = iteraton % 2 == 0 ? r + 1 : r - 1;
+            m.Write(val);
+        //     std::copy(std::begin(currentColor), std::end(currentColor), std::begin(lastsyncedColor));
+        //     //lastsyncedColor[0] = val;
+        // }
+    }
+    else
+        m.Write(r);
+
     m.Write(g);
     m.Write(b);
 
@@ -8980,152 +8999,6 @@ static int se_ColorDistance( int a[3], int b[3] )
 }
 
 
-
-#include <vector>
-#include <algorithm>
-
-
-static bool se_playerColoredName = false;
-static tConfItem<bool> se_playerColoredNameConf("PLAYER_COLORED_NAME", se_playerColoredName);
-
-static bool se_playerColoredNameShiftLeft = false;
-static tConfItem<bool> se_playerColoredNameShiftLeftConf("PLAYER_COLORED_NAME_SHIFT_LEFT", se_playerColoredNameShiftLeft);
-
-static bool se_playerColoredNameShift = false;
-static tConfItem<bool> se_playerColoredNameShiftConf("PLAYER_COLORED_NAME_SHIFT", se_playerColoredNameShift);
-
-static int se_playerColoredNameNumColors = 4;
-static tConfItem<int> se_playerColoredNameNumColorsConf("PLAYER_COLORED_NAME_NUMB_COLORS", se_playerColoredNameNumColors);
-
-static int se_playerColoredNamePatternInterval = 4;
-static tConfItem<int> se_playerColoredNamePatternIntervalConf("PLAYER_COLORED_NAME_PATTERN_INTERVAL", se_playerColoredNamePatternInterval);
-
-
-// Generates a patterned assortment of colors with a repeating pattern length based on the length of the player's name.
-// name: the player's name to use for determining the pattern length.
-// numColors: the number of colors to generate for the pattern.
-// returns: a vector of hexadecimal color codes representing the patterned assortment of colors.
-std::vector<std::string> se_randomPatternedColors(tString name, int numColors) {
-    std::vector<std::string> patternedColors;
-
-    int patternLength = std::max(1, name.Len()); // The pattern length is at least 1 and based on the player's name length
-
-    // Calculate the number of times the pattern needs to repeat to generate enough colors to fill the requested number of colors
-    int numRepeats = std::ceil(numColors / static_cast<float>(patternLength));
-
-    // Add the colors to the pattern
-    for (int i = 0; i < numRepeats; i++) {
-        for (int j = 0; j < patternLength; j++) {
-            float hue = j / static_cast<float>(patternLength);
-            float saturation = 0.5f;
-            float value = 0.8f;
-
-            // Convert HSV color to RGB color
-            float chroma = value * saturation;
-            float hue_ = hue * 6.0f;
-            float x = chroma * (1 - std::abs(std::fmod(hue_, 2) - 1));
-            float m = value - chroma;
-            float r_, g_, b_;
-            if (hue_ < 1) {
-                r_ = chroma; g_ = x; b_ = 0;
-            } else if (hue_ < 2) {
-                r_ = x; g_ = chroma; b_ = 0;
-            } else if (hue_ < 3) {
-                r_ = 0; g_ = chroma; b_ = x;
-            } else if (hue_ < 4) {
-                r_ = 0; g_ = x; b_ = chroma;
-            } else if (hue_ < 5) {
-                r_ = x; g_ = 0; b_ = chroma;
-            } else {
-                r_ = chroma; g_ = 0; b_ = x;
-            }
-            int r = static_cast<int>(std::round((r_ + m) * 255));
-            int g = static_cast<int>(std::round((g_ + m) * 255));
-            int b = static_cast<int>(std::round((b_ + m) * 255));
-
-            // Add the color to the pattern
-            std::stringstream ss;
-            ss << "0x" << std::hex << std::setfill('0') << std::setw(2) << r << std::setw(2) << g << std::setw(2) << b;
-            patternedColors.push_back(ss.str());
-        }
-    }
-
-    // Trim the pattern to the requested number of colors
-    patternedColors.resize(numColors);
-
-    return patternedColors;
-}
-
-
-// Generates a random pattern of colors every n iterations, and shifts the colors left or right on each iteration.
-// patternInterval: the interval (in number of iterations) at which to generate a new random pattern of colors.
-// shiftLeft: a boolean flag indicating whether to shift the colors to the left (true) or to the right (false) on each iteration.
-// numColors: the number of colors to include in each pattern.
-// returns: a vector of hexadecimal color codes representing the current pattern of colors.
-// Generates a random pattern of colors every n iterations, and shifts the colors left or right on each iteration.
-// patternInterval: the interval (in number of iterations) at which to generate a new random pattern of colors.
-// shiftLeft: a boolean flag indicating whether to shift the colors to the left (true) or to the right (false) on each iteration.
-// numColors: the number of colors to include in each pattern.
-// returns: a vector of hexadecimal color codes representing the current pattern of colors.
-std::vector<std::string> getPatternedColor(tString name, int colorIteration, int patternInterval, bool shiftLeft, int numColors)
-{
-    std::vector<std::string> pattern;
-
-    // Generate a new pattern of colors every patternInterval iterations
-    if (colorIteration % patternInterval == 0)
-    {
-        pattern.clear();
-        pattern = se_randomPatternedColors(name, numColors);
-    }
-
-    if (se_playerColoredNameShift)
-    {
-        // Shift the colors left or right depending on the shiftLeft flag
-        if (shiftLeft)
-        {
-            std::string firstColor = pattern[0];
-            for (int i = 0; i < pattern.size() - 1; i++)
-            {
-                pattern[i] = pattern[i + 1];
-            }
-            pattern[pattern.size() - 1] = firstColor;
-        }
-        else
-        {
-            std::string lastColor = pattern[pattern.size() - 1];
-            for (int i = pattern.size() - 1; i > 0; i--)
-            {
-                pattern[i] = pattern[i - 1];
-            }
-            pattern[0] = lastColor;
-        }
-    }
-
-    // Trim the pattern to the requested number of colors
-    pattern.resize(numColors);
-
-    return pattern;
-}
-
-static void se_colorName(ePlayer* l) {
-    tString ourName = tColoredString::RemoveColors(l->name);
-    tString tempName = ourName;
-    tString ourNewName;
-
-    // Get the current pattern of colors and apply it to the player's name
-    std::vector<std::string> pattern = getPatternedColor(ourName, l->colorIteration, se_playerColoredNamePatternInterval, se_playerColoredNameShiftLeft, se_playerColoredNameNumColors);
-    for (int i = 0; i < ourName.Len(); i++) {
-        int colorIndex = i % pattern.size();
-        ourNewName << pattern[colorIndex] << tempName[i];
-    }
-
-    // Increment the iteration counter
-    l->colorIteration++;
-
-    // Set the modified name to the player's name
-    l->name = ourNewName;
-}
-
 static int se_RandomizeColorRange = 32;
 static tConfItem<int> se_RandomizeColorRangeConf("PLAYER_RANDOM_COLOR_RANGE", se_RandomizeColorRange);
 
@@ -10291,9 +10164,103 @@ static tConfItem<tString> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC"
 static bool se_forceTeamname = false;
 static tConfItem<bool> se_forceTeamnameConf("FORCE_TEAMNAME", se_forceTeamname);
 
-static bool se_forceSync = false;
-static tConfItem<bool> se_forceSyncConf("FORCE_SYNC", se_forceSync);
 
+tString sg_ExtractColorCodes(const tString& str)
+{
+    tString colorCodes;
+    int len = str.Len();
+
+    for (int i = 0; i < len;)
+    {
+        if (str[i] == '0' && i + 7 < len && str[i + 1] == 'x')
+        {
+            colorCodes << str.SubStr(i, 8);
+            i += 8;
+        }
+        else
+        {
+            i++;
+        }
+    }
+
+    return colorCodes;
+}
+
+static REAL se_playerRandomColorNameShiftAmount = 1;
+static tConfItem<REAL> se_playerRandomColorNameShiftAmountConf("PLAYER_COLOR_NAME_RANDOMIZATION_SHIFT_AMOUNT", se_playerRandomColorNameShiftAmount);
+
+static int se_playerRandomColorNameStartMode = 1;
+static tConfItem<int> se_playerRandomColorNameStartModeConf("PLAYER_COLOR_NAME_RANDOMIZATION_SHIFT_START_MODE", se_playerRandomColorNameStartMode);
+
+tColoredString sg_ShiftColors(const tColoredString& original, int shift)
+{
+    tColoredString shifted;
+    tString nameWithoutColors = tColoredString::RemoveColors(original);
+    tString colorCodes = sg_ExtractColorCodes(original);
+    int nameLength = nameWithoutColors.Len();
+    int colorCodesLength = colorCodes.Len() / 8;
+
+    for (int j = 0; j < nameLength - 1; ++j)
+    {
+        int colorIndex = ((j - shift) % colorCodesLength) * 8;
+        if (colorIndex < 0) colorIndex += colorCodesLength * 8;
+
+        shifted << colorCodes.SubStr(colorIndex, 8);
+        shifted << nameWithoutColors[j];
+    }
+
+    return shifted;
+}
+
+#include <cmath>
+tColor ColorFromHSV(float h, float s, float v)
+{
+    int i = static_cast<int>(h * 6);
+    float f = h * 6 - i;
+    float p = v * (1 - s);
+    float q = v * (1 - f * s);
+    float t = v * (1 - (1 - f) * s);
+
+    switch (i % 6)
+    {
+        case 0: return tColor(v, t, p);
+        case 1: return tColor(q, v, p);
+        case 2: return tColor(p, v, t);
+        case 3: return tColor(p, q, v);
+        case 4: return tColor(t, p, v);
+        default: return tColor(v, p, q);
+    }
+}
+
+static REAL se_playerRandomColorNameRandRainbowNumColors = 1;
+static tConfItem<REAL> se_playerRandomColorNameRandRainbowNumColorsConf("PLAYER_COLOR_NAME_RANDOMIZATION_RAINBOW_NUM_COLORS", se_playerRandomColorNameRandRainbowNumColors);
+
+static REAL se_playerRandomColorNameRandRainbowBrightness = 1;
+static tConfItem<REAL> se_playerRandomColorNameRandRainbowBrightnessConf("PLAYER_COLOR_NAME_RANDOMIZATION_RAINBOW_BRIGHTNESS", se_playerRandomColorNameRandRainbowBrightness);
+
+static REAL se_playerRandomColorNameRandRainbowSaturation = 1;
+static tConfItem<REAL> se_playerRandomColorNameRandRainbowSaturationConf("PLAYER_COLOR_NAME_RANDOMIZATION_RAINBOW_SATURATION", se_playerRandomColorNameRandRainbowSaturation);
+
+tColoredString sg_RainbowNameGeneration(const tString& name)
+{
+    tColoredString rainbowName;
+    int nameLength = name.Len();
+    int numColors = se_playerRandomColorNameRandRainbowNumColors;
+    float colorStep = static_cast<float>(numColors) / (nameLength - 1);
+
+    for (int i = 0; i < nameLength - 1; ++i)
+    {
+        float hue = fmod(i * colorStep, 1.0f);
+        tColor rainbowColor = ColorFromHSV(hue, se_playerRandomColorNameRandRainbowSaturation, se_playerRandomColorNameRandRainbowBrightness);
+        float r = rainbowColor.r_, g = rainbowColor.g_, b = rainbowColor.b_;
+
+        auto colorCode = tColoredString::ColorString(r, g, b);
+        rainbowName << colorCode;
+        rainbowName << name[i];
+    }
+
+    return rainbowName;
+}
 
 static REAL gradientR = 15, gradientG = 15, gradientB = 15;
 static tSettingItem< REAL > gradientRConf( "GRADIENT_R", gradientR );
@@ -10550,6 +10517,7 @@ void se_ForcePlayerColorMenu()
     }
 }
 
+static tColoredString lastColoredName;
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
 {
@@ -10620,18 +10588,12 @@ void ePlayerNetID::Update()
             if (bool(p) && in_game)  // update
             {
 
-                if (se_playerColoredName &&
-                    sn_Connections[0].version.Max() == 18) {
-                    se_colorName(local_p);
-                }
-
                 if (se_forceTeamname && sn_GetNetState() == nCLIENT &&
                     (sn_Connections[0].version.Max() == 18 ||
                      sn_Connections[0].version.Max() == 22))
                 {
                     p->Chat(tString("/teamname ") + tString(local_p->teamname));
                 }
-
 
                 if (se_toggleChatFlag) {
                     //toggle This Players ChatFlag?
@@ -10646,21 +10608,21 @@ void ePlayerNetID::Update()
                     }
                 }
 
-                p->favoriteNumberOfPlayersPerTeam=ePlayer::PlayerConfig(i)->favoriteNumberOfPlayersPerTeam;
-                p->nameTeamAfterMe=ePlayer::PlayerConfig(i)->nameTeamAfterMe;
+                p->favoriteNumberOfPlayersPerTeam=local_p->favoriteNumberOfPlayersPerTeam;
+                p->nameTeamAfterMe=local_p->nameTeamAfterMe;
 
                 float bakR = 0, bakG = 0, bakB = 0;
                 if(
-                    ePlayer::PlayerConfig(i)->rgb[0] != p->r ||
-                    ePlayer::PlayerConfig(i)->rgb[1] != p->g ||
-                    ePlayer::PlayerConfig(i)->rgb[2] != p->b )
+                    local_p->rgb[0] != p->r ||
+                    local_p->rgb[1] != p->g ||
+                    local_p->rgb[2] != p->b )
                 {
                     bakR = p->r;
                     bakG = p->g;
                     bakB = p->b;
                 }
 
-                switch(ePlayer::PlayerConfig(i)->colorRandomization)
+                switch(local_p->colorRandomization)
                 {
                     case ColorRandomization::OFF:
                         break;
@@ -10680,9 +10642,9 @@ void ePlayerNetID::Update()
                         break;
                 }
 
-                p->r=ePlayer::PlayerConfig(i)->rgb[0];
-                p->g=ePlayer::PlayerConfig(i)->rgb[1];
-                p->b=ePlayer::PlayerConfig(i)->rgb[2];
+                p->r=local_p->rgb[0];
+                p->g=local_p->rgb[1];
+                p->b=local_p->rgb[2];
 
                 sg_ClampPingCharity();
                 p->pingCharity=::pingCharity;
@@ -10735,17 +10697,41 @@ void ePlayerNetID::Update()
                 p->stealth_ = local_p->stealth;
 
                 // update name
-                tString newName( ePlayer::PlayerConfig(i)->Name() );
+                tString newName( local_p->Name() );
 
-                if(
-                    local_p->sg_gradientName &&
-                    ( sn_GetNetState() == nSTANDALONE ||
-                        ( sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18 )
-                    )
-                )
+                if ((sn_GetNetState() == nSTANDALONE ||
+                     (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)))
                 {
-                    int rgb[3] = { p->r, p->g, p->b };
-                    newName = sg_ColorGradientGeneration( rgb, newName );
+                    switch (local_p->colorNameRandomization)
+                    {
+                    case ColorNameRandomization::OFF_NAME:
+                        break;
+                    case ColorNameRandomization::GRADIENT_NAME: {
+                        int rgb[3] = {p->r, p->g, p->b};
+                        newName = sg_ColorGradientGeneration(rgb, newName);
+                        lastColoredName = newName;
+                        break;
+                    }
+                    case ColorNameRandomization::RAINBOW_NAME:{
+                        newName = sg_RainbowNameGeneration(newName);
+                        lastColoredName = newName;
+                        break;
+                    }
+                    case ColorNameRandomization::SHIFT_NAME:{
+                        if (newName != p->GetName() || lastColoredName.empty()) {
+                            int rgb[3] = {p->r, p->g, p->b};
+                            lastColoredName = se_playerRandomColorNameStartMode == 1 ?
+                                                sg_RainbowNameGeneration(newName) :
+                                                sg_ColorGradientGeneration(rgb, newName);
+                        }
+
+                        newName = sg_ShiftColors(lastColoredName,se_playerRandomColorNameShiftAmount);
+                        lastColoredName = newName;
+                        break;
+                    }
+                    default:
+                        break;
+                    }
                 }
 
                 if ( ::sn_GetNetState() != nCLIENT || newName != p->nameFromClient_ )
@@ -10755,8 +10741,9 @@ void ePlayerNetID::Update()
 
                 p->SetName( newName );
 
-                if (se_forceSync)
+                if (se_forceSync) {
                     p->RequestSync();
+                }
             }
         }
 

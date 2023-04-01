@@ -1553,9 +1553,6 @@ void eCamera::SpectatePlayer(ePlayerNetID &owner, const tString &s_orig)
         return;
     }
 
-    // ePlayer *test = se_GetEPlayer(&owner);
-    // con << "TEST EXIST ? " << bool(test) << "\n";
-
     ePlayer *localPlayer = ePlayer::NetToLocalPlayer(&owner);
     if (!localPlayer || !localPlayer->cam)
     {
@@ -1565,10 +1562,9 @@ void eCamera::SpectatePlayer(ePlayerNetID &owner, const tString &s_orig)
     // Extract the target player name from the input string
     int pos = 0;
     tString targetPlayerName = s_orig.ExtractNonBlankSubString(pos, 1);
+
     if (!targetPlayerName.empty())
-    {
         targetPlayerName = ePlayerNetID::FilterName(targetPlayerName);
-    }
 
     // Find the player by name, if specified
     ePlayerNetID *targetPlayer = nullptr;
@@ -1582,11 +1578,6 @@ void eCamera::SpectatePlayer(ePlayerNetID &owner, const tString &s_orig)
             con << "Player not found or already being spectated.\n";
             return;
         }
-        else if (!targetPlayer->Object()->Alive())
-        {
-            con << "Target player is not alive.\n";
-            return;
-        }
     }
     else
     {
@@ -1596,15 +1587,12 @@ void eCamera::SpectatePlayer(ePlayerNetID &owner, const tString &s_orig)
         for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
         {
             ePlayerNetID *player = se_PlayerNetIDs[i];
+            
             if (!player || !player->Object() || !player->Object()->Alive())
-            {
                 continue;
-            }
 
             if (player->Object()->GOID() != currentTarget->GOID())
-            {
                 eligiblePlayers.push_back(player);
-            }
         }
 
         if (eligiblePlayers.empty())

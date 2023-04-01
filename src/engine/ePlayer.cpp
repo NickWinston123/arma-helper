@@ -1990,7 +1990,7 @@ void handle_chat_client(nMessage &m)
         m.Read(id);
         tColoredString say;
         m >> say;
-
+        //con.nMessageToString(m);
         tJUST_CONTROLLED_PTR< ePlayerNetID > p=dynamic_cast<ePlayerNetID *>(nNetObject::ObjectDangerous(id));
 
         se_DisplayChatLocallyClient( p, say );
@@ -2078,7 +2078,6 @@ static nMessage* se_ServerControlledChatMessageConsole( ePlayerNetID const * pla
 
     m->Write( player->ID() );
     *m << toConsole;
-
     return m;
 }
 
@@ -4898,7 +4897,7 @@ static tString se_rebuildCommand("/rebuild");
 static tConfItem<tString> se_rebuildCommandConf("LOCAL_CHAT_COMMAND_REBUILD", se_rebuildCommand);
 
 static tString se_watchCommand("/watch");
-static tConfItem<tString> se_watchCommandConf("LOCAL_CHAT_COMMAND_SPEC", se_watchCommand);
+static tConfItem<tString> se_watchCommandConf("LOCAL_CHAT_COMMAND_WATCH", se_watchCommand);
 
 static tString se_activeStatusCommand("/afk");
 static tConfItem<tString> se_activeStatusCommandConf("LOCAL_CHAT_COMMAND_ACTIVE_STATUS", se_activeStatusCommand);
@@ -5026,7 +5025,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
             tString s_modified(s_orig);
             s_modified.RemoveSubStr(0, se_reverseCommand.Len());
             Chat(s_modified.Reverse());
-        } 
+        }
         else if (command == se_spectateCommand)
         {
             ePlayer::NetToLocalPlayer(this)->spectate = true;
@@ -5072,21 +5071,6 @@ void ePlayerNetID::Chat(const tString& s_orig)
     }
 }
 
-//return the playernetid for a given name
-/*
-static ePlayerNetID* identifyPlayer(tString inname)
-{
-    for(int i=0; i<se_PlayerNetIDs.Len(); i++)
-    {
-        ePlayerNetID *p = se_PlayerNetIDs[i];
-
-        if( inname == p->GetUserName() )
-            return p;
-    }
-    return NULL;
-}
-*/
-
 // identify a local human player
 ePlayerNetID *se_GetLocalPlayer()
 {
@@ -5099,8 +5083,6 @@ ePlayerNetID *se_GetLocalPlayer()
     }
     return NULL;
 }
-
-
 
 static tString sg_AdminName("Admin");
 bool restrictAdminName(tString const &newValue)
@@ -9044,7 +9026,7 @@ static void se_RandomizeColor(ePlayer * l)
 }
 
 //Attempts to pick a color no one else currently has.
-static void se_UniqueColor( ePlayer * l, ePlayerNetID * p )
+static void se_UniqueColor( ePlayer * local_p )
 {
     int currentRGB[3];
     int newRGB[3];
@@ -9054,7 +9036,7 @@ static void se_UniqueColor( ePlayer * l, ePlayerNetID * p )
 
     for( int i = 2; i >= 0; --i )
     {
-        currentRGB[i] = l->rgb[i];
+        currentRGB[i] = local_p->rgb[i];
         newRGB[i] = randomizer.Get(15);
     }
 
@@ -9065,7 +9047,7 @@ static void se_UniqueColor( ePlayer * l, ePlayerNetID * p )
     for ( int i = se_PlayerNetIDs.Len()-1; i >= 0; --i )
     {
         ePlayerNetID * other = se_PlayerNetIDs(i);
-        if ( other != p )
+        if ( other != local_p->netPlayer )
         {
             int color[3] = { other->r, other->g, other->b };
             int currentDiff = se_ColorDistance( currentRGB, color );
@@ -9086,7 +9068,7 @@ static void se_UniqueColor( ePlayer * l, ePlayerNetID * p )
     {
         for( int i = 2; i >= 0; --i )
         {
-            l->rgb[i] = newRGB[i];
+            local_p->rgb[i] = newRGB[i];
         }
     }
 }
@@ -9664,7 +9646,7 @@ tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID * p)
 static tString se_colorVarFile("colors.txt");
 static tConfItem<tString> se_colorVarFileConf("RGB_COLORS_FILE", se_colorVarFile);
 
-static void se_loadSavedColor(int lineNumber)
+static void se_loadSavedColor(ePlayer * local_p, int lineNumber)
 {
     tArray<tString> colors;
 
@@ -9714,9 +9696,9 @@ static void se_loadSavedColor(int lineNumber)
                 << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15) << Name << "0xRESETT ("
                 << Color1 << ", " << Color2 << ", " << Color3 << ")\n";
         }
-        ePlayer::PlayerConfig(0)->rgb[0] = Color1;
-        ePlayer::PlayerConfig(0)->rgb[1] = Color2;
-        ePlayer::PlayerConfig(0)->rgb[2] = Color3;
+        local_p->rgb[0] = Color1;
+        local_p->rgb[1] = Color2;
+        local_p->rgb[2] = Color3;
     }
 }
 
@@ -9857,69 +9839,84 @@ void ePlayerNetID::activeStatus(tString s_orig)
 //        /rgb clear would clear your current list of saved colors.
 void ePlayerNetID::currentPlayerRGB( tString s_orig )
 {
+    ePlayer *local_p = ePlayer::NetToLocalPlayer(this);
+    if (!local_p)
+        return;
+
+    std::vector<std::pair<ePlayer*, ePlayerNetID*>> activePlayers;
+
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+            bool in_game = ePlayer::PlayerIsInGame(i);
+            ePlayer* me = ePlayer::PlayerConfig(i);
+            if (bool(me->netPlayer.get()))
+                activePlayers.emplace_back(me, me->netPlayer.get());
+    }
+
     if (s_orig.StrPos(" ") == -1)
     {
         con << tOutput("$player_colors_current_text");
-        for (int i = 0; i < MAX_PLAYERS; ++i)
-        {
-            bool in_game = ePlayer::PlayerIsInGame(i);
-            ePlayer* me = ePlayer::PlayerConfig(i);
-            tASSERT(me);
-            tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
-            if (bool(p) && in_game)
-            {
-                tColoredString listColors;
-                listColors << p->GetColoredName() << "0xRESETT ("
-                           << ePlayer::PlayerConfig(i)->rgb[0] << ", "
-                           << ePlayer::PlayerConfig(i)->rgb[1] << ", "
-                           << ePlayer::PlayerConfig(i)->rgb[2] << ")\n";
-                con << listColors;
-            }
+        for (const auto &playerPair : activePlayers) {
+            tColoredString listColors;
+            listColors << playerPair.second->GetColoredName() << "0xRESETT ("
+                    << playerPair.first->rgb[0] << ", "
+                    << playerPair.first->rgb[1] << ", "
+                    << playerPair.first->rgb[2] << ")\n";
+            con << listColors;
         }
     }
     else
     {
         tArray<tString> passedString = s_orig.Split(" ");
         bool correctParameters = false;
-        bool help = false;
         bool hideError = false;
-        bool load = false;
-        bool save = false;
-        bool random = false;
-        bool list = false;
-        bool clear = false;
-        bool unique = false;
-        int ourID = 0;
+        int targetID = 0;
 
-        if (passedString[1] == "random")
+        if (passedString[1] == "help")
         {
-            correctParameters = true;
-            random = true;
-
-            // bool in_game = ePlayer::PlayerIsInGame(this);
-            // ePlayer *me = ePlayer::NetToLocalPlayer(this);
-            // tASSERT(me);
-            // tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
-            bool in_game = ePlayer::PlayerIsInGame(0);
-            ePlayer *me = ePlayer::PlayerConfig(0);
-            tASSERT(me);
-            tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
-            if (bool(p) && in_game)
-            {
-                se_RandomizeColor(me);
-            }
-
-        }
-        else if (passedString[1] == "help")
-        {
-            help = true;
             hideError = true;
             con << tOutput("$player_colors_command_help", se_colorVarFile);
+        }
+        else if (passedString[1] == "unique")
+        {
+            if (passedString.Len() == 2)
+            {
+                // Apply random color to the player who sent the command
+                se_UniqueColor(local_p);
+            }
+            else if (passedString.Len() == 3)
+            {
+                int targetID = atoi(passedString[2]);
+                if (targetID > 0 && targetID <= MAX_PLAYERS)
+                {
+                    // Apply random color to the specified player
+                    se_UniqueColor(ePlayer::PlayerConfig(targetID - 1));
+                }
+            }
+            correctParameters = true;
+        }
+        else if (passedString[1] == "random")
+        {
+            if (passedString.Len() == 2)
+            {
+                // Apply random color to the player who sent the command
+                se_RandomizeColor(local_p);
+            }
+            else if (passedString.Len() == 3)
+            {
+                int targetID = atoi(passedString[2]);
+                if (targetID > 0 && targetID <= MAX_PLAYERS)
+                {
+                    // Apply random color to the specified player
+                    se_RandomizeColor(ePlayer::PlayerConfig(targetID - 1));
+                }
+            }
+
+            correctParameters = true;
         }
         else if (passedString[1] == "save")
         {
             hideError = true;
-            save = true;
             bool foundPlayer = false;
 
             if (passedString.Len() == 2)
@@ -9930,18 +9927,9 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
                 if (tDirectories::Var().Open(o, se_colorVarFile, std::ios::app))
                 {
                     con << tOutput("$player_colors_saved");
-                    for (int i = 0; i < MAX_PLAYERS; ++i)
-                    {
-                        bool in_game = ePlayer::PlayerIsInGame(i);
-                        ePlayer* me = ePlayer::PlayerConfig(i);
-                        tASSERT(me);
-                        tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
-
-                        if (bool(p) && in_game)
-                        {
-                            o << ePlayerNetID::gatherPlayerColor(p,0);
-                            con << ePlayerNetID::gatherPlayerColor(p);;
-                        }
+                    for (auto &playerPair : activePlayers) {
+                        o << ePlayerNetID::gatherPlayerColor(playerPair.second,false);
+                        con << ePlayerNetID::gatherPlayerColor(playerPair.second);
                     }
                 }
                 else
@@ -9950,7 +9938,7 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
                 }
                 o.close();
             }
-            else if (passedString.Len() >= 3)
+            else if (passedString.Len() >= 3) // Save specific persons color
             {
                 for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
                 {
@@ -9962,7 +9950,7 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
                         if (tDirectories::Var().Open(o, se_colorVarFile, std::ios::app))
                         {
                             con << tOutput("$player_colors_saved");
-                            o << ePlayerNetID::gatherPlayerColor(p,0);
+                            o << ePlayerNetID::gatherPlayerColor(p,false);
                             con << ePlayerNetID::gatherPlayerColor(p);;
                         }
                         else
@@ -9978,40 +9966,37 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
                 }
             }
         }
-
         else if (passedString[1] == "load")
         {
-            load = true;
             int savedColorsCount = se_savedColorsCount();
 
-            if (passedString.Len() == 2)
+            if (passedString.Len() == 2) // No Line #
             {
                 con << tOutput("$player_colors_changed_usage_error");
                 return;
             }
-            else if (passedString.Len() == 3)
+            else if (passedString.Len() == 3) // Line # specified
             {
                 correctParameters = true;
                 int lineNumber = (atoi(passedString[2]) - 1);
                 if ((lineNumber >= 0) && lineNumber <= savedColorsCount - 1)
                 {
-                    se_loadSavedColor(lineNumber);
+                    se_loadSavedColor(local_p,lineNumber);
                 }
                 else
                 {
                     correctParameters = false;
                     hideError = true;
-                    con << tOutput("$players_color_line_not_found", se_colorVarFile,
-                        savedColorsCount, lineNumber + 1);
+                    con << tOutput("$players_color_line_not_found", se_colorVarFile, savedColorsCount, lineNumber + 1);
                 }
             }
         }
         else if (passedString[1] == "list")
         {
             hideError = true;
-            list = true;
             int savedColorsCount = se_savedColorsCount();
             con << tOutput("$players_color_list", savedColorsCount, se_colorVarFile);
+
             if (savedColorsCount > 0)
             {
                 se_SavedColors(savedColorsCount);
@@ -10024,7 +10009,6 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
         else if (passedString[1] == "clear")
         {
             hideError = true;
-            clear = true;
             std::ofstream o;
             if (tDirectories::Var().Open(o, se_colorVarFile))
             {
@@ -10033,32 +10017,12 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
             o.close();
             con << tOutput("$player_colors_cleared", se_colorVarFile);
         }
-        else if (passedString[1] == "unique" && !(help || random || load || save || list || clear))
-        {
-            correctParameters = true;
-            unique = true;
-
-            // bool in_game = ePlayer::PlayerIsInGame(this);
-            // ePlayer *me = ePlayer::NetToLocalPlayer(this);
-            // tASSERT(me);
-            // tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
-            bool in_game = ePlayer::PlayerIsInGame(0);
-            ePlayer *me = ePlayer::PlayerConfig(0);
-            tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
-            if (bool(p) && in_game)
-            {
-                se_UniqueColor(me, p);
-            }
-
-        }
-
         // Not really checking if the strings passed parameters are numbers,
         // but if someone did /rgb asd asd asd it would just make it 0 0 0.
-        else if (passedString.Len() >= 4
-            && !(help || random || unique || load || save || list || clear))
+        else if (passedString.Len() >= 4) // Apply color to players
         {
-            // Guess we must be ID 0?
-            if (passedString.Len() == 4)
+
+            if (passedString.Len() == 4 || (passedString.Len() >= 4 && passedString[4] == "")) // Apply color to player who sent command
             {
                 correctParameters = true;
 
@@ -10066,28 +10030,25 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
                 int g = atoi(passedString[2]);
                 int b = atoi(passedString[3]);
 
-                ePlayer::PlayerConfig(0)->rgb[0] = r;
-                ePlayer::PlayerConfig(0)->rgb[1] = g;
-                ePlayer::PlayerConfig(0)->rgb[2] = b;
+                local_p->rgb[0] = r;
+                local_p->rgb[1] = g;
+                local_p->rgb[2] = b;
             }
-            else if (passedString.Len() == 5
-                && !(help || random || unique || load || save || list || clear))
+            else if (passedString.Len() == 5) // Apply color to specified who sent command
             {
-                ourID = atoi(passedString[1]);
-                if ((ourID <= MAX_PLAYERS) && (ourID > 0))
+                targetID = atoi(passedString[1]);
+                if ((targetID <= MAX_PLAYERS) && (targetID > 0))
                 {
                     correctParameters = true;
-
-                    bool in_game = ePlayer::PlayerIsInGame(ourID - 1);
-                    ePlayer* me = ePlayer::PlayerConfig(ourID - 1);
+                    ePlayer* player = ePlayer::PlayerConfig(targetID - 1);
 
                     int r = atoi(passedString[2]);
                     int g = atoi(passedString[3]);
                     int b = atoi(passedString[4]);
 
-                    ePlayer::PlayerConfig(ourID - 1)->rgb[0] = r;
-                    ePlayer::PlayerConfig(ourID - 1)->rgb[1] = g;
-                    ePlayer::PlayerConfig(ourID - 1)->rgb[2] = b;
+                    player->rgb[0] = r;
+                    player->rgb[1] = g;
+                    player->rgb[2] = b;
                 }
             }
         }
@@ -10099,25 +10060,25 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
 
             for (int i = 0; i < MAX_PLAYERS; ++i)
             {
-                bool in_game = ePlayer::PlayerIsInGame(i);
-                ePlayer* me = ePlayer::PlayerConfig(i);
-                tASSERT(me);
-                tCONTROLLED_PTR(ePlayerNetID)& p = me->netPlayer;
-                if (bool(p) && in_game)
+                ePlayer *player = ePlayer::PlayerConfig(i);
+                tCONTROLLED_PTR(ePlayerNetID) &p = player->netPlayer;
+                if (bool(p))
                 {
                     ePlayerNetID::Update();
                     tColoredString listColors;
                     listColors << i + 1 << ") " << p->GetColoredName() << "0xRESETT ("
-                               << ePlayer::PlayerConfig(i)->rgb[0] << ", "
-                               << ePlayer::PlayerConfig(i)->rgb[1] << ", "
-                               << ePlayer::PlayerConfig(i)->rgb[2] << ")\n";
+                               << player->rgb[0] << ", "
+                               << player->rgb[1] << ", "
+                               << player->rgb[2] << ")\n";
                     con << listColors;
                 }
-                if (!(bool(p) && in_game) && ourID - 1 == i)
+                else if (targetID - 1 == i)
                 {
-                    con << tOutput("$player_colors_changed_text", ourID,
-                        ePlayer::PlayerConfig(i)->rgb[0], ePlayer::PlayerConfig(i)->rgb[1],
-                        ePlayer::PlayerConfig(i)->rgb[2]);
+                    con << tOutput("$player_colors_changed_text",
+                                   player->Name(),
+                                   player->rgb[0],
+                                   player->rgb[1],
+                                   player->rgb[2]);
                 }
             }
         }
@@ -10654,7 +10615,7 @@ void ePlayerNetID::Update()
                         se_RandomizeColor(local_p);
                         break;
                     case ColorRandomization::UNIQUE:
-                        se_UniqueColor(local_p,p);
+                        se_UniqueColor(local_p);
                         break;
                     case ColorRandomization::RAINBOW:
                         se_rainbowColor(local_p);
@@ -10750,15 +10711,15 @@ void ePlayerNetID::Update()
                                                 sg_ColorGradientGeneration(rgb, newName);
                         }
 
-                        if (currentShift == 0 || 
+                        if (currentShift == 0 ||
                             (!(se_playerRandomColorNameShiftBounceInterval > 0) && currentShift != se_playerRandomColorNameShiftAmount) )
                             currentShift = se_playerRandomColorNameShiftAmount;
-                            
+
 
                         if (se_playerRandomColorNameShiftBounceInterval > 0 &&
-                            shiftIter % se_playerRandomColorNameShiftBounceInterval == 0) 
+                            shiftIter % se_playerRandomColorNameShiftBounceInterval == 0)
                             currentShift = currentShift * -1;
-                            
+
                         newName = sg_ShiftColors(lastColoredName,currentShift);
                         shiftIter++;
                         lastColoredName = newName;

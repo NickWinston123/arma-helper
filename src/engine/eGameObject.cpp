@@ -998,10 +998,10 @@ void eGameObject::DeleteAllSafe(eGrid *grid)
     for (i = grid->gameObjects.Len() - 1; i >= 0; i--)
     {
         eGameObject *o = grid->gameObjects(i);
-        gCycle *cycle = dynamic_cast<gCycle *>(o);
-        if (cycle)
+        //gCycle *cycle = dynamic_cast<gCycle *>(o);
+        if (o->lastTime < se_GameTime()-10)//if (cycle)
         {
-             if (!cycle->Alive())
+          //   if (!cycle->Alive())
             {
                 o->RemoveFromGame();
                 o->RemoveFromListsAll();

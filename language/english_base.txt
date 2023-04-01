@@ -482,7 +482,7 @@ player_info_text Player Information: \n
 player_not_found_text No players found for "\1" \n
 
 player_colors_current_text Current RGB: \n
-player_colors_changed_text Player \1's colors changed R: \2 B: \3 G: \4 \n
+player_colors_changed_text  \1's colors changed R: \2 B: \3 G: \4 \n
 player_colors_changed_usage_error Incorrect usage. See /rgb help for info.
 player_colors_command_help Allow us to change our current RGB easily.\nUsage: \n1) 0x77ff77/rgb 0xRESETTwith no parameters displays current rgb.\n2) 0x77ff77/rgb 15 3 3 0xRESETTwill set player 1's RGB to R15 G3 B3.\n3) 0x77ff77/rgb unique 0xRESETTgives all players unique colors.\n4) 0x77ff77/rgb random 0xRESETTgives all players random colors.\n5) 0x77ff77/rgb 2 15 3 3 0xRESETTwill change player 2's colors to 15 3 3.\n6) 0x77ff77/rgb save 0xRESETTwill save your current colors to var/\1.\n7) 0x77ff77/rgb save player 0xRESETTwill save the players current colors to var/\1.\n8) 0x77ff77/rgb list 0xRESETTwill list your current saved colors.\n9) 0x77ff77/rgb load 1 0xRESETTwill load from line #1 in var/\1. (As shown in /rgb list)\n10) 0x77ff77/rgb clear 0xRESETTwill clear your current list of saved colors.\n(Page up if you can not see the entire list)\n
 player_colors_cleared var/\1 was cleared. \n

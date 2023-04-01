@@ -10727,7 +10727,7 @@ void ePlayerNetID::Update()
                 tString newName( local_p->Name() ); // LENGTH: ACTUAL IN GAME LENGTH + 1
 
                 if ((sn_GetNetState() == nSTANDALONE ||
-                     (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)))
+                     (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)) && !newName.empty())
                 {
                     switch (local_p->colorNameRandomization)
                     {

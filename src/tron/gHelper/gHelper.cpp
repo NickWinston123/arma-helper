@@ -302,11 +302,11 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     }
 }
 
-
+static REAL nextUpdateTime = tSysTimeFloat();
 void gHelper::autoBrake()
 {
     // Check if the cycle is still alive
-    if (!aliveCheck())
+    if (!aliveCheck() || tSysTimeFloat() <= nextUpdateTime )
         return;
 
     REAL min = sg_helperAutoBrakeMin;
@@ -314,16 +314,14 @@ void gHelper::autoBrake()
 
     if (sg_helperAutoBrakeRandomness > 0)
     {
+        if (sg_helperAutoBrakeRandomness > 2)
+            sg_helperAutoBrakeRandomness = 2;
+
         tRandomizer &randomizer = tReproducibleRandomizer::GetInstance();
-        REAL random = randomizer.GetFloat(0.0, 1.0); // Get a random REAL between 0 and 1
+        REAL random = randomizer.GetFloat(0.0, sg_helperAutoBrakeRandomness); // Get a random REAL between 0 and 1
 
-        //Aproach 1
-        // min += (random*sg_helperAutoBrakeRandomness);
-        // max += (random*sg_helperAutoBrakeRandomness);
+        nextUpdateTime = tSysTimeFloat() + random;
 
-        // Approach 2
-        if (random < sg_helperAutoBrakeRandomness)
-            return;
     }
     // Get the current used braking percentage of the cycle ( always out of 1 )
     REAL brakeUsagePercent = owner_.GetBrakingReservoir();

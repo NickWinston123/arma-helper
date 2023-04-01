@@ -10180,6 +10180,9 @@ static tConfItem<REAL> se_playerRandomColorNameShiftAmountConf("PLAYER_COLOR_NAM
 static int se_playerRandomColorNameShiftBounceInterval = 0; // 0 = off
 static tConfItem<int> se_playerRandomColorNameShiftBounceIntervalConf("PLAYER_COLOR_NAME_RANDOMIZATION_BOUNCE_INTERVAL", se_playerRandomColorNameShiftBounceInterval);
 
+static bool se_playerRandomColorNameShiftBounceNameLength = false;
+static tConfItem<bool> se_playerRandomColorNameShiftBounceNameLengthConf("PLAYER_COLOR_NAME_RANDOMIZATION_BOUNCE_NAME_LENGTH", se_playerRandomColorNameShiftBounceNameLength);
+
 static int se_playerRandomColorNameStartMode = 1;
 static tConfItem<int> se_playerRandomColorNameStartModeConf("PLAYER_COLOR_NAME_RANDOMIZATION_SHIFT_START_MODE", se_playerRandomColorNameStartMode);
 
@@ -10511,6 +10514,32 @@ void se_ForcePlayerColorMenu()
 
 static tColoredString lastColoredName;
 static int currentShift = 0, shiftIter = 0;
+// Have to do this to account for changes 
+static REAL prevRainbowNumColors = -1;
+static REAL prevRainbowBrightness = -1;
+static REAL prevRainbowSaturation = -1;
+static int prevRgb[3] = {-1, -1, -1};
+
+bool shouldUpdateLastName(int rgb[3]) {
+    bool hasChanged = false;
+    
+    if (prevRainbowNumColors != se_playerRandomColorNameRandRainbowNumColors ||
+        prevRainbowBrightness != se_playerRandomColorNameRandRainbowBrightness ||
+        prevRainbowSaturation != se_playerRandomColorNameRandRainbowSaturation || (se_playerRandomColorNameStartMode != 1 && (
+        prevRgb[0] != rgb[0] || prevRgb[1] != rgb[1] || prevRgb[2] != rgb[2]))) {
+        hasChanged = true;
+
+        prevRainbowNumColors = se_playerRandomColorNameRandRainbowNumColors;
+        prevRainbowBrightness = se_playerRandomColorNameRandRainbowBrightness;
+        prevRainbowSaturation = se_playerRandomColorNameRandRainbowSaturation;
+        prevRgb[0] = rgb[0];
+        prevRgb[1] = rgb[1];
+        prevRgb[2] = rgb[2];
+    }
+
+    return hasChanged;
+}
+
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
 {
@@ -10695,7 +10724,7 @@ void ePlayerNetID::Update()
                 p->stealth_ = local_p->stealth;
 
                 // update name
-                tString newName( local_p->Name() );
+                tString newName( local_p->Name() ); // LENGTH: ACTUAL IN GAME LENGTH + 1
 
                 if ((sn_GetNetState() == nSTANDALONE ||
                      (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)))
@@ -10715,29 +10744,36 @@ void ePlayerNetID::Update()
                         lastColoredName = newName;
                         break;
                     }
-                    case ColorNameRandomization::SHIFT_NAME:{
-                        if (newName != p->GetName() || lastColoredName.empty()) {
-                            int rgb[3] = {p->r, p->g, p->b};
+                    case ColorNameRandomization::SHIFT_NAME: {
+                        int rgb[3] = {p->r, p->g, p->b};
 
-                            lastColoredName = se_playerRandomColorNameStartMode == 1 ?
+                        // Name changed or lastColoredName not set or gradient mode and color change
+                        bool shouldUpdateName = newName != p->GetName() || lastColoredName.empty() || shouldUpdateLastName(rgb);
+                        if (shouldUpdateName) {
+                            lastColoredName = (se_playerRandomColorNameStartMode == 1) ?
                                                 sg_RainbowNameGeneration(newName) :
                                                 sg_ColorGradientGeneration(rgb, newName);
+                            shiftIter = 0;
                         }
 
-                        if (currentShift == 0 ||
-                            (!(se_playerRandomColorNameShiftBounceInterval > 0) && currentShift != se_playerRandomColorNameShiftAmount) )
+
+                        bool updateCurrentShift = (fabs(currentShift) != se_playerRandomColorNameShiftAmount);
+
+                        if (updateCurrentShift) 
                             currentShift = se_playerRandomColorNameShiftAmount;
 
+                        bool shouldInvertCurrentShift = (se_playerRandomColorNameShiftBounceNameLength && (shiftIter % (newName.Len()-1) == 0)) || 
+                                                        (!se_playerRandomColorNameShiftBounceNameLength && (se_playerRandomColorNameShiftBounceInterval > 0) && (shiftIter % se_playerRandomColorNameShiftBounceInterval == 0));
 
-                        if (se_playerRandomColorNameShiftBounceInterval > 0 &&
-                            shiftIter % se_playerRandomColorNameShiftBounceInterval == 0)
-                            currentShift = currentShift * -1;
+                        if (shouldInvertCurrentShift) 
+                            currentShift *= -1;
 
-                        newName = sg_ShiftColors(lastColoredName,currentShift);
+                        newName = sg_ShiftColors(lastColoredName, currentShift);
                         shiftIter++;
                         lastColoredName = newName;
                         break;
                     }
+
                     default:
                         break;
                     }

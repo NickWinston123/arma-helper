@@ -77,6 +77,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 int se_lastSaidMaxEntries = 8;
 
 
+static bool se_forceJoinTeam = false;
+static tConfItem<bool> se_forceJoinTeamConf("FORCE_JOIN_TEAM", se_forceJoinTeam);
+
 static bool se_forceSync = false;
 static tConfItem<bool> se_forceSyncConf("FORCE_SYNC", se_forceSync);
 
@@ -4908,6 +4911,9 @@ static tConfItem<tString> se_reverseCommandConf("LOCAL_CHAT_COMMAND_REVERSE", se
 static tString se_spectateCommand("/spec");
 static tConfItem<tString> se_spectateCommandConf("LOCAL_CHAT_COMMAND_SPECTATE", se_spectateCommand);
 
+static tString se_joinCommand("/join");
+static tConfItem<tString> se_joinCommandConf("LOCAL_CHAT_COMMAND_JOIN", se_joinCommand);
+
 #endif //if not dedicated
 
 void ePlayerNetID::Chat(const tString& s_orig)
@@ -4929,7 +4935,8 @@ void ePlayerNetID::Chat(const tString& s_orig)
         se_watchCommand,
         se_activeStatusCommand,
         se_reverseCommand,
-        se_spectateCommand
+        se_spectateCommand,
+        se_joinCommand
     };
 
     std::string chatString(s_orig);
@@ -5030,6 +5037,14 @@ void ePlayerNetID::Chat(const tString& s_orig)
         {
             ePlayer::NetToLocalPlayer(this)->spectate = true;
             CompleteRebuild();
+        }
+        else if (command == se_joinCommand)
+        {
+            if (!bool( currentTeam )) {
+                ePlayer::NetToLocalPlayer(this)->spectate = false;
+                CreateNewTeamWish();
+                Update();
+            }
         }
     }
     else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )
@@ -9533,13 +9548,15 @@ tColoredString ePlayerNetID::gatherPlayerColor(ePlayerNetID* p, bool showReset)
 {
     tColoredString listColors;
     if (showReset){
-        return listColors << p->GetColoredName() << "0xRESETT (" << p->r << ", " << p->g << ", "
-                          << p->b << ")\n";
+        listColors << p->GetColoredName() << "0xRESETT (";
     } else {
         tString coloredName = p->GetColoredName();
-        return listColors << coloredName.StripWhitespace() << " (" << p->r << ", " << p->g << ", " << p->b
-                          << ")\n";
+        listColors << coloredName.StripWhitespace() << " (";
     }
+
+    return listColors << p->r << ", "
+                      << p->g << ", "
+                      << p->b << ")\n";
 }
 
 /*
@@ -9585,9 +9602,7 @@ void ePlayerNetID::listPlayerInfo(tString s_orig)
                     if (p->GetName().Filter().Contains(word.Filter()))
                     {
                         playerFound = true;
-
                         con << gatherPlayerInfo(p);
-
                     }
                 }
             }
@@ -9602,105 +9617,93 @@ void ePlayerNetID::listPlayerInfo(tString s_orig)
     }
 }
 
-
-
-tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID * p)
-{
+tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p) {
     tColoredString listinfo;
     listinfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n";
 
-    ///Status. Includes player type, spectating or playing, and if the player is chatting.
-    listinfo << "Status: ";
-    (p->IsHuman()) ? listinfo << "Human" : listinfo << "Bot";
+    // Status. Includes player type, spectating or playing, and if the player is chatting.
+    listinfo << "Status: " << (p->IsHuman() ? "Human" : "Bot")
+             << ", " << (p->CurrentTeam() ? "Playing" : "Spectating")
+             << (p->IsChatting() ? ", Chatting" : "");
 
-    //Oddly IsSpectating returned some confusing results.
-    (!p->CurrentTeam()) ? listinfo << ", Spectating" : listinfo << ", Playing";
+    // Only grab this information if the player is an active object.
+    if (p->Object() && p->currentTeam) {
+        // If the player is an active object, are they alive?
+        listinfo << (p->Object()->Alive() ? ", Alive" : ", Dead") << '\n';
 
-    //Are we chatting / out of focus? Calculating the time worked for our local player but didnt work too well for players who joined before us.
-    (p->IsChatting()) ? listinfo << ", Chatting" : listinfo << ""; // ("<< fabs(p->TimeChatting()) << ") seconds\n" : listinfo << "\n";
-
-
-    //Only grab this information if the player is an active object.
-    if (p->Object() && p->currentTeam)
-    {
-        //If the player is an active object, are they alive? Pretty sure we know this already but no harm in including it.
-        (p->Object()->Alive()) ? listinfo << ", Alive\n" : listinfo << ", Dead\n";
-
-        //Only grab this information if the player is an alive object.
-        if (p->Object()->Alive())
-        {
+        // Only grab this information if the player is an alive object.
+        if (p->Object()->Alive()) {
             gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
 
-            listinfo <<  "Position: x: " << pCycle->Position().x << ", y: " << pCycle->Position().y  << "\n";
-
-            //Had trouble converting the direction to an angle, will have to visit this later
-            listinfo << "Map Direction: " << "x: " << pCycle->Direction().x << ", y: " << pCycle->Direction().y << "\n";
-            listinfo << "Speed: " << pCycle->verletSpeed_  << "\n";
-            listinfo << "Rubber: " << pCycle->GetRubber() << "/" << sg_rubberCycle << "\n";
+            listinfo << "Position: x: " << pCycle->Position().x
+                     << ", y: " << pCycle->Position().y << '\n'
+                     << "Map Direction: x: " << pCycle->Direction().x
+                     << ", y: " << pCycle->Direction().y << '\n'
+                     << "Speed: " << pCycle->verletSpeed_ << '\n'
+                     << "Rubber: " << pCycle->GetRubber() << "/"
+                     << sg_rubberCycle << '\n';
         }
     }
 
-    return listinfo << "\n";
+    return listinfo << '\n';
 }
+
 
 static tString se_colorVarFile("colors.txt");
 static tConfItem<tString> se_colorVarFileConf("RGB_COLORS_FILE", se_colorVarFile);
 
-static void se_loadSavedColor(ePlayer * local_p, int lineNumber)
-{
+static void se_loadSavedColor(ePlayer *local_p, int lineNumber) {
     tArray<tString> colors;
 
     std::ifstream i;
-    if (tDirectories::Var().Open(i, se_colorVarFile))
-    {
-        while (!i.eof())
-        {
-            std::string sayLine;
-            std::getline(i, sayLine);
+    if (tDirectories::Var().Open(i, se_colorVarFile)) {
+        std::string sayLine;
+        while (std::getline(i, sayLine)) {
             std::istringstream s(sayLine);
 
             tString params;
             params.ReadLine(s);
-            int pos = 0;
 
-            if (params.Filter() != "")
+            if (!params.Filter().empty()) {
                 colors.Insert(params);
+            }
         }
     }
     i.close();
 
-    tString currentLine = colors[lineNumber];
-    if (currentLine != "")
-    {
+    if (lineNumber < colors.Len()) {
+        tString currentLine = colors[lineNumber];
+
         int pos = 0;
         tString Name = currentLine.ExtractNonBlankSubString(pos);
         tString ColorOne = currentLine.ExtractNonBlankSubString(pos);
         ColorOne.RemoveSubStr(0, 1);
+
         int Color1 = atoi(ColorOne);
         int Color2 = atoi(currentLine.ExtractNonBlankSubString(pos));
         int Color3 = atoi(currentLine.ExtractNonBlankSubString(pos));
+
         REAL c1 = Color1;
         REAL c2 = Color2;
         REAL c3 = Color3;
+
         se_MakeColorValid(c1, c2, c3, 1.0f);
-        if (tColoredString::HasColors(Name))
-        {
-            con << tOutput("$player_colors_loading");
-            con << (lineNumber + 1) << ") " << Name << "0xRESETT (" << Color1 << ", " << Color2
-                << ", " << Color3 << ")\n";
-        }
-        else
-        {
-            con << tOutput("$player_colors_loading");
-            con << (lineNumber + 1) << ") "
-                << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15) << Name << "0xRESETT ("
+
+        con << tOutput("$player_colors_loading");
+        con << (lineNumber + 1) << ") ";
+        if (tColoredString::HasColors(Name)) {
+            con << Name << "0xRESETT (" << Color1 << ", " << Color2 << ", " << Color3 << ")\n";
+        } else {
+            con << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15) << Name << "0xRESETT ("
                 << Color1 << ", " << Color2 << ", " << Color3 << ")\n";
         }
+
         local_p->rgb[0] = Color1;
         local_p->rgb[1] = Color2;
         local_p->rgb[2] = Color3;
     }
 }
+
 
 static int se_savedColorsCount()
 {
@@ -9768,13 +9771,20 @@ static void se_SavedColors(int savedColorsCount)
             se_MakeColorValid(c1, c2, c3, 1.0f);
             if (tColoredString::HasColors(Name))
             {
-                con << (index + 1) << ") " << Name << "0xRESETT (" << Color1 << ", " << Color2
-                    << ", " << Color3 << ")\n";
+                con << (index + 1) << ") "
+                    << Name << "0xRESETT ("
+                    << Color1 << ", "
+                    << Color2 << ", "
+                    << Color3 << ")\n";
             }
             else
             {
-                con << (index + 1) << ") " << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15)
-                    << Name << "0xRESETT (" << Color1 << ", " << Color2 << ", " << Color3 << ")\n";
+                con << (index + 1) << ") "
+                    << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15)
+                    << Name   << "0xRESETT ("
+                    << Color1 << ", "
+                    << Color2 << ", "
+                    << Color3 << ")\n";
             }
         }
     }
@@ -9814,7 +9824,7 @@ void ePlayerNetID::activeStatus(tString s_orig)
     REAL chattingTime = p->ChattingTime();
 
     tColoredString listInfo;
-    listInfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n";
+    listInfo << "\nResults for "  << p->GetColoredName() << "0xRESETT: \n";
     listInfo << "Status: "        << "\n";
     listInfo << "Created: "       << p->createTime_    << "\n";
     listInfo << "Last Activity: " << p->LastActivity() << "\n";
@@ -9859,9 +9869,9 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
         for (const auto &playerPair : activePlayers) {
             tColoredString listColors;
             listColors << playerPair.second->GetColoredName() << "0xRESETT ("
-                    << playerPair.first->rgb[0] << ", "
-                    << playerPair.first->rgb[1] << ", "
-                    << playerPair.first->rgb[2] << ")\n";
+                       << playerPair.first->rgb[0] << ", "
+                       << playerPair.first->rgb[1] << ", "
+                       << playerPair.first->rgb[2] << ")\n";
             con << listColors;
         }
     }
@@ -9928,7 +9938,7 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
                 {
                     con << tOutput("$player_colors_saved");
                     for (auto &playerPair : activePlayers) {
-                        o << ePlayerNetID::gatherPlayerColor(playerPair.second,false);
+                        o   << ePlayerNetID::gatherPlayerColor(playerPair.second,false);
                         con << ePlayerNetID::gatherPlayerColor(playerPair.second);
                     }
                 }
@@ -9950,7 +9960,7 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
                         if (tDirectories::Var().Open(o, se_colorVarFile, std::ios::app))
                         {
                             con << tOutput("$player_colors_saved");
-                            o << ePlayerNetID::gatherPlayerColor(p,false);
+                            o   << ePlayerNetID::gatherPlayerColor(p,false);
                             con << ePlayerNetID::gatherPlayerColor(p);;
                         }
                         else
@@ -10011,9 +10021,7 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
             hideError = true;
             std::ofstream o;
             if (tDirectories::Var().Open(o, se_colorVarFile))
-            {
                 o << "";
-            }
             o.close();
             con << tOutput("$player_colors_cleared", se_colorVarFile);
         }
@@ -10573,6 +10581,11 @@ void ePlayerNetID::Update()
             if (bool(p) && in_game)  // update
             {
 
+                if (se_forceJoinTeam && !bool( p->currentTeam )) {
+                    local_p->spectate = false;
+                    p->CreateNewTeamWish();
+                }
+                
                 if (se_forceTeamname && sn_GetNetState() == nCLIENT &&
                     (sn_Connections[0].version.Max() == 18 ||
                      sn_Connections[0].version.Max() == 22))
@@ -10737,9 +10750,9 @@ void ePlayerNetID::Update()
 
                 p->SetName( newName );
 
-                if (se_forceSync) {
+                if (se_forceSync)
                     p->RequestSync();
-                }
+
             }
         }
 

@@ -45,21 +45,6 @@ static tConfItem<REAL> sg_helperAutoBrakeMaxConf("HELPER_SELF_AUTO_BRAKE_MAX", s
 REAL sg_helperAutoBrakeRandomness = 0;
 static tConfItem<REAL> sg_helperAutoBrakeRandomnessConf("HELPER_SELF_AUTO_BRAKE_RANDOMNESS", sg_helperAutoBrakeRandomness);
 
-bool sg_tailHelper = false;
-static tConfItem<bool> sg_tailHelperC("HELPER_SELF_TAIL", sg_tailHelper);
-REAL sg_tailHelperBrightness = 1;
-static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_SELF_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
-REAL sg_tailHelperHeight = 1;
-static tConfItem<REAL> sg_tailHelperHeightC("HELPER_SELF_TAIL_HEIGHT", sg_tailHelperHeight);
-REAL sg_tailHelperGridSize = 1;
-static tConfItem<REAL> sg_tailHelperGridSizeC("HELPER_SELF_TAIL_GRID_SIZE", sg_tailHelperGridSize);
-REAL sg_tailHelperDelay = 0;
-static tConfItem<REAL> sg_tailHelperDelayC("HELPER_SELF_TAIL_DELAY", sg_tailHelperDelay);
-REAL sg_tailHelperUpdateTime = 1;
-static tConfItem<REAL> sg_tailHelperUpdateTimeC("HELPER_SELF_TAIL_UPDATE_TIME", sg_tailHelperUpdateTime);
-REAL sg_tailHelperUpdateDistance = 1;
-static tConfItem<REAL> sg_tailHelperUpdateDistanceC("HELPER_SELF_TAIL_UPDATE_DISTANCE", sg_tailHelperUpdateDistance);
-
 bool sg_pathHelper = false;
 static tConfItem<bool> sg_pathHelperC("HELPER_SELF_PATH", sg_pathHelper);
 bool sg_pathHelperRenderPath = false;
@@ -117,8 +102,8 @@ REAL sg_helperDetectCutTimeout = .001;
 static tConfItem<REAL> sg_helperDetectCutTimeoutConf("HELPER_ENEMY_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
 REAL sg_helperDetectCutHeight = 0;
 static tConfItem<REAL> sg_helperDetectCutHeightConf("HELPER_ENEMY_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
-REAL sg_helperDetectCutReact = .2; // .005 ?
-static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_ENEMY_DETECT_CUT_REACT", sg_helperDetectCutReact);
+REAL sg_helperDetectCutReact = .02; // .005 ?
+static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_ENEMY_DETECT_CUT_REACTION_TIME", sg_helperDetectCutReact);
 bool sg_helperEnemyTracers = false;
 
 

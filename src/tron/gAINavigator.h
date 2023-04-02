@@ -365,13 +365,14 @@ private:
 
         //! determine when we need to turn in order to catch the target.
         void SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data );
-
+        void TryTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data, int depth = 0);
         bool FindTarget();
+        bool targetZone();
         bool SetDesiredTarget(tString target);
         //! set the target to follow
         void SetTarget( eCoord const & target, eCoord const & velocity );
         void SetTarget( eGameObject * object );
-
+        bool WallsInPath(const eCoord &start, const eCoord &target);
         virtual void Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const;
 
         gCycle * GetBlocker() const { return blocker_; }

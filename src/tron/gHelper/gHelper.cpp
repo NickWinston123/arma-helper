@@ -222,7 +222,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // our relative coordinate system ( so .x > 0 )
 
     // Check if the enemy is facing opposite direction of ours
-    enemyData.oppositeDirectionofEnemy = directionsAreClose(enemyDir, ourDir.Turn(LEFT).Turn(LEFT), 0.001);
+    enemyData.oppositeDirectionofEnemy = directionsAreClose(enemyDir, ourDir.Turn(LEFT).Turn(LEFT), 0.05);
 
     // Check if the enemy is on the left side of us
     enemyData.enemyIsOnLeft = relEnemyPos.x < 0;
@@ -231,10 +231,10 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     enemyData.enemyIsOnRight = !enemyData.enemyIsOnLeft;
 
     // Check if the enemy is facing right direction of ours
-    enemyData.enemyIsFacingOurRight = directionsAreClose(enemyDir, ourDir.Turn(RIGHT), 0.1);
+    enemyData.enemyIsFacingOurRight = directionsAreClose(enemyDir, ourDir.Turn(RIGHT), 0.05);
 
     // Check if the enemy is facing left direction of ours
-    enemyData.enemyIsFacingOurLeft = directionsAreClose(enemyDir, ourDir.Turn(LEFT), 0.1);
+    enemyData.enemyIsFacingOurLeft = directionsAreClose(enemyDir, ourDir.Turn(LEFT), 0.05);
 
     // If the enemy is facing opposite direction of ours, flip the relative position
     if (enemyData.oppositeDirectionofEnemy)

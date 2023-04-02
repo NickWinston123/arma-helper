@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eWall.h"
 #include "eGameObject.h"
 #include "eCamera.h"
+#include "eDebugLine.h"
 
 #include "tMath.h"
 #include "nConfig.h"
@@ -2122,7 +2123,7 @@ void eGrid::Create(){
 
 void eGrid::Clear(){
     eHalfEdge::ClearPathData();
-
+    eDebugLine::ClearLines();
     eGameObject::DeleteAll( this );
 
     base=eCoord(0,100);

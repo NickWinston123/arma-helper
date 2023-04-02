@@ -6,6 +6,22 @@
 #include "gTailHelper.h"
 
 using namespace helperConfig;
+namespace helperConfig{
+bool sg_tailHelper = false;
+static tConfItem<bool> sg_tailHelperC("HELPER_SELF_TAIL", sg_tailHelper);
+REAL sg_tailHelperBrightness = 1;
+static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_SELF_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
+REAL sg_tailHelperHeight = 1;
+static tConfItem<REAL> sg_tailHelperHeightC("HELPER_SELF_TAIL_HEIGHT", sg_tailHelperHeight);
+REAL sg_tailHelperGridSize = 1;
+static tConfItem<REAL> sg_tailHelperGridSizeC("HELPER_SELF_TAIL_GRID_SIZE", sg_tailHelperGridSize);
+REAL sg_tailHelperDelay = 0;
+static tConfItem<REAL> sg_tailHelperDelayC("HELPER_SELF_TAIL_DELAY", sg_tailHelperDelay);
+REAL sg_tailHelperUpdateTime = 1;
+static tConfItem<REAL> sg_tailHelperUpdateTimeC("HELPER_SELF_TAIL_UPDATE_TIME", sg_tailHelperUpdateTime);
+REAL sg_tailHelperUpdateDistance = 1;
+static tConfItem<REAL> sg_tailHelperUpdateDistanceC("HELPER_SELF_TAIL_UPDATE_DISTANCE", sg_tailHelperUpdateDistance);
+};
 
 gTailHelper::gTailHelper(gHelper &helper, gCycle &owner)
     : helper_(&helper),
@@ -130,10 +146,15 @@ void gTailHelper::Activate(gHelperData &data)
     if (path.size() < 1)
         return;
 
+    REAL timeout = data.ownerData.speedFactorF();
+
+    if (sg_tailHelperUpdateTime > timeout)
+        timeout = sg_tailHelperUpdateTime;
+
     eCoord lastPos = *ownerPos;
     for (int i = 0; i < path.size(); i++)
     {
-        gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_tailHelperHeight, data.ownerData.speedFactorF(), lastPos, path[i], sg_tailHelperBrightness);
+        gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_tailHelperHeight, timeout, lastPos, path[i], sg_tailHelperBrightness);
         lastPos = path[i];
     }
 }

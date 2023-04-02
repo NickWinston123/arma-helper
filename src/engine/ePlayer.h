@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_PLAYERS 4
 
 //For Menu Color Settings
-enum ColorRandomization {
+enum ColorCustomization {
     OFF = 0,
     RANDOM = 1,
     UNIQUE = 2,
@@ -44,7 +44,7 @@ enum ColorRandomization {
 };
 
 //For Menu Color Settings
-enum ColorNameRandomization {
+enum ColorNameCustomization {
     OFF_NAME = 0,
     GRADIENT_NAME = 1,
     RAINBOW_NAME = 2,
@@ -146,7 +146,10 @@ public:
     REAL sg_smarterBotTrapScale;
     REAL sg_smarterBotFollowScale;
     bool sg_smarterBotFollowBlockLogic;
+    bool sg_smarterBotFollowTryLogic;
+    bool sg_smarterBotFollowTryLogicOppositeTurn;
     bool sg_smarterBotFollowFindTarget;
+    bool sg_smarterBotFollowFindZone;
     tString sg_smarterBotFollowTarget;
     REAL sg_smarterBotPlanScale;
     REAL sg_smarterBotTailScale;
@@ -168,8 +171,8 @@ public:
 
     int rgb[3]; // our color
 
-    int colorRandomization; // The players color randomization
-    int colorNameRandomization; // The players name color randomization
+    int colorCustomization; // The players color randomization
+    int colorNameCustomization; // The players name color randomization
 
     tString instantChatString[MAX_INSTANT_CHAT];
     // instant chat macros
@@ -292,6 +295,7 @@ public:
     tColoredString lastColoredName;
     int currentShift = 0;
     int shiftIter = 0;
+    int lastplayerRandomColorNameStartMode;
 private:
 
     int listID;                          // ID in the list of all players

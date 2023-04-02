@@ -293,7 +293,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
 {
     // Check if the player is alive. If not, return.
     // Check if the player has any pending turns. If yes, return.
-    if (!helper_.aliveCheck() || !owner_.pendingTurns.empty())
+    if (!helper_.aliveCheck())
         return;
 
     // Check if the player can survive a turn.

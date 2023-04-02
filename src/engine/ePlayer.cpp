@@ -86,6 +86,7 @@ static tConfItem<bool> se_forceSyncConf("FORCE_SYNC", se_forceSync);
 static bool se_forceSyncOverride = false;
 static tConfItem<bool> se_forceSyncOverrideConf("FORCE_SYNC_OVERRIDE", se_forceSyncOverride);
 
+static int se_playerRandomColorNameStartMode = 1;
 
 // call on commands that only work on the server; quit if it returns true
 bool se_NeedsServer(char const * command, std::istream & s, bool strict )
@@ -1369,18 +1370,19 @@ ePlayer::ePlayer() : colorIteration(0)
                                         rgb[0]));
 
     confname.Clear();
-    confname << "PLAYER_COLOR_RANDOMIZATION_" << id+1;
-    colorRandomization=0;
+    confname << "PLAYER_COLOR_CUSTOMIZATION_" << id+1;
+    colorCustomization=0;
     StoreConfitem(tNEW(tConfItem<int>) (confname,
                                          "$player_random_color_help",
-                                         colorRandomization));
+                                         colorCustomization));
     confname.Clear();
-    confname << "PLAYER_COLOR_NAME_RANDOMIZATION_" << id+1;
-    colorNameRandomization=0;
+    confname << "PLAYER_NAME_COLOR_CUSTOMIZATION_" << id+1;
+    colorNameCustomization=0;
     StoreConfitem(tNEW(tConfItem<int>) (confname,
                                          "$player_random_color_help",
-                                         colorNameRandomization));
+                                         colorNameCustomization));
 
+    //SMARTER BOT
     //sg_smarterBotThink
     confname.Clear();
     confname << "SMARTER_BOT_" << id+1 << "_THINK";
@@ -1435,11 +1437,29 @@ ePlayer::ePlayer() : colorIteration(0)
     sg_smarterBotFollowFindTarget = true;
     StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot Follow Target", sg_smarterBotFollowFindTarget));
 
+    // sg_smarterBotFollowFindTarget
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_ZONE";
+    sg_smarterBotFollowFindZone = true;
+    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot Follow Znoe", sg_smarterBotFollowFindZone));
+
     // sg_smarterBotFollowBlockLogic
     confname.Clear();
     confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_BLOCKED_LOGIC";
     sg_smarterBotFollowBlockLogic = true;
     StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot blocked by self logic", sg_smarterBotFollowBlockLogic));
+
+    // sg_smarterBotFollowTryLogic
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_TRY_LOGIC";
+    sg_smarterBotFollowTryLogic = false;
+    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot try logic - think before turn", sg_smarterBotFollowTryLogic));
+
+    // sg_smarterBotFollowTryLogicOppositeTurn
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_TRY_LOGIC_OPPOSITE_TURN";
+    sg_smarterBotFollowTryLogicOppositeTurn = true;
+    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot try logic - try other direction", sg_smarterBotFollowTryLogicOppositeTurn));
 
 
     // sg_smarterBotFollowTarget
@@ -6106,7 +6126,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                pID(p),
                                                timeSinceLastChat_(0),
                                                createTime_(getTimeString(false)),
-                                               lastWatchStatus(playerWatchStatus::ACTIVE)
+                                               lastWatchStatus(playerWatchStatus::ACTIVE),
+                                               lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode)
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -9127,7 +9148,7 @@ void getRainbowRGB(int iteration, int max, gRealColor &color) {
     color.b *= 15;
 }
 static int se_RandomizeColorRainbowMaxRange = 180;
-static tConfItem<int> se_RandomizeColorRainbowMaxRangeConf("PLAYER_RANDOM_COLOR_RAINBOW_MAX", se_RandomizeColorRainbowMaxRange);
+static tConfItem<int> se_RandomizeColorRainbowMaxRangeConf("PLAYER_COLOR_CUSTOMIZATION_RAINBOW_MAX", se_RandomizeColorRainbowMaxRange);
 
 int rainbowIteration = 0;
 bool countUp = true;
@@ -9160,17 +9181,22 @@ static void se_rainbowColor(ePlayer *l)
     l->rgb[2] = color.b;
 }
 
-bool se_fadeColor = false;//true;
-static tSettingItem< bool > se_fadeColorConf( "CROSSFADE_ENABLED", se_fadeColor );
 
 bool se_fadeColorRand = false;
-static tSettingItem< bool > se_fadeColorRandConf( "CROSSFADE_RAND", se_fadeColorRand );
+static tConfItem< bool > se_fadeColorRandConf( "PLAYER_NAME_COLOR_CUSTOMIZATION_CROSSFADE_RAND", se_fadeColorRand );
 
 int se_fadeColorSpeed = 50;
-static tSettingItem< int > se_fadeColorSpdConf( "CROSSFADE_SPEED", se_fadeColorSpeed );
+static tConfItem< int > se_fadeColorSpdConf( "PLAYER_NAME_COLOR_CUSTOMIZATION_CROSSFADE_SPEED", se_fadeColorSpeed );
 
 float se_fadeColorHold = 0;
-static tSettingItem< float > se_fadeColorHoldConf( "CROSSFADE_HOLD", se_fadeColorHold );
+static tConfItem< float > se_fadeColorHoldConf( "PLAYER_NAME_COLOR_CUSTOMIZATION_CROSSFADE_HOLD", se_fadeColorHold );
+
+static tConfItem< tString > se_crossfadeColorsConf( "PLAYER_NAME_COLOR_CUSTOMIZATION_CROSSFADE_COLORS", se_crossfadeColorsStr, &buildTargetColors);
+
+static tConfItemFunc se_crossfadeAddColorConf("PLAYER_NAME_COLOR_CUSTOMIZATION_CROSSFADE_ADD", &se_addCrossfadeColor);
+static tConfItemFunc se_crossfadeListColorsConf("PLAYER_NAME_COLOR_CUSTOMIZATION_CROSSFADE_LIST", &se_listCrossfadeColors);
+static tConfItemFunc se_crossfadeRemoveColorConf("PLAYER_NAME_COLOR_CUSTOMIZATION_CROSSFADE_REMOVE", &se_rmCrossfadeColors);
+static tConfItemFunc se_loadCrossfadePresetConf("PLAYER_NAME_COLOR_CUSTOMIZATION_CROSSFADE_PRESET",&se_loadCrossfadePreset);
 
 static const char * const crossfadePresets[] = {
     "15 0 0, 15 15 0, 0 15 0, 0 15 15, 0 0 15",
@@ -9241,7 +9267,6 @@ static bool buildTargetColors( const tString &crossfadeColors )
     return true;
 }
 
-static tSettingItem< tString > se_crossfadeColorsConf( "CROSSFADE_COLORS", se_crossfadeColorsStr, &buildTargetColors);
 
 static void se_addCrossfadeColor( std::istream &s )
 {
@@ -9263,7 +9288,6 @@ static void se_addCrossfadeColor( std::istream &s )
     }
 }
 
-static tConfItemFunc se_crossfadeAddColorConf("CROSSFADE_ADD", &se_addCrossfadeColor);
 
 static void se_listCrossfadeColors( std::istream &s )
 {
@@ -9273,8 +9297,6 @@ static void se_listCrossfadeColors( std::istream &s )
         con << (++id) << ": " << ((*i)[0]) << ", " << ((*i)[1]) << ", " << ((*i)[2]) << "\n";
     }
 }
-
-static tConfItemFunc se_crossfadeListColorsConf("CROSSFADE_LIST", &se_listCrossfadeColors);
 
 static void se_rmCrossfadeColors( std::istream &s )
 {
@@ -9305,7 +9327,6 @@ static void se_rmCrossfadeColors( std::istream &s )
     }
 }
 
-static tConfItemFunc se_crossfadeRemoveColorConf("CROSSFADE_REMOVE", &se_rmCrossfadeColors);
 
 static void se_loadCrossfadePreset( std::istream &s )
 {
@@ -9335,14 +9356,13 @@ static void se_loadCrossfadePreset( std::istream &s )
     }
 }
 
-static tConfItemFunc se_loadCrossfadePresetConf("CROSSFADE_PRESET",&se_loadCrossfadePreset);
 
 static void se_FadeColor(ePlayer * p)
 {
     static float lasttime = 0;
     float time = tSysTimeFloat();
 
-    if( se_fadeColor && !se_crossfadeColors.array )
+    if( !se_crossfadeColors.array )
     {
         buildTargetColors( se_crossfadeColorsStr );
     }
@@ -9354,13 +9374,6 @@ static void se_FadeColor(ePlayer * p)
     static float tdiff[3] = {1, 1, 1};
 
     static bool resetColor = true, prepareFade = true;
-
-    if( !se_fadeColor )
-    {
-        if(!resetColor) resetColor = true;
-        lasttime = time;
-        return;
-    }
 
     //#define NUM_COLORS 5
     //static float colors[NUM_COLORS][3] = {{15,0,0},{15,15,0},{0,15,0},{0,15,15},{0,0,15}};
@@ -10175,16 +10188,15 @@ tString sg_ExtractColorCodes(const tString& str)
 }
 
 static REAL se_playerRandomColorNameShiftAmount = 1;
-static tConfItem<REAL> se_playerRandomColorNameShiftAmountConf("PLAYER_COLOR_NAME_RANDOMIZATION_SHIFT_AMOUNT", se_playerRandomColorNameShiftAmount);
+static tConfItem<REAL> se_playerRandomColorNameShiftAmountConf("PLAYER_NAME_COLOR_CUSTOMIZATION_SHIFT_AMOUNT", se_playerRandomColorNameShiftAmount);
 
 static int se_playerRandomColorNameShiftBounceInterval = 0; // 0 = off
-static tConfItem<int> se_playerRandomColorNameShiftBounceIntervalConf("PLAYER_COLOR_NAME_RANDOMIZATION_BOUNCE_INTERVAL", se_playerRandomColorNameShiftBounceInterval);
+static tConfItem<int> se_playerRandomColorNameShiftBounceIntervalConf("PLAYER_NAME_COLOR_CUSTOMIZATION_SHIFT_BOUNCE_INTERVAL", se_playerRandomColorNameShiftBounceInterval);
 
 static bool se_playerRandomColorNameShiftBounceNameLength = false;
-static tConfItem<bool> se_playerRandomColorNameShiftBounceNameLengthConf("PLAYER_COLOR_NAME_RANDOMIZATION_BOUNCE_NAME_LENGTH", se_playerRandomColorNameShiftBounceNameLength);
+static tConfItem<bool> se_playerRandomColorNameShiftBounceNameLengthConf("PLAYER_NAME_COLOR_CUSTOMIZATION_HIFT_BOUNCE_NAME_LENGTH", se_playerRandomColorNameShiftBounceNameLength);
 
-static int se_playerRandomColorNameStartMode = 1;
-static tConfItem<int> se_playerRandomColorNameStartModeConf("PLAYER_COLOR_NAME_RANDOMIZATION_SHIFT_START_MODE", se_playerRandomColorNameStartMode);
+static tConfItem<int> se_playerRandomColorNameStartModeConf("PLAYER_NAME_COLOR_CUSTOMIZATION_SHIFT_START_MODE", se_playerRandomColorNameStartMode);
 
 tColoredString sg_ShiftColors(const tColoredString& original, int shift)
 {
@@ -10228,13 +10240,13 @@ tColor ColorFromHSV(float h, float s, float v)
 }
 
 static REAL se_playerRandomColorNameRandRainbowNumColors = 1;
-static tConfItem<REAL> se_playerRandomColorNameRandRainbowNumColorsConf("PLAYER_COLOR_NAME_RANDOMIZATION_RAINBOW_NUM_COLORS", se_playerRandomColorNameRandRainbowNumColors);
+static tConfItem<REAL> se_playerRandomColorNameRandRainbowNumColorsConf("PLAYER_NAME_COLOR_RAINBOW_NUM_COLORS", se_playerRandomColorNameRandRainbowNumColors);
 
 static REAL se_playerRandomColorNameRandRainbowBrightness = 1;
-static tConfItem<REAL> se_playerRandomColorNameRandRainbowBrightnessConf("PLAYER_COLOR_NAME_RANDOMIZATION_RAINBOW_BRIGHTNESS", se_playerRandomColorNameRandRainbowBrightness);
+static tConfItem<REAL> se_playerRandomColorNameRandRainbowBrightnessConf("PLAYER_NAME_COLOR_RAINBOW_BRIGHTNESS", se_playerRandomColorNameRandRainbowBrightness);
 
 static REAL se_playerRandomColorNameRandRainbowSaturation = 1;
-static tConfItem<REAL> se_playerRandomColorNameRandRainbowSaturationConf("PLAYER_COLOR_NAME_RANDOMIZATION_RAINBOW_SATURATION", se_playerRandomColorNameRandRainbowSaturation);
+static tConfItem<REAL> se_playerRandomColorNameRandRainbowSaturationConf("PLAYER_NAME_COLOR_RAINBOW_SATURATION", se_playerRandomColorNameRandRainbowSaturation);
 
 tColoredString sg_RainbowNameGeneration(const tString& name)
 {
@@ -10258,9 +10270,9 @@ tColoredString sg_RainbowNameGeneration(const tString& name)
 }
 
 static REAL gradientR = 15, gradientG = 15, gradientB = 15;
-static tSettingItem< REAL > gradientRConf( "GRADIENT_R", gradientR );
-static tSettingItem< REAL > gradientGConf( "GRADIENT_G", gradientG );
-static tSettingItem< REAL > gradientBConf( "GRADIENT_B", gradientB );
+static tSettingItem< REAL > gradientRConf( "PLAYER_NAME_COLOR_CUSTOMIZATION_GRADIENT_R", gradientR );
+static tSettingItem< REAL > gradientGConf( "PLAYER_NAME_COLOR_CUSTOMIZATION_GRADIENT_G", gradientG );
+static tSettingItem< REAL > gradientBConf( "PLAYER_NAME_COLOR_CUSTOMIZATION_GRADIENT_B", gradientB );
 
 tColoredString sg_ColorGradientGeneration( int rgb[3], tString newName )
 {
@@ -10647,20 +10659,20 @@ void ePlayerNetID::Update()
                     bakB = p->b;
                 }
 
-                switch(local_p->colorRandomization)
+                switch(local_p->colorCustomization)
                 {
-                    case ColorRandomization::OFF:
+                    case ColorCustomization::OFF:
                         break;
-                    case ColorRandomization::RANDOM:
+                    case ColorCustomization::RANDOM:
                         se_RandomizeColor(local_p);
                         break;
-                    case ColorRandomization::UNIQUE:
+                    case ColorCustomization::UNIQUE:
                         se_UniqueColor(local_p);
                         break;
-                    case ColorRandomization::RAINBOW:
+                    case ColorCustomization::RAINBOW:
                         se_rainbowColor(local_p);
                         break;
-                    case ColorRandomization::CROSSFADE:
+                    case ColorCustomization::CROSSFADE:
                         se_FadeColor(local_p);
                         break;
                     default:
@@ -10727,27 +10739,28 @@ void ePlayerNetID::Update()
                 if ((sn_GetNetState() == nSTANDALONE ||
                      (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)) && !newName.empty() && bool(p))
                 {
-                    switch (local_p->colorNameRandomization)
+                    switch (local_p->colorNameCustomization)
                     {
-                    case ColorNameRandomization::OFF_NAME:
+                    case ColorNameCustomization::OFF_NAME:
                         break;
-                    case ColorNameRandomization::GRADIENT_NAME: {
+                    case ColorNameCustomization::GRADIENT_NAME: {
                         int rgb[3] = {p->r, p->g, p->b};
                         newName = sg_ColorGradientGeneration(rgb, newName);
                         p->lastColoredName = newName;
                         break;
                     }
-                    case ColorNameRandomization::RAINBOW_NAME:{
+                    case ColorNameCustomization::RAINBOW_NAME:{
                         newName = sg_RainbowNameGeneration(newName);
                         p->lastColoredName = newName;
                         break;
                     }
-                    case ColorNameRandomization::SHIFT_NAME: {
+                    case ColorNameCustomization::SHIFT_NAME: {
                         int rgb[3] = {p->r, p->g, p->b};
 
                         // Name changed or lastColoredName not set or gradient mode and color change
-                        bool shouldUpdateName = newName != p->GetName() || p->lastColoredName.empty() || shouldUpdateLastName(rgb);
+                        bool shouldUpdateName = newName != p->GetName() || p->lastColoredName.empty() || shouldUpdateLastName(rgb) || se_playerRandomColorNameStartMode != p->lastplayerRandomColorNameStartMode;
                         if (shouldUpdateName) {
+                            p->lastplayerRandomColorNameStartMode = se_playerRandomColorNameStartMode;
                             p->lastColoredName = (se_playerRandomColorNameStartMode == 1) ?
                                                   sg_RainbowNameGeneration(newName) :
                                                   sg_ColorGradientGeneration(rgb, newName);
@@ -10757,9 +10770,10 @@ void ePlayerNetID::Update()
 
                         bool updateCurrentShift = (fabs(p->currentShift) != se_playerRandomColorNameShiftAmount);
 
-                        if (updateCurrentShift)
+                        if (updateCurrentShift) {
+                            p->shiftIter = 0;
                             p->currentShift = se_playerRandomColorNameShiftAmount;
-
+                        }
                         bool shouldInvertCurrentShift = (se_playerRandomColorNameShiftBounceNameLength && (p->shiftIter % (newName.Len()-1) == 0)) ||
                                                         (!se_playerRandomColorNameShiftBounceNameLength && (se_playerRandomColorNameShiftBounceInterval > 0) && (p->shiftIter % se_playerRandomColorNameShiftBounceInterval == 0));
 

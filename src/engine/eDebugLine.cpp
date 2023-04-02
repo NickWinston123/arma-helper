@@ -139,3 +139,8 @@ void eDebugLine::Draw(const eCoord& start, REAL startH,
     line.stopH  = stopH;
 }
 
+
+void eDebugLine::ClearLines()
+{
+    se_lines.SetLen(0);
+}

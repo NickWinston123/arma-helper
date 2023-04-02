@@ -741,13 +741,34 @@ void gAINavigator::RubberEvaluator::Init( gCycle const & cycle, REAL maxTime )
 // * FollowEvaluator      *
 // *************************
 
-gAINavigator::FollowEvaluator::FollowEvaluator( gCycle & cycle ): cycle_( cycle ), blocker_( 0 ), blockedBySelf_( false )
+gAINavigator::FollowEvaluator::FollowEvaluator(gCycle &cycle)
+    : cycle_(cycle), blocker_(0), blockedBySelf_(false)
 {
     ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle);
 
-    if (local_p && local_p->sg_smarterBotFollowFindTarget && local_p->sg_smarterBotFollowTarget.empty() ||
-       (local_p->sg_smarterBotFollowFindTarget && !SetDesiredTarget(local_p->sg_smarterBotFollowTarget)) )
-        gAINavigator::FollowEvaluator::FindTarget();
+    if (!local_p)
+        return;
+
+    bool foundZone = false;
+    bool foundDesiredTarget = false;
+
+    if (local_p->sg_smarterBotFollowFindZone)
+    {
+        foundZone = targetZone();
+    }
+
+    if (!foundZone)
+    {
+        if (local_p->sg_smarterBotFollowFindTarget && !local_p->sg_smarterBotFollowTarget.empty())
+        {
+            foundDesiredTarget = SetDesiredTarget(local_p->sg_smarterBotFollowTarget);
+        }
+    }
+
+    if (!foundDesiredTarget && !foundZone)
+    {
+        FindTarget();
+    }
 }
 
 gAINavigator::FollowEvaluator::~FollowEvaluator()
@@ -768,6 +789,7 @@ bool gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
     }
     return false;
 }
+
 
 
 //!@ param direction            direction to turn in
@@ -863,11 +885,67 @@ bool gAINavigator::FollowEvaluator::FindTarget()
     return false;
 }
 
+bool gAINavigator::FollowEvaluator::targetZone()
+{
+    gZone * closestZone = gZoneHelper::findClosestZone(&cycle_);
+
+    if (closestZone)
+    {
+        SetTarget(closestZone);
+        return true;
+    }
+
+    return false;
+}
+
+
 void gAINavigator::FollowEvaluator::SetTarget( eGameObject * object )
 {
-    SetTarget(object->Position(), 
+    SetTarget(object->Position(),
               object->Direction() * (object->Speed() + object->Lag()));
 }
+
+static const int MAX_SEARCH_DEPTH = 3;
+
+bool gAINavigator::FollowEvaluator::WallsInPath(const eCoord &start, const eCoord &end)
+{
+    eCoord direction = end - start;
+    gTargetSensor sensor(&cycle_, start, direction);
+    sensor.detect(0.99);
+
+    // return true if a wall is detected
+    return sensor.type != gSENSOR_NONE;
+}
+
+
+
+void gAINavigator::FollowEvaluator::TryTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data, int depth)
+{
+     ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
+    if (depth >= MAX_SEARCH_DEPTH) {
+        data.quality = 1e10;
+        return;
+    }
+
+    // Get the velocity after the turn
+    int winding = cycle_.WindingNumber();
+    cycle_.Grid()->Turn(winding, direction);
+    eCoord turnDir = cycle_.Grid()->GetDirection(winding);
+
+    // Check if there are walls in the path after the turn
+    eCoord newPosition = cycle_.Position() + turnDir * cycle_.Speed();
+    if (WallsInPath(cycle_.Position(), newPosition)) {
+        // Try turning in the opposite direction
+        if (local_p->sg_smarterBotFollowTryLogicOppositeTurn) {
+            direction = -direction;
+            TryTurn(direction, targetVelocity, targetPosition, data, depth + 1);
+        }
+    } else {
+        // If the path is clear, call SolveTurn
+        SolveTurn(direction, targetVelocity, targetPosition, data);
+    }
+}
+
 
 void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord const & velocity )
 {
@@ -880,10 +958,10 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
     // check whether the path is blocked
     gTargetSensor sensor( &cycle_, cycle_.Position(), toTarget_ );
     sensor.detect( .99 );
-
+    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
     if( sensor.type != gSENSOR_NONE )
     {
-        if( sensor.lastOwnEHit && ePlayer::gCycleToLocalPlayer(&cycle_)->sg_smarterBotFollowBlockLogic)
+        if( sensor.lastOwnEHit && local_p->sg_smarterBotFollowBlockLogic)
         {
             gPlayerWall const * ownWall = dynamic_cast< gPlayerWall const * >( sensor.lastOwnEHit->GetWall() );
             if ( ownWall )
@@ -935,8 +1013,13 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
 
     // determine next possible left or right directions
     SolveTurnData left, right;
-    SolveTurn( -1, velocity, toTarget_, left );
-    SolveTurn( 1,  velocity, toTarget_, right );
+    if (local_p->sg_smarterBotFollowTryLogic){
+        TryTurn( -1, velocity, toTarget_, left );
+        TryTurn( 1,  velocity, toTarget_, right );
+    } else {
+        SolveTurn( -1, velocity, toTarget_, left );
+        SolveTurn( 1,  velocity, toTarget_, right );
+    }
 
     REAL quality = 0;
 

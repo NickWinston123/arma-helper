@@ -44,10 +44,10 @@ public:
     // function to check if a turn can help the cycle survive a left or right turn given speed and rubber factors
     gSurviveData canSurviveTurn(gHelperData &data,
                                 REAL freeSpaceFactor = 0,
-                                bool driveStraight = true);
+                                bool driveStraight = false);
                         
 
-    // performs the actual turn
+    // convert uActionPlayer to DIR
     static int ActToTurn(uActionPlayer *action);
 
     // displays a debugging message

@@ -63,9 +63,6 @@ public:
     eCoord direction_;
     eGameObject *owner_;
     const tList<eGameObject>& gameObjects;
-    bool HitIntersceptsZone2(gZone * zone);
-    bool HitIntersceptsZone(gZone * zone,REAL range);
-    void calculateZoneHit(REAL range);
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
     void detect(REAL range, const eCoord &newPos, const eCoord &newDir, bool render = false);
     void detect(REAL range, bool render = false);

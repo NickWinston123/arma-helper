@@ -1373,20 +1373,20 @@ void sg_PlayerMenu(int Player){
      p->favoriteNumberOfPlayersPerTeam, 1, 16, 1);
 
 
-    //Color Randomization in the player menu
-    uMenuItemSelection<int> se_cnr(&playerMenu,"Gradient Name","Gradient Name",p->colorNameRandomization);
-    se_cnr.NewChoice("None",   "No color name randomization",   ColorNameRandomization::OFF_NAME);
-    se_cnr.NewChoice("Gradient", "Gradient name randomization", ColorNameRandomization::GRADIENT_NAME);
-    se_cnr.NewChoice("Rainbow", "Rainbow name randomization", ColorNameRandomization::RAINBOW_NAME);
-    se_cnr.NewChoice("Shift", "Shift name randomization", ColorNameRandomization::SHIFT_NAME);
+    //Color Customization in the player menu
+    uMenuItemSelection<int> se_cnr(&playerMenu,"Name Color","Gradient Name",p->colorNameCustomization);
+    se_cnr.NewChoice("None",     "No color name customization", ColorNameCustomization::OFF_NAME);
+    se_cnr.NewChoice("Gradient", "Gradient name customization", ColorNameCustomization::GRADIENT_NAME);
+    se_cnr.NewChoice("Rainbow",  "Rainbow name customization",  ColorNameCustomization::RAINBOW_NAME);
+    se_cnr.NewChoice("Shift",    "Shift name customization",    ColorNameCustomization::SHIFT_NAME);
 
-    //Color Randomization in the player menu
-    uMenuItemSelection<int> se_cr(&playerMenu,"$player_color_randomization_text","$player_color_randomization_help",p->colorRandomization);
-    se_cr.NewChoice("$player_color_randomization_none_text",   "$player_color_randomization_none_help",   ColorRandomization::OFF);
-    se_cr.NewChoice("$player_color_randomization_random_text", "$player_color_randomization_random_help", ColorRandomization::RANDOM);
-    se_cr.NewChoice("$player_color_randomization_unique_text", "$player_color_randomization_unique_help", ColorRandomization::UNIQUE);
-    se_cr.NewChoice("$player_color_randomization_rainbow_text", "$player_color_randomization_rainbow_help", ColorRandomization::RAINBOW);
-    se_cr.NewChoice("$player_color_randomization_crossfade_text", "$player_color_randomization_crossfade_help", ColorRandomization::CROSSFADE);
+    //Color Customization in the player menu
+    uMenuItemSelection<int> se_cr(&playerMenu,"$player_color_randomization_text","$player_color_randomization_help",p->colorCustomization);
+    se_cr.NewChoice("$player_color_randomization_none_text",      "$player_color_randomization_none_help",      ColorCustomization::OFF);
+    se_cr.NewChoice("$player_color_randomization_random_text",    "$player_color_randomization_random_help",    ColorCustomization::RANDOM);
+    se_cr.NewChoice("$player_color_randomization_unique_text",    "$player_color_randomization_unique_help",    ColorCustomization::UNIQUE);
+    se_cr.NewChoice("$player_color_randomization_rainbow_text",   "$player_color_randomization_rainbow_help",   ColorCustomization::RAINBOW);
+    se_cr.NewChoice("$player_color_randomization_crossfade_text", "$player_color_randomization_crossfade_help", ColorCustomization::CROSSFADE);
 
     // HACK: backup color before clamping by menuitems
     int r = p->rgb[0], g = p->rgb[1], b = p->rgb[2];

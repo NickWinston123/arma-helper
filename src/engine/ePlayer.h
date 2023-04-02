@@ -289,6 +289,9 @@ public:
     static void watchPlayerStatus();
     static ePlayerNetID  *gCycleToNetPlayer(gCycle *owner);
     int lastsyncedColor[3] = {0, 0, 0};
+    tColoredString lastColoredName;
+    int currentShift = 0;
+    int shiftIter = 0;
 private:
 
     int listID;                          // ID in the list of all players

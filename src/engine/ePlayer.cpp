@@ -10512,9 +10512,7 @@ void se_ForcePlayerColorMenu()
     }
 }
 
-static tColoredString lastColoredName;
-static int currentShift = 0, shiftIter = 0;
-// Have to do this to account for changes 
+// Have to do this to account for changes
 static REAL prevRainbowNumColors = -1;
 static REAL prevRainbowBrightness = -1;
 static REAL prevRainbowSaturation = -1;
@@ -10522,7 +10520,7 @@ static int prevRgb[3] = {-1, -1, -1};
 
 bool shouldUpdateLastName(int rgb[3]) {
     bool hasChanged = false;
-    
+
     if (prevRainbowNumColors != se_playerRandomColorNameRandRainbowNumColors ||
         prevRainbowBrightness != se_playerRandomColorNameRandRainbowBrightness ||
         prevRainbowSaturation != se_playerRandomColorNameRandRainbowSaturation || (se_playerRandomColorNameStartMode != 1 && (
@@ -10614,7 +10612,7 @@ void ePlayerNetID::Update()
                     local_p->spectate = false;
                     p->CreateNewTeamWish();
                 }
-                
+
                 if (se_forceTeamname && sn_GetNetState() == nCLIENT &&
                     (sn_Connections[0].version.Max() == 18 ||
                      sn_Connections[0].version.Max() == 22))
@@ -10727,7 +10725,7 @@ void ePlayerNetID::Update()
                 tString newName( local_p->Name() ); // LENGTH: ACTUAL IN GAME LENGTH + 1
 
                 if ((sn_GetNetState() == nSTANDALONE ||
-                     (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)) && !newName.empty())
+                     (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)) && !newName.empty() && bool(p))
                 {
                     switch (local_p->colorNameRandomization)
                     {
@@ -10736,41 +10734,41 @@ void ePlayerNetID::Update()
                     case ColorNameRandomization::GRADIENT_NAME: {
                         int rgb[3] = {p->r, p->g, p->b};
                         newName = sg_ColorGradientGeneration(rgb, newName);
-                        lastColoredName = newName;
+                        p->lastColoredName = newName;
                         break;
                     }
                     case ColorNameRandomization::RAINBOW_NAME:{
                         newName = sg_RainbowNameGeneration(newName);
-                        lastColoredName = newName;
+                        p->lastColoredName = newName;
                         break;
                     }
                     case ColorNameRandomization::SHIFT_NAME: {
                         int rgb[3] = {p->r, p->g, p->b};
 
                         // Name changed or lastColoredName not set or gradient mode and color change
-                        bool shouldUpdateName = newName != p->GetName() || lastColoredName.empty() || shouldUpdateLastName(rgb);
+                        bool shouldUpdateName = newName != p->GetName() || p->lastColoredName.empty() || shouldUpdateLastName(rgb);
                         if (shouldUpdateName) {
-                            lastColoredName = (se_playerRandomColorNameStartMode == 1) ?
-                                                sg_RainbowNameGeneration(newName) :
-                                                sg_ColorGradientGeneration(rgb, newName);
-                            shiftIter = 0;
+                            p->lastColoredName = (se_playerRandomColorNameStartMode == 1) ?
+                                                  sg_RainbowNameGeneration(newName) :
+                                                  sg_ColorGradientGeneration(rgb, newName);
+                            p->shiftIter = 0;
                         }
 
 
-                        bool updateCurrentShift = (fabs(currentShift) != se_playerRandomColorNameShiftAmount);
+                        bool updateCurrentShift = (fabs(p->currentShift) != se_playerRandomColorNameShiftAmount);
 
-                        if (updateCurrentShift) 
-                            currentShift = se_playerRandomColorNameShiftAmount;
+                        if (updateCurrentShift)
+                            p->currentShift = se_playerRandomColorNameShiftAmount;
 
-                        bool shouldInvertCurrentShift = (se_playerRandomColorNameShiftBounceNameLength && (shiftIter % (newName.Len()-1) == 0)) || 
-                                                        (!se_playerRandomColorNameShiftBounceNameLength && (se_playerRandomColorNameShiftBounceInterval > 0) && (shiftIter % se_playerRandomColorNameShiftBounceInterval == 0));
+                        bool shouldInvertCurrentShift = (se_playerRandomColorNameShiftBounceNameLength && (p->shiftIter % (newName.Len()-1) == 0)) ||
+                                                        (!se_playerRandomColorNameShiftBounceNameLength && (se_playerRandomColorNameShiftBounceInterval > 0) && (p->shiftIter % se_playerRandomColorNameShiftBounceInterval == 0));
 
-                        if (shouldInvertCurrentShift) 
-                            currentShift *= -1;
+                        if (shouldInvertCurrentShift)
+                            p->currentShift *= -1;
 
-                        newName = sg_ShiftColors(lastColoredName, currentShift);
-                        shiftIter++;
-                        lastColoredName = newName;
+                        newName = sg_ShiftColors(p->lastColoredName, p->currentShift);
+                        p->shiftIter++;
+                        p->lastColoredName = newName;
                         break;
                     }
 

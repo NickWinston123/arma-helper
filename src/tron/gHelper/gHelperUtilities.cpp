@@ -7,34 +7,45 @@ extern void sg_RubberValues( ePlayerNetID const * player, REAL speed, REAL & max
 
 using namespace helperConfig;
 
-void gHelperUtility::debugLine(gRealColor color, REAL height, REAL timeout,
-                                eCoord start,eCoord end, REAL brightness) {
-    if (timeout >= 6) {
+void gHelperUtility::debugLine(tColor color, REAL height, REAL timeout,
+                               eCoord start, eCoord end, REAL brightness)
+{
+    if (timeout >= 6)
+    {
         timeout = 1;
     }
     REAL startHeight = height;
-    if (start == end) {
+    if (start == end)
         startHeight = 0;
-    }
     eDebugLine::SetTimeout(timeout);
-    eDebugLine::SetColor(color.r * sg_helperBrightness * brightness, color.g * sg_helperBrightness * brightness, color.b * sg_helperBrightness* brightness);
+    eDebugLine::SetColor(color.r_ * sg_helperBrightness * brightness, color.g_ * sg_helperBrightness * brightness, color.b_ * sg_helperBrightness * brightness);
     eDebugLine::Draw(start, startHeight, end, height);
 }
 
-void gHelperUtility::debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout, REAL height)
-    {
-        eCoord corner[3];
-        corner[0] = eCoord(center.x - (radius), center.y + (radius));
-        corner[1] = eCoord(center.x + (radius), center.y + (radius));
-        corner[2] = eCoord(center.x + (radius), center.y - (radius));
-        corner[3] = eCoord(center.x - (radius), center.y - (radius));
+void gHelperUtility::debugBox(tColor color, eCoord center, REAL radius, REAL timeout, REAL height)
+{
+    eCoord corner[3];
+    corner[0] = eCoord(center.x - (radius), center.y + (radius));
+    corner[1] = eCoord(center.x + (radius), center.y + (radius));
+    corner[2] = eCoord(center.x + (radius), center.y - (radius));
+    corner[3] = eCoord(center.x - (radius), center.y - (radius));
 
-        debugLine(color,height,timeout,corner[0],corner[1]);
-        debugLine(color,height,timeout,corner[1],corner[2]);
-        debugLine(color,height,timeout,corner[2],corner[3]);
-        debugLine(color,height,timeout,corner[3],corner[0]);
-    }
+    debugLine(color, height, timeout, corner[0], corner[1]);
+    debugLine(color, height, timeout, corner[1], corner[2]);
+    debugLine(color, height, timeout, corner[2], corner[3]);
+    debugLine(color, height, timeout, corner[3], corner[0]);
+}
 
+tColor gHelperUtility::tStringTotColor(tString string)
+{
+    tArray<tString>rgb = string.Split(",");
+    int pos;
+    REAL r = atoi(rgb[0]);
+    REAL g = atoi(rgb[1]);
+    REAL b = atoi(rgb[2]);
+    tColor color(r,g,b);
+    return color;
+}
 
 // Function: isClose
 // Check if the distance between a point and the player is within a certain range.

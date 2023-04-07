@@ -28,6 +28,10 @@ static tConfItem<REAL> sg_showHitDataHeightSidesConf("HELPER_SHOW_HIT_HEIGHT_SID
 REAL sg_showHitDataBrightness = 1;
 static tConfItem<REAL> sg_showHitDataBrightnessConf("HELPER_SHOW_HIT_BRIGHTNESS",
                                                      sg_showHitDataBrightness);
+
+tString sg_helperShowHitFrontLineColor = tString("1,.5,0");
+static tConfItem<tString> sg_helperShowHitFrontLineColorConf("HELPER_SHOW_HIT_FRONT_LINE_COLOR",
+                                                     sg_helperShowHitFrontLineColor);
 REAL sg_showHitDataRange = 1;
 static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE",
                                                sg_showHitDataRange);
@@ -290,15 +294,15 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     if (enemyData.canCutUs)
     {
-        gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
+        gHelperUtility::debugLine(tColor(1, 0, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
     }
     else if (enemyData.canCutEnemy)
     {
-        gHelperUtility::debugLine(gRealColor(0, 1, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
+        gHelperUtility::debugLine(tColor(0, 1, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
     }
     else
     {
-        gHelperUtility::debugLine(gRealColor(.4, .4, .4), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
+        gHelperUtility::debugLine(tColor(.4, .4, .4), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
     }
 }
 
@@ -396,7 +400,7 @@ void gHelper::enemyTracers(gHelperData &data)
         }
 
         // Draw the tracer line on the screen
-        gHelperUtility::debugLine(gRealColor(R, G, B), sg_helperEnemyTracersHeight, sg_helperEnemyTracersTimeout * data.ownerData.speedFactorF(), (ownerPos), enemyPos, sg_helperEnemyTracersBrightness);
+        gHelperUtility::debugLine(tColor(R, G, B), sg_helperEnemyTracersHeight, sg_helperEnemyTracersTimeout * data.ownerData.speedFactorF(), (ownerPos), enemyPos, sg_helperEnemyTracersBrightness);
     }
 }
 
@@ -423,7 +427,7 @@ void gHelper::showTail(gHelperData &data)
 
     if (canSeeTarget((tailPos), sg_helperShowTailPassthrough))
     {
-        gHelperUtility::debugLine(gRealColor(owner_.color_.r, owner_.color_.g, owner_.color_.b), sg_helperShowTailHeight, timeout, (ownerPos), (tailPos));
+        gHelperUtility::debugLine(tColor(owner_.color_.r, owner_.color_.g, owner_.color_.b), sg_helperShowTailHeight, timeout, (ownerPos), (tailPos));
     }
 }
 
@@ -465,7 +469,7 @@ void gHelper::showEnemyTail(gHelperData &data)
         timeout = fabs(distanceToTail) / 10 * data.ownerData.speedFactorF();
         // draw a debug line to show the enemy's tail
         gHelperUtility::debugLine(
-            gRealColor(other->color_.r, other->color_.g, other->color_.b),
+            tColor(other->color_.r, other->color_.g, other->color_.b),
             sg_helperShowEnemyTailHeight,
             timeout * sg_helperShowEnemyTailTimeoutMult,
             other->tailPos,
@@ -509,7 +513,7 @@ void gHelper::showTailTracer(gHelperData &data)
     REAL timeout = fabs(distanceToTail) / sg_helperShowTailTracerDistanceMult * data.ownerData.speedFactorF();
 
     // draws a debug line at the tail position with a specified height, color, and timeout
-    gHelperUtility::debugLine(gRealColor(1, 1, 1), sg_helperShowTailTracerHeight, timeout * sg_helperShowTailTracerTimeoutMult, tailPos, tailPos, sg_helperShowTailTracerBrightness);
+    gHelperUtility::debugLine(tColor(1, 1, 1), sg_helperShowTailTracerHeight, timeout * sg_helperShowTailTracerTimeoutMult, tailPos, tailPos, sg_helperShowTailTracerBrightness);
 }
 
 
@@ -543,7 +547,7 @@ void gHelper::showCorner(gHelperData &data, gSmartTurningCornerData & corner, RE
         // If the corner is close, visualize the corner
         if (isClose)
         {
-            gHelperUtility::debugLine(gRealColor(1, .5, 0), sg_helperShowCornersHeight, timeout, corner.currentPos, corner.currentPos);
+            gHelperUtility::debugLine(tColor(1, .5, 0), sg_helperShowCornersHeight, timeout, corner.currentPos, corner.currentPos);
         }
     }
 }
@@ -604,10 +608,10 @@ void gHelper::showHit(gHelperData &data)
     eCoord frontBeforeHit = data.sensors.getSensor(FRONT)->before_hit;
 
     // draw a line from the owner's current position to the front before hit position
-    gHelperUtility::debugLine(gRealColor(1, .5, 0), sg_showHitDataHeightFront, timeout, ownerPos, frontBeforeHit);
+    gHelperUtility::debugLine(tColor(1, .5, 0), sg_showHitDataHeightFront, timeout, ownerPos, frontBeforeHit);
 
     if (sg_helperShowHitFrontLine){
-        gHelperUtility::debugLine(gRealColor(1, .5, 0), sg_helperShowHitFrontLineHeight, timeout, frontBeforeHit, frontBeforeHit);
+        gHelperUtility::debugLine(gHelperUtility::tStringTotColor(sg_helperShowHitFrontLineColor),sg_helperShowHitFrontLineHeight, timeout, frontBeforeHit, frontBeforeHit);
     }
 
     // check if the start position is at the hit position or not
@@ -669,7 +673,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     if (firstRun && sg_helperDetectCut) {
         gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
 
-        // Only care when enemy is driving toward us, or same direction        
+        // Only care when enemy is driving toward us, or same direction
         if ( !( enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight )) {
             open = open && (enemyData.canCutEnemy || sensorDir != enemyData.enemySide);
         }
@@ -679,12 +683,12 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     // Draw a green line if the hit distance is greater than the specified value, indicating that the path is clear.
     if (open)
     {
-        gHelperUtility::debugLine(gRealColor(0, 1, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
+        gHelperUtility::debugLine(tColor(0, 1, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
     }
     // Draw a red line if the hit distance is smaller than the specified value, indicating an obstacle in the way.
     else
     {
-        gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
+        gHelperUtility::debugLine(tColor(1, 0, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
     }
 
     // Recursively call the function to visualize multiple sensor hits.
@@ -703,7 +707,7 @@ void gHelper::Activate()
 {
     if (!aliveCheck())
         return;
-        
+
     REAL start;
 
     if (sg_helperHud) {
@@ -714,7 +718,7 @@ void gHelper::Activate()
         debug << "Walls: " << sg_netPlayerWalls.Len() << "\n";
         debug << "eGameObjects: " << eGrid::CurrentGrid()->gameObjects.Len() << "\n";
 
-        helperDebugH << debug;        
+        helperDebugH << debug;
         ownerPosH << roundeCoord(ownerPos);
         ownerDirH << roundeCoord(ownerDir);
         tailPosH << roundeCoord(tailPos);

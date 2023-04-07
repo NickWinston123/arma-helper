@@ -5,6 +5,7 @@
 #include "tDirectories.h"
 #include "tLocale.h"
 #include "tSystime.h"
+#include "tColor.h"
 #include <unordered_set>
 #ifndef ArmageTron_GHELPER_UTILITIES
 #define ArmageTron_GHELPER_UTILITIES
@@ -254,11 +255,13 @@ using namespace helperConfig;
 class gHelperUtility
 {
 public:
-    static void debugLine(gRealColor color, REAL height, REAL timeout,
+    static void debugLine(tColor color, REAL height, REAL timeout,
                           eCoord start, eCoord end, REAL brightness = 1);
 
-    static void debugBox(gRealColor color, eCoord center, REAL radius, REAL timeout, REAL height = 1);
+    static void debugBox(tColor color, eCoord center, 
+                         REAL radius, REAL timeout, REAL height = 1);
 
+    static tColor tStringTotColor(tString string);
 
     template <typename T>
     static void Debug(const std::string &sender, const std::string &description, T value, debugParams *params)

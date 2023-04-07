@@ -154,7 +154,7 @@ void gTailHelper::Activate(gHelperData &data)
     eCoord lastPos = *ownerPos;
     for (int i = 0; i < path.size(); i++)
     {
-        gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_tailHelperHeight, timeout, lastPos, path[i], sg_tailHelperBrightness);
+        gHelperUtility::debugLine(tColor(1, 0, 0), sg_tailHelperHeight, timeout, lastPos, path[i], sg_tailHelperBrightness);
         lastPos = path[i];
     }
 }

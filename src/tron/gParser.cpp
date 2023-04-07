@@ -1111,7 +1111,7 @@ ePoint * gParser::DrawRim( eGrid * grid, ePoint * start, eCoord const & stop, RE
     REAL length = (stop-(*start)).Norm();
     REAL rimTextureStop = rimTexture + length;
 
-    if (sr_highRim && h > sr_highRimCap)
+    if (!sr_highRim && h > sr_highRimCap)
         h = sr_highRimCap;
     // create wall
     tJUST_CONTROLLED_PTR< gWallRim > newWall = tNEW( gWallRim )(grid, rimTexture, rimTextureStop, h);

@@ -133,21 +133,21 @@ void gPathHelper::RenderPath(gHelperData &data)
     eCoord last_c;
     eCoord owner_pos = owner_.pos; // get the current position of the owner
 
-    gHelperUtility::debugLine(gRealColor(1, 1, 0), 0, data.ownerData.speedFactorF(), owner_pos, path_.positions(0) + path_.offsets(0), se_pathBrightness);
+    gHelperUtility::debugLine(tColor(1, 1, 0), 0, data.ownerData.speedFactorF(), owner_pos, path_.positions(0) + path_.offsets(0), se_pathBrightness);
 
     for (int i = path_.positions.Len() - 1; i >= 0; i--)
     {
         eCoord c = path_.positions(i) + path_.offsets(i);
         if (i != path_.positions.Len() - 1)
-            gHelperUtility::debugLine(gRealColor(1, 0, 0), se_pathHeight, data.ownerData.speedFactorF(), last_c, c, se_pathBrightness);
+            gHelperUtility::debugLine(tColor(1, 0, 0), se_pathHeight, data.ownerData.speedFactorF(), last_c, c, se_pathBrightness);
         last_c = c;
     }
 
     if (path_.current >= 0 && path_.positions.Len() > 0)
     {
         eCoord c = path_.CurrentPosition();
-        gHelperUtility::debugLine(gRealColor(1, 1, 0), se_pathHeight, data.ownerData.speedFactorF(), c, c, 1);
-        gHelperUtility::debugLine(gRealColor(1, 1, 0), (se_pathHeight * 2), data.ownerData.speedFactorF(), c, c, se_pathBrightness);
+        gHelperUtility::debugLine(tColor(1, 1, 0), se_pathHeight, data.ownerData.speedFactorF(), c, c, 1);
+        gHelperUtility::debugLine(tColor(1, 1, 0), (se_pathHeight * 2), data.ownerData.speedFactorF(), c, c, se_pathBrightness);
     }
 }
 
@@ -215,7 +215,7 @@ void gPathHelper::RenderTurn(gHelperData &data)
             // Comes in opposite, flip to fit turn direction mapping set in gHelper
             lr *= -1;
 
-            gHelperUtility::debugLine(gRealColor(.2, 1, 0), 3, data.ownerData.speedFactorF() * 3, owner_.Position(), data.sensors.getSensor(lr)->before_hit, 1);
+            gHelperUtility::debugLine(tColor(.2, 1, 0), 3, data.ownerData.speedFactorF() * 3, owner_.Position(), data.sensors.getSensor(lr)->before_hit, 1);
             if (sg_pathHelperShowTurnAct)
                 helper_.turnHelper->makeTurnIfPossible(data, lr, 1);
         }

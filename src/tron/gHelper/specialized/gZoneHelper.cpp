@@ -52,7 +52,7 @@ gHelperHudItem<tColoredString> zoneInfoH("Zone Info", tColoredString("None"));
 
 gHelperHudItem<REAL> zoneHitH("Zone Hit", 0);
 
-void debugZone(gZone *zone, gRealColor color, REAL timeout)
+void debugZone(gZone *zone, tColor color, REAL timeout)
 {
     gHelperUtility::debugBox(color, zone->Position(), zone->GetRadius()+sg_helperZoneShowBonusRadius, timeout, sg_helperZoneShowHeight);
 }
@@ -66,7 +66,7 @@ void gZoneHelper::renderSensorHit( gZoneHitData * zoneHit,gHelperData &data){
     if (zoneHit->hitZone) {
         zoneHitH << zoneHit->hit;
         gHelperUtility::Debug("zoneSensor","SENSOR ZONE HIT, INTERCEPT: ", zoneHit->intercept);
-        gHelperUtility::debugLine(gRealColor(1,0,0), 1, data.ownerData.speedFactorF() + 1, owner_.Position(), zoneHit->intercept);
+        gHelperUtility::debugLine(tColor(1,0,0), 1, data.ownerData.speedFactorF() + 1, owner_.Position(), zoneHit->intercept);
     }
 }
 
@@ -195,7 +195,7 @@ void gZoneHelper::zoneTracer(gHelperData &data)
         return;
 
     // Draw the tracer line to the nearest corner of the zone
-    gHelperUtility::debugLine(gRealColor(1, 0, 0), sg_helperZoneTracerHeight,
+    gHelperUtility::debugLine(tColor(1, 0, 0), sg_helperZoneTracerHeight,
                                 data.ownerData.speedFactorF() *sg_helperZoneTracerTimeoutMult,
                                 owner_.Position(), closestCorner(zone), sg_helperZoneTracerBrightness);
 }
@@ -249,10 +249,10 @@ void gZoneHelper::showZones(gHelperData &data)
         bool zoneIsOurs = zone->Team() == owner_.Team();
         if (!sg_helperZoneShowOwnerOnly || sg_helperZoneShowOwnerOnly && zoneIsOurs)
         {
-            gRealColor color(zone->GetColor().r, zone->GetColor().g, zone->GetColor().b);
+            tColor color(zone->GetColor().r, zone->GetColor().g, zone->GetColor().b);
 
             if (sg_helperZoneEnemyZonesColor && !zoneIsOurs) {
-                color = gRealColor(1,0,0);
+                color = tColor(1,0,0);
             }
             zoneVelocity = zone->GetVelocity().Norm();
             timeout = zoneVelocity > 0 ? 1 / zoneVelocity : .005;

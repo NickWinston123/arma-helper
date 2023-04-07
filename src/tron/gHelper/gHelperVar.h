@@ -42,7 +42,6 @@ namespace helperConfig {
     extern REAL sg_helperSmartTurningFrontBotActivationSpace ;
     extern REAL sg_helperSmartTurningFrontBotDisableTime ;
 
-    extern bool sg_helperSmartTurningTrapped;
     extern bool sg_helperSmartTurningClosedIn ;
 
     extern bool sg_helperSmartTurningAutoTrace ;

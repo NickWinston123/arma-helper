@@ -157,7 +157,12 @@ gHelperSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSens
 }
 
 REAL gHelperOwnerData::turnSpeedFactorF() {
-    return ((owner_->verletSpeed_) * owner_->GetTurnDelay());
+    return 1 / ( ((owner_->verletSpeed_) * owner_->GetTurnDelay()));
+}
+
+REAL gHelperOwnerData::turnTimeF(int dir) {
+    return owner_->GetNextTurn(dir);
+
 }
 
 REAL gHelperOwnerData::lagFactorF() {

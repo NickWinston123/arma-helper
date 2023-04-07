@@ -150,6 +150,7 @@ public:
     bool sg_smarterBotFollowTryLogicOppositeTurn;
     bool sg_smarterBotFollowFindTarget;
     bool sg_smarterBotFollowFindZone;
+    bool sg_smarterBotFollowTail;
     tString sg_smarterBotFollowTarget;
     REAL sg_smarterBotPlanScale;
     REAL sg_smarterBotTailScale;
@@ -291,6 +292,7 @@ public:
     playerWatchStatus lastWatchStatus;
     static void watchPlayerStatus();
     static ePlayerNetID  *gCycleToNetPlayer(gCycle *owner);
+    static gCycle *NetPlayerTogCycle(ePlayerNetID *player);
     int lastsyncedColor[3] = {0, 0, 0};
     tColoredString lastColoredName;
     int currentShift = 0;
@@ -524,6 +526,7 @@ public:
     void listPlayerInfo(tString s_orig);
     // Fast way to change / display current RGB
     void currentPlayerRGB(tString s_orig);
+    void rebuildCommand(tString s_orig);
     // Quick way to speak as another local player
     void localSpeak(tString s_orig);
     // List active status of players (chatting time, activity, etc)

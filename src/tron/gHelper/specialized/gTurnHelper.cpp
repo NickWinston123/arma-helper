@@ -165,15 +165,24 @@ bool gTurnHelper::makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFacto
 // Function that checks if a turn can be survived by the player.
 gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor, bool driveStraight)
 {
+    // gHelperUtility::Debug("CAN_SURVIVE_TURN", "Entering function", true);
+
     // If the player is not alive, return.
     if (!helper_.aliveCheck() || (driveStraight && helper_.drivingStraight()))
+    {
+        gHelperUtility::Debug("CAN_SURVIVE_TURN", "Player not alive or driving straight", false);
         return gSurviveData(false);
+    }
 
     gSurviveData surviveData;
-
+    
     // Calculate the rubber factor.
-    // data.rubberData.calculate();
     REAL rubberFactor = data.rubberData.rubberFactorF();
+    // REAL turnTime = data.ownerData.turnTimeF(1) - se_GameTime();
+    // con << "TURN TIME: " << turnTime << "\n"; 
+    REAL turnFactor   = (data.ownerData.turnSpeedFactorF());
+    // gHelperUtility::Debug("CAN_SURVIVE_TURN", "Rubber factor: ", rubberFactor);
+
     // Initialize the values to assume both turns are survivable.
     surviveData.canSurviveLeftTurn = true;
     surviveData.canSurviveRightTurn = true;
@@ -185,31 +194,38 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
 
     // Initialize the variables to assume the turns can be survived.
     bool canTurnLeftRubber = true, canTurnRightRubber = true, canTurnLeftSpace = true, canTurnRightSpace = true;
+
     // Calculate the closed-in factor based on the turn speed factor and the closed-in mult.
-    REAL closedInFactor = data.ownerData.turnSpeedFactorF() * sg_helperSmartTurningClosedInMult;
+    REAL closedInFactor = turnFactor * sg_helperSmartTurningClosedInMult;
     // Check if the player is closed in on the front, left and right sides.
     surviveData.closedIn = (front->hit <= closedInFactor && (left->hit <= closedInFactor || right->hit <= closedInFactor));
+    // gHelperUtility::Debug("CAN_SURVIVE_TURN", "Closed in: ", surviveData.closedIn ? "TRUE" : "FALSE");
+
     // Check if the player is blocked by itself on the front, left and right sides.
     surviveData.blockedBySelf = (left->type == gSENSOR_SELF && right->type == gSENSOR_SELF && front->type == gSENSOR_SELF);
+    // gHelperUtility::Debug("CAN_SURVIVE_TURN", "Blocked by self: ", surviveData.blockedBySelf  ? "TRUE" : "FALSE");
 
-    surviveData.trapped =  false;//IsTrapped(owner_, NULL);
-
+    // con << "rubberFactor: " << rubberFactor << "\n" << "rubberTimeLeft: " << data.rubberData.rubberTimeLeftF << "\n";
+    // con << "comparing verse: " << turnFactor * freeSpaceFactor << "\n";
     // If free space factor is greater than 0, check the free space factor.
     if (freeSpaceFactor > 0)
     {
         // If the left hit is less than the turn speed factor multiplied by the free space factor and the front and right hits are greater than the turn speed factor multiplied by the free space factor, the turn left cannot be survived.
-        if (left->hit < data.ownerData.turnSpeedFactorF() * freeSpaceFactor &&
-            front->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor &&
-            right->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor)
+        if (left->hit < turnFactor * freeSpaceFactor &&
+            front->hit > turnFactor * freeSpaceFactor &&
+            right->hit > turnFactor * freeSpaceFactor)
         {
             canTurnLeftSpace = false;
+            gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnLeftSpace false");
         }
         // If the right hit is less than the turn speed factor multiplied by the free space factor and the front and left hits are greater than the turn speed factor multiplied by the free space factor, the turn right cannot be survived.
-        if (right->hit < data.ownerData.turnSpeedFactorF() * freeSpaceFactor &&
-            front->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor &&
-            left->hit > data.ownerData.turnSpeedFactorF() * freeSpaceFactor)
+        if (right->hit < turnFactor * freeSpaceFactor &&
+            front->hit > turnFactor * freeSpaceFactor &&
+            left->hit > turnFactor * freeSpaceFactor)
         {
             canTurnRightSpace = false;
+            gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnRightSpace false");
+            // gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnRightSpace: ", canTurnRightSpace  ? "TRUE" : "FALSE");
         }
     }
 

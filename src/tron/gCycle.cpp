@@ -5037,6 +5037,17 @@ gCycleWallsDisplayListManager::~gCycleWallsDisplayListManager()
 }
 
 
+REAL gCycle::timeBeforeWallRemoval(gCycle *owner) {
+    if (!owner->Alive() && gCycle::WallsStayUpDelay() >= 0) {
+        REAL timeRemaining = owner->DeathTime() + gCycle::WallsStayUpDelay() - se_GameTime();
+        if (timeRemaining > 0) {
+            return timeRemaining;
+        }
+    }
+    return 0;
+}
+
+
 bool gCycleWallsDisplayListManager::CannotHaveList( REAL distance, gCycle const * cycle )
 {
     return

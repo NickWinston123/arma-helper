@@ -4246,13 +4246,14 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
 
         eGameObject *e = p->Object();
         //e checks if player is an actual game object ( spectaters are not )
-        if (!e || e && !e->Alive()) {
+        if (((!e) || (e && !e->Alive())) && (p)) {
             eCoord pos, dir;
             sg_DetermineSpawnPoint(p,pos,dir);
             gCycle * cycle = new gCycle( grid, pos, dir, p );
+            if (!cycle)
+                return; 
             p->ControlObject(cycle);
             p->respawnedLocally = true;
-            sg_Timestamp();
         }
 
         return;

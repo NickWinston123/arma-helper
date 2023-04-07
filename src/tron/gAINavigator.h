@@ -368,6 +368,7 @@ private:
         void TryTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data, int depth = 0);
         bool FindTarget();
         bool targetZone();
+        void followTail();
         bool SetDesiredTarget(tString target);
         //! set the target to follow
         void SetTarget( eCoord const & target, eCoord const & velocity );

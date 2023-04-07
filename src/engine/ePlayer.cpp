@@ -1169,6 +1169,14 @@ ePlayerNetID *ePlayerNetID::gCycleToNetPlayer(gCycle *owner)
     return owner->Player();
 }
 
+gCycle *ePlayerNetID::NetPlayerTogCycle(ePlayerNetID *player)
+{
+    gCycle *cycle = dynamic_cast<gCycle *>(player->Object());
+    if (cycle)
+        return cycle;
+    return NULL;
+}
+
 void   ePlayer::StoreConfitem(tConfItemBase *c)
 {
     tASSERT(CurrentConfitem < PLAYER_CONFITEMS);
@@ -1437,11 +1445,17 @@ ePlayer::ePlayer() : colorIteration(0)
     sg_smarterBotFollowFindTarget = true;
     StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot Follow Target", sg_smarterBotFollowFindTarget));
 
-    // sg_smarterBotFollowFindTarget
+    // sg_smarterBotFollowFindZone
     confname.Clear();
     confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_ZONE";
-    sg_smarterBotFollowFindZone = true;
+    sg_smarterBotFollowFindZone = false;
     StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot Follow Znoe", sg_smarterBotFollowFindZone));
+
+    // sg_smarterBotFollowTail
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_TAIL";
+    sg_smarterBotFollowTail = false;
+    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot Follow Tail", sg_smarterBotFollowTail));
 
     // sg_smarterBotFollowBlockLogic
     confname.Clear();
@@ -5037,7 +5051,7 @@ void ePlayerNetID::Chat(const tString& s_orig)
         }
         else if (command == se_rebuildCommand)
         {
-            CompleteRebuild();
+            rebuildCommand(s_orig);
         }
         else if (command == se_watchCommand)
         {
@@ -8686,6 +8700,10 @@ void ePlayerNetID::DisplayScores()
 #endif
 }
 
+bool se_playerTabMenuWallTime = false;
+static tConfItem<bool> se_playerTabMenuWallTimeConf("PLAYER_TAB_MENU_WALL_TIME",se_playerTabMenuWallTime);
+
+
 
 tString ePlayerNetID::Ranking( int MAX, bool cut )
 {
@@ -8708,6 +8726,10 @@ tString ePlayerNetID::Ranking( int MAX, bool cut )
         ret.SetPos(39, cut );
         ret << tOutput("$player_scoretable_team");
         ret.SetPos(56, cut );
+        if (se_playerTabMenuWallTime) {
+            ret << tOutput("Wall Time:");
+            ret.SetPos(73, cut );
+        }
         ret << "\n";
 
         int max = se_PlayerNetIDs.Len();
@@ -8771,6 +8793,21 @@ tString ePlayerNetID::Ranking( int MAX, bool cut )
             }
             else
                 line << tOutput("$player_scoretable_inactive");
+
+            if (se_playerTabMenuWallTime)
+            {
+                gCycle *cycle = ePlayerNetID::NetPlayerTogCycle(p);
+                if (cycle)
+                {
+                    REAL remainingTime = gCycle::timeBeforeWallRemoval(cycle);
+                    if (remainingTime > 0)
+                        line << remainingTime;
+                    else
+                        line << "";
+
+                    line.SetPos(73, cut);
+                }
+            }
             ret << line << "\n";
         }
         if ( max < se_PlayerNetIDs.Len() )
@@ -9854,6 +9891,22 @@ void ePlayerNetID::activeStatus(tString s_orig)
         listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.\n";
 
     con << listInfo;
+}
+
+void ePlayerNetID::rebuildCommand(tString s_orig)
+{
+    int pos = 0;
+
+    tString PlayerNumb = s_orig.ExtractNonBlankSubString(pos,1);
+
+    if (PlayerNumb.empty() || PlayerNumb == "")
+    {
+        CompleteRebuild();
+    } else {
+        ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb));
+        Clear(local_p);
+        Update();
+    }
 }
 
 // Allow us to change our current RGB easily.

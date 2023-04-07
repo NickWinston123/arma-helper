@@ -1749,7 +1749,7 @@ void login_accept_handler(nMessage &m){
         // only now, login can be considered a success
         login_succeeded=true;
         sn_myNetID=id;
-
+        // con << "ASSIGNED sn_myNetID to " << id << "\n";
         first_fill_ids();
     }
 }

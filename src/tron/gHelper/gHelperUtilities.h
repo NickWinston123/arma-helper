@@ -199,6 +199,8 @@ struct gHelperOwnerData {
     // calculates the factor based on the owner's turning speed
     REAL turnSpeedFactorF();
 
+    REAL turnTimeF(int dir);
+
     // calculates the percentage based on the turn speed factor
     REAL turnSpeedFactorPercentF() {
         return (1/turnSpeedFactorF());
@@ -258,7 +260,7 @@ public:
     static void debugLine(tColor color, REAL height, REAL timeout,
                           eCoord start, eCoord end, REAL brightness = 1);
 
-    static void debugBox(tColor color, eCoord center, 
+    static void debugBox(tColor color, eCoord center,
                          REAL radius, REAL timeout, REAL height = 1);
 
     static tColor tStringTotColor(tString string);

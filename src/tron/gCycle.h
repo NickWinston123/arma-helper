@@ -395,6 +395,7 @@ public:
 
     bool    IsMe( eGameObject const * other ) const;              //!< checks whether the passed pointer is logically identical with this cycle
 
+    static REAL timeBeforeWallRemoval(gCycle *owner);
     // the network routines:
     gCycle(nMessage &m);
     virtual void WriteCreate(nMessage &m);

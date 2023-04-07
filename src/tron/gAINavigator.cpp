@@ -488,14 +488,14 @@ gAINavigator::PathEvaluator::~PathEvaluator(){}
         evaluation.score = 0;
 
         // don't do anything if we're tunneling. Danger affot.
-        // if( path.left.owner == path.right.owner )
-        // {
-        // return;
-        // }
+        if( path.left.owner == path.right.owner )
+        {
+        return;
+        }
 
         // total wall length
         REAL len  = cycle_.ThisWallsLength();
-        if( len < 0 )
+        if( len < 0 || !cycle_.tailMoving)
         {
             return;
         }
@@ -737,6 +737,14 @@ void gAINavigator::RubberEvaluator::Init( gCycle const & cycle, REAL maxTime )
     }
 }
 
+void gAINavigator::FollowEvaluator::followTail()
+{
+    if (!cycle_.tailMoving)
+        return;
+    // con << cycle_.tailMoving << "\n";
+    SetTarget(cycle_.tailPos, cycle_.tailDir * cycle_.Speed());
+}
+
 // *************************
 // * FollowEvaluator      *
 // *************************
@@ -748,6 +756,12 @@ gAINavigator::FollowEvaluator::FollowEvaluator(gCycle &cycle)
 
     if (!local_p)
         return;
+
+    if (local_p->sg_smarterBotFollowTail)
+    {
+        followTail();
+        return;
+    }
 
     bool foundZone = false;
     bool foundDesiredTarget = false;
@@ -889,7 +903,7 @@ bool gAINavigator::FollowEvaluator::targetZone()
 {
     gZone * closestZone = gZoneHelper::findClosestZone(&cycle_);
 
-    if (closestZone)
+    if (closestZone && ! closestZone->isInside(&cycle_))
     {
         SetTarget(closestZone);
         return true;
@@ -902,7 +916,7 @@ bool gAINavigator::FollowEvaluator::targetZone()
 void gAINavigator::FollowEvaluator::SetTarget( eGameObject * object )
 {
     SetTarget(object->Position(),
-              object->Direction() * (object->Speed() + object->Lag()));
+              object->Direction() * (object->Speed())); // + object->Lag()
 }
 
 static const int MAX_SEARCH_DEPTH = 3;
@@ -957,6 +971,7 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
 
     // check whether the path is blocked
     gTargetSensor sensor( &cycle_, cycle_.Position(), toTarget_ );
+    // gTargetSensor sensor( &cycle_, cycle_.Position(), target);
     sensor.detect( .99 );
     ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
     if( sensor.type != gSENSOR_NONE )
@@ -1053,6 +1068,12 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
 
 void gAINavigator::FollowEvaluator::Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const
 {
+    if (toTarget_ == eCoord(0,0))
+    {
+        evaluation.score = -100;
+        return;
+    }
+
     eCoord pathDir = path.shortTermDirection;
     REAL f = eCoord::F( toTarget_, pathDir );
     if( f > 0 && f*f > .5 * pathDir.NormSquared() )
@@ -1061,6 +1082,7 @@ void gAINavigator::FollowEvaluator::Evaluate( gAINavigator::Path const & path, g
     }
 
     evaluation.score = 50 * f + 50;
+    // con << "toTarget_: "<< toTarget_ << "\n";
 }
 
 //!@param evaluator  evaluator doing the core work
@@ -1081,6 +1103,10 @@ void gAINavigator::EvaluationManager::Evaluate( PathEvaluator const & evaluator,
         PathEvaluation evaluation;
         Path const & path = paths_.GetPath(i);
         evaluator.Evaluate( path, evaluation );
+        // con << "GOT SCORE: " << evaluation.score << "\n";
+        // if (evaluation.score <= 0 )
+        //     continue;
+
         evaluation.score = evaluation.score * scale + offset;
 
         // update stored evaluation
@@ -1122,26 +1148,27 @@ void gAINavigator::EvaluationManager::Evaluate( PathEvaluator const & evaluator,
             bestDistance = path.distance;
         }
     }
+    
+//     if( bestPath_ < 0 )
+//     {
+//         // ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle);
+// #ifdef DEBUG
+//         con << "PANIC!\n";
+// #endif
 
-    if( bestPath_ < 0 )
-    {
-#ifdef DEBUG
-        con << "PANIC!\n";
-#endif
-
-        // PANIC. No path ever was not vetoed. Oh well. Take the best anyway and be done.
-        for( int i = paths_.GetPathCount()-1; i >= 0 ; --i )
-        {
-            PathEvaluation & store = evaluations_[i];
-            Path const & path = paths_.GetPath(i);
-            if ( bestPath_ < 0 || store.score > bestScore || ( store.score == bestScore && path.distance < bestDistance ) )
-            {
-                bestPath_ = i;
-                bestScore = store.score;
-                bestDistance = path.distance;
-            }
-        }
-    }
+//         // PANIC. No path ever was not vetoed. Oh well. Take the best anyway and be done.
+//         for( int i = paths_.GetPathCount()-1; i >= 0 ; --i )
+//         {
+//             PathEvaluation & store = evaluations_[i];
+//             Path const & path = paths_.GetPath(i);
+//             if ( bestPath_ < 0 || store.score > bestScore || ( store.score == bestScore && path.distance < bestDistance ) )
+//             {
+//                 bestPath_ = i;
+//                 bestScore = store.score;
+//                 bestDistance = path.distance;
+//             }
+//         }
+//     }
 }
 
 //! reset scores, but don't forget veto

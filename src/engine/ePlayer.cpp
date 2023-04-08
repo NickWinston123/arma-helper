@@ -10662,7 +10662,7 @@ void ePlayerNetID::Update()
             ));
             
             
-            if ( (!se_disableCreateSpecific.empty() || !tIsInList(se_disableCreateSpecific,i+1)) && !se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
+            if ( (se_disableCreateSpecific.empty() || !tIsInList(se_disableCreateSpecific,i+1)) && !se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
             {
                 // reset last time so idle time in the menus does not count as play time
                 lastTime = tSysTimeFloat();

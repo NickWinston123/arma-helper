@@ -253,7 +253,12 @@ static tSettingItem<int> s_s("SCORE_SUICIDE",score_suicide);
 // input control
 
 uActionPlayer gCycle::s_brake("CYCLE_BRAKE", -9);
+
 static uActionPlayer s_brakeToggle("CYCLE_BRAKE_TOGGLE", -9);
+
+bool s_cycleBrakeToggleUndeplete = false;
+static tConfItem<bool> s_cycleBrakeToggleUndepleteConf("CYCLE_BRAKE_TOGGLE_UNDEPLETE",s_cycleBrakeToggleUndeplete);
+
 static uActionTooltip sg_brakeTooltip( gCycle::s_brake, 1, &ePlayer::VetoActiveTooltip );
 
 static eWavData cycle_run("moviesounds/engine.wav","sound/cyclrun.wav");
@@ -3069,6 +3074,10 @@ bool gCycle::Timestep(REAL currentTime){
     if (sg_updateCycleColor && playerExist ) //&& player->pID == 0
     {
         this->updateColor();
+    }
+
+    if (s_cycleBrakeToggleUndeplete) {
+        gHelper::autoBrake(*this,0.01,10);
     }
 
     bool ret = false;

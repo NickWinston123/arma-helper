@@ -327,32 +327,36 @@ void gHelper::autoBrake()
         nextUpdateTime = tSysTimeFloat() + random;
 
     }
+    autoBrake(owner_,min,max);
+}
+
+void gHelper::autoBrake(gCycle &owner, REAL min, REAL max)
+{
     // Get the current used braking percentage of the cycle ( always out of 1 )
-    REAL brakeUsagePercent = owner_.GetBrakingReservoir();
+    REAL brakeUsagePercent = owner.GetBrakingReservoir();
 
     // Check if the brake depletion is enabled
     bool cycleBrakeDeplete = true;
-    if (sg_helperAutoBrakeDeplete && sg_helperAutoBrakeMin == 0 && sg_cycleBrakeDeplete < 0)
+    if (min <= 0 && sg_cycleBrakeDeplete < 0)
     {
         cycleBrakeDeplete = false;
     }
 
     // Check if the cycle is already braking and the used brake percentage is below the minimum brake limit
     // and brake depletion is enabled
-    if (owner_.GetBraking() && brakeUsagePercent <= min && cycleBrakeDeplete)
+    if (owner.GetBraking() && brakeUsagePercent <= min && cycleBrakeDeplete)
     {
         // Stop braking
-        owner_.ActBot(&gCycle::s_brake, -1);
+        owner.ActBot(&gCycle::s_brake, -1);
     }
 
     // Check if the cycle is not braking and the used brake percentage is above the maximum brake limit
-    if (!owner_.GetBraking() && brakeUsagePercent >= max)
+    if (!owner.GetBraking() && brakeUsagePercent >= max)
     {
         // brake
-        owner_.ActBot(&gCycle::s_brake, 1);
+        owner.ActBot(&gCycle::s_brake, 1);
     }
 }
-
 
 // This function adds tracers to the position of enemies to make it easier for the player to see their position.
 void gHelper::enemyTracers(gHelperData &data)

@@ -64,7 +64,7 @@ namespace helperConfig {
     extern bool sg_helperSmartTurningPlan ;
 
     extern bool sg_helperAutoBrake ;
-    extern bool sg_helperAutoBrakeDeplete ;
+    // extern bool sg_helperAutoBrakeDeplete ;
     extern REAL sg_helperAutoBrakeMin ;
     extern REAL sg_helperAutoBrakeMax ;
     extern REAL sg_helperAutoBrakeRandomness ;

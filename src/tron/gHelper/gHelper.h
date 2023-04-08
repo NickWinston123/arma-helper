@@ -130,6 +130,7 @@ class gHelper {
          * autoBrake - Automatically apply brakes to the cycle
          */
         void autoBrake();
+        static void autoBrake(gCycle &owner, REAL min, REAL max);
 
         /**
          * showEnemyTail - Visualize the tail of the closest enemy cycle
@@ -224,6 +225,6 @@ class gHelper {
 
         // Unique pointer to the gZoneHelper object
         std::unique_ptr< gZoneHelper > zoneHelper;
-        
+
 };
 #endif

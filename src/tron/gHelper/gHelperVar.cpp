@@ -36,8 +36,8 @@ static tConfItem<REAL> sg_helperAITimec("HELPER_AI_TIME", sg_helperAITime);
 
 bool sg_helperAutoBrake = false;
 static tConfItem<bool> sg_helperAutoBrakeConf("HELPER_SELF_AUTO_BRAKE", sg_helperAutoBrake);
-bool sg_helperAutoBrakeDeplete = false;
-static tConfItem<bool> sg_helperAutoBrakeDepleteConf("HELPER_SELF_AUTO_BRAKE_DEPLETE", sg_helperAutoBrakeDeplete);
+// bool sg_helperAutoBrakeDeplete = false;
+// static tConfItem<bool> sg_helperAutoBrakeDepleteConf("HELPER_SELF_AUTO_BRAKE_DEPLETE", sg_helperAutoBrakeDeplete);
 REAL sg_helperAutoBrakeMin = 0;
 static tConfItem<REAL> sg_helperAutoBrakeMinConf("HELPER_SELF_AUTO_BRAKE_MIN", sg_helperAutoBrakeMin);
 REAL sg_helperAutoBrakeMax = 2;

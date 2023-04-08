@@ -6131,6 +6131,9 @@ void se_ListPastChatters(ePlayerNetID * receiver)
 bool se_disableCreate = false;
 static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
 
+tString se_disableCreateSpecific = tString("");
+static tConfItem<tString> se_disableCreateSpecificConf("DISABLE_CREATE_SPECIFIC", se_disableCreateSpecific);
+
 static bool se_disableCreateHard = false;
 static tConfItem<bool> se_disableCreateHardConf("DISABLE_CREATE_HARD", se_disableCreateHard);
 
@@ -9903,7 +9906,7 @@ void ePlayerNetID::rebuildCommand(tString s_orig)
     {
         CompleteRebuild();
     } else {
-        ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb));
+        ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb)+1);
         Clear(local_p);
         Update();
     }
@@ -10653,10 +10656,13 @@ void ePlayerNetID::Update()
             tCONTROLLED_PTR(ePlayerNetID) &p=local_p->netPlayer;
             bool in_game=ePlayer::PlayerIsInGame(i) ||
             (local_p && local_p->ID() != 0 &&
-            (i <= (se_createPlayers) ||
-            (se_createPlayersSpecific != "" && tIsInList(se_createPlayersSpecific,i+1))));
-
-            if (!se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
+            (
+            (i <= se_createPlayers) ||
+            (se_createPlayersSpecific != "" && tIsInList(se_createPlayersSpecific,i+1))
+            ));
+            
+            
+            if ( (se_disableCreateSpecific == "" || !tIsInList(se_disableCreateSpecific,i+1)) && !se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
             {
                 // reset last time so idle time in the menus does not count as play time
                 lastTime = tSysTimeFloat();

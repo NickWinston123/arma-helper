@@ -71,9 +71,8 @@ void helperCornersMenu() {
 void helperShowHitMenu() {
     uMenu showHitMenu("Show Hit Settings");
 
-    uMenuItemInt showHitStartAtHitPos(&showHitMenu, "Start at Hit Pos", "Position where calculation for debug lines begins. 0 - At front hit point, 1 - At owners position, 2 - Both ", sg_helperShowHitStartPos,0, 2, 1);
+    uMenuItemInt showHitStartAtHitPos(&showHitMenu, "Start at Hit Mode", "Position where calculation for side debug lines begins. 0 - At front hit point, 1 - At owners position, 2 - Both ", sg_helperShowHitStartMode,0, 2, 1);
 
-    uMenuItemReal showHitHeight(&showHitMenu, "Hit Height", "Height for displaying hit", sg_showHitDataHeight,0, 5, .1);
     uMenuItemReal showHitHeightFront(&showHitMenu, "Hit Height (Front)", "Height for displaying hit in front", sg_showHitDataHeightFront,0, 5, 0.1);
     uMenuItemReal showHitHeightSides(&showHitMenu, "Hit Height (Sides)", "Height for displaying hit on sides", sg_showHitDataHeightSides,0, 5, 0.1);
     uMenuItemReal showHitRange(&showHitMenu, "Hit Range", "Range for displaying hit", sg_showHitDataRange,0, 1000, 5);
@@ -266,8 +265,6 @@ void helperExperimentalMenu(){
                                "Zone Helper",
                                "Zone Helper Settings",
                                helperZoneMenu);
-
-    uMenuItemToggle helperAI(&helperExperimentalMenu, "Helper AI", "Enable Helper AI", sg_helperAI);
 
     helperExperimentalMenu.Enter();
 }

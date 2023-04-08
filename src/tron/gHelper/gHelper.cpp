@@ -13,48 +13,180 @@ extern REAL sg_cycleBrakeDeplete;
 using namespace helperConfig;
 
 namespace helperConfig{
+
+bool sg_helper = false;
+static tConfItem<bool> sg_helperConf("HELPER", sg_helper);
+
+
+bool sg_helperCurrentTimeLocal = true; // Determines if the helper uses its own internal clock or the games to sync actions
+static tConfItem<bool> sg_helperCurrentTimeLocalConf("HELPER_CONF_CURRENT_TIME_LOCAL", sg_helperCurrentTimeLocal);
+REAL sg_helperBrightness = 1;
+static tConfItem<REAL> sg_helperBrightnessConf("HELPER_CONF_BRIGHTESS", sg_helperBrightness);
+bool sg_helperSensorsZoneDetection = false;
+static tConfItem<bool> sg_helperSensorsZoneDetectionC("HELPER_CONF_SENSORS_ZONE_DETECTION", sg_helperSensorsZoneDetection);
+REAL sg_helperSensorRange = 1000;
+static tConfItem<REAL> sg_helperSensorRangeConf("HELPER_CONF_SENSOR_RANGE", sg_helperSensorRange);
+bool sg_helperSensorLightUsageMode = false;
+static tConfItem<bool> sg_helperSensorLightUsageModeConf("HELPER_CONF_SENSOR_LIGHT_USAGE_MODE", sg_helperSensorLightUsageMode);
+bool sg_helperSensorDiagonalMode = false;
+static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_CONF_SENSOR_DIAGONAL_MODE", sg_helperSensorDiagonalMode);
+
+
+
+bool sg_helperDebug = false;
+static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
+bool sg_helperDebugSpamFilter = true;
+static tConfItem<bool> sg_helperDebugSpamFilterConf("HELPER_DEBUG_SPAM_FILTER", sg_helperDebugSpamFilter);
+tString sg_helperDebugIgnoreList = tString("");
+static tConfItem<tString> sg_helperDebugIgnoreListConf("HELPER_DEBUG_IGNORE_LIST", sg_helperDebugIgnoreList);
+REAL sg_helperDebugDelay = 0.15;
+static tConfItem<REAL> sg_helperDebugDelayConf("HELPER_DEBUG_DELAY", sg_helperDebugDelay);
+bool sg_helperDebugTimeStamp = true;
+static tConfItem<bool> sg_helperDebugTimeStampConf("HELPER_DEBUG_TIMESTAMP", sg_helperDebugTimeStamp);
+
+
+
+bool sg_helperAutoBrake = false;
+static tConfItem<bool> sg_helperAutoBrakeConf("HELPER_SELF_AUTO_BRAKE", sg_helperAutoBrake);
+REAL sg_helperAutoBrakeMin = 0;
+static tConfItem<REAL> sg_helperAutoBrakeMinConf("HELPER_SELF_AUTO_BRAKE_MIN", sg_helperAutoBrakeMin);
+REAL sg_helperAutoBrakeMax = 2;
+static tConfItem<REAL> sg_helperAutoBrakeMaxConf("HELPER_SELF_AUTO_BRAKE_MAX", sg_helperAutoBrakeMax);
+REAL sg_helperAutoBrakeRandomness = 0;
+static tConfItem<REAL> sg_helperAutoBrakeRandomnessConf("HELPER_SELF_AUTO_BRAKE_RANDOMNESS", sg_helperAutoBrakeRandomness);
+
+bool sg_pathHelper = false;
+static tConfItem<bool> sg_pathHelperC("HELPER_SELF_PATH", sg_pathHelper);
+bool sg_pathHelperRenderPath = false;
+static tConfItem<bool> sg_pathHelperRenderPathC("HELPER_SELF_PATH_RENDER", sg_pathHelperRenderPath);
+bool sg_pathHelperShowTurn = false;
+static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_SELF_PATH_RENDER_TURN", sg_pathHelperShowTurn);
+bool sg_pathHelperShowTurnAct = false;
+static tConfItem<bool> sg_pathHelperShowTurnActC("HELPER_SELF_PATH_RENDER_TURN_ACT", sg_pathHelperShowTurnAct);
+REAL sg_pathHelperShowTurnAhead = 0;
+static tConfItem<REAL> sg_pathHelperShowTurnAheadC("HELPER_SELF_PATH_RENDER_TURN_AHEAD", sg_pathHelperShowTurnAhead);
+int sg_pathHelperMode = 0;
+static tConfItem<int> sg_pathHelperModeC("HELPER_SELF_PATH_MODE", sg_pathHelperMode);
+REAL sg_pathHelperAutoCloseDistance = 150;
+static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC("HELPER_SELF_PATH_AUTO_CLOSE_DISTANCE", sg_pathHelperAutoCloseDistance);
+REAL sg_pathHelperUpdateTime = -1000;
+static tConfItem<REAL> sg_pathHelperUpdateTimeC("HELPER_SELF_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
+REAL se_pathHeight = 1;
+static tConfItem<REAL> se_pathHeightC("HELPER_SELF_PATH_RENDER_HEIGHT", se_pathHeight);
+REAL se_pathBrightness = 1;
+static tConfItem<REAL> se_pathBrightnessC("HELPER_SELF_PATH_BRIGHTNESS", se_pathBrightness);
+REAL sg_pathHelperUpdateDistance = 1;
+static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_SELF_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
+
+bool sg_helperShowCorners = false;
+static tConfItem<bool> sg_helperShowCornersConf("HELPER_SELF_SHOW_CORNERS", sg_helperShowCorners);
+bool sg_helperShowCornersPassed = 0;
+static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_SELF_SHOW_CORNERS_PASSED",sg_helperShowCornersPassed);
+REAL sg_helperShowCornersPassedRange = 1;
+static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_SELF_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
+REAL sg_helperShowCornersBoundary = 10;
+static tConfItem<REAL> sg_showTraceDatacornerRangeConf("HELPER_SELF_SHOW_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
+REAL sg_helperShowCornersBoundaryPassed = 2.5;
+static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_SELF_SHOW_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
+REAL sg_helperShowCornersTimeout = 1;
+static tConfItem<REAL> sg_traceTimeoutConf("HELPER_SELF_SHOW_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
+REAL sg_helperShowCornersHeight = 1;
+static tConfItem<REAL> sg_helperShowCornersHeightConf("HELPER_SELF_SHOW_CORNERS_HEIGHT", sg_helperShowCornersHeight);
+
+bool sg_helperSimpleBot = false;
+static tConfItem<bool> sg_helperSimpleBotConf("HELPER_SELF_SIMPLE_BOT", sg_helperSimpleBot);
+REAL sg_helperSimpleBotActivationSpace = 0;
+static tConfItem<REAL> sg_helperSimpleBotActivationSpaceConf("HELPER_SELF_SIMPLE_BOT_SPACE", sg_helperSimpleBotActivationSpace);
+REAL sg_helperSimpleBotActivationRubber = 0.9;
+static tConfItem<REAL> sg_helperSimpleBotActivationRubberConf("HELPER_SELF_SIMPLE_BOT_RUBBER", sg_helperSimpleBotActivationRubber);
+int sg_helperSimpleBotTurns = 1;
+static tConfItem<int> sg_helperSimpleBotTurnsConf("HELPER_SELF_SIMPLE_BOT_TURNS", sg_helperSimpleBotTurns);
+
+bool sg_helperShowTail = false;
+static tConfItem<bool> sg_helperShowTailConf("HELPER_SELF_SHOW_TAIL", sg_helperShowTail);
+REAL sg_helperShowTailHeight = 1;
+static tConfItem<REAL> sg_helperShowTailHeightConf("HELPER_SELF_SHOW_TAIL_HEIGHT", sg_helperShowTailHeight);
+REAL sg_helperShowTailPassthrough = 0.5;
+static tConfItem<REAL> sg_helperShowTailPassthroughConf("HELPER_SELF_SHOW_TAIL_PASSTHROUGH", sg_helperShowTailPassthrough);
+REAL sg_helperShowTailTimeout = 1;
+static tConfItem<REAL> sg_helperShowTailTimeoutConf("HELPER_SELF_SHOW_TAIL_TIMEOUT", sg_helperShowTailTimeout);
+
+bool sg_helperShowTailTracer = false;
+static tConfItem<bool> sg_helperShowTailTracerConf("HELPER_SELF_TAIL_TRACER", sg_helperShowTailTracer);
+REAL sg_helperShowTailTracerHeight = 1;
+static tConfItem<REAL> sg_helperShowTailTracerHeightConf("HELPER_SELF_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
+REAL sg_helperShowTailTracerBrightness = 1;
+static tConfItem<REAL> sg_helperShowTailTracerBrightnessConf("HELPER_SELF_TAIL_TRACER_BRIGHTNESS", sg_helperShowTailTracerBrightness);
+REAL sg_helperShowTailTracerTimeoutMult = 1;
+static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf("HELPER_SELF_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
+REAL sg_helperShowTailTracerDistanceMult = 10;
+static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf("HELPER_SELF_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
+
 bool sg_helperShowHit = false;
-static tConfItem<bool> sg_helperShowHitConf("HELPER_SHOW_HIT",
-                                            sg_helperShowHit);
-REAL sg_showHitDataHeight = 1;
-static tConfItem<REAL> sg_showHitDataHeightConf("HELPER_SHOW_HIT_HEIGHT",
-                                                sg_showHitDataHeight);
-REAL sg_showHitDataHeightFront = 1;
-static tConfItem<REAL> sg_showHitDataHeightFrontConf("HELPER_SHOW_HIT_HEIGHT_FRONT",
-                                                     sg_showHitDataHeightFront);
-REAL sg_showHitDataHeightSides = 2;
-static tConfItem<REAL> sg_showHitDataHeightSidesConf("HELPER_SHOW_HIT_HEIGHT_SIDES",
-                                                     sg_showHitDataHeightSides);
+static tConfItem<bool> sg_helperShowHitConf("HELPER_SELF_SHOW_HIT", sg_helperShowHit);
 REAL sg_showHitDataBrightness = 1;
-static tConfItem<REAL> sg_showHitDataBrightnessConf("HELPER_SHOW_HIT_BRIGHTNESS",
-                                                     sg_showHitDataBrightness);
-
-tString sg_helperShowHitFrontLineColor = tString("1,.5,0");
-static tConfItem<tString> sg_helperShowHitFrontLineColorConf("HELPER_SHOW_HIT_FRONT_LINE_COLOR",
-                                                     sg_helperShowHitFrontLineColor);
-REAL sg_showHitDataRange = 1;
-static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SHOW_HIT_RANGE",
-                                               sg_showHitDataRange);
+static tConfItem<REAL> sg_showHitDataBrightnessConf("HELPER_SELF_SHOW_HIT_BRIGHTNESS", sg_showHitDataBrightness);
+REAL sg_showHitDataRange = 200;
+static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SELF_SHOW_HIT_RANGE", sg_showHitDataRange);
 REAL sg_showHitDataFreeRange = 1;
-static tConfItem<REAL> sg_showHitDataFreeRangeConf("HELPER_SHOW_HIT_OPEN_RANGE",
-                                                   sg_showHitDataFreeRange);
-int sg_showHitDataRecursion = 1;
-static tConfItem<int> sg_showHitDataRecursionConf("HELPER_SHOW_HIT_RECURSION",
-                                                  sg_showHitDataRecursion);
-bool sg_helperShowHitFrontLine = false;
-static tConfItem<bool> sg_helperShowHitFrontLineConf("HELPER_SHOW_HIT_FRONT_LINE",
-                                                     sg_helperShowHitFrontLine);
-
-REAL sg_helperShowHitFrontLineHeight = 2;
-static tConfItem<REAL> sg_helperShowHitFrontLineHeightConf("HELPER_SHOW_HIT_FRONT_LINE_HEIGHT",
-                                                          sg_helperShowHitFrontLineHeight);
+static tConfItem<REAL> sg_showHitDataFreeRangeConf("HELPER_SELF_SHOW_HIT_OPEN_RANGE", sg_showHitDataFreeRange);
+int sg_showHitDataRecursion = 0;
+static tConfItem<int> sg_showHitDataRecursionConf("HELPER_SELF_SHOW_HIT_RECURSION", sg_showHitDataRecursion);
 REAL sg_showHitDataTimeout = 1;
-static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SHOW_HIT_TIMEOUT",
-                                                 sg_showHitDataTimeout);
+static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SELF_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
+REAL sg_showHitDataHeightFront = 1;
+static tConfItem<REAL> sg_showHitDataHeightFrontConf("HELPER_SELF_SHOW_HIT_HEIGHT_FRONT", sg_showHitDataHeightFront);
+REAL sg_showHitDataHeightSides = 2;
+static tConfItem<REAL> sg_showHitDataHeightSidesConf("HELPER_SELF_SHOW_HIT_HEIGHT_SIDES", sg_showHitDataHeightSides);
+bool sg_helperShowHitFrontLine = false;
+static tConfItem<bool> sg_helperShowHitFrontLineConf("HELPER_SELF_SHOW_HIT_FRONT_LINE", sg_helperShowHitFrontLine);
+tString sg_helperShowHitFrontLineColor = tString("1,.5,0");
+static tConfItem<tString> sg_helperShowHitFrontLineColorConf("HELPER_SELF_SHOW_HIT_FRONT_LINE_COLOR", sg_helperShowHitFrontLineColor);
+REAL sg_helperShowHitFrontLineHeight = 2;
+static tConfItem<REAL> sg_helperShowHitFrontLineHeightConf("HELPER_SELF_SHOW_HIT_FRONT_LINE_HEIGHT", sg_helperShowHitFrontLineHeight);
+int sg_helperShowHitStartMode = 0;
+static tConfItem<int> sg_helperShowHitStartModeConf("HELPER_SELF_SHOW_HIT_START_MODE", sg_helperShowHitStartMode);
 
-int sg_helperShowHitStartPos = 0;
-static tConfItem<int> sg_helperShowHitStartPosConf("HELPER_SHOW_HIT_START_POS",
-                                                         sg_helperShowHitStartPos);
+
+
+bool sg_helperShowEnemyTail = false;
+static tConfItem<bool> sg_helperShowEnemyTailConf("HELPER_ENEMY_TAIL", sg_helperShowEnemyTail);
+REAL sg_helperShowEnemyTailHeight = 1;
+static tConfItem<REAL> sg_helperShowEnemyTailHeightConf("HELPER_ENEMY_TAIL_HEIGHT", sg_helperShowEnemyTailHeight);
+REAL sg_helperShowEnemyTailDistanceMult = 1;
+static tConfItem<REAL> sg_helperShowEnemyTailDistanceMultConf("HELPER_ENEMY_TAIL_DISTANCE_MULT", sg_helperShowEnemyTailDistanceMult);
+REAL sg_helperShowEnemyTailTimeoutMult = 1;
+static tConfItem<REAL> sg_helperShowEnemyTailTimeoutMultConf("HELPER_ENEMY_TAIL_TIMEOUT_MULT", sg_helperShowEnemyTailTimeoutMult);
+REAL sg_helperShowEnemyTailBrightness = 1;
+static tConfItem<REAL> sg_helperShowEnemyTailBrightnessConf("HELPER_ENEMY_TAIL_BRIGHTNESS", sg_helperShowEnemyTailBrightness);
+
+bool sg_helperDetectCut = false;
+static tConfItem<bool> sg_helperDetectCutConf("HELPER_ENEMY_DETECT_CUT", sg_helperDetectCut);
+REAL sg_helperDetectCutDetectionRange = 150;
+static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf("HELPER_ENEMY_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
+REAL sg_helperDetectCutTimeout = .001;
+static tConfItem<REAL> sg_helperDetectCutTimeoutConf("HELPER_ENEMY_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
+REAL sg_helperDetectCutHeight = 0;
+static tConfItem<REAL> sg_helperDetectCutHeightConf("HELPER_ENEMY_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
+REAL sg_helperDetectCutReact = .02; // .005 ?
+static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_ENEMY_DETECT_CUT_REACTION_TIME", sg_helperDetectCutReact);
+bool sg_helperEnemyTracers = false;
+
+static tConfItem<bool> sg_helperEnemyTracersConf("HELPER_ENEMY_TRACERS", sg_helperEnemyTracers);
+REAL sg_helperEnemyTracersHeight = 0;
+static tConfItem<REAL> sg_helperEnemyTracersHeightConf("HELPER_ENEMY_TRACERS_HEIGHT", sg_helperEnemyTracersHeight);
+REAL sg_helperEnemyTracersDetectionRange = 150;
+static tConfItem<REAL> sg_helperEnemyTracersDetectionRangeConf("HELPER_ENEMY_TRACERS_DETECTION_RANGE", sg_helperEnemyTracersDetectionRange);
+REAL sg_helperEnemyTracersSpeedMult = 1.5;
+static tConfItem<REAL> sg_helperEnemyTracersSpeedMultConf("HELPER_ENEMY_TRACERS_SPEED_MULT", sg_helperEnemyTracersSpeedMult);
+REAL sg_helperEnemyTracersPassthrough = 1;
+static tConfItem<REAL> sg_helperEnemyTracersPassthroughConf("HELPER_ENEMY_TRACERS_PASSTHROUGH", sg_helperEnemyTracersPassthrough);
+REAL sg_helperEnemyTracersDelayMult = 1;
+static tConfItem<REAL> sg_helperEnemyTracersDelayMultConf("HELPER_ENEMY_TRACERS_DELAY_MULT", sg_helperEnemyTracersDelayMult);
+REAL sg_helperEnemyTracersTimeout = 0.01;
+static tConfItem<REAL> sg_helperEnemyTracersTimeoutConf("HELPER_ENEMY_TRACERS_TIMEOUT", sg_helperEnemyTracersTimeout);
+REAL sg_helperEnemyTracersBrightness = 1;
+static tConfItem<REAL> sg_helperEnemyTracersBrightnessConf("HELPER_ENEMY_TRACERS_BRIGHTNESS", sg_helperEnemyTracersBrightness);
 }
 
 //HUD ITEMS
@@ -106,8 +238,8 @@ REAL gHelper::CurrentTime() {
 void gHelper::turningBot(gHelperData &data){
     //data.rubberData.calculate();
     REAL rubberUsedRatio = data.rubberData.rubberUsedRatioF();
-    if ( (sg_helperTurningBotActivationRubber > 0 && rubberUsedRatio + data.ownerData.lagFactorF() >= sg_helperTurningBotActivationRubber) ||
-         (sg_helperTurningBotActivationSpace  > 0 && data.sensors.getSensor(FRONT)->hit <= sg_helperTurningBotActivationSpace)
+    if ( (sg_helperSimpleBotActivationRubber > 0 && rubberUsedRatio + data.ownerData.lagFactorF() >= sg_helperSimpleBotActivationRubber) ||
+         (sg_helperSimpleBotActivationSpace  > 0 && data.sensors.getSensor(FRONT)->hit <= sg_helperSimpleBotActivationSpace)
        )
     {
         int direction = owner_.lastBotTurnDir;
@@ -117,7 +249,7 @@ void gHelper::turningBot(gHelperData &data){
         // else
         //     direction = direction * -1;
 
-        for (int i = 0; i < sg_helperTurningBotTurns; i++) {
+        for (int i = 0; i < sg_helperSimpleBotTurns; i++) {
             owner_.ActTurnBot(direction);
         }
     }
@@ -619,7 +751,7 @@ void gHelper::showHit(gHelperData &data)
     }
 
     // check if the start position is at the hit position or not
-    switch (sg_helperShowHitStartPos)
+    switch (sg_helperShowHitStartMode)
     {
         case 2:
             // draw debug lines from the owner's current position in the left and right directions
@@ -770,7 +902,7 @@ void gHelper::Activate()
     if (sg_helperAutoBrake)
         autoBrake();
 
-    if (sg_helperTurningBot)
+    if (sg_helperSimpleBot)
         turningBot(data_stored);
 
     if (sg_helperHud) {

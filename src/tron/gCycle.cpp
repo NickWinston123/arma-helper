@@ -342,7 +342,7 @@ extern REAL sg_cycleBrakeDeplete;
 static bool sg_smarterBot = false;
 static tConfItem<bool> sg_smarterBotConf( "SMARTER_BOT", sg_smarterBot );
 
-bool sg_smarterBotTeam = false; // absolute unit
+bool sg_smarterBotTeam = false; // absolute unit - does not include owner
 static tConfItem<bool> sg_smarterBotTeamConf( "SMARTER_BOT_TEAM", sg_smarterBotTeam );
 
 bool sg_smarterBotTeamOwner = false; // absolute unit
@@ -381,12 +381,6 @@ void gSmarterBot::Survive(gCycle *owner)
     gSmarterBot &bot = gSmarterBot::Get(owner);
     if (&bot)
         bot.gAINavigator::Activate(se_GameTime(),0);
-    // bot.UpdatePaths();
-    // EvaluationManager manager( bot.GetPaths() );
-    // manager.Evaluate( SuicideEvaluator( *(bot.Owner())), 10);
-    // manager.Evaluate( SpaceEvaluator( *(bot.Owner())), 20);
-    // CycleControllerAction controller;
-    // manager.Finish( controller, *(bot.Owner()), 0 );
 }
 
 REAL gSmarterBot::Think( REAL minStep )

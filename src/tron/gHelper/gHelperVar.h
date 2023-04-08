@@ -30,9 +30,6 @@ namespace helperConfig {
     extern REAL sg_helperDebugDelay ;
     extern bool sg_helperDebugTimeStamp ;
 
-    extern bool sg_helperAI ;
-    extern REAL sg_helperAITime ;
-
     extern bool sg_helperSmartTurning ;
 
     extern bool sg_helperSmartTurningFrontBot ;
@@ -119,10 +116,10 @@ namespace helperConfig {
     extern REAL sg_helperEnemyTracersTimeout ;
     extern REAL sg_helperEnemyTracersBrightness ;
 
-    extern bool sg_helperTurningBot;
-    extern REAL sg_helperTurningBotActivationSpace;
-    extern REAL sg_helperTurningBotActivationRubber;
-    extern int sg_helperTurningBotTurns;
+    extern bool sg_helperSimpleBot;
+    extern REAL sg_helperSimpleBotActivationSpace;
+    extern REAL sg_helperSimpleBotActivationRubber;
+    extern int sg_helperSimpleBotTurns;
 
     extern bool sg_helperShowTail ;
     extern REAL sg_helperShowTailHeight ;
@@ -142,7 +139,6 @@ namespace helperConfig {
     extern REAL sg_helperShowTailTracerDistanceMult ;
 
     extern bool sg_helperShowHit ;
-    extern REAL sg_showHitDataHeight ;
     extern REAL sg_showHitDataHeightFront ;
     extern REAL sg_showHitDataHeightSides ;
     extern REAL sg_showHitDataBrightness ;
@@ -153,7 +149,7 @@ namespace helperConfig {
 
     extern bool sg_helperShowHitFrontLine;
     extern REAL sg_helperShowHitFrontLineHeight;
-    extern int sg_helperShowHitStartPos ;
+    extern int sg_helperShowHitStartMode ;
     extern bool sg_helperCurrentTimeLocal ;
 
 }

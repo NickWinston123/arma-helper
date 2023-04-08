@@ -9902,7 +9902,7 @@ void ePlayerNetID::rebuildCommand(tString s_orig)
 
     tString PlayerNumb = s_orig.ExtractNonBlankSubString(pos,1);
 
-    if (PlayerNumb.empty() || PlayerNumb == "")
+    if (PlayerNumb.empty())
     {
         CompleteRebuild();
     } else {
@@ -10658,11 +10658,11 @@ void ePlayerNetID::Update()
             (local_p && local_p->ID() != 0 &&
             (
             (i <= se_createPlayers) ||
-            (se_createPlayersSpecific != "" && tIsInList(se_createPlayersSpecific,i+1))
+            (!se_createPlayersSpecific.empty() && tIsInList(se_createPlayersSpecific,i+1))
             ));
             
             
-            if ( (se_disableCreateSpecific == "" || !tIsInList(se_disableCreateSpecific,i+1)) && !se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
+            if ( (!se_disableCreateSpecific.empty() || !tIsInList(se_disableCreateSpecific,i+1)) && !se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
             {
                 // reset last time so idle time in the menus does not count as play time
                 lastTime = tSysTimeFloat();

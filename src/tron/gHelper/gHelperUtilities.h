@@ -74,7 +74,7 @@ struct gSmartTurningCornerData
 
     // Finds a corner based on the sensor data, updates relevant data in the
     // gSmartTurningCornerData object, and returns a boolean indicating if the corner was found
-    bool findCorner(const gHelperSensor *sensor, gHelper &helper);
+    bool findCorner(const std::shared_ptr<gHelperSensor>& sensor, gHelper& helper);
 };
 
 
@@ -166,29 +166,30 @@ public:
 };
 
 
-struct gHelperSensors
-{
-    gHelperSensor* front;
-    gHelperSensor* left;
-    gHelperSensor* right;
+class gHelperSensors {
+public:
+    gHelperSensors(std::shared_ptr<gHelperSensor> front_, std::shared_ptr<gHelperSensor> left_, std::shared_ptr<gHelperSensor> right_);
 
-    gHelperSensors(gHelperSensor* front_, gHelperSensor* left_, gHelperSensor* right_);
+    std::shared_ptr<gHelperSensor> front;
+    std::shared_ptr<gHelperSensor> left;
+    std::shared_ptr<gHelperSensor> right;
 };
 
 
-struct gHelperSensorsData
-{
-    gCycle *owner_;
-    gHelperSensor *front_stored;
-    gHelperSensor *left_stored;
-    gHelperSensor *right_stored;
-
+class gHelperSensorsData {
+public:
     gHelperSensorsData() {};
-    ~gHelperSensorsData();
     gHelperSensorsData(gCycle *owner);
-    gHelperSensor* getSensor(int dir, bool newSensor = false);
-    gHelperSensor* getSensor(eCoord start, int dir, bool newSensor = false);
-    gHelperSensor* getSensor(eCoord start, eCoord dir, REAL detectRange = sg_helperSensorRange);
+
+    std::shared_ptr<gHelperSensor> getSensor(int dir, bool newSensor = false);
+    std::shared_ptr<gHelperSensor> getSensor(eCoord start, int dir, bool newSensor = false);
+
+    std::shared_ptr<gHelperSensor> getSensor(eCoord start, eCoord dir, REAL detectRange = sg_helperSensorRange);
+
+    gCycle *owner_;
+    std::shared_ptr<gHelperSensor> front_stored;
+    std::shared_ptr<gHelperSensor> left_stored;
+    std::shared_ptr<gHelperSensor> right_stored;
 };
 
 struct gHelperOwnerData {

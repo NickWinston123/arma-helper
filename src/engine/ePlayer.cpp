@@ -9906,7 +9906,7 @@ void ePlayerNetID::rebuildCommand(tString s_orig)
     {
         CompleteRebuild();
     } else {
-        ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb)+1);
+        ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb)-1);
         Clear(local_p);
         Update();
     }
@@ -9933,7 +9933,6 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
 
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
-            bool in_game = ePlayer::PlayerIsInGame(i);
             ePlayer* me = ePlayer::PlayerConfig(i);
             if (bool(me->netPlayer.get()))
                 activePlayers.emplace_back(me, me->netPlayer.get());
@@ -10109,14 +10108,9 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
             if (passedString.Len() == 4 || (passedString.Len() >= 4 && passedString[4] == "")) // Apply color to player who sent command
             {
                 correctParameters = true;
-
-                int r = atoi(passedString[1]);
-                int g = atoi(passedString[2]);
-                int b = atoi(passedString[3]);
-
-                local_p->rgb[0] = r;
-                local_p->rgb[1] = g;
-                local_p->rgb[2] = b;
+                local_p->rgb[0] = atoi(passedString[1]); //r
+                local_p->rgb[1] = atoi(passedString[2]); //g
+                local_p->rgb[2] = atoi(passedString[3]); //b
             }
             else if (passedString.Len() == 5) // Apply color to specified who sent command
             {
@@ -10125,14 +10119,9 @@ void ePlayerNetID::currentPlayerRGB( tString s_orig )
                 {
                     correctParameters = true;
                     ePlayer* player = ePlayer::PlayerConfig(targetID - 1);
-
-                    int r = atoi(passedString[2]);
-                    int g = atoi(passedString[3]);
-                    int b = atoi(passedString[4]);
-
-                    player->rgb[0] = r;
-                    player->rgb[1] = g;
-                    player->rgb[2] = b;
+                    player->rgb[0] = atoi(passedString[2]); //r
+                    player->rgb[1] = atoi(passedString[3]); //g
+                    player->rgb[2] = atoi(passedString[4]); //b
                 }
             }
         }

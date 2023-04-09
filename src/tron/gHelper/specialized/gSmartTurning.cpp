@@ -313,7 +313,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     }
 
     // If the player cannot survive either of the turn, block both turns.
-    if (!surviveData.canSurviveLeftTurn && !surviveData.canSurviveRightTurn && this->blockTurn != BOTH)
+    if (!surviveData.canSurviveLeftTurn && !surviveData.canSurviveRightTurn)
     {
         gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING BOTH TURNS");
         this->blockTurn = BOTH;
@@ -321,7 +321,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     }
 
     // If the player cannot survive the left turn, block the left turn.
-    if (!surviveData.canSurviveLeftTurn && this->blockTurn != LEFT)
+    if (!surviveData.canSurviveLeftTurn)
     {
         gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS");
         this->blockTurn = LEFT;
@@ -329,7 +329,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     }
 
     // If the player cannot survive the right turn, block the right turn.
-    if (!surviveData.canSurviveRightTurn && this->blockTurn != RIGHT)
+    if (!surviveData.canSurviveRightTurn)
     {
         gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN");
         this->blockTurn = RIGHT;

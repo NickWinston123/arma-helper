@@ -176,14 +176,12 @@ void gPathHelper::RenderTurn(gHelperData &data)
         eCoord intermediate = opos + owner_.Direction() * eCoord::F(odir, owner_.Direction());
 
         // assigns a hit pointer to the memory location of the hit
-        gHelperSensor* sensor = data.sensors.getSensor(opos,intermediate - opos,1.1f);
+        std::shared_ptr<gHelperSensor> sensor = data.sensors.getSensor(opos,intermediate - opos,1.1f);
         nogood = (sensor->hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
-        delete sensor;
         if (!nogood)
         {
-            gHelperSensor* sensor = data.sensors.getSensor(intermediate, pos - intermediate, 1);
+            std::shared_ptr<gHelperSensor> sensor = data.sensors.getSensor(intermediate, pos - intermediate, 1);
             nogood = (sensor->hit <= .99999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
-            delete sensor;
         }
 
     } while (goon && nogood);
@@ -206,8 +204,9 @@ void gPathHelper::RenderTurn(gHelperData &data)
         { // we have passed it. Make a turn towards it.
             int lr;
             REAL side = (target - pos) * owner_.Direction();
-
-            if (!((side > 0 && data.sensors.getSensor(LEFT)->hit < 3) || (side < 0 && data.sensors.getSensor(RIGHT)->hit < 3)) && (fabs(side) > 3 || ahead < -10))
+            std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT);
+            std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT);
+            if (!((side > 0 && left->hit < 3) || (side < 0 && right->hit < 3)) && (fabs(side) > 3 || ahead < -10))
             {
                 lr += (side > 0 ? 1 : -1);
             }

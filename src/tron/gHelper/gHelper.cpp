@@ -238,19 +238,23 @@ REAL gHelper::CurrentTime() {
 void gHelper::turningBot(gHelperData &data){
     //data.rubberData.calculate();
     REAL rubberUsedRatio = data.rubberData.rubberUsedRatioF();
-    if ( (sg_helperSimpleBotActivationRubber > 0 && rubberUsedRatio + data.ownerData.lagFactorF() >= sg_helperSimpleBotActivationRubber) ||
-         (sg_helperSimpleBotActivationSpace  > 0 && data.sensors.getSensor(FRONT)->hit <= sg_helperSimpleBotActivationSpace)
+
+    std::shared_ptr<gHelperSensor> front = data.sensors.getSensor(FRONT);
+    if ( (sg_helperSimpleBotActivationRubber > 0 && rubberUsedRatio >= sg_helperSimpleBotActivationRubber) ||
+         (sg_helperSimpleBotActivationSpace  > 0 && front->hit <= sg_helperSimpleBotActivationSpace)
        )
     {
-        int direction = owner_.lastBotTurnDir;
-
+        // int dir = owner_.lastBotTurnDir;
+        std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT,true);
+        std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT,true);
         // if (direction == -999)
-            direction = data.sensors.getSensor(LEFT,true)->hit > data.sensors.getSensor(RIGHT,true)->hit ? LEFT : RIGHT;
+        int dir = left->hit > right->hit ? LEFT : RIGHT;
+
         // else
         //     direction = direction * -1;
 
         for (int i = 0; i < sg_helperSimpleBotTurns; i++) {
-            owner_.ActTurnBot(direction);
+            turnHelper->makeTurnIfPossible(data, dir);
         }
     }
 }
@@ -659,10 +663,12 @@ void gHelper::showTailTracer(gHelperData &data)
 // Output: None.
 void gHelper::findCorners(gHelperData &data)
 {
+    std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT);
+    std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT);
     // Find the left corner
-    data.leftCorner.findCorner(data.sensors.getSensor(LEFT),*this);
+    data.leftCorner.findCorner(left,*this);
     // Find the right corner
-    data.rightCorner.findCorner(data.sensors.getSensor(RIGHT),*this);
+    data.rightCorner.findCorner(right,*this);
 }
 
 // Function: showCornergHelperUtiltiy::
@@ -799,7 +805,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     eCoord newDir = initDir.Turn(eCoord(0, sensorDir * -1));
 
     // Get the information of the sensor at the current position and direction.
-    gHelperSensor *sensor = data.sensors.getSensor(currentPos, initDir);
+    std::shared_ptr<gHelperSensor> sensor = data.sensors.getSensor(currentPos, initDir);
     eCoord hitPos = sensor->before_hit;
     REAL hitDistance = sensor->hit;
 

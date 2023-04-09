@@ -67,40 +67,29 @@ tColor gHelperUtility::tStringTotColor(tString string)
     return isClose(owner_, enemy_->Position(), closeFactor);
 }
 
-
-gHelperSensors::gHelperSensors(gHelperSensor* front_, gHelperSensor* left_, gHelperSensor* right_) :
+gHelperSensors::gHelperSensors(std::shared_ptr<gHelperSensor> front_, std::shared_ptr<gHelperSensor> left_, std::shared_ptr<gHelperSensor> right_) :
     front(front_), left(left_), right(right_) {}
 
 gHelperSensorsData::gHelperSensorsData(gCycle *owner) :
     owner_(owner),
-    front_stored(new gHelperSensor(owner_, owner_->Position(), owner_->Direction())),
-    left_stored(new gHelperSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(LEFT)))),
-    right_stored(new gHelperSensor(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(RIGHT))))
+    front_stored(std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction())),
+    left_stored(std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(LEFT)))),
+    right_stored(std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(RIGHT))))
 {}
 
-gHelperSensorsData::~gHelperSensorsData()
-{
-    // delete front_stored;
-    // delete left_stored;
-    // delete right_stored;
+
+std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(int dir, bool newSensor) {
+    return getSensor(owner_->Position(), dir, newSensor);
 }
 
-
-gHelperSensor * gHelperSensorsData::getSensor(int dir, bool newSensor)
+std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, eCoord dir, REAL detectRange)
 {
-    return getSensor(owner_->Position(),dir, newSensor);
-}
-
-//DELETE AFTER DONE.
-gHelperSensor *gHelperSensorsData::getSensor(eCoord start, eCoord dir, REAL detectRange)
-{
-    gHelperSensor * sensor = new gHelperSensor(owner_,start, dir);
+    std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(owner_, start, dir);
     sensor->detect(detectRange);
     return sensor;
 }
 
-gHelperSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
-{
+std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor) {
     if (sg_helperSensorLightUsageMode && !newSensor)
     {
         switch (dir)
@@ -132,32 +121,35 @@ gHelperSensor *gHelperSensorsData::getSensor(eCoord start, int dir, bool newSens
     }
     else
     {
+        std::shared_ptr<gHelperSensor> sensor;
         switch (dir)
         {
+
             case LEFT:
             {
-                gHelperSensor *left = new gHelperSensor(owner_, start, owner_->Direction().Turn(eCoord(0, 1)));
-                left->detect(sg_helperSensorRange, true);
-                return left;
+                sensor = std::make_shared<gHelperSensor>(owner_, start, owner_->Direction().Turn(eCoord(0, 1)));
+                sensor->detect(sg_helperSensorRange, true);
+                return sensor;
             }
             case FRONT:
             {
-                gHelperSensor *front = new gHelperSensor(owner_, start, owner_->Direction());
-                front->detect(sg_helperSensorRange, true);
-                return front;
+                sensor = std::make_shared<gHelperSensor>(owner_, start, owner_->Direction());
+                sensor->detect(sg_helperSensorRange, true);
+                return sensor;
             }
             case RIGHT:
             {
-                gHelperSensor *right = new gHelperSensor(owner_, start, owner_->Direction().Turn(eCoord(0, -1)));
-                right->detect(sg_helperSensorRange, true);
-                return right;
+                sensor = std::make_shared<gHelperSensor>(owner_, start, owner_->Direction().Turn(eCoord(0, -1)));
+                sensor->detect(sg_helperSensorRange, true);
+                return sensor;
             }
         }
     }
+    return nullptr;
 }
 
 REAL gHelperOwnerData::turnSpeedFactorF() {
-    return 1 / ( ((owner_->verletSpeed_) * owner_->GetTurnDelay()));
+    return (((owner_->verletSpeed_) * owner_->GetTurnDelay()));
 }
 
 REAL gHelperOwnerData::turnTimeF(int dir) {
@@ -237,7 +229,7 @@ bool gSmartTurningCornerData::isInfront(eCoord pos, eCoord dir, eCoord posToChec
     return eCoord::F(dir, posToCheck - pos) > 0;
 }
 
-bool gSmartTurningCornerData::findCorner(const gHelperSensor *sensor, gHelper &helper)
+bool gSmartTurningCornerData::findCorner(const std::shared_ptr<gHelperSensor>& sensor, gHelper &helper)
 {
     if (!sensor->ehit)
     {

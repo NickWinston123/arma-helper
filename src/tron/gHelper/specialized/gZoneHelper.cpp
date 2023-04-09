@@ -129,7 +129,7 @@ void gZoneHelper::zoneIntersects(gHelperSensor * sensor) {
 gZoneHitData *gZoneHelper::zoneIntersects(int dir, gZone *zone,gHelperData &data)
 {
 
-    gHelperSensor* sensor  = data.sensors.getSensor(dir,true);
+    std::shared_ptr<gHelperSensor> sensor  = data.sensors.getSensor(dir,true);
     eCoord sensorDirection = sensor->Direction();
     eCoord zonePos = zone->Position();
     REAL zoneRadius = zone->GetRadius();

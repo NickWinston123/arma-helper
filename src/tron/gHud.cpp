@@ -454,10 +454,10 @@ static void display_hud_subby( ePlayer* player ){
                         {
                             gCycle *owner_ = h;
                             eCamera *cam = player->cam;
-                            eCoord direction = owner_->Direction();
 
                             if (cam)
                             {
+                                eCoord direction = owner_->Direction();
                                 if (cam->glancingLeft) {
                                     direction = owner_->Direction().Turn(eCoord(0, 1));
                                 } else if (cam->glancingRight) {
@@ -467,7 +467,7 @@ static void display_hud_subby( ePlayer* player ){
                                 gSensor sensor(owner_, owner_->Position(), direction);
                                 sensor.detect(10000);
 
-                                if (sensor.ehit && sensor.wallOwner)
+                                if (sensor.ehit && sensor.wallOwner && sensor.type != gSENSOR_SELF)
                                 {
                                     tString message;
                                     REAL remainingTime = gCycle::timeBeforeWallRemoval(sensor.wallOwner);

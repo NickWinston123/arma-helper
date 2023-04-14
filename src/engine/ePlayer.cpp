@@ -4962,7 +4962,6 @@ static tConfItem<tString> se_joinCommandConf("LOCAL_CHAT_COMMAND_JOIN", se_joinC
 
 static tString se_searchCommand("/search");
 static tConfItem<tString> se_searchCommandConf("LOCAL_CHAT_COMMAND_SEARCH", se_searchCommand);
-
 static REAL se_searchCommandMaxFileSize = 50; // 50 MB
 static tConfItem<REAL> se_searchCommandMaxFileSizeConf("LOCAL_CHAT_COMMAND_SEARCH_MAX_FILE_SIZE", se_searchCommandMaxFileSize);
 
@@ -9925,7 +9924,9 @@ static std::vector<std::pair<tString, tString>> searchableFiles = {
 };
 
 
-const std::streamoff MAX_FILE_SIZE = se_searchCommandMaxFileSize * 1024 * 1024;
+REAL BytesToMB(REAL bytes){
+    return bytes / 1024 / 1024;
+}
 
 // TODO: Check if file is too big
 void ePlayerNetID::searchCommand(tString s_orig)
@@ -9984,14 +9985,20 @@ void ePlayerNetID::searchCommand(tString s_orig)
         }
 
         std::ifstream i;
+        REAL fileSizeMB;
+        REAL fileSizeMaxMB;
+        REAL numMatches = 0;
         if (tDirectories::Var().Open(i, fileName))
         {
+            std::streamoff MAX_FILE_SIZE = se_searchCommandMaxFileSize * 1024 * 1024;
             std::streamoff fileSize = tPath::GetFileSize(i);
+            fileSizeMB = BytesToMB(fileSize);
+            fileSizeMaxMB = BytesToMB(MAX_FILE_SIZE);
             if (fileSize > MAX_FILE_SIZE)
             {
                 con << "Error: File is too big: '" << fileName << "' ("
-                    << (fileSize * 1024 * 1024)  << " MB /"
-                    << (se_searchCommandMaxFileSize* 1024 * 1024) << " MB)\n";
+                    << fileSizeMB  << " MB /"
+                    << BytesToMB(se_searchCommandMaxFileSize) << " MB)\n";
 
                 i.close();
                 return;
@@ -10025,7 +10032,8 @@ void ePlayerNetID::searchCommand(tString s_orig)
                     if (lineNumber >= startLineNumber && lineNumber <= endLineNumber)
                     {
                         found = true;
-                        output << "0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
+                        numMatches++;
+                        output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
                     }
 
                     if (lineNumber > endLineNumber)
@@ -10050,7 +10058,8 @@ void ePlayerNetID::searchCommand(tString s_orig)
                     if (foundPos != std::string::npos)
                     {
                         found = true;
-                        output << "0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
+                        numMatches++;
+                        output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
                     }
                     lineNumber++;
                 }
@@ -10058,15 +10067,20 @@ void ePlayerNetID::searchCommand(tString s_orig)
             if (!found)
             {
                 con << "No matches found for the search phrase: '0x8bc34a"
-                    << searchPhrase << tString("0xffffff' (0xffb900")
-                    << fileName << tString("0xffffff)\n");
+                    << searchPhrase << ("0xffffff' (0xffb900")
+                    << fileName     << ("0xffffff)\n");
             }
             else
             {
-                output = tString("Found matches for: '0x8bc34a")
-                         << searchPhrase << tString("0xffffff' (0xffb900")
-                         << fileName << tString("0xffffff)\n")
-                         << output;
+                tString matches;
+                matches << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
+
+                output =  matches             << tString("'0x8bc34a")
+                       << searchPhrase        << tString("0xffffff' (0xffb900")
+                       << fileName            << tString("0xffffff ")
+                       << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB) \n"
+                       << output;
+
                 con << output;
             }
             i.close();

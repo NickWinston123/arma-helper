@@ -48,7 +48,7 @@ public:
     //         }
 
     gSensor(eGameObject *o,const eCoord &start,const eCoord &d)
-            :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction_(d) {
+            :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction_(d), wallOwner(NULL) {
                 // this->AddToList();
                 // grid->AddGameObjectInteresting(this);
             }

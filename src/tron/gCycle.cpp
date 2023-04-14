@@ -5041,13 +5041,14 @@ gCycleWallsDisplayListManager::~gCycleWallsDisplayListManager()
 
 
 REAL gCycle::timeBeforeWallRemoval(gCycle *owner) {
-    if (!owner->Alive() && gCycle::WallsStayUpDelay() >= 0) {
+    if (bool(owner) && !owner->Alive() && gCycle::WallsStayUpDelay() >= 0) {
         REAL timeRemaining = owner->DeathTime() + gCycle::WallsStayUpDelay() - se_GameTime();
         if (timeRemaining > 0) {
-            return timeRemaining;
+            REAL roundedTimeRemaining = std::round(timeRemaining * 100) / 100;
+            return roundedTimeRemaining;
         }
     }
-    return 0;
+    return -1;
 }
 
 

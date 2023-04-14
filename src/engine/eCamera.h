@@ -100,8 +100,9 @@ protected:
     eCoord centerPosLast;
     REAL  userCameraControl;
     REAL  centerIncam;
-
+public:
     bool glancingLeft,glancingRight,glancingBack,glancingForward;
+protected:
     REAL glanceSmooth, glanceSmoothAbs;
     eCoord glanceDir_;
 

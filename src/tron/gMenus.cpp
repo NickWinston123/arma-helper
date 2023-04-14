@@ -825,6 +825,13 @@ static tConfItem<REAL> sgs("HUD_SPEED_GAUGE_SIZE",subby_SpeedGaugeSize);
 static tConfItem<REAL> sgx("HUD_SPEED_GAUGE_LOCX",subby_SpeedGaugeLocX);
 static tConfItem<REAL> sgy("HUD_SPEED_GAUGE_LOCY",subby_SpeedGaugeLocY);
 
+static tConfItem<bool> wt("HUD_WALL_TIME",hud_WallTime);
+static tConfItem<bool> wtl("HUD_WALL_TIME_LABEL",hud_WallTimeLabel);
+static tConfItem<REAL> wts("HUD_WALL_TIME_SIZE",hud_WallTimeSize);
+static tConfItem<REAL> wtx("HUD_WALL_TIME_LOCX",hud_WallTimeLocX);
+static tConfItem<REAL> wty("HUD_WALL_TIME_LOCY",hud_WallTimeLocY);
+
+
 static tConfItem<REAL> bgs("HUD_BRAKE_GAUGE_SIZE",subby_BrakeGaugeSize);
 static tConfItem<REAL> bgx("HUD_BRAKE_GAUGE_LOCX",subby_BrakeGaugeLocX);
 static tConfItem<REAL> bgy("HUD_BRAKE_GAUGE_LOCY",subby_BrakeGaugeLocY);

@@ -58,7 +58,6 @@ class gTextCache
         return list_.Call();
     }
     };
-    
     rDisplayList list_;
 
 private:
@@ -67,7 +66,8 @@ private:
 
 };
 
-
+extern bool hud_WallTime, hud_WallTimeLabel;
+extern REAL hud_WallTimeLocX, hud_WallTimeLocY, hud_WallTimeSize;
 extern REAL subby_SpeedGaugeSize, subby_SpeedGaugeLocX, subby_SpeedGaugeLocY;
 extern REAL subby_BrakeGaugeSize, subby_BrakeGaugeLocX, subby_BrakeGaugeLocY;
 extern REAL subby_RubberGaugeSize, subby_RubberGaugeLocX, subby_RubberGaugeLocY;

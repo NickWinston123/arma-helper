@@ -49,10 +49,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 #include "gHud.h"
+#include "gSensor.h"
 
 
 
-
+bool hud_WallTime = true, hud_WallTimeLabel = true;
+REAL hud_WallTimeLocX = 0.80, hud_WallTimeLocY =-0.9 , hud_WallTimeSize =.13;
 REAL subby_SpeedGaugeSize=.175, subby_SpeedGaugeLocX=0.0, subby_SpeedGaugeLocY=-0.9;
 REAL subby_BrakeGaugeSize=.175, subby_BrakeGaugeLocX=0.48, subby_BrakeGaugeLocY=-0.9;
 REAL subby_RubberGaugeSize=.175, subby_RubberGaugeLocX=-0.48, subby_RubberGaugeLocY=-0.9;
@@ -448,6 +450,43 @@ static void display_hud_subby( ePlayer* player ){
                             meter[player->ID()].Display(h->GetBrakingReservoir(), 1.0,subby_BrakeGaugeLocX,subby_BrakeGaugeLocY,subby_BrakeGaugeSize, " Brakes");
                         }
 
+                        if (hud_WallTime && h) // owner
+                        {
+                            gCycle *owner_ = h;
+                            eCamera *cam = player->cam;
+                            eCoord direction = owner_->Direction();
+
+                            if (cam)
+                            {
+                                if (cam->glancingLeft) {
+                                    direction = owner_->Direction().Turn(eCoord(0, 1));
+                                } else if (cam->glancingRight) {
+                                    direction = owner_->Direction().Turn(eCoord(0, -1));
+                                }
+
+                                gSensor sensor(owner_, owner_->Position(), direction);
+                                sensor.detect(10000);
+
+                                if (sensor.ehit && sensor.wallOwner)
+                                {
+                                    tString message;
+                                    REAL remainingTime = gCycle::timeBeforeWallRemoval(sensor.wallOwner);
+
+                                    if (hud_WallTimeLabel)
+                                        message << "0xbf9d50Wall Time: ";
+
+                                    message << "0xffffff" << remainingTime;
+
+                                    rTextField wallTime(hud_WallTimeLocX - ((.15 * hud_WallTimeSize * (message.Len() - 1.5)) / 2.0),
+                                                        hud_WallTimeLocY, 
+                                                        .15 * hud_WallTimeSize, 
+                                                        .3 * hud_WallTimeSize);
+
+                                    wallTime << message;
+                                }
+                            }
+                        }
+
                         //  bool displayfastest = true;// put into global, set via menusytem... subby to do.make sr_DISPLAYFASTESTout
 
                         if(subby_ShowSpeedFastest)
@@ -478,29 +517,29 @@ static void display_hud_subby( ePlayer* player ){
                         {
                             static float lastTimes[MAX_PLAYERS] = {0};
                             float & lastTime = lastTimes[player->ID()];
-                            
+
                             static tColoredString messageColor("0x58bf90");
-                            
+
                             static tColoredString messages[MAX_PLAYERS];
                             tColoredString & message = messages[player->ID()];
-                            
+
                             //static rDisplayList dispList;
-                            
+
                             if( se_GameTime() > 0 && ( tSysTimeFloat() - lastTime ) > 0.2 )
                             {
                                 message.Clear();
-                                
+
                                 //dispList.Clear();
-                                
+
                                 //rDisplayListFiller filler( dispList );
-                                
+
                                 lastTime = tSysTimeFloat();
-                                
-                                
+
+
                                 auto hunter = h->GetPlayerHuntedBy();
-                                
-                                
-                                
+
+
+
                                 /*tColoredString message,messageColor;
                                 messageColor << "0xbf9d50";*/
 
@@ -511,15 +550,15 @@ static void display_hud_subby( ePlayer* player ){
                                     message << hunter->GetName();
                                     message.RemoveHex();
                                 }
-                                else 
+                                else
                                 {
                                     message << "0x808080<SUICIDE>";
                                 }
                             }
-                            
+
                             float size = hud_InteractSize;
                             int length = message.Len();
-                            
+
                             rTextField meter(hud_InteractLocX-((.15*size*(length-1.5))/2.0),hud_InteractLocY,.15*size,.3*size);
                             meter << messageColor << message;
                         }
@@ -653,24 +692,24 @@ static void display_fps_subby()
     if(sr_FPSOut){
         c2 << "0xffffffFPS: " <<fps;
     }
-    
+
     if( sg_TeamNumCount )
     {
         static tString output("0");
         static REAL lasttime = 0;
-        
+
         if( tSysTimeFloat() - lasttime > 0.32 )
         {
             lasttime = tSysTimeFloat();
-            
+
             eTeam * myTeam = se_GetLocalPlayer()?se_GetLocalPlayer()->CurrentTeam():0x0;
-            
+
             output = "";
-            
+
             if( myTeam )
             {
                 // list players own team first
-                
+
                 int alive = 0;
                 for(int i=myTeam->players.Len()-1;i>=0;--i)
                 {
@@ -679,14 +718,14 @@ static void display_fps_subby()
                         ++alive;
                     }
                 }
-                
+
                 output << alive;
             }
-            
+
             for(int t=eTeam::teams.Len()-1;t>=0;--t)
             {
                 if( myTeam && myTeam == eTeam::teams(t) ) continue;
-                
+
                 int total = 0, alive = 0;
                 for(int i=eTeam::teams(t)->players.Len()-1;i>=0;--i)
                 {
@@ -696,22 +735,22 @@ static void display_fps_subby()
                         ++alive;
                     }
                 }
-                
+
                 if( total == 0 ) continue;
-                
+
                 if(output[0] != '\0')
                 {
                      output << "v";
                 }
-                
+
                 output << alive;
             }
-            
+
         }
-        
+
         c2 << "\n0x808080" << output;
     }
-    
+
     // Show the time
     if (hudShowTime)
     {
@@ -734,24 +773,24 @@ extern bool stc_forbidHudMap;
 static void drawMinimap()
 {
     if(stc_forbidHudMap) return;
-    
+
     sr_ResetRenderState(true);
 
     if(simplemapmode & 1)
     {
         gHudMapDrawConf c;
-        
+
         c.cycleSize = 5;
         c.border = 10;
-        
+
         c.x = .5; c.y = -1;
         c.w = .5; c.h = .5 * sr_screenWidth / sr_screenHeight;
         c.rw = .25 * sr_screenWidth; c.rh = .25 * sr_screenWidth;
         c.ix = 1; c.iy = 1; // iy was 0
-        
+
         DrawMap( c );
     }
-    
+
     if(simplemapmode & 2)
     {
         DrawMap(true, true, true,
@@ -783,7 +822,7 @@ static void display_hud_subby_all()
         // delegate
         display_hud_subby( player );
     }
-    
+
     drawMinimap();
 }
 

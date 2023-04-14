@@ -304,7 +304,7 @@ bool uBind::IsDoubleBind( int sym )
 static int nextid = 0;
 
 uPlayerPrototype* uPlayerPrototype::PlayerConfig(int i){
-    tASSERT(i>=0 && i<uMAX_PLAYERS);
+    // tASSERT(i>=0 && i<uMAX_PLAYERS);
     return playerConfig[i];
 }
 

@@ -12,11 +12,11 @@ bool sg_helperHud = false; // Helper Hud
 static tConfItem<bool> sg_helperHudConf("HELPER_HUD", sg_helperHud);
 bool sg_helperHudFreeze = false; // Helper Hud
 static tConfItem<bool> sg_helperHudFreezeConf("HELPER_HUD_FREEZE", sg_helperHudFreeze);
-REAL sg_helperHudX = 0.74; // Helper Hud Y Position
-static tConfItem<REAL> sg_helperHudXC("HELPER_HUD_X", sg_helperHudX);
+REAL sg_helperHudX = 0.755; // Helper Hud Y Position
+static tConfItem<REAL> sg_helperHudXC("HELPER_HUD_LOCX", sg_helperHudX);
 REAL sg_helperHudY = -0.01; // Helper Hud Y Position
-static tConfItem<REAL> sg_helperHudYC("HELPER_HUD_Y", sg_helperHudY);
-REAL sg_helperHudSize = .06; // Size of Helper Hud
+static tConfItem<REAL> sg_helperHudYC("HELPER_HUD_LOCY", sg_helperHudY);
+REAL sg_helperHudSize = .055; // Size of Helper Hud
 static tConfItem<REAL> sg_helperHudSizeC("HELPER_HUD_SIZE", sg_helperHudSize);
 tString sg_helperHudIgnoreList = tString("");
 static tConfItem<tString> sg_helperHudIgnoreListConf("HELPER_HUD_IGNORE_LIST", sg_helperHudIgnoreList);

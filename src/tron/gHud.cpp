@@ -46,6 +46,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include "gCycle.h"
 #include "gHelper/gHelperHud.h"
+#include "gHelper/gHelperUtilities.h"
 #include <time.h>
 
 #include "gHud.h"
@@ -54,7 +55,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 bool hud_WallTime = true, hud_WallTimeLabel = true;
-REAL hud_WallTimeLocX = 0.80, hud_WallTimeLocY =-0.9 , hud_WallTimeSize =.13;
+REAL hud_WallTimeLocX = 0.90, hud_WallTimeLocY =-0.9 , hud_WallTimeSize =.13;
 REAL subby_SpeedGaugeSize=.175, subby_SpeedGaugeLocX=0.0, subby_SpeedGaugeLocY=-0.9;
 REAL subby_BrakeGaugeSize=.175, subby_BrakeGaugeLocX=0.48, subby_BrakeGaugeLocY=-0.9;
 REAL subby_RubberGaugeSize=.175, subby_RubberGaugeLocX=-0.48, subby_RubberGaugeLocY=-0.9;
@@ -475,7 +476,7 @@ static void display_hud_subby( ePlayer* player ){
                                     if (hud_WallTimeLabel)
                                         message << "0xbf9d50Wall Time: ";
 
-                                    message << "0xffffff" << remainingTime;
+                                    message << "0xffffff" << customRound(remainingTime,2);
 
                                     rTextField wallTime(hud_WallTimeLocX - ((.15 * hud_WallTimeSize * (message.Len() - 1.5)) / 2.0),
                                                         hud_WallTimeLocY, 

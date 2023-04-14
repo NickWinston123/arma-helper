@@ -150,6 +150,7 @@ public:
 
     //! strips all whitespace from a string
     tString StripWhitespace( void ) const;
+    tString TrimWhitespace( void ) const;
 
     //! Converts the string to lowercase
     tString ToLower(void) const;

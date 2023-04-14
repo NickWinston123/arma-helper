@@ -742,7 +742,7 @@ void gHelper::showHit(gHelperData &data)
 
     // write the front hit distance to the stream
     if (sg_helperHud)
-        sg_helperShowHitFrontDistH << (frontHit);
+        sg_helperShowHitFrontDistH << (customRound(frontHit,2));
 
     // return if the wall is not close
     if (!wallClose)

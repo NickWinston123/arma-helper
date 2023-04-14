@@ -531,6 +531,7 @@ public:
     void localSpeak(tString s_orig);
     // List active status of players (chatting time, activity, etc)
     void activeStatus(tString s_orig);
+    void searchCommand(tString s_orig);
 
     //Grab Stuff
     static tColoredString gatherPlayerInfo(ePlayerNetID * p);

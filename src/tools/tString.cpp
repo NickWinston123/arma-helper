@@ -1814,6 +1814,25 @@ tString tString::StripWhitespace( void ) const
     return toReturn;
 }
 
+tString tString::TrimWhitespace( void ) const
+{
+    tString toReturn = *this;
+
+    while (!toReturn.empty() && isblank(toReturn[0]))
+    {
+        toReturn = toReturn.SubStr(1);
+    }
+
+    while (!toReturn.empty() && isblank(toReturn[toReturn.Len() - 1]))
+    {
+        toReturn = toReturn.SubStr(0, toReturn.Len() - 2);
+    }
+
+    return toReturn;
+}
+
+
+
 //! @return a string where all characters are converted to lowercase. "Hello World!" -> "hello world!"
 tString tString::ToLower(void) const
 {

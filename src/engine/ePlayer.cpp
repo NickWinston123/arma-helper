@@ -1745,7 +1745,7 @@ static void se_DisplayChatLocally( ePlayerNetID* p, const tString& say )
         //tColoredString say2( say );
         //say2.RemoveHex();
         tColoredString message;
-       
+
         message << *p;
         message << tColoredString::ColorString(1,1,.5);
         if (se_highlightMyName && (actualMessage.Contains(p->GetName())))
@@ -1816,7 +1816,7 @@ static void se_DisplayChatLocallyClient( ePlayerNetID* p, const tString& message
 
         se_SaveToChatLog(actualMessage);
         se_SaveToChatLogC(actualMessage);
-        
+
         if (se_chatTimeStamp && !sr_consoleTimeStamp){
             actualMessage = st_GetCurrentTime("%H:%M:%S| ") << actualMessage;
         }
@@ -4960,6 +4960,9 @@ static tConfItem<tString> se_spectateCommandConf("LOCAL_CHAT_COMMAND_SPECTATE", 
 static tString se_joinCommand("/join");
 static tConfItem<tString> se_joinCommandConf("LOCAL_CHAT_COMMAND_JOIN", se_joinCommand);
 
+static tString se_searchCommand("/search");
+static tConfItem<tString> se_searchCommandConf("LOCAL_CHAT_COMMAND_SEARCH", se_searchCommand);
+
 #endif //if not dedicated
 
 void ePlayerNetID::Chat(const tString& s_orig)
@@ -4982,7 +4985,8 @@ void ePlayerNetID::Chat(const tString& s_orig)
         se_activeStatusCommand,
         se_reverseCommand,
         se_spectateCommand,
-        se_joinCommand
+        se_joinCommand,
+        se_searchCommand
     };
 
     std::string chatString(s_orig);
@@ -5093,6 +5097,10 @@ void ePlayerNetID::Chat(const tString& s_orig)
                 CreateNewTeamWish();
                 Update();
             }
+        }
+        else if (command == se_searchCommand)
+        {
+            searchCommand(s_orig);
         }
     }
     else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )
@@ -8816,7 +8824,7 @@ tString ePlayerNetID::Ranking( int MAX, bool cut )
                 {
                     REAL remainingTime = gCycle::timeBeforeWallRemoval(cycle);
                     if (remainingTime > 0)
-                        line << remainingTime;
+                        line << customRound(remainingTime,2);
                     else
                         line << "";
 
@@ -9896,16 +9904,161 @@ void ePlayerNetID::activeStatus(tString s_orig)
     REAL chattingTime = p->ChattingTime();
 
     tColoredString listInfo;
-    listInfo << "\nResults for "  << p->GetColoredName() << "0xRESETT: \n";
-    listInfo << "Status: "        << "\n";
-    listInfo << "Created: "       << p->createTime_    << "\n";
-    listInfo << "Last Activity: " << p->LastActivity() << "\n";
-    listInfo << "Chatting For: "  << chattingTime << "\n";
+    listInfo << "\nResults for "  << p->GetColoredName() << "0xRESETT: \n"
+             << "Status: "        << "\n"
+             << "Created: "       << p->createTime_     << "\n"
+             << "Last Activity: " << p->LastActivity()  << "\n"
+             << "Chatting For: "  << chattingTime       << "\n";
 
     if (chattingTime == 0)
         listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.\n";
 
     con << listInfo;
+}
+
+static std::vector<std::pair<tString, tString>> searchableFiles = {
+    {tString("chat"), tString("chatlog.txt")},
+    {tString("console"), tString("consolelog.txt")}, // TOO BIG?
+};
+
+// TODO: Check if file is too big
+void ePlayerNetID::searchCommand(tString s_orig)
+{
+    tString params;
+    params << s_orig;
+    int pos = 0;
+
+    tString fileName = params.ExtractNonBlankSubString(pos, 1);
+    tString output;
+    if (fileName.empty())
+    {
+        output << "Available files to search:\n";
+
+        int i = 1;
+        for (const auto &searchableFile : searchableFiles)
+        {
+            output << i << ") 0x8bc34a" << searchableFile.first << " 0xffffff(0x8f8f8f" << searchableFile.second << "0xffffff)\n";
+            i++;
+        }
+        output << "Uses: \n"
+               << "/search chat hack the planet (by search phrase)\n"
+               << "/search chat #102 (by line number)\n"
+               << "/search chat #102-105 (by line number range)\n";
+        con << output;
+
+        return;
+    }
+    else
+    {
+        tString searchPhrase;
+        searchPhrase << params.SubStr(pos);
+        searchPhrase = searchPhrase.TrimWhitespace();
+        std::string searchValue(searchPhrase);
+        if (searchPhrase.empty())
+        {
+            con << "Nothing to search.\n";
+            return;
+        }
+
+        tToLower(fileName);
+
+        for (const auto &searchableFile : searchableFiles)
+        {
+            if (searchableFile.first == fileName)
+            {
+                fileName = searchableFile.second;
+                break;
+            }
+        }
+
+        if (fileName.empty())
+        {
+            searchCommand(tString("/search"));
+            return;
+        }
+
+        std::ifstream i;
+        if (tDirectories::Var().Open(i, fileName))
+        {
+            std::string sayLine;
+            int lineNumber = 1;
+            bool found = false;
+            tString output;
+
+            if (searchPhrase.StartsWith("#"))
+            {
+                int startLineNumber = -1;
+                int endLineNumber = -1;
+
+                tString rangeString = searchPhrase.SubStr(1);
+                int dashPos = rangeString.StrPos("-");
+                if (dashPos != -1)
+                {
+                    startLineNumber = atoi(rangeString.SubStr(0, dashPos));
+                    endLineNumber = atoi(rangeString.SubStr(dashPos + 1));
+                }
+                else
+                {
+                    startLineNumber = atoi(rangeString);
+                    endLineNumber = startLineNumber;
+                }
+
+                while (std::getline(i, sayLine))
+                {
+                    if (lineNumber >= startLineNumber && lineNumber <= endLineNumber)
+                    {
+                        found = true;
+                        output << "0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
+                    }
+
+                    if (lineNumber > endLineNumber)
+                    {
+                        break;
+                    }
+
+                    lineNumber++;
+                }
+                if (!found)
+                {
+                    output << "0x8bc34aLine Range0xffb900" << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
+                }
+                con << output;
+            }
+            else
+            {
+                while (std::getline(i, sayLine))
+                {
+                    std::size_t foundPos = sayLine.find(searchValue);
+                    if (foundPos != std::string::npos)
+                    {
+                        found = true;
+                        output << "0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
+                    }
+                    lineNumber++;
+                }
+            }
+            if (!found)
+            {
+                con << "No matches found for the search phrase: '0x8bc34a"
+                    << searchPhrase << tString("0xffffff' (0xffb900")
+                    << fileName << tString("0xffffff)\n");
+            }
+            else
+            {
+                output = tString("Found matches for: '0x8bc34a")
+                         << searchPhrase << tString("0xffffff' (0xffb900")
+                         << fileName << tString("0xffffff)\n")
+                         << output;
+                con << output;
+            }
+            i.close();
+        }
+        else
+        {
+            con << "Error opening: "
+                << "'" << fileName << "'.\n";
+        }
+    }
 }
 
 void ePlayerNetID::rebuildCommand(tString s_orig)
@@ -10661,8 +10814,8 @@ void ePlayerNetID::Update()
             (i <= se_createPlayers) ||
             (!se_createPlayersSpecific.empty() && tIsInList(se_createPlayersSpecific,i+1))
             ));
-            
-            
+
+
             if ( (se_disableCreateSpecific.empty() || !tIsInList(se_disableCreateSpecific,i+1)) && !se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
             {
                 // reset last time so idle time in the menus does not count as play time

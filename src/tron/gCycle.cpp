@@ -5044,8 +5044,7 @@ REAL gCycle::timeBeforeWallRemoval(gCycle *owner) {
     if (bool(owner) && !owner->Alive() && gCycle::WallsStayUpDelay() >= 0) {
         REAL timeRemaining = owner->DeathTime() + gCycle::WallsStayUpDelay() - se_GameTime();
         if (timeRemaining > 0) {
-            REAL roundedTimeRemaining = std::round(timeRemaining * 100) / 100;
-            return roundedTimeRemaining;
+            return timeRemaining;
         }
     }
     return -1;

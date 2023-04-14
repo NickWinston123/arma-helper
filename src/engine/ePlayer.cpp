@@ -1727,7 +1727,7 @@ bool se_highlightMyName = false;
 
 
 static bool se_chatTimeStamp = false;
-static tSettingItem<bool> se_chatTimeStampConf("CHAT_TIMESTAMP",se_chatTimeStamp);
+static tConfItem<bool> se_chatTimeStampConf("CHAT_TIMESTAMP",se_chatTimeStamp);
 
 static void se_DisplayChatLocally( ePlayerNetID* p, const tString& say )
 {

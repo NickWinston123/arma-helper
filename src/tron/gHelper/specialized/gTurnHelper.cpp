@@ -178,26 +178,19 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
 
     // Calculate the rubber factor.
     REAL rubberFactor = data.rubberData.rubberFactorF();
+    REAL turnFactor   = data.ownerData.turnSpeedFactorF();
     // REAL turnTime = data.ownerData.turnTimeF(1) - se_GameTime();
     // con << "TURN TIME: " << turnTime << "\n";
-    REAL turnFactor   = (data.ownerData.turnSpeedFactorF());
     if (freeSpaceFactor > 0)
     {
         freeSpaceFactor = turnFactor * freeSpaceFactor;
     }
     // gHelperUtility::Debug("CAN_SURVIVE_TURN", "Rubber factor: ", rubberFactor);
 
-    // Initialize the values to assume both turns are survivable.
-    surviveData.canSurviveLeftTurn = true;
-    surviveData.canSurviveRightTurn = true;
-
     // Get the left, front, and right sensors.
     std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT,true);
     std::shared_ptr<gHelperSensor> front = data.sensors.getSensor(FRONT, true);
     std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT,true);
-
-    // Initialize the variables to assume the turns can be survived.
-    bool canTurnLeftRubber = true, canTurnRightRubber = true, canTurnLeftSpace = true, canTurnRightSpace = true;
 
     // Calculate the closed-in factor based on the turn speed factor and the closed-in mult.
     REAL closedInFactor = turnFactor * sg_helperSmartTurningClosedInMult;
@@ -222,19 +215,23 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     {
         // If the left hit is less than the turn speed factor multiplied by the free space factor and the front and right hits are greater than the turn speed factor multiplied by the free space factor, the turn left cannot be survived.
         if (left->hit < freeSpaceFactor &&
-            front->hit > freeSpaceFactor &&
-            right->hit > freeSpaceFactor)
+            //front->hit > freeSpaceFactor &&
+            right->hit >= freeSpaceFactor)
         {
-            canTurnLeftSpace = false;
-            gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnLeftSpace false");
+             surviveData.debug << "BECAUSE: RUBBER: "  << surviveData.canTurnLeftRubber << " SPACE: " << surviveData.canTurnLeftSpace << "\nREASON: " << left->hit  << " < " << freeSpaceFactor << " = " << bool(left->hit < freeSpaceFactor) << " && "
+                                             << right->hit  << " > " << freeSpaceFactor << " = " << bool(right->hit > freeSpaceFactor) << "\n";
+            surviveData.canTurnLeftSpace = false;
+            // gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnLeftSpace false");
         }
         // If the right hit is less than the turn speed factor multiplied by the free space factor and the front and left hits are greater than the turn speed factor multiplied by the free space factor, the turn right cannot be survived.
         if (right->hit < freeSpaceFactor &&
-            front->hit > freeSpaceFactor &&
-            left->hit > freeSpaceFactor)
+            //front->hit > freeSpaceFactor &&
+            left->hit >= freeSpaceFactor)
         {
-            canTurnRightSpace = false;
-            gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnRightSpace false");
+            surviveData.debug << "BECAUSE: RUBBER: " << surviveData.canTurnRightRubber << " SPACE: " << surviveData.canTurnRightSpace << "\nREASON: " << right->hit  << " < " << freeSpaceFactor << " = " << bool(right->hit < freeSpaceFactor) << " && "
+                                            << left->hit  << " > " << freeSpaceFactor << " = " << bool(left->hit > freeSpaceFactor) << "\n";
+            surviveData.canTurnRightSpace = false;
+            // gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnRightSpace false");
             // gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnRightSpace: ", canTurnRightSpace  ? "TRUE" : "FALSE");
         }
     }
@@ -242,13 +239,13 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     // If the left hit is less than the rubber factor, the turn left cannot be survived.
     if (left->hit < rubberFactor)
     {
-        canTurnLeftRubber = false;
+        surviveData.canTurnLeftRubber = false;
     }
 
     // If the right hit is less than the rubber factor, the turn right cannot be survived.
     if (right->hit < rubberFactor)
     {
-        canTurnRightRubber = false;
+        surviveData.canTurnRightRubber = false;
     }
 
     // If freeSpaceFactor is greater than 0, calculate canSurviveLeftTurn and canSurviveRightTurn based on closedIn and freeSpaceFactor
@@ -256,19 +253,19 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     {
         // If the player is not closed in and both canTurnLeftRubber and canTurnLeftSpace are true,
         // then the left turn can be survived.
-        surviveData.canSurviveLeftTurn = !surviveData.closedIn ? canTurnLeftRubber && canTurnLeftSpace : canTurnLeftRubber;
+        surviveData.canSurviveLeftTurn = !surviveData.closedIn ? surviveData.canTurnLeftRubber && surviveData.canTurnLeftSpace : surviveData.canTurnLeftRubber;
         // con << "surviveData.canSurviveLeftTurn == " << surviveData.canSurviveLeftTurn << "\n";
         // If the player is not closed in and both canTurnRightRubber and canTurnRightSpace are true,
         // then the right turn can be survived.
-        surviveData.canSurviveRightTurn = !surviveData.closedIn ? canTurnRightRubber && canTurnRightSpace : canTurnRightRubber;
+        surviveData.canSurviveRightTurn = !surviveData.closedIn ? surviveData.canTurnRightRubber && surviveData.canTurnRightSpace :surviveData.canTurnRightRubber;
         // con << "surviveData.canSurviveRightTurn == "  <<  surviveData.canSurviveRightTurn << "\n";
     }
     else
     {
         // If freeSpaceFactor is not greater than 0, calculate canSurviveLeftTurn and canSurviveRightTurn
         // based on canTurnLeftRubber and canTurnRightRubber.
-        surviveData.canSurviveLeftTurn = canTurnLeftRubber;
-        surviveData.canSurviveRightTurn = canTurnRightRubber;
+        surviveData.canSurviveLeftTurn = surviveData.canTurnLeftRubber;
+        surviveData.canSurviveRightTurn = surviveData.canTurnRightRubber;
     }
     return surviveData;
 }

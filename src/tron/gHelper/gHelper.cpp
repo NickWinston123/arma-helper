@@ -35,6 +35,8 @@ static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_CONF_SENSOR_DIAGO
 
 bool sg_helperDebug = false;
 static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
+bool sg_helperDebugLog = false;
+static tConfItem<bool> sg_helperDebugLogConf("HELPER_DEBUG_LOG", sg_helperDebugLog);
 bool sg_helperDebugSpamFilter = true;
 static tConfItem<bool> sg_helperDebugSpamFilterConf("HELPER_DEBUG_SPAM_FILTER", sg_helperDebugSpamFilter);
 tString sg_helperDebugIgnoreList = tString("");

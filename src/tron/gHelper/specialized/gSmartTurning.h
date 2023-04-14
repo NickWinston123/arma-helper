@@ -14,6 +14,7 @@ public:
 
     // function to make the cycle survive by determining which turns are possible and blocking if required
     void smartTurningSurvive(gHelperData &data);
+    void smartTurningSurvive();
 
     // function to make the cycle turn in response to a front bot
     void smartTurningFrontBot(gHelperData &data);

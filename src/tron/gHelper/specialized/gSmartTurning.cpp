@@ -286,6 +286,9 @@ void gSmartTurning::smartTurningOpposite(gHelperData &data)
  *
  * @param data The reference to the gHelperData struct that holds all the helper data.
  */
+void gSmartTurning::smartTurningSurvive(){
+    smartTurningSurvive(helper_.data_stored);
+}
 void gSmartTurning::smartTurningSurvive(gHelperData &data)
 {
     // Check if the player is alive. If not, return.
@@ -304,9 +307,9 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
         return;
     }
     // If the player is closed in or blocked by themselves and closedIn is set, unblock both turns and return.
-    if ( 
+    if (
         (sg_helperSmartTurningClosedIn && surviveData.closedIn) ||
-        (surviveData.closedIn && surviveData.blockedBySelf) 
+        (surviveData.closedIn && surviveData.blockedBySelf)
         )
     {
         goto UN_BLOCKTURN;
@@ -324,6 +327,12 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     if (!surviveData.canSurviveLeftTurn)
     {
         gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS");
+
+               // if (this->blockTurn != LEFT)
+                {
+                        std::string debug (surviveData.debug);
+            gHelperUtility::Debug("SMART TURNING SURVIVE", debug);
+        }
         this->blockTurn = LEFT;
         return;
     }
@@ -332,6 +341,12 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     if (!surviveData.canSurviveRightTurn)
     {
         gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN");
+
+                        //if (this->blockTurn != RIGHT)
+                        {
+                        std::string debug (surviveData.debug);
+            gHelperUtility::Debug("SMART TURNING SURVIVE", debug);
+        }
         this->blockTurn = RIGHT;
         return;
     }
@@ -411,7 +426,7 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
     // 4. The time until the turn is greater than 0
     // 5. The time until the turn is less than a certain threshold
 
-    //REAL noticedTime = se_GameTime() -corner.noticedTime 
+    //REAL noticedTime = se_GameTime() -corner.noticedTime
 
     // con << "Corner detected: " << corner.currentPos.x << ", " << corner.currentPos.y << "\n";
     // con << "Close factor: " << sg_helperSmartTurningSurviveTraceCloseFactor << "\n";
@@ -468,7 +483,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
     {
         // If the rubber used ratio is greater than or equal to sg_helperSmartTurningFrontBotActivationRubber
         // or the range to the front bot is less than or equal to sg_helperSmartTurningFrontBotActivationSpace
-        if ( 
+        if (
             (sg_helperSmartTurningFrontBotActivationRubber > 0 && data.rubberData.rubberUsedRatioF() + data.ownerData.lagFactorF() >= sg_helperSmartTurningFrontBotActivationRubber) ||
             (sg_helperSmartTurningFrontBotActivationSpace > 0 && hitRange <= sg_helperSmartTurningFrontBotActivationSpace)
            )

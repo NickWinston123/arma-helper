@@ -197,13 +197,13 @@ class gCycle: public gCycleMovement
     friend class gCycleChatBot;
     //friend class gHelperEmergencyTurn;
     std::unique_ptr< gCycleChatBot > chatBot_;
-
+public:
     friend class gHelper;
     std::unique_ptr< gHelper > helper_;
-    
+
     friend class gSmarterBot;
     std::unique_ptr< gSmarterBot > smarterBot_;
-    
+
     bool dropWallRequested_; //!< flag indicating that someone requested a wall drop
 public:
     eCoord            lastGoodPosition_;    // the location of the last known good position

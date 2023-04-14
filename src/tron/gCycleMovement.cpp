@@ -3388,6 +3388,9 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
     REAL currentTime;
     if (helperSmartTurning && !botTurn && (Owner() == ::sn_myNetID && Player() && Player()->IsHuman())) {
         playerIsMe = true;
+
+        // gCycle *cycle = dynamic_cast<gCycle *>(this);
+        // cycle->helper_.get()->smartTurning.get()->smartTurningSurvive();
         bool ignoreTurn = false;
 
         currentTime = this->localCurrentTime;
@@ -3407,6 +3410,10 @@ bool gCycleMovement::DoTurn( int dir, bool botTurn = false)
             this->lastTurnAttemptTime = currentTime;
             this->lastTurnAttemptDir = dir;
             // this->blockTurn = 0;
+            tString debugstr;
+            debugstr << "Ignoring turn: " << dir << "\n";
+                        std::string debug (debugstr);
+            gHelperUtility::Debug("SMART TURNING SURVIVE", debug);
             return false;
         }
 

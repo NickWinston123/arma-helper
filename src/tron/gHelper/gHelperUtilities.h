@@ -322,6 +322,24 @@ public:
         }
         delete params;
         con << debugMessage;
+        if (helperConfig::sg_helperDebugLog)
+        {
+            DebugLog(debugMessage);
+        }
+    }
+
+    static void DebugLog(std::string message)
+    {
+        std::ofstream o;
+        if (tDirectories::Var().Open(o, "helperdebug.txt", std::ios::app))
+        {
+            o << message << std::endl;
+        }
+        else
+        {
+            con << tOutput("Log Error");
+        }
+        o.close();
     }
 
     template <typename T>
@@ -344,19 +362,6 @@ public:
     static bool isClose(gCycle *owner_, gCycle *enemy_, REAL closeFactor);
 };
 
-static void DebugLog(std::string message)
-{
-    std::ofstream o;
-    if (tDirectories::Var().Open(o, "helperdebug.txt", std::ios::app))
-    {
-        o << message << std::endl;
-    }
-    else
-    {
-        con << tOutput("Log Error");
-    }
-    o.close();
-}
 
 
 // See how close two coordinates are, lower the threshold the more strict the comparison

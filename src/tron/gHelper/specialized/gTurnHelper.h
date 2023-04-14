@@ -10,12 +10,17 @@ class gSmarterBot;
 class Sensor;
 
 struct gSurviveData {
-    bool canSurviveLeftTurn;
-    bool canSurviveRightTurn;
+    bool canSurviveLeftTurn = true;
+    bool canSurviveRightTurn = true;
+    bool canTurnLeftRubber = true;
+    bool canTurnRightRubber = true;
+    bool canTurnLeftSpace = true;
+    bool canTurnRightSpace = true;
     bool trapped;
     bool closedIn;
     bool blockedBySelf;
     bool exist; 
+    tString debug = tString("");
 
     gSurviveData(): exist(true) {};
     gSurviveData(bool): exist(false) {};

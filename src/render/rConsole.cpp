@@ -97,6 +97,9 @@ REAL rCHEIGHT_CON=REAL(32/480.0);
 static bool sr_consoleLog = false;
 static tConfItem<bool> sr_consoleLogConf("CONSOLE_LOG", sr_consoleLog);
 
+bool sr_consoleTimeStamp = false;
+static tConfItem<bool> sr_consoleTimeStampConf("CONSOLE_TIMESTAMP", sr_consoleTimeStamp);
+
 static bool sr_consoleLogColor = false;
 static tConfItem<bool> sr_consoleLogColorConf("CONSOLE_LOG_COLOR", sr_consoleLogColor);
 
@@ -135,7 +138,13 @@ tConsole & rConsole::DoPrint(const tString &s){
     }
 
     if (sr_screen){
-        const char *c=s;
+        tString message;
+
+        if (sr_consoleTimeStamp)
+            message = st_GetCurrentTime("%H:%M:%S| ") << s;   
+        else 
+            message = s;
+        const char *c=message;
         while (*c!=0){
             lines[currentIn] << *c;
             if (*c=='\n'){

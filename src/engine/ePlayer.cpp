@@ -1725,6 +1725,10 @@ void ePlayer::LogIn()
 
 bool se_highlightMyName = false;
 
+
+static bool se_chatTimeStamp = false;
+static tSettingItem<bool> se_chatTimeStampConf("CHAT_TIMESTAMP",se_chatTimeStamp);
+
 static void se_DisplayChatLocally( ePlayerNetID* p, const tString& say )
 {
 #ifdef DEBUG_X
@@ -1741,6 +1745,7 @@ static void se_DisplayChatLocally( ePlayerNetID* p, const tString& say )
         //tColoredString say2( say );
         //say2.RemoveHex();
         tColoredString message;
+       
         message << *p;
         message << tColoredString::ColorString(1,1,.5);
         if (se_highlightMyName && (actualMessage.Contains(p->GetName())))
@@ -1807,6 +1812,13 @@ static void se_DisplayChatLocallyClient( ePlayerNetID* p, const tString& message
             strReplace << p->GetColoredName() << tColoredString::ColorString(1,1,.5);
 
             actualMessage = actualMessage.Replace(strOld, strReplace);
+        }
+
+        se_SaveToChatLog(actualMessage);
+        se_SaveToChatLogC(actualMessage);
+        
+        if (se_chatTimeStamp && !sr_consoleTimeStamp){
+            actualMessage = st_GetCurrentTime("%H:%M:%S| ") << actualMessage;
         }
 
         con << actualMessage << "\n";
@@ -8352,8 +8364,8 @@ void se_SaveToLadderLog( tOutput const & out )
 
 static bool se_chatLog = false;
 static bool se_chatLogColors = false;
-static tSettingItem<bool> se_chatLogConf("CHAT_LOG", se_chatLog);
-static tSettingItem<bool> se_chatLogColorsConf("CHAT_LOG_COLORS", se_chatLogColors);
+static tConfItem<bool> se_chatLogConf("CHAT_LOG", se_chatLog);
+static tConfItem<bool> se_chatLogColorsConf("CHAT_LOG_COLORS", se_chatLogColors);
 
 static eLadderLogWriter se_chatWriter("CHAT", false);
 
@@ -8361,10 +8373,10 @@ void se_SaveToChatLog(tOutput const &out)
 {
     tString colStr(out);
     eBannedWords::BadWordTrigger(colStr);
-
-    if(sn_GetNetState() != nCLIENT && !tRecorder::IsPlayingBack())
+    colStr = tColoredString::RemoveColors(colStr);
+    if(!tRecorder::IsPlayingBack())
     {
-        if(se_chatWriter.isEnabled())
+        if(sn_GetNetState() != nCLIENT && se_chatWriter.isEnabled())
         {
             se_chatWriter << out;
             se_chatWriter.write();
@@ -8385,7 +8397,7 @@ void se_SaveToChatLogC(tOutput const &out)
     tString colStr(out);
     eBannedWords::BadWordTrigger(colStr);
 
-    if(sn_GetNetState() != nCLIENT && !tRecorder::IsPlayingBack())
+    if(!tRecorder::IsPlayingBack())
     {
         if(se_chatLogColors)
         {

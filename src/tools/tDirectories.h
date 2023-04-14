@@ -51,6 +51,7 @@ public:
     tString GetPaths(void) const; //!< Puts all paths into a tString for outputting to the user
     tString GetPaths(char const * delimiter, char const * finalizer) const; //!< Puts all paths into a tString for outputting to the user
 
+    static std::streamoff GetFileSize(std::ifstream &f);
     tPath(){}
     virtual ~tPath(){}
 protected:

@@ -4963,6 +4963,9 @@ static tConfItem<tString> se_joinCommandConf("LOCAL_CHAT_COMMAND_JOIN", se_joinC
 static tString se_searchCommand("/search");
 static tConfItem<tString> se_searchCommandConf("LOCAL_CHAT_COMMAND_SEARCH", se_searchCommand);
 
+static REAL se_searchCommandMaxFileSize = 50; // 50 MB
+static tConfItem<REAL> se_searchCommandMaxFileSizeConf("LOCAL_CHAT_COMMAND_SEARCH_MAX_FILE_SIZE", se_searchCommandMaxFileSize);
+
 #endif //if not dedicated
 
 void ePlayerNetID::Chat(const tString& s_orig)
@@ -9906,9 +9909,9 @@ void ePlayerNetID::activeStatus(tString s_orig)
     tColoredString listInfo;
     listInfo << "\nResults for "  << p->GetColoredName() << "0xRESETT: \n"
              << "Status: "        << "\n"
-             << "Created: "       << p->createTime_     << "\n"
-             << "Last Activity: " << p->LastActivity()  << "\n"
-             << "Chatting For: "  << chattingTime       << "\n";
+             << "Created: "       << p->createTime_      << "\n"
+             << "Last Activity: " << p->LastActivity()   << "\n"
+             << "Chatting For: "  << chattingTime        << "\n";
 
     if (chattingTime == 0)
         listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.\n";
@@ -9920,6 +9923,9 @@ static std::vector<std::pair<tString, tString>> searchableFiles = {
     {tString("chat"), tString("chatlog.txt")},
     {tString("console"), tString("consolelog.txt")}, // TOO BIG?
 };
+
+
+const std::streamoff MAX_FILE_SIZE = se_searchCommandMaxFileSize * 1024 * 1024;
 
 // TODO: Check if file is too big
 void ePlayerNetID::searchCommand(tString s_orig)
@@ -9980,6 +9986,17 @@ void ePlayerNetID::searchCommand(tString s_orig)
         std::ifstream i;
         if (tDirectories::Var().Open(i, fileName))
         {
+            std::streamoff fileSize = tPath::GetFileSize(i);
+            if (fileSize > MAX_FILE_SIZE)
+            {
+                con << "Error: File is too big: '" << fileName << "' ("
+                    << (fileSize * 1024 * 1024)  << " MB /"
+                    << (se_searchCommandMaxFileSize* 1024 * 1024) << " MB)\n";
+
+                i.close();
+                return;
+            }
+
             std::string sayLine;
             int lineNumber = 1;
             bool found = false;
@@ -10020,7 +10037,8 @@ void ePlayerNetID::searchCommand(tString s_orig)
                 }
                 if (!found)
                 {
-                    output << "0x8bc34aLine Range0xffb900" << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
+                    con << "0x8bc34aLine Range0xffb900: " << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
+                    return;
                 }
                 con << output;
             }

@@ -687,6 +687,18 @@ bool tPath::Open    ( std::ifstream& f,
 static bool st_protectFiles = true;
 tSettingItem<bool> st_protectFilesConf("PROTECT_SENSITIVE_FILES", st_protectFiles);
 
+
+std::streamoff tPath::GetFileSize(std::ifstream &f)
+{
+    std::streamoff curPos = f.tellg();
+    f.seekg(0, std::ios::beg);
+    std::streamoff startPos = f.tellg();
+    f.seekg(0, std::ios::end);
+    std::streamoff endPos = f.tellg();
+    f.seekg(curPos);
+    return (endPos - startPos);
+}
+
 bool tPath::Open    ( std::ofstream& f,
                       const char* filename,
                       std::ios::openmode mode,

@@ -467,7 +467,7 @@ static void display_hud_subby( ePlayer* player ){
                                 gSensor sensor(owner_, owner_->Position(), direction);
                                 sensor.detect(10000);
 
-                                if (sensor.ehit && sensor.wallOwner && sensor.type != gSENSOR_SELF)
+                                if (sensor.ehit && sensor.wallOwner && sensor.wallOwner != owner_)
                                 {
                                     tString message;
                                     REAL remainingTime = gCycle::timeBeforeWallRemoval(sensor.wallOwner);

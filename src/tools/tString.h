@@ -174,6 +174,8 @@ public:
     //  splits string intoarrays
     tArray<tString> Split(tString del_word);
     tArray<tString> Split(const char *del_word);
+    tArray<tString> SplitBySize(int size);
+    tArray<tString> SplitBySizeWithFullWords(int maxSize);
 
     tString Replace(tString old_word, tString new_word);
     tString Replace(const char *old_word, const char *new_word);

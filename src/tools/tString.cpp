@@ -2444,6 +2444,74 @@ tString tString::RemoveWord(const char *find_word)
 //!
 // **********************************************************************
 
+tArray<tString> tString::SplitBySize(int size)
+{
+    tString ret(*this);
+    tArray<tString> arrayString;
+
+    if (size <= 0)
+    {
+        return arrayString; // No change
+    }
+
+    int strLength = ret.Len();
+    int numberOfChunks = (strLength + size - 1) / size; // Calculate the number of chunks, rounding up
+
+    for (int i = 0; i < numberOfChunks; i++)
+    {
+        int startIndex = i * size;
+        int endIndex = std::min(startIndex + size, strLength);
+        arrayString[i] = ret.SubStr(startIndex, endIndex - startIndex);
+    }
+
+    return arrayString;
+}
+
+tArray<tString> tString::SplitBySizeWithFullWords(int maxSize)
+{
+    tString ret(*this);
+    tArray<tString> arrayString;
+
+    if (maxSize <= 0)
+    {
+        arrayString[0] = ret;
+        return arrayString;
+    }
+
+    int index = 0;
+    int arrayKey = 0;
+
+    while (index < ret.Len())
+    {
+        int currentSize = 0;
+        int lastSpace = -1;
+
+        while (currentSize < maxSize && index < ret.Len())
+        {
+            if (ret[index] == ' ')
+            {
+                lastSpace = index;
+            }
+            currentSize++;
+            index++;
+        }
+
+        if (index < ret.Len() && lastSpace != -1)
+        {
+            arrayString[arrayKey] = ret.SubStr(index - currentSize, lastSpace - (index - currentSize) + 1);
+            index = lastSpace + 1;
+        }
+        else
+        {
+            arrayString[arrayKey] = ret.SubStr(index - currentSize, currentSize);
+        }
+        arrayKey++;
+    }
+
+    return arrayString;
+}
+
+
 tArray<tString> tString::Split(tString delimiter)
 {
     tString ret(*this);

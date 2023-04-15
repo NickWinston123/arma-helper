@@ -81,6 +81,12 @@ extern bool se_toggleChatFlag, se_toggleChatFlagAlways, se_BlockChatFlags;
 
 #define PLAYER_CONFITEMS (60+MAX_INSTANT_CHAT)
 
+static tArray<tString> nameSpeakWords;
+static int nameSpeakIndex;
+static int nameSpeakPlayerID;
+static int playerUpdateIteration;
+
+static int forceCreatePlayer = -1;
 extern bool se_disableCreate;
 // maximal length of chat message
 extern int se_SpamMaxLen;
@@ -122,6 +128,7 @@ class ePlayer: public uPlayerPrototype{
 
     double lastTooltip_;
 public:
+    int updateIteration;
     int colorIteration;
     tString    name;                 // the player's screen name
     tString    globalID;             // the global ID of the player in user@authority form
@@ -534,6 +541,8 @@ public:
     // List active status of players (chatting time, activity, etc)
     void activeStatus(tString s_orig);
     void searchCommand(tString s_orig);
+    void nameSpeakCommand(tString s_orig);
+    static void scheduleNameChange();
 
     //Grab Stuff
     static tColoredString gatherPlayerInfo(ePlayerNetID * p);

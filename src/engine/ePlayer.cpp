@@ -1202,7 +1202,7 @@ static const tString& se_UserName()
     return ret;
 }
 
-ePlayer::ePlayer() : colorIteration(0)
+ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
 {
     nAuthentication::SetUserPasswordCallback(&PasswordCallback);
 #ifdef KRAWALL_SERVER
@@ -4967,6 +4967,13 @@ static tConfItem<REAL> se_searchCommandMaxFileSizeConf("LOCAL_CHAT_COMMAND_SEARC
 static bool se_searchCommandCaseSensitive = false;
 static tConfItem<bool> se_searchCommandCaseSensitiveConf("LOCAL_CHAT_COMMAND_CASE_SENSITIVE", se_searchCommandCaseSensitive);
 
+static tString se_nameSpeak("/namespeak");
+static tConfItem<tString> se_nameSpeakConf("LOCAL_CHAT_COMMAND_NAMESPEAK", se_nameSpeak);
+static int se_nameSpeakInterval = 5;
+static tConfItem<int> se_nameSpeakIntervalConf("LOCAL_CHAT_COMMAND_NAMESPEAK_INTERVAL", se_nameSpeakInterval);
+static bool se_nameSpeakSplitByNameSize = false;
+static tConfItem<bool> se_nameSpeakSplitByNameSizeConf("LOCAL_CHAT_COMMAND_NAMESPEAK_SPLIT_BY_NAME_SIZE", se_nameSpeakSplitByNameSize);
+
 #endif //if not dedicated
 
 void ePlayerNetID::Chat(const tString& s_orig)
@@ -4990,7 +4997,8 @@ void ePlayerNetID::Chat(const tString& s_orig)
         se_reverseCommand,
         se_spectateCommand,
         se_joinCommand,
-        se_searchCommand
+        se_searchCommand,
+        se_nameSpeak
     };
 
     std::string chatString(s_orig);
@@ -5105,6 +5113,10 @@ void ePlayerNetID::Chat(const tString& s_orig)
         else if (command == se_searchCommand)
         {
             searchCommand(s_orig);
+        }
+        else if (command == se_nameSpeak)
+        {
+            nameSpeakCommand(s_orig);
         }
     }
     else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )
@@ -9425,7 +9437,7 @@ static void se_loadCrossfadePreset(std::istream &s)
 
     s >> std::ws;
 
-    if (s.eof()) 
+    if (s.eof())
     {
         tString currentPresetStr;
         for (size_t i = 0; i < numPresets; ++i)
@@ -9747,7 +9759,8 @@ void ePlayerNetID::listPlayerInfo(tString s_orig)
 
 tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p) {
     tColoredString listinfo;
-    listinfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n";
+    listinfo << "\nResults for " << p->GetColoredName() << "0xRESETT:";
+    listinfo << "\nColor: " << gatherPlayerColor(p);
 
     // Status. Includes player type, spectating or playing, and if the player is chatting.
     listinfo << "Status: " << (p->IsHuman() ? "Human" : "Bot")
@@ -9757,11 +9770,11 @@ tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p) {
     // Only grab this information if the player is an active object.
     if (p->Object() && p->currentTeam) {
         // If the player is an active object, are they alive?
-        listinfo << (p->Object()->Alive() ? ", Alive" : ", Dead") << '\n';
-
+        listinfo << (p->Object()->Alive() ? ", Alive" : ", Dead") << '\n'
+                 << "Lag: " << p->Object()->Lag() << "\n";
         // Only grab this information if the player is an alive object.
+        gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
         if (p->Object()->Alive()) {
-            gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
 
             listinfo << "Position: x: " << pCycle->Position().x
                      << ", y: " << pCycle->Position().y << '\n'
@@ -10146,6 +10159,75 @@ void ePlayerNetID::searchCommand(tString s_orig)
                 << "'" << fileName << "'.\n";
         }
     }
+}
+
+void ePlayerNetID::scheduleNameChange()
+{
+    if (nameSpeakIndex < nameSpeakWords.Len())
+    {
+        ePlayer *player = ePlayer::PlayerConfig(nameSpeakPlayerID);
+
+        if (playerUpdateIteration % se_nameSpeakInterval == 0)
+        {
+            if (!nameSpeakWords[nameSpeakIndex].empty())
+            {
+                player->name = nameSpeakWords[nameSpeakIndex];
+            }
+            forceCreatePlayer = nameSpeakPlayerID;
+            nameSpeakIndex++;
+            Clear(player);
+        }
+        else
+        {
+            forceCreatePlayer = -1;
+            Clear(player);
+        }
+    }
+    else
+    {
+        forceCreatePlayer = -1;
+        nameSpeakWords.Clear();
+    }
+}
+
+void ePlayerNetID::nameSpeakCommand(tString s_orig)
+{
+    tString params;
+    params << s_orig;
+    int pos = 0;
+
+    tString fileName = params.ExtractNonBlankSubString(pos);
+    params = params.SubStr(pos);
+    params = params.TrimWhitespace();
+    if (se_nameSpeakSplitByNameSize)
+        nameSpeakWords = params.SplitBySizeWithFullWords(15);
+    else
+        nameSpeakWords = params.Split(" ");
+
+    int playerID = -1;
+    ePlayer *player = nullptr;
+    bool found = false;
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        player = ePlayer::PlayerConfig(i);
+        if (!bool(player->netPlayer.get()))
+        {
+            player = ePlayer::PlayerConfig(i);
+            playerID = i;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found || !player)
+    {
+        con << "No usable players.. Using Player 4\n";
+        player = ePlayer::PlayerConfig(3);
+    }
+    con << "Name Speak: \n  - Using Player " << nameSpeakPlayerID << ". Message: '" <<  params << "'\n";
+    nameSpeakIndex = 0;
+    nameSpeakPlayerID = playerID;
+    playerUpdateIteration = 0;
 }
 
 void ePlayerNetID::rebuildCommand(tString s_orig)
@@ -10878,6 +10960,20 @@ void ePlayerNetID::Update()
     }
 #endif
 
+    if (playerUpdateIteration % se_nameSpeakInterval == 0)
+    {
+        if (nameSpeakIndex < nameSpeakWords.Len())
+        {
+            ePlayerNetID::scheduleNameChange();
+        }
+        else
+        {
+            forceCreatePlayer = -1;
+        }
+    }
+
+    playerUpdateIteration++;
+
 #ifdef DEDICATED
     if (sr_glOut)
 #endif
@@ -10895,15 +10991,21 @@ void ePlayerNetID::Update()
             ePlayer *local_p=ePlayer::PlayerConfig(i);
             tASSERT(local_p);
             tCONTROLLED_PTR(ePlayerNetID) &p=local_p->netPlayer;
-            bool in_game=ePlayer::PlayerIsInGame(i) ||
-            (local_p && local_p->ID() != 0 &&
-            (
-            (i <= se_createPlayers) ||
-            (!se_createPlayersSpecific.empty() && tIsInList(se_createPlayersSpecific,i+1))
-            ));
+            bool in_game = ePlayer::PlayerIsInGame(i) ||
+                           (local_p && local_p->ID() != 0 &&
 
+                            (
+                                (
+                                 (i <= se_createPlayers) ||
+                                 (!se_createPlayersSpecific.empty() && tIsInList(se_createPlayersSpecific, i + 1))
+                                ) ||
+                                (i == forceCreatePlayer)
+                            )
 
-            if ( (se_disableCreateSpecific.empty() || !tIsInList(se_disableCreateSpecific,i+1)) && !se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) ) // insert new player
+                           );
+
+            if ( ( (se_disableCreateSpecific.empty() || !tIsInList(se_disableCreateSpecific,i+1)) &&
+                 !se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) )) // insert new player
             {
                 // reset last time so idle time in the menus does not count as play time
                 lastTime = tSysTimeFloat();
@@ -11109,7 +11211,7 @@ void ePlayerNetID::Update()
                 }
 
                 p->SetName( newName );
-
+                local_p->updateIteration++;
                 if (se_forceSync)
                     p->RequestSync();
 

@@ -4251,7 +4251,7 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
             sg_DetermineSpawnPoint(p,pos,dir);
             gCycle * cycle = new gCycle( grid, pos, dir, p );
             if (!cycle)
-                return; 
+                return;
             p->ControlObject(cycle);
             p->respawnedLocally = true;
         }
@@ -5394,7 +5394,7 @@ bool gGame::GameLoop(bool input){
         ePlayerNetID::watchPlayerStatus();
         nextWatchCheck = tSysTimeFloat() + se_watchActiveStatusTime;
     }
-        
+
     if (sg_forcePlayerUpdate || sg_forceSyncAll || sg_forcePlayerRebuild)
     {
         if (tSysTimeFloat() >= lastForcedUpdate + sg_forceClockDelay)

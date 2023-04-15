@@ -67,6 +67,8 @@ enum ColorNameCustomization {
 #include <utility>
 #include "eChat.h"
 
+static void se_CrossFadeColor(ePlayer * p,bool reset = false);
+
 extern bool se_watchActiveStatus;
 extern int se_watchActiveStatusTime;
 enum playerWatchStatus {

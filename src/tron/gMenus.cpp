@@ -1381,7 +1381,7 @@ void sg_PlayerMenu(int Player){
 
 
     //Color Customization in the player menu
-    uMenuItemSelection<int> se_cnr(&playerMenu,"Name Color","Gradient Name",p->colorNameCustomization);
+    uMenuItemSelection<int> se_cnr(&playerMenu,"Name Color","Name Color",p->colorNameCustomization);
     se_cnr.NewChoice("None",     "No color name customization", ColorNameCustomization::OFF_NAME);
     se_cnr.NewChoice("Gradient", "Gradient name customization", ColorNameCustomization::GRADIENT_NAME);
     se_cnr.NewChoice("Rainbow",  "Rainbow name customization",  ColorNameCustomization::RAINBOW_NAME);

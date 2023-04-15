@@ -4964,6 +4964,8 @@ static tString se_searchCommand("/search");
 static tConfItem<tString> se_searchCommandConf("LOCAL_CHAT_COMMAND_SEARCH", se_searchCommand);
 static REAL se_searchCommandMaxFileSize = 50; // 50 MB
 static tConfItem<REAL> se_searchCommandMaxFileSizeConf("LOCAL_CHAT_COMMAND_SEARCH_MAX_FILE_SIZE", se_searchCommandMaxFileSize);
+static bool se_searchCommandCaseSensitive = false;
+static tConfItem<bool> se_searchCommandCaseSensitiveConf("LOCAL_CHAT_COMMAND_CASE_SENSITIVE", se_searchCommandCaseSensitive);
 
 #endif //if not dedicated
 
@@ -9251,97 +9253,118 @@ static void se_rainbowColor(ePlayer *l)
     l->rgb[2] = color.b_;
 }
 
+bool se_CrossFadeColorRand = false;
+static tConfItem<bool> se_CrossFadeColorRandConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_RAND", se_CrossFadeColorRand);
 
-bool se_fadeColorRand = false;
-static tConfItem< bool > se_fadeColorRandConf( "PLAYER_NAME_COLOR_CUSTOM_CROSSFADE_RAND", se_fadeColorRand );
+int se_CrossFadeColorSpeed = 50;
+static tConfItem<int> se_CrossFadeColorSpdConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_SPEED", se_CrossFadeColorSpeed);
 
-int se_fadeColorSpeed = 50;
-static tConfItem< int > se_fadeColorSpdConf( "PLAYER_NAME_COLOR_CUSTOM_CROSSFADE_SPEED", se_fadeColorSpeed );
+float se_CrossFadeColorHold = 0;
+static tConfItem<float> se_CrossFadeColorHoldConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_HOLD", se_CrossFadeColorHold);
 
-float se_fadeColorHold = 0;
-static tConfItem< float > se_fadeColorHoldConf( "PLAYER_NAME_COLOR_CUSTOM_CROSSFADE_HOLD", se_fadeColorHold );
+static const std::vector<std::pair<const char *, std::string>> crossfadePresets = {
+    {"15 0 0, 15 15 0, 0 15 0, 0 15 15, 0 0 15",
+    "Fade between Red -> Purple -> Green -> Orange -> Blue"},
+    {"15 0 0, 0 15 0, 0 0 15",
+    "Fade between Red -> Green -> Blue"},
+    {"0 0 15, 0 5 15, 0 10 15, 0 15 15, 5 15 15, 10 15 15",
+    "A smooth gradient between shades of blue"},
+    {"15 0 0, 15 7 0, 15 15 0, 7 15 0, 0 15 0, 0 15 7, 0 15 15, 0 7 15, 0 0 15, 7 0 15, 15 0 15, 15 0 7",
+    "A rainbow cycle with smooth transitions"},
+    {"15 0 0, 15 5 0, 15 10 0, 15 15 0, 10 15 0, 5 15 0, 0 15 0, 0 15 5, 0 15 10, 0 15 15, 0 10 15, 0 5 15, 0 0 15",
+    "A gradient between warm and cold colors"},
+    {"15 7 10, 10 15 7, 7 10 15, 10 7 15, 15 10 7, 7 15 10",
+    "Pastel colors cycling"},
+    {"15 0 15, 12 0 15, 9 0 15, 6 0 15, 3 0 15, 0 0 15, 0 0 12, 0 0 9, 0 0 6, 0 0 3",
+    "A gradient of purple shades"},
+    {"15 0 15, 15 15 0, 0 15 15, 15 0 0, 0 15 0, 0 0 15",
+    "Neon colors cycling"},
+    {"0 15 0, 0 12 0, 0 9 0, 0 6 0, 0 3 0",
+    "A gradient of green shades"},
+    {"15 0 0, 12 0 3, 9 0 6, 6 0 9, 3 0 12, 0 0 15",
+    "A gradient between red and blue"},
+    {"0 0 0, 3 3 3, 6 6 6, 9 9 9, 12 12 12, 15 15 15",
+    "Monochrome cycling"},
+    {"0 0 15, 0 3 12, 0 6 9, 0 9 6, 0 12 3, 0 15 0",
+    "Ocean colors cycling"},
+    {"15 0 0, 15 3 0, 15 6 0, 15 9 0, 15 12 0, 15 15 0",
+    "Sunset colors cycling"},
+    {"15 0 15, 15 3 12, 15 6 9, 15 9 6, 15 12 3, 15 15 0",
+    "Pink and purple shades cycling"},
+    {"0 15 15, 15 0 15, 15 15 0",
+    "Tricolor cycling between shades of blue, pink and yellow"},
+    {"15 0 0, 15 15 0, 15 0 15, 15 15 15, 0 15 15, 0 0 15, 15 0 15, 0 15 0",
+    "Cycling between shades of red, blue and purple"},
+    {"15 15 0, 0 15 15, 15 0 0",
+    "Tricolor cycling between shades of yellow, blue and red"},
+    {"15 7 0, 15 0 15, 0 7 15, 7 15 0",
+    "Cycling between complementary colors: yellow and violet, blue and orange"},
+    {"15 0 0, 15 0 15, 0 15 15, 0 15 0, 15 7 0, 15 15 0, 15 15 15",
+    "Cycling between various shades of red and blue, with a hint of green and white"},
+    };
 
-static const char * const crossfadePresets[] = {
-    "15 0 0, 15 15 0, 0 15 0, 0 15 15, 0 0 15",
-    "15 0 0, 0 15 0, 0 0 15",
-};
+static tString se_crossfadeColorsStr(crossfadePresets[0].first);
+static int currentPreset = 0;
 
-static tString se_crossfadeColorsStr(crossfadePresets[0]);
+using ColorPtr = std::unique_ptr<float[]>;
+using ColorArray = std::vector<ColorPtr>;
+ColorArray se_crossfadeColors;
 
-struct {
-    size_t size = 0, alloc = 0;
-    float ** array = nullptr;
-} static se_crossfadeColors;
+float crossFadelasttime = 0;
+size_t crossFadetarget = 0;
 
-static bool buildTargetColors( const tString &crossfadeColors )
+static bool buildTargetColors(const tString &crossfadeColors)
 {
-    if( se_crossfadeColors.array )
+
+    if (!se_crossfadeColors.empty())
     {
-        for(auto i=se_crossfadeColors.array;(*i)!=nullptr;i++)
-        {
-            //free(*i);
-            delete(*i);
-        }
-        free(se_crossfadeColors.array);
-
-        se_crossfadeColors.array = nullptr;
-        se_crossfadeColors.size = 0;
+        se_crossfadeColors.clear();
     }
-
-    se_crossfadeColors.array = (float **)malloc((se_crossfadeColors.alloc=8)*sizeof(float *));
-    if( !se_crossfadeColors.array ) return false;
-
-    se_crossfadeColors.array[se_crossfadeColors.alloc-1] = nullptr;
 
     int pos = 0;
 
     std::cout << se_crossfadeColorsStr.Len() << "\n";
 
     bool cont = true;
-    while(cont)
+    while (cont)
     {
-        //auto color = (float *)malloc(3*sizeof(float));
         auto color = tNEW(float[3]);
 
         color[0] = atoi(crossfadeColors.ExtractNonBlankSubString(pos));
         color[1] = atoi(crossfadeColors.ExtractNonBlankSubString(pos));
         color[2] = atoi(crossfadeColors.ExtractNonBlankSubString(pos));
 
-        std::cout << color[0] << "," << color[1] << "," << color[2] << "\n";
+        //con << color[0] << "," << color[1] << "," << color[2] << "\n";
 
-        pos = crossfadeColors.StrPos(pos-1, ",");
-        if(pos == -1) cont = false;
+        pos = crossfadeColors.StrPos(pos - 1, ",");
+        if (pos == -1)
+            cont = false;
 
         pos += 1;
 
         std::cout << crossfadeColors.SubStr(pos) << "\n";
 
-        se_crossfadeColors.array[se_crossfadeColors.size++] = color;
-        if( se_crossfadeColors.size == se_crossfadeColors.alloc )
-        {
-            auto p = (float **)realloc(se_crossfadeColors.array, (se_crossfadeColors.alloc*=2)*sizeof(float *));
-            if( !p ) return false;
-            se_crossfadeColors.array = p;
-        }
-    }
+        se_crossfadeColors.push_back(ColorPtr(color));
 
-    se_crossfadeColors.array[se_crossfadeColors.size] = nullptr;
+    }
 
     return true;
 }
 
-
-static void se_addCrossfadeColor( std::istream &s )
+static void se_addCrossfadeColor(std::istream &s)
 {
     tString colors(se_crossfadeColorsStr);
 
-    int r; s >> r;
-    int g; s >> g;
-    int b; s >> b;
+    int r;
+    s >> r;
+    int g;
+    s >> g;
+    int b;
+    s >> b;
 
     colors << ", " << r << " " << g << " " << b;
 
-    if( buildTargetColors(colors) )
+    if (buildTargetColors(colors))
     {
         se_crossfadeColorsStr = colors;
     }
@@ -9351,67 +9374,101 @@ static void se_addCrossfadeColor( std::istream &s )
     }
 }
 
-
-static void se_listCrossfadeColors( std::istream &s )
+static void se_listCrossfadeColors(std::istream &s)
 {
     size_t id = 0;
-    for(auto i=se_crossfadeColors.array;(*i)!=nullptr;i++)
+    for (auto &color : se_crossfadeColors)
     {
-        con << (++id) << ": " << ((*i)[0]) << ", " << ((*i)[1]) << ", " << ((*i)[2]) << "\n";
+        con << (++id) << ": " << (color[0]) << ", " << (color[1]) << ", " << (color[2]) << "\n";
     }
 }
 
-static void se_rmCrossfadeColors( std::istream &s )
+static void se_rmCrossfadeColors(std::istream &s)
 {
-    if( s.eof() )
+    if (s.eof())
     {
         con << "An ID to remove is required. See CROSSFADE_LIST.";
         return;
     }
 
-    tArray<size_t> ids;
+    std::vector<size_t> ids;
 
-    while( !s.eof() )
+    while (!s.eof())
     {
-        size_t target; s >> target;
-        ids.Insert(target);
+        size_t target;
+        s >> target;
+        target -= 1;
+        ids.push_back(target);
     }
 
-    size_t id = 0;
-    for(auto i=se_crossfadeColors.array;(*i)!=nullptr;i++)
-    {
-        for(int i=ids.Len()-1;i>=0;--i)
-        {
-            if( (++id) == ids[i] )
-            {
+    // Sort ids in descending order
+    std::sort(ids.rbegin(), ids.rend());
 
-            }
+    for (const auto &id : ids)
+    {
+        if (id < se_crossfadeColors.size())
+        {
+            se_crossfadeColors.erase(se_crossfadeColors.begin() + id);
         }
     }
 }
 
-
-static void se_loadCrossfadePreset( std::istream &s )
+void resetSeCrossFadeColorVariables()
 {
-    int selection; s >> selection;
+    crossFadetarget = 0;
+    crossFadelasttime = 0;
+}
 
-    if( selection < 0 )
+static void se_loadCrossfadePreset(std::istream &s)
+{
+    size_t numPresets = crossfadePresets.size();
+
+    s >> std::ws;
+
+    if (s.eof()) 
     {
-        con << "Preset must be 0 and above.\n";
+        tString currentPresetStr;
+        for (size_t i = 0; i < numPresets; ++i)
+        {
+            if (i == currentPreset)
+            {
+                currentPresetStr << "0x90ee90" << (i + 1) << ": 0xe6e6fa" << crossfadePresets[i].second << "0xffffff\n  - (" << crossfadePresets[i].first << ")\n";
+                con << currentPresetStr;
+            }
+            else
+            {
+                con << (i + 1) << ": 0xe6e6fa" << crossfadePresets[i].second << "0xffffff \n  - (" << crossfadePresets[i].first << ")\n";
+            }
+        }
+        con << "Current preset: " << currentPresetStr;
         return;
     }
 
-    if( selection >= sizeof(crossfadePresets) )
+    int selection;
+    s >> selection;
+    selection -= 1;
+
+    if (selection < 0)
     {
-        con << "There are only " << sizeof(crossfadePresets) << " presets defined!";
-        con << "Valid range 0 - " << (sizeof(crossfadePresets)-1) << "\n";
+        con << "Preset must be 1 and above.\n";
         return;
     }
 
-    tString colors(crossfadePresets[selection]);
-    if( buildTargetColors(colors) )
+    if (selection >= numPresets)
     {
+        con << "There are only " << numPresets << " presets defined!\n";
+        con << "Valid range: 1 - " << numPresets << "\n";
+        return;
+    }
+
+    currentPreset = selection;
+    tString colors(crossfadePresets[selection].first);
+    if (buildTargetColors(colors))
+    {
+        //se_crossfadeColors.clear(); // Reset the se_crossfadeColors array
         se_crossfadeColorsStr = colors;
+        resetSeCrossFadeColorVariables(); // Reset target and lasttime variables
+        con << "0xadd8e6Using preset " << (selection+1) << ":0xffffff " << crossfadePresets[selection].second << " \n  - " << colors << "\n";
     }
     else
     {
@@ -9419,156 +9476,145 @@ static void se_loadCrossfadePreset( std::istream &s )
     }
 }
 
-
-static void se_FadeColor(ePlayer * p)
+void se_CrossFadeColor(ePlayer *p,bool reset)
 {
-    static float lasttime = 0;
     float time = tSysTimeFloat();
 
-    if( !se_crossfadeColors.array )
+    // if (se_crossfadeColorsStr.empty()){
+    //     se_crossfadeColorsStr = crossfadePresets[0].first;
+    //     con << "SET TO " << se_crossfadeColorsStr << "\n";
+    // }
+
+    if (se_crossfadeColorsStr.empty() || se_crossfadeColors.empty())
     {
-        buildTargetColors( se_crossfadeColorsStr );
+        buildTargetColors(se_crossfadeColorsStr);
     }
 
-    //static float r = 15, g = 0, b = 0;
     static float color[3] = {0, 0, 0};
-    static int target = 0;
 
     static float tdiff[3] = {1, 1, 1};
 
     static bool resetColor = true, prepareFade = true;
 
-    //#define NUM_COLORS 5
-    //static float colors[NUM_COLORS][3] = {{15,0,0},{15,15,0},{0,15,0},{0,15,15},{0,0,15}};
+    auto &colors = se_crossfadeColors;
+    size_t num_colors = se_crossfadeColors.size();
 
-    auto colors = se_crossfadeColors.array;
-    auto num_colors = se_crossfadeColors.size;
 
-    if( se_fadeColorRand )
+    if (se_CrossFadeColorRand)
     {
         num_colors += 1;
 
-        if( !se_crossfadeColors.array[se_crossfadeColors.size] )
+        if (se_crossfadeColors.size() < num_colors)
         {
             static tReproducibleRandomizer randomizer;
 
-            //auto color = (float *)malloc(3*sizeof(float));
-            auto color = tNEW(float[3]);
+            auto color = std::make_unique<float[]>(3);
             color[0] = randomizer.Get(15);
             color[1] = randomizer.Get(15);
             color[2] = randomizer.Get(15);
 
-            if( se_crossfadeColors.array[se_crossfadeColors.size] )
-            {
-                delete(se_crossfadeColors.array[se_crossfadeColors.size]);
-                se_crossfadeColors.array[se_crossfadeColors.size] = nullptr;
-            }
-
-            se_crossfadeColors.array[se_crossfadeColors.size] = color;
-            se_crossfadeColors.array[num_colors] = nullptr;
+            se_crossfadeColors.push_back(std::move(color));
         }
     }
-    else if( se_crossfadeColors.array[se_crossfadeColors.size] )
+    else if (se_crossfadeColors.size() > num_colors)
     {
-        delete(se_crossfadeColors.array[se_crossfadeColors.size]);
-        se_crossfadeColors.array[se_crossfadeColors.size] = nullptr;
+        se_crossfadeColors.pop_back();
     }
 
-    if( target >= num_colors ) { target = 0; prepareFade = true; }
-
-#if 0
-    if( roundf(color[0]) != p->rgb[0] || roundf(color[1]) != p->rgb[1] || roundf(color[2]) != p->rgb[2] )
+    if (crossFadetarget >= num_colors)
     {
-        std::cout << "Color diverged from expected value.\n";
-
-        std::cout << color[0] << " vs " << p->rgb[0] << "\n";
-        std::cout << color[1] << " vs " << p->rgb[1] << "\n";
-        std::cout << color[2] << " vs " << p->rgb[2] << "\n";
-
-        resetColor = true;
+        crossFadetarget = 0;
+        prepareFade = true;
     }
-#endif
 
-    if( resetColor )
+    if (resetColor)
     {
-        color[0] = p->rgb[0]; color[1] = p->rgb[1]; color[2] = p->rgb[2];
+        color[0] = p->rgb[0];
+        color[1] = p->rgb[1];
+        color[2] = p->rgb[2];
         prepareFade = true;
         resetColor = false;
     }
 
-    if( prepareFade )
+    if (prepareFade)
     {
-        tdiff[0] = fabs( colors[target][0] - color[0] ) / 15.f;
-        tdiff[1] = fabs( colors[target][1] - color[1] ) / 15.f;
-        tdiff[2] = fabs( colors[target][2] - color[2] ) / 15.f;
+        tdiff[0] = fabs(colors[crossFadetarget][0] - color[0]) / 15.f;
+        tdiff[1] = fabs(colors[crossFadetarget][1] - color[1]) / 15.f;
+        tdiff[2] = fabs(colors[crossFadetarget][2] - color[2]) / 15.f;
 
-        std::cout << tdiff[0] << "," << tdiff[1] << "," << tdiff[2] << "\n";
         prepareFade = false;
     }
 
-    float timestep = time - lasttime;
+    float timestep = time - crossFadelasttime;
 
-    if( timestep < 0 ) return;
+    if (timestep < 0)
+        return;
 
-    for(int x=2;x>=0;--x)
+    for (int x = 2; x >= 0; --x)
     {
-        if( color[x] < colors[target][x] )
+        if (color[x] < colors[crossFadetarget][x])
         {
-            color[x] += timestep*(se_fadeColorSpeed / 10.f)*tdiff[x];
-            if( color[x] > colors[target][x] )
+            color[x] += timestep * (se_CrossFadeColorSpeed / 10.f) * tdiff[x];
+            if (color[x] > colors[crossFadetarget][x])
             {
-                color[x] = colors[target][x];
+                color[x] = colors[crossFadetarget][x];
             }
         }
-        else if( color[x] > colors[target][x] )
+        else if (color[x] > colors[crossFadetarget][x])
         {
-            color[x] -= timestep*(se_fadeColorSpeed / 10.f)*tdiff[x];
-            if( color[x] < colors[target][x] )
+            color[x] -= timestep * (se_CrossFadeColorSpeed / 10.f) * tdiff[x];
+            if (color[x] < colors[crossFadetarget][x])
             {
-                color[x] = colors[target][x];
+                color[x] = colors[crossFadetarget][x];
             }
         }
 
-        //std::cout << timestep << "\n";
-
-        if(color[x] > 15) color[x] = 15;
-        if(color[x] < 0) color[x] = 0;
+        if (color[x] > 15)
+            color[x] = 15;
+        if (color[x] < 0)
+            color[x] = 0;
     }
 
-    if( color[0] == colors[target][0] && color[1] == colors[target][1] && color[2] == colors[target][2] )
+    if (color[0] == colors[crossFadetarget][0] && color[1] == colors[crossFadetarget][1] && color[2] == colors[crossFadetarget][2])
     {
-        ++target;
-        if( target >= num_colors )
+        ++crossFadetarget;
+        if (crossFadetarget >= num_colors)
         {
-            if( se_fadeColorRand )
+            if (se_CrossFadeColorRand)
             {
-                target = num_colors-1;
-                se_crossfadeColors.array[se_crossfadeColors.size] = nullptr;
+                crossFadetarget = num_colors - 1;
+                se_crossfadeColors.pop_back();
             }
             else
-                target = 0;
+                crossFadetarget = 0;
         }
 
-        lasttime = time + se_fadeColorHold;
+        crossFadelasttime = time + se_CrossFadeColorHold;
 
         prepareFade = true;
     }
     else
-        lasttime = time;
-
-    p->rgb[0] = roundf(color[0]); p->rgb[1] = roundf(color[1]); p->rgb[2] = roundf(color[2]);
-
-    while( tColor(p->rgb[0]/15.f, p->rgb[1]/15.f, p->rgb[2]/15.f).IsDark() )
     {
-        p->rgb[0] += 1; p->rgb[1] += 1; p->rgb[2] += 1;
+        crossFadelasttime = time;
+    }
+
+    p->rgb[0] = roundf(color[0]);
+    p->rgb[1] = roundf(color[1]);
+    p->rgb[2] = roundf(color[2]);
+
+    while (tColor(p->rgb[0] / 15.f, p->rgb[1] / 15.f, p->rgb[2] / 15.f).IsDark())
+    {
+        p->rgb[0] += 1;
+        p->rgb[1] += 1;
+        p->rgb[2] += 1;
     }
 }
 
-static tConfItem< tString > se_crossfadeColorsConf( "PLAYER_NAME_COLOR_CUSTOM_CROSSFADE_COLORS", se_crossfadeColorsStr, &buildTargetColors);
-static tConfItemFunc se_crossfadeAddColorConf("PLAYER_NAME_COLOR_CUSTOM_CROSSFADE_ADD", &se_addCrossfadeColor);
-static tConfItemFunc se_crossfadeListColorsConf("PLAYER_NAME_COLOR_CUSTOM_CROSSFADE_LIST", &se_listCrossfadeColors);
-static tConfItemFunc se_crossfadeRemoveColorConf("PLAYER_NAME_COLOR_CUSTOM_CROSSFADE_REMOVE", &se_rmCrossfadeColors);
-static tConfItemFunc se_loadCrossfadePresetConf("PLAYER_NAME_COLOR_CUSTOM_CROSSFADE_PRESET",&se_loadCrossfadePreset);
+static tConfItem< tString > se_crossfadeColorsConf( "PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_COLORS", se_crossfadeColorsStr, &buildTargetColors);
+static tConfItemFunc se_crossfadeAddColorConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_ADD", &se_addCrossfadeColor);
+static tConfItemFunc se_crossfadeListColorsConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_LIST", &se_listCrossfadeColors);
+static tConfItemFunc se_crossfadeRemoveColorConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_REMOVE", &se_rmCrossfadeColors);
+static tConfItemFunc se_loadCrossfadePresetConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_PRESET",&se_loadCrossfadePreset);
 
 
 //Gather all the rgb colors and put them in a nice list.
@@ -10054,7 +10100,16 @@ void ePlayerNetID::searchCommand(tString s_orig)
             {
                 while (std::getline(i, sayLine))
                 {
-                    std::size_t foundPos = sayLine.find(searchValue);
+                    std::string sayLineComparison = sayLine;
+                    std::string searchValueComparison = searchValue;
+
+                    if (!se_searchCommandCaseSensitive){
+                        std::transform(sayLineComparison.begin(), sayLineComparison.end(), sayLineComparison.begin(),
+                                    [](unsigned char c) { return std::tolower(c); });
+                        std::transform(searchValueComparison.begin(), searchValueComparison.end(), searchValueComparison.begin(),
+                                    [](unsigned char c) { return std::tolower(c); });
+                    }
+                    std::size_t foundPos = sayLineComparison.find(searchValueComparison);
                     if (foundPos != std::string::npos)
                     {
                         found = true;
@@ -10930,7 +10985,7 @@ void ePlayerNetID::Update()
                         se_rainbowColor(local_p);
                         break;
                     case ColorCustomization::CROSSFADE:
-                        se_FadeColor(local_p);
+                        se_CrossFadeColor(local_p);
                         break;
                     default:
                         break;

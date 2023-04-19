@@ -29,6 +29,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ArmageTron_floor_H
 
 #include "defs.h"
+
+extern bool sr_filterCycleWalls;
+extern REAL sr_filterCycleWallsMinR;
+extern REAL sr_filterCycleWallsMinG;
+extern REAL sr_filterCycleWallsMinB;
+extern REAL sr_filterCycleWallsMaxTotal;
+extern REAL sr_filterCycleWallsComponentMin;
+extern REAL sr_filterCycleWallsDarknessThresh;
+
 struct gRealColor;
 
 class eFloor{
@@ -56,5 +65,6 @@ bool se_BlackSky();
 void se_FloorColor(REAL& r, REAL& g, REAL &b);
 
 void se_MakeColorValid(REAL& r, REAL & g, REAL& b, REAL f);
-void se_removeDarkColors(gRealColor &color, int min_r, int min_g, int min_b, int min_total, int max_total);
+// void se_removeDarkColors(gRealColor &color, int min_r, int min_g, int min_b, int min_total, int max_total, REAL darkness_threshold);
+void se_removeDarkColors(gRealColor &color, REAL darkness_threshold = sr_filterCycleWallsDarknessThresh, REAL min_color_component = sr_filterCycleWallsComponentMin);
 #endif

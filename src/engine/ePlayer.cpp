@@ -4969,7 +4969,7 @@ static tConfItem<bool> se_searchCommandCaseSensitiveConf("LOCAL_CHAT_COMMAND_CAS
 
 static tString se_nameSpeak("/namespeak");
 static tConfItem<tString> se_nameSpeakConf("LOCAL_CHAT_COMMAND_NAMESPEAK", se_nameSpeak);
-static int se_nameSpeakInterval = 5;
+static int se_nameSpeakInterval = 1;
 static tConfItem<int> se_nameSpeakIntervalConf("LOCAL_CHAT_COMMAND_NAMESPEAK_INTERVAL", se_nameSpeakInterval);
 static bool se_nameSpeakSplitByNameSize = false;
 static tConfItem<bool> se_nameSpeakSplitByNameSizeConf("LOCAL_CHAT_COMMAND_NAMESPEAK_SPLIT_BY_NAME_SIZE", se_nameSpeakSplitByNameSize);
@@ -9987,7 +9987,7 @@ REAL BytesToMB(REAL bytes){
     return bytes / 1024 / 1024;
 }
 
-// TODO: Check if file is too big
+
 void ePlayerNetID::searchCommand(tString s_orig)
 {
     tString params;
@@ -10009,7 +10009,8 @@ void ePlayerNetID::searchCommand(tString s_orig)
         output << "Uses: \n"
                << "/search chat hack the planet (by search phrase)\n"
                << "/search chat #102 (by line number)\n"
-               << "/search chat #102-105 (by line number range)\n";
+               << "/search chat #102-105 (by line number range)\n"
+               << "/search chat #102-105 copy (copy text by line number range)\n";
         con << output;
 
         return;
@@ -10056,7 +10057,7 @@ void ePlayerNetID::searchCommand(tString s_orig)
             if (fileSize > MAX_FILE_SIZE)
             {
                 con << "Error: File is too big: '" << fileName << "' ("
-                    << fileSizeMB  << " MB /"
+                    << fileSizeMB << " MB /"
                     << BytesToMB(se_searchCommandMaxFileSize) << " MB)\n";
 
                 i.close();
@@ -10067,22 +10068,30 @@ void ePlayerNetID::searchCommand(tString s_orig)
             int lineNumber = 1;
             bool found = false;
             tString output;
-
+            bool copyToClipboard = false;
             if (searchPhrase.StartsWith("#"))
             {
+                tString actualSearchPhrase = searchPhrase.SubStr(1);
+                int copyPos = actualSearchPhrase.StrPos(" copy");
+                copyToClipboard = (copyPos != -1);
+
+                if (copyToClipboard)
+                {
+                    actualSearchPhrase = actualSearchPhrase.SubStr(0, copyPos); // Remove " copy" from the search phrase
+                }
+
                 int startLineNumber = -1;
                 int endLineNumber = -1;
 
-                tString rangeString = searchPhrase.SubStr(1);
-                int dashPos = rangeString.StrPos("-");
+                int dashPos = actualSearchPhrase.StrPos("-");
                 if (dashPos != -1)
                 {
-                    startLineNumber = atoi(rangeString.SubStr(0, dashPos));
-                    endLineNumber = atoi(rangeString.SubStr(dashPos + 1));
+                    startLineNumber = atoi(actualSearchPhrase.SubStr(0, dashPos));
+                    endLineNumber = atoi(actualSearchPhrase.SubStr(dashPos + 1));
                 }
                 else
                 {
-                    startLineNumber = atoi(rangeString);
+                    startLineNumber = atoi(actualSearchPhrase);
                     endLineNumber = startLineNumber;
                 }
 
@@ -10093,6 +10102,35 @@ void ePlayerNetID::searchCommand(tString s_orig)
                         found = true;
                         numMatches++;
                         output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
+
+                        if (copyToClipboard && startLineNumber == endLineNumber)
+                        {
+                            tString lineToCopy;
+                            if (found)
+                            {
+                                lineToCopy = output.SubStr(output.StrPos(": ") + 2); // Remove everything before the line content
+                                int lineEndPos = lineToCopy.StrPos("\n");
+                                if (lineEndPos != -1)
+                                {
+                                    lineToCopy = tColoredString::RemoveColors(lineToCopy.SubStr(0, lineEndPos)); // Remove newline character
+                                }
+
+                                if (OpenClipboard(0))
+                                {
+                                    EmptyClipboard();
+
+                                    HGLOBAL hClipboardData = GlobalAlloc(GMEM_MOVEABLE, lineToCopy.Len() + 1);
+                                    char *pchData = static_cast<char *>(GlobalLock(hClipboardData));
+                                    strcpy(pchData, lineToCopy);
+                                    GlobalUnlock(hClipboardData);
+
+                                    SetClipboardData(CF_TEXT, hClipboardData);
+                                    CloseClipboard();
+                                }
+                            }
+                            con << "Copied contents to clipboard.\n";
+                            break;
+                        }
                     }
 
                     if (lineNumber > endLineNumber)
@@ -10109,18 +10147,21 @@ void ePlayerNetID::searchCommand(tString s_orig)
                 }
                 con << output;
             }
-            else
+            else if (!copyToClipboard)
             {
                 while (std::getline(i, sayLine))
                 {
                     std::string sayLineComparison = sayLine;
                     std::string searchValueComparison = searchValue;
 
-                    if (!se_searchCommandCaseSensitive){
+                    if (!se_searchCommandCaseSensitive)
+                    {
                         std::transform(sayLineComparison.begin(), sayLineComparison.end(), sayLineComparison.begin(),
-                                    [](unsigned char c) { return std::tolower(c); });
+                                       [](unsigned char c)
+                                       { return std::tolower(c); });
                         std::transform(searchValueComparison.begin(), searchValueComparison.end(), searchValueComparison.begin(),
-                                    [](unsigned char c) { return std::tolower(c); });
+                                       [](unsigned char c)
+                                       { return std::tolower(c); });
                     }
                     std::size_t foundPos = sayLineComparison.find(searchValueComparison);
                     if (foundPos != std::string::npos)
@@ -10132,22 +10173,22 @@ void ePlayerNetID::searchCommand(tString s_orig)
                     lineNumber++;
                 }
             }
-            if (!found)
+            if (!found && !copyToClipboard)
             {
                 con << "No matches found for the search phrase: '0x8bc34a"
                     << searchPhrase << ("0xffffff' (0xffb900")
-                    << fileName     << ("0xffffff)\n");
+                    << fileName << ("0xffffff)\n");
             }
-            else
+            else if (!copyToClipboard)
             {
                 tString matches;
                 matches << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
 
-                output =  matches             << tString("'0x8bc34a")
-                       << searchPhrase        << tString("0xffffff' (0xffb900")
-                       << fileName            << tString("0xffffff ")
-                       << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB) \n"
-                       << output;
+                output = matches << tString("'0x8bc34a")
+                                 << searchPhrase << tString("0xffffff' (0xffb900")
+                                 << fileName << tString("0xffffff ")
+                                 << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB) \n"
+                                 << output;
 
                 con << output;
             }
@@ -10221,10 +10262,11 @@ void ePlayerNetID::nameSpeakCommand(tString s_orig)
 
     if (!found || !player)
     {
-        con << "No usable players.. Using Player 4\n";
-        player = ePlayer::PlayerConfig(3);
+        con << "No usable players!\n";
+        nameSpeakWords.Clear();
+        return;
     }
-    con << "Name Speak: \n  - Using Player " << nameSpeakPlayerID << ". Message: '" <<  params << "'\n";
+    con << "Name Speak: \n  - Using Player " << nameSpeakPlayerID+1 << ". Message: '" <<  params << "'\n";
     nameSpeakIndex = 0;
     nameSpeakPlayerID = playerID;
     playerUpdateIteration = 0;

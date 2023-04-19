@@ -152,6 +152,38 @@ const tConfiguration* tConfiguration::GetConfiguration() {
 bool           tConfItemBase::printChange=true;
 bool           tConfItemBase::printErrors=true;
 
+static void st_ToggleConfigItem( std::istream & s )
+{
+    tString name;
+    s >> name;
+
+    if ( name.Size() == 0 )
+    {
+        con << tOutput( "$toggle_usage_error" );
+        return;
+    }
+
+    tConfItemBase *base = tConfItemBase::GetConfigItem( name );
+
+    if ( !base )
+    {
+        con << tOutput( "$config_command_unknown", name );
+        return;
+    }
+
+    tConfItem< bool > *confItem = dynamic_cast< tConfItem< bool > * >( base );
+    if ( confItem && confItem->Writable() )
+    {
+        confItem->SetVal( !*confItem->GetTarget() );
+    }
+    else
+    {
+        con << tOutput( "$toggle_invalid_config_item", name );
+    }
+}
+
+static tConfItemFunc toggleConfItemFunc( "TOGGLE", st_ToggleConfigItem );
+
 
 //! @param newLevel         the new access level to set over the course of the lifetime of this object
 //! @param allowElevation   only if set to true, getting higher access rights is possible. Use with extreme care.

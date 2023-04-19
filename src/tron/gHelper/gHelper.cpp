@@ -149,6 +149,15 @@ static tConfItem<REAL> sg_helperShowHitFrontLineHeightConf("HELPER_SELF_SHOW_HIT
 int sg_helperShowHitStartMode = 0;
 static tConfItem<int> sg_helperShowHitStartModeConf("HELPER_SELF_SHOW_HIT_START_MODE", sg_helperShowHitStartMode);
 
+bool sg_helperTraceLeft = false;
+static tSettingItem<bool> sg_helperTraceLeftConf("HELPER_SELF_TRACE_LEFT", sg_helperTraceLeft);
+bool sg_helperTraceRight = false;
+static tSettingItem<bool> sg_helperTraceRightConf("HELPER_SELF_TRACE_RIGHT", sg_helperTraceRight);
+REAL sg_helperTraceReactRange = 2;
+static tConfItem<REAL> sg_helperTraceReactRangeConf("HELPER_SELF_TRACE_RANGE", sg_helperTraceReactRange);
+REAL sg_helperTraceDelay = 0.01;
+static tConfItem<REAL> sg_helperTraceDelayConf("HELPER_SELF_TRACE_DELAY", sg_helperTraceDelay);
+
 
 
 bool sg_helperShowEnemyTail = false;
@@ -846,6 +855,56 @@ bool gHelper::aliveCheck()
     return &owner_ && owner_.Alive() && owner_.Grid();
 }
 
+static float leftSensorDistance = -100;
+static float rightSensorDistance = -100;
+
+void gHelper::traceLeft() {
+    if (!(owner_.pendingTurns.size() == 0)) {
+        gHelperUtility::Debug("Trace","Not tracing right due to pending turns.");
+        return;
+    }
+
+    int winding = owner_.Grid()->DirectionWinding(owner_.Direction());
+    int left_winding = winding - 1;
+    eCoord left_dir = owner_.Grid()->GetDirection(left_winding);
+
+    gSensor leftSensor(&owner_, owner_.Position(), left_dir);
+    leftSensor.detect(10000);
+
+    if (leftSensor.hit > (leftSensorDistance + sg_helperTraceReactRange)) {
+        gHelperUtility::Debug("Trace","Tracing left");
+        owner_.ActTurnBot(LEFT);
+        leftSensorDistance = leftSensor.hit;
+    }
+    else {
+        leftSensorDistance = leftSensor.hit;
+    }
+}
+
+void gHelper::traceRight() {
+    if (!(owner_.pendingTurns.size() == 0)) {
+        gHelperUtility::Debug("Trace","Not tracing right due to pending turns.");
+        return;
+    }
+
+    int winding = owner_.Grid()->DirectionWinding(owner_.Direction());
+    int right_winding = winding + 1;
+    eCoord right_dir = owner_.Grid()->GetDirection(right_winding);
+
+    gSensor rightSensor(&owner_, owner_.Position(), right_dir);
+    rightSensor.detect(10000);
+
+    if (rightSensor.hit > (rightSensorDistance + sg_helperTraceReactRange)) {
+        gHelperUtility::Debug("Trace","Tracing right");
+        owner_.ActTurnBot(RIGHT);
+        rightSensorDistance = rightSensor.hit;
+    }
+    else {
+        rightSensorDistance = rightSensor.hit;
+    }
+}
+
+
 #include "../gWall.h"
 void gHelper::Activate()
 {
@@ -873,6 +932,9 @@ void gHelper::Activate()
     owner_.localCurrentTime = se_GameTime();
 
     data_stored.enemies.detectEnemies();
+
+    if (sg_helperShowCorners)
+        showCorners(data_stored);
 
     if (sg_helperSmartTurning)
         smartTurning->Activate(data_stored);
@@ -904,14 +966,24 @@ void gHelper::Activate()
     if (sg_helperShowEnemyTail)
         showEnemyTail(data_stored);
 
-    if (sg_helperShowCorners)
-        showCorners(data_stored);
 
     if (sg_helperAutoBrake)
         autoBrake();
 
     if (sg_helperSimpleBot)
         turningBot(data_stored);
+
+    if (sg_helperTraceLeft) {
+        traceLeft();
+    } else {
+        leftSensorDistance = 100;
+    }
+
+    if (sg_helperTraceRight) {
+        traceRight();
+    } else {
+        rightSensorDistance = 100;
+    }
 
     if (sg_helperHud) {
         sg_helperActivateTimeH << (tRealSysTimeFloat() - start);

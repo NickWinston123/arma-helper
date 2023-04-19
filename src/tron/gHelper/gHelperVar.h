@@ -153,5 +153,10 @@ namespace helperConfig {
     extern int sg_helperShowHitStartMode ;
     extern bool sg_helperCurrentTimeLocal ;
 
+    extern bool sg_helperTraceLeft;
+    extern bool sg_helperTraceRight;
+    extern REAL sg_helperTraceReactRange;
+    extern REAL sg_helperTraceDelay;
+
 }
 #endif

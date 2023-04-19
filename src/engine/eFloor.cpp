@@ -83,67 +83,66 @@ void se_FloorColor(REAL& r, REAL& g, REAL &b)
     }
 }
 
-void se_removeDarkColors(gRealColor &color, int min_r, int min_g, int min_b, int min_total, int max_total)
+void se_removeDarkColors(gRealColor &color, REAL darkness_threshold, REAL min_color_component)
 {
-    if (color.r > 500 ) {
-        color.r = 0;
-    }
-    if (color.g > 500 ) {
-        color.g = 0;
-    }
-    if (color.b > 500 ) {
-        color.b = 0;
-    }
+    darkness_threshold /= 15;
+    min_color_component /= 15;
+    // con << "WORKING WITH " << color.r << " " << color.g << " " << color.b << "\n";
     REAL currentTotal = (color.r + color.g + color.b) / 3;
-    if (color.r < min_r)
+
+    // Adjust dark colors
+    if (currentTotal < darkness_threshold)
     {
-        color.r = min_r;
-    }
-    else if (color.r > max_total)
-    {
-        color.r = 1 - ((color.r - max_total) / 15);
+        REAL brightnessFactor = 1 + (darkness_threshold - currentTotal) / darkness_threshold;
+        color.r *= brightnessFactor;
+        color.g *= brightnessFactor;
+        color.b *= brightnessFactor;
+
+        // Adjust dark color components
+        if (color.r < min_color_component) color.r += min_color_component;
+        if (color.g < min_color_component) color.g += min_color_component;
+        if (color.b < min_color_component) color.b += min_color_component;
     }
 
-    if (color.g < min_g)
+    // Adjust blue colors
+    if (color.b > 0.7 && color.r < 0.7 && color.g < 0.7)
     {
-        color.g = min_g;
+        REAL adjustment = 0.3;
+        color.r = std::min(color.r + adjustment, static_cast<REAL>(1.0));
+        color.g = std::min(color.g + adjustment, static_cast<REAL>(1.0));
+        color.b = std::max(color.b - adjustment, static_cast<REAL>(0.0));
     }
-    else if (color.g > max_total)
-    {
-        color.g = 1 - ((color.g - max_total) / 15);
-    }
-
-    if (color.b < min_b)
-    {
-        color.b = min_b;
-    }
-    else if (color.b > max_total)
-    {
-        color.b = 1 - ((color.b - max_total) / 15);
-    }
-
-    if (currentTotal < min_total)
-    {
-        REAL totalDiff = min_total - currentTotal;
-        color.r += totalDiff;
-        color.g += totalDiff;
-        color.b += totalDiff;
-    }
-    else if (currentTotal > max_total)
-    {
-        REAL totalDiff = currentTotal - max_total;
-        color.r = 1 - (totalDiff / 15);
-        color.g = 1 - (totalDiff / 15);
-        color.b = 1 - (totalDiff / 15);
-    }
-
-    if (color.r > 1)
-        color.r = 1;
-    if (color.g > 1)
-        color.g = 1;
-    if (color.b > 1)
-        color.b = 1;
 }
+
+
+// void se_removeDarkColors(gRealColor &color, int min_r, int min_g, int min_b, int min_total, int max_total, REAL darkness_threshold)
+// {
+//     REAL currentTotal = (color.r + color.g + color.b) / 3;
+
+//     // Adjust dark colors
+//     if (currentTotal < darkness_threshold)
+//     {
+//         REAL brightnessFactor = 1 + (darkness_threshold - currentTotal) / darkness_threshold;
+//         color.r *= brightnessFactor;
+//         color.g *= brightnessFactor;
+//         color.b *= brightnessFactor;
+//     }
+
+//     // Adjust blue colors
+//     if (color.b > 0.7 && color.r < 0.7 && color.g < 0.7)
+//     {
+//         color.r += 0.3;
+//         color.g += 0.3;
+//         color.b -= 0.3;
+//     }
+
+//     // Clamping color components between 0 and 1
+//     color.r = std::min(std::max(color.r, static_cast<REAL>(0.0)), static_cast<REAL>(1.0));
+
+//     color.g = std::min(std::max(color.g, static_cast<REAL>(0.0)), static_cast<REAL>(1.0));
+//     color.b = std::min(std::max(color.b, static_cast<REAL>(0.0)), static_cast<REAL>(1.0));
+
+// }
 
 
 void se_MakeColorValid(REAL& r, REAL& g, REAL& b, REAL f)

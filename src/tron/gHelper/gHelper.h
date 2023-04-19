@@ -167,6 +167,9 @@ class gHelper {
 
 
         void turningBot(gHelperData &data);
+
+        void traceLeft();
+        void traceRight();
         /**
          * Activates the helper, setting up necessary data and pointers.
          */

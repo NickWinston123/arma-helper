@@ -686,7 +686,8 @@ static tConfItem<REAL> sr_filterZonesMinTotalConf("FILTER_ZONES_MIN_TOTAL", sr_f
 
 void gZone::FilterZoneColor(gRealColor &color) {
     // con << "filtering\n";
-    se_removeDarkColors( color, sr_filterZonesMinR, sr_filterZonesMinG, sr_filterZonesMinB, sr_filterZonesMinTotal, sr_filterZonesMaxTotal);
+    // se_removeDarkColors( color, sr_filterZonesMinR, sr_filterZonesMinG, sr_filterZonesMinB, sr_filterZonesMinTotal, sr_filterZonesMaxTotal, 0.35);
+    se_removeDarkColors(color,.35);
 }
 
 void gZone::HelperTrackedZonesManager( bool newZone) {

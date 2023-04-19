@@ -216,20 +216,20 @@ static REAL sg_GetSyncIntervalSelf( gCycle* cycle )
 bool sr_filterCycleWalls = false;
 static tConfItem< bool > sr_filterCycleWallsConf( "FILTER_CYCLE_WALLS", sr_filterCycleWalls );
 
-REAL sr_filterCycleWallsMinR = 0;
-static tConfItem<REAL> sr_filterCycleWallsMinRConf("FILTER_CYCLE_WALLS_MIN_R", sr_filterCycleWallsMinR);
+// REAL sr_filterCycleWallsMinR = 0;
+// static tConfItem<REAL> sr_filterCycleWallsMinRConf("FILTER_CYCLE_WALLS_MIN_R", sr_filterCycleWallsMinR);
 
-REAL sr_filterCycleWallsMinG = 0;
-static tConfItem<REAL> sr_filterCycleWallsMinGConf("FILTER_CYCLE_WALLS_MIN_G", sr_filterCycleWallsMinG);
+// REAL sr_filterCycleWallsMinG = 0;
+// static tConfItem<REAL> sr_filterCycleWallsMinGConf("FILTER_CYCLE_WALLS_MIN_G", sr_filterCycleWallsMinG);
 
-REAL sr_filterCycleWallsMinB = 0;
-static tConfItem<REAL> sr_filterCycleWallsMinBConf("FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB);
+// REAL sr_filterCycleWallsMinB = 0;
+// static tConfItem<REAL> sr_filterCycleWallsMinBConf("FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB);
 
-REAL sr_filterCycleWallsMaxTotal = 100;
-static tConfItem<REAL> sr_filterCycleWallsMaxTotalConf("FILTER_CYCLE_WALLS_MAX_TOTAL", sr_filterCycleWallsMaxTotal);
+REAL sr_filterCycleWallsComponentMin = 0; // Minimum value for r or g or b
+static tConfItem<REAL> sr_filterCycleWallsComponentMinConf("FILTER_CYCLE_WALLS_COMPONENT_MIN", sr_filterCycleWallsComponentMin);
 
-REAL sr_filterCycleWallsMinTotal = 0;
-static tConfItem<REAL> sr_filterCycleWallsMinTotalConf("FILTER_CYCLE_WALLS_MIN_TOTAL", sr_filterCycleWallsMinTotal);
+REAL sr_filterCycleWallsDarknessThresh = 5;
+static tConfItem<REAL> sr_filterCycleWallsDarknessThreshConf("FILTER_CYCLE_WALLS_DARKNESS_THRESHOLD", sr_filterCycleWallsDarknessThresh);
 
 // moviepack hack
 //static bool moviepack_hack=false;       // do we use it?
@@ -2488,6 +2488,10 @@ void gCycle::MyInitAfterCreation(){
 
             se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
             se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
+            if (sr_filterCycleWalls) {
+                se_removeDarkColors(color_);
+                se_removeDarkColors(trailColor_);
+            }
         }
 
         if( player && player->overrideColor )
@@ -2502,8 +2506,8 @@ void gCycle::MyInitAfterCreation(){
             se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
 
             if (sr_filterCycleWalls) {
-                se_removeDarkColors( color_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal );
-                se_removeDarkColors( trailColor_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal);
+                se_removeDarkColors(color_);
+                se_removeDarkColors(trailColor_);
             }
         }
     }
@@ -2620,65 +2624,6 @@ void gCycle::MyInitAfterCreation(){
 #endif
 }
 
-bool sr_removeBlueColors = false;
-static tConfItem< bool > sr_removeBlueColorsConf( "FILTER_CYCLE_WALLS_BLUE", sr_removeBlueColors );
-
-void removeBlueColors(gRealColor &color)
-{
-// Check if the blue value of the color is too high
-if (color.b > 0)
-{
-// Reduce the blue value and increase the red and green values to make the color brighter and less blue
-color.b= 0;
-color.r = std::min(color.r + 0.3, 1.0);
-color.g = std::min(color.g + 0.3, 1.0);
-}
-}
-
-// void filterColors(REAL &r, REAL &g, REAL &b)
-// {
-
-// }
-// void removeDarkColors(REAL& r, REAL& g, REAL& b)
-// {
-//     if (sr_filterCycleWallsMinR > 1) {
-//         sr_filterCycleWallsMinR = 1;
-//     }
-//     if (sr_filterCycleWallsMinG > 1) {
-//         sr_filterCycleWallsMinG = 1;
-//     }
-//     if (sr_filterCycleWallsMinB > 1) {
-//         sr_filterCycleWallsMinB = 1;
-//     }
-//     if (sr_filterCycleWallsMinTotal > 1) {
-//         sr_filterCycleWallsMinTotal = 1;
-//     }
-
-//     while (r < sr_filterCycleWallsMinR || g < sr_filterCycleWallsMinG || b < sr_filterCycleWallsMinB || ((r+g+b)/3 < sr_filterCycleWallsMinTotal ))
-//     {
-//         REAL currentTotal = (r + g + b)/3;
-
-//         if ( r < sr_filterCycleWallsMinR || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
-//             r += 0.1;
-//         }
-
-//         if ( g < sr_filterCycleWallsMinG || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
-//             g += 0.1;
-//         }
-
-//         if ( b < sr_filterCycleWallsMinB || (currentTotal < sr_filterCycleWallsMinTotal ) ) {
-//             b += 0.1;
-//         }
-
-//         if (r > 1)
-//             r = 1;
-//         if (g > 1)
-//             g = 1;
-//         if (b > 1)
-//             b = 1;
-//     }
-// }
-
 bool sg_updateCycleColor = false;
 static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycleColor);
 
@@ -2688,11 +2633,8 @@ void gCycle::updateColor() {
         player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
 
         if (sr_filterCycleWalls) {
-             se_removeDarkColors( color_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal );
-             se_removeDarkColors( trailColor_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal);
-         }
-         if (sr_removeBlueColors){
-            removeBlueColors(color_);
+            se_removeDarkColors(color_);
+            se_removeDarkColors(trailColor_);
          }
 }
 
@@ -3065,7 +3007,7 @@ bool gCycle::Timestep(REAL currentTime){
        helper.Activate();
     }
 
-    if (sg_updateCycleColor && playerExist ) //&& player->pID == 0
+    if (sg_updateCycleColor ) //&& player->pID == 0
     {
         this->updateColor();
     }
@@ -6054,9 +5996,10 @@ gCycle::gCycle(nMessage &m)
     se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
 
     if (sr_filterCycleWalls) {
-            se_removeDarkColors( color_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal );
-            se_removeDarkColors( trailColor_, sr_filterCycleWallsMinR, sr_filterCycleWallsMinG, sr_filterCycleWallsMinB, sr_filterCycleWallsMinTotal, sr_filterCycleWallsMaxTotal);
+        se_removeDarkColors(color_);
+        se_removeDarkColors(trailColor_);
     }
+
     // set last time so that the first read_sync will not think this is old
     lastTimeAnim = lastTime = -EPS;
 

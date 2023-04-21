@@ -5,6 +5,7 @@
 #ifndef ArmageTron_GHELPER_ZONEHELPER
 #define ArmageTron_GHELPER_ZONEHELPER
 
+extern bool sg_gSensorsZoneDetection;
 class gZone;
 
 struct gZoneHitData {
@@ -34,8 +35,7 @@ public:
     void showZones(gHelperData &data);
     void zoneData(gHelperData &data);
 
-    gZoneHitData* zoneIntersects(int dir, gZone *zone, gHelperData &data);
-    static void zoneIntersects(gHelperSensor * sensor);
+    static void zoneIntersects(gSensor * sensor);
 
     void renderSensorHit( gZoneHitData * zoneHit,gHelperData &data);
     // void zoneSensor(gHelperData &data);

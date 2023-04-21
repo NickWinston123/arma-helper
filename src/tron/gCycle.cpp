@@ -521,6 +521,9 @@ static tConfItem<tString> sg_localBotEnableForPlayersConf( "LOCAL_BOT_ENABLED_PL
 static bool sg_localBotAlwaysActive = false;
 static tConfItem<bool> sg_localBotAlwaysActiveConf( "LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive );
 
+static bool sg_localBotBrake = false;
+static tConfItem<bool> sg_localBotBrakeConf( "LOCAL_BOT_BRAKE", sg_localBotBrake );
+
 static REAL sg_localBotNewWallBlindness = 0;
 static tSettingItem<REAL> sg_localBotNewWallBlindnessConf( "LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness );
 
@@ -1122,11 +1125,14 @@ class Sensor: public gSensor
             moveOn = .5 * ( minMoveOn * ( 1 + rubberRatio ) + maxMoveOn * ( 1 - rubberRatio ) );
 
             // hit the brakes before you hit anything and if it's worth it
-            bool brake = sg_brakeCycle > 0 &&
-                         front.hit * lookahead * sg_cycleBrakeDeplete < owner_->GetBrakingReservoir() &&
-                         sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_->GetBrakingReservoir() &&
-                         ( maxMoveOn - minMoveOn ) > 0 &&
-                         owner_->GetBrakingReservoir() * ( maxMoveOn - minMoveOn ) < speed * owner_->GetTurnDelay();
+            bool brake = false;
+            if (!sg_localBotBrake)                   
+                brake = sg_brakeCycle > 0 &&
+                            front.hit * lookahead * sg_cycleBrakeDeplete < owner_->GetBrakingReservoir() &&
+                            sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_->GetBrakingReservoir() &&
+                            ( maxMoveOn - minMoveOn ) > 0 &&
+                            owner_->GetBrakingReservoir() * ( maxMoveOn - minMoveOn ) < speed * owner_->GetTurnDelay();
+                            
             if ( frontOpen < bestOpen &&
                     ( forwardOverhang <= backwardOverhang || ( minMoveOn < 0 && moveOn < minstep * speed ) ) )
             {
@@ -2476,6 +2482,9 @@ void gCycle::MyInitAfterCreation(){
 
         se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
         se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
+        
+        se_removeDarkColors(color_);
+        se_removeDarkColors(trailColor_);
 
     }
 

@@ -51,7 +51,7 @@ public:
 
     REAL NormSquared() 			const 	{return x*x+y*y;}
     REAL Norm() 				const 	{return sqrt(NormSquared());}
-    void Normalize()					{ *this *= 1/Norm(); }
+void Normalize()					{ *this *= 1/Norm(); }
     eCoord GetNormalized() const {
         eCoord temp = *this;
         temp.Normalize();

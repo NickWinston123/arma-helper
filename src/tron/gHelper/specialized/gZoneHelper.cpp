@@ -62,99 +62,40 @@ gZoneHelper::gZoneHelper(gHelper &helper, gCycle &owner)
       owner_(owner)
 {}
 
-void gZoneHelper::renderSensorHit( gZoneHitData * zoneHit,gHelperData &data){
-    if (zoneHit->hitZone) {
-        zoneHitH << zoneHit->hit;
-        gHelperUtility::Debug("zoneSensor","SENSOR ZONE HIT, INTERCEPT: ", zoneHit->intercept);
-        gHelperUtility::debugLine(tColor(1,0,0), 1, data.ownerData.speedFactorF() + 1, owner_.Position(), zoneHit->intercept);
-    }
-}
-
-// void gZoneHelper::zoneSensor(gHelperData &data)
-// {
-//     gZone *zone = findClosestZone();
-
-//     if (!zone)
-//         return;
-
-//     gZoneHitData * zoneHit = zoneIntersects(LEFT, zone, data);
-//     renderSensorHit(zoneHit,data);
-
-//     zoneHit = zoneIntersects(FRONT, zone, data);
-//     renderSensorHit(zoneHit,data);
-
-//     zoneHit = zoneIntersects(RIGHT, zone, data);
-//     renderSensorHit(zoneHit,data);
-
-//     delete zoneHit;
-
-// }
-
-void gZoneHelper::zoneIntersects(gHelperSensor * sensor) {
+void gZoneHelper::zoneIntersects(gSensor *sensor) {
     gZone *zone = findClosestZone(sensor->owner_);
     if (!zone)
         return;
-
     eCoord sensorDirection = sensor->Direction();
     eCoord zonePos = zone->Position();
     REAL zoneRadius = zone->GetRadius();
     eCoord toZone = zonePos - sensor->start_;
-    eCoord sensorDir = sensor->direction_;
 
     REAL projection = toZone.Dot(sensorDirection) / sensorDirection.Norm();
     eCoord nearestPoint = sensor->start_ + sensorDirection.GetNormalized() * projection;
     REAL distanceToCenter = (nearestPoint - zonePos).Norm();
 
-    if (distanceToCenter > zoneRadius)
-    {
+    if (distanceToCenter > zoneRadius) {
         return;
     }
 
-    // Check if the nearest point is inside the circle
-    if (distanceToCenter < zoneRadius)
-    {
-        sensor->before_hit = nearestPoint;
-        sensor->hit = (nearestPoint-sensor->start_).Norm();
-        return;
+    // Calculate the intersection points between the sensor's movement path and the zone's circle
+    REAL length = sqrt(zoneRadius * zoneRadius - distanceToCenter * distanceToCenter);
+    eCoord directionToIntercept = sensorDirection.GetNormalized();
+    eCoord intercept1 = nearestPoint + directionToIntercept * length;
+    eCoord intercept2 = nearestPoint - directionToIntercept * length;
+
+    // Choose the intercept point that is closer to the sensor's starting point
+    eCoord intercept = (intercept1 - sensor->start_).Norm() < (intercept2 - sensor->start_).Norm() ? intercept1 : intercept2;
+
+    REAL zoneHitDistance = (intercept - sensor->start_).Norm();
+
+    // Update data if zone hit distance is less than initial hit
+    if (zoneHitDistance < sensor->hit) {
+        sensor->before_hit = intercept;
+        sensor->hit = zoneHitDistance;
+        sensor->type = gSENSOR_RIM;
     }
-
-    // Check if the nearest point is on the circle
-    eCoord toIntercept = (nearestPoint - zonePos).GetNormalized() * sqrt(zoneRadius * zoneRadius - distanceToCenter * distanceToCenter);
-    eCoord intercept = nearestPoint + toIntercept;
-    sensor->before_hit = intercept;
-    sensor->hit = (nearestPoint-sensor->start_).Norm();
-
-}
-
-gZoneHitData *gZoneHelper::zoneIntersects(int dir, gZone *zone,gHelperData &data)
-{
-
-    std::shared_ptr<gHelperSensor> sensor  = data.sensors.getSensor(dir,true);
-    eCoord sensorDirection = sensor->Direction();
-    eCoord zonePos = zone->Position();
-    REAL zoneRadius = zone->GetRadius();
-    eCoord toZone = zonePos - sensor->start_;
-    eCoord sensorDir = sensor->direction_;
-
-    REAL projection = toZone.Dot(sensorDirection) / sensorDirection.Norm();
-    eCoord nearestPoint = sensor->start_ + sensorDirection.GetNormalized() * projection;
-    REAL distanceToCenter = (nearestPoint - zonePos).Norm();
-
-    if (distanceToCenter > zoneRadius)
-    {
-        return new gZoneHitData();
-    }
-
-    // Check if the nearest point is inside the circle
-    if (distanceToCenter < zoneRadius)
-    {
-        return new gZoneHitData(nearestPoint, (nearestPoint-sensor->start_).Norm());
-    }
-
-    // Check if the nearest point is on the circle
-    eCoord toIntercept = (nearestPoint - zonePos).GetNormalized() * sqrt(zoneRadius * zoneRadius - distanceToCenter * distanceToCenter);
-    eCoord intercept = nearestPoint + toIntercept;
-    return new gZoneHitData(intercept, (nearestPoint-sensor->start_).Norm());
 }
 
 // Returns the closest corner of the given center and radius to the owner's position
@@ -292,9 +233,6 @@ void gZoneHelper::Activate(gHelperData &data)
 
     if (sg_helperZoneTracer)
         zoneTracer(data);
-
-    // if (sg_zoneHelperSensor)
-    //     zoneSensor(data);
 
     zoneData(data);
 }

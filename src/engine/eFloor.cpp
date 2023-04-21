@@ -85,9 +85,12 @@ void se_FloorColor(REAL& r, REAL& g, REAL &b)
 
 void se_removeDarkColors(gRealColor &color, REAL darkness_threshold, REAL min_color_component)
 {
+    // color.r /= 15;
+    // color.g /= 15;
+    // color.b /= 15;
     darkness_threshold /= 15;
     min_color_component /= 15;
-    // con << "WORKING WITH " << color.r << " " << color.g << " " << color.b << "\n";
+    //con << "WORKING WITH " << color.r << " " << color.g << " " << color.b << "\n";
     REAL currentTotal = (color.r + color.g + color.b) / 3;
 
     // Adjust dark colors
@@ -105,45 +108,14 @@ void se_removeDarkColors(gRealColor &color, REAL darkness_threshold, REAL min_co
     }
 
     // Adjust blue colors
-    if (color.b > 0.7 && color.r < 0.7 && color.g < 0.7)
+    if ( (color.b > color.r && color.b > color.g) || (color.b > color.r+color.g) )
     {
-        REAL adjustment = 0.3;
+        REAL adjustment = 0.7;
         color.r = std::min(color.r + adjustment, static_cast<REAL>(1.0));
         color.g = std::min(color.g + adjustment, static_cast<REAL>(1.0));
         color.b = std::max(color.b - adjustment, static_cast<REAL>(0.0));
     }
 }
-
-
-// void se_removeDarkColors(gRealColor &color, int min_r, int min_g, int min_b, int min_total, int max_total, REAL darkness_threshold)
-// {
-//     REAL currentTotal = (color.r + color.g + color.b) / 3;
-
-//     // Adjust dark colors
-//     if (currentTotal < darkness_threshold)
-//     {
-//         REAL brightnessFactor = 1 + (darkness_threshold - currentTotal) / darkness_threshold;
-//         color.r *= brightnessFactor;
-//         color.g *= brightnessFactor;
-//         color.b *= brightnessFactor;
-//     }
-
-//     // Adjust blue colors
-//     if (color.b > 0.7 && color.r < 0.7 && color.g < 0.7)
-//     {
-//         color.r += 0.3;
-//         color.g += 0.3;
-//         color.b -= 0.3;
-//     }
-
-//     // Clamping color components between 0 and 1
-//     color.r = std::min(std::max(color.r, static_cast<REAL>(0.0)), static_cast<REAL>(1.0));
-
-//     color.g = std::min(std::max(color.g, static_cast<REAL>(0.0)), static_cast<REAL>(1.0));
-//     color.b = std::min(std::max(color.b, static_cast<REAL>(0.0)), static_cast<REAL>(1.0));
-
-// }
-
 
 void se_MakeColorValid(REAL& r, REAL& g, REAL& b, REAL f)
 {
@@ -206,9 +178,6 @@ void se_MakeColorValid(REAL& r, REAL& g, REAL& b, REAL f)
             b = 1;
     }
 }
-
-
-
 
 eFloor *eFloor::Floor;
 

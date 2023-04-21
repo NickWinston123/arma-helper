@@ -295,6 +295,7 @@ private:
         gCycle const & cycle_;
     };
 
+
     //! tunnel evaluator: avoids tunneling between walls of different cycles
     class TunnelEvaluator: public PathEvaluator
     {

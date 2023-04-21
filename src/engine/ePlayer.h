@@ -383,7 +383,7 @@ public:
     tArray<nTimeRolling> lastSaidTimes;
     //	void SetLastSaid(tString ls);
     unsigned short r,g,b; // our color
-
+    int syncIteration;
     bool overrideColor;
     gRealColor colorOverride;
 

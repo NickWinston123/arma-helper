@@ -10,10 +10,9 @@ class gHelperSensor : public gSensor
 {
 public:
     gHelperSensor(eGameObject *o, const eCoord &start, const eCoord &d)
-        : gSensor(o, start, d), owner_(o) {}
+        : gSensor(o, start, d) {}
 
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
-eGameObject *owner_;
 
 };
 #endif

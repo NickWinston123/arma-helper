@@ -43,22 +43,10 @@ public:
 
     gCycle * hitWallOwner() {return wallOwner;}
 
-    // gSensor(eGameObject *o,const eCoord &start,const eCoord &d)
-    //         :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction_(d) {
-    //         }
-
     gSensor(eGameObject *o,const eCoord &start,const eCoord &d)
             :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction_(d), wallOwner(NULL) {
-                // this->AddToList();
-                // grid->AddGameObjectInteresting(this);
             }
 
-
-    // ~gSensor(){
-    //     // this->RemoveFromList();
-    //     // grid->RemoveGameObjectInteresting(this);
-
-    // void DoRemoveFromGame() {}
     eCoord start_;
     eCoord direction_;
     eGameObject *owner_;
@@ -66,8 +54,5 @@ public:
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
     void detect(REAL range, const eCoord &newPos, const eCoord &newDir, bool render = false);
     void detect(REAL range, bool render = false);
-    //  virtual void InteractWith(eGameObject *target,REAL time,int recursion=1);
-    //virtual  void  HitZone(eGameObject * zone ,REAL time);
-    //virtual void HitZone(gZone *zone );
 };
 #endif

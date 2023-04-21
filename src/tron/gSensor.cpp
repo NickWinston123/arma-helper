@@ -29,27 +29,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gSensor.h"
 #include "gWall.h"
 #include "eDebugLine.h"
+#include "./gHelper/specialized/gZoneHelper.h"
+
 bool sg_sensorsRender = false;
 static tConfItem<bool> sg_sensorsRenderC("SENSORS_GSENSOR_RENDER", sg_sensorsRender);
 
+bool sg_gSensorsZoneDetection = false;
+static tConfItem<bool> sg_gSensorsZoneDetectionC("SENSORS_GSENSOR_ZONE_DETECTION", sg_gSensorsZoneDetection);
+
 extern REAL sg_delayCycle;
 
-#include "tDirectories.h"
-void DebugLog2(std::string message)
-{
-    std::ofstream o;
-    if (tDirectories::Var().Open(o, "helperdebug.txt", std::ios::app))
-    {
-        o << message << std::endl;
-    }
-    else
-    {
-        con << tOutput("Log Error");
-    }
-    o.close();
-}
-
-
+//Reuse existing sensor
 void gSensor::detect(REAL range, const eCoord &newPos, const eCoord &newDir,bool render){
     pos = newPos;
     dir = newDir;
@@ -57,25 +47,9 @@ void gSensor::detect(REAL range, const eCoord &newPos, const eCoord &newDir,bool
     hit = (1000);
     ehit = (NULL);
     lr = 0;
-
-    // if (owned)
-    // {
-    //     currentFace=owned->currentFace;
-
-    //     // find a better current face if our start postion is not really at the
-    //     // current position of the owner
-    //     if ( ( grid && !currentFace ) || ( !currentFace->IsInside( pos ) && currentFace->IsInside( owned->pos ) ) )
-    //     {
-    //         currentFace = owner_->grid->FindSurroundingFace( pos, currentFace );
-    //     }
-    // }
-    // else
-    //     currentFace=NULL;
     detect(range, render);
 }
 
-//void gSensor::InteractWith(eGameObject *target,REAL,int)
-//{}
 void gSensor::detect(REAL range, bool render){
     //  eCoord start = pos;
     //  pos=pos+dir*.01;
@@ -95,6 +69,7 @@ void gSensor::detect(REAL range, bool render){
     catch( eSensorFinished & e )
     {
     }
+
     if (!render || !sg_sensorsRender){
         return;
     }
@@ -123,10 +98,10 @@ void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
     }
     catch( eSensorFinished & e )
     {
-            // if (calculateZoneHit()) {
-            //      throw;
-            // }
-                //con << before_hit << "\n";
+        if (sg_gSensorsZoneDetection) {
+            gZoneHelper::zoneIntersects(this);
+        }
+
         const gPlayerWall *w=dynamic_cast<const gPlayerWall*>(ww);
         if (w)
         {

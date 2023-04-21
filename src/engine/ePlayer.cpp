@@ -6182,7 +6182,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                timeSinceLastChat_(0),
                                                createTime_(getTimeString(false)),
                                                lastWatchStatus(playerWatchStatus::ACTIVE),
-                                               lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode)
+                                               lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
+                                               syncIteration(0)
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -6313,7 +6314,8 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           registeredMachine_(0),
                                           timeSinceLastChat_(0),
                                           createTime_(getTimeString(false)),
-                                          lastWatchStatus(playerWatchStatus::ACTIVE)
+                                          lastWatchStatus(playerWatchStatus::ACTIVE),
+                                          syncIteration(0)
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -7716,7 +7718,6 @@ void ePlayerNetID::CreateVoter()
             voter->PlayerChanged();
     }
 }
-static int iteraton = 0;
 void ePlayerNetID::WriteSync(nMessage &m)
 {
     lastSync=tSysTimeFloat();
@@ -7726,8 +7727,8 @@ void ePlayerNetID::WriteSync(nMessage &m)
         // int currentColor[3] = { this->r, this->g, this->b };
         // if (std::equal(std::begin(currentColor), std::end(currentColor), std::begin(lastsyncedColor)))
         // {
-            iteraton += 1;
-            int val = iteraton % 2 == 0 ? r + 1 : r - 1;
+            syncIteration += 1;
+            int val = syncIteration % 2 == 0 ? r + 1 : r - 1;
             m.Write(val);
         //     std::copy(std::begin(currentColor), std::end(currentColor), std::begin(lastsyncedColor));
         //     //lastsyncedColor[0] = val;
@@ -9699,6 +9700,7 @@ tColoredString ePlayerNetID::gatherPlayerColor(ePlayerNetID* p, bool showReset)
                       << p->b << ")\n";
 }
 
+
 /*
 List player information.
 Displays:
@@ -9761,6 +9763,14 @@ tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p) {
     tColoredString listinfo;
     listinfo << "\nResults for " << p->GetColoredName() << "0xRESETT:";
     listinfo << "\nColor: " << gatherPlayerColor(p);
+
+    gRealColor color(p->r,p->g,p->b);
+    //p->Color(color);
+    se_removeDarkColors(color);
+    listinfo << "\nFiltered Color: ("
+             << p->r << ", "
+             << p->g << ", "
+             << p->b << ")\n";
 
     // Status. Includes player type, spectating or playing, and if the player is chatting.
     listinfo << "Status: " << (p->IsHuman() ? "Human" : "Bot")
@@ -10010,7 +10020,7 @@ void ePlayerNetID::searchCommand(tString s_orig)
                << "/search chat hack the planet (by search phrase)\n"
                << "/search chat #102 (by line number)\n"
                << "/search chat #102-105 (by line number range)\n"
-               << "/search chat #102-105 copy (copy text by line number range)\n";
+               << "/search chat #102 copy (copy text by single line number)\n";
         con << output;
 
         return;
@@ -10079,6 +10089,10 @@ void ePlayerNetID::searchCommand(tString s_orig)
                 {
                     actualSearchPhrase = actualSearchPhrase.SubStr(0, copyPos); // Remove " copy" from the search phrase
                 }
+
+                #ifndef WIN32
+                    copyToClipboard = false;
+                #endif
 
                 int startLineNumber = -1;
                 int endLineNumber = -1;
@@ -10237,7 +10251,7 @@ void ePlayerNetID::nameSpeakCommand(tString s_orig)
     params << s_orig;
     int pos = 0;
 
-    tString fileName = params.ExtractNonBlankSubString(pos);
+    tString command = params.ExtractNonBlankSubString(pos);
     params = params.SubStr(pos);
     params = params.TrimWhitespace();
     if (se_nameSpeakSplitByNameSize)
@@ -10251,7 +10265,7 @@ void ePlayerNetID::nameSpeakCommand(tString s_orig)
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
         player = ePlayer::PlayerConfig(i);
-        if (!bool(player->netPlayer.get()))
+        if (!bool(player->netPlayer.get()) && !tIsInList(se_disableCreateSpecific,i+1))
         {
             player = ePlayer::PlayerConfig(i);
             playerID = i;

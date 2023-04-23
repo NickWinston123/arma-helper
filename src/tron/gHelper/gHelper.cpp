@@ -229,17 +229,18 @@ gHelperHudItem<REAL> sg_helperGameTimeH("Game Time",0);
 // Returns: a pointer to the gSmartTurningCornerData instance for the given direction
 gSmartTurningCornerData &gHelper::getCorner(int dir)
 {
-switch (dir)
-{
-case LEFT:
-    return data_stored.leftCorner;
-    break;
-case RIGHT:
-    return data_stored.rightCorner;
-    break;
-default:
-    return data_stored.leftCorner;
-}
+    findCorners(data_stored);
+    switch (dir)
+    {
+    case LEFT:
+        return data_stored.leftCorner;
+        break;
+    case RIGHT:
+        return data_stored.rightCorner;
+        break;
+    default:
+        return data_stored.leftCorner;
+    }
 }
 
 REAL gHelper::CurrentTime() {
@@ -822,6 +823,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
 
     // Check if the hit distance is greater than a certain value.
     bool open = hitDistance > data.ownerData.turnSpeedFactorF() * sg_showHitDataFreeRange;
+    bool other = false;
 
     if (firstRun && sg_helperDetectCut) {
         gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
@@ -829,6 +831,9 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
         // Only care when enemy is driving toward us, or same direction
         if ( !( enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight )) {
             open = open && (enemyData.canCutEnemy || sensorDir != enemyData.enemySide);
+
+            if (!open && !enemyData.canCutUs && sensorDir == enemyData.enemySide)
+                other = true;
         }
 
     }
@@ -837,6 +842,11 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     if (open)
     {
         gHelperUtility::debugLine(tColor(0, 1, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
+    }
+    //Gray line - special case when enemy cant cut us and we cant cut them
+    else if (other)
+    {
+        gHelperUtility::debugLine(tColor(.4, .4, .4), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
     }
     // Draw a red line if the hit distance is smaller than the specified value, indicating an obstacle in the way.
     else
@@ -855,8 +865,6 @@ bool gHelper::aliveCheck()
     return &owner_ && owner_.Alive() && owner_.Grid();
 }
 
-static float leftSensorDistance = -100;
-static float rightSensorDistance = -100;
 
 void gHelper::traceLeft() {
     if (!(owner_.pendingTurns.size() == 0)) {
@@ -870,11 +878,11 @@ void gHelper::traceLeft() {
 
     gSensor leftSensor(&owner_, owner_.Position(), left_dir);
     leftSensor.detect(10000);
-
+    static float leftSensorDistance = leftSensor.hit;
     if (leftSensor.hit > (leftSensorDistance + sg_helperTraceReactRange)) {
         gHelperUtility::Debug("Trace","Tracing left");
         owner_.ActTurnBot(LEFT);
-        leftSensorDistance = leftSensor.hit;
+        leftSensorDistance = 1E+30;
     }
     else {
         leftSensorDistance = leftSensor.hit;
@@ -893,17 +901,39 @@ void gHelper::traceRight() {
 
     gSensor rightSensor(&owner_, owner_.Position(), right_dir);
     rightSensor.detect(10000);
-
+    static float rightSensorDistance = rightSensor.hit;
     if (rightSensor.hit > (rightSensorDistance + sg_helperTraceReactRange)) {
         gHelperUtility::Debug("Trace","Tracing right");
         owner_.ActTurnBot(RIGHT);
-        rightSensorDistance = rightSensor.hit;
+        rightSensorDistance = 1E+30;
     }
     else {
         rightSensorDistance = rightSensor.hit;
     }
 }
 
+
+void gHelper::trace(gHelperData &data, int dir)
+{
+    if (!aliveCheck())
+    {
+        return;
+    }
+
+    gSmartTurningCornerData& corner = getCorner(dir);
+
+    if (!corner.exist)
+        return;
+
+    REAL turnTimeFactor = corner.getTimeUntilTurn(owner_.Speed());
+
+    if (gHelperUtility::isClose(&owner_, corner.currentPos, data.ownerData.turnSpeedFactorF()) &&
+        corner.getTimeUntilTurn(owner_.Speed()) > 0 &&
+        (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime))
+    {
+        turnHelper->makeTurnIfPossible(data, dir, 1);
+    }
+}
 
 #include "../gWall.h"
 void gHelper::Activate()
@@ -975,15 +1005,11 @@ void gHelper::Activate()
 
     if (sg_helperTraceLeft) {
         traceLeft();
-    } else {
-        leftSensorDistance = 100;
     }
 
     if (sg_helperTraceRight) {
         traceRight();
-    } else {
-        rightSensorDistance = 100;
-    }
+    } 
 
     if (sg_helperHud) {
         sg_helperActivateTimeH << (tRealSysTimeFloat() - start);

@@ -1475,6 +1475,12 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
     sg_smarterBotFollowTryLogicOppositeTurn = true;
     StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot try logic - try other direction", sg_smarterBotFollowTryLogicOppositeTurn));
 
+    //sg_smarterBotFollowPredictionTime
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_PREDICT_TIME";
+    sg_smarterBotFollowPredictionTime = 0;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Predict time - determines how far to push ahead pos", sg_smarterBotFollowPredictionTime));
+
 
     // sg_smarterBotFollowTarget
     confname.Clear();
@@ -11209,18 +11215,19 @@ void ePlayerNetID::Update()
                 if ((sn_GetNetState() == nSTANDALONE ||
                      (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)) && !newName.empty() && bool(p))
                 {
+                    tString nameToUse = tColoredString::RemoveColors(newName);
                     switch (local_p->colorNameCustomization)
                     {
                     case ColorNameCustomization::OFF_NAME:
                         break;
                     case ColorNameCustomization::GRADIENT_NAME: {
                         int rgb[3] = {p->r, p->g, p->b};
-                        newName = sg_ColorGradientGeneration(rgb, newName);
+                        newName = sg_ColorGradientGeneration(rgb, nameToUse);
                         p->lastColoredName = newName;
                         break;
                     }
                     case ColorNameCustomization::RAINBOW_NAME:{
-                        newName = sg_RainbowNameGeneration(newName);
+                        newName = sg_RainbowNameGeneration(nameToUse);
                         p->lastColoredName = newName;
                         break;
                     }
@@ -11232,8 +11239,8 @@ void ePlayerNetID::Update()
                         if (shouldUpdateName) {
                             p->lastplayerRandomColorNameStartMode = se_playerRandomColorNameStartMode;
                             p->lastColoredName = (se_playerRandomColorNameStartMode == 1) ?
-                                                  sg_RainbowNameGeneration(newName) :
-                                                  sg_ColorGradientGeneration(rgb, newName);
+                                                  sg_RainbowNameGeneration(nameToUse) :
+                                                  sg_ColorGradientGeneration(rgb, nameToUse);
                             p->shiftIter = 0;
                         }
 
@@ -11244,7 +11251,7 @@ void ePlayerNetID::Update()
                             p->shiftIter = 0;
                             p->currentShift = se_playerRandomColorNameShiftAmount;
                         }
-                        bool shouldInvertCurrentShift = (se_playerRandomColorNameShiftBounceNameLength && (p->shiftIter % (newName.Len()-1) == 0)) ||
+                        bool shouldInvertCurrentShift = (se_playerRandomColorNameShiftBounceNameLength && (p->shiftIter % (nameToUse.Len()-1) == 0)) ||
                                                         (!se_playerRandomColorNameShiftBounceNameLength && (se_playerRandomColorNameShiftBounceInterval > 0) && (p->shiftIter % se_playerRandomColorNameShiftBounceInterval == 0));
 
                         if (shouldInvertCurrentShift)

@@ -521,7 +521,7 @@ static tConfItem<tString> sg_localBotEnableForPlayersConf( "LOCAL_BOT_ENABLED_PL
 static bool sg_localBotAlwaysActive = false;
 static tConfItem<bool> sg_localBotAlwaysActiveConf( "LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive );
 
-static bool sg_localBotBrake = false;
+static bool sg_localBotBrake = true;
 static tConfItem<bool> sg_localBotBrakeConf( "LOCAL_BOT_BRAKE", sg_localBotBrake );
 
 static REAL sg_localBotNewWallBlindness = 0;
@@ -579,7 +579,6 @@ bool sg_chatBotControlByServer = false;
 static tSettingItem<bool> sg_chatBotControlByServerConf("CHATBOT_CONTROLLED_BY_SERVER", sg_chatBotControlByServer);
 
 extern REAL sg_suicideTimeout;
-REAL chatBotNewWallBlindness, chatBotMinTimestep, chatBotDelay, chatBotRange, chatBotDecay, chatBotEnemyPenalty;
 
 class gCycleChatBot
 {
@@ -663,12 +662,12 @@ class Sensor: public gSensor
                     windingNumber_ = playerWall->WindingNumber();
 
                     // don't see new walls
-                    if ( hitTime_ > hitOwner_->LastTime() - chatBotNewWallBlindness && hitOwner_ != owned )
-                    {
-                        ehit = NULL;
-                        hit = 1E+40;
-                        return false;
-                    }
+                    // if ( hitTime_ > hitOwner_->LastTime() - chatBotNewWallBlindness && hitOwner_ != owned )
+                    // {
+                    //     ehit = NULL;
+                    //     hit = 1E+40;
+                    //     return false;
+                    // }
 
                     // REAL cycleDistance = hitOwner_->GetDistance();
 
@@ -1126,13 +1125,13 @@ class Sensor: public gSensor
 
             // hit the brakes before you hit anything and if it's worth it
             bool brake = false;
-            if (!sg_localBotBrake)                   
+            if (!localBot || !sg_localBotBrake)
                 brake = sg_brakeCycle > 0 &&
                             front.hit * lookahead * sg_cycleBrakeDeplete < owner_->GetBrakingReservoir() &&
                             sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_->GetBrakingReservoir() &&
                             ( maxMoveOn - minMoveOn ) > 0 &&
                             owner_->GetBrakingReservoir() * ( maxMoveOn - minMoveOn ) < speed * owner_->GetTurnDelay();
-                            
+
             if ( frontOpen < bestOpen &&
                     ( forwardOverhang <= backwardOverhang || ( minMoveOn < 0 && moveOn < minstep * speed ) ) )
             {
@@ -1293,6 +1292,8 @@ class Sensor: public gSensor
 
     REAL nextChatAI_;        //!< the next time the chat AI can be active
 private:
+    REAL chatBotNewWallBlindness;
+    REAL chatBotMinTimestep, chatBotDelay, chatBotRange, chatBotDecay, chatBotEnemyPenalty;
     REAL timeOnChatAI_;      //!< the total time the player was on chat AI this round
     short lastTurn_;         //!< the last turn the chat AI made
     REAL nextTurn_;          //!< the next turn if one is planned
@@ -2482,7 +2483,7 @@ void gCycle::MyInitAfterCreation(){
 
         se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
         se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
-        
+
         se_removeDarkColors(color_);
         se_removeDarkColors(trailColor_);
 

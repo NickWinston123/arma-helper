@@ -155,6 +155,7 @@ public:
     REAL sg_smarterBotTrapScale;
     REAL sg_smarterBotFollowScale;
     bool sg_smarterBotFollowBlockLogic;
+    REAL sg_smarterBotFollowPredictionTime;
     bool sg_smarterBotFollowTryLogic;
     bool sg_smarterBotFollowTryLogicOppositeTurn;
     bool sg_smarterBotFollowFindTarget;

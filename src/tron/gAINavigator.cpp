@@ -964,8 +964,12 @@ void gAINavigator::FollowEvaluator::TryTurn(int direction, eCoord const &targetV
 void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord const & velocity )
 {
     // determine direction to center
-    toTarget_ = target - cycle_.Position();
-
+    // toTarget_ = target - cycle_.Position();
+    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
+    if (!local_p)
+        return;
+    eCoord predictedTargetPosition = target + velocity * local_p->sg_smarterBotFollowPredictionTime;
+    toTarget_ = predictedTargetPosition - cycle_.Position();
     blocker_ = 0;
     blockedBySelf_ = false;
 
@@ -973,7 +977,6 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
     gTargetSensor sensor( &cycle_, cycle_.Position(), toTarget_ );
     // gTargetSensor sensor( &cycle_, cycle_.Position(), target);
     sensor.detect( .99 );
-    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
     if( sensor.type != gSENSOR_NONE )
     {
         if( sensor.lastOwnEHit && local_p->sg_smarterBotFollowBlockLogic)

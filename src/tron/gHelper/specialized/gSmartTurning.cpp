@@ -403,8 +403,6 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
     if (lastBlockedDir == NONE)
         return;
 
-    helper_.findCorners(data);
-
     // Get the direction of the last blocked turn attempt
 
     //con << "SMART TURNING LAST lastBlockedDir " << lastBlockedDir << "\n";

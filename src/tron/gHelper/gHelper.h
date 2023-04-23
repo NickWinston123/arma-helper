@@ -170,6 +170,7 @@ class gHelper {
 
         void traceLeft();
         void traceRight();
+        void trace(gHelperData &data, int dir);
         /**
          * Activates the helper, setting up necessary data and pointers.
          */

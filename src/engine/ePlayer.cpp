@@ -88,6 +88,7 @@ static tConfItem<bool> se_forceSyncOverrideConf("FORCE_SYNC_OVERRIDE", se_forceS
 
 static int se_playerRandomColorNameStartMode = 1;
 
+
 // call on commands that only work on the server; quit if it returns true
 bool se_NeedsServer(char const * command, std::istream & s, bool strict )
 {
@@ -4982,8 +4983,116 @@ static tConfItem<bool> se_nameSpeakSplitByNameSizeConf("LOCAL_CHAT_COMMAND_NAMES
 
 #endif //if not dedicated
 
+void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString s_orig)
+{
+    std::string chatString(s_orig);
+    std::istringstream passedString(chatString);
+
+    tString command;
+
+    passedString >> command;
+    // con << "inside LocalChatCommands, command: " << command << "s_orig: " << s_orig << "\n";
+    if (p != NULL)
+    {
+        // Short handle for grabbing player information.
+        if (command == se_infoCommand)
+        {
+            p->listPlayerInfo(s_orig);
+        }
+        // Short handle for changing our RGB values.
+        else if (command == se_rgbCommand)
+        {
+            p->currentPlayerRGB(s_orig);
+        }
+        else if (command == se_rebuildCommand)
+        {
+            p->rebuildCommand(s_orig);
+        }
+        else if (command == se_watchCommand)
+        {
+            eCamera::SpectatePlayer(*p, s_orig);
+        }
+        else if (command == se_reverseCommand)
+        {
+            tString s_modified(s_orig);
+            s_modified.RemoveSubStr(0, se_reverseCommand.Len());
+            p->Chat(s_modified.Reverse());
+        }
+        else if (command == se_spectateCommand)
+        {
+            ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
+            local_p->spectate = true;
+            Clear(local_p);
+            Update();
+        }
+        else if (command == se_joinCommand)
+        {
+            if (!bool(p->currentTeam))
+            {
+                ePlayer::NetToLocalPlayer(p)->spectate = false;
+                p->CreateNewTeamWish();
+                Update();
+            }
+        }
+        else if (command == se_activeStatusCommand)
+        {
+            activeStatus(s_orig,p);
+        }
+/*
+    }
+    else
+    { // DO NOT REQUIRE PLAYER TO USE
+    */
+        // check for direct console commands
+        if (command == se_consoleCommand)
+        {
+            // direct commands are executed at owner level
+            tCurrentAccessLevel level(tAccessLevel_Owner, true);
+
+            tString params("");
+            if (s_orig.StrPos(" ") == -1)
+                return;
+            else
+                params = s_orig.SubStr(s_orig.StrPos(" ") + 1);
+
+            if (tRecorder::IsPlayingBack())
+            {
+                tConfItemBase::LoadPlayback();
+            }
+            else
+            {
+                std::stringstream s(static_cast<char const *>(params));
+                tConfItemBase::LoadAll(s);
+            }
+        }
+        // Short handle for grabbing player colors.
+        else if (command == se_colorsCommand)
+        {
+            listPlayerColors(s_orig);
+        }
+        else if (command == se_browserCommand)
+        {
+            gServerBrowser::BrowseMaster();
+        }
+        else if (command == se_speakCommand)
+        {
+            localSpeak(s_orig);
+        }
+        else if (command == se_searchCommand)
+        {
+            searchCommand(s_orig);
+        }
+        else if (command == se_nameSpeak)
+        {
+            nameSpeakCommand(s_orig);
+        }
+
+    }
+}
+
 void ePlayerNetID::Chat(const tString& s_orig)
 {
+    // con << "IN CHAT WITH s_orig: " << s_orig << "\n";
     tColoredString s(s_orig);
     s.NetFilter();
 
@@ -5035,95 +5144,11 @@ void ePlayerNetID::Chat(const tString& s_orig)
         tConfItemBase::LoadAll(s);
         return;
     }
-
+    // con << "IS LOCAL? " << isLocalCommand << " STARTS WITH / " << s_orig.StartsWith("/") << "\n";
     if (isLocalCommand && se_enableChatCommands && (s_orig.StartsWith("/")))
     {
-        // check for direct console commands
-        if (command == se_consoleCommand)
-        {
-            // direct commands are executed at owner level
-            tCurrentAccessLevel level(tAccessLevel_Owner, true);
-
-            tString params("");
-            if (s_orig.StrPos(" ") == -1)
-                return;
-            else
-                params = s_orig.SubStr(s_orig.StrPos(" ") + 1);
-
-            if (tRecorder::IsPlayingBack())
-            {
-                tConfItemBase::LoadPlayback();
-            }
-            else
-            {
-                std::stringstream s(static_cast<char const *>(params));
-                tConfItemBase::LoadAll(s);
-            }
-        }
-        // Short handle for grabbing player colors.
-        else if (command == se_colorsCommand)
-        {
-            listPlayerColors(s_orig);
-        }
-        // Short handle for grabbing player information.
-        else if (command == se_infoCommand)
-        {
-            listPlayerInfo(s_orig);
-        }
-        // Short handle for changing our RGB values.
-        else if (command == se_rgbCommand)
-        {
-            currentPlayerRGB(s_orig);
-        }
-        else if (command == se_browserCommand)
-        {
-            gServerBrowser::BrowseMaster();
-        }
-        else if (command == se_speakCommand)
-        {
-            localSpeak(s_orig);
-        }
-        else if (command == se_rebuildCommand)
-        {
-            rebuildCommand(s_orig);
-        }
-        else if (command == se_watchCommand)
-        {
-            eCamera::SpectatePlayer(*this,s_orig);
-        }
-        else if (command == se_activeStatusCommand)
-        {
-            activeStatus(s_orig);
-        }
-        else if (command == se_reverseCommand)
-        {
-            tString s_modified(s_orig);
-            s_modified.RemoveSubStr(0, se_reverseCommand.Len());
-            Chat(s_modified.Reverse());
-        }
-        else if (command == se_spectateCommand)
-        {
-           ePlayer *local_p = ePlayer::NetToLocalPlayer(this);
-           local_p->spectate = true;
-           Clear(local_p);
-           Update();
-        }
-        else if (command == se_joinCommand)
-        {
-            if (!bool( currentTeam )) {
-                ePlayer::NetToLocalPlayer(this)->spectate = false;
-                CreateNewTeamWish();
-                Update();
-            }
-        }
-        else if (command == se_searchCommand)
-        {
-            searchCommand(s_orig);
-        }
-        else if (command == se_nameSpeak)
-        {
-            nameSpeakCommand(s_orig);
-        }
+        // con << "CALLING LOCAL CHAT COMMANDS\n";
+        LocalChatCommands(this,s_orig);
     }
     else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )
     {
@@ -5633,6 +5658,7 @@ public:
         if (e.type==SDL_KEYDOWN &&
                 (e.key.keysym.sym==SDLK_KP_ENTER || e.key.keysym.sym==SDLK_RETURN))
         {
+            bool playerFound = false;
 
             for(int i=se_PlayerNetIDs.Len()-1; i>=0; i--)
             {
@@ -5640,8 +5666,15 @@ public:
                 if (p && (p->pID == me->ID()))
                 {
                     p->Chat(*content);
+                    playerFound = true;
                     break;
                 }
+            }
+            if (!playerFound)
+            {
+                con << "PLAYER NOT FOUND\n";
+            ePlayerNetID::LocalChatCommands(NULL,*content);
+
             }
 
             se_BlockScores = false;
@@ -6175,9 +6208,6 @@ static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
 
 tString se_disableCreateSpecific = tString("");
 static tConfItem<tString> se_disableCreateSpecificConf("DISABLE_CREATE_SPECIFIC", se_disableCreateSpecific);
-
-static bool se_disableCreateHard = false;
-static tConfItem<bool> se_disableCreateHardConf("DISABLE_CREATE_HARD", se_disableCreateHard);
 
 ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                teamListID(-1),
@@ -9685,9 +9715,7 @@ void ePlayerNetID::listPlayerColors(tString s_orig)
             {
                 con << tOutput("$player_colors_not_found", msgsExt[1]);
             }
-
         }
-
     }
 }
 
@@ -9957,11 +9985,11 @@ void ePlayerNetID::localSpeak(tString s_orig)
 
     ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
 
-    if (p && this->Owner() == p->Owner())
+    if (p && ePlayer::NetToLocalPlayer(p))
         p->Chat(params.SubStr(pos+1));
 }
 
-void ePlayerNetID::activeStatus(tString s_orig)
+void ePlayerNetID::activeStatus(tString s_orig, ePlayerNetID *calledPlayer) 
 {
     tString params;
     params << s_orig;
@@ -9972,8 +10000,8 @@ void ePlayerNetID::activeStatus(tString s_orig)
     ePlayerNetID *p;
     if (!PlayerStr.empty())
         p = ePlayerNetID::FindPlayerByName(PlayerStr);
-    else
-        p = this;
+    else if (calledPlayer)
+        p = calledPlayer;
 
     if (!p)
         return;
@@ -11055,19 +11083,10 @@ void ePlayerNetID::Update()
             tCONTROLLED_PTR(ePlayerNetID) &p=local_p->netPlayer;
             bool in_game = ePlayer::PlayerIsInGame(i) ||
                            (local_p && local_p->ID() != 0 &&
+                           (((i <= se_createPlayers) || (!se_createPlayersSpecific.empty() && tIsInList(se_createPlayersSpecific, i + 1))) ||
+                           (i == forceCreatePlayer)));
 
-                            (
-                                (
-                                 (i <= se_createPlayers) ||
-                                 (!se_createPlayersSpecific.empty() && tIsInList(se_createPlayersSpecific, i + 1))
-                                ) ||
-                                (i == forceCreatePlayer)
-                            )
-
-                           );
-
-            if ( ( (se_disableCreateSpecific.empty() || !tIsInList(se_disableCreateSpecific,i+1)) &&
-                 !se_disableCreateHard && !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) )) // insert new player
+            if ( ( !p && in_game && ( !local_p->spectate || se_VisibleSpectatorsSupported() ) )) // insert new player
             {
                 // reset last time so idle time in the menus does not count as play time
                 lastTime = tSysTimeFloat();
@@ -14763,3 +14782,11 @@ static void sg_ListChatters(std::istream &s)
 
 static tConfItemFunc sg_ListChatters_conf("CHATTERS_LIST", &sg_ListChatters);
 static tAccessLevelSetter sg_ListChatters_confLevel( sg_ListChatters_conf, tAccessLevel_Moderator );
+
+void ePlayerNetID::RequestSync(bool ack){
+
+    if (se_disableCreate || tIsInList(se_disableCreateSpecific,pID+1)) {
+        return;
+    }
+    nNetObject::RequestSync(ack);
+}

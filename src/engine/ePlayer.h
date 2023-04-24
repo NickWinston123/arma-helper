@@ -509,6 +509,8 @@ public:
     REAL ChattingTime( bool current = true) const; //!< returns how long the player has been chatting
     eNetGameObject *Object() const;
 
+    void RequestSync(bool ack=true);
+
     //void SetRubber(ePlayerNetID *player, REAL rubber);
     void AddScore(int points);
     void AddScore(int points, const tOutput& reasonwin, const tOutput& reasonlose, bool shouldPrint=true);
@@ -530,19 +532,22 @@ public:
     static void OnlineStatsLadderLog(); //  writes the online players, teams and the numbers
     static void  ResetScore();  // resets the ranking list
 
-    // List the colors of other players.
-    void listPlayerColors(tString s_orig);
     // List the information of other players.
     void listPlayerInfo(tString s_orig);
     // Fast way to change / display current RGB
     void currentPlayerRGB(tString s_orig);
+    // Rebuild all or specific players
     void rebuildCommand(tString s_orig);
+    // List the colors of other players.
+    static void listPlayerColors(tString s_orig);
     // Quick way to speak as another local player
-    void localSpeak(tString s_orig);
+    static void localSpeak(tString s_orig);
     // List active status of players (chatting time, activity, etc)
-    void activeStatus(tString s_orig);
-    void searchCommand(tString s_orig);
-    void nameSpeakCommand(tString s_orig);
+    static void activeStatus(tString s_orig,ePlayerNetID *calledPlayer = NULL);
+    // Search through logs
+    static void searchCommand(tString s_orig);
+    // Use an unused player to 
+    static void nameSpeakCommand(tString s_orig);
     static void scheduleNameChange();
 
     //Grab Stuff
@@ -577,6 +582,7 @@ public:
     void GetScoreFromDisconnectedCopy(); // get the player's data from the previous login
 
     void Chat(const tString &s);
+    static void LocalChatCommands(ePlayerNetID *p, tString command);
 
     nTimeAbsolute GetTimeCreated() const { return timeCreated_; }
 

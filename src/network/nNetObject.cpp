@@ -1365,8 +1365,6 @@ void nNetObject::RequestSync(int user,bool ack){ // only for a single user
 
 
 void nNetObject::RequestSync(bool ack){
-    if (se_disableCreate)
-        return;
     this->GetID();
 
 #ifdef nSIMULATE_PING
@@ -2016,7 +2014,7 @@ void sn_Sync(REAL timeout,bool sync_sn_netObjects, bool otherEnd){
     else if (sn_GetNetState()==nSERVER){
         // first determine which clients have players which are playing
         bool * isSpec = sg_GetSpecs();
-        
+
         for(int user=MAXCLIENTS;user>0;user--){
             sync_ack[user]=false;
             if(sn_Connections[user].socket){

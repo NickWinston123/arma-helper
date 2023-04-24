@@ -112,8 +112,7 @@ void se_removeDarkColors(gRealColor &color, REAL darkness_threshold, REAL min_co
     {
         REAL adjustment = 0.7;
         color.r = std::min(color.r + adjustment, static_cast<REAL>(1.0));
-        color.g = std::min(color.g + adjustment, static_cast<REAL>(1.0));
-        color.b = std::max(color.b - adjustment, static_cast<REAL>(0.0));
+        color.b = std::max(color.b + adjustment, static_cast<REAL>(1.0));
     }
 }
 

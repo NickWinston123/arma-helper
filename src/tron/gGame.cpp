@@ -1540,8 +1540,21 @@ static void sg_deleteAllSafe(std::istream &s)
 
 static tConfItemFunc sg_deleteAllSafeConf("DELETE_ALL_SAFE", &sg_deleteAllSafe);
 
-int sg_descriptorsSendID = -1;
-static tConfItem<int> sg_descriptorsSendIDConf("DESCRIPTOR_SEND_ID",sg_descriptorsSendID);
+static void sg_descriptorList(std::istream &s)
+{
+    con << "List of non-null descriptors:\n";
+
+    const auto &trackedDescriptors = nDescriptor::getTrackedDescriptors();
+    for (const auto &descriptor : trackedDescriptors)
+    {
+        if (descriptor)
+        {
+            con << descriptor->ID() << ": " << descriptor->Name() << "\n";
+        }
+    }
+}
+
+static tConfItemFunc sg_descriptorListConf("DESCRIPTOR_LIST", &sg_descriptorList);
 
 
 void SendCustomMessage(nDescriptor *descriptor, const std::vector<unsigned short> &dataToSend)
@@ -1559,8 +1572,8 @@ void SendCustomMessage(nDescriptor *descriptor, const std::vector<unsigned short
         con << data << " ";
     }
     con << "\n";
-    int broadcastID = (sg_descriptorsSendID >= 0) ? sg_descriptorsSendID : ::sn_myNetID;
-    message->Write(broadcastID);
+    // int broadcastID = (sg_descriptorsSendID >= 0) ? sg_descriptorsSendID : ::sn_myNetID;
+    // message->Write(broadcastID);
     message->BroadCast();
 }
 

@@ -820,7 +820,7 @@ nWaitForAck::~nWaitForAck(){
     }
     else
     {
-        tERR_ERROR( "No message." );
+        // tERR_ERROR( "No message." );
     }
     //    sn_ackAckPending[receiver]--;
 

@@ -368,7 +368,7 @@ extern int sn_myNetID; // our network identification:  0: server
 class nMessage;
 typedef void nHandler(nMessage &m);
 
-
+#include <vector>
 // types of network messages
 class nDescriptor:public tListItem<nDescriptor>{
     friend class nMessage;
@@ -381,14 +381,16 @@ class nDescriptor:public tListItem<nDescriptor>{
     const char *name;
 
     const bool acceptWithoutLogin;
+    static std::vector<nDescriptor*> trackedDescriptors;
 public:
     nDescriptor(unsigned short identification,nHandler *handle
                 ,const char *name, bool acceptEvenIfNotLoggedIn = false);
     //  nDescriptor(nHandler *handle,
     //		const char *name);
     static void HandleMessage(nMessage &message);
-
+    static std::vector<nDescriptor*>& getTrackedDescriptors();
     unsigned short ID(){return id;}
+    const char * Name() { return name;}
 };
 
 // register the routine that gives the peer the server/client information
@@ -1083,8 +1085,10 @@ nMachine & nMachine::SetDecorators( nMachineDecorator * decorators )
     return *this;
 }
 
+
+#define MAXDESCRIPTORS 400
+static nDescriptor* descriptors[MAXDESCRIPTORS];
+
+
+
 #endif
-
-
-
-

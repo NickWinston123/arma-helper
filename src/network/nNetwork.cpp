@@ -551,51 +551,45 @@ public:
 
 unsigned short nDescriptor::s_nextID(1);
 
-#define MAXDESCRIPTORS 400
-static nDescriptor* descriptors[MAXDESCRIPTORS];
-
 static nDescriptor* nDescriptor_anchor;
 
+std::vector<nDescriptor*>& nDescriptor::getTrackedDescriptors() {
+    return trackedDescriptors;
+}
+
+std::vector<nDescriptor*> nDescriptor::trackedDescriptors(MAXDESCRIPTORS, nullptr);
 nDescriptor::nDescriptor(unsigned short identification,
-                         nHandler *handle,const char *Name, bool awl)
+                         nHandler *handle, const char *Name, bool awl)
         :tListItem<nDescriptor>(nDescriptor_anchor),
-        id(identification),handler(handle),name(Name), acceptWithoutLogin(awl)
+        id(identification), handler(handle), name(Name), acceptWithoutLogin(awl)
 {
-#ifdef DEBUG
-#ifndef WIN32
-    //  con << "Descriptor " << id << ": " << name << '\n';
-#endif
-#endif
-    if (MAXDESCRIPTORS<=id || descriptors[id]!=NULL){
+    if (MAXDESCRIPTORS <= id || descriptors[id] != nullptr) {
         con << "Descriptor " << id << " already used!\n";
         exit(-1);
     }
-    s_nextID=id+1;
-    descriptors[id]=this;
+    s_nextID = id + 1;
+
+    descriptors[id] = this;
+
+    // Resize the trackedDescriptors vector if needed
+    if (trackedDescriptors.size() <= id) {
+        trackedDescriptors.resize(id + 1, nullptr);
+    }
+
+    trackedDescriptors[id] = descriptors[id];
 }
 
-/*
-nDescriptor::nDescriptor(nHandler *handle,const char *Name)
-  :id(s_nextID++),handler(handle),name(Name)
-{
-#ifdef DEBUG
-  con << "Descriptor " << id << ": " << name << '\n';
-#endif
-
-  if (descriptors.Len()>id && descriptors[id]!=NULL){
-    con << "Descriptor " << id << " already used!\n";
-    exit(-1);
-  }
-  descriptors[id]=this;
-}
-*/
 
 int nCurrentSenderID::currentSenderID_ = 0;
+
+bool sg_descriptorsShow = false;
+static tConfItem<bool> sg_descriptorsShowConf("DESCRIPTOR_SHOW_HANDLED",sg_descriptorsShow);
 
 void nDescriptor::HandleMessage(nMessage &message){
     // store sender ID for console
     nCurrentSenderID currentSender( message.SenderID() );
-
+    if (sg_descriptorsShow)
+        con << "Handling nDescriptor message for " << descriptors[message.descriptor]->name << ":\n" << con.nMessageToString(message) << "\n";
 #ifdef DEBUG_X
     if (message.descriptor>1)
         con << "RMT " << message.descriptor << "\n";
@@ -777,8 +771,8 @@ nWaitForAck::nWaitForAck(nMessage* m,int rec)
 
     if (message->Descriptor()!=s_Acknowledge.ID())
         sn_Connections[receiver].ackPending++;
-    else
-        tERR_ERROR("Should not wait for ack of an ack message itself.");
+    // else
+    //     tERR_ERROR("Should not wait for ack of an ack message itself.");
 
     //    sn_ackAckPending[receiver]++;
 #ifdef NET_DEBUG
@@ -1141,8 +1135,14 @@ nMessage::~nMessage(){
 
 
 
+bool sg_descriptorsShowBroadCasted = false;
+static tConfItem<bool> sg_descriptorsShowBroadCastedConf("DESCRIPTOR_SHOW_BROADCASTED",sg_descriptorsShowBroadCasted);
 
 void nMessage::BroadCast(bool ack){
+
+if (sg_descriptorsShowBroadCasted)
+    con << "BroadCast message for " << descriptors[(*this).Descriptor()]->name << ":\n" << con.nMessageToString(*this) << "\n";
+
     tControlledPTR< nMessage > keep( this );
     if (sn_GetNetState()==nCLIENT)
         Send(0,ack);
@@ -1243,6 +1243,7 @@ bool sn_filterColorStrings = false;
 static tConfItem<bool> sn_filterColorStringsConf("FILTER_COLOR_STRINGS",sn_filterColorStrings);
 bool sn_filterDarkColorStrings = false;
 static tConfItem<bool> sn_filterDarkColorStringsConf("FILTER_DARK_COLOR_STRINGS",sn_filterDarkColorStrings);
+
 
 nMessage& nMessage::operator >> (tColoredString &s )
 {

@@ -1540,6 +1540,95 @@ static void sg_deleteAllSafe(std::istream &s)
 
 static tConfItemFunc sg_deleteAllSafeConf("DELETE_ALL_SAFE", &sg_deleteAllSafe);
 
+int sg_descriptorsSendID = -1;
+static tConfItem<int> sg_descriptorsSendIDConf("DESCRIPTOR_SEND_ID",sg_descriptorsSendID);
+
+
+void SendCustomMessage(nDescriptor *descriptor, const std::vector<unsigned short> &dataToSend)
+{
+    tControlledPTR<nMessage> message = new nMessage(*descriptor);
+
+    for (const auto &data : dataToSend)
+    {
+        (*message) << data;
+    }
+    
+    con << "Sending message with descriptor ID " << descriptor->ID() << " (" << nDescriptor::getTrackedDescriptors()[descriptor->ID()]->Name() << ") and data: ";
+    for (const auto &data : dataToSend)
+    {
+        con << data << " ";
+    }
+    con << "\n";
+    int broadcastID = (sg_descriptorsSendID >= 0) ? sg_descriptorsSendID : ::sn_myNetID;
+    message->Write(broadcastID);
+    message->BroadCast();
+}
+
+static void sg_descriptorSendMessage(std::istream &s)
+{
+    int ID;
+    s >> ID;
+    con << "Using ID " << ID << "\n";
+
+    nDescriptor *message = nullptr;
+    const auto &trackedDescriptors = nDescriptor::getTrackedDescriptors();
+    con << "trackedDescriptors size: " << trackedDescriptors.size() << "\n";
+    for (const auto &descriptor : trackedDescriptors)
+    {
+        if (descriptor && descriptor->ID() == ID)
+        {
+            message = descriptor;
+            break;
+        }
+    }
+
+    if (message == nullptr)
+    {
+        con << "No descriptors found with ID " << ID << "\n";
+        return;
+    }
+
+    std::vector<unsigned short> dataToSend;
+    unsigned short value;
+    while (s >> value)
+    {
+        dataToSend.push_back(value);
+    }
+
+    SendCustomMessage(message, dataToSend);
+}
+
+static tConfItemFunc sg_descriptorSendMessageConf("DESCRIPTOR_SEND", &sg_descriptorSendMessage);
+
+static void sg_FindDescriptor(std::istream &s)
+{
+    int ID;
+    s >> ID;
+    con << "Using ID " << ID << "\n";
+
+    nDescriptor *message = nullptr;
+    const auto &trackedDescriptors = nDescriptor::getTrackedDescriptors();
+    con << "trackedDescriptors size: " << trackedDescriptors.size() << "\n";
+    for (const auto &descriptor : trackedDescriptors)
+    {
+        if (descriptor && descriptor->ID() == ID)
+        {
+            message = descriptor;
+            break;
+        }
+    }
+
+    if (message == nullptr)
+    {
+        con << "No descriptors found with ID " << ID << "\n";
+        return;
+    }
+
+    con << "Found descriptor for ID " << ID << ": " << message->Name() << "\n";
+}
+
+static tConfItemFunc sg_FindDescriptorConf("DESCRIPTOR_FIND", &sg_FindDescriptor);
+
 /*REAL exponent(int i)
 {
     int abs = i;
@@ -3010,8 +3099,52 @@ void sg_StartupPlayerMenu();
 
 extern bool sg_ShowSpecialMenu(), sg_ShowConfigMenu();
 
+bool sg_RestrictPlayTime = false;
+static tConfItem<bool> sg_RestrictPlayTimeConf("GAME_RESTRICT_PLAY_TIME",sg_RestrictPlayTime);
+int sg_RestrictPlayTimeStartTime = 23;
+static tConfItem<int> sg_RestrictPlayTimeStartTimeConf("GAME_RESTRICT_PLAY_TIME_START",sg_RestrictPlayTimeStartTime);
+int sg_RestrictPlayTimeEndTime = 7;
+static tConfItem<int> sg_RestrictPlayTimeEndTimeConf("GAME_RESTRICT_PLAY_TIME_END",sg_RestrictPlayTimeEndTime);
+
+bool isWithinRange() {
+    time_t rawtime;
+    struct tm* thisTime;
+
+    time(&rawtime);
+    thisTime = localtime(&rawtime);
+
+    int hour = thisTime->tm_hour;
+
+    if (sg_RestrictPlayTimeStartTime < sg_RestrictPlayTimeEndTime) {
+        // The restricted range is within a single day
+        if (hour >= sg_RestrictPlayTimeStartTime && hour < sg_RestrictPlayTimeEndTime) {
+            return true;
+        }
+    } else {
+        // The restricted range spans two days
+        if (hour >= sg_RestrictPlayTimeStartTime || hour < sg_RestrictPlayTimeEndTime) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int sg_RestrictPlayTimeStartTimWarnings = 0;
+
 void MainMenu(bool ingame){
-    //	update_settings();
+
+    if (sg_RestrictPlayTime && isWithinRange()) {
+        tString message("You are not allowed to play within this time slot because of GAME_RESTRICT_PLAY_TIME. ");
+                message << "(Within set block time: " <<  sg_RestrictPlayTimeStartTime << ":00 - " << sg_RestrictPlayTimeEndTime << ":00)" << "\n";
+
+        if (ingame && sg_RestrictPlayTimeStartTimWarnings <= 5)
+            con << message;
+        else
+            tERR_ERROR(message);
+
+        sg_RestrictPlayTimeStartTimWarnings++;
+        return;
+    }
 
     if (ingame)
     {

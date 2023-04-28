@@ -589,7 +589,7 @@ void nDescriptor::HandleMessage(nMessage &message){
     // store sender ID for console
     nCurrentSenderID currentSender( message.SenderID() );
     if (sg_descriptorsShow)
-        con << "Handling nDescriptor message for " << descriptors[message.descriptor]->name << ":\n" << con.nMessageToString(message) << "\n";
+        con << "Handling nDescriptor message for ID: " << message.descriptor << " (" << descriptors[message.descriptor]->name << ") :\n" << con.nMessageToString(message) << "\n";
 #ifdef DEBUG_X
     if (message.descriptor>1)
         con << "RMT " << message.descriptor << "\n";
@@ -1141,7 +1141,7 @@ static tConfItem<bool> sg_descriptorsShowBroadCastedConf("DESCRIPTOR_SHOW_BROADC
 void nMessage::BroadCast(bool ack){
 
 if (sg_descriptorsShowBroadCasted)
-    con << "BroadCast message for " << descriptors[(*this).Descriptor()]->name << ":\n" << con.nMessageToString(*this) << "\n";
+    con << "BroadCast message for ID " << (*this).descriptor << " (" << descriptors[(*this).Descriptor()]->name << ") :\n" << con.nMessageToString(*this) << "\n";
 
     tControlledPTR< nMessage > keep( this );
     if (sn_GetNetState()==nCLIENT)

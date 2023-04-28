@@ -1552,8 +1552,8 @@ void SendCustomMessage(nDescriptor *descriptor, const std::vector<unsigned short
     {
         (*message) << data;
     }
-    
-    con << "Sending message with descriptor ID " << descriptor->ID() << " (" << nDescriptor::getTrackedDescriptors()[descriptor->ID()]->Name() << ") and data: ";
+
+    con << "Sending message with descriptor ID " << descriptor->ID() << " (" << descriptor->Name() << ") and data: ";
     for (const auto &data : dataToSend)
     {
         con << data << " ";

@@ -1527,35 +1527,12 @@ void exit_game_objects(eGrid *grid){
     exit_game_grid(grid);
 }
 
-void clean_game_objects(eGrid *grid) {
-    eGameObject::DeleteAllSafe(grid);
-    //gNetPlayerWall::ClearSafe();
-}
-
 static void sg_deleteAllSafe(std::istream &s)
 {
-    clean_game_objects(eGrid::CurrentGrid());
-   // nNetObject::ClearAllDeleted();
+    eGameObject::DeleteAllSafe(eGrid::CurrentGrid());
 }
 
 static tConfItemFunc sg_deleteAllSafeConf("DELETE_ALL_SAFE", &sg_deleteAllSafe);
-
-static void sg_descriptorList(std::istream &s)
-{
-    con << "List of non-null descriptors:\n";
-
-    const auto &trackedDescriptors = nDescriptor::getTrackedDescriptors();
-    for (const auto &descriptor : trackedDescriptors)
-    {
-        if (descriptor)
-        {
-            con << descriptor->ID() << ": " << descriptor->Name() << "\n";
-        }
-    }
-}
-
-static tConfItemFunc sg_descriptorListConf("DESCRIPTOR_LIST", &sg_descriptorList);
-
 
 void SendCustomMessage(nDescriptor *descriptor, const std::vector<unsigned short> &dataToSend)
 {
@@ -1572,8 +1549,6 @@ void SendCustomMessage(nDescriptor *descriptor, const std::vector<unsigned short
         con << data << " ";
     }
     con << "\n";
-    // int broadcastID = (sg_descriptorsSendID >= 0) ? sg_descriptorsSendID : ::sn_myNetID;
-    // message->Write(broadcastID);
     message->BroadCast();
 }
 
@@ -1602,69 +1577,77 @@ static void sg_descriptorSendMessage(std::istream &s)
     }
 
     std::vector<unsigned short> dataToSend;
-    unsigned short value;
-    while (s >> value)
-    {
-        dataToSend.push_back(value);
-    }
 
+    if (s.peek() == std::istream::traits_type::eof())
+    {
+        dataToSend = message->GetLastSentData();
+    }
+    else
+    {
+        unsigned short value;
+        while (s >> value)
+        {
+            dataToSend.push_back(value);
+        }
+    }
     SendCustomMessage(message, dataToSend);
 }
 
 static tConfItemFunc sg_descriptorSendMessageConf("DESCRIPTOR_SEND", &sg_descriptorSendMessage);
 
+static void displayDescriptor(nDescriptor *descriptor)
+{
+    con << "0xffffff" << descriptor->ID() << "0x888888: 0xe38690" << descriptor->Name() << "\n";;
+
+    const auto &lastSentData = descriptor->GetLastSentData();
+    if (lastSentData.size() > 0)
+    {
+        con << "0x888888 - Last sent data: 0xaaaaaa";
+        for (const auto &data : lastSentData)
+        {
+            con << data << " ";
+        }
+        con << "\n";
+    }
+}
+
 static void sg_FindDescriptor(std::istream &s)
 {
     int ID;
     s >> ID;
+    bool blankID = ID == 0;
     con << "Using ID " << ID << "\n";
 
-    nDescriptor *message = nullptr;
+    nDescriptor *matchingDescriptor = nullptr;
     const auto &trackedDescriptors = nDescriptor::getTrackedDescriptors();
     con << "trackedDescriptors size: " << trackedDescriptors.size() << "\n";
     for (const auto &descriptor : trackedDescriptors)
     {
-        if (descriptor && descriptor->ID() == ID)
+        if (descriptor)
         {
-            message = descriptor;
-            break;
+            if (descriptor->ID() == ID) {
+                matchingDescriptor = descriptor;
+                if (!blankID)
+                    break;
+            }
+            else if (blankID)
+            {
+                displayDescriptor(descriptor);
+            }
         }
     }
 
-    if (message == nullptr)
+    if (!blankID && matchingDescriptor == nullptr)
     {
         con << "No descriptors found with ID " << ID << "\n";
         return;
     }
 
-    con << "Found descriptor for ID " << ID << ": " << message->Name() << "\n";
+    // Found match
+    displayDescriptor(matchingDescriptor);
 }
 
 static tConfItemFunc sg_FindDescriptorConf("DESCRIPTOR_FIND", &sg_FindDescriptor);
-
-/*REAL exponent(int i)
-{
-    int abs = i;
-    if ( abs < 0 )
-        abs = -abs;
-
-    REAL ret = 1;
-    REAL fac = sqrtf(2);
-
-    while (abs > 0)
-    {
-        if ( 1 == (abs & 1) )
-            ret *= fac;
-
-        fac *= fac;
-        abs >>= 1;
-    }
-
-    if (i < 0)
-        ret = 1/ret;
-
-    return ret;
-}*/
 
 REAL exponent(REAL i)
 {

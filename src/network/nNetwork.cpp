@@ -554,10 +554,9 @@ unsigned short nDescriptor::s_nextID(1);
 static nDescriptor* nDescriptor_anchor;
 
 std::vector<nDescriptor*>& nDescriptor::getTrackedDescriptors() {
+    static std::vector<nDescriptor*> trackedDescriptors(MAXDESCRIPTORS, nullptr);
     return trackedDescriptors;
 }
-
-std::vector<nDescriptor*> nDescriptor::trackedDescriptors(MAXDESCRIPTORS, nullptr);
 nDescriptor::nDescriptor(unsigned short identification,
                          nHandler *handle, const char *Name, bool awl)
         :tListItem<nDescriptor>(nDescriptor_anchor),
@@ -570,14 +569,9 @@ nDescriptor::nDescriptor(unsigned short identification,
     s_nextID = id + 1;
 
     descriptors[id] = this;
-
-    // Resize the trackedDescriptors vector if needed
-    if (trackedDescriptors.size() <= id) {
-        trackedDescriptors.resize(id + 1, nullptr);
-    }
-
-    trackedDescriptors[id] = descriptors[id];
+    getTrackedDescriptors()[id] = this;
 }
+
 
 
 int nCurrentSenderID::currentSenderID_ = 0;
@@ -605,8 +599,10 @@ void nDescriptor::HandleMessage(nMessage &message){
             nd=descriptors[message.descriptor];
 
         if (nd){
-            if ((message.SenderID() <= MAXCLIENTS) || nd->acceptWithoutLogin)
+            if ((message.SenderID() <= MAXCLIENTS) || nd->acceptWithoutLogin) {
+                nd->SetLastSentData(nMessage::nMessageToDataVector(message)); // Store last sent data
                 nd->handler(message);
+            }
         }
 #ifdef DEBUG
         else
@@ -1673,6 +1669,7 @@ void login_accept_handler(nMessage &m){
         }
 
         unsigned short id=0;
+        con << "login_accept_handler GOT ID:" << id << "\n";
         m.Read(id);
 
         // read or reset server version info
@@ -5613,3 +5610,11 @@ nMachineDecorator::nMachineDecorator( nMachine & machine )
     Insert( machine.decorators_ );
 }
 
+
+std::vector<unsigned short> nMessage::nMessageToDataVector(nMessage& msg) {
+    std::vector<unsigned short> data;
+    for (int i = 0; i < msg.DataLen(); i++) {
+        data.push_back(msg.Data(i));
+    }
+    return data;
+}

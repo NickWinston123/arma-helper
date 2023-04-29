@@ -10641,6 +10641,10 @@ static tConfItem<tString> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC"
 static bool se_forceTeamname = false;
 static tConfItem<bool> se_forceTeamnameConf("FORCE_TEAMNAME", se_forceTeamname);
 
+static bool se_forceMessage = false;
+static tConfItem<bool> se_forceMessageConf("FORCE_MESS", se_forceMessage);
+
+
 
 tString sg_ExtractColorCodes(const tString& str)
 {
@@ -11030,6 +11034,19 @@ bool shouldUpdateLastName(int rgb[3]) {
     return hasChanged;
 }
 
+tString RandomStr(int maxLength) {
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    int length = rand() % maxLength + 1;
+    tString randomStr;
+    randomStr.SetLen(length);
+    for (int i = 0; i < length; i++) {
+        int index = rand() % (sizeof(charset) - 1);
+        randomStr[i] = charset[index];
+    }
+    randomStr[length] = '\0';
+    return randomStr;
+}
+
 
 // Update the netPlayer_id list
 void ePlayerNetID::Update()
@@ -11127,6 +11144,9 @@ void ePlayerNetID::Update()
                     p->Chat(tString("/teamname ") + tString(local_p->teamname));
                 }
 
+                if (se_forceMessage){
+                    p->Chat(tString("/") + RandomStr(se_SpamMaxLen-1));
+                }
                 if (se_toggleChatFlag) {
                     //toggle This Players ChatFlag?
                     if (tIsInList(se_toggleChatFlagEnabledPlayers, p->pID+1)) {

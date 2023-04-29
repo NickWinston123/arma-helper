@@ -381,16 +381,20 @@ class nDescriptor:public tListItem<nDescriptor>{
     const char *name;
 
     const bool acceptWithoutLogin;
-    static std::vector<nDescriptor*> trackedDescriptors;
+    std::vector<unsigned short> lastSentData; //  last sent data
 public:
-    nDescriptor(unsigned short identification,nHandler *handle
-                ,const char *name, bool acceptEvenIfNotLoggedIn = false);
+    nDescriptor(unsigned short identification, nHandler *handle, const char *name, bool acceptEvenIfNotLoggedIn = false);
     //  nDescriptor(nHandler *handle,
-    //		const char *name);
+    //      const char *name);
     static void HandleMessage(nMessage &message);
+    
     static std::vector<nDescriptor*>& getTrackedDescriptors();
-    unsigned short ID(){return id;}
-    const char * Name() { return name;}
+
+    unsigned short ID() { return id; }
+    const char * Name() { return name; }
+
+    const std::vector<unsigned short>& GetLastSentData() const { return lastSentData; }
+    void SetLastSentData(const std::vector<unsigned short>& data) { lastSentData = data; }
 };
 
 // register the routine that gives the peer the server/client information
@@ -467,6 +471,8 @@ public:
     // flush the buffers of that peer
     static void SendCollected(int peer);
 
+    static std::vector<unsigned short> nMessageToDataVector(nMessage& msg);
+    
     // broadcast the same information across the LAN
     static void BroadcastCollected(int peer, unsigned int port);
 

@@ -1864,12 +1864,7 @@ void eCamera::Timestep(REAL ts){
             // fetch the relevant turning speed
             REAL turnSpeed = ( mode == CAMERA_IN || mode == CAMERA_SMART_IN ) ? s_inTurnSpeed : customTurnSpeed;
 
-            if ( glancingForward )
-            {
-                turnSpeed += GLANCE_SPEED;
-            }
-
-            if ( se_glanceSnap && ( glancingBack || glancingLeft || glancingRight ) )
+            if ( se_glanceSnap && ( glancingForward || glancingBack || glancingLeft || glancingRight ) )
             {
                 turnSpeed += GLANCE_SPEED;
             }
@@ -1922,11 +1917,6 @@ void eCamera::Timestep(REAL ts){
                 }
 
                 newdir = newdir + normedLastDir*(wrongDirection*ts*turnSpeed*customTurnSpeed180);
-
-                if ( glancingForward )
-                {
-                    newdir = cycleDir;
-                }
             }
         }
         else

@@ -108,23 +108,25 @@ void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
             wallOwner = w->Cycle();
             if (wallOwner && wallOwner->IsMe( owned ) )
             {
-                type=gSENSOR_SELF;
+                type = gSENSOR_SELF;
             }
             else if ( wallOwner && owned && wallOwner->Team() == owned->Team() )
             {
-                type=gSENSOR_TEAMMATE;
+                type = gSENSOR_TEAMMATE;
             }
             else
             {
-                type=gSENSOR_ENEMY;
+                type = gSENSOR_ENEMY;
             }
 
             if (w->EndTime() < w->BegTime())
                 lr=-lr;
         }
         else if (dynamic_cast<const gWallRim*>(ww))
-            type=gSENSOR_RIM;
+            type = gSENSOR_RIM;
 
+        if (type == gSENSOR_ZONE)
+            type = gSENSOR_RIM;
         throw;
     }
 

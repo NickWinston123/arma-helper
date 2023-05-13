@@ -92,13 +92,17 @@ std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, eCoor
 std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor) {
     if (sg_helperSensorLightUsageMode && !newSensor)
     {
+        int winding = owner_->Grid()->DirectionWinding(owner_->Direction());
+
         switch (dir)
         {
-
             case LEFT:
             {
+                int left_winding = winding - 1;
+                eCoord left_dir = owner_->Grid()->GetDirection(left_winding);
+
                 if (sg_helperSensorDiagonalMode)
-                    left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), sin(M_PI/4))), true);
+                    left_stored->detect(sg_helperSensorRange, start, left_dir, true);
                 else
                     left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
 
@@ -106,13 +110,18 @@ std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, int d
             }
             case FRONT:
             {
-                front_stored->detect(sg_helperSensorRange, start, owner_->Direction(), true);
+                eCoord front_dir = owner_->Grid()->GetDirection(winding);
+
+                front_stored->detect(sg_helperSensorRange, start, front_dir, true);
                 return front_stored;
             }
             case RIGHT:
             {
+                int right_winding = winding + 1;
+                eCoord right_dir = owner_->Grid()->GetDirection(right_winding);
+
                 if (sg_helperSensorDiagonalMode)
-                    right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(-cos(M_PI/4), -sin(M_PI/4))), true);
+                    right_stored->detect(sg_helperSensorRange, start, right_dir, true);
                 else
                     right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
                 return right_stored;
@@ -121,25 +130,34 @@ std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, int d
     }
     else
     {
+        int winding = owner_->Grid()->DirectionWinding(owner_->Direction());
+
         std::shared_ptr<gHelperSensor> sensor;
         switch (dir)
         {
-
             case LEFT:
             {
-                sensor = std::make_shared<gHelperSensor>(owner_, start, owner_->Direction().Turn(eCoord(0, 1)));
+                int left_winding = winding - 1;
+                eCoord left_dir = owner_->Grid()->GetDirection(left_winding);
+
+                sensor = std::make_shared<gHelperSensor>(owner_, start, left_dir);
                 sensor->detect(sg_helperSensorRange, true);
                 return sensor;
             }
             case FRONT:
             {
-                sensor = std::make_shared<gHelperSensor>(owner_, start, owner_->Direction());
+                eCoord front_dir = owner_->Grid()->GetDirection(winding);
+
+                sensor = std::make_shared<gHelperSensor>(owner_, start, front_dir);
                 sensor->detect(sg_helperSensorRange, true);
                 return sensor;
             }
             case RIGHT:
             {
-                sensor = std::make_shared<gHelperSensor>(owner_, start, owner_->Direction().Turn(eCoord(0, -1)));
+                int right_winding = winding + 1;
+                eCoord right_dir = owner_->Grid()->GetDirection(right_winding);
+
+                sensor = std::make_shared<gHelperSensor>(owner_, start, right_dir);
                 sensor->detect(sg_helperSensorRange, true);
                 return sensor;
             }

@@ -45,6 +45,9 @@ static tConfItem<REAL> sg_helperZoneTracerBrightnessConf("HELPER_ZONE_TRACER_BRI
 REAL sg_helperZoneTracerHeight = 0;
 static tConfItem<REAL> sg_helperZoneTracerHeightConf("HELPER_ZONE_TRACER_HEIGHT", sg_helperZoneTracerHeight);
 
+REAL sg_zoneSensorRadiusBonus = 0;
+static tConfItem<REAL> sg_zoneSensorRadiusBonusConf("ZONE_SENSOR_RADIUS_BONUS", sg_zoneSensorRadiusBonus);
+
 }
 
 gHelperHudItem<tColoredString> zoneDebugH("Zone Debug", tColoredString("None"));
@@ -63,38 +66,48 @@ gZoneHelper::gZoneHelper(gHelper &helper, gCycle &owner)
 {}
 
 void gZoneHelper::zoneIntersects(gSensor *sensor) {
-    gZone *zone = findClosestZone(sensor->owner_);
-    if (!zone)
-        return;
-    eCoord sensorDirection = sensor->Direction();
-    eCoord zonePos = zone->Position();
-    REAL zoneRadius = zone->GetRadius();
-    eCoord toZone = zonePos - sensor->start_;
 
-    REAL projection = toZone.Dot(sensorDirection) / sensorDirection.Norm();
-    eCoord nearestPoint = sensor->start_ + sensorDirection.GetNormalized() * projection;
-    REAL distanceToCenter = (nearestPoint - zonePos).Norm();
+    for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
+    {
+        gZone *zone = *i;
+        if (!zone)
+            continue;
 
-    if (distanceToCenter > zoneRadius) {
-        return;
-    }
+        eCoord sensorDirection = sensor->Direction();
+        eCoord zonePos = zone->Position();
+        REAL zoneRadius = zone->GetRadius() + sg_zoneSensorRadiusBonus;
+        eCoord toZone = zonePos - sensor->start_;
 
-    // Calculate the intersection points between the sensor's movement path and the zone's circle
-    REAL length = sqrt(zoneRadius * zoneRadius - distanceToCenter * distanceToCenter);
-    eCoord directionToIntercept = sensorDirection.GetNormalized();
-    eCoord intercept1 = nearestPoint + directionToIntercept * length;
-    eCoord intercept2 = nearestPoint - directionToIntercept * length;
+        REAL projection = toZone.Dot(sensorDirection) / sensorDirection.Norm();
 
-    // Choose the intercept point that is closer to the sensor's starting point
-    eCoord intercept = (intercept1 - sensor->start_).Norm() < (intercept2 - sensor->start_).Norm() ? intercept1 : intercept2;
+        // Check if the zone is in the direction of the sensor's movement
+        if (projection < 0) 
+            continue;
 
-    REAL zoneHitDistance = (intercept - sensor->start_).Norm();
+        eCoord nearestPoint = sensor->start_ + sensorDirection.GetNormalized() * projection;
+        REAL distanceToCenter = (nearestPoint - zonePos).Norm();
 
-    // Update data if zone hit distance is less than initial hit
-    if (zoneHitDistance < sensor->hit) {
-        sensor->before_hit = intercept;
-        sensor->hit = zoneHitDistance;
-        sensor->type = gSENSOR_RIM;
+        if (distanceToCenter > zoneRadius) {
+            continue;
+        }
+
+        // Calculate the intersection points between the sensor's movement path and the zone's circle
+        REAL length = sqrt(zoneRadius * zoneRadius - distanceToCenter * distanceToCenter);
+        eCoord directionToIntercept = sensorDirection.GetNormalized();
+        eCoord intercept1 = nearestPoint + directionToIntercept * length;
+        eCoord intercept2 = nearestPoint - directionToIntercept * length;
+
+        // Choose the intercept point that is closer to the sensor's starting point
+        eCoord intercept = (intercept1 - sensor->start_).Norm() < (intercept2 - sensor->start_).Norm() ? intercept1 : intercept2;
+
+        REAL zoneHitDistance = (intercept - sensor->start_).Norm();
+
+        // Update data if zone hit distance is less than initial hit
+        if (zoneHitDistance < sensor->hit && zoneHitDistance >= 0) {
+            sensor->before_hit = intercept;
+            sensor->hit = zoneHitDistance;
+            sensor->type = gSENSOR_ZONE;
+        }
     }
 }
 

@@ -155,6 +155,7 @@ public:
     REAL sg_smarterBotTrapScale;
     REAL sg_smarterBotFollowScale;
     bool sg_smarterBotFollowBlockLogic;
+    bool sg_smarterBotFollowCheckLogic;
     REAL sg_smarterBotFollowPredictionTime;
     bool sg_smarterBotFollowTryLogic;
     bool sg_smarterBotFollowTryLogicOppositeTurn;
@@ -162,6 +163,7 @@ public:
     bool sg_smarterBotFollowFindZone;
     bool sg_smarterBotFollowTail;
     tString sg_smarterBotFollowTarget;
+    REAL sg_smarterBotFollowAlignedThresh;
     REAL sg_smarterBotPlanScale;
     REAL sg_smarterBotTailScale;
     REAL sg_smarterBotSpaceScale;
@@ -681,7 +683,7 @@ private:
 extern tList<ePlayerNetID> se_PlayerNetIDs;
 extern int    sr_viewportBelongsToPlayer[MAX_VIEWPORTS];
 
-void se_ChatState( ePlayerNetID::ChatFlags flag, bool cs);
+void se_ChatState( ePlayerNetID::ChatFlags flag, bool cs, ePlayerNetID *player = NULL);
 
 void se_SaveToScoreFile( tOutput const & out );  //!< writes something to scorelog.txt
 void se_SaveToChatLog( tOutput const & out );  //!< writes something to chatlog.txt (if enabled) and/or ladderlog
@@ -935,6 +937,11 @@ ePlayerNetID & ePlayerNetID::SetUserName( tString const & userName )
 ePlayerNetID *se_GetLocalPlayer();
 
 extern bool se_highlightMyName, se_tabCompletion, se_tabCompletionWithColors;
+
+
+static ePlayer * se_chatterPlanned=NULL;
+static ePlayer * se_chatter =NULL;
+static tString se_say;
 
 #endif
 

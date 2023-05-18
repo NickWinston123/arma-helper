@@ -805,6 +805,39 @@ bool gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
 }
 
 
+//! sensor picking up several walls between cycle and target
+class gTargetSensor:public gSensor
+{
+public:
+    int lastOwnLR; //!< the last LR value of a hit with an own wall
+    tCHECKED_PTR_CONST(eHalfEdge) lastOwnEHit; //!< the edge hit there
+
+    gTargetSensor(eGameObject *o,const eCoord &start,const eCoord &d)
+    :gSensor(o,start,d), lastOwnLR(0), lastOwnEHit(0) {}
+
+    virtual void PassEdge(const eWall *w, REAL time, REAL a, int i)
+    {
+        try
+        {
+            gSensor::PassEdge(w, time, a, i);
+        }
+        catch (eSensorFinished &e)
+        {
+            if (type == gSENSOR_SELF)
+            {
+                // copy the last own wall we see
+                lastOwnLR = lr;
+                lastOwnEHit = ehit;
+                ehit = 0;
+            }
+            else
+            {
+                throw;
+            }
+        }
+    }
+};
+
 
 //!@ param direction            direction to turn in
 //!@ param targetVelocity       velocity of the target
@@ -812,13 +845,40 @@ bool gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
 //!@ param data                 solution filled in
 void gAINavigator::FollowEvaluator::SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data )
 {
+    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
+
     eCoord velocityDifference = cycle_.Speed() * cycle_.Direction() - targetVelocity;
+
+    // Calculate the angle difference between the current and target direction
+    REAL angleDifference = acos((targetPosition * cycle_.Direction()) / (targetPosition.Norm() * cycle_.Direction().Norm()));
+
+    // if the angle difference is less than a certain threshold (5 degrees), go straight
+    if (local_p->sg_smarterBotFollowAlignedThresh > 0 && fabs(angleDifference) < local_p->sg_smarterBotFollowAlignedThresh * M_PI / 180.0) {
+        // Go straight
+        return;
+    }
 
     // get the velocity after the turn
     int winding = cycle_.WindingNumber();
     cycle_.Grid()->Turn( winding, direction );
-    data.turnDir = cycle_.Grid()->GetDirection( winding );
+    eCoord turnDir = cycle_.Grid()->GetDirection( winding );
+
+    if (local_p->sg_smarterBotFollowCheckLogic) {
+        // Check if there's enough free space to turn
+        gTargetSensor sensor(&cycle_, cycle_.Position(), turnDir);
+        sensor.detect(.99);
+        // con << "sensor.hit " << sensor.hit << "\n";
+        if ( sensor.hit < 0.2)
+        {
+            // If the path is blocked, return without making a turn
+            return;
+        }
+    }
+
+    // If the path is clear, proceed with the turn
+    data.turnDir = turnDir;
     eCoord turnVelocityDifference = data.turnDir * cycle_.Speed() * GetTurnSpeedFactor() - targetVelocity;
+
 
     // some little algebra to solve velocityDifference * turnTime + turnVelocityDifference * Quality == targetPosition
     REAL determinant = turnVelocityDifference * velocityDifference;
@@ -856,38 +916,6 @@ void gAINavigator::FollowEvaluator::SolveTurn( int direction, eCoord const & tar
     data.quality /= antiTurnDir.Norm();
 }
 
-//! sensor picking up several walls between cycle and target
-class gTargetSensor:public gSensor
-{
-public:
-    int lastOwnLR; //!< the last LR value of a hit with an own wall
-    tCHECKED_PTR_CONST(eHalfEdge) lastOwnEHit; //!< the edge hit there
-
-    gTargetSensor(eGameObject *o,const eCoord &start,const eCoord &d)
-    :gSensor(o,start,d), lastOwnLR(0), lastOwnEHit(0) {}
-
-    virtual void PassEdge(const eWall *w, REAL time, REAL a, int i)
-    {
-        try
-        {
-            gSensor::PassEdge(w, time, a, i);
-        }
-        catch (eSensorFinished &e)
-        {
-            if (type == gSENSOR_SELF)
-            {
-                // copy the last own wall we see
-                lastOwnLR = lr;
-                lastOwnEHit = ehit;
-                ehit = 0;
-            }
-            else
-            {
-                throw;
-            }
-        }
-    }
-};
 
 bool gAINavigator::FollowEvaluator::FindTarget()
 {
@@ -935,7 +963,8 @@ bool gAINavigator::FollowEvaluator::WallsInPath(const eCoord &start, const eCoor
 
 void gAINavigator::FollowEvaluator::TryTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data, int depth)
 {
-     ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
+    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
+
     if (depth >= MAX_SEARCH_DEPTH) {
         data.quality = 1e10;
         return;
@@ -1151,7 +1180,7 @@ void gAINavigator::EvaluationManager::Evaluate( PathEvaluator const & evaluator,
             bestDistance = path.distance;
         }
     }
-    
+
 //     if( bestPath_ < 0 )
 //     {
 //         // ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle);

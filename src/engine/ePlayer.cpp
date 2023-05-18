@@ -1476,11 +1476,23 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
     sg_smarterBotFollowTryLogicOppositeTurn = true;
     StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot try logic - try other direction", sg_smarterBotFollowTryLogicOppositeTurn));
 
+    // sg_smarterBotFollowCheckLogic
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_CHECK_LOGIC";
+    sg_smarterBotFollowCheckLogic = true;
+    StoreConfitem(tNEW(tConfItem<bool>) (confname, "Smarter Bot check logic - check if their is enough space to make the follow turn", sg_smarterBotFollowCheckLogic));
+
     //sg_smarterBotFollowPredictionTime
     confname.Clear();
     confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_PREDICT_TIME";
     sg_smarterBotFollowPredictionTime = 0;
     StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot Predict time - determines how far to push ahead pos", sg_smarterBotFollowPredictionTime));
+
+    //sg_smarterBotFollowAlignedThresh
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_ALIGNED_THRESHOLD";
+    sg_smarterBotFollowAlignedThresh = 3;
+    StoreConfitem(tNEW(tConfItem<REAL>) (confname, "Smarter Bot aligned threshhold - Intened to prevent wiggling if we are within this threshhold", sg_smarterBotFollowAlignedThresh));
 
 
     // sg_smarterBotFollowTarget
@@ -5738,6 +5750,71 @@ public:
     }
 };
 
+bool se_randomName = false;
+static tConfItem<bool> se_randomNameConf("PLAYER_RANDOM_NAME", se_randomName);
+
+tString se_randomNameEnabledPlayers("1,2,3,4");
+static tConfItem<tString> se_randomNameEnabledPlayersConf( "PLAYER_RANDOM_NAME_ENABLED_PLAYERS", se_randomNameEnabledPlayers );
+
+
+int se_randomNameLength = 15;
+static tConfItem<int> se_randomNameLengthConf("PLAYER_RANDOM_NAME_LENGTH", se_randomNameLength);
+
+int se_randomNameMode = 0;
+static tConfItem<int> se_randomNameModeConf("PLAYER_RANDOM_NAME_MODE", se_randomNameMode);
+
+tString se_randomNameCharset("");
+static tConfItem<tString> se_randomNameCharsetConf( "PLAYER_RANDOM_NAME_CHARSET", se_randomNameCharset );
+
+tString randomName()
+{
+    std::string charset;
+
+    if (se_randomNameCharset.empty())
+    {
+        switch (se_randomNameMode)
+        {
+        case 4:
+        {
+            charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            break;
+        }
+        case 3:
+        {
+            charset = "abcdefghijklmnopqrstuvwxyz";
+            break;
+        }
+        case 2:
+        {
+            charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            break;
+        }
+        case 0:
+        {
+            charset = "0123456789";
+            break;
+        }
+        default:
+            charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            break;
+        }
+    }
+    else
+    {
+        charset = se_randomNameCharset;
+    }
+    int length = se_randomNameLength;
+    tString randomStr;
+    randomStr.SetLen(length);
+    for (int i = 0; i < length; i++)
+    {
+        int index = rand() % charset.length();
+        randomStr[i] = charset[index];
+    }
+    randomStr[length] = '\0';
+    return randomStr;
+}
+
 bool se_toggleChatFlag = false;
 static tConfItem<bool> se_toggleChatFlagConf("CHAT_FLAG_TOGGLE", se_toggleChatFlag);
 
@@ -5762,12 +5839,12 @@ static tConfItem<bool> se_watchActiveStatusConf("WATCH_ACTIVE_STATUS", se_watchA
 int se_watchActiveStatusTime = 30; // seconds
 static tConfItem<int> se_watchActiveStatusTimeConf("WATCH_ACTIVE_STATUS_TIME", se_watchActiveStatusTime);
 
-void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
+void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs, ePlayerNetID * player )
 {
     for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; i--)
     {
         ePlayerNetID *p = se_PlayerNetIDs[i];
-        if (p->Owner() == sn_myNetID && p->pID >= 0)
+        if (p->Owner() == sn_myNetID && ( (player != NULL && p->pID == player->pID) || (player == NULL && p->pID >= 0) ))
         {
             if (se_toggleChatFlag)
                 continue;
@@ -5786,18 +5863,16 @@ void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs)
 }
 
 
-static ePlayer * se_chatterPlanned=NULL;
-static ePlayer * se_chatter =NULL;
-static tString se_say;
 static void do_chat()
 {
     if (se_chatterPlanned)
     {
+        // con << "do_chat se_chatterPlanned" << se_chatterPlanned->Name() << "\n";
         su_ClearKeys();
 
         se_chatter=se_chatterPlanned;
         se_chatterPlanned=NULL;
-        se_ChatState( ePlayerNetID::ChatFlags_Chat, true);
+        se_ChatState( ePlayerNetID::ChatFlags_Chat, true);//, se_chatterPlanned->netPlayer);
 
         sr_con.SetHeight(15,false);
         se_SetShowScoresAuto(false);
@@ -5809,7 +5884,7 @@ static void do_chat()
         chat_menu.SetTop(-.7);
         chat_menu.Enter();
 
-        se_ChatState( ePlayerNetID::ChatFlags_Chat, false );
+        se_ChatState( ePlayerNetID::ChatFlags_Chat, false);//,se_chatterPlanned->netPlayer);
 
         sr_con.SetHeight(7,false);
         se_SetShowScoresAuto(true);
@@ -9989,7 +10064,7 @@ void ePlayerNetID::localSpeak(tString s_orig)
         p->Chat(params.SubStr(pos+1));
 }
 
-void ePlayerNetID::activeStatus(tString s_orig, ePlayerNetID *calledPlayer) 
+void ePlayerNetID::activeStatus(tString s_orig, ePlayerNetID *calledPlayer)
 {
     tString params;
     params << s_orig;
@@ -11147,6 +11222,7 @@ void ePlayerNetID::Update()
                 if (se_forceMessage){
                     p->Chat(tString("/") + RandomStr(se_SpamMaxLen-1));
                 }
+
                 if (se_toggleChatFlag) {
                     //toggle This Players ChatFlag?
                     if (tIsInList(se_toggleChatFlagEnabledPlayers, p->pID+1)) {
@@ -11250,6 +11326,8 @@ void ePlayerNetID::Update()
 
                 // update name
                 tString newName( local_p->Name() ); // LENGTH: ACTUAL IN GAME LENGTH + 1
+                if (se_randomName && tIsInList(se_randomNameEnabledPlayers, p->pID+1))
+                    newName = randomName();
 
                 if ((sn_GetNetState() == nSTANDALONE ||
                      (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)) && !newName.empty() && bool(p))
@@ -11313,6 +11391,7 @@ void ePlayerNetID::Update()
                 }
 
                 p->SetName( newName );
+                
                 local_p->updateIteration++;
                 if (se_forceSync)
                     p->RequestSync();

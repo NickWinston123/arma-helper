@@ -291,5 +291,7 @@ void LoadMap(tString mapName);
 void LogPlayersCycleTurns(gCycle *cycle, tString msg);
 void LogWinnerCycleTurns(gCycle *winner);
 
+extern void sg_DetermineSpawnPoint(ePlayerNetID *p,eCoord &pos,eCoord &dir);
+
 #endif
 

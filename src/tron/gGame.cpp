@@ -4358,6 +4358,8 @@ static tConfItem<bool> sg_localRespawnConf("LOCAL_RESPAWN",sg_localRespawn);
 #define RESPAWN_HACK
 
 #ifdef RESPAWN_HACK
+
+
 // Respawns cycles (crude test)
 static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
 {
@@ -4372,20 +4374,8 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
         if (!p) {
             return;
         }
-
-        eGameObject *e = p->Object();
-        //e checks if player is an actual game object ( spectaters are not )
-        if (((!e) || (e && !e->Alive())) && (p)) {
-            eCoord pos, dir;
-            sg_DetermineSpawnPoint(p,pos,dir);
-            gCycle * cycle = new gCycle( grid, pos, dir, p );
-            if (!cycle)
-                return;
-            p->ControlObject(cycle);
-            p->respawnedLocally = true;
-        }
-
-        return;
+       
+       p->RespawnPlayer();
     }
 
     for ( int i = se_PlayerNetIDs.Len()-1; i >= 0; --i )
@@ -4427,6 +4417,7 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
     }
 }
 #endif
+
 
 #ifdef RESPAWN_HACK
 // Respawns all cycles (crude test)

@@ -4993,6 +4993,9 @@ static tConfItem<int> se_nameSpeakIntervalConf("LOCAL_CHAT_COMMAND_NAMESPEAK_INT
 static bool se_nameSpeakSplitByNameSize = false;
 static tConfItem<bool> se_nameSpeakSplitByNameSizeConf("LOCAL_CHAT_COMMAND_NAMESPEAK_SPLIT_BY_NAME_SIZE", se_nameSpeakSplitByNameSize);
 
+static tString se_resCommand("/res");
+static tConfItem<tString> se_resCommandConf("LOCAL_CHAT_COMMAND_RESPAWN", se_resCommand);
+
 #endif //if not dedicated
 
 void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString s_orig)
@@ -5003,7 +5006,7 @@ void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString s_orig)
     tString command;
 
     passedString >> command;
-    // con << "inside LocalChatCommands, command: " << command << "s_orig: " << s_orig << "\n";
+
     if (p != NULL)
     {
         // Short handle for grabbing player information.
@@ -5050,11 +5053,6 @@ void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString s_orig)
         {
             activeStatus(s_orig,p);
         }
-/*
-    }
-    else
-    { // DO NOT REQUIRE PLAYER TO USE
-    */
         // check for direct console commands
         if (command == se_consoleCommand)
         {
@@ -5098,7 +5096,25 @@ void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString s_orig)
         {
             nameSpeakCommand(s_orig);
         }
+        else if (command == se_resCommand)
+        {
+            p->RespawnPlayer();
+        }
 
+    }
+}
+void ePlayerNetID::RespawnPlayer()
+{
+    gCycle *cycle = dynamic_cast<gCycle *>(Object());
+    if ((!cycle || !cycle->Alive()))
+    {
+        eCoord pos, dir;
+        sg_DetermineSpawnPoint(this, pos, dir);
+        gCycle *cycle = new gCycle(eGrid::CurrentGrid(), pos, dir, this);
+        if (!cycle)
+            return;
+        ControlObject(cycle);
+        respawnedLocally = true;
     }
 }
 
@@ -5125,7 +5141,8 @@ void ePlayerNetID::Chat(const tString& s_orig)
         se_spectateCommand,
         se_joinCommand,
         se_searchCommand,
-        se_nameSpeak
+        se_nameSpeak,
+        se_resCommand
     };
 
     std::string chatString(s_orig);
@@ -11391,7 +11408,7 @@ void ePlayerNetID::Update()
                 }
 
                 p->SetName( newName );
-                
+
                 local_p->updateIteration++;
                 if (se_forceSync)
                     p->RequestSync();

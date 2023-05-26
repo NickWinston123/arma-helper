@@ -64,6 +64,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 #include <climits>
 
+
 // /rgb
 #include "eFloor.h"
 
@@ -73,6 +74,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../tron/gRotation.h"
 #include "eBannedWords.h"
 #include "../tron/gServerBrowser.h"
+
+#include "../tron/gSpawn.h"
 
 int se_lastSaidMaxEntries = 8;
 
@@ -5103,13 +5106,26 @@ void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString s_orig)
 
     }
 }
-void ePlayerNetID::RespawnPlayer()
+void ePlayerNetID::RespawnPlayer(bool local)
 {
     gCycle *cycle = dynamic_cast<gCycle *>(Object());
     if ((!cycle || !cycle->Alive()))
     {
         eCoord pos, dir;
-        sg_DetermineSpawnPoint(this, pos, dir);
+
+        if (local)
+        {
+            gSpawnPoint *spawn = Arena.LeastDangerousSpawnPoint();
+            spawn->Spawn(pos, dir);
+
+            if (CurrentTeam() && !CurrentTeam()->SpawnPoint())
+                CurrentTeam()->SetSpawnPoint(spawn);
+        }
+        else
+        {
+            sg_DetermineSpawnPoint(this, pos, dir);
+        }
+
         gCycle *cycle = new gCycle(eGrid::CurrentGrid(), pos, dir, this);
         if (!cycle)
             return;

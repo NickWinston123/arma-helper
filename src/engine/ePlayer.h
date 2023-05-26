@@ -374,7 +374,7 @@ public:
         ChatFlags_Console = 8
     };
 
-    void RespawnPlayer();
+    void RespawnPlayer( bool local = false);
     bool flagOverrideChat;
     bool flagChatState;
 

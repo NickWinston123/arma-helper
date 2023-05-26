@@ -4378,7 +4378,7 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
             ePlayerNetID * np = p->netPlayer;
             if ( !np )
                 continue;
-            np->RespawnPlayer();
+            np->RespawnPlayer(true);
         }
         return;
     }

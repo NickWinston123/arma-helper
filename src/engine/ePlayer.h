@@ -513,6 +513,7 @@ public:
     eNetGameObject *Object() const;
 
     void RequestSync(bool ack=true);
+    void RequestSyncForce(bool ack=true);
 
     //void SetRubber(ePlayerNetID *player, REAL rubber);
     void AddScore(int points);

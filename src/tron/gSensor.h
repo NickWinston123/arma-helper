@@ -53,6 +53,6 @@ public:
     const tList<eGameObject>& gameObjects;
     virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
     void detect(REAL range, const eCoord &newPos, const eCoord &newDir, bool render = false);
-    void detect(REAL range, bool render = false);
+    void detect(REAL range, bool render = true);
 };
 #endif

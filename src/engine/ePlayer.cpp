@@ -11128,7 +11128,7 @@ bool shouldUpdateLastName(int rgb[3]) {
 
 tString RandomStr(int maxLength) {
     const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    int length = rand() % maxLength + 1;
+    int length = maxLength + 1;
     tString randomStr;
     randomStr.SetLen(length);
     for (int i = 0; i < length; i++) {
@@ -11212,12 +11212,13 @@ void ePlayerNetID::Update()
                     p->Owner() == ::sn_myNetID )
             {
                 p->RemoveFromGame();
-
+                p->RequestSyncForce();
                 if (p->object)
                     p->object->player = NULL;
 
                 p->object = NULL;
                 p = NULL;
+
             }
 
 
@@ -14899,10 +14900,14 @@ static void sg_ListChatters(std::istream &s)
 static tConfItemFunc sg_ListChatters_conf("CHATTERS_LIST", &sg_ListChatters);
 static tAccessLevelSetter sg_ListChatters_confLevel( sg_ListChatters_conf, tAccessLevel_Moderator );
 
-void ePlayerNetID::RequestSync(bool ack){
-
-    if (se_disableCreate || tIsInList(se_disableCreateSpecific,pID+1)) {
+void ePlayerNetID::RequestSyncForce(bool ack)
+{
+    nNetObject::RequestSync(ack);
+}
+void ePlayerNetID::RequestSync(bool ack)
+{
+    if (se_disableCreate || tIsInList(se_disableCreateSpecific, pID + 1))
         return;
-    }
+
     nNetObject::RequestSync(ack);
 }

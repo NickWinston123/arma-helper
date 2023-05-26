@@ -384,6 +384,7 @@ private:
         bool   blockedBySelf_; //!< flag indicating the path is blocked by the cycle itself
         eCoord toTarget_;      //!< direction to target, roughly normalized
         REAL   turnTime_;      //!< time to make the next turn
+        eCoord smoothedDirection = eCoord(0, 0);
     };
 
 

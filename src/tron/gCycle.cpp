@@ -515,6 +515,9 @@ static tConfItem<REAL> sg_lastTimeHackMultConf( "LAST_TIME_HACK_ADD", sg_lastTim
 static bool sg_localBot = false;
 static tConfItem<bool> sg_localBotConf( "LOCAL_BOT", sg_localBot );
 
+static bool sg_localBotEnabledWhileChatting = true;
+static tConfItem<bool> sg_localBotEnabledWhileChattingConf( "LOCAL_BOT_ENABLED_WHILE_CHATTING", sg_localBotEnabledWhileChatting );
+
 tString sg_localBotEnableForPlayers("1,2,3,4");
 static tConfItem<tString> sg_localBotEnableForPlayersConf( "LOCAL_BOT_ENABLED_PLAYERS", sg_localBotEnableForPlayers );
 
@@ -625,9 +628,12 @@ class Sensor: public gSensor
             // move towards the beginning of a wall
             lrSuggestion_ = -lr;
 
+            // con << "type: " << type << "\n";
             switch ( type )
             {
             case gSENSOR_NONE:
+            case gSENSOR_ZONE:
+                // con << "ZONE!\n";
             case gSENSOR_RIM:
                 lrSuggestion_ = 0;
                 return true;
@@ -1003,7 +1009,7 @@ class Sensor: public gSensor
             self.lr = 1;
             REAL rearRightOpen = Distance( backwardRight, self );
 
-            if (sg_localBot) {
+            if (localBot) {
                 // override: don't camp (too much)
                 if ( forwardRight.type == gSENSOR_SELF &&
                         forwardLeft.type == gSENSOR_SELF &&
@@ -1125,7 +1131,7 @@ class Sensor: public gSensor
 
             // hit the brakes before you hit anything and if it's worth it
             bool brake = false;
-            if (!localBot || !sg_localBotBrake)
+            if (!localBot || localBot && sg_localBotBrake)
                 brake = sg_brakeCycle > 0 &&
                             front.hit * lookahead * sg_cycleBrakeDeplete < owner_->GetBrakingReservoir() &&
                             sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_->GetBrakingReservoir() &&
@@ -1247,7 +1253,8 @@ class Sensor: public gSensor
             }
 
             // execute brake command
-            owner_->ActBot( &gCycle::s_brake, brake ? 1 : -1 );
+            if (!localBot || localBot && sg_localBotBrake)
+                owner_->ActBot( &gCycle::s_brake, brake ? 1 : -1 );
 
         }
 
@@ -3044,7 +3051,7 @@ bool gCycle::Timestep(REAL currentTime){
                                                tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
 
         bool activateLocalBotForThisPlayer = !activateSmarterBotForThisPlayer && bool(player) && sg_localBot &&
-                                             (sg_localBotAlwaysActive || player->IsChatting()) &&
+                                             ( sg_localBotAlwaysActive || (sg_localBotEnabledWhileChatting && player->IsChatting()) ) &&
                                              tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
 
         bool activateChatbotForThisPlayer = !activateLocalBotForThisPlayer &&
@@ -3072,6 +3079,7 @@ bool gCycle::Timestep(REAL currentTime){
             gSmarterBot &smarterBot = gSmarterBot::Get(this);
             smarterBot.Activate(currentTime);
         }
+
         bool simulate=Alive();
 
         if ( !pendingTurns.empty() || currentDestination )
@@ -3663,16 +3671,23 @@ void gCycle::KillAt( const eCoord& deathPos){
     if ( !Alive() || sn_GetNetState()==nCLIENT && Owner() != sn_myNetID )
         return;
 
-    if( sn_GetNetState() == nCLIENT )
+if( sn_GetNetState() == nCLIENT )
+{
+    if( sg_localDeath && !ID() )
     {
-        if( sg_localDeath && !ID() )
-        {
-            Die( lastTime );
-            tNEW(gExplosion)(grid, pos,lastTime, color_, this );
+        Die( lastTime );
+        tNEW(gExplosion)(grid, pos,lastTime, color_, this );
+
+        if (Player()) {
             con << *Player() << "0xffffff died.\n";
+        } else {
+            con << "Unknown player died.\n";
         }
+
         return;
     }
+}
+
 #ifdef KRAWALL_SERVER_LEAGUE
     if (    hunter           && Player()          &&
             !dynamic_cast<gAIPlayer*>(hunter)     &&

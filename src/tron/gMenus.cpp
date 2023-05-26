@@ -827,9 +827,15 @@ static tConfItem<REAL> sgy("HUD_SPEED_GAUGE_LOCY",subby_SpeedGaugeLocY);
 
 static tConfItem<bool> wt("HUD_WALL_TIME",hud_WallTime);
 static tConfItem<bool> wtl("HUD_WALL_TIME_LABEL",hud_WallTimeLabel);
+static tConfItem<bool> wtsa("HUD_WALL_TIME_SHOW_FOR_INFINITE",hud_WallTimeShowForInfinite);
 static tConfItem<REAL> wts("HUD_WALL_TIME_SIZE",hud_WallTimeSize);
 static tConfItem<REAL> wtx("HUD_WALL_TIME_LOCX",hud_WallTimeLocX);
 static tConfItem<REAL> wty("HUD_WALL_TIME_LOCY",hud_WallTimeLocY);
+
+static tConfItem<bool> interact("HUD_INTERACT",hud_showInteract);
+static tConfItem<REAL> interactx("HUD_INTERACT_LOCX",hud_InteractLocX);
+static tConfItem<REAL> interacty("HUD_INTERACT_LOCY",hud_InteractLocY);
+static tConfItem<REAL> interacts("HUD_INTERACT_SIZE",hud_InteractSize);
 
 
 static tConfItem<REAL> bgs("HUD_BRAKE_GAUGE_SIZE",subby_BrakeGaugeSize);
@@ -840,7 +846,7 @@ static tConfItem<REAL> rgs("HUD_RUBBER_GAUGE_SIZE",subby_RubberGaugeSize);
 static tConfItem<REAL> rgx("HUD_RUBBER_GAUGE_LOCX",subby_RubberGaugeLocX);
 static tConfItem<REAL> rgy("HUD_RUBBER_GAUGE_LOCY",subby_RubberGaugeLocY);
 
-static tConfItem<bool> showh("HUD_SHOW",subby_ShowHUD);
+static tConfItem<bool> showh("HUD",subby_ShowHUD);
 static tConfItem<bool> showf("HUD_SHOW_FASTEST",subby_ShowSpeedFastest);
 static tConfItem<bool> shows("HUD_SHOW_SCORE",subby_ShowScore);
 static tConfItem<bool> showae("HUD_SHOW_ALIVE",subby_ShowAlivePeople);

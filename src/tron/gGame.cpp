@@ -4368,14 +4368,19 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
         return;
     }
 
-    if (sg_localRespawn && (sn_GetNetState() == nCLIENT )) {
-
-        ePlayerNetID *p = se_GetLocalPlayer();
-        if (!p) {
-            return;
+    if (sg_localRespawn && (sn_GetNetState() == nCLIENT )) 
+    {
+        for (int pi = MAX_PLAYERS-1; pi >= 0; --pi )
+        {
+            ePlayer * p = ePlayer::PlayerConfig(pi);
+            if ( !p )
+                continue;
+            ePlayerNetID * np = p->netPlayer;
+            if ( !np )
+                continue;
+            np->RespawnPlayer();
         }
-       
-       p->RespawnPlayer();
+        return;
     }
 
     for ( int i = se_PlayerNetIDs.Len()-1; i >= 0; --i )

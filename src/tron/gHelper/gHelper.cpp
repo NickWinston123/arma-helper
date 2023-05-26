@@ -842,16 +842,19 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     if (open)
     {
         gHelperUtility::debugLine(tColor(0, 1, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
+        gHelperUtility::debugLine(tColor(0, 1, 0), sg_showHitDataHeightSides, timeout, hitPos, hitPos,sg_showHitDataBrightness);
     }
     //Gray line - special case when enemy cant cut us and we cant cut them
     else if (other)
     {
         gHelperUtility::debugLine(tColor(.4, .4, .4), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
+        gHelperUtility::debugLine(tColor(.4, .4, .4), sg_showHitDataHeightSides, timeout, hitPos, hitPos,sg_showHitDataBrightness);
     }
     // Draw a red line if the hit distance is smaller than the specified value, indicating an obstacle in the way.
     else
     {
         gHelperUtility::debugLine(tColor(1, 0, 0), sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
+        gHelperUtility::debugLine(tColor(1, 0, 0), sg_showHitDataHeightSides, timeout, hitPos, hitPos,sg_showHitDataBrightness);
     }
 
     // Recursively call the function to visualize multiple sensor hits.

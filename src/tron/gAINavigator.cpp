@@ -943,8 +943,15 @@ bool gAINavigator::FollowEvaluator::targetZone()
 
 void gAINavigator::FollowEvaluator::SetTarget( eGameObject * object )
 {
+    // // The dampening factor
+    // const REAL dampeningFactor = 0.9;  
+
+    // // The desired direction, dampened
+    // eCoord desiredDirection = object->Direction();
+    // smoothedDirection = smoothedDirection * dampeningFactor + desiredDirection * (1 - dampeningFactor);
+    smoothedDirection = object->Direction();
     SetTarget(object->Position(),
-              object->Direction() * (object->Speed())); // + object->Lag()
+              smoothedDirection * (object->Speed())); // + object->Lag()
 }
 
 static const int MAX_SEARCH_DEPTH = 3;

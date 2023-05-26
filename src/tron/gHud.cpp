@@ -54,7 +54,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-bool hud_WallTime = true, hud_WallTimeLabel = true;
+bool hud_WallTime = true, hud_WallTimeLabel = true, hud_WallTimeShowForInfinite = true;
 REAL hud_WallTimeLocX = 0.90, hud_WallTimeLocY =-0.9 , hud_WallTimeSize =.13;
 REAL subby_SpeedGaugeSize=.175, subby_SpeedGaugeLocX=0.0, subby_SpeedGaugeLocY=-0.9;
 REAL subby_BrakeGaugeSize=.175, subby_BrakeGaugeLocX=0.48, subby_BrakeGaugeLocY=-0.9;
@@ -470,20 +470,22 @@ static void display_hud_subby( ePlayer* player ){
 
                                 if (sensor.ehit && sensor.wallOwner && sensor.wallOwner != owner_)
                                 {
-                                    tString message;
                                     REAL remainingTime = gCycle::timeBeforeWallRemoval(sensor.wallOwner);
+                                    if (hud_WallTimeShowForInfinite || remainingTime > 0 )
+                                    {
+                                        tString message;
+                                        if (hud_WallTimeLabel)
+                                            message << "0xbf9d50Wall Time: ";
 
-                                    if (hud_WallTimeLabel)
-                                        message << "0xbf9d50Wall Time: ";
+                                        message << "0xffffff" << customRound(remainingTime, 2);
 
-                                    message << "0xffffff" << customRound(remainingTime,2);
+                                        rTextField wallTime(hud_WallTimeLocX - ((.15 * hud_WallTimeSize * (message.Len() - 1.5)) / 2.0),
+                                                            hud_WallTimeLocY,
+                                                            .15 * hud_WallTimeSize,
+                                                            .3 * hud_WallTimeSize);
 
-                                    rTextField wallTime(hud_WallTimeLocX - ((.15 * hud_WallTimeSize * (message.Len() - 1.5)) / 2.0),
-                                                        hud_WallTimeLocY, 
-                                                        .15 * hud_WallTimeSize, 
-                                                        .3 * hud_WallTimeSize);
-
-                                    wallTime << message;
+                                        wallTime << message;
+                                    }
                                 }
                             }
                         }
@@ -516,53 +518,34 @@ static void display_hud_subby( ePlayer* player ){
 
                         if( hud_showInteract )
                         {
-                            static float lastTimes[MAX_PLAYERS] = {0};
-                            float & lastTime = lastTimes[player->ID()];
+                            static gTextCache<tString, tString> cacheArray[MAX_PLAYERS];
+                            gTextCache<tString, tString> & cache = cacheArray[player->ID()];
 
-                            static tColoredString messageColor("0x58bf90");
-
-                            static tColoredString messages[MAX_PLAYERS];
-                            tColoredString & message = messages[player->ID()];
-
-                            //static rDisplayList dispList;
-
-                            if( se_GameTime() > 0 && ( tSysTimeFloat() - lastTime ) > 0.2 )
-                            {
-                                message.Clear();
-
-                                //dispList.Clear();
-
-                                //rDisplayListFiller filler( dispList );
-
-                                lastTime = tSysTimeFloat();
-
-
-                                auto hunter = h->GetPlayerHuntedBy();
-
-
-
-                                /*tColoredString message,messageColor;
-                                messageColor << "0xbf9d50";*/
-
-                                sprintf(fasteststring,"%.1f",max);
-                                message << "  Interact: ";
-                                if( hunter )
-                                {
-                                    message << hunter->GetName();
-                                    message.RemoveHex();
-                                }
-                                else
-                                {
-                                    message << "0x808080<SUICIDE>";
-                                }
+                            static tString lastHunter;
+                            tString hunterName;
+                            if(h->GetPlayerHuntedBy()) {
+                                hunterName = h->GetPlayerHuntedBy()->GetName();
+                            } else {
+                                hunterName = "0x808080<SUICIDE>";
                             }
 
-                            float size = hud_InteractSize;
-                            int length = message.Len();
+                            if ( !cache.Call( hunterName, lastHunter ) )
+                            {
+                                rDisplayListFiller filler( cache.list_ );
 
-                            rTextField meter(hud_InteractLocX-((.15*size*(length-1.5))/2.0),hud_InteractLocY,.15*size,.3*size);
-                            meter << messageColor << message;
+                                static tColoredString messageColor("0x58bf90");
+
+                                tColoredString message;
+                                message << "  Interact: " << hunterName;
+
+                                float size = hud_InteractSize;
+                                int length = message.Len();
+
+                                rTextField meter(hud_InteractLocX-((.15*size*(length-1.5))/2.0),hud_InteractLocY,.15*size,.3*size);
+                                meter << messageColor << message;
+                            }
                         }
+
                         // */
 
                         if(subby_ShowScore){

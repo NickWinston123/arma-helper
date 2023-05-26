@@ -66,7 +66,7 @@ private:
 
 };
 
-extern bool hud_WallTime, hud_WallTimeLabel;
+extern bool hud_WallTime, hud_WallTimeLabel, hud_WallTimeShowForInfinite;
 extern REAL hud_WallTimeLocX, hud_WallTimeLocY, hud_WallTimeSize;
 extern REAL subby_SpeedGaugeSize, subby_SpeedGaugeLocX, subby_SpeedGaugeLocY;
 extern REAL subby_BrakeGaugeSize, subby_BrakeGaugeLocX, subby_BrakeGaugeLocY;
@@ -79,5 +79,7 @@ extern REAL subby_PingLocX, subby_PingLocY, subby_PingSize;
 extern bool hudShowTime;
 extern bool hudShowTime24hour;
 extern bool showPosition;
+extern bool hud_showInteract;
+extern REAL hud_InteractLocX, hud_InteractLocY, hud_InteractSize;
 extern REAL subby_CoordLocX, subby_CoordLoxY, subby_CoordSize;
 #endif

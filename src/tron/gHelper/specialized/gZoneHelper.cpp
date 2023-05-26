@@ -78,13 +78,13 @@ void gZoneHelper::zoneIntersects(gSensor *sensor) {
         REAL zoneRadius = zone->GetRadius() + sg_zoneSensorRadiusBonus;
         eCoord toZone = zonePos - sensor->start_;
 
-        REAL projection = toZone.Dot(sensorDirection) / sensorDirection.Norm();
+        REAL projection = toZone.Dot(sensorDirection);
 
         // Check if the zone is in the direction of the sensor's movement
         if (projection < 0) 
             continue;
 
-        eCoord nearestPoint = sensor->start_ + sensorDirection.GetNormalized() * projection;
+        eCoord nearestPoint = sensor->start_ + sensorDirection.GetNormalized() * (projection / sensorDirection.Norm());
         REAL distanceToCenter = (nearestPoint - zonePos).Norm();
 
         if (distanceToCenter > zoneRadius) {

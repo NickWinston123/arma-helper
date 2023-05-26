@@ -100,6 +100,14 @@ void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
     {
         if (sg_gSensorsZoneDetection) {
             gZoneHelper::zoneIntersects(this);
+
+        if (type == gSENSOR_ZONE) {
+            type == gSENSOR_ENEMY
+            // con << "found zone..\n";
+            // type = gSENSOR_RIM;
+            throw;
+        }
+
         }
 
         const gPlayerWall *w=dynamic_cast<const gPlayerWall*>(ww);
@@ -125,8 +133,7 @@ void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
         else if (dynamic_cast<const gWallRim*>(ww))
             type = gSENSOR_RIM;
 
-        if (type == gSENSOR_ZONE)
-            type = gSENSOR_RIM;
+            
         throw;
     }
 

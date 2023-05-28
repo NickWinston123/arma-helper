@@ -469,7 +469,7 @@ public:
 
 
     void RemoveFromGame();
-    void ControlObject(eNetGameObject *c);
+    void ControlObject(eNetGameObject *c, bool local = false);
     void ClearObject();
     void ClearRespawn();
 

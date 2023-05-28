@@ -5129,8 +5129,9 @@ void ePlayerNetID::RespawnPlayer(bool local)
         gCycle *cycle = new gCycle(eGrid::CurrentGrid(), pos, dir, this);
         if (!cycle)
             return;
-        ControlObject(cycle);
-        respawnedLocally = true;
+            
+        ControlObject(cycle,local);
+        cycle->updateColor();
     }
 }
 
@@ -8370,12 +8371,13 @@ nDescriptor &ePlayerNetID::CreatorDescriptor() const
 
 
 
-void ePlayerNetID::ControlObject(eNetGameObject *c)
+void ePlayerNetID::ControlObject(eNetGameObject *c, bool local)
 {
     if (!c)
     {
         return;
     }
+
 
     if (bool(object) && c!=object)
         ClearObject();
@@ -8388,7 +8390,7 @@ void ePlayerNetID::ControlObject(eNetGameObject *c)
 #ifdef DEBUG
     //con << "Player " << name << " controlles new object.\n";
 #endif
-
+    respawnedLocally = local;
     NewObject();
 }
 
@@ -8944,7 +8946,7 @@ tString ePlayerNetID::Ranking( int MAX, bool cut )
             line.SetPos(2, cut);
             line << *p << tColoredString::ColorString(-1,-1,-1);
             line.SetPos(19, false );
-            if ( p->Object() && p->Object()->Alive() )
+            if ( p->Object() && p->Object()->Alive() && !p->respawnedLocally )
             {
                 line << tColoredString::ColorString(0,1,0) << tOutput("$player_scoretable_alive_yes") << tColoredString::ColorString(-1,-1,-1);
             }

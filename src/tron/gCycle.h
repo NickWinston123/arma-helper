@@ -341,8 +341,6 @@ private:
 
     void MyInitAfterCreation();
 
-    void updateColor();
-
     void SetCurrentWall(gNetPlayerWall *w);
 
     void PreparePredictPosition( gPredictPositionData & data ); //!< prepares CalculatePredictPosition() call, requesting a raycast to the front
@@ -356,6 +354,7 @@ protected:
 
     // virtual REAL            DoGetDistanceSinceLastTurn  (                               ) const     ;   //!< returns the distance since the last turn
 public:
+    void updateColor();
     virtual void Die ( REAL time )  ;  //!< dies at the specified time
     void KillAt( const eCoord& pos );  //!< kill this cycle at the given position and take care of scoring
     tString deathReason_;

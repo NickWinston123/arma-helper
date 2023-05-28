@@ -126,6 +126,10 @@ tConsole & rConsole::DoPrint(const tString &s){
             if ( tDirectories::Var().Open(o, "consolelog.txt", std::ios::app) ) {
                 o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
             }
+
+            // if ( tDirectories::Var().Open(o, "consolelog-recent.txt", std::ios::app) ) {
+            //     o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
+            // }
     }
     
     if(!tRecorder::IsPlayingBack() && sr_consoleLogColor) {

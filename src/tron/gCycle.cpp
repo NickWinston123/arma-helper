@@ -216,17 +216,14 @@ static REAL sg_GetSyncIntervalSelf( gCycle* cycle )
 bool sr_filterCycleWalls = false;
 static tConfItem< bool > sr_filterCycleWallsConf( "FILTER_CYCLE_WALLS", sr_filterCycleWalls );
 
-// REAL sr_filterCycleWallsMinR = 0;
-// static tConfItem<REAL> sr_filterCycleWallsMinRConf("FILTER_CYCLE_WALLS_MIN_R", sr_filterCycleWallsMinR);
-
-// REAL sr_filterCycleWallsMinG = 0;
-// static tConfItem<REAL> sr_filterCycleWallsMinGConf("FILTER_CYCLE_WALLS_MIN_G", sr_filterCycleWallsMinG);
-
-// REAL sr_filterCycleWallsMinB = 0;
-// static tConfItem<REAL> sr_filterCycleWallsMinBConf("FILTER_CYCLE_WALLS_MIN_B", sr_filterCycleWallsMinB);
-
 REAL sr_filterCycleWallsComponentMin = 0; // Minimum value for r or g or b
 static tConfItem<REAL> sr_filterCycleWallsComponentMinConf("FILTER_CYCLE_WALLS_COMPONENT_MIN", sr_filterCycleWallsComponentMin);
+
+REAL sr_filterCycleWallsBlueAdjustFactor = 0.7; 
+static tConfItem<REAL> sr_filterCycleWallsBlueAdjustFactorConf("FILTER_CYCLE_WALLS_BLUE_ADJUST_FACTOR", sr_filterCycleWallsBlueAdjustFactor);
+
+bool sr_filterCycleWallsBlueAdjust = false; 
+static tConfItem<bool> sr_filterCycleWallsBlueAdjustConf("FILTER_CYCLE_WALLS_BLUE_ADJUST", sr_filterCycleWallsBlueAdjust);
 
 REAL sr_filterCycleWallsDarknessThresh = 5;
 static tConfItem<REAL> sr_filterCycleWallsDarknessThreshConf("FILTER_CYCLE_WALLS_DARKNESS_THRESHOLD", sr_filterCycleWallsDarknessThresh);
@@ -528,22 +525,22 @@ static bool sg_localBotBrake = true;
 static tConfItem<bool> sg_localBotBrakeConf( "LOCAL_BOT_BRAKE", sg_localBotBrake );
 
 static REAL sg_localBotNewWallBlindness = 0;
-static tSettingItem<REAL> sg_localBotNewWallBlindnessConf( "LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness );
+static tConfItem<REAL> sg_localBotNewWallBlindnessConf( "LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness );
 
 static REAL sg_localBotMinTimestep = 0;
-static tSettingItem<REAL> sg_localBotMinTimestepConf( "LOCAL_BOT_MIN_TIMESTEP", sg_localBotMinTimestep );
+static tConfItem<REAL> sg_localBotMinTimestepConf( "LOCAL_BOT_MIN_TIMESTEP", sg_localBotMinTimestep );
 
 static REAL sg_localBotDelay = 0;
-static tSettingItem<REAL> sg_localBotDelayConf( "LOCAL_BOT_DELAY", sg_localBotDelay );
+static tConfItem<REAL> sg_localBotDelayConf( "LOCAL_BOT_DELAY", sg_localBotDelay );
 
 static REAL sg_localBotRange = 10;
-static tSettingItem<REAL> sg_localBotRangeConf( "LOCAL_BOT_RANGE", sg_localBotRange );
+static tConfItem<REAL> sg_localBotRangeConf( "LOCAL_BOT_RANGE", sg_localBotRange );
 
 static REAL sg_localBotDecay = 0;
-static tSettingItem<REAL> sg_localBotDecayConf( "LOCAL_BOT_DECAY", sg_localBotDecay );
+static tConfItem<REAL> sg_localBotDecayConf( "LOCAL_BOT_DECAY", sg_localBotDecay );
 
 static REAL sg_localBotEnemyPenalty = 0;
-static tSettingItem<REAL> sg_localBotEnemyPenaltyConf( "LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty );
+static tConfItem<REAL> sg_localBotEnemyPenaltyConf( "LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty );
 
 
 #ifdef DEBUGCHATBOT
@@ -2648,7 +2645,10 @@ static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycle
 void gCycle::updateColor() {
         player->Color(color_.r, color_.g, color_.b);
         player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
-
+        
+        se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
+        se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
+        
         if (sr_filterCycleWalls) {
             se_removeDarkColors(color_);
             se_removeDarkColors(trailColor_);

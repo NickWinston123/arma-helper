@@ -83,7 +83,7 @@ void se_FloorColor(REAL& r, REAL& g, REAL &b)
     }
 }
 
-void se_removeDarkColors(gRealColor &color, REAL darkness_threshold, REAL min_color_component)
+void se_removeDarkColors(gRealColor &color, REAL darkness_threshold, REAL min_color_component, bool blue_adjust, REAL blue_adjust_factor)
 {
     // color.r /= 15;
     // color.g /= 15;
@@ -108,11 +108,12 @@ void se_removeDarkColors(gRealColor &color, REAL darkness_threshold, REAL min_co
     }
 
     // Adjust blue colors
+    if (blue_adjust) {
     if ( (color.b > color.r && color.b > color.g) || (color.b > color.r+color.g) )
     {
-        REAL adjustment = 0.7;
-        color.r = std::min(color.r + adjustment, static_cast<REAL>(1.0));
-        color.b = std::max(color.b + adjustment, static_cast<REAL>(1.0));
+        color.r = std::min(color.r + blue_adjust_factor, static_cast<REAL>(1.0));
+        color.b = std::max(color.b + blue_adjust_factor, static_cast<REAL>(1.0));
+    }
     }
 }
 

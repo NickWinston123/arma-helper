@@ -4354,6 +4354,10 @@ static tAccessLevelSetter sg_respawnallConfLevel( sg_respawnall_conf, tAccessLev
 bool sg_localRespawn = false;
 static tConfItem<bool> sg_localRespawnConf("LOCAL_RESPAWN",sg_localRespawn);
 
+
+tString sg_localRespawnEnabledPlayers("1,2,3,4");
+static tConfItem<tString> sg_localRespawnEnabledPlayersConf( "LOCAL_RESPAWN_ENABLED_PLAYERS", sg_localRespawnEnabledPlayers );
+
 // uncomment to activate respawning
 #define RESPAWN_HACK
 
@@ -4368,7 +4372,7 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
         return;
     }
 
-    if (sg_localRespawn && (sn_GetNetState() == nCLIENT )) 
+    if (sg_localRespawn && (sn_GetNetState() == nCLIENT ))
     {
         for (int pi = MAX_PLAYERS-1; pi >= 0; --pi )
         {
@@ -4376,8 +4380,10 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
             if ( !p )
                 continue;
             ePlayerNetID * np = p->netPlayer;
-            if ( !np )
+
+            if ( !np || !tIsInList(sg_localRespawnEnabledPlayers, np->pID+1))
                 continue;
+
             np->RespawnPlayer(true);
         }
         return;

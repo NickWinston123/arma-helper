@@ -37,6 +37,8 @@ extern REAL sr_filterCycleWallsMinB;
 extern REAL sr_filterCycleWallsMaxTotal;
 extern REAL sr_filterCycleWallsComponentMin;
 extern REAL sr_filterCycleWallsDarknessThresh;
+extern bool sr_filterCycleWallsBlueAdjust;
+extern REAL sr_filterCycleWallsBlueAdjustFactor;
 
 struct gRealColor;
 
@@ -66,5 +68,9 @@ void se_FloorColor(REAL& r, REAL& g, REAL &b);
 
 void se_MakeColorValid(REAL& r, REAL & g, REAL& b, REAL f);
 // void se_removeDarkColors(gRealColor &color, int min_r, int min_g, int min_b, int min_total, int max_total, REAL darkness_threshold);
-void se_removeDarkColors(gRealColor &color, REAL darkness_threshold = sr_filterCycleWallsDarknessThresh, REAL min_color_component = sr_filterCycleWallsComponentMin);
+void se_removeDarkColors(gRealColor &color, 
+                         REAL darkness_threshold = sr_filterCycleWallsDarknessThresh,
+                         REAL min_color_component = sr_filterCycleWallsComponentMin, 
+                         bool blue_adjust = sr_filterCycleWallsBlueAdjust, 
+                         REAL blue_adjust_factor = sr_filterCycleWallsBlueAdjustFactor);
 #endif

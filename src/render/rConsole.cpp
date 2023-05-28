@@ -97,6 +97,15 @@ REAL rCHEIGHT_CON=REAL(32/480.0);
 static bool sr_consoleLog = false;
 static tConfItem<bool> sr_consoleLogConf("CONSOLE_LOG", sr_consoleLog);
 
+bool sr_consoleLogLimited = false;
+static tConfItem<bool> sr_consoleLogLimitedConf("CONSOLE_LOG_LIMITED", sr_consoleLogLimited);
+
+bool sr_consoleLogLimitedBackup = true;
+static tConfItem<bool> sr_consoleLogLimitedBackupConf("CONSOLE_LOG_LIMITED_BACKUP", sr_consoleLogLimitedBackup);
+
+REAL sr_consoleLogLimitedSize = 50;
+static tConfItem<REAL> sr_consoleLogLimitedSizeConf("CONSOLE_LOG_LIMITED_SIZE", sr_consoleLogLimitedSize);
+
 bool sr_consoleTimeStamp = false;
 static tConfItem<bool> sr_consoleTimeStampConf("CONSOLE_TIMESTAMP", sr_consoleTimeStamp);
 
@@ -126,11 +135,16 @@ tConsole & rConsole::DoPrint(const tString &s){
             if ( tDirectories::Var().Open(o, "consolelog.txt", std::ios::app) ) {
                 o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
             }
-
-            // if ( tDirectories::Var().Open(o, "consolelog-recent.txt", std::ios::app) ) {
-            //     o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
-            // }
     }
+       
+
+    if(!tRecorder::IsPlayingBack() && sr_consoleLogLimited) {
+            std::ofstream o;
+            if ( tDirectories::Var().Open(o, "consolelog-limited.txt", std::ios::app) ) {
+                o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
+            }
+    }
+    
     
     if(!tRecorder::IsPlayingBack() && sr_consoleLogColor) {
             std::ofstream o;

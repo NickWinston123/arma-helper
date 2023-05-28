@@ -37,7 +37,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern REAL rCWIDTH_CON;
 extern REAL rCHEIGHT_CON;
 extern bool sr_consoleTimeStamp;
-
+extern bool sr_consoleLogLimited;
+extern bool sr_consoleLogLimitedBackup;
+extern REAL sr_consoleLogLimitedSize;
 extern float sr_chatLayer;
 
 class rConsole:public tConsole{

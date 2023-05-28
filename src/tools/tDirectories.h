@@ -105,6 +105,8 @@ public:
 
     // sort the list of files
     static void SortFiles( tArray< tString >& files );
+
+    static void CheckAndClearFileBySize(tString fileName, REAL maxFileSizeMB, bool backup = true);
 };
 
 #endif

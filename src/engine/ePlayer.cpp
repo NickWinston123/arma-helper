@@ -4988,6 +4988,8 @@ static REAL se_searchCommandMaxFileSize = 50; // 50 MB
 static tConfItem<REAL> se_searchCommandMaxFileSizeConf("LOCAL_CHAT_COMMAND_SEARCH_MAX_FILE_SIZE", se_searchCommandMaxFileSize);
 static bool se_searchCommandCaseSensitive = false;
 static tConfItem<bool> se_searchCommandCaseSensitiveConf("LOCAL_CHAT_COMMAND_CASE_SENSITIVE", se_searchCommandCaseSensitive);
+static int se_searchCommandEmptySearchNumLines = 20;
+static tConfItem<int> se_searchCommandEmptySearchNumLinesConf("LOCAL_CHAT_COMMAND_EMPTY_SEARCH_NUM_LINES", se_searchCommandEmptySearchNumLines);
 
 static tString se_nameSpeak("/namespeak");
 static tConfItem<tString> se_nameSpeakConf("LOCAL_CHAT_COMMAND_NAMESPEAK", se_nameSpeak);
@@ -5129,7 +5131,7 @@ void ePlayerNetID::RespawnPlayer(bool local)
         gCycle *cycle = new gCycle(eGrid::CurrentGrid(), pos, dir, this);
         if (!cycle)
             return;
-            
+
         ControlObject(cycle,local);
         cycle->updateColor();
     }
@@ -10133,7 +10135,8 @@ void ePlayerNetID::activeStatus(tString s_orig, ePlayerNetID *calledPlayer)
 
 static std::vector<std::pair<tString, tString>> searchableFiles = {
     {tString("chat"), tString("chatlog.txt")},
-    {tString("console"), tString("consolelog.txt")}, // TOO BIG?
+    {tString("console"), tString("consolelog-limited.txt")},
+    {tString("console-full"), tString("consolelog.txt")}, // TOO BIG?
 };
 
 
@@ -10171,15 +10174,15 @@ void ePlayerNetID::searchCommand(tString s_orig)
     }
     else
     {
+        std::ifstream i;
         tString searchPhrase;
         searchPhrase << params.SubStr(pos);
         searchPhrase = searchPhrase.TrimWhitespace();
         std::string searchValue(searchPhrase);
-        if (searchPhrase.empty())
-        {
-            con << "Nothing to search.\n";
-            return;
-        }
+
+        REAL fileSizeMB;
+        REAL fileSizeMaxMB;
+        REAL numMatches = 0;
 
         tToLower(fileName);
 
@@ -10198,10 +10201,6 @@ void ePlayerNetID::searchCommand(tString s_orig)
             return;
         }
 
-        std::ifstream i;
-        REAL fileSizeMB;
-        REAL fileSizeMaxMB;
-        REAL numMatches = 0;
         if (tDirectories::Var().Open(i, fileName))
         {
             std::streamoff MAX_FILE_SIZE = se_searchCommandMaxFileSize * 1024 * 1024;
@@ -10217,6 +10216,32 @@ void ePlayerNetID::searchCommand(tString s_orig)
                 i.close();
                 return;
             }
+
+            if (searchPhrase.empty())
+            {
+                std::deque<std::pair<std::string, int>> lastLines;
+                std::string line;
+                int lineNumber = 1; // Added a line number counter
+                while (std::getline(i, line))
+                {
+                    lastLines.push_back(std::make_pair(line, lineNumber));
+                    if (lastLines.size() > se_searchCommandEmptySearchNumLines)
+                        lastLines.pop_front();
+                    lineNumber++;
+                }
+                tString fileNameOut;
+                fileNameOut << "\nFile '0xffb900"  << fileName   << tString("0xffffff' ")
+                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+
+                con << fileNameOut << "Nothing to search. Showing last 0x8bc34a" << se_searchCommandEmptySearchNumLines << "0xffffff lines:\n";
+                int count = 1;
+                for (const auto& linePair : lastLines) // linePair is a pair of line content and line number
+                    con << count++ << ") 0x8bc34aLine 0xffb900" << linePair.second << ": 0xffffff" << linePair.first << "\n";
+
+                i.close();
+                return;
+            }
+
 
             std::string sayLine;
             int lineNumber = 1;
@@ -10333,20 +10358,27 @@ void ePlayerNetID::searchCommand(tString s_orig)
             }
             if (!found && !copyToClipboard)
             {
-                con << "No matches found for the search phrase: '0x8bc34a"
-                    << searchPhrase << ("0xffffff' (0xffb900")
-                    << fileName << ("0xffffff)\n");
+                tString fileNameOut;
+                fileNameOut << "\nFile '0xffb900"  << fileName   << tString("0xffffff' ")
+                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+
+                con << fileNameOut
+                    << "No matches found for the search phrase: '0x8bc34a"
+                    << searchPhrase << ("0xffffff' (0xffb900");
             }
             else if (!copyToClipboard)
             {
+                tString fileNameOut;
+                fileNameOut << "\nFile '0xffb900"  << fileName   << tString("0xffffff' ")
+                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+
                 tString matches;
-                matches << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
+                matches << fileNameOut << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
 
                 output = matches << tString("'0x8bc34a")
-                                 << searchPhrase << tString("0xffffff' (0xffb900")
-                                 << fileName << tString("0xffffff ")
-                                 << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB) \n"
+                                 << searchPhrase << tString("0xffffff'\n") 
                                  << output;
+
 
                 con << output;
             }

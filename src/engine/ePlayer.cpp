@@ -5622,10 +5622,6 @@ static std::vector<std::pair<tString, tString>> searchableFiles = {
     {tString("console-full"), tString("consolelog.txt")}, // TOO BIG?
 };
 
-REAL BytesToMB(REAL bytes)
-{
-    return bytes / 1024 / 1024;
-}
 
 class SearchCommand : public Command
 {
@@ -5691,13 +5687,18 @@ public:
             {
                 std::streamoff MAX_FILE_SIZE = se_searchCommandMaxFileSize * 1024 * 1024;
                 std::streamoff fileSize = tPath::GetFileSize(i);
-                fileSizeMB = BytesToMB(fileSize);
-                fileSizeMaxMB = BytesToMB(MAX_FILE_SIZE);
-                if (fileSize > MAX_FILE_SIZE)
+                fileSizeMB = gHelperUtility::BytesToMB(fileSize);
+                if (fileName == tString("consolelog-limited.txt"))
+                {
+                    fileSizeMaxMB = sr_consoleLogLimitedSize;
+                } else {
+                    fileSizeMaxMB = gHelperUtility::BytesToMB(MAX_FILE_SIZE);
+                }
+                if (fileSizeMB > fileSizeMaxMB)
                 {
                     con << "Error: File is too big: '" << fileName << "' ("
-                        << fileSizeMB << " MB /"
-                        << BytesToMB(se_searchCommandMaxFileSize) << " MB)\n";
+                        << fileSizeMB                  << " MB /"
+                        << fileSizeMaxMB               << " MB)\n";
 
                     i.close();
                     return;
@@ -5716,8 +5717,8 @@ public:
                         lineNumber++;
                     }
                     tString fileNameOut;
-                    fileNameOut << "\nFile '0xffb900" << fileName << tString("0xffffff' ")
-                                << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+                    fileNameOut << "\nFile '0xffb900" << fileName   << tString("0xffffff' ")
+                                << "- 0xffb900"       << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
 
                     con << fileNameOut << "Nothing to search. Showing last 0x8bc34a" << se_searchCommandEmptySearchNumLines << "0xffffff lines:\n";
                     int count = 1;
@@ -5849,13 +5850,13 @@ public:
 
                     con << fileNameOut
                         << "No matches found for the search phrase: '0x8bc34a"
-                        << searchPhrase << ("0xffffff' (0xffb900");
+                        << searchPhrase << "0xffffff'";
                 }
                 else if (!copyToClipboard)
                 {
                     tString fileNameOut;
-                    fileNameOut << "\nFile '0xffb900" << fileName << tString("0xffffff' ")
-                                << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+                    fileNameOut << "\nFile '0xffb900" << fileName                 << "0xffffff' - 0xffb900"
+                                << fileSizeMB         << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
 
                     tString matches;
                     matches << fileNameOut << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
@@ -6198,7 +6199,6 @@ void ePlayerNetID::Chat(const tString &s_orig)
         }
     }
 
-    // con << "IS LOCAL? " << isLocalCommand << " STARTS WITH / " << s_orig.StartsWith("/") << "\n";
     if (isLocalCommand && se_enableChatCommands && (s_orig.StartsWith("/")))
     { // con << "CALLING LOCAL CHAT COMMANDS\n";
         LocalChatCommands(this, s_orig, commandMap);
@@ -9969,7 +9969,7 @@ tString ePlayerNetID::Ranking( int MAX, bool cut )
                 if ( p->currentTeam )
                 {
                     //tString teamtemp = p->currentTeam->Name();
-                    //teamtemp.RemoveHex();
+                    //teamtemp.RemoveHex()z`;
                     //Not sure why we need to filter the color here.
                        // line << tColoredString::RemoveColors(p->currentTeam->Name());
                     line << p->currentTeam->GetColoredName();

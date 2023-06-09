@@ -3147,6 +3147,10 @@ void MainMenu(bool ingame){
         return;
     }
 
+    if (sr_consoleLogLimited) 
+        tDirectories::CheckAndClearFileBySize(tString("consolelog-limited.txt"),sr_consoleLogLimitedSize,sr_consoleLogLimitedBackup);
+    
+
     if (ingame)
     {
         sr_con.SetHeight(2);

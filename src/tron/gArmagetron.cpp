@@ -872,8 +872,6 @@ int main(int argc,char **argv){
                     nNetObject::ClearAll();
 
                     rITexture::UnloadAll();
-
-                    tDirectories::CheckAndClearFileBySize(tString("consolelog-limited.txt"),sr_consoleLogLimitedSize,sr_consoleLogLimitedBackup);
                 }
                 catch (tException const & e)
                 {

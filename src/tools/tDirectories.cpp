@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tConfiguration.h"
 #include "tCommandLine.h"
 #include "tMemManager.h"
+#include "../tron/gHelper/gHelperUtilities.h"
 
 // include definition for top source directory
 #ifndef MACOSX_XCODE
@@ -872,59 +873,49 @@ void tDirectories::SetIncludedResource( const tString& dir ) {
 
 
 void tDirectories::CheckAndClearFileBySize(tString fileName, REAL maxFileSizeMB, bool backup) {
-    std::ifstream i;
-
-    REAL maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
-
-    if (tDirectories::Var().Open(i, fileName)) {
-        std::streamoff fileSize = tPath::GetFileSize(i);
-        if (fileSize > maxFileSizeBytes) {
-            // Close the input stream before clearing the file
-            i.close();
-
-            if (backup) {
-                // Get the current date and time
-                auto now = std::chrono::system_clock::now();
-                auto time_t_now = std::chrono::system_clock::to_time_t(now);
-                tm local_tm;
-                localtime_s(&local_tm, &time_t_now);
-
-                // Create a timestamp string
-                std::stringstream ss;
-                ss << std::put_time(&local_tm, "%m-%d-%Y");
-
-                // Create backup file name
-                tString backupFileName = fileName + "-" + tString(ss.str());
-
-                // Backup the file
-                std::ifstream src(fileName, std::ios::binary);
-                std::ofstream dest(backupFileName, std::ios::binary);
-                dest << src.rdbuf();
-
-                // Check if there was any error during the backup
-                if (!src || !dest) {
-                    con << "Error creating backup: '" << backupFileName << "'.\n";
-                    return;
+    FileManager fileManager(fileName);
+    std::streamoff fileSize = fileManager.FileSize();
+    REAL fileSizeMB = gHelperUtility::BytesToMB(fileSize);
+    
+    if (fileSizeMB >= maxFileSizeMB) {
+        if (backup) {
+            // Get the current date and time
+            auto now = std::chrono::system_clock::now();
+            auto time_t_now = std::chrono::system_clock::to_time_t(now);
+            tm local_tm;
+            localtime_s(&local_tm, &time_t_now);
+            
+            // Create a timestamp string
+            std::stringstream ss;
+            ss << std::put_time(&local_tm, "%m-%d-%Y");
+            
+            // Create backup file name
+            tString backupFileName = fileName + "-" + tString(ss.str());
+            FileManager backupFileManager(backupFileName);
+            
+            // Get the lines from the original file
+            tArray<tString> lines = fileManager.Load();
+            bool backedup = false;
+            // Backup the file
+            for (int i = 0; i < lines.Len(); i++) {
+                if (!backupFileManager.Write(lines[i])){
+                    backedup = false;
+                    break;
                 }
-                src.close();
-                dest.close();
-
-                con << "Created backup: '" << backupFileName << "'.\n";
+                backedup = true;
             }
-
-            // Clear file by opening it in out (write) mode and closing it
-            std::ofstream o(fileName, std::ios::trunc);
-            o.close();
-
-            con << "File '" << fileName << "' was cleared because it exceeded " << maxFileSizeMB << " MB.\n";
-        } else {
-            // If file size is within limit, close the input stream
-            i.close();
+            
+            if (backedup)
+                con << "Created backup: '" << backupFileName << "'.\n";
         }
-    } else {
-        con << "Error opening: '" << fileName << "'.\n";
+        
+        // Clear the original file
+        fileManager.Clear();
+        
+        con << "File '" << fileName << "' was cleared because it exceeded " << maxFileSizeMB << " MB.\n";
     }
 }
+
 
 
 /*
@@ -1724,6 +1715,7 @@ std::streamoff FileManager::FileSize()
     }
     return -1;
 }
+
 void FileManager::Clear(){
     if (tDirectories::Var().Open(o, fileName))
         o << "";

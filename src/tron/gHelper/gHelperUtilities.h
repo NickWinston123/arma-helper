@@ -353,6 +353,10 @@ public:
         Debug(sender, description, "",  new debugParams(true,spamProtection));
     }
 
+    static REAL BytesToMB(REAL bytes)
+    {
+        return bytes / 1024 / 1024;
+    }
     // isClose checks if the distance between the owner cycle's position and the given position
     // is within a certain factor of closeness.
     // pos: the position to check the distance to

@@ -618,13 +618,16 @@ public:
 
     void LogActivity(int activity_type);    //!< Log the activity of the player currently in motion
 
-private:
+public:
+    tColoredString  coloredNickname;
+    tString         nickname;
     tColoredString  nameFromClient_;        //!< this player's name as the client wants it to be. Avoid using it when possilbe.
     tColoredString  nameFromServer_;        //!< this player's name as the server wants it to be. Avoid using it when possilbe.
     tColoredString  nameFromAdmin_;         //!< this player's name as the admin wants it to be. Avoid using it when possilbe.
     tColoredString  coloredName_;           //!< this player's name, cleared by the server. Use this for onscreen screen display.
     tString         name_;                  //!< this player's name without colors.
     tString         userName_;              //!< this player's name, cleared for system logs. Use for writing to files or comparing with admin input.
+private:
 
 #ifdef KRAWALL_SERVER
     tString         rawAuthenticatedName_;  //!< the raw authenticated name in user@authority form.
@@ -817,8 +820,12 @@ ePlayerNetID & ePlayerNetID::SetNameFromClient( tColoredString const & nameFromC
 
 tColoredString const & ePlayerNetID::GetColoredName( void ) const
 {
-    return this->coloredName_;
+    if (this->coloredNickname.empty())
+        return this->coloredName_;
+    else
+        return this->coloredNickname;
 }
+
 
 // ******************************************************************************************
 // *
@@ -866,7 +873,7 @@ ePlayerNetID & ePlayerNetID::SetColoredName( tColoredString const & coloredName 
 
 tString const & ePlayerNetID::GetName( void ) const
 {
-    return this->name_;
+    return this->nickname.empty() ? this->name_ : this->nickname;
 }
 
 // ******************************************************************************************
@@ -880,7 +887,7 @@ tString const & ePlayerNetID::GetName( void ) const
 //!
 // ******************************************************************************************
 
-ePlayerNetID const & ePlayerNetID::GetName( tString & name ) const
+ePlayerNetID const &ePlayerNetID::GetName(tString &name) const
 {
     name = this->name_;
     return *this;
@@ -937,7 +944,7 @@ ePlayerNetID & ePlayerNetID::SetUserName( tString const & userName )
 
 ePlayerNetID *se_GetLocalPlayer();
 
-extern bool se_highlightMyName, se_tabCompletion, se_tabCompletionWithColors;
+extern bool se_highlightMyName, se_tabCompletion, se_tabCompletionWithColors,se_tabCompletionColon;
 
 
 static ePlayer * se_chatterPlanned=NULL;

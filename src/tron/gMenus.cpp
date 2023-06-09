@@ -493,7 +493,7 @@ static tConfItem<bool> se_highlightMyNameConf("HIGHLIGHT_NAME", se_highlightMyNa
 
 static tConfItem<bool> se_tabCompletionConf("TAB_COMPLETION", se_tabCompletion);
 static tConfItem<bool> se_tabCompletionColors("TAB_COMPLETION_WITH_COLORS", se_tabCompletionWithColors);
-static tConfItem<bool> se_autoComplColor("AUTO_COMPLETE_WITH_COLOR", se_tabCompletionWithColors);
+static tConfItem<bool> se_tabCompletionColonConf("TAB_COMPLETION_COLON", se_tabCompletionColon);
 
 extern void sg_ColorMenu(), se_ForcePlayerColorMenu();
 

@@ -1772,6 +1772,7 @@ static void se_DisplayChatLocally( ePlayerNetID* p, const tString& say )
         st_Breakpoint();
     }
 #endif
+    // con << "say " << say << "\n";
 
     tColoredString actualMessage(say);
 
@@ -1781,8 +1782,14 @@ static void se_DisplayChatLocally( ePlayerNetID* p, const tString& say )
         //say2.RemoveHex();
         tColoredString message;
 
-        message << *p;
+        if (p->coloredNickname.empty()) {
+            message << *p;
+        } else
+            message << p->coloredNickname;
+
         message << tColoredString::ColorString(1,1,.5);
+
+
         if (se_highlightMyName && (actualMessage.Contains(p->GetName())))
         {
             tString strOld = p->GetName();
@@ -1800,6 +1807,7 @@ static void se_DisplayChatLocally( ePlayerNetID* p, const tString& say )
 
 static void se_DisplayChatLocallyClient( ePlayerNetID* p, const tString& message )
 {
+    // con << "message " << message << "\n";
     if ( p && !p->IsSilenced() && se_enableChat )
     {
         tColoredString actualMessage(message);
@@ -1838,6 +1846,11 @@ static void se_DisplayChatLocallyClient( ePlayerNetID* p, const tString& message
                 con << tOutput("$dead_console_decoration");
         }
         else con << tOutput("$spectator_console_decoration");
+
+
+        if (!p->coloredNickname.empty()) {
+            actualMessage = actualMessage.Replace(p->coloredName_, p->GetColoredName());
+        }
 
         if (se_highlightMyName && actualMessage.Contains(p->GetName()))
         {
@@ -5035,6 +5048,9 @@ static tConfItem<tString> se_saveConfigCommandConf("LOCAL_CHAT_COMMAND_SAVE_CONF
 static tString se_replyCommand("/r");
 static tConfItem<tString> se_replyCommandConf("LOCAL_CHAT_COMMAND_REPLY", se_replyCommand);
 
+static tString se_nicknameCommand("/nickname");
+static tConfItem<tString> se_nicknameCommandConf("LOCAL_CHAT_COMMAND_NICKNAME", se_nicknameCommand);
+
 tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p)
 {
     tColoredString listinfo;
@@ -6046,22 +6062,77 @@ public:
         if (player->lastMessagedPlayer == nullptr) {
             return false;
         }
-        
+
         int pos = args.StrPos(" ");  // Find the position of the first space
         if (pos == -1) {
-            return false;  
+            return false;
         }
-        pos++;  
-        
+        pos++;
+
         tString message = args.SubStr(pos);  // Get the substring starting from the position after the first space
-        
+
         tString messageToSend;
         messageToSend << "/msg " << player->lastMessagedPlayer->GetName() << " " << message;
         player->Chat(messageToSend);
-        
+
         return true;
     }
 
+};
+
+class NicknameCommand : public ChatCommand
+{
+public:
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        int posCommand = args.StrPos(" ");
+        if (posCommand == -1)
+        {
+            for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+            {
+                se_PlayerNetIDs[i]->nickname.Clear();
+                se_PlayerNetIDs[i]->coloredNickname.Clear();
+            }
+            con << "All nicknames have been cleared.\n";
+            return true;
+        }
+
+        args = args.SubStr(posCommand + 1);
+        int posNickname = args.StrPos(" ");
+        tString targetName;
+        if (posNickname == -1)
+            targetName = args;
+        else
+            targetName = args.SubStr(0, posNickname);
+
+        ePlayerNetID *target = ePlayerNetID::FindPlayerByName(targetName);
+        if (target)
+        {
+            if (posNickname != -1)
+            {
+                // nickname provided
+                tString nickname;
+                nickname << args.SubStr(posNickname + 1);
+                target->nickname = nickname;
+
+                REAL r, g, b;
+                target->Color(r, g, b);
+                tColoredString coloredNickname;
+                coloredNickname << tColoredString::ColorString(r, g, b) << nickname;
+                target->coloredNickname = coloredNickname;
+                con << target->coloredName_ << "0xffffff is now nicknamed '" << target->GetColoredName() << "0xffffff'\n";
+            }
+            else
+            {
+                // no nickname
+                con << target->coloredName_ << "0xffffff's nickname has been cleared.\n";
+                target->nickname.Clear();
+                target->coloredNickname.Clear();
+            }
+            return true;
+        }
+        return false;
+    }
 };
 
 class RebuildCommand : public ChatCommand
@@ -6214,6 +6285,7 @@ std::unordered_map<std::string, std::unique_ptr<ChatCommand>> createCommandMap()
     commandMap.emplace(se_rebuildGridCommand.stdString(), std::make_unique<RebuildGridCommand>());
     commandMap.emplace(se_saveConfigCommand.stdString(), std::make_unique<SaveConfigCommand>());
     commandMap.emplace(se_replyCommand.stdString(), std::make_unique<ReplyCommand>());
+    commandMap.emplace(se_nicknameCommand.stdString(), std::make_unique<NicknameCommand>());
 
     return commandMap;
 }
@@ -6572,6 +6644,7 @@ struct eChatInsertionCommand
 };
 
 bool se_tabCompletion = true;
+bool se_tabCompletionColon = true;
 bool se_tabCompletionWithColors = false;
 
 static char const * const se_chatNormalCommands[] = {
@@ -6696,7 +6769,7 @@ static void ChatTabCompletition(tString &strString, int &curserPos, bool changeL
                     p = foundPlayers[0];
                     if (p && p->IsActive())
                     {
-                        if (isFirst && !isChat)
+                        if (isFirst && !isChat && se_tabCompletionColon)
                             word = (se_tabCompletionWithColors ? p->GetColoredName() + breaker : p->GetName()) + ": ";
                         else
                             word = (se_tabCompletionWithColors ? p->GetColoredName() + breaker : p->GetName()) + " ";
@@ -6718,7 +6791,7 @@ static void ChatTabCompletition(tString &strString, int &curserPos, bool changeL
                                 currPos++;
                                 continue;
                             }
-                            if (isFirst && !isChat)
+                            if (isFirst && !isChat && se_tabCompletionColon)
                                 word = (se_tabCompletionWithColors ? p->GetColoredName() + breaker : p->GetName()) + ": ";
                             else
                                 word = (se_tabCompletionWithColors ? p->GetColoredName() + breaker : p->GetName()) + " ";
@@ -7409,7 +7482,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                lastWatchStatus(playerWatchStatus::ACTIVE),
                                                lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                                syncIteration(0),
-                                               lastMessagedPlayer(nullptr)
+                                               lastMessagedPlayer(nullptr),
+                                               nickname(tString(""))
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -7546,7 +7620,8 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           lastWatchStatus(playerWatchStatus::ACTIVE),
                                           lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                           syncIteration(0),
-                                          lastMessagedPlayer(nullptr)
+                                          lastMessagedPlayer(nullptr),
+                                          nickname(tString(""))
 {
     flagOverrideChat = false;
     flagChatState = false;

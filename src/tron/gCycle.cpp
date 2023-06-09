@@ -2681,7 +2681,8 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos,const eCoord &d,ePlayerNetID *p)
         tactical_stats(static_cast<std::string>(p->GetUserName())),
         currentWall(NULL),
         lastWall(NULL),
-        netPlayer_(p)
+        netPlayer_(p),
+        lastActTime(0)
 {
     eGameObject::number_of_gCycles++;
 
@@ -4218,6 +4219,7 @@ bool gCycle::ActBot(uActionPlayer *Act, REAL x)
 }
 
 bool gCycle::Act(uActionPlayer *Act, REAL x){
+    
     // don't accept premature input
     if (se_mainGameTimer && ( se_mainGameTimer->speed <= 0 || se_mainGameTimer->Time() < -1 ) )
         return false;
@@ -4228,11 +4230,13 @@ bool gCycle::Act(uActionPlayer *Act, REAL x){
     if(se_turnLeft==*Act && x>.5){
         //SendControl(lastTime,&se_turnLeft,1);
         Turn(-1);
+        lastActTime = tSysTimeFloat();
         return true;
     }
     else if(se_turnRight==*Act && x>.5){
         //SendControl(lastTime,&se_turnRight,1);
         Turn(1);
+        lastActTime = tSysTimeFloat();
         return true;
     }
     else if(s_brake==*Act){
@@ -4249,7 +4253,7 @@ bool gCycle::Act(uActionPlayer *Act, REAL x){
             {
                 ProcessShoot(false);
             }
-        }
+        }lastActTime = tSysTimeFloat();
         return true;
     }
     else if(s_brakeToggle==*Act){
@@ -4265,6 +4269,7 @@ bool gCycle::Act(uActionPlayer *Act, REAL x){
                 ProcessShoot(false);
             }
         }
+        lastActTime = tSysTimeFloat();
         return true;
     }
     return false;
@@ -5990,7 +5995,8 @@ gCycle::gCycle(nMessage &m)
         tactical_stats(""),
         currentWall(NULL),
         lastWall(NULL),
-        netPlayer_(NULL)
+        netPlayer_(NULL),
+        lastActTime(0)
 {
     eGameObject::number_of_gCycles++;
     deathTime=0;

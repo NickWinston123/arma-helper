@@ -113,7 +113,6 @@ class FileManager
 {
 public:
     FileManager(tString fileName) { this->fileName = fileName; }
-    void Action();
     tArray<tString> Load();
     bool Write(tString content);
     void Clear();

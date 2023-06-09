@@ -121,7 +121,7 @@ class tOutput;
 class eTeam;
 class eVoter;
 class gCycle;
-class Command;
+class ChatCommand;
 
 class ePlayer: public uPlayerPrototype{
     friend class eMenuItemChat;
@@ -213,6 +213,7 @@ public:
 #endif
 
     static ePlayer * PlayerConfig(int p);
+
     static ePlayer *NetToLocalPlayer(ePlayerNetID *player);
     static ePlayer  *gCycleToLocalPlayer(gCycle *owner);
 
@@ -306,12 +307,14 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
+    ePlayerNetID * lastMessagedPlayer;
     typedef std::set< eTeam * > eTeamSet;
     bool respawnedLocally;
     playerWatchStatus lastWatchStatus;
     static void watchPlayerStatus();
     static ePlayerNetID  *gCycleToNetPlayer(gCycle *owner);
     static gCycle *NetPlayerTogCycle(ePlayerNetID *player);
+    static ePlayerNetID *GetPlayerByName(tString name);
     int lastsyncedColor[3] = {0, 0, 0};
     tColoredString lastColoredName;
     int currentShift = 0;
@@ -517,7 +520,7 @@ public:
     virtual bool IsHuman() const { return true; }
 
     void Activity(); // call it if this player just showed some activity.
-    REAL LastActivity() const; //!< returns how long the last activity of this player was ago
+    REAL LastActivity(); //!< returns how long the last activity of this player was ago
     REAL ChattingTime( bool current = true) const; //!< returns how long the player has been chatting
     eNetGameObject *Object() const;
 
@@ -545,18 +548,7 @@ public:
     static void OnlineStatsLadderLog(); //  writes the online players, teams and the numbers
     static void  ResetScore();  // resets the ranking list
 
-    // List the information of other players.
-    void listPlayerInfo(tString s_orig);
-    // Fast way to change / display current RGB
-    void currentPlayerRGB(tString s_orig);
 
-
-    // List active status of players (chatting time, activity, etc)
-    static void activeStatus(tString s_orig,ePlayerNetID *calledPlayer = NULL);
-    // Search through logs
-    static void searchCommand(tString s_orig);
-    // Use an unused player to 
-    static void nameSpeakCommand(tString s_orig);
     static void scheduleNameChange();
 
     //Grab Stuff
@@ -592,7 +584,7 @@ public:
 
     void Chat(const tString &s);
     static void LocalChatCommands(ePlayerNetID *p, tString command);
-    static void LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<std::string, std::unique_ptr<Command>>& commandMap);
+    static void LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<std::string, std::unique_ptr<ChatCommand>>& commandMap);
 
 
     nTimeAbsolute GetTimeCreated() const { return timeCreated_; }
@@ -952,10 +944,12 @@ static ePlayer * se_chatterPlanned=NULL;
 static ePlayer * se_chatter =NULL;
 static tString se_say;
 
-class Command {
+class ChatCommand {
 public:
-    virtual void execute(ePlayerNetID* player, tString args) = 0;
+    virtual bool execute(ePlayerNetID* player, tString args) = 0;
 };
+
+
 
 #endif
 

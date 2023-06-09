@@ -1143,6 +1143,18 @@ ePlayer * ePlayer::PlayerConfig(int p)
     //  return (ePlayer*)P;
 }
 
+ePlayerNetID * ePlayerNetID::GetPlayerByName(tString name)
+{
+    for( int i = se_PlayerNetIDs.Len()-1; i>=0; --i )
+    {
+        if (se_PlayerNetIDs[i] && se_PlayerNetIDs[i]->GetName().Filter() == name.Filter())
+        {
+            return se_PlayerNetIDs[i];
+        }
+    }
+    return NULL;
+}
+
 
 ePlayer * ePlayer::NetToLocalPlayer(ePlayerNetID *player)
 {
@@ -1817,7 +1829,6 @@ static void se_DisplayChatLocallyClient( ePlayerNetID* p, const tString& message
                 }
             }
         }
-
         if ( se_silenceEnemies && !sentFromTeamMember )
             return;
 
@@ -1839,6 +1850,20 @@ static void se_DisplayChatLocallyClient( ePlayerNetID* p, const tString& message
 
         se_SaveToChatLog(actualMessage);
         se_SaveToChatLogC(actualMessage);
+
+        if (actualMessage.Contains("-->")) {
+            tString expectedString;
+            int pos;
+            expectedString  << p->GetName() << " --> ";
+            if (actualMessage.Filter().TrimWhitespace().StartsWith(expectedString.Filter().TrimWhitespace()))
+            {
+                tString ourName = actualMessage.ExtractNonBlankSubString(pos,2).Replace(":","");
+
+                ePlayerNetID *ourPlayer = ePlayerNetID::GetPlayerByName(ourName);
+                if (ourPlayer)
+                    ourPlayer->lastMessagedPlayer = p;
+            }
+        }
 
         if (se_chatTimeStamp && !sr_consoleTimeStamp){
             actualMessage = st_GetCurrentTime("%H:%M:%S| ") << actualMessage;
@@ -5007,11 +5032,14 @@ static tConfItem<tString> se_rebuildGridCommandConf("LOCAL_CHAT_COMMAND_REBUILD_
 static tString se_saveConfigCommand("/savecfg");
 static tConfItem<tString> se_saveConfigCommandConf("LOCAL_CHAT_COMMAND_SAVE_CONFIG", se_saveConfigCommand);
 
+static tString se_replyCommand("/r");
+static tConfItem<tString> se_replyCommandConf("LOCAL_CHAT_COMMAND_REPLY", se_replyCommand);
+
 tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p)
 {
     tColoredString listinfo;
     listinfo << "\nResults for " << p->GetColoredName() << "0xRESETT:";
-    listinfo << "\nColor: " << gatherPlayerColor(p);
+    listinfo << "\nColor: "      << gatherPlayerColor(p);
 
     gRealColor color(p->r, p->g, p->b);
     // p->Color(color);
@@ -5023,7 +5051,7 @@ tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p)
 
     // Status. Includes player type, spectating or playing, and if the player is chatting.
     listinfo << "Status: " << (p->IsHuman() ? "Human" : "Bot")
-             << ", " << (p->CurrentTeam() ? "Playing" : "Spectating")
+             << ", "       << (p->CurrentTeam() ? "Playing" : "Spectating")
              << (p->IsChatting() ? ", Chatting" : "");
 
     // Only grab this information if the player is an active object.
@@ -5032,17 +5060,18 @@ tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p)
         // If the player is an active object, are they alive?
         listinfo << (p->Object()->Alive() ? ", Alive" : ", Dead") << '\n'
                  << "Lag: " << p->Object()->Lag() << "\n";
+
         // Only grab this information if the player is an alive object.
         gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
         if (p->Object()->Alive())
         {
 
-            listinfo << "Position: x: " << pCycle->Position().x
-                     << ", y: " << pCycle->Position().y << '\n'
+            listinfo << "Position: x: "      << pCycle->Position().x
+                     << ", y: "              << pCycle->Position().y  << '\n'
                      << "Map Direction: x: " << pCycle->Direction().x
-                     << ", y: " << pCycle->Direction().y << '\n'
-                     << "Speed: " << pCycle->verletSpeed_ << '\n'
-                     << "Rubber: " << pCycle->GetRubber() << "/"
+                     << ", y: "              << pCycle->Direction().y << '\n'
+                     << "Speed: "            << pCycle->verletSpeed_  << '\n'
+                     << "Rubber: "           << pCycle->GetRubber()   << "/"
                      << sg_rubberCycle << '\n';
         }
     }
@@ -5064,10 +5093,10 @@ Sometimes Alive / Dead
 Usage: /info - Returns own information
        /info playername - Returns that players name. (or more depending if the search word is found in more than one player)
 */
-class listPlayerInfoCommand : public Command
+class listPlayerInfoCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         if (se_PlayerNetIDs.Len() > 0)
         {
@@ -5192,15 +5221,14 @@ static void se_SavedColors(int savedColorsCount)
 //        /rgb list would list your current saved colors.
 //        /rgb load 1 would load from line #1 in the list.
 //        /rgb clear would clear your current list of saved colors.
-class RgbCommand : public Command
+class RgbCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
-
         ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
         if (!local_p)
-            return;
+            return false;
 
         std::vector<std::pair<ePlayer *, ePlayerNetID *>> activePlayers;
 
@@ -5341,7 +5369,7 @@ public:
                 if (passedString.Len() == 2) // No Line #
                 {
                     con << tOutput("$player_colors_changed_usage_error");
-                    return;
+                    return true;
                 }
                 else if (passedString.Len() == 3) // Line # specified
                 {
@@ -5440,13 +5468,14 @@ public:
                 }
             }
         }
+        return true;
     }
 };
 
-class JoinCommand : public Command
+class JoinCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         if (!bool(player->CurrentTeam()))
         {
@@ -5457,10 +5486,10 @@ public:
     }
 };
 
-class ActiveStatusCommand : public Command
+class ActiveStatusCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         tString params;
         params << args;
@@ -5475,7 +5504,7 @@ public:
             p = player;
 
         if (!p)
-            return;
+            return false;
 
         REAL chattingTime = p->ChattingTime();
 
@@ -5491,18 +5520,19 @@ public:
             listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.\n";
 
         con << listInfo;
+        return true;
     }
 };
 
-class ConsoleCommand : public Command
+class ConsoleCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         tCurrentAccessLevel level(tAccessLevel_Owner, true);
         tString params("");
         if (args.StrPos(" ") == -1)
-            return;
+            return false;
         else
             params = args.SubStr(args.StrPos(" ") + 1);
 
@@ -5515,12 +5545,14 @@ public:
             std::stringstream s(static_cast<char const *>(params));
             tConfItemBase::LoadAll(s);
         }
+        return true;
     }
 };
 
 tColoredString ePlayerNetID::gatherPlayerColor(ePlayerNetID *p, bool showReset)
 {
-    tColoredString listColors;
+    tColoredString listColors, cyclePreview;
+
     if (showReset)
     {
         listColors << p->GetColoredName() << "0xRESETT (";
@@ -5531,18 +5563,29 @@ tColoredString ePlayerNetID::gatherPlayerColor(ePlayerNetID *p, bool showReset)
         listColors << coloredName.StripWhitespace() << " (";
     }
 
+
+    REAL r = p->r, g = p->g, b = p->b;
+    //se_MakeColorValid(r,g,b,1.0f);
+    REAL sr = r, sg = g, sb = b;
+    while( sr > 1.f ) sr -= 1.f;
+    while( sg > 1.f ) sg -= 1.f;
+    while( sb > 1.f ) sb -= 1.f;
+
+    cyclePreview << tColoredString::ColorString(r,g,b) << "<" << tColoredString::ColorString(sr,sg,sb) << "==\n";
+
     return listColors << p->r << ", "
                       << p->g << ", "
-                      << p->b << ")\n";
+                      << p->b << ") "
+                      << cyclePreview;
 }
 
 // Gather all the rgb colors and put them in a nice list.
 // Usage /colors with no parameters returns all players and their colors.
 //       /colors playername returns that specific players color or more depending if the search term is found in other player names
-class ColorsCommand : public Command
+class ColorsCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         if (se_PlayerNetIDs.Len() > 0)
         {
@@ -5558,14 +5601,14 @@ public:
             }
             else
             {
-                tArray<tString> msgsExt = args.Split(" ");
+                tArray<tString> searchWords = args.Split(" ");
                 bool playerFound = false;
 
                 con << tOutput("$player_colors_text");
 
-                for (int i = 0; i < msgsExt.Len(); i++)
+                for (int i = 0; i < searchWords.Len(); i++)
                 {
-                    tString word = msgsExt[i];
+                    tString word = searchWords[i];
                     int j = 0;
                     for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
                     {
@@ -5574,7 +5617,6 @@ public:
                         if (p->GetName().Filter().Contains(word.Filter()))
                         {
                             playerFound = true;
-
                             con << (j + 1) << ") " << player->gatherPlayerColor(p);
                             j++;
                         }
@@ -5582,27 +5624,28 @@ public:
                 }
                 // No one found.
                 if (!playerFound)
-                {
-                    con << tOutput("$player_colors_not_found", msgsExt[1]);
-                }
+                    con << tOutput("$player_colors_not_found", searchWords[1]);
             }
         }
+
+    return true;
     }
 };
 
-class BrowserCommand : public Command
+class BrowserCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         gServerBrowser::BrowseMaster();
+        return true;
     }
 };
 
-class SpeakCommand : public Command
+class SpeakCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
 
         int pos = 0;
@@ -5611,8 +5654,11 @@ public:
 
         ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
 
-        if (p && ePlayer::NetToLocalPlayer(p))
+        if (p && ePlayer::NetToLocalPlayer(p)) {
             p->Chat(args.SubStr(pos + 1));
+            return true;
+        }
+        return false;
     }
 };
 
@@ -5623,10 +5669,10 @@ static std::vector<std::pair<tString, tString>> searchableFiles = {
 };
 
 
-class SearchCommand : public Command
+class SearchCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
 
         tString params;
@@ -5652,7 +5698,7 @@ public:
                    << "/search chat #102 copy (copy text by single line number)\n";
             con << output;
 
-            return;
+            return true;
         }
         else
         {
@@ -5680,7 +5726,7 @@ public:
             if (fileName.empty())
             {
                 execute(player, args);
-                return;
+                return true;
             }
 
             if (tDirectories::Var().Open(i, fileName))
@@ -5701,7 +5747,7 @@ public:
                         << fileSizeMaxMB               << " MB)\n";
 
                     i.close();
-                    return;
+                    return true;
                 }
 
                 if (searchPhrase.empty())
@@ -5726,7 +5772,7 @@ public:
                         con << count++ << ") 0x8bc34aLine 0xffb900" << linePair.second << ": 0xffffff" << linePair.first << "\n";
 
                     i.close();
-                    return;
+                    return true;
                 }
 
                 std::string sayLine;
@@ -5812,7 +5858,7 @@ public:
                     if (!found)
                     {
                         con << "0x8bc34aLine Range0xffb900: " << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
-                        return;
+                        return true;
                     }
                     con << output;
                 }
@@ -5875,6 +5921,7 @@ public:
                     << "'" << fileName << "'.\n";
             }
         }
+        return true;
     }
 };
 
@@ -5907,10 +5954,10 @@ void ePlayerNetID::scheduleNameChange()
     }
 }
 
-class NameSpeakCommand : public Command
+class NameSpeakCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         tString params;
         params << args;
@@ -5943,54 +5990,84 @@ public:
         {
             con << "No usable players!\n";
             nameSpeakWords.Clear();
-            return;
+            return true;;
         }
         con << "Name Speak: \n  - Using Player " << nameSpeakPlayerID + 1 << ". Message: '" << params << "'\n";
         nameSpeakIndex = 0;
         nameSpeakPlayerID = playerID;
         playerUpdateIteration = 0;
+        return true;
     }
 };
 
-class ResCommand : public Command
+class ResCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         player->RespawnPlayer();
+        return true;
     }
 };
 
-class RebuildGridCommand : public Command
+class RebuildGridCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         tArray<tString> passedString = args.Split(" ");
         if (gGame::CurrentGame())
         {
             gGame::CurrentGame()->RebuildGrid(atoi(passedString[1]));
         }
+        return true;
     }
 };
 
-class SaveConfigCommand : public Command
+class SaveConfigCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
 
         extern tString st_AddToUserExt(tArray<tString> commands);
         auto str = tString(args).Split(" ");
         str.RemoveAt(0);
         con << st_AddToUserExt(str);
+        return true;
     }
 };
 
-class RebuildCommand : public Command
+class ReplyCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        if (player->lastMessagedPlayer == nullptr) {
+            return false;
+        }
+        
+        int pos = args.StrPos(" ");  // Find the position of the first space
+        if (pos == -1) {
+            return false;  
+        }
+        pos++;  
+        
+        tString message = args.SubStr(pos);  // Get the substring starting from the position after the first space
+        
+        tString messageToSend;
+        messageToSend << "/msg " << player->lastMessagedPlayer->GetName() << " " << message;
+        player->Chat(messageToSend);
+        
+        return true;
+    }
+
+};
+
+class RebuildCommand : public ChatCommand
+{
+public:
+    bool execute(ePlayerNetID *player, tString args) override
     {
         int pos = 0;
 
@@ -6006,24 +6083,25 @@ public:
             player->Clear(local_p);
             player->Update();
         }
+        return true;
     }
 };
 
-class WatchCommand : public Command
+class WatchCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         if (!eGrid::CurrentGrid())
         {
             con << "Must be called while a grid exists!\n";
-            return;
+            return false;
         }
 
         ePlayer *localPlayer = ePlayer::NetToLocalPlayer(player);
         if (!localPlayer || !localPlayer->cam)
         {
-            return;
+            return false;
         }
 
         // Extract the target player name from the input string
@@ -6039,11 +6117,11 @@ public:
         {
             targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
             if (!targetPlayer || !targetPlayer->Object() ||
-                !targetPlayer->Object()->Alive() ||
+                !targetPlayer->CurrentTeam() ||
                 targetPlayer->Object()->GOID() == localPlayer->cam->center->GOID())
             {
                 con << "Player not found or already being spectated.\n";
-                return;
+                return true;
             }
             else
             {
@@ -6059,26 +6137,28 @@ public:
     }
 };
 
-class ReverseCommand : public Command
+class ReverseCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         tString s_modified(args);
         s_modified.RemoveSubStr(0, se_reverseCommand.Len());
         player->Chat(s_modified.Reverse());
+        return true;
     }
 };
 
-class SpectateCommand : public Command
+class SpectateCommand : public ChatCommand
 {
 public:
-    void execute(ePlayerNetID *player, tString args) override
+    bool execute(ePlayerNetID *player, tString args) override
     {
         ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
         local_p->spectate = true;
         player->Clear(local_p);
         player->Update();
+        return true;
     }
 };
 
@@ -6113,9 +6193,9 @@ void ePlayerNetID::RespawnPlayer(bool local)
     }
 }
 
-std::unordered_map<std::string, std::unique_ptr<Command>> createCommandMap()
+std::unordered_map<std::string, std::unique_ptr<ChatCommand>> createCommandMap()
 {
-    std::unordered_map<std::string, std::unique_ptr<Command>> commandMap;
+    std::unordered_map<std::string, std::unique_ptr<ChatCommand>> commandMap;
     commandMap.emplace(se_consoleCommand.stdString(), std::make_unique<ConsoleCommand>());
     commandMap.emplace(se_colorsCommand.stdString(), std::make_unique<ColorsCommand>());
     commandMap.emplace(se_infoCommand.stdString(), std::make_unique<listPlayerInfoCommand>());
@@ -6133,17 +6213,18 @@ std::unordered_map<std::string, std::unique_ptr<Command>> createCommandMap()
     commandMap.emplace(se_resCommand.stdString(), std::make_unique<ResCommand>());
     commandMap.emplace(se_rebuildGridCommand.stdString(), std::make_unique<RebuildGridCommand>());
     commandMap.emplace(se_saveConfigCommand.stdString(), std::make_unique<SaveConfigCommand>());
+    commandMap.emplace(se_replyCommand.stdString(), std::make_unique<ReplyCommand>());
 
     return commandMap;
 }
 
 void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString command)
 {
-    std::unordered_map<std::string, std::unique_ptr<Command>> commandMap = createCommandMap();
+    std::unordered_map<std::string, std::unique_ptr<ChatCommand>> commandMap = createCommandMap();
     ePlayerNetID::LocalChatCommands(p, command, commandMap);
 }
 
-void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<std::string, std::unique_ptr<Command>> &commandMap)
+void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<std::string, std::unique_ptr<ChatCommand>> &commandMap)
 {
     if (p != NULL)
     {
@@ -6177,7 +6258,7 @@ void ePlayerNetID::Chat(const tString &s_orig)
 
 #ifndef DEDICATED
 
-    std::unordered_map<std::string, std::unique_ptr<Command>> commandMap = createCommandMap();
+    std::unordered_map<std::string, std::unique_ptr<ChatCommand>> commandMap = createCommandMap();
 
     std::string chatString(s_orig);
     std::istringstream passedString(chatString);
@@ -7327,7 +7408,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                createTime_(getTimeString(false)),
                                                lastWatchStatus(playerWatchStatus::ACTIVE),
                                                lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
-                                               syncIteration(0)
+                                               syncIteration(0),
+                                               lastMessagedPlayer(nullptr)
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -7420,7 +7502,6 @@ tColoredString playerWatchStatusToStr(playerWatchStatus status)
     }
 }
 
-
 void ePlayerNetID::watchPlayerStatus()
 {
     for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; i--)
@@ -7438,12 +7519,16 @@ void ePlayerNetID::watchPlayerStatus()
 
         tString message;
         REAL chattingTime = p->ChattingTime();
+        REAL lastActivity = p->LastActivity() ;
 
-        message << getTimeString() << " | 0xe6e6faWatch Status0xRESETT: " << p->GetColoredName();
+        message << getTimeString()    << " | 0xe6e6faWatch Status0xRESETT: " << p->GetColoredName();
         message << " 0xRESETTis now " << playerWatchStatusToStr(p->lastWatchStatus);
-        message << "0xRESETT. (" << chattingTime << " seconds)";
-        if (chattingTime == 0)
+        message << "0xRESETT. ("      << chattingTime << " seconds)";
+
+        if (chattingTime == 0 || lastActivity != 0) {
+            message << " - Last activity: "      << p->LastActivity()      << " seconds ago.\n";
             message << " - Last chat activity: " << p->ChattingTime(false) << " seconds ago.";
+        }
         message << "\n";
         con << message;
     }
@@ -7459,7 +7544,9 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           timeSinceLastChat_(0),
                                           createTime_(getTimeString(false)),
                                           lastWatchStatus(playerWatchStatus::ACTIVE),
-                                          syncIteration(0)
+                                          lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
+                                          syncIteration(0),
+                                          lastMessagedPlayer(nullptr)
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -9226,15 +9313,15 @@ void ePlayerNetID::ReadSync(nMessage &m)
         unsigned short flags;
         m >> flags;
 
+        if ( chatting_ != ( ( flags & 1 ) != 0 ) || spectating_ != ( ( flags & 2 ) != 0 ) || stealth_ != ( ( flags & 4 ) != 0 ) )
+            lastActivity_ = tSysTimeFloat();
+
         if (Owner() != ::sn_myNetID)
         {
             bool newChat = ( ( flags & 1 ) != 0 );
             bool newSpectate = ( ( flags & 2 ) != 0 );
             bool newStealth = ( ( flags & 4 ) != 0 );
 
-
-            if ( chatting_ != newChat || spectating_ != newSpectate || newStealth != stealth_ )
-                lastActivity_ = tSysTimeFloat();
 
             if(spectating_ && !newSpectate && strlen(GetLogName()) > 0)
             {
@@ -12055,7 +12142,7 @@ void ePlayerNetID::GreetHighscores(tString &s)
 // *******************
 // *      chatting_   *
 // *******************
-void ePlayerNetID::SetChatting ( ChatFlags flag, bool chatting )
+void ePlayerNetID::SetChatting(ChatFlags flag, bool chatting)
 {
     /* z-man can't remember why this exception was made; probably
        just do disable the chat indicator while you play in local menus.
@@ -12064,10 +12151,11 @@ void ePlayerNetID::SetChatting ( ChatFlags flag, bool chatting )
         chatting = false;
     }
     */
-    if ( chatting )
+    if (chatting)
     {
         chatFlags_ |= flag;
-        if ( !chatting_ ) {
+        if (!chatting_)
+        {
             this->RequestSync();
             timeSinceLastChat_ = tSysTimeFloat();
         }
@@ -12076,9 +12164,10 @@ void ePlayerNetID::SetChatting ( ChatFlags flag, bool chatting )
     else
     {
         chatFlags_ &= ~flag;
-        if ( 0 == chatFlags_ )
+        if (0 == chatFlags_)
         {
-            if ( chatting_ ) {
+            if (chatting_)
+            {
                 this->RequestSync();
             }
             chatting_ = false;
@@ -14189,18 +14278,28 @@ nMachine & ePlayerNetID::DoGetMachine( void ) const
 //!
 // *******************************************************************************
 
-REAL ePlayerNetID::LastActivity( void ) const
+REAL ePlayerNetID::LastActivity(void)
 {
-    return tSysTimeFloat() - lastActivity_;
+
+    REAL lastPlayerActivity = tSysTimeFloat() - lastActivity_;
+    REAL activity = lastPlayerActivity;
+    if (CurrentTeam())
+    {
+        gCycle *cycle = ePlayerNetID::NetPlayerTogCycle(this);
+        if (cycle)
+        {
+            REAL lastCycleActivity = tSysTimeFloat() - cycle->lastActTime;
+            if (lastCycleActivity < activity)
+                activity = lastCycleActivity;
+        }
+    }
+    return activity;
 }
 
 REAL ePlayerNetID::ChattingTime( bool current ) const
 {
                      // timeSinceLastChat_ will remain after chat
                      // so information can be used even if not current
-    if (current)
-        return chatting_ ? tSysTimeFloat() - timeSinceLastChat_ : 0;
-    else
         return tSysTimeFloat() - timeSinceLastChat_;
 }
 

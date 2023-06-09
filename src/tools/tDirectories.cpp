@@ -1659,3 +1659,73 @@ void st_PrintPathInfo(tOutput &buf) {
     << hcol << "$path_info_screenshot" << "0xRESETT\n" << tDirectories::Screenshot().GetPaths()
     << hcol << "$path_info_var"        << "0xRESETT\n" << tDirectories::Var().GetPaths();
 }
+
+
+
+int FileManager::NumberOfLines()
+{
+    int count = 0;
+    if (tDirectories::Var().Open(i, fileName))
+    {
+        while (!i.eof())
+        {
+            std::string sayLine;
+            std::getline(i, sayLine);
+            std::istringstream s(sayLine);
+
+            tString params;
+            params.ReadLine(s);
+
+            if (params.Filter() != "")
+                count++;
+        }
+    }
+    i.close();
+
+    return count;
+}
+
+tArray<tString> FileManager::Load()
+{
+    tArray<tString> lines;
+    if (tDirectories::Var().Open(i, fileName)) {
+        std::string sayLine;
+        while (std::getline(i, sayLine)) {
+            std::istringstream s(sayLine);
+
+            tString params;
+            params.ReadLine(s);
+
+            if (!params.Filter().empty()) {
+                lines.Insert(params);
+            }
+        }
+    }
+    i.close();
+
+    return lines;
+}
+
+bool FileManager::Write(tString content)
+{
+    if (tDirectories::Var().Open(o, fileName, std::ios::app))
+    {
+        o << content;
+        return true;
+    }
+    return false;
+}
+
+std::streamoff FileManager::FileSize()
+{
+    if (tDirectories::Var().Open(i, fileName))
+    {
+        return tPath::GetFileSize(i);
+    }
+    return -1;
+}
+void FileManager::Clear(){
+    if (tDirectories::Var().Open(o, fileName))
+        o << "";
+    o.close();
+}

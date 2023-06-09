@@ -36,6 +36,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <map>
 
+#define GS_CREATED 0        // newborn baby
+#define GS_TRANSFER_SETTINGS	7
+#define GS_CREATE_GRID			10
+#define GS_CREATE_OBJECTS		20
+#define GS_TRANSFER_OBJECTS		30
+#define GS_CAMERA				35
+#define GS_SYNCING				40
+#define GS_SYNCING2				41
+#define GS_SYNCING3				42
+#define GS_PLAY					50
+#define GS_DELETE_OBJECTS		60
+#define GS_DELETE_GRID			70
+#define GS_STATE_MAX			80
+
+
 class eGrid;
 class nServerInfo;
 class nServerInfoBase;
@@ -110,7 +125,11 @@ public:
 
     void StartNewMatch();
 
+    virtual void RebuildGrid(int requestedState);
+
     void StartNewMatchNow();
+
+    static tCONTROLLED_PTR(gGame) CurrentGame();
 };
 
 void update_settings( bool const * goon = 0 );

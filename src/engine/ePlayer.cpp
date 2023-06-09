@@ -77,6 +77,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "../tron/gSpawn.h"
 
+#include <unordered_map>
 int se_lastSaidMaxEntries = 8;
 
 
@@ -4942,9 +4943,6 @@ static bool IsLegalPlayerName( tString const & name )
 bool se_enableChatCommands = true;
 static tConfItem<bool> se_enableChatCommandsConf("LOCAL_CHAT_COMMANDS", se_enableChatCommands);
 
-bool se_consoleLocalCommandPlayersEnabled = false;
-static tConfItem<bool> se_consoleLocalCommandPlayersEnabledConf("LOCAL_CHAT_COMMAND_PLAYERS_ENABLED", se_consoleLocalCommandPlayersEnabled);
-
 // our local commands (should always be lowercase)
 static tString se_consoleCommand("/console");
 static tConfItem<tString> se_consoleCommandConf("LOCAL_CHAT_COMMAND_CONSOLE", se_consoleCommand);
@@ -4957,6 +4955,8 @@ static tConfItem<tString> se_infoCommandConf("LOCAL_CHAT_COMMAND_INFO", se_infoC
 
 static tString se_rgbCommand("/rgb");
 static tConfItem<tString> se_rgbCommandConf("LOCAL_CHAT_COMMAND_RGB", se_rgbCommand);
+static tString se_colorVarFile("colors.txt");
+static tConfItem<tString> se_colorVarFileConf("LOCAL_CHAT_COMMAND_RGB_FILE", se_colorVarFile);
 
 static tString se_browserCommand("/browser");
 static tConfItem<tString> se_browserCommandConf("LOCAL_CHAT_COMMAND_BROWSER", se_browserCommand);
@@ -5001,113 +5001,1007 @@ static tConfItem<bool> se_nameSpeakSplitByNameSizeConf("LOCAL_CHAT_COMMAND_NAMES
 static tString se_resCommand("/res");
 static tConfItem<tString> se_resCommandConf("LOCAL_CHAT_COMMAND_RESPAWN", se_resCommand);
 
-#endif //if not dedicated
+static tString se_rebuildGridCommand("/regrid");
+static tConfItem<tString> se_rebuildGridCommandConf("LOCAL_CHAT_COMMAND_REBUILD_GRID", se_rebuildGridCommand);
 
-void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString s_orig)
-{
-    std::string chatString(s_orig);
-    std::istringstream passedString(chatString);
+static tString se_saveConfigCommand("/savecfg");
+static tConfItem<tString> se_saveConfigCommandConf("LOCAL_CHAT_COMMAND_SAVE_CONFIG", se_saveConfigCommand);
 
-    tString command;
 
-    passedString >> command;
+tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p) {
+    tColoredString listinfo;
+    listinfo << "\nResults for " << p->GetColoredName() << "0xRESETT:";
+    listinfo << "\nColor: " << gatherPlayerColor(p);
 
-    if (p != NULL)
+    gRealColor color(p->r,p->g,p->b);
+    //p->Color(color);
+    se_removeDarkColors(color);
+    listinfo << "\nFiltered Color: ("
+             << p->r << ", "
+             << p->g << ", "
+             << p->b << ")\n";
+
+    // Status. Includes player type, spectating or playing, and if the player is chatting.
+    listinfo << "Status: " << (p->IsHuman() ? "Human" : "Bot")
+             << ", " << (p->CurrentTeam() ? "Playing" : "Spectating")
+             << (p->IsChatting() ? ", Chatting" : "");
+
+    // Only grab this information if the player is an active object.
+    if (p->Object() && p->currentTeam) {
+        // If the player is an active object, are they alive?
+        listinfo << (p->Object()->Alive() ? ", Alive" : ", Dead") << '\n'
+                 << "Lag: " << p->Object()->Lag() << "\n";
+        // Only grab this information if the player is an alive object.
+        gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
+        if (p->Object()->Alive()) {
+
+            listinfo << "Position: x: " << pCycle->Position().x
+                     << ", y: " << pCycle->Position().y << '\n'
+                     << "Map Direction: x: " << pCycle->Direction().x
+                     << ", y: " << pCycle->Direction().y << '\n'
+                     << "Speed: " << pCycle->verletSpeed_ << '\n'
+                     << "Rubber: " << pCycle->GetRubber() << "/"
+                     << sg_rubberCycle << '\n';
+        }
+    }
+
+    return listinfo << '\n';
+}
+
+/*
+List player information.
+Displays:
+Colored Name
+Position
+Direction
+Used Rubber out of max
+Speed
+Spectating / Playing
+Chatting
+Sometimes Alive / Dead
+Usage: /info - Returns own information
+       /info playername - Returns that players name. (or more depending if the search word is found in more than one player)
+*/
+class listPlayerInfoCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+    if (se_PlayerNetIDs.Len()>0)
     {
-        // Short handle for grabbing player information.
-        if (command == se_infoCommand)
+        if (args.StrPos(" ") == -1)
         {
-            p->listPlayerInfo(s_orig);
+            con << tOutput("$player_info_text");
+            ePlayerNetID *p = se_GetLocalPlayer();
+            con << player->gatherPlayerInfo(p);
         }
-        // Short handle for changing our RGB values.
-        else if (command == se_rgbCommand)
+        else
         {
-            p->currentPlayerRGB(s_orig);
-        }
-        else if (command == se_rebuildCommand)
-        {
-            p->rebuildCommand(s_orig);
-        }
-        else if (command == se_watchCommand)
-        {
-            eCamera::SpectatePlayer(*p, s_orig);
-        }
-        else if (command == se_reverseCommand)
-        {
-            tString s_modified(s_orig);
-            s_modified.RemoveSubStr(0, se_reverseCommand.Len());
-            p->Chat(s_modified.Reverse());
-        }
-        else if (command == se_spectateCommand)
-        {
-            ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
-            local_p->spectate = true;
-            Clear(local_p);
-            Update();
-        }
-        else if (command == se_joinCommand)
-        {
-            if (!bool(p->currentTeam))
+            tArray<tString> msgsExt = args.Split(" ");
+            tArray<ePlayerNetID *> foundPlayers;
+            bool playerFound = false;
+            con << tOutput("$player_info_text");
+            for(int i = 0; i < msgsExt.Len(); i++)
             {
-                ePlayer::NetToLocalPlayer(p)->spectate = false;
-                p->CreateNewTeamWish();
-                Update();
-            }
-        }
-        else if (command == se_activeStatusCommand)
-        {
-            activeStatus(s_orig,p);
-        }
-        // check for direct console commands
-        if (command == se_consoleCommand)
-        {
-            // direct commands are executed at owner level
-            tCurrentAccessLevel level(tAccessLevel_Owner, true);
+                tString word = msgsExt[i];
 
-            tString params("");
-            if (s_orig.StrPos(" ") == -1)
-                return;
-            else
-                params = s_orig.SubStr(s_orig.StrPos(" ") + 1);
+                for(int i=0; i < se_PlayerNetIDs.Len(); i++)
+                {
+                    ePlayerNetID *p=se_PlayerNetIDs(i);
 
-            if (tRecorder::IsPlayingBack())
-            {
-                tConfItemBase::LoadPlayback();
+                    if (p->GetName().Filter().Contains(word.Filter()))
+                    {
+                        playerFound = true;
+                        con << player->gatherPlayerInfo(p);
+                    }
+                }
             }
-            else
+
+            if (!playerFound)
             {
-                std::stringstream s(static_cast<char const *>(params));
-                tConfItemBase::LoadAll(s);
+                con << tOutput("$player_not_found_text", msgsExt[1]);
             }
-        }
-        // Short handle for grabbing player colors.
-        else if (command == se_colorsCommand)
-        {
-            listPlayerColors(s_orig);
-        }
-        else if (command == se_browserCommand)
-        {
-            gServerBrowser::BrowseMaster();
-        }
-        else if (command == se_speakCommand)
-        {
-            localSpeak(s_orig);
-        }
-        else if (command == se_searchCommand)
-        {
-            searchCommand(s_orig);
-        }
-        else if (command == se_nameSpeak)
-        {
-            nameSpeakCommand(s_orig);
-        }
-        else if (command == se_resCommand)
-        {
-            p->RespawnPlayer();
+
         }
 
     }
+    }
+};
+
+
+static std::tuple<tString, int, int, int> se_extractColorInfoFromLine(const tString& line) {
+    int pos = 0;
+    tString Name = line.ExtractNonBlankSubString(pos);
+    tString ColorOne = line.ExtractNonBlankSubString(pos);
+    ColorOne.RemoveSubStr(0, 1);
+    int Color1 = atoi(ColorOne);
+    int Color2 = atoi(line.ExtractNonBlankSubString(pos));
+    int Color3 = atoi(line.ExtractNonBlankSubString(pos));
+    return std::make_tuple(Name, Color1, Color2, Color3);
 }
+
+static void se_outputColorInfo(int index, const tString& Name, REAL c1, REAL c2, REAL c3) {
+    if (tColoredString::HasColors(Name)) {
+        con << (index + 1) << ") "
+            << Name << "0xRESETT ("
+            << c1 << ", "
+            << c2 << ", "
+            << c3 << ")\n";
+    } else {
+        con << (index + 1) << ") "
+            << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15)
+            << Name   << "0xRESETT ("
+            << c1 << ", "
+            << c2 << ", "
+            << c3 << ")\n";
+    }
+}
+
+
+static void se_loadSavedColor(ePlayer *local_p, int lineNumber) {
+    tArray<tString> colors = FileManager(se_colorVarFile).Load();
+
+    if (lineNumber < colors.Len()) {
+        auto [Name, Color1, Color2, Color3] = se_extractColorInfoFromLine(colors[lineNumber]);
+        REAL c1 = Color1;
+        REAL c2 = Color2;
+        REAL c3 = Color3;
+        se_MakeColorValid(c1, c2, c3, 1.0f);
+
+        con << tOutput("$player_colors_loading");
+        se_outputColorInfo(lineNumber, Name, c1, c2, c3);
+
+        local_p->rgb[0] = Color1;
+        local_p->rgb[1] = Color2;
+        local_p->rgb[2] = Color3;
+    }
+}
+
+static void se_SavedColors(int savedColorsCount)
+{
+    tArray<tString> colors = FileManager(se_colorVarFile).Load();
+    con << tOutput("$players_color_list", savedColorsCount, se_colorVarFile);
+    for (int index = 0; index <= savedColorsCount; index++)
+    {
+        if (!colors[index].empty())
+        {
+            auto [Name, Color1, Color2, Color3] = se_extractColorInfoFromLine(colors[index]);
+            REAL c1 = Color1;
+            REAL c2 = Color2;
+            REAL c3 = Color3;
+            se_MakeColorValid(c1, c2, c3, 1.0f);
+
+            se_outputColorInfo(index, Name, c1, c2, c3);
+        }
+    }
+}
+
+// Allow us to change our current RGB easily.
+// Usage: /rgb with no parameters displays current rgb.
+//        /rgb 15 3 3 Would set player 1's RGB to R15 G3 B3.
+//        /rgb unique gives all players unique colors.
+//        /rgb random gives all players random colors.
+//        /rgb 2 15 3 3 Will change player 2's colors to 15 3 3.
+//        /rgb save would save your current colors to colors.txt
+//        /rgb save player would save the players current colors to colors.txt
+//        /rgb list would list your current saved colors.
+//        /rgb load 1 would load from line #1 in the list.
+//        /rgb clear would clear your current list of saved colors.
+class RgbCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+
+    ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
+    if (!local_p)
+        return;
+
+    std::vector<std::pair<ePlayer*, ePlayerNetID*>> activePlayers;
+
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+            ePlayer* me = ePlayer::PlayerConfig(i);
+            if (bool(me->netPlayer.get()))
+                activePlayers.emplace_back(me, me->netPlayer.get());
+    }
+
+    if (args.StrPos(" ") == -1)
+    {
+        con << tOutput("$player_colors_current_text");
+        for (const auto &playerPair : activePlayers) {
+            tColoredString listColors;
+            listColors << ePlayerNetID::gatherPlayerColor(playerPair.second);
+            con << listColors;
+        }
+    }
+    else
+    {
+        tArray<tString> passedString = args.Split(" ");
+        tString command = passedString[1];
+        bool correctParameters = false;
+        bool hideError = false;
+        int targetID = 0;
+
+        if (command == "help")
+        {
+            hideError = true;
+            con << tOutput("$player_colors_command_help", se_colorVarFile);
+        }
+        else if (command == "unique")
+        {
+            if (passedString.Len() == 2)
+            {
+                // Apply random color to the player who sent the command
+                se_UniqueColor(local_p);
+            }
+            else if (passedString.Len() == 3)
+            {
+                int targetID = atoi(passedString[2]);
+                if (targetID > 0 && targetID <= MAX_PLAYERS)
+                {
+                    // Apply random color to the specified player
+                    se_UniqueColor(ePlayer::PlayerConfig(targetID - 1));
+                }
+            }
+            correctParameters = true;
+        }
+        else if (command == "random")
+        {
+            if (passedString.Len() == 2)
+            {
+                // Apply random color to the player who sent the command
+                se_RandomizeColor(local_p);
+            }
+            else if (passedString.Len() == 3)
+            {
+                int targetID = atoi(passedString[2]);
+                if (targetID > 0 && targetID <= MAX_PLAYERS)
+                {
+                    // Apply random color to the specified player
+                    se_RandomizeColor(ePlayer::PlayerConfig(targetID - 1));
+                }
+            }
+
+            correctParameters = true;
+        }
+        else if (command == "save")
+        {
+            hideError = true;
+            bool foundPlayer = false;
+
+            if (passedString.Len() == 2)
+            {
+                foundPlayer = true;
+                std::ofstream o;
+
+                bool written = false;
+                tString message;
+                con << tOutput("$player_colors_saved");
+
+                for (auto &playerPair : activePlayers) {
+                    if (!FileManager(se_colorVarFile).Write(ePlayerNetID::gatherPlayerColor(playerPair.second,false)))
+                    {
+                        written = false;
+                        break;
+                    }
+
+                    message << ePlayerNetID::gatherPlayerColor(playerPair.second);
+                }
+
+                if (written)
+                {
+                    con << tOutput("$player_colors_saved");
+                    con << message;
+                }
+                else
+                {
+                    con << tOutput("$players_color_error");
+                }
+                o.close();
+            }
+            else if (passedString.Len() >= 3) // Save specific persons color
+            {
+                for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
+                {
+                    ePlayerNetID* p = se_PlayerNetIDs(i);
+                    if (p->GetName().Filter().Contains(passedString[2].Filter()))
+                    {
+                        foundPlayer = true;
+                        std::ofstream o;
+                        if (FileManager(se_colorVarFile).Write(ePlayerNetID::gatherPlayerColor(p,false)))
+                        {
+                            con << tOutput("$player_colors_saved");
+                            con << ePlayerNetID::gatherPlayerColor(p);
+                        }
+                        else
+                        {
+                            con << tOutput("$players_color_error");
+                        }
+                        o.close();
+                    }
+                }
+                if (!foundPlayer)
+                {
+                    con << tOutput("$player_colors_not_found", passedString[2]);
+                }
+            }
+        }
+        else if (command == "load")
+        {
+            int savedColorsCount = FileManager(se_colorVarFile).NumberOfLines();
+
+            if (passedString.Len() == 2) // No Line #
+            {
+                con << tOutput("$player_colors_changed_usage_error");
+                return;
+            }
+            else if (passedString.Len() == 3) // Line # specified
+            {
+                correctParameters = true;
+                int lineNumber = (atoi(passedString[2]) - 1);
+                if ((lineNumber >= 0) && lineNumber <= savedColorsCount - 1)
+                {
+                    se_loadSavedColor(local_p,lineNumber);
+                }
+                else
+                {
+                    correctParameters = false;
+                    hideError = true;
+                    con << tOutput("$players_color_line_not_found", se_colorVarFile, savedColorsCount, lineNumber + 1);
+                }
+            }
+        }
+        else if (command == "list")
+        {
+            hideError = true;
+            int savedColorsCount = FileManager(se_colorVarFile).NumberOfLines();
+
+            if (savedColorsCount > 0)
+            {
+                se_SavedColors(savedColorsCount);
+            }
+            else
+            {
+                con << tOutput("$player_colors_empty");
+            }
+        }
+        else if (command == "clear")
+        {
+            hideError = true;
+            FileManager(se_colorVarFile).Clear();
+            con << tOutput("$player_colors_cleared", se_colorVarFile);
+        }
+        // Not really checking if the strings passed parameters are numbers,
+        // but if someone did /rgb asd asd asd it would just make it 0 0 0.
+        else if (passedString.Len() >= 4) // Apply color to players
+        {
+
+            if (passedString.Len() == 4 || (passedString.Len() >= 4 && passedString[4] == "")) // Apply color to player who sent command
+            {
+                correctParameters = true;
+                local_p->rgb[0] = atoi(passedString[1]); //r
+                local_p->rgb[1] = atoi(passedString[2]); //g
+                local_p->rgb[2] = atoi(passedString[3]); //b
+            }
+            else if (passedString.Len() == 5) // Apply color to specified who sent command
+            {
+                targetID = atoi(passedString[1]);
+                if ((targetID <= MAX_PLAYERS) && (targetID > 0))
+                {
+                    correctParameters = true;
+                    ePlayer* player = ePlayer::PlayerConfig(targetID - 1);
+                    player->rgb[0] = atoi(passedString[2]); //r
+                    player->rgb[1] = atoi(passedString[3]); //g
+                    player->rgb[2] = atoi(passedString[4]); //b
+                }
+            }
+        }
+
+        // If the correct parameters are passed, display the changes.
+        if (correctParameters)
+        {
+            con << tOutput("$player_colors_current_text");
+
+            for (int i = 0; i < MAX_PLAYERS; ++i)
+            {
+                ePlayer *player = ePlayer::PlayerConfig(i);
+                tCONTROLLED_PTR(ePlayerNetID) &p = player->netPlayer;
+                if (bool(p))
+                {
+                    ePlayerNetID::Update();
+                    tColoredString listColors;
+                    listColors << i + 1 << ") " << ePlayerNetID::gatherPlayerColor(p);
+                    con << listColors;
+                }
+                else if (targetID - 1 == i)
+                {
+                    con << tOutput("$player_colors_changed_text",
+                                   player->Name(),
+                                   player->rgb[0],
+                                   player->rgb[1],
+                                   player->rgb[2]);
+                }
+            }
+        }
+        else
+        {
+            // If hideError is enabled we wont display the error message.
+            if (!hideError)
+            {
+                con << tOutput("$player_colors_changed_usage_error");
+            }
+        }
+    }
+
+    }
+};
+
+
+class JoinCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        if (!bool(player->CurrentTeam())) {
+            ePlayer::NetToLocalPlayer(player)->spectate = false;
+            player->CreateNewTeamWish();
+            player->Update();
+        }
+    }
+};
+
+class ActiveStatusCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        tString params;
+        params << args;
+        int pos = 0;
+
+        tString PlayerStr = params.ExtractNonBlankSubString(pos,1);
+
+        ePlayerNetID *p;
+        if (!PlayerStr.empty())
+            p = ePlayerNetID::FindPlayerByName(PlayerStr);
+        else if (player)
+            p = player;
+
+        if (!p)
+            return;
+
+        REAL chattingTime = p->ChattingTime();
+
+        tColoredString listInfo;
+        listInfo << "\nResults for "  << p->GetColoredName() << "0xRESETT: \n"
+                 << "Status: "        << "\n"
+                 << "Created: "       << p->createTime_      << "\n"
+                 << "Last Activity: " << p->LastActivity()   << "\n"
+                 << "Chatting For: "  << chattingTime        << "\n";
+
+        if (chattingTime == 0)
+            listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.\n";
+
+        con << listInfo;
+    }
+};
+
+class ConsoleCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        tCurrentAccessLevel level(tAccessLevel_Owner, true);
+        tString params("");
+        if (args.StrPos(" ") == -1)
+            return;
+        else
+            params = args.SubStr(args.StrPos(" ") + 1);
+
+        if (tRecorder::IsPlayingBack()) {
+            tConfItemBase::LoadPlayback();
+        } else {
+            std::stringstream s(static_cast<char const *>(params));
+            tConfItemBase::LoadAll(s);
+        }
+    }
+};
+
+
+
+tColoredString ePlayerNetID::gatherPlayerColor(ePlayerNetID* p, bool showReset)
+{
+    tColoredString listColors;
+    if (showReset){
+        listColors << p->GetColoredName() << "0xRESETT (";
+    } else {
+        tString coloredName = p->GetColoredName();
+        listColors << coloredName.StripWhitespace() << " (";
+    }
+
+    return listColors << p->r << ", "
+                      << p->g << ", "
+                      << p->b << ")\n";
+}
+
+//Gather all the rgb colors and put them in a nice list.
+//Usage /colors with no parameters returns all players and their colors.
+//      /colors playername returns that specific players color or more depending if the search term is found in other player names
+class ColorsCommand : public Command
+{
+public:
+    void execute(ePlayerNetID *player, tString args) override
+    {
+        if (se_PlayerNetIDs.Len() > 0)
+        {
+            if (args.StrPos(" ") == -1)
+            {
+                con << tOutput("$player_colors_text");
+
+                for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
+                {
+                    ePlayerNetID *p = se_PlayerNetIDs(i);
+                    con << (i + 1) << ") " << player->gatherPlayerColor(p);
+                }
+            }
+            else
+            {
+                tArray<tString> msgsExt = args.Split(" ");
+                bool playerFound = false;
+
+                con << tOutput("$player_colors_text");
+
+                for (int i = 0; i < msgsExt.Len(); i++)
+                {
+                    tString word = msgsExt[i];
+                    int j = 0;
+                    for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
+                    {
+                        ePlayerNetID *p = se_PlayerNetIDs(i);
+
+                        if (p->GetName().Filter().Contains(word.Filter()))
+                        {
+                            playerFound = true;
+
+                            con << (j + 1) << ") " << player->gatherPlayerColor(p);
+                            j++;
+                        }
+                    }
+                }
+                // No one found.
+                if (!playerFound)
+                {
+                    con << tOutput("$player_colors_not_found", msgsExt[1]);
+                }
+            }
+        }
+    }
+};
+
+class BrowserCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        gServerBrowser::BrowseMaster();
+    }
+};
+
+class SpeakCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+
+        int pos = 0;
+
+        tString PlayerStr = args.ExtractNonBlankSubString(pos,1);
+
+        ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
+
+        if (p && ePlayer::NetToLocalPlayer(p))
+            p->Chat(args.SubStr(pos+1));
+        }
+    };
+
+
+static std::vector<std::pair<tString, tString>> searchableFiles = {
+    {tString("chat"), tString("chatlog.txt")},
+    {tString("console"), tString("consolelog-limited.txt")},
+    {tString("console-full"), tString("consolelog.txt")}, // TOO BIG?
+};
+
+
+REAL BytesToMB(REAL bytes){
+    return bytes / 1024 / 1024;
+}
+
+
+class SearchCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+
+    tString params;
+    params << args;
+    int pos = 0;
+
+    tString fileName = params.ExtractNonBlankSubString(pos, 1);
+    tString output;
+    if (fileName.empty())
+    {
+        output << "Available files to search:\n";
+
+        int i = 1;
+        for (const auto &searchableFile : searchableFiles)
+        {
+            output << i << ") 0x8bc34a" << searchableFile.first << " 0xffffff(0x8f8f8f" << searchableFile.second << "0xffffff)\n";
+            i++;
+        }
+        output << "Uses: \n"
+               << "/search chat hack the planet (by search phrase)\n"
+               << "/search chat #102 (by line number)\n"
+               << "/search chat #102-105 (by line number range)\n"
+               << "/search chat #102 copy (copy text by single line number)\n";
+        con << output;
+
+        return;
+    }
+    else
+    {
+        std::ifstream i;
+        tString searchPhrase;
+        searchPhrase << params.SubStr(pos);
+        searchPhrase = searchPhrase.TrimWhitespace();
+        std::string searchValue(searchPhrase);
+
+        REAL fileSizeMB;
+        REAL fileSizeMaxMB;
+        REAL numMatches = 0;
+
+        tToLower(fileName);
+
+        for (const auto &searchableFile : searchableFiles)
+        {
+            if (searchableFile.first == fileName)
+            {
+                fileName = searchableFile.second;
+                break;
+            }
+        }
+
+        if (fileName.empty())
+        {
+            execute(player,args);
+            return;
+        }
+
+        if (tDirectories::Var().Open(i, fileName))
+        {
+            std::streamoff MAX_FILE_SIZE = se_searchCommandMaxFileSize * 1024 * 1024;
+            std::streamoff fileSize = tPath::GetFileSize(i);
+            fileSizeMB = BytesToMB(fileSize);
+            fileSizeMaxMB = BytesToMB(MAX_FILE_SIZE);
+            if (fileSize > MAX_FILE_SIZE)
+            {
+                con << "Error: File is too big: '" << fileName << "' ("
+                    << fileSizeMB << " MB /"
+                    << BytesToMB(se_searchCommandMaxFileSize) << " MB)\n";
+
+                i.close();
+                return;
+            }
+
+            if (searchPhrase.empty())
+            {
+                std::deque<std::pair<std::string, int>> lastLines;
+                std::string line;
+                int lineNumber = 1; // Added a line number counter
+                while (std::getline(i, line))
+                {
+                    lastLines.push_back(std::make_pair(line, lineNumber));
+                    if (lastLines.size() > se_searchCommandEmptySearchNumLines)
+                        lastLines.pop_front();
+                    lineNumber++;
+                }
+                tString fileNameOut;
+                fileNameOut << "\nFile '0xffb900"  << fileName   << tString("0xffffff' ")
+                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+
+                con << fileNameOut << "Nothing to search. Showing last 0x8bc34a" << se_searchCommandEmptySearchNumLines << "0xffffff lines:\n";
+                int count = 1;
+                for (const auto& linePair : lastLines) // linePair is a pair of line content and line number
+                    con << count++ << ") 0x8bc34aLine 0xffb900" << linePair.second << ": 0xffffff" << linePair.first << "\n";
+
+                i.close();
+                return;
+            }
+
+
+            std::string sayLine;
+            int lineNumber = 1;
+            bool found = false;
+            tString output;
+            bool copyToClipboard = false;
+            if (searchPhrase.StartsWith("#"))
+            {
+                tString actualSearchPhrase = searchPhrase.SubStr(1);
+                int copyPos = actualSearchPhrase.StrPos(" copy");
+                copyToClipboard = (copyPos != -1);
+
+                if (copyToClipboard)
+                {
+                    actualSearchPhrase = actualSearchPhrase.SubStr(0, copyPos); // Remove " copy" from the search phrase
+                }
+
+                #ifndef WIN32
+                    copyToClipboard = false;
+                #endif
+
+                int startLineNumber = -1;
+                int endLineNumber = -1;
+
+                int dashPos = actualSearchPhrase.StrPos("-");
+                if (dashPos != -1)
+                {
+                    startLineNumber = atoi(actualSearchPhrase.SubStr(0, dashPos));
+                    endLineNumber = atoi(actualSearchPhrase.SubStr(dashPos + 1));
+                }
+                else
+                {
+                    startLineNumber = atoi(actualSearchPhrase);
+                    endLineNumber = startLineNumber;
+                }
+
+                while (std::getline(i, sayLine))
+                {
+                    if (lineNumber >= startLineNumber && lineNumber <= endLineNumber)
+                    {
+                        found = true;
+                        numMatches++;
+                        output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
+
+                        if (copyToClipboard && startLineNumber == endLineNumber)
+                        {
+                            tString lineToCopy;
+                            if (found)
+                            {
+                                lineToCopy = output.SubStr(output.StrPos(": ") + 2); // Remove everything before the line content
+                                int lineEndPos = lineToCopy.StrPos("\n");
+                                if (lineEndPos != -1)
+                                {
+                                    lineToCopy = tColoredString::RemoveColors(lineToCopy.SubStr(0, lineEndPos)); // Remove newline character
+                                }
+
+                                if (OpenClipboard(0))
+                                {
+                                    EmptyClipboard();
+
+                                    HGLOBAL hClipboardData = GlobalAlloc(GMEM_MOVEABLE, lineToCopy.Len() + 1);
+                                    char *pchData = static_cast<char *>(GlobalLock(hClipboardData));
+                                    strcpy(pchData, lineToCopy);
+                                    GlobalUnlock(hClipboardData);
+
+                                    SetClipboardData(CF_TEXT, hClipboardData);
+                                    CloseClipboard();
+                                }
+                            }
+                            con << "Copied contents to clipboard.\n";
+                            break;
+                        }
+                    }
+
+                    if (lineNumber > endLineNumber)
+                    {
+                        break;
+                    }
+
+                    lineNumber++;
+                }
+                if (!found)
+                {
+                    con << "0x8bc34aLine Range0xffb900: " << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
+                    return;
+                }
+                con << output;
+            }
+            else if (!copyToClipboard)
+            {
+                while (std::getline(i, sayLine))
+                {
+                    std::string sayLineComparison = sayLine;
+                    std::string searchValueComparison = searchValue;
+
+                    if (!se_searchCommandCaseSensitive)
+                    {
+                        std::transform(sayLineComparison.begin(), sayLineComparison.end(), sayLineComparison.begin(),
+                                       [](unsigned char c)
+                                       { return std::tolower(c); });
+                        std::transform(searchValueComparison.begin(), searchValueComparison.end(), searchValueComparison.begin(),
+                                       [](unsigned char c)
+                                       { return std::tolower(c); });
+                    }
+                    std::size_t foundPos = sayLineComparison.find(searchValueComparison);
+                    if (foundPos != std::string::npos)
+                    {
+                        found = true;
+                        numMatches++;
+                        output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
+                    }
+                    lineNumber++;
+                }
+            }
+            if (!found && !copyToClipboard)
+            {
+                tString fileNameOut;
+                fileNameOut << "\nFile '0xffb900"  << fileName   << tString("0xffffff' ")
+                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+
+                con << fileNameOut
+                    << "No matches found for the search phrase: '0x8bc34a"
+                    << searchPhrase << ("0xffffff' (0xffb900");
+            }
+            else if (!copyToClipboard)
+            {
+                tString fileNameOut;
+                fileNameOut << "\nFile '0xffb900"  << fileName   << tString("0xffffff' ")
+                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+
+                tString matches;
+                matches << fileNameOut << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
+
+                output = matches << tString("'0x8bc34a")
+                                 << searchPhrase << tString("0xffffff'\n")
+                                 << output;
+
+
+                con << output;
+            }
+            i.close();
+        }
+        else
+        {
+            con << "Error opening: "
+                << "'" << fileName << "'.\n";
+        }
+    }
+
+    }
+};
+
+
+void ePlayerNetID::scheduleNameChange()
+{
+    if (nameSpeakIndex < nameSpeakWords.Len())
+    {
+        ePlayer *player = ePlayer::PlayerConfig(nameSpeakPlayerID);
+
+        if (playerUpdateIteration % se_nameSpeakInterval == 0)
+        {
+            if (!nameSpeakWords[nameSpeakIndex].empty())
+            {
+                player->name = nameSpeakWords[nameSpeakIndex];
+            }
+            forceCreatePlayer = nameSpeakPlayerID;
+            nameSpeakIndex++;
+            Clear(player);
+        }
+        else
+        {
+            forceCreatePlayer = -1;
+            Clear(player);
+        }
+    }
+    else
+    {
+        forceCreatePlayer = -1;
+        nameSpeakWords.Clear();
+    }
+}
+
+class NameSpeakCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+    tString params;
+    params << args;
+    int pos = 0;
+
+    tString command = params.ExtractNonBlankSubString(pos);
+    params = params.SubStr(pos);
+    params = params.TrimWhitespace();
+    if (se_nameSpeakSplitByNameSize)
+        nameSpeakWords = params.SplitBySizeWithFullWords(15);
+    else
+        nameSpeakWords = params.Split(" ");
+
+    int playerID = -1;
+    ePlayer *local_p = nullptr;
+    bool found = false;
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        local_p = ePlayer::PlayerConfig(i);
+        if (!bool(local_p->netPlayer.get()) && !tIsInList(se_disableCreateSpecific,i+1))
+        {
+            local_p = ePlayer::PlayerConfig(i);
+            playerID = i;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found || !player)
+    {
+        con << "No usable players!\n";
+        nameSpeakWords.Clear();
+        return;
+    }
+    con << "Name Speak: \n  - Using Player " << nameSpeakPlayerID+1 << ". Message: '" <<  params << "'\n";
+    nameSpeakIndex = 0;
+    nameSpeakPlayerID = playerID;
+    playerUpdateIteration = 0;
+    }
+};
+
+class ResCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        player->RespawnPlayer();
+    }
+};
+
+class RebuildGridCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        tArray<tString> passedString = args.Split(" ");
+        if (gGame::CurrentGame()) {
+            gGame::CurrentGame()->RebuildGrid(atoi(passedString[1]));
+        }
+    }
+};
+
+class SaveConfigCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+
+        extern tString st_AddToUserExt( tArray<tString> commands );
+        auto str = tString(args).Split(" ");
+        str.RemoveAt( 0 );
+        con << st_AddToUserExt( str );
+    }
+};
+
+class RebuildCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        int pos = 0;
+
+        tString PlayerNumb = args.ExtractNonBlankSubString(pos,1);
+
+        if (PlayerNumb.empty())
+        {
+            ePlayerNetID::CompleteRebuild();
+        } else {
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb)-1);
+            player->Clear(local_p);
+            player->Update();
+        }
+    }
+};
+
+class WatchCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        eCamera::SpectatePlayer(*player, args);
+    }
+};
+
+class ReverseCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        tString s_modified(args);
+        s_modified.RemoveSubStr(0, se_reverseCommand.Len());
+        player->Chat(s_modified.Reverse());
+    }
+};
+
+class SpectateCommand : public Command {
+public:
+    void execute(ePlayerNetID* player, tString args) override {
+        ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
+        local_p->spectate = true;
+        player->Clear(local_p);
+        player->Update();
+    }
+};
+
+#endif //if not dedicated
+
 void ePlayerNetID::RespawnPlayer(bool local)
 {
     gCycle *cycle = dynamic_cast<gCycle *>(Object());
@@ -5137,6 +6031,57 @@ void ePlayerNetID::RespawnPlayer(bool local)
     }
 }
 
+
+std::unordered_map<std::string, std::unique_ptr<Command>> createCommandMap()
+{
+    std::unordered_map<std::string, std::unique_ptr<Command>> commandMap;
+    commandMap.emplace(se_consoleCommand.stdString(), std::make_unique<ConsoleCommand>());
+    commandMap.emplace(se_colorsCommand.stdString(), std::make_unique<ColorsCommand>());
+    commandMap.emplace(se_infoCommand.stdString(), std::make_unique<listPlayerInfoCommand>());
+    commandMap.emplace(se_rgbCommand.stdString(), std::make_unique<RgbCommand>());
+    commandMap.emplace(se_browserCommand.stdString(), std::make_unique<BrowserCommand>());
+    commandMap.emplace(se_speakCommand.stdString(), std::make_unique<SpeakCommand>());
+    commandMap.emplace(se_rebuildCommand.stdString(), std::make_unique<RebuildCommand>());
+    commandMap.emplace(se_watchCommand.stdString(), std::make_unique<WatchCommand>());
+    commandMap.emplace(se_activeStatusCommand.stdString(), std::make_unique<ActiveStatusCommand>());
+    commandMap.emplace(se_reverseCommand.stdString(), std::make_unique<ReverseCommand>());
+    commandMap.emplace(se_spectateCommand.stdString(), std::make_unique<SpectateCommand>());
+    commandMap.emplace(se_joinCommand.stdString(), std::make_unique<JoinCommand>());
+    commandMap.emplace(se_searchCommand.stdString(), std::make_unique<SearchCommand>());
+    commandMap.emplace(se_nameSpeak.stdString(), std::make_unique<NameSpeakCommand>());
+    commandMap.emplace(se_resCommand.stdString(), std::make_unique<ResCommand>());
+    commandMap.emplace(se_rebuildGridCommand.stdString(), std::make_unique<RebuildGridCommand>());
+    commandMap.emplace(se_saveConfigCommand.stdString(), std::make_unique<SaveConfigCommand>());
+
+    return commandMap;
+}
+
+ void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString command)
+{
+    std::unordered_map<std::string, std::unique_ptr<Command>> commandMap = createCommandMap();
+    ePlayerNetID::LocalChatCommands(p, command, commandMap);
+}
+
+ void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<std::string, std::unique_ptr<Command>>& commandMap)
+{
+    if (p != NULL)
+    {
+        tArray<tString> passedString = command.Split(" ");
+        std::string cmd(passedString[0]);
+
+        auto it = commandMap.find(cmd);
+        if(it != commandMap.end()) {
+            try {
+                it->second->execute(p, command);
+            } catch(const std::exception& e) {
+                con << e.what();
+            }
+        } else {
+            con << "ERROR: NO COMMAND FOR: " << cmd << "\n";
+        }
+    }
+}
+
 void ePlayerNetID::Chat(const tString& s_orig)
 {
     // con << "IN CHAT WITH s_orig: " << s_orig << "\n";
@@ -5145,66 +6090,32 @@ void ePlayerNetID::Chat(const tString& s_orig)
 
 #ifndef DEDICATED
 
-    tString se_localChatCommands[] =
-    {
-        se_consoleCommand,
-        se_colorsCommand,
-        se_infoCommand,
-        se_rgbCommand,
-        se_browserCommand,
-        se_speakCommand,
-        se_rebuildCommand,
-        se_watchCommand,
-        se_activeStatusCommand,
-        se_reverseCommand,
-        se_spectateCommand,
-        se_joinCommand,
-        se_searchCommand,
-        se_nameSpeak,
-        se_resCommand
-    };
+    std::unordered_map<std::string, std::unique_ptr<Command>> commandMap = createCommandMap();
 
     std::string chatString(s_orig);
     std::istringstream passedString(chatString);
 
     tString command;
-
     passedString >> command;
     tToLower(command);
     tConfItemBase::EatWhitespace(passedString);
 
     bool isLocalCommand = false;
 
-    for (int i = sizeof(se_localChatCommands) / sizeof(se_localChatCommands[0]) - 1; i >= 0; --i)
+    // Iterate over the commandMap to find if the entered command is a local command
+    for (auto &cmd : commandMap)
     {
-        if (command.StartsWith(se_localChatCommands[i]))
+        if (command.StartsWith(cmd.first.c_str()))
         {
             isLocalCommand = true;
+            break;
         }
     }
 
-    if ((se_consoleLocalCommandPlayersEnabled) && s_orig.StartsWith("/")
-        && (command == "/players" || command == "/listplayers"))
-    {
-        tCurrentAccessLevel level(tAccessLevel_Owner, true);
-        tString params("PLAYERS");
-        std::stringstream s(static_cast<char const*>(params));
-        tConfItemBase::LoadAll(s);
-        return;
-    }
     // con << "IS LOCAL? " << isLocalCommand << " STARTS WITH / " << s_orig.StartsWith("/") << "\n";
     if (isLocalCommand && se_enableChatCommands && (s_orig.StartsWith("/")))
-    {
-        // con << "CALLING LOCAL CHAT COMMANDS\n";
-        LocalChatCommands(this,s_orig);
-    }
-    else if( command == "/savecmd" || command == "/saveset" || command == "/savecfg" || command == "/savesetting" )
-    {
-        extern tString st_AddToUserExt( tArray<tString> commands );
-
-        auto str = tString(s_orig).Split(" ");
-        str.RemoveAt( 0 );
-        con << st_AddToUserExt( str );
+    {        // con << "CALLING LOCAL CHAT COMMANDS\n";
+        LocalChatCommands(this,s_orig,commandMap);
     }
     else
 #endif // if not dedicated
@@ -5721,7 +6632,7 @@ public:
             if (!playerFound)
             {
                 con << "PLAYER NOT FOUND\n";
-            ePlayerNetID::LocalChatCommands(NULL,*content);
+                ePlayerNetID::LocalChatCommands(NULL,*content);
 
             }
 
@@ -9275,7 +10186,7 @@ static tConfItem<int> se_RandomizeColorRangeConf("PLAYER_RANDOM_COLOR_RANGE", se
 
 
 //This seems more random.
-static void se_RandomizeColor(ePlayer * l)
+void se_RandomizeColor(ePlayer * l)
 {
     int currentRGB[3];
     int newRGB[3];
@@ -9295,7 +10206,7 @@ static void se_RandomizeColor(ePlayer * l)
 }
 
 //Attempts to pick a color no one else currently has.
-static void se_UniqueColor( ePlayer * local_p )
+void se_UniqueColor( ePlayer * local_p )
 {
     int currentRGB[3];
     int newRGB[3];
@@ -9778,959 +10689,7 @@ static tConfItemFunc se_crossfadeRemoveColorConf("PLAYER_COLOR_CUSTOMIZATION_CRO
 static tConfItemFunc se_loadCrossfadePresetConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_PRESET",&se_loadCrossfadePreset);
 
 
-//Gather all the rgb colors and put them in a nice list.
-//Usage /colors with no parameters returns all players and their colors.
-//      /colors playername returns that specific players color or more depending if the search term is found in other player names
-void ePlayerNetID::listPlayerColors(tString s_orig)
-{
 
-    if (se_PlayerNetIDs.Len()>0)
-    {
-        if (s_orig.StrPos(" ") == -1)
-        {
-            con << tOutput("$player_colors_text");
-
-            for ( int i = 0; i <= se_PlayerNetIDs.Len()-1; i++ )
-            {
-                ePlayerNetID *p=se_PlayerNetIDs(i);
-                con << (i+1) << ") " << gatherPlayerColor(p);
-
-            }
-        }
-        else
-        {
-            tArray<tString> msgsExt = s_orig.Split(" ");
-            bool playerFound = false;
-
-            con << tOutput("$player_colors_text");
-
-            for(int i = 0; i < msgsExt.Len(); i++)
-            {
-                tString word = msgsExt[i];
-                int j = 0;
-                for ( int i = 0; i <= se_PlayerNetIDs.Len()-1; i++ )
-                {
-                    ePlayerNetID *p=se_PlayerNetIDs(i);
-
-                    if (p->GetName().Filter().Contains(word.Filter()))
-                    {
-                        playerFound = true;
-
-                        con << (j+1) << ") " << gatherPlayerColor(p);
-                        j++;
-
-                    }
-                }
-            }
-            //No one found.
-            if (!playerFound)
-            {
-                con << tOutput("$player_colors_not_found", msgsExt[1]);
-            }
-        }
-    }
-}
-
-tColoredString ePlayerNetID::gatherPlayerColor(ePlayerNetID* p, bool showReset)
-{
-    tColoredString listColors;
-    if (showReset){
-        listColors << p->GetColoredName() << "0xRESETT (";
-    } else {
-        tString coloredName = p->GetColoredName();
-        listColors << coloredName.StripWhitespace() << " (";
-    }
-
-    return listColors << p->r << ", "
-                      << p->g << ", "
-                      << p->b << ")\n";
-}
-
-
-/*
-List player information.
-Displays:
-Colored Name
-Position
-Direction
-Used Rubber out of max
-Speed
-Spectating / Playing
-Chatting
-Sometimes Alive / Dead
-Usage: /info - Returns own information
-       /info playername - Returns that players name. (or more depending if the search word is found in more than one player)
-*/
-
-void ePlayerNetID::listPlayerInfo(tString s_orig)
-{
-
-    if (se_PlayerNetIDs.Len()>0)
-    {
-        if (s_orig.StrPos(" ") == -1)
-        {
-            con << tOutput("$player_info_text");
-            ePlayerNetID *p = se_GetLocalPlayer();
-            con << gatherPlayerInfo(p);
-        }
-        else
-        {
-            tArray<tString> msgsExt = s_orig.Split(" ");
-            tArray<ePlayerNetID *> foundPlayers;
-            bool playerFound = false;
-            con << tOutput("$player_info_text");
-            for(int i = 0; i < msgsExt.Len(); i++)
-            {
-                tString word = msgsExt[i];
-
-                for(int i=0; i < se_PlayerNetIDs.Len(); i++)
-                {
-                    ePlayerNetID *p=se_PlayerNetIDs(i);
-
-                    if (p->GetName().Filter().Contains(word.Filter()))
-                    {
-                        playerFound = true;
-                        con << gatherPlayerInfo(p);
-                    }
-                }
-            }
-
-            if (!playerFound)
-            {
-                con << tOutput("$player_not_found_text", msgsExt[1]);
-            }
-
-        }
-
-    }
-}
-
-tColoredString ePlayerNetID::gatherPlayerInfo(ePlayerNetID *p) {
-    tColoredString listinfo;
-    listinfo << "\nResults for " << p->GetColoredName() << "0xRESETT:";
-    listinfo << "\nColor: " << gatherPlayerColor(p);
-
-    gRealColor color(p->r,p->g,p->b);
-    //p->Color(color);
-    se_removeDarkColors(color);
-    listinfo << "\nFiltered Color: ("
-             << p->r << ", "
-             << p->g << ", "
-             << p->b << ")\n";
-
-    // Status. Includes player type, spectating or playing, and if the player is chatting.
-    listinfo << "Status: " << (p->IsHuman() ? "Human" : "Bot")
-             << ", " << (p->CurrentTeam() ? "Playing" : "Spectating")
-             << (p->IsChatting() ? ", Chatting" : "");
-
-    // Only grab this information if the player is an active object.
-    if (p->Object() && p->currentTeam) {
-        // If the player is an active object, are they alive?
-        listinfo << (p->Object()->Alive() ? ", Alive" : ", Dead") << '\n'
-                 << "Lag: " << p->Object()->Lag() << "\n";
-        // Only grab this information if the player is an alive object.
-        gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
-        if (p->Object()->Alive()) {
-
-            listinfo << "Position: x: " << pCycle->Position().x
-                     << ", y: " << pCycle->Position().y << '\n'
-                     << "Map Direction: x: " << pCycle->Direction().x
-                     << ", y: " << pCycle->Direction().y << '\n'
-                     << "Speed: " << pCycle->verletSpeed_ << '\n'
-                     << "Rubber: " << pCycle->GetRubber() << "/"
-                     << sg_rubberCycle << '\n';
-        }
-    }
-
-    return listinfo << '\n';
-}
-
-
-static tString se_colorVarFile("colors.txt");
-static tConfItem<tString> se_colorVarFileConf("RGB_COLORS_FILE", se_colorVarFile);
-
-static void se_loadSavedColor(ePlayer *local_p, int lineNumber) {
-    tArray<tString> colors;
-
-    std::ifstream i;
-    if (tDirectories::Var().Open(i, se_colorVarFile)) {
-        std::string sayLine;
-        while (std::getline(i, sayLine)) {
-            std::istringstream s(sayLine);
-
-            tString params;
-            params.ReadLine(s);
-
-            if (!params.Filter().empty()) {
-                colors.Insert(params);
-            }
-        }
-    }
-    i.close();
-
-    if (lineNumber < colors.Len()) {
-        tString currentLine = colors[lineNumber];
-
-        int pos = 0;
-        tString Name = currentLine.ExtractNonBlankSubString(pos);
-        tString ColorOne = currentLine.ExtractNonBlankSubString(pos);
-        ColorOne.RemoveSubStr(0, 1);
-
-        int Color1 = atoi(ColorOne);
-        int Color2 = atoi(currentLine.ExtractNonBlankSubString(pos));
-        int Color3 = atoi(currentLine.ExtractNonBlankSubString(pos));
-
-        REAL c1 = Color1;
-        REAL c2 = Color2;
-        REAL c3 = Color3;
-
-        se_MakeColorValid(c1, c2, c3, 1.0f);
-
-        con << tOutput("$player_colors_loading");
-        con << (lineNumber + 1) << ") ";
-        if (tColoredString::HasColors(Name)) {
-            con << Name << "0xRESETT (" << Color1 << ", " << Color2 << ", " << Color3 << ")\n";
-        } else {
-            con << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15) << Name << "0xRESETT ("
-                << Color1 << ", " << Color2 << ", " << Color3 << ")\n";
-        }
-
-        local_p->rgb[0] = Color1;
-        local_p->rgb[1] = Color2;
-        local_p->rgb[2] = Color3;
-    }
-}
-
-
-static int se_savedColorsCount()
-{
-    int count = 0;
-    std::ifstream i;
-    if (tDirectories::Var().Open(i, se_colorVarFile))
-    {
-        while (!i.eof())
-        {
-            std::string sayLine;
-            std::getline(i, sayLine);
-            std::istringstream s(sayLine);
-
-            tString params;
-            params.ReadLine(s);
-
-            if (params.Filter() != "")
-                count++;
-        }
-    }
-    i.close();
-
-    return count;
-}
-
-
-static void se_SavedColors(int savedColorsCount)
-{
-    tArray<tString> colors;
-
-    std::ifstream i;
-    if (tDirectories::Var().Open(i, se_colorVarFile))
-    {
-        while (!i.eof())
-        {
-            std::string sayLine;
-            std::getline(i, sayLine);
-            std::istringstream s(sayLine);
-
-            tString params;
-            params.ReadLine(s);
-            int pos = 0;
-
-            if (!params.Filter().empty())
-                colors.Insert(params);
-        }
-    }
-    i.close();
-
-    for (int index = 0; index <= savedColorsCount; index++)
-    {
-        tString currentLine = colors[index];
-        if (!currentLine.empty())
-        {
-            int pos = 0;
-            tString Name = currentLine.ExtractNonBlankSubString(pos);
-            tString ColorOne = currentLine.ExtractNonBlankSubString(pos);
-            ColorOne.RemoveSubStr(0, 1);
-            int Color1 = atoi(ColorOne);
-            int Color2 = atoi(currentLine.ExtractNonBlankSubString(pos));
-            int Color3 = atoi(currentLine.ExtractNonBlankSubString(pos));
-            REAL c1 = Color1;
-            REAL c2 = Color2;
-            REAL c3 = Color3;
-            se_MakeColorValid(c1, c2, c3, 1.0f);
-            if (tColoredString::HasColors(Name))
-            {
-                con << (index + 1) << ") "
-                    << Name << "0xRESETT ("
-                    << Color1 << ", "
-                    << Color2 << ", "
-                    << Color3 << ")\n";
-            }
-            else
-            {
-                con << (index + 1) << ") "
-                    << tColoredString::ColorString(c1 / 15, c2 / 15, c3 / 15)
-                    << Name   << "0xRESETT ("
-                    << Color1 << ", "
-                    << Color2 << ", "
-                    << Color3 << ")\n";
-            }
-        }
-    }
-}
-
-void ePlayerNetID::localSpeak(tString s_orig)
-{
-    tString params;
-    params << s_orig;
-    int pos = 0;
-
-    tString PlayerStr = params.ExtractNonBlankSubString(pos,1);
-
-    ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
-
-    if (p && ePlayer::NetToLocalPlayer(p))
-        p->Chat(params.SubStr(pos+1));
-}
-
-void ePlayerNetID::activeStatus(tString s_orig, ePlayerNetID *calledPlayer)
-{
-    tString params;
-    params << s_orig;
-    int pos = 0;
-
-    tString PlayerStr = params.ExtractNonBlankSubString(pos,1);
-
-    ePlayerNetID *p;
-    if (!PlayerStr.empty())
-        p = ePlayerNetID::FindPlayerByName(PlayerStr);
-    else if (calledPlayer)
-        p = calledPlayer;
-
-    if (!p)
-        return;
-
-    REAL chattingTime = p->ChattingTime();
-
-    tColoredString listInfo;
-    listInfo << "\nResults for "  << p->GetColoredName() << "0xRESETT: \n"
-             << "Status: "        << "\n"
-             << "Created: "       << p->createTime_      << "\n"
-             << "Last Activity: " << p->LastActivity()   << "\n"
-             << "Chatting For: "  << chattingTime        << "\n";
-
-    if (chattingTime == 0)
-        listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.\n";
-
-    con << listInfo;
-}
-
-static std::vector<std::pair<tString, tString>> searchableFiles = {
-    {tString("chat"), tString("chatlog.txt")},
-    {tString("console"), tString("consolelog-limited.txt")},
-    {tString("console-full"), tString("consolelog.txt")}, // TOO BIG?
-};
-
-
-REAL BytesToMB(REAL bytes){
-    return bytes / 1024 / 1024;
-}
-
-
-void ePlayerNetID::searchCommand(tString s_orig)
-{
-    tString params;
-    params << s_orig;
-    int pos = 0;
-
-    tString fileName = params.ExtractNonBlankSubString(pos, 1);
-    tString output;
-    if (fileName.empty())
-    {
-        output << "Available files to search:\n";
-
-        int i = 1;
-        for (const auto &searchableFile : searchableFiles)
-        {
-            output << i << ") 0x8bc34a" << searchableFile.first << " 0xffffff(0x8f8f8f" << searchableFile.second << "0xffffff)\n";
-            i++;
-        }
-        output << "Uses: \n"
-               << "/search chat hack the planet (by search phrase)\n"
-               << "/search chat #102 (by line number)\n"
-               << "/search chat #102-105 (by line number range)\n"
-               << "/search chat #102 copy (copy text by single line number)\n";
-        con << output;
-
-        return;
-    }
-    else
-    {
-        std::ifstream i;
-        tString searchPhrase;
-        searchPhrase << params.SubStr(pos);
-        searchPhrase = searchPhrase.TrimWhitespace();
-        std::string searchValue(searchPhrase);
-
-        REAL fileSizeMB;
-        REAL fileSizeMaxMB;
-        REAL numMatches = 0;
-
-        tToLower(fileName);
-
-        for (const auto &searchableFile : searchableFiles)
-        {
-            if (searchableFile.first == fileName)
-            {
-                fileName = searchableFile.second;
-                break;
-            }
-        }
-
-        if (fileName.empty())
-        {
-            searchCommand(tString("/search"));
-            return;
-        }
-
-        if (tDirectories::Var().Open(i, fileName))
-        {
-            std::streamoff MAX_FILE_SIZE = se_searchCommandMaxFileSize * 1024 * 1024;
-            std::streamoff fileSize = tPath::GetFileSize(i);
-            fileSizeMB = BytesToMB(fileSize);
-            fileSizeMaxMB = BytesToMB(MAX_FILE_SIZE);
-            if (fileSize > MAX_FILE_SIZE)
-            {
-                con << "Error: File is too big: '" << fileName << "' ("
-                    << fileSizeMB << " MB /"
-                    << BytesToMB(se_searchCommandMaxFileSize) << " MB)\n";
-
-                i.close();
-                return;
-            }
-
-            if (searchPhrase.empty())
-            {
-                std::deque<std::pair<std::string, int>> lastLines;
-                std::string line;
-                int lineNumber = 1; // Added a line number counter
-                while (std::getline(i, line))
-                {
-                    lastLines.push_back(std::make_pair(line, lineNumber));
-                    if (lastLines.size() > se_searchCommandEmptySearchNumLines)
-                        lastLines.pop_front();
-                    lineNumber++;
-                }
-                tString fileNameOut;
-                fileNameOut << "\nFile '0xffb900"  << fileName   << tString("0xffffff' ")
-                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
-
-                con << fileNameOut << "Nothing to search. Showing last 0x8bc34a" << se_searchCommandEmptySearchNumLines << "0xffffff lines:\n";
-                int count = 1;
-                for (const auto& linePair : lastLines) // linePair is a pair of line content and line number
-                    con << count++ << ") 0x8bc34aLine 0xffb900" << linePair.second << ": 0xffffff" << linePair.first << "\n";
-
-                i.close();
-                return;
-            }
-
-
-            std::string sayLine;
-            int lineNumber = 1;
-            bool found = false;
-            tString output;
-            bool copyToClipboard = false;
-            if (searchPhrase.StartsWith("#"))
-            {
-                tString actualSearchPhrase = searchPhrase.SubStr(1);
-                int copyPos = actualSearchPhrase.StrPos(" copy");
-                copyToClipboard = (copyPos != -1);
-
-                if (copyToClipboard)
-                {
-                    actualSearchPhrase = actualSearchPhrase.SubStr(0, copyPos); // Remove " copy" from the search phrase
-                }
-
-                #ifndef WIN32
-                    copyToClipboard = false;
-                #endif
-
-                int startLineNumber = -1;
-                int endLineNumber = -1;
-
-                int dashPos = actualSearchPhrase.StrPos("-");
-                if (dashPos != -1)
-                {
-                    startLineNumber = atoi(actualSearchPhrase.SubStr(0, dashPos));
-                    endLineNumber = atoi(actualSearchPhrase.SubStr(dashPos + 1));
-                }
-                else
-                {
-                    startLineNumber = atoi(actualSearchPhrase);
-                    endLineNumber = startLineNumber;
-                }
-
-                while (std::getline(i, sayLine))
-                {
-                    if (lineNumber >= startLineNumber && lineNumber <= endLineNumber)
-                    {
-                        found = true;
-                        numMatches++;
-                        output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
-
-                        if (copyToClipboard && startLineNumber == endLineNumber)
-                        {
-                            tString lineToCopy;
-                            if (found)
-                            {
-                                lineToCopy = output.SubStr(output.StrPos(": ") + 2); // Remove everything before the line content
-                                int lineEndPos = lineToCopy.StrPos("\n");
-                                if (lineEndPos != -1)
-                                {
-                                    lineToCopy = tColoredString::RemoveColors(lineToCopy.SubStr(0, lineEndPos)); // Remove newline character
-                                }
-
-                                if (OpenClipboard(0))
-                                {
-                                    EmptyClipboard();
-
-                                    HGLOBAL hClipboardData = GlobalAlloc(GMEM_MOVEABLE, lineToCopy.Len() + 1);
-                                    char *pchData = static_cast<char *>(GlobalLock(hClipboardData));
-                                    strcpy(pchData, lineToCopy);
-                                    GlobalUnlock(hClipboardData);
-
-                                    SetClipboardData(CF_TEXT, hClipboardData);
-                                    CloseClipboard();
-                                }
-                            }
-                            con << "Copied contents to clipboard.\n";
-                            break;
-                        }
-                    }
-
-                    if (lineNumber > endLineNumber)
-                    {
-                        break;
-                    }
-
-                    lineNumber++;
-                }
-                if (!found)
-                {
-                    con << "0x8bc34aLine Range0xffb900: " << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
-                    return;
-                }
-                con << output;
-            }
-            else if (!copyToClipboard)
-            {
-                while (std::getline(i, sayLine))
-                {
-                    std::string sayLineComparison = sayLine;
-                    std::string searchValueComparison = searchValue;
-
-                    if (!se_searchCommandCaseSensitive)
-                    {
-                        std::transform(sayLineComparison.begin(), sayLineComparison.end(), sayLineComparison.begin(),
-                                       [](unsigned char c)
-                                       { return std::tolower(c); });
-                        std::transform(searchValueComparison.begin(), searchValueComparison.end(), searchValueComparison.begin(),
-                                       [](unsigned char c)
-                                       { return std::tolower(c); });
-                    }
-                    std::size_t foundPos = sayLineComparison.find(searchValueComparison);
-                    if (foundPos != std::string::npos)
-                    {
-                        found = true;
-                        numMatches++;
-                        output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
-                    }
-                    lineNumber++;
-                }
-            }
-            if (!found && !copyToClipboard)
-            {
-                tString fileNameOut;
-                fileNameOut << "\nFile '0xffb900"  << fileName   << tString("0xffffff' ")
-                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
-
-                con << fileNameOut
-                    << "No matches found for the search phrase: '0x8bc34a"
-                    << searchPhrase << ("0xffffff' (0xffb900");
-            }
-            else if (!copyToClipboard)
-            {
-                tString fileNameOut;
-                fileNameOut << "\nFile '0xffb900"  << fileName   << tString("0xffffff' ")
-                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
-
-                tString matches;
-                matches << fileNameOut << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
-
-                output = matches << tString("'0x8bc34a")
-                                 << searchPhrase << tString("0xffffff'\n") 
-                                 << output;
-
-
-                con << output;
-            }
-            i.close();
-        }
-        else
-        {
-            con << "Error opening: "
-                << "'" << fileName << "'.\n";
-        }
-    }
-}
-
-void ePlayerNetID::scheduleNameChange()
-{
-    if (nameSpeakIndex < nameSpeakWords.Len())
-    {
-        ePlayer *player = ePlayer::PlayerConfig(nameSpeakPlayerID);
-
-        if (playerUpdateIteration % se_nameSpeakInterval == 0)
-        {
-            if (!nameSpeakWords[nameSpeakIndex].empty())
-            {
-                player->name = nameSpeakWords[nameSpeakIndex];
-            }
-            forceCreatePlayer = nameSpeakPlayerID;
-            nameSpeakIndex++;
-            Clear(player);
-        }
-        else
-        {
-            forceCreatePlayer = -1;
-            Clear(player);
-        }
-    }
-    else
-    {
-        forceCreatePlayer = -1;
-        nameSpeakWords.Clear();
-    }
-}
-
-void ePlayerNetID::nameSpeakCommand(tString s_orig)
-{
-    tString params;
-    params << s_orig;
-    int pos = 0;
-
-    tString command = params.ExtractNonBlankSubString(pos);
-    params = params.SubStr(pos);
-    params = params.TrimWhitespace();
-    if (se_nameSpeakSplitByNameSize)
-        nameSpeakWords = params.SplitBySizeWithFullWords(15);
-    else
-        nameSpeakWords = params.Split(" ");
-
-    int playerID = -1;
-    ePlayer *player = nullptr;
-    bool found = false;
-    for (int i = 0; i < MAX_PLAYERS; ++i)
-    {
-        player = ePlayer::PlayerConfig(i);
-        if (!bool(player->netPlayer.get()) && !tIsInList(se_disableCreateSpecific,i+1))
-        {
-            player = ePlayer::PlayerConfig(i);
-            playerID = i;
-            found = true;
-            break;
-        }
-    }
-
-    if (!found || !player)
-    {
-        con << "No usable players!\n";
-        nameSpeakWords.Clear();
-        return;
-    }
-    con << "Name Speak: \n  - Using Player " << nameSpeakPlayerID+1 << ". Message: '" <<  params << "'\n";
-    nameSpeakIndex = 0;
-    nameSpeakPlayerID = playerID;
-    playerUpdateIteration = 0;
-}
-
-void ePlayerNetID::rebuildCommand(tString s_orig)
-{
-    int pos = 0;
-
-    tString PlayerNumb = s_orig.ExtractNonBlankSubString(pos,1);
-
-    if (PlayerNumb.empty())
-    {
-        CompleteRebuild();
-    } else {
-        ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb)-1);
-        Clear(local_p);
-        Update();
-    }
-}
-
-// Allow us to change our current RGB easily.
-// Usage: /rgb with no parameters displays current rgb.
-//        /rgb 15 3 3 Would set player 1's RGB to R15 G3 B3.
-//        /rgb unique gives all players unique colors.
-//        /rgb random gives all players random colors.
-//        /rgb 2 15 3 3 Will change player 2's colors to 15 3 3.
-//        /rgb save would save your current colors to colors.txt
-//        /rgb save player would save the players current colors to colors.txt
-//        /rgb list would list your current saved colors.
-//        /rgb load 1 would load from line #1 in the list.
-//        /rgb clear would clear your current list of saved colors.
-void ePlayerNetID::currentPlayerRGB( tString s_orig )
-{
-    ePlayer *local_p = ePlayer::NetToLocalPlayer(this);
-    if (!local_p)
-        return;
-
-    std::vector<std::pair<ePlayer*, ePlayerNetID*>> activePlayers;
-
-    for (int i = 0; i < MAX_PLAYERS; ++i)
-    {
-            ePlayer* me = ePlayer::PlayerConfig(i);
-            if (bool(me->netPlayer.get()))
-                activePlayers.emplace_back(me, me->netPlayer.get());
-    }
-
-    if (s_orig.StrPos(" ") == -1)
-    {
-        con << tOutput("$player_colors_current_text");
-        for (const auto &playerPair : activePlayers) {
-            tColoredString listColors;
-            listColors << playerPair.second->GetColoredName() << "0xRESETT ("
-                       << playerPair.first->rgb[0] << ", "
-                       << playerPair.first->rgb[1] << ", "
-                       << playerPair.first->rgb[2] << ")\n";
-            con << listColors;
-        }
-    }
-    else
-    {
-        tArray<tString> passedString = s_orig.Split(" ");
-        bool correctParameters = false;
-        bool hideError = false;
-        int targetID = 0;
-
-        if (passedString[1] == "help")
-        {
-            hideError = true;
-            con << tOutput("$player_colors_command_help", se_colorVarFile);
-        }
-        else if (passedString[1] == "unique")
-        {
-            if (passedString.Len() == 2)
-            {
-                // Apply random color to the player who sent the command
-                se_UniqueColor(local_p);
-            }
-            else if (passedString.Len() == 3)
-            {
-                int targetID = atoi(passedString[2]);
-                if (targetID > 0 && targetID <= MAX_PLAYERS)
-                {
-                    // Apply random color to the specified player
-                    se_UniqueColor(ePlayer::PlayerConfig(targetID - 1));
-                }
-            }
-            correctParameters = true;
-        }
-        else if (passedString[1] == "random")
-        {
-            if (passedString.Len() == 2)
-            {
-                // Apply random color to the player who sent the command
-                se_RandomizeColor(local_p);
-            }
-            else if (passedString.Len() == 3)
-            {
-                int targetID = atoi(passedString[2]);
-                if (targetID > 0 && targetID <= MAX_PLAYERS)
-                {
-                    // Apply random color to the specified player
-                    se_RandomizeColor(ePlayer::PlayerConfig(targetID - 1));
-                }
-            }
-
-            correctParameters = true;
-        }
-        else if (passedString[1] == "save")
-        {
-            hideError = true;
-            bool foundPlayer = false;
-
-            if (passedString.Len() == 2)
-            {
-                foundPlayer = true;
-                std::ofstream o;
-
-                if (tDirectories::Var().Open(o, se_colorVarFile, std::ios::app))
-                {
-                    con << tOutput("$player_colors_saved");
-                    for (auto &playerPair : activePlayers) {
-                        o   << ePlayerNetID::gatherPlayerColor(playerPair.second,false);
-                        con << ePlayerNetID::gatherPlayerColor(playerPair.second);
-                    }
-                }
-                else
-                {
-                    con << tOutput("$players_color_error");
-                }
-                o.close();
-            }
-            else if (passedString.Len() >= 3) // Save specific persons color
-            {
-                for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
-                {
-                    ePlayerNetID* p = se_PlayerNetIDs(i);
-                    if (p->GetName().Filter().Contains(passedString[2].Filter()))
-                    {
-                        foundPlayer = true;
-                        std::ofstream o;
-                        if (tDirectories::Var().Open(o, se_colorVarFile, std::ios::app))
-                        {
-                            con << tOutput("$player_colors_saved");
-                            o   << ePlayerNetID::gatherPlayerColor(p,false);
-                            con << ePlayerNetID::gatherPlayerColor(p);;
-                        }
-                        else
-                        {
-                            con << tOutput("$players_color_error");
-                        }
-                        o.close();
-                    }
-                }
-                if (!foundPlayer)
-                {
-                    con << tOutput("$player_colors_not_found", passedString[2]);
-                }
-            }
-        }
-        else if (passedString[1] == "load")
-        {
-            int savedColorsCount = se_savedColorsCount();
-
-            if (passedString.Len() == 2) // No Line #
-            {
-                con << tOutput("$player_colors_changed_usage_error");
-                return;
-            }
-            else if (passedString.Len() == 3) // Line # specified
-            {
-                correctParameters = true;
-                int lineNumber = (atoi(passedString[2]) - 1);
-                if ((lineNumber >= 0) && lineNumber <= savedColorsCount - 1)
-                {
-                    se_loadSavedColor(local_p,lineNumber);
-                }
-                else
-                {
-                    correctParameters = false;
-                    hideError = true;
-                    con << tOutput("$players_color_line_not_found", se_colorVarFile, savedColorsCount, lineNumber + 1);
-                }
-            }
-        }
-        else if (passedString[1] == "list")
-        {
-            hideError = true;
-            int savedColorsCount = se_savedColorsCount();
-            con << tOutput("$players_color_list", savedColorsCount, se_colorVarFile);
-
-            if (savedColorsCount > 0)
-            {
-                se_SavedColors(savedColorsCount);
-            }
-            else
-            {
-                con << tOutput("$player_colors_empty");
-            }
-        }
-        else if (passedString[1] == "clear")
-        {
-            hideError = true;
-            std::ofstream o;
-            if (tDirectories::Var().Open(o, se_colorVarFile))
-                o << "";
-            o.close();
-            con << tOutput("$player_colors_cleared", se_colorVarFile);
-        }
-        // Not really checking if the strings passed parameters are numbers,
-        // but if someone did /rgb asd asd asd it would just make it 0 0 0.
-        else if (passedString.Len() >= 4) // Apply color to players
-        {
-
-            if (passedString.Len() == 4 || (passedString.Len() >= 4 && passedString[4] == "")) // Apply color to player who sent command
-            {
-                correctParameters = true;
-                local_p->rgb[0] = atoi(passedString[1]); //r
-                local_p->rgb[1] = atoi(passedString[2]); //g
-                local_p->rgb[2] = atoi(passedString[3]); //b
-            }
-            else if (passedString.Len() == 5) // Apply color to specified who sent command
-            {
-                targetID = atoi(passedString[1]);
-                if ((targetID <= MAX_PLAYERS) && (targetID > 0))
-                {
-                    correctParameters = true;
-                    ePlayer* player = ePlayer::PlayerConfig(targetID - 1);
-                    player->rgb[0] = atoi(passedString[2]); //r
-                    player->rgb[1] = atoi(passedString[3]); //g
-                    player->rgb[2] = atoi(passedString[4]); //b
-                }
-            }
-        }
-
-        // If the correct parameters are passed, display the changes.
-        if (correctParameters)
-        {
-            con << tOutput("$player_colors_current_text");
-
-            for (int i = 0; i < MAX_PLAYERS; ++i)
-            {
-                ePlayer *player = ePlayer::PlayerConfig(i);
-                tCONTROLLED_PTR(ePlayerNetID) &p = player->netPlayer;
-                if (bool(p))
-                {
-                    ePlayerNetID::Update();
-                    tColoredString listColors;
-                    listColors << i + 1 << ") " << p->GetColoredName() << "0xRESETT ("
-                               << player->rgb[0] << ", "
-                               << player->rgb[1] << ", "
-                               << player->rgb[2] << ")\n";
-                    con << listColors;
-                }
-                else if (targetID - 1 == i)
-                {
-                    con << tOutput("$player_colors_changed_text",
-                                   player->Name(),
-                                   player->rgb[0],
-                                   player->rgb[1],
-                                   player->rgb[2]);
-                }
-            }
-        }
-        else
-        {
-            // If hideError is enabled we wont display the error message.
-            if (!hideError)
-            {
-                con << tOutput("$player_colors_changed_usage_error");
-            }
-        }
-    }
-}
 
 static nSettingItem<int> se_pingCharityServerConf("PING_CHARITY_SERVER",sn_pingCharityServer );
 static nVersionFeature   se_pingCharityServerControlled( 14 );

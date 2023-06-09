@@ -67,6 +67,12 @@ enum ColorNameCustomization {
 #include <utility>
 #include "eChat.h"
 
+#include <unordered_map>
+
+extern tString se_disableCreateSpecific ;
+static void se_UniqueColor( ePlayer * local_p );
+static void se_RandomizeColor(ePlayer * l);
+
 static void se_CrossFadeColor(ePlayer * p,bool reset = false);
 
 extern bool se_watchActiveStatus;
@@ -115,6 +121,7 @@ class tOutput;
 class eTeam;
 class eVoter;
 class gCycle;
+class Command;
 
 class ePlayer: public uPlayerPrototype{
     friend class eMenuItemChat;
@@ -344,7 +351,9 @@ private:
     bool			spectating_; //!< are we currently spectating? Spectators don't get assigned to teams.
     bool			stealth_; //!< does this player want to hide his/her identity?
     bool			chatting_;   //!< are we currently chatting?
+public:
     std::string     createTime_;
+private:
     REAL            timeSinceLastChat_;
     int				chatFlags_;  //!< different types of reasons for beeing chatting
     bool			allowTeamChange_; //!< allow team changes even if ALLOW_TEAM_CHANGE is disabled?
@@ -540,12 +549,8 @@ public:
     void listPlayerInfo(tString s_orig);
     // Fast way to change / display current RGB
     void currentPlayerRGB(tString s_orig);
-    // Rebuild all or specific players
-    void rebuildCommand(tString s_orig);
-    // List the colors of other players.
-    static void listPlayerColors(tString s_orig);
-    // Quick way to speak as another local player
-    static void localSpeak(tString s_orig);
+
+
     // List active status of players (chatting time, activity, etc)
     static void activeStatus(tString s_orig,ePlayerNetID *calledPlayer = NULL);
     // Search through logs
@@ -587,6 +592,8 @@ public:
 
     void Chat(const tString &s);
     static void LocalChatCommands(ePlayerNetID *p, tString command);
+    static void LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<std::string, std::unique_ptr<Command>>& commandMap);
+
 
     nTimeAbsolute GetTimeCreated() const { return timeCreated_; }
 
@@ -944,6 +951,11 @@ extern bool se_highlightMyName, se_tabCompletion, se_tabCompletionWithColors;
 static ePlayer * se_chatterPlanned=NULL;
 static ePlayer * se_chatter =NULL;
 static tString se_say;
+
+class Command {
+public:
+    virtual void execute(ePlayerNetID* player, tString args) = 0;
+};
 
 #endif
 

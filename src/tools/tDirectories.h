@@ -4,7 +4,7 @@
 
 ArmageTron -- Just another Tron Lightcycle Game in 3D.
 Copyright (C) 2000  Manuel Moos (manuel@moosnet.de)
-Copyright (C) 2004  Armagetron Advanced Team (http://sourceforge.net/projects/armagetronad/) 
+Copyright (C) 2004  Armagetron Advanced Team (http://sourceforge.net/projects/armagetronad/)
 
 **************************************************************************
 
@@ -21,7 +21,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
@@ -107,6 +107,24 @@ public:
     static void SortFiles( tArray< tString >& files );
 
     static void CheckAndClearFileBySize(tString fileName, REAL maxFileSizeMB, bool backup = true);
+};
+
+class FileManager
+{
+public:
+    FileManager(tString fileName) { this->fileName = fileName; }
+    void Action();
+    tArray<tString> Load();
+    bool Write(tString content);
+    void Clear();
+    int NumberOfLines();
+    std::streamoff FileSize();
+
+
+private:
+    tString fileName;
+    std::ofstream o;
+    std::ifstream i;
 };
 
 #endif

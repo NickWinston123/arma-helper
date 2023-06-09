@@ -1429,6 +1429,10 @@ void check_hs(){
 
 static tCONTROLLED_PTR(gGame) sg_currentGame;
 
+tCONTROLLED_PTR(gGame) gGame::CurrentGame() {
+    return sg_currentGame;
+}
+
 void sg_OutputOnlinePlayers()
 {
     //! Send to /var/online_players.txt
@@ -3098,9 +3102,9 @@ extern bool sg_ShowSpecialMenu(), sg_ShowConfigMenu();
 bool sg_RestrictPlayTime = false;
 static tConfItem<bool> sg_RestrictPlayTimeConf("GAME_RESTRICT_PLAY_TIME",sg_RestrictPlayTime);
 int sg_RestrictPlayTimeStartTime = 23;
-static tConfItem<int> sg_RestrictPlayTimeStartTimeConf("GAME_RESTRICT_PLAY_TIME_START",sg_RestrictPlayTimeStartTime);
+static tConfItem<int> sg_RestrictPlayTimeStartTimeConf("GAME_RESTRICT_PLAY_TIME_START_HOUR",sg_RestrictPlayTimeStartTime);
 int sg_RestrictPlayTimeEndTime = 7;
-static tConfItem<int> sg_RestrictPlayTimeEndTimeConf("GAME_RESTRICT_PLAY_TIME_END",sg_RestrictPlayTimeEndTime);
+static tConfItem<int> sg_RestrictPlayTimeEndTimeConf("GAME_RESTRICT_PLAY_TIME_END_HOUR",sg_RestrictPlayTimeEndTime);
 
 bool isWithinRange() {
     time_t rawtime;
@@ -3125,18 +3129,19 @@ bool isWithinRange() {
     return false;
 }
 
-int sg_RestrictPlayTimeStartTimWarnings = 0;
+int sg_RestrictPlayTimeStartTimWarnings = 1;
+int sg_RestrictPlayTimeStartTimWarningsCap = 5;
 
 void MainMenu(bool ingame){
 
     if (sg_RestrictPlayTime && isWithinRange()) {
         tString message("You are not allowed to play within this time slot because of GAME_RESTRICT_PLAY_TIME. ");
-                message << "(Within set block time: " <<  sg_RestrictPlayTimeStartTime << ":00 - " << sg_RestrictPlayTimeEndTime << ":00)" << "\n";
+                message << "(Within set block time: " <<  sg_RestrictPlayTimeStartTime << ":00 - " << sg_RestrictPlayTimeEndTime << ":00)";
 
-        if (ingame && sg_RestrictPlayTimeStartTimWarnings <= 5)
-            con << message;
+        if (ingame && sg_RestrictPlayTimeStartTimWarnings <= sg_RestrictPlayTimeStartTimWarningsCap)
+            con << message << "(" << sg_RestrictPlayTimeStartTimWarnings << "/" << sg_RestrictPlayTimeStartTimWarningsCap << ")" << "\n";
         else
-            tERR_ERROR(message);
+            tERR_ERROR(message << "\n");
 
         sg_RestrictPlayTimeStartTimWarnings++;
         return;
@@ -3424,19 +3429,7 @@ if( !sg_ShowSpecialMenu() ) {MainMenu.RemoveItem(&spm); }
 
 // Game states:
 
-#define GS_CREATED 0        // newborn baby
-#define GS_TRANSFER_SETTINGS	7
-#define GS_CREATE_GRID			10
-#define GS_CREATE_OBJECTS		20
-#define GS_TRANSFER_OBJECTS		30
-#define GS_CAMERA				35
-#define GS_SYNCING				40
-#define GS_SYNCING2				41
-#define GS_SYNCING3				42
-#define GS_PLAY					50
-#define GS_DELETE_OBJECTS		60
-#define GS_DELETE_GRID			70
-#define GS_STATE_MAX			80
+
 
 static bool sg_AbeforeB( int stateA, int stateB )
 {
@@ -3837,6 +3830,22 @@ static tSettingItem<bool> sg_showMapCreationConf("SHOW_MAP_CREATION", sg_showMap
 
 static bool sg_showMapAxes = true;
 static tSettingItem<bool> sg_showMapAxesConf("SHOW_MAP_AXES", sg_showMapAxes);
+
+void gGame::RebuildGrid(int requestedState) {
+
+    // Ensure the requested state is valid
+    if (requestedState < GS_CREATED || requestedState > GS_STATE_MAX) {
+        // Handle invalid state request
+        con << ("Invalid game state requested.\n");
+        return;
+    }
+
+    // Update the state
+    stateNext = requestedState;
+    StateUpdate();
+
+    return;
+}
 
 
 void gGame::StateUpdate(){

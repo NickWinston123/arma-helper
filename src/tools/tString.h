@@ -116,6 +116,7 @@ public:
     tString& Erase(size_t pos, size_t len = std::string::npos);
     char* Begin(); // Add this line for the Begin function
     const char* Begin() const; // Add this line for the const version of Begin function
+    std::string stdString()  const;
 
     tString& Insert(size_t pos, const tString& str);
     size_t FindFirstOf(char ch, size_t start_pos) const;

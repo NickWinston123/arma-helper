@@ -2814,3 +2814,9 @@ char* tString::Begin() {
 const char* tString::Begin() const {
     return &(*this)(0);
 }
+
+
+std::string tString::stdString() const {
+    std::string str(*this);
+    return str;
+}

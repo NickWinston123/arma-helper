@@ -6013,7 +6013,48 @@ class WatchCommand : public Command
 public:
     void execute(ePlayerNetID *player, tString args) override
     {
-        eCamera::SpectatePlayer(*player, args);
+        if (!eGrid::CurrentGrid())
+        {
+            con << "Must be called while a grid exists!\n";
+            return;
+        }
+
+        ePlayer *localPlayer = ePlayer::NetToLocalPlayer(player);
+        if (!localPlayer || !localPlayer->cam)
+        {
+            return;
+        }
+
+        // Extract the target player name from the input string
+        int pos = 0;
+        tString targetPlayerName = args.ExtractNonBlankSubString(pos, 1);
+
+        if (!targetPlayerName.empty())
+            targetPlayerName = ePlayerNetID::FilterName(targetPlayerName);
+
+        // Find the player by name, if specified
+        ePlayerNetID *targetPlayer = nullptr;
+        if (!targetPlayerName.empty())
+        {
+            targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
+            if (!targetPlayer || !targetPlayer->Object() ||
+                !targetPlayer->Object()->Alive() ||
+                targetPlayer->Object()->GOID() == localPlayer->cam->center->GOID())
+            {
+                con << "Player not found or already being spectated.\n";
+                return;
+            }
+            else
+            {
+                con << "0xffaaaaWatch Player set to: " << targetPlayer->GetColoredName() << "\n";
+                localPlayer->cam->watchPlayer = targetPlayer;
+            }
+        }
+        else
+        {
+            con << "0xffaaaaWatch Player removed.\n";
+            localPlayer->cam->watchPlayer = nullptr;
+        }
     }
 };
 

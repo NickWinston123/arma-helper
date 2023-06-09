@@ -440,7 +440,7 @@ eCamera::eCamera(eGrid *g, rViewport *view,ePlayerNetID *p,
         :id(-1),grid(g),netPlayer(p),localPlayer(lp),
         // centerID(0),
         mode(m),pos(0,0),dir(1,0),top(0,0),
-vp(view), cameraMain_(rMain){
+vp(view), cameraMain_(rMain), watchPlayer(nullptr){
     /*
       if (p->pID>=0)
       localPlayer=playerConfig[p->pID];
@@ -1544,71 +1544,6 @@ void eCamera::SwitchCenter(int d){
     }
 }
 
-#include "tRandom.h"
-void eCamera::SpectatePlayer(ePlayerNetID &owner, const tString &s_orig)
-{
-    if (!eGrid::CurrentGrid())
-    {
-        con << "Must be called while a grid exists!\n";
-        return;
-    }
-
-    ePlayer *localPlayer = ePlayer::NetToLocalPlayer(&owner);
-    if (!localPlayer || !localPlayer->cam)
-    {
-        return;
-    }
-
-    // Extract the target player name from the input string
-    int pos = 0;
-    tString targetPlayerName = s_orig.ExtractNonBlankSubString(pos, 1);
-
-    if (!targetPlayerName.empty())
-        targetPlayerName = ePlayerNetID::FilterName(targetPlayerName);
-
-    // Find the player by name, if specified
-    ePlayerNetID *targetPlayer = nullptr;
-    if (!targetPlayerName.empty())
-    {
-        targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
-        if (!targetPlayer || !targetPlayer->Object() ||
-            !targetPlayer->Object()->Alive() ||
-            targetPlayer->Object()->GOID() == localPlayer->cam->center->GOID())
-        {
-            con << "Player not found or already being spectated.\n";
-            return;
-        }
-    }
-    else
-    {
-        // Get a list of all eligible players (i.e., those that are not the current target)
-        std::vector<ePlayerNetID *> eligiblePlayers;
-        eGameObject *currentTarget = localPlayer->cam->center;
-        for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
-        {
-            ePlayerNetID *player = se_PlayerNetIDs[i];
-            
-            if (!player || !player->Object() || !player->Object()->Alive())
-                continue;
-
-            if (player->Object()->GOID() != currentTarget->GOID())
-                eligiblePlayers.push_back(player);
-        }
-
-        if (eligiblePlayers.empty())
-        {
-            con << "No eligible players to spectate.\n";
-            return;
-        }
-
-        // Choose a random eligible player
-        tRandomizer &randomizer = tReproducibleRandomizer::GetInstance();
-        targetPlayer = eligiblePlayers[randomizer.Get(0, eligiblePlayers.size())];
-    }
-
-    // Set the camera's center to the chosen player
-    localPlayer->cam->center = targetPlayer->Object();
-}
 
 void eCamera::Timestep(REAL ts){
     // find net player
@@ -1619,6 +1554,16 @@ void eCamera::Timestep(REAL ts){
     if (fov != localPlayer->FOV) {
         fov = localPlayer->FOV;
     }
+
+    if (watchPlayer != nullptr)
+    {
+        gCycle *cycle = ePlayerNetID::NetPlayerTogCycle(watchPlayer);
+        if (center != cycle && InterestingToWatch(cycle))
+        {
+            center = cycle;
+        } 
+    }
+
     // the best center is always our own vehicle. Focus on it if possible.
     if (netPlayer)
     {

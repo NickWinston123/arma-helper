@@ -116,7 +116,7 @@ public:
     //! describes walls
     struct WallHug
     {
-        gCycle const * owner;  //! the cycle the walls we like belong to
+        gCycle * owner;  //! the cycle the walls we like belong to
         REAL lastTimeSeen;     //! the last time we saw such a wall
         REAL hitDistance;      //! driving distance of the wall that was hit
         REAL distance;         //! distance to the hit wall
@@ -216,8 +216,8 @@ public:
     class SuicideEvaluator: public PathEvaluator
     {
     public:
-        SuicideEvaluator( gCycle const & cycle, REAL timeFrame );
-        explicit SuicideEvaluator( gCycle const & cycle );
+        SuicideEvaluator( gCycle & cycle, REAL timeFrame );
+        explicit SuicideEvaluator( gCycle & cycle );
 
         //! evaluate a path.
         virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
@@ -225,7 +225,7 @@ public:
 
         static void SetEmergency( bool emergency );
     private:
-        gCycle const & cycle_;
+        gCycle & cycle_;
         REAL   timeFrame_;
         static bool emergency_;
     };
@@ -234,11 +234,11 @@ public:
 class TailChaseEvaluator: public PathEvaluator
 {
 public:
-    TailChaseEvaluator( gCycle const & cycle );
+    TailChaseEvaluator( gCycle & cycle );
 
     void Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const;
 private:
-    gCycle const & cycle_; //!< the owning cycle
+    gCycle & cycle_; //!< the owning cycle
 };
 
 
@@ -246,8 +246,8 @@ private:
     class TrapEvaluator: public PathEvaluator
     {
     public:
-        TrapEvaluator( gCycle const & cycle, REAL space );
-        explicit TrapEvaluator( gCycle const & cycle );
+        TrapEvaluator( gCycle & cycle, REAL space );
+        explicit TrapEvaluator( gCycle & cycle );
 
         //! evaluate a path.
         virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
@@ -255,7 +255,7 @@ private:
 
         static void SetEmergency( bool emergency );
     private:
-        gCycle const & cycle_;
+        gCycle & cycle_;
         REAL   space_;
     };
 
@@ -265,34 +265,36 @@ private:
     public:
         //! evaluate a path.
         virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
-        RandomEvaluator();
+        RandomEvaluator(gCycle & cycle );
         ~RandomEvaluator();
+    private:
+        gCycle & cycle_;
     };
 
     //! cowardly evaluator: try to move backwards on enemy walls
     class CowardEvaluator: public PathEvaluator
     {
     public:
-        explicit CowardEvaluator( gCycle const & cycle );
+        explicit CowardEvaluator( gCycle & cycle );
         ~CowardEvaluator();
 
         //! evaluate a path.
         virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
     private:
-        gCycle const & cycle_;
+        gCycle & cycle_;
     };
 
     //! cowardly evaluator: try to move backwards on enemy walls
     class SpeedEvaluator: public PathEvaluator
     {
     public:
-        explicit SpeedEvaluator( gCycle const & cycle );
+        explicit SpeedEvaluator( gCycle & cycle );
         ~SpeedEvaluator();
 
         //! evaluate a path.
         virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
     private:
-        gCycle const & cycle_;
+        gCycle & cycle_;
     };
 
 
@@ -300,20 +302,20 @@ private:
     class TunnelEvaluator: public PathEvaluator
     {
     public:
-        explicit TunnelEvaluator( gCycle const & cycle );
+        explicit TunnelEvaluator( gCycle & cycle );
         ~TunnelEvaluator();
 
         //! evaluate a path.
         virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
     private:
-        gCycle const & cycle_;
+        gCycle & cycle_;
     };
 
     //! simple evaluator: measures available space compared to a passed-in value
     class SpaceEvaluator: public PathEvaluator
     {
     public:
-        explicit SpaceEvaluator( gCycle const & cycle );
+        explicit SpaceEvaluator( gCycle & cycle );
         explicit SpaceEvaluator( REAL referenceDistance );
 
         //! evaluate a path.
@@ -338,11 +340,11 @@ private:
     public:
         //! evaluate a path.
         virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
-        explicit RubberEvaluator( gCycle const & cylce );
-        RubberEvaluator( gCycle const & cycle, REAL maxTime );
+        explicit RubberEvaluator( gCycle & cylce );
+        RubberEvaluator( gCycle & cycle, REAL maxTime );
         ~RubberEvaluator();
     private:
-        void Init( gCycle const & cycle, REAL maxTime );
+        void Init( gCycle & cycle, REAL maxTime );
         REAL rubberLeft_; //!< amount of rubber left to burn with inevitable loss due to turn delay factored in
         REAL maxRubber_;  //!< maximal rubber possible to burn
     };

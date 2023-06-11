@@ -1963,6 +1963,23 @@ static bool st_IsUnderscore( char c )
     return c == '_';
 }
 
+bool tString::isNumber() const
+{
+    std::string str = this->stdString();  
+    if (empty())
+        return false;
+
+    for(unsigned char c : str)
+    {
+        if(!std::isdigit(c))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // function prototype for character testing functions
 typedef bool TestSCharacter( char c );
 
@@ -2511,6 +2528,46 @@ tArray<tString> tString::SplitBySizeWithFullWords(int maxSize)
     return arrayString;
 }
 
+tArray<tString> tString::SplitIncludeFirst(tString delimiter)
+{
+    tArray<tString> arrayString;
+
+    int strleng = Len() - 1;
+    int delleng = delimiter.Len() - 1;
+    if (delleng == 0)
+    {
+        arrayString.Add(*this);  // No change, add the entire string as the only element
+        return arrayString;
+    }
+
+    int i = 0;
+    int k = 0;
+    while (i < strleng)
+    {
+        int j = 0;
+        while (i + j < strleng && j < delleng && (*this)[i + j] == delimiter[j])
+            j++;
+
+        if (j == delleng)  // Found delimiter
+        {
+            arrayString.Add(SubStr(k, i - k));  // Add the substring from k to i-k
+            i += delleng;
+            k = i;
+        }
+        else
+        {
+            i++;
+        }
+    }
+    arrayString.Add(SubStr(k, i - k));  // Add the remaining substring from k to i-k
+
+    return arrayString;
+}
+
+tArray<tString> tString::SplitIncludeFirst(const char* delimiter)
+{
+    return SplitIncludeFirst(tString(delimiter));
+}
 
 tArray<tString> tString::Split(tString delimiter)
 {

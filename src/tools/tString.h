@@ -77,6 +77,8 @@ public:
     tString & operator =(const tOutput &s);
     tString & operator+=(const tString &s);
 
+    bool isNumber() const;
+
     // Z-Man: stupid, stupid disambiguation for Visual C++.
     // not harmful to GCC, but not required.
 #ifdef _MSC_VER
@@ -177,6 +179,8 @@ public:
     tArray<tString> Split(tString del_word);
     tArray<tString> Split(const char *del_word);
     tArray<tString> SplitBySize(int size);
+    tArray<tString> SplitIncludeFirst(tString delimiter);
+    tArray<tString> SplitIncludeFirst(const char *del_word);
     tArray<tString> SplitBySizeWithFullWords(int maxSize);
 
     tString Replace(tString old_word, tString new_word);

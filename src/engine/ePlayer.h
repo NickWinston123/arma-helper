@@ -583,9 +583,9 @@ public:
     void GetScoreFromDisconnectedCopy(); // get the player's data from the previous login
 
     void Chat(const tString &s);
-    static void LocalChatCommands(ePlayerNetID *p, tString command);
-    static void LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<std::string, std::unique_ptr<ChatCommand>>& commandMap);
-
+    static bool LocalChatCommands(ePlayerNetID *p, tString command);
+    static bool LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<std::string, std::unique_ptr<ChatCommand>>& commandMap);
+    bool RunChatCommand(ChatCommand & command, tString args);
 
     nTimeAbsolute GetTimeCreated() const { return timeCreated_; }
 

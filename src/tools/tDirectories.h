@@ -105,19 +105,20 @@ public:
 
     // sort the list of files
     static void SortFiles( tArray< tString >& files );
-
-    static void CheckAndClearFileBySize(tString fileName, REAL maxFileSizeMB, bool backup = true);
 };
 
 class FileManager
 {
 public:
     FileManager(tString fileName) { this->fileName = fileName; }
+    std::streamoff FileSize();
     tArray<tString> Load();
     bool Write(tString content);
-    void Clear();
+    bool Clear();
+    bool Clear(int lineNumber);
     int NumberOfLines();
-    std::streamoff FileSize();
+    bool BackUp();
+    void CheckAndClearFileBySize(REAL maxFileSizeMB);
 
 
 private:

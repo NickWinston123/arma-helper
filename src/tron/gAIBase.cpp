@@ -1094,7 +1094,7 @@ public:
         manager.Reset();
         manager.Evaluate( gAINavigator::CowardEvaluator( cycle ), 5 );
         manager.Evaluate( gAINavigator::SpaceEvaluator( cycle ), 1 );
-        manager.Evaluate( gAINavigator::RandomEvaluator(), .01 );
+        manager.Evaluate( gAINavigator::RandomEvaluator( cycle ), .01 );
         manager.Evaluate( gAINavigator::PlanEvaluator(), .1 );
 
         gAINavigator::CycleControllerBasic controller;
@@ -2460,6 +2460,7 @@ void gAIPlayer::NewObject()         // called when we control a new object
         nextTime_ = Delay() * 2 + .1;
     }
 
+    nextTime_ = 0;
     ClearTarget();
 }
 
@@ -2558,7 +2559,7 @@ REAL gAIPlayer::Think( REAL maxStep ){
         ClearTarget();
     }
 
-    if (!Object()->Alive())
+    if (!Object() || !Object()->Alive())
         return 100;
 
     emergency = false;
@@ -2665,7 +2666,7 @@ void gAIPlayer::Timestep(REAL time){
     }
 
     
-    //if (bool(Object()) && Object()->Alive() && nextTime_<time)
+    // if (bool(Object()) && Object()->Alive() && nextTime_<time)
     {
         gRandomController random( randomizer_ );
 

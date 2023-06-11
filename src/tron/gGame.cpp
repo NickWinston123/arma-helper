@@ -3159,7 +3159,7 @@ void MainMenu(bool ingame){
     }
 
     if (sr_consoleLogLimited)
-        tDirectories::CheckAndClearFileBySize(tString("consolelog-limited.txt"),sr_consoleLogLimitedSize,sr_consoleLogLimitedBackup);
+        FileManager(tString("consolelog-limited.txt")).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
 
 
     if (ingame)
@@ -4852,7 +4852,7 @@ void gGame::Analysis(REAL time){
         static double nextTime = -1;
         if ( tSysTimeFloat() > nextTime || time < -10 )
         {
-            nextTime = tSysTimeFloat() + ( sg_tutorial ? .1 : 1.0 );
+            nextTime = 1;// tSysTimeFloat() + ( sg_tutorial ? .1 : 1.0 );
         }
         else
         {

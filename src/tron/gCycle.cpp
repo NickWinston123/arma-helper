@@ -455,7 +455,7 @@ REAL gSmarterBot::Think( REAL minStep )
         manager.Evaluate( RubberEvaluator( *Owner()), local_player->sg_smarterBotRubberEval);
 
     if (local_player->sg_smarterBotRandomScale > 0)
-        manager.Evaluate( RandomEvaluator(), local_player->sg_smarterBotRandomScale );
+        manager.Evaluate( RandomEvaluator(*Owner()), local_player->sg_smarterBotRandomScale );
 
     if (local_player->sg_smarterBotTrapScale > 0)
         manager.Evaluate( TrapEvaluator( *Owner()), local_player->sg_smarterBotTrapScale );

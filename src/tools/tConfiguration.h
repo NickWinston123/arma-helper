@@ -768,5 +768,7 @@ struct tConfigMigration
 
 extern bool st_FirstUse;
 
+extern tString st_AddToUserExt(tArray<tString> commands);
+
 #endif
 

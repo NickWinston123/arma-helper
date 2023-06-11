@@ -872,49 +872,6 @@ void tDirectories::SetIncludedResource( const tString& dir ) {
 }
 
 
-void tDirectories::CheckAndClearFileBySize(tString fileName, REAL maxFileSizeMB, bool backup) {
-    FileManager fileManager(fileName);
-    std::streamoff fileSize = fileManager.FileSize();
-    REAL fileSizeMB = gHelperUtility::BytesToMB(fileSize);
-    
-    if (fileSizeMB >= maxFileSizeMB) {
-        if (backup) {
-            // Get the current date and time
-            auto now = std::chrono::system_clock::now();
-            auto time_t_now = std::chrono::system_clock::to_time_t(now);
-            tm local_tm;
-            localtime_s(&local_tm, &time_t_now);
-            
-            // Create a timestamp string
-            std::stringstream ss;
-            ss << std::put_time(&local_tm, "%m-%d-%Y");
-            
-            // Create backup file name
-            tString backupFileName = fileName + "-" + tString(ss.str());
-            FileManager backupFileManager(backupFileName);
-            
-            // Get the lines from the original file
-            tArray<tString> lines = fileManager.Load();
-            bool backedup = false;
-            // Backup the file
-            for (int i = 0; i < lines.Len(); i++) {
-                if (!backupFileManager.Write(lines[i])){
-                    backedup = false;
-                    break;
-                }
-                backedup = true;
-            }
-            
-            if (backedup)
-                con << "Created backup: '" << backupFileName << "'.\n";
-        }
-        
-        // Clear the original file
-        fileManager.Clear();
-        
-        con << "File '" << fileName << "' was cleared because it exceeded " << maxFileSizeMB << " MB.\n";
-    }
-}
 
 
 
@@ -1716,8 +1673,94 @@ std::streamoff FileManager::FileSize()
     return -1;
 }
 
-void FileManager::Clear(){
-    if (tDirectories::Var().Open(o, fileName))
+bool FileManager::Clear(int lineNumber)
+{
+    tArray<tString> lines = Load();
+    bool cleared = false;
+    if (lineNumber >= 0 && lineNumber < lines.Len())
+    {
+        lines.RemoveAt(lineNumber);
+
+        // Now write the lines back to the file
+        if (tDirectories::Var().Open(o, fileName))
+        {
+            for (int i = 0; i < lines.Len(); ++i)
+            {
+                o << lines[i];
+                if (i != lines.Len() - 1) // not the last line
+                    o << std::endl;
+            }
+            cleared  = true;
+        }
+        o.close();
+    }
+    else
+    {
+        con << tOutput("$file_manager_line_out_of_range", lineNumber, fileName);
+    }
+    return cleared;
+}
+
+bool FileManager::BackUp()
+{
+    bool backedup = false;
+    // Get the current date and time
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    tm local_tm;
+    localtime_s(&local_tm, &time_t_now);
+
+    // Create a timestamp string
+    std::stringstream ss;
+    ss << std::put_time(&local_tm, "%m-%d-%Y");
+
+    // Create backup file name
+    tString backupFileName = fileName + "-" + tString(ss.str());
+
+    // Get the lines from the original file
+    tArray<tString> lines = Load();
+
+    // Backup the file
+    for (int i = 0; i < lines.Len(); i++) {
+        if (!Write(lines[i])){
+            backedup = false;
+            break;
+        }
+        backedup = true;
+    }
+
+    if (backedup)
+        con << tOutput("$file_manager_created_backup", fileName);
+    else
+        con << tOutput("$file_manager_error_creating_backup", fileName);
+    return backedup;
+}
+
+bool FileManager::Clear(){
+    bool cleared = false;
+    if (tDirectories::Var().Open(o, fileName)) {
         o << "";
+        cleared = true;
+    }
     o.close();
+    return cleared;
+}
+
+void FileManager::CheckAndClearFileBySize(REAL maxFileSizeMB) {
+    FileManager fileManager(fileName);
+    std::streamoff fileSize = fileManager.FileSize();
+    REAL fileSizeMB = gHelperUtility::BytesToMB(fileSize);
+
+    if (fileSizeMB <= maxFileSizeMB)
+        return;
+
+    // Back up and Clear the original file
+    fileManager.BackUp();
+    fileManager.Clear();
+    tOutput msg;
+    msg.SetTemplateParameter(1,fileName);
+    msg.SetTemplateParameter(2,REAL(fileSize));
+    msg.SetTemplateParameter(3,maxFileSizeMB);
+    con << msg;
+
 }

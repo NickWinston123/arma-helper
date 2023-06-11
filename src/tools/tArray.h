@@ -92,6 +92,11 @@ protected:
     }
 
 public:
+    void Add(const T& element) {
+        SetLen(Len() + 1);
+        (*this)[Len() - 1] = element;
+    }
+    
     void Clear(){
         int i;
         for(i=Size()-1;i>=0;i--){
@@ -108,6 +113,9 @@ protected:
             new(reinterpret_cast<T *>(Base())+i) T(A(i));
         for(i=Len();i<Size();i++)
             new(reinterpret_cast<T *>(Base())+i) T();
+    }
+    void Copy(const tArray &A){
+        CopyFrom(A);
     }
 
 public:

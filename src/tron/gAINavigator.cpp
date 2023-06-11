@@ -479,7 +479,7 @@ void gAINavigator::PathEvaluator::Evaluate( Path const & path, PathEvaluation & 
 gAINavigator::PathEvaluator::~PathEvaluator(){}
 
 
-    gAINavigator::TailChaseEvaluator::TailChaseEvaluator( gCycle const & cycle ): cycle_( cycle )
+    gAINavigator::TailChaseEvaluator::TailChaseEvaluator( gCycle & cycle ): cycle_( cycle )
     {
     }
 
@@ -549,8 +549,8 @@ void gAINavigator::SuicideEvaluator::SetEmergency( bool emergency )
     emergency_ = emergency;
 }
 
-gAINavigator::SuicideEvaluator::SuicideEvaluator( gCycle const & cycle ): cycle_( cycle ), timeFrame_( cycle.GetTurnDelay() ){}
-gAINavigator::SuicideEvaluator::SuicideEvaluator( gCycle const & cycle, REAL timeFrame ): cycle_( cycle ), timeFrame_( timeFrame ){}
+gAINavigator::SuicideEvaluator::SuicideEvaluator( gCycle & cycle ): cycle_( cycle ), timeFrame_( cycle.GetTurnDelay() ){}
+gAINavigator::SuicideEvaluator::SuicideEvaluator( gCycle & cycle, REAL timeFrame ): cycle_( cycle ), timeFrame_( timeFrame ){}
 gAINavigator::SuicideEvaluator::~SuicideEvaluator(){}
 
 //!@param path        the path to evaluate
@@ -570,13 +570,13 @@ void gAINavigator::TrapEvaluator::Evaluate( Path const & path, PathEvaluation & 
     }
 }
 
-gAINavigator::TrapEvaluator::TrapEvaluator( gCycle const & cycle )
+gAINavigator::TrapEvaluator::TrapEvaluator( gCycle & cycle )
 : cycle_( cycle )
 {
     space_ = .25 * cycle.ThisWallsLength();
 }
 
-gAINavigator::TrapEvaluator::TrapEvaluator( gCycle const & cycle, REAL space )
+gAINavigator::TrapEvaluator::TrapEvaluator( gCycle & cycle, REAL space )
 : cycle_( cycle )
 , space_( space ){}
 gAINavigator::TrapEvaluator::~TrapEvaluator(){}
@@ -584,13 +584,21 @@ gAINavigator::TrapEvaluator::~TrapEvaluator(){}
 void gAINavigator::RandomEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
 {
     static tReproducibleRandomizer randomizer;
-    evaluation.score = randomizer.Get() * 100;
+    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
+    REAL randomDeviationScale = 0;
+    if (local_p)
+        randomDeviationScale = local_p->sg_smarterBotRandomScale;
+    // Introduce random deviation
+    double randomDeviation = (randomizer.Get() - 0.5) * randomDeviationScale;
+
+    // The scoring function is the previous score function plus some random deviation
+    evaluation.score = (randomizer.Get() * 100) + randomDeviation;
 }
 
-gAINavigator::RandomEvaluator::RandomEvaluator(){}
+gAINavigator::RandomEvaluator::RandomEvaluator( gCycle & cycle ): cycle_( cycle ){}
 gAINavigator::RandomEvaluator::~RandomEvaluator(){}
 
-gAINavigator::CowardEvaluator::CowardEvaluator( gCycle const & cycle ): cycle_( cycle ){}
+gAINavigator::CowardEvaluator::CowardEvaluator( gCycle & cycle ): cycle_( cycle ){}
 gAINavigator::CowardEvaluator::~CowardEvaluator(){}
 
 void gAINavigator::CowardEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
@@ -616,7 +624,7 @@ void gAINavigator::CowardEvaluator::Evaluate( Path const & path, PathEvaluation 
     }
 }
 
-gAINavigator::TunnelEvaluator::TunnelEvaluator( gCycle const & cycle ): cycle_( cycle ){}
+gAINavigator::TunnelEvaluator::TunnelEvaluator( gCycle & cycle ): cycle_( cycle ){}
 gAINavigator::TunnelEvaluator::~TunnelEvaluator(){}
 
 void gAINavigator::TunnelEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
@@ -637,7 +645,7 @@ void gAINavigator::TunnelEvaluator::Evaluate( Path const & path, PathEvaluation 
     }
 }
 
-gAINavigator::SpaceEvaluator::SpaceEvaluator( gCycle const & cycle )
+gAINavigator::SpaceEvaluator::SpaceEvaluator( gCycle & cycle )
 : referenceDistance_( cycle.MaxWallsLength() )
 {
     if( referenceDistance_ <= 0 )
@@ -700,12 +708,12 @@ void gAINavigator::RubberEvaluator::Evaluate( Path const & path, PathEvaluation 
     evaluation.score = ( 1 - burn/maxRubber_ ) * 100;
 }
 
-gAINavigator::RubberEvaluator::RubberEvaluator( gCycle const & cycle )
+gAINavigator::RubberEvaluator::RubberEvaluator( gCycle & cycle )
 {
     Init( cycle, cycle.GetTurnDelay() );
 }
 
-gAINavigator::RubberEvaluator::RubberEvaluator( gCycle const & cycle, REAL maxTime )
+gAINavigator::RubberEvaluator::RubberEvaluator( gCycle & cycle, REAL maxTime )
 {
     Init( cycle, maxTime );
 }
@@ -714,7 +722,7 @@ gAINavigator::RubberEvaluator::~RubberEvaluator()
 {
 }
 
-void gAINavigator::RubberEvaluator::Init( gCycle const & cycle, REAL maxTime )
+void gAINavigator::RubberEvaluator::Init( gCycle & cycle, REAL maxTime )
 {
     // compensate for the addition of rubber in the stored sensor distances
     REAL rubberGranted, rubberEffectiveness;
@@ -944,7 +952,7 @@ bool gAINavigator::FollowEvaluator::targetZone()
 void gAINavigator::FollowEvaluator::SetTarget( eGameObject * object )
 {
     // // The dampening factor
-    // const REAL dampeningFactor = 0.9;  
+    // const REAL dampeningFactor = 0.9;
 
     // // The desired direction, dampened
     // eCoord desiredDirection = object->Direction();
@@ -2056,7 +2064,7 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
 
 
 
-gAINavigator::SpeedEvaluator::SpeedEvaluator(gCycle const & cycle ): cycle_( cycle ){}
+gAINavigator::SpeedEvaluator::SpeedEvaluator(gCycle & cycle ): cycle_( cycle ){}
 
 gAINavigator::SpeedEvaluator::~SpeedEvaluator(){}
 

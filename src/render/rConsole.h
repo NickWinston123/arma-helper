@@ -38,7 +38,6 @@ extern REAL rCWIDTH_CON;
 extern REAL rCHEIGHT_CON;
 extern bool sr_consoleTimeStamp;
 extern bool sr_consoleLogLimited;
-extern bool sr_consoleLogLimitedBackup;
 extern REAL sr_consoleLogLimitedSize;
 extern float sr_chatLayer;
 

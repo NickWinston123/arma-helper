@@ -71,6 +71,7 @@ public:
     bool operator>=( const char* other ) const;
 
     operator const char*() const;
+    const char* c_str() const;
 
     tString & operator =(const tString &s);
     tString & operator =(const tOutput &s);

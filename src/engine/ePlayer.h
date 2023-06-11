@@ -617,16 +617,16 @@ public:
     static bool HasRenameCapability ( ePlayerNetID const *, ePlayerNetID const * admin ); //!< Checks if the admin can use the RENAME command. Used in IsAllowedToRename()
 
     void LogActivity(int activity_type);    //!< Log the activity of the player currently in motion
-
-public:
-    tColoredString  coloredNickname;
-    tString         nickname;
+private:
     tColoredString  nameFromClient_;        //!< this player's name as the client wants it to be. Avoid using it when possilbe.
     tColoredString  nameFromServer_;        //!< this player's name as the server wants it to be. Avoid using it when possilbe.
     tColoredString  nameFromAdmin_;         //!< this player's name as the admin wants it to be. Avoid using it when possilbe.
+    tString         userName_;              //!< this player's name, cleared for system logs. Use for writing to files or comparing with admin input.
+public:
+    tColoredString  coloredNickname;
+    tString         nickname;
     tColoredString  coloredName_;           //!< this player's name, cleared by the server. Use this for onscreen screen display.
     tString         name_;                  //!< this player's name without colors.
-    tString         userName_;              //!< this player's name, cleared for system logs. Use for writing to files or comparing with admin input.
 private:
 
 #ifdef KRAWALL_SERVER

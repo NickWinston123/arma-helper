@@ -1600,6 +1600,9 @@ version_info_gl_version        \n  GL Version  :
 #********************************************
 #********************************************
 
+game_menu_tutorials_text    Tutorials and Challenges
+game_menu_tutorials_help    Small training tasks to make you familiar with the basic concepts of this game.
+
 game_menu_start_text        Local Game
 game_menu_start_help        Enter the game grid! Only players configured on this computer will play.
 
@@ -1787,6 +1790,182 @@ game_menu_wz_mr_help        Minimum number of seconds the round has to be going 
 
 game_menu_wz_ld_text        Win Zone Min Last Death
 game_menu_wz_ld_help        Minimum number of seconds since the last death before the instant win zone is activated
+
+
+#********************************************
+#********************************************
+#
+#             tutorials
+#
+#********************************************
+#********************************************
+
+window_title_tutorial       \g - \1
+tutorial_success            Well done!
+tutorial_teamkill           Failure: Team Kill
+
+tutorial_menu_navigation_text     Navigation
+tutorial_menu_navigation_help     Navigation Tutorial: learn to control your cycle.
+tutorial_menu_navigation_instructions Use the turn controls to reach the green winzone, get used to how the basic physics work. Take your time, nothing is trying to kill you yet.\n\nPress Escape to abort this tutorial, most other keys let you continue.
+
+
+tutorial_menu_survival_text     Survival
+tutorial_menu_survival_help     Survival Tutorial: learn to survive.
+tutorial_menu_survival_instructions Walls are deadly in \g, that includes your own trail. Your task in this tutorial is to avoid crashing in a small arena for long 30 seconds, after which a green winzone will appear. Drive into it to finish this tutorial.\n\nTraining wheels are activated, touching walls does not kill you right away.\n\nPress Escape to abort this tutorial as well as those that follow, most other keys let you continue.
+
+tutorial_menu_grind_text     Grind
+tutorial_menu_grind_help     Grind Tutorial: learn to accelerate
+tutorial_menu_grind_instructions Walls are also your friend in \g. You can drive close to a cycle trail to accelerate. If you are driving so close to a wall that you see sparks fly, you're doing it right.\nUse that to beat the enemy AI in a race to the winzone up ahead.
+
+tutorial_menu_conquest_text     Conquest
+tutorial_menu_conquest_help     Conquest Tutorial: learn to conquer a fortress.
+tutorial_menu_conquest_instructions The goal of the Fortress mode is to conquer the enemy zone and defend your own zone. Unlike the winzones you saw earlier, a simple touch is not enough; you have to stay inside the zone and keep defenders out for a few seconds.\nIn this excercise, you will try to attack the enemy Gold zone, your home zone is safe. You will need to find a way past the lone defender or kill it.\n\nSadly, Fortress mode is not available for local play against AIs. We don't have any good AIs for it yet.
+
+tutorial_conquest_ai_retreated   The defending AI has retreated. Take the gold zone!
+tutorial_conquest_ai_killed      The defending AI has been killed. Take the gold zone!
+tutorial_conquest_ai_go          Drive into the gold zone and stay inside for a bit.
+tutorial_conquest_ai_gap         Break into the enemy defenses. Aim for the gap!
+
+tutorial_menu_teamstart_text     Team Start
+tutorial_menu_teamstart_help     Team Start Tutorial: learn the standard team formation opening move
+tutorial_menu_teamstart_instructions If you play in a team, it usually is the best startup move to tightly grind each others walls. The outside players should cuddle up on the center player, the ones further outside doing so in several steps. This tutorial puts you in the most difficult position there is, the player next to the outer player. Survive the start and don't let anyone on your team die.
+tutorial_fail_backdoor            Failure: Follow the other cycles.
+
+tutorial_menu_doublegrind_text     Double Grind
+tutorial_menu_doublegrind_help     Double Grind Tutorial: learn the other standard team formation opening move
+tutorial_menu_doublegrind_instructions In many configurations, a modification of the standard team formation called 'double grinding' is of advantage: the two players next to the center do not grind it immediately. Instead, they go straight for a bit, then turn back, then forward again. They grind the center player twice, hence the name. This gives them extra time between two cycle trails and thus extra acceleration. Your job as a player right next to one of them is to supply that extra trail. Do not grind the center too hard or you will kill the double grinder.\nThe double grinding itself takes practice to do right and the exact timing depends a lot on the configuration, so we can't teach it here. Don't worry, it is mostly optional.
+
+
+tutorial_menu_speedkill_text     Speed Kill
+tutorial_menu_speedkill_help     Speed Kill: learn to use a speed advantage to trap an enemy
+tutorial_menu_speedkill_instructions The speed kill is the most basic way to get rid of your enemies in \g. You sneak up on them, grinding their trail, and after you overtake them, you cut them off and wrap them in your tail.\nHere, we set you up for an easy speed kill against an oblivious AI.
+
+tutorial_menu_speedkilldefense_text     Speed Kill Defense
+tutorial_menu_speedkilldefense_help     Defense: learn how to defend against speed kills
+tutorial_menu_speedkilldefense_instructions Oh no! Now the situation is reversed. An enemy is grinding your tail on the right hand side and is going to cut you off in a moment. Quick, think of a counter!
+
+tutorial_menu_congratulations_text     Closing Words
+tutorial_menu_congratulations_help     Not everything can be taught in tutorials.
+tutorial_menu_congratulations_instructions Congratulations, you should now have completed all the essential tutorials. What follows here are optional challenges. You are now ready to enter the proper game, which is the online multiplayer component. Before you dive into that, there are a couple of things you should know about the online community and server landscape:\n\nYou can scroll this and other messages of this kind up and down using the cursor up and down keys.\n\nSumo Mode: You were taught the basics of Fortress mode here; Sumo uses the same basic mechanics, only usually for single players and not teams, and the zones of several competing players are put right on top of each other. And they shrink.\n\nCapture the Flag (CTF): Some servers offer this classic game mode, with a small zone standing in as the flag and a bigger one serving as base to return the flag to.\n\nAlso, It is best to read over the included documentation (use the Help menu to launch it in a browser). And you should definitely stick to basic game modes and close-to-default settings at first. The server browser helps you with that by hiding advanced servers from immediate view initially; you can still enter them early if you dare.
+
+tutorial_menu_bullies_text     Maze Challenge
+tutorial_menu_bullies_help     Maze: two enemies have trapped you between their walls. Can you survive?
+tutorial_menu_bullies_instructions Two bullies have trapped you between their walls and are forcing you through their maze. Follow the turns they make and escape.
+tutorial_menu_bullies_teamname Bullies
+
+tutorial_menu_hilbert2_text     Maze Challenge: Hilbert 2
+tutorial_menu_hilbert2_help     Maze: two enemies have trapped you between their walls. Can you survive? They follow a Hilbert Curve of order 2.
+tutorial_menu_hilbert2_instructions The two bullies have read a math book and are now torturing you with Hilbert Curves, paths that cover a whole square with arbitrary density. First, a simple order two curve.
+
+tutorial_menu_hilbert3_text     Maze Challenge: Hilbert 3
+tutorial_menu_hilbert3_help     Maze: two enemies have trapped you between their walls. Can you survive? They follow a Hilbert Curve of order 3.
+tutorial_menu_hilbert3_instructions The two bullies now force you on to a faster Hilbert Curve of order 3.
+
+tutorial_menu_hilbert4_text     Ultimate Maze Challenge
+tutorial_menu_hilbert4_help     Maze: two enemies have trapped you between their walls. Can you survive? They follow a Hilbert Curve of order 4.
+tutorial_menu_hilbert4_instructions The two bullies now force you on to an extremely fast and narrow Hilbert Curve of order 4.\n\nNo human can survive this.
+
+tutorial_menu_dragon1_text     Maze Challenge: Dragon 5
+tutorial_menu_dragon1_help     Maze: two enemies have trapped you between their walls. Can you survive? They follow a Simplified Dragon Curve of order 5.
+tutorial_menu_dragon1_instructions The two bullies now force you on to a simplified Dragon Curve of order 5. (The regular dragon curve would intersect itself at corners, which we can't allow. So we follow the diagonals instead.)
+
+tutorial_menu_dragon2_text     Maze Challenge: Dragon 6
+tutorial_menu_dragon2_help     Maze: two enemies have trapped you between their walls. Can you survive? They follow a Simplified Dragon Curve of order 6.
+tutorial_menu_dragon2_instructions The two bullies now force you on to a simplified Dragon Curve of order 6.
+
+tutorial_menu_dragon3_text     Maze Challenge: Dragon 7
+tutorial_menu_dragon3_help     Maze: two enemies have trapped you between their walls. Can you survive? They follow a Simplified Dragon Curve of order 7.
+tutorial_menu_dragon3_instructions The two bullies now force you on to a simplified Dragon Curve of order 7.
+
+tutorial_menu_dragon4_text     Maze Challenge: Dragon 8
+tutorial_menu_dragon4_help     Maze: two enemies have trapped you between their walls. Can you survive? They follow a Simplified Dragon Curve of order 8.
+tutorial_menu_dragon4_instructions The two bullies now force you on to a simplified Dragon Curve of order 8.
+
+tutorial_menu_dragon5_text     Maze Challenge: Dragon 9
+tutorial_menu_dragon5_help     Maze: two enemies have trapped you between their walls. Can you survive? They follow a Simplified Dragon Curve of order 9.
+tutorial_menu_dragon5_instructions The two bullies now force you on to a simplified Dragon Curve of order 9.
+
+tutorial_menu_survival1_text     Survival Challenge 1
+tutorial_menu_survival1_help     Survive for a given time.
+tutorial_menu_survival1_instructions You are in a bit of a sticky situation. Your brakes are offline and your engine is overloading; your bike is accelerating exponentially. Slow it down by making many turns and survive until the countdown for the emergency shutdown runs out.\n\nDoublebinding is disabled for this challenge.
+
+tutorial_menu_survival2_text     Survival Challenge 2
+tutorial_menu_survival2_help     Survive for a given time.
+tutorial_menu_survival2_instructions Yes, we really mean that your cycle is accelerating exponentially. In the strict mathematical sense. The really, really bad sense. It's doing that faster now.\n\nGood luck. On an unrelated note, We are not liable for any peripherals you break while playing \g. Or fingers, for that matter.
+
+tutorial_menu_survival3_text     Survival Challenge 3
+tutorial_menu_survival3_help     Survive for a given time.
+tutorial_menu_survival3_instructions The good news: your engines are ine a slightly better state this time.\nThe bad news: you have even less room than before.
+
+tutorial_menu_survival4_text     Survival Challenge 4
+tutorial_menu_survival4_help     Survive for a given time.
+tutorial_menu_survival4_instructions Your engines are perfectly fine this time, but there are three ininitely respawning AIs in the arena, cramping your style. And their walls give you extra acceleration.
+
+tutorial_menu_ai1_text     AI Fight
+tutorial_menu_ai1_help     Play against one AI, no time limit.
+tutorial_menu_ai1_instructions As the final tutorial, we test your skills against a lone AI.\n\nTraining wheels are off for this fight, touching walls is as deadly as it should be.
+
+tutorial_ai_timeout        Failure: Timeout
+tutorial_ai_extratime      Extra Time
+
+tutorial_menu_controls_text     Advanced Controls
+tutorial_menu_controls_help     Learn the rest of the control scheme.
+tutorial_menu_controls_instructions Turning left and right is all well and good, but there are a couple of other input options you may want to use occasionally. This tutorial demonstrates them to you in a risk-free environment.\n\nFollow the onscreen prompts. You'll finish it quicker if you experiment with the commands you learn.
+
+tutorial_menu_ai2_text     AI Challenge 2
+tutorial_menu_ai2_help     Play against two AIs, no time limit.
+tutorial_menu_ai2_instructions You need to defeat two sligtly smarter AIs.
+
+tutorial_menu_ai3_text     AI Challenge 3
+tutorial_menu_ai3_help     Play against three AIs, no time limit.
+tutorial_menu_ai3_instructions You need to defeat three AIs.
+
+tutorial_menu_ai4_text     AI Challenge 4
+tutorial_menu_ai4_help     Kill AIs, beat the ticking clock.
+tutorial_menu_ai4_instructions From now on, the AIs respawn endlessly. There is a time limit, extended every time you manage to kill one.\n\nHere, you need to score four kills without getting killed yourself.
+
+tutorial_menu_ai5_text     AI Challenge 5
+tutorial_menu_ai5_help     Kill AIs, beat the ticking clock.
+tutorial_menu_ai5_instructions Score six kills.
+
+tutorial_menu_ai6_text     AI Challenge 6
+tutorial_menu_ai6_help     Kill AIs, beat the ticking clock.
+tutorial_menu_ai6_instructions Score eight kills.
+
+tutorial_menu_ai7_text     AI Challenge 7
+tutorial_menu_ai7_help     Kill AIs, beat the ticking clock.
+tutorial_menu_ai7_instructions Score ten kills.
+
+tutorial_menu_ai8_text     AI Challenge 8
+tutorial_menu_ai8_help     Kill AIs, beat the ticking clock.
+tutorial_menu_ai8_instructions Score fifteen kills.
+
+tutorial_menu_highrubber_text         Showcase: High Rubber
+tutorial_menu_highrubber_help         Prepares you for some of the weird settings out there.
+tutorial_menu_highrubber_instructions Remember how in the early tutorials, you could touch walls without exlpoding immediately? We call this 'rubber' for historical reasons. Some servers ramp up that rubber setting really high and also reduce the delay between cycle turns so it gets harder to die.\n\nOther human players you meet on high rubber servers will usually do tight moves close to walls in tiny corridors; it's impossible to read these and find a way out after they are built, so you need to watch the players themselves.\n\nIt may be helpful (but not required if you have quick fingers) if you 'doublebind': go to your input configuration and bind the turn commands to two keys, then press those at the same time during the game. You will make an instant 180 degree turn.\n\nAs always, kill all AIs.
+
+tutorial_menu_brakeboost_text         Showcase: Brake Boost
+tutorial_menu_brakeboost_help         Prepares you for some of the weird settings out there.
+tutorial_menu_brakeboost_instructions One of the strengths of \g are the various gameplay configurations it allows. These showcases prepare you for a little bit of the insanity you will encounter online.\n\nFirst, a simple one: The brake can be reconfigured to act as a speed boost. Use it to obliterate the AIs.
+
+tutorial_menu_open_text         Showcase: Open Play
+tutorial_menu_open_help         Prepares you for some of the weird settings out there.
+tutorial_menu_open_instructions This challenge has you playing in a high rubber environment where you cannot grind too tightly; you are forced to leave a gap. If someone wants to follow you, though, they will always be able to squeeze through that gap. Naturally, this makes it very hard to kill someone properly.\n\nTry do do so anyway, eliminate the AIs.\n\n\nSome servers you find online enforce this style of play not via settings used here, but by policy. You are expected to voluntarily leave a gap for trapped players to try and escape through.
+
+tutorial_menu_turbo_text         Showcase: High Speed
+tutorial_menu_turbo_help         Prepares you for some of the weird settings out there.
+tutorial_menu_turbo_instructions Some servers will have you racing at ludicrous speed or, which is the same from a gameplay perspective, confined to a very small arena.\n\nSurvive. The AIs will probably suicide within seconds.
+
+tutorial_menu_map_text         Showcase: Maps
+tutorial_menu_map_help         Prepares you for some of the weird settings out there.
+tutorial_menu_map_instructions Not all battles are fought on rectangular arenas. Some have obstacles, passages and traps. This is one of them.\n\nGet the AIs.
+
+tutorial_menu_axes_text         Showcase: Betrayal
+tutorial_menu_axes_help         Prepares you for some of the weird settings out there.
+tutorial_menu_axes_instructions When we said you can only make 90 degree turns, we lied. In this showcase, you make 45 degree turns.\n\nSurvive the AIs. Interestingly, the easiest way to do so is to let them try and trap you and fail miserably.
+
+tutorial_complete_all_help      Marks all tutorials as completed.
+tutorial_incomplete_all_help    Marks all tutorials and challenges as not completed.
 
 
 #********************************************

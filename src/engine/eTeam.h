@@ -180,6 +180,8 @@ public:												// public methods
 
     int	 			NumHumanPlayers	(		) const; 							// number of human players
     int	 			NumAIPlayers	(		) const; 							// number of human players
+    int             NumActivePlayers(       ) const;                            //!< how many active players are there right now that can spawn next round?
+    int	 			AlivePlayers	(		) const;	
     ePlayerNetID*	OldestPlayer	(		) const;							// the oldest player
     ePlayerNetID*	OldestHumanPlayer(		) const;							// the oldest human player
     ePlayerNetID*	OldestAIPlayer	(		) const;							// the oldest AI player
@@ -187,6 +189,7 @@ public:												// public methods
     ePlayerNetID*	YoungestHumanPlayer(	) const;							// the youngest human player
     ePlayerNetID*	YoungestAIPlayer(		) const;							// the youngest AI player
     bool			Alive			(		) const;							// is any of the players currently alive?
+
 
     // name and color
     unsigned short	R() 	const {

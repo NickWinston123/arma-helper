@@ -1451,15 +1451,15 @@ static bool se_centerPlayerIsBoss=true;
 static tSettingItem<bool> se_centerPlayerIsBossConf("TEAM_CENTER_IS_BOSS", se_centerPlayerIsBoss );
 
 // the oldest player
-ePlayerNetID*	eTeam::OldestPlayer	(		) const
-{
+ePlayerNetID*	eTeam::OldestPlayer() const {
     ePlayerNetID* ret = NULL;
 
-    for (int i= players.Len(); i>=0; i--)
-    {
+    // Ensure array index is within bounds
+    for (int i = players.Len() - 1; i >= 0; i--) {
         ePlayerNetID* p = players(i);
-        if (!ret || ret->timeJoinedTeam > p->timeJoinedTeam || se_centerPlayerIsBoss )
-        {
+
+        // Check for NULL pointer
+        if (p && (!ret || ret->timeJoinedTeam > p->timeJoinedTeam || se_centerPlayerIsBoss)) {
             ret = p;
         }
     }

@@ -115,6 +115,7 @@ public:
 
     //! call if an action was triggered
     void Count( int player );
+    void ShowAgain();
 private:
     virtual void WriteVal(std::ostream & s );
     virtual void ReadVal(std::istream & s );

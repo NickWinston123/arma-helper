@@ -18,9 +18,9 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-5along with this program; if not, write to the Free Software
+along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
+  
 ***************************************************************************
 
 */
@@ -44,6 +44,18 @@ class gSensor;
 class gAISensor;
 class gAILog;
 class gAICharacter;
+
+namespace Game{ class AIPlayerSync; class AITeamSync; }
+
+typedef enum
+{ AI_SURVIVE = 0,   // just try to stay alive
+  AI_TRACE,         // trace a wall
+  AI_PATH,          // follow a path to a target
+  AI_CLOSECOMBAT,   // try to frag a nearby opponent
+  AI_PATH_GIVEN,    // follow a predetermined path to a target, abort if danger looms
+  AI_PATH_MINDLESS  // follow a path to a target mindlessly without caring whether it's suicide
+}
+gAI_STATE;
 
 class gSimpleAI
 {
@@ -82,6 +94,45 @@ private:
 
 class gAIPlayer: public ePlayerNetID{
     friend class gAITeam;
+
+
+protected:
+    // for pathfinding mode:
+    ePath                   path;    // last found path to the victim
+    REAL lastPath;                   // when was the last time we did a pathsearch?
+
+    // for trace mode:
+    int  traceSide;
+    REAL lastChangeAttempt;
+    REAL lazySideChange;
+
+    // state management:
+    gAI_STATE state;             // the current mode of operation
+    REAL      nextStateChange;   // when is the operation mode allowed to change?
+
+    bool emergency;              // tell if an emergency is present
+    int  triesLeft;              // number of tries left before we die
+
+    REAL freeSide;               // number that tells which side is probably free for evasive actions
+
+    // basic thinking:
+    REAL lastTime;
+    REAL nextTime;
+
+    REAL concentration;
+
+    // log
+    gAILog* log;
+
+    //  gCycle * Cycle(){return object;}
+
+    // set trace side:
+    void SetTraceSide(int side);
+
+    // state change:
+    void SwitchToState(gAI_STATE nextState, REAL minTime=10);
+
+    // data structure common to thinking functions
 public:
     //! set sight on target (side effects: switch state accordingly)
     void SetTarget( eNetGameObject * target );
@@ -91,6 +142,49 @@ public:
         return target_;
     }
 
+    gAI_STATE GetState() const { return state; }      // the current mode of operation
+
+    struct ThinkDataBase
+    {
+        int turn;                                   // direction to turn to
+        REAL thinkAgain;                            // when to think again
+
+        ThinkDataBase()
+                : turn(0), thinkAgain(0)
+        {
+        }
+    };
+
+protected:
+struct ThinkData : public ThinkDataBase
+    {
+        gAISensor const & front;                    // sensors cast by upper level function
+        gAISensor const & left;
+        gAISensor const & right;
+
+        ThinkData( gAISensor const & a_front, gAISensor const & a_left, gAISensor const & a_right )
+                : front(a_front), left( a_left ), right( a_right )
+        {
+        }
+    };
+
+    // state update functions:
+    virtual void ThinkSurvive( ThinkData & data );
+    virtual void ThinkTrace( ThinkData & data );
+    virtual void ThinkPath( ThinkData & data );
+    virtual void ThinkPathGiven( ThinkData & data, bool emergency = false );
+    virtual void ThinkCloseCombat( ThinkData & data );
+
+    // emergency functions:
+    virtual bool EmergencySurvive( ThinkData & data, int enemyEvade = -1, int preferedSide = 0);
+    virtual void EmergencyTrace( ThinkData & data );
+    virtual void EmergencyPath( ThinkData & data );
+    virtual void EmergencyCloseCombat( ThinkData & data );
+
+    // acting on gathered data
+    virtual void ActOnData( ThinkData & data );
+    virtual void ActOnData( ThinkDataBase & data );
+public:
     gAICharacter* Character() const {return character_;}
 
     //	virtual void AddRef();
@@ -122,7 +216,7 @@ public:
 
     static void SetNumberOfAIs(int num, int minPlayers, int iq, int tries=3); // make sure this many AI players are in the game (with approximately the given IQ)
 
-    void ClearTarget(){target_=NULL;}
+    void ClearTarget(){target=NULL;}
 
     virtual void ControlObject(eNetGameObject *c){ ePlayerNetID::ControlObject( c ); simpleAI_ = NULL; }
     virtual void ClearObject(){ ePlayerNetID::ClearObject(); simpleAI_ = NULL; }
@@ -130,7 +224,9 @@ public:
     // do some thinking. Return value: time to think again
     virtual REAL Think( REAL maxStep );
 
-    bool Alive();
+    bool Alive(){
+        return bool(Object()) && Object()->Alive();
+    }
 
     virtual bool IsHuman() const { return false; }
 
@@ -178,7 +274,7 @@ public:
 
     // state management
     void SwitchToState( State * newState );
-    State * GetState() const{ return state_; }
+    // State * GetState() const{ return state_; }
 
     // switch to survival state
     void SwitchToSurvival();
@@ -209,6 +305,7 @@ private:
 
     // for all offensive modes:
     nObserverPtr< eNetGameObject >  target_;  // the current victim
+    nObserverPtr< gCycle >    target;  // the current victim
 
     // basic thinking resource management
     REAL lastTime_;
@@ -220,8 +317,8 @@ private:
 
     //! state
     tJUST_CONTROLLED_PTR< State > state_;
-
     void CreateNavigator();
+
 };
 
 // the AI team
@@ -238,5 +335,6 @@ public:
     virtual bool BalanceThisTeam() const { return false; } // care about this team when balancing teams
     virtual bool IsHuman() const { return false; } // does this team consist of humans?
 };
+
 
 #endif

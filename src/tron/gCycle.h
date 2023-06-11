@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tList.h"
 #include "nObserver.h"
 #include "rDisplayList.h"
-
+#include "uInput.h"
 
 #include "ePath.h"
 #include "gCycleMovement.h"
@@ -81,7 +81,7 @@ extern REAL sg_rubberCycle;
 
 extern bool sg_localDeath;
 
-
+extern uActionTooltip sg_brakeTooltip;
 
 // this class set is responsible for remembering which walls are too
 // close together to pass through safely. The AI uses this information,

@@ -308,3 +308,25 @@ void gTeam::TeamMenu()
 
 
 
+// how many active players are there right now that can spawn next round?
+int eTeam::NumActivePlayers(       ) const
+{
+    return numHumans + numAIs;
+}
+
+// how many of the current players are currently alive?
+int eTeam::AlivePlayers ( ) const
+{
+    int ret = 0;
+    for (int i= players.Len()-1; i>=0; --i)
+    {
+        ePlayerNetID* p = players(i);
+        if ( p->Object() && p->Object()->Alive() )
+        {
+            ret++;
+        }
+    }
+
+    return ret;
+}
+

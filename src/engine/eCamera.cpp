@@ -1561,7 +1561,7 @@ void eCamera::Timestep(REAL ts){
         if (center != cycle && InterestingToWatch(cycle))
         {
             center = cycle;
-        } 
+        }
     }
 
     // the best center is always our own vehicle. Focus on it if possible.
@@ -2326,3 +2326,36 @@ void eCamera::CenterCockpitFixedAfter() const{
 }
 
 
+bool eCamera::SetCamMode(eCamMode m){
+
+    if ((localPlayer && localPlayer->allowCam[m] && (!forbid_camera[m])) && m != CAMERA_COUNT) {
+    	mode = m;
+		switch(mode){
+		case CAMERA_IN:
+			rise=0;
+			break;
+		case CAMERA_SMART_IN:
+			break;
+		case CAMERA_CUSTOM:
+			rise=0;
+			break;
+		case CAMERA_SERVER_CUSTOM:
+			rise=0;
+			break;
+		case CAMERA_FREE:
+			break;
+		case CAMERA_FOLLOW:
+			break;
+		case CAMERA_SMART:
+			smartcamIncamSmooth=1;
+			z=z+1;
+			pos=pos+dir.Turn(-1,.1);
+			break;
+        case CAMERA_COUNT:
+            tASSERT(0);
+            break;
+		}
+		return true;
+	}
+	return false;
+}

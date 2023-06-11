@@ -2820,3 +2820,7 @@ std::string tString::stdString() const {
     std::string str(*this);
     return str;
 }
+
+const char* tString::c_str() const {
+    return operator const char*();
+}

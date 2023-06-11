@@ -219,10 +219,10 @@ static tConfItem< bool > sr_filterCycleWallsConf( "FILTER_CYCLE_WALLS", sr_filte
 REAL sr_filterCycleWallsComponentMin = 0; // Minimum value for r or g or b
 static tConfItem<REAL> sr_filterCycleWallsComponentMinConf("FILTER_CYCLE_WALLS_COMPONENT_MIN", sr_filterCycleWallsComponentMin);
 
-REAL sr_filterCycleWallsBlueAdjustFactor = 0.7; 
+REAL sr_filterCycleWallsBlueAdjustFactor = 0.7;
 static tConfItem<REAL> sr_filterCycleWallsBlueAdjustFactorConf("FILTER_CYCLE_WALLS_BLUE_ADJUST_FACTOR", sr_filterCycleWallsBlueAdjustFactor);
 
-bool sr_filterCycleWallsBlueAdjust = false; 
+bool sr_filterCycleWallsBlueAdjust = false;
 static tConfItem<bool> sr_filterCycleWallsBlueAdjustConf("FILTER_CYCLE_WALLS_BLUE_ADJUST", sr_filterCycleWallsBlueAdjust);
 
 REAL sr_filterCycleWallsDarknessThresh = 5;
@@ -256,7 +256,7 @@ static uActionPlayer s_brakeToggle("CYCLE_BRAKE_TOGGLE", -9);
 bool s_cycleBrakeToggleUndeplete = false;
 static tConfItem<bool> s_cycleBrakeToggleUndepleteConf("CYCLE_BRAKE_TOGGLE_UNDEPLETE",s_cycleBrakeToggleUndeplete);
 
-static uActionTooltip sg_brakeTooltip( gCycle::s_brake, 1, &ePlayer::VetoActiveTooltip );
+uActionTooltip sg_brakeTooltip( gCycle::s_brake, 1, &ePlayer::VetoActiveTooltip );
 
 static eWavData cycle_run("moviesounds/engine.wav","sound/cyclrun.wav");
 static eWavData turn_wav("moviesounds/cycturn.wav","sound/expl.wav");
@@ -2645,10 +2645,10 @@ static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycle
 void gCycle::updateColor() {
         player->Color(color_.r, color_.g, color_.b);
         player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
-        
+
         se_MakeColorValid( color_.r, color_.g, color_.b, 1.0f );
         se_MakeColorValid( trailColor_.r, trailColor_.g, trailColor_.b, .5f );
-        
+
         if (sr_filterCycleWalls) {
             se_removeDarkColors(color_);
             se_removeDarkColors(trailColor_);
@@ -4219,7 +4219,7 @@ bool gCycle::ActBot(uActionPlayer *Act, REAL x)
 }
 
 bool gCycle::Act(uActionPlayer *Act, REAL x){
-    
+
     // don't accept premature input
     if (se_mainGameTimer && ( se_mainGameTimer->speed <= 0 || se_mainGameTimer->Time() < -1 ) )
         return false;

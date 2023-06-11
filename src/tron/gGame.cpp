@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gCycle.h"
 #include "eCoord.h"
 #include "eTimer.h"
+#include "gTutorial.h"
 #include "gAIBase.h"
 #include "rSysdep.h"
 #include "rFont.h"
@@ -114,6 +115,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef DEBUG
 //#define CONNECTION_STRESS
 #endif
+
+
 
 tCONFIG_ENUM( gGameType );
 tCONFIG_ENUM( gFinishType );
@@ -228,7 +231,7 @@ static eWavData extro("moviesounds/extro.wav");
 #define AUTO_AI_WIN     3
 #define AUTO_AI_LOSE    1
 
-gGameSettings::gGameSettings(int a_scoreWin, int a_scoreDiffWin,
+gGameSettings::gGameSettings(int a_scoreWin,
                              int a_limitTime, int a_limitRounds, int a_limitScore, int a_limitSet,
                              int a_limitScoreMinLead, int a_maxBlowout,
                              int a_numAIs,    int a_minPlayers,  int a_AI_IQ,
@@ -238,7 +241,7 @@ gGameSettings::gGameSettings(int a_scoreWin, int a_scoreDiffWin,
                              int a_minTeams,
                              REAL a_winZoneMinRoundTime, REAL a_winZoneMinLastDeath
                             )
-        :scoreWin(a_scoreWin), scoreDiffWin(a_scoreDiffWin),
+        :scoreWin(a_scoreWin),
         limitTime(a_limitTime), limitRounds(a_limitRounds), limitScore(a_limitScore), limitSet(a_limitSet),
         limitScoreMinLead(a_limitScoreMinLead), maxBlowout(a_maxBlowout),
         numAIs(a_numAIs),       minPlayers(a_minPlayers),   AI_IQ(a_AI_IQ),
@@ -557,7 +560,7 @@ void gGameSettings::Menu()
     GameSettings.Enter();
 }
 
-gGameSettings singlePlayer(10, 1,
+gGameSettings singlePlayer(10,
                            30, 10, 100000, 1,
                            0, 100000,
                            1,   0, 30,
@@ -566,7 +569,7 @@ gGameSettings singlePlayer(10, 1,
                            gDUEL, gFINISH_IMMEDIATELY, 1,
                            100000, 1000000);
 
-gGameSettings multiPlayer(10, 1,
+gGameSettings multiPlayer(10,
                           30, 10, 100, 1,
                           0, 100000,
                           0,   4, 100,
@@ -578,7 +581,7 @@ gGameSettings multiPlayer(10, 1,
 gGameSettings* sg_currentSettings = &singlePlayer;
 
 static tSettingItem<int> mp_sw("SCORE_WIN"   ,multiPlayer.scoreWin);
-static tSettingItem<int> mp_sd("SCORE_DIFF_WIN"   ,multiPlayer.scoreDiffWin);
+
 static tSettingItem<int> mp_lt("LIMIT_TIME"  ,multiPlayer.limitTime);
 static tSettingItem<int> mp_lr("LIMIT_ROUNDS",multiPlayer.limitRounds);
 static tSettingItem<int> mp_ls("LIMIT_SCORE" ,multiPlayer.limitScore);
@@ -615,7 +618,6 @@ static tConfItem<REAL>   mp_wl		("WALLS_LENGTH"		    ,		multiPlayer.wallsLength 
 static tConfItem<REAL>   mp_er		("EXPLOSION_RADIUS"		,		multiPlayer.explosionRadius );
 
 static tSettingItem<int> sp_sw("SP_SCORE_WIN"   ,singlePlayer.scoreWin);
-static tSettingItem<int> sp_sd("SP_SCORE_DIFF_WIN"   ,singlePlayer.scoreDiffWin);
 static tSettingItem<int> sp_lt("SP_LIMIT_TIME"  ,singlePlayer.limitTime);
 static tSettingItem<int> sp_lr("SP_LIMIT_ROUNDS",singlePlayer.limitRounds);
 static tSettingItem<int> sp_ls("SP_LIMIT_SCORE" ,singlePlayer.limitScore);
@@ -1864,6 +1866,10 @@ void init_game_objects(eGrid *grid){
                                   sg_currentSettings->minPlayers,
                                   sg_currentSettings->AI_IQ);
 
+        if( sg_tutorial )
+        {
+            sg_tutorial->BeforeSpawn();
+        }        
         int spawnPointsUsed = 0;
 
         if( sg_spawnAlternate == 1 )
@@ -1966,6 +1972,11 @@ void init_game_objects(eGrid *grid){
         }
 
         eTeam::SortByScore(); //sort again by score, so new players will join the losing team.
+
+        if( sg_tutorial )
+        {
+            sg_tutorial->AfterSpawn();
+        }
 
 #ifdef ALLOW_NO_TEAM
         for(int p=se_PlayerNetIDs.Len()-1;p>=0;p--){
@@ -3147,9 +3158,9 @@ void MainMenu(bool ingame){
         return;
     }
 
-    if (sr_consoleLogLimited) 
+    if (sr_consoleLogLimited)
         tDirectories::CheckAndClearFileBySize(tString("consolelog-limited.txt"),sr_consoleLogLimitedSize,sr_consoleLogLimitedBackup);
-    
+
 
     if (ingame)
     {
@@ -3168,6 +3179,8 @@ void MainMenu(bool ingame){
     uMenu game_menu(gametitle);
 
     uMenuItemFunction *reset=NULL;
+
+    std::unique_ptr< uMenuItemFunction > tutorials;
 
     if(ingame && sn_GetNetState()!=nCLIENT){
         reset=new uMenuItemFunction
@@ -3194,6 +3207,9 @@ void MainMenu(bool ingame){
     uMenuItemFunction *connect=NULL,*start=NULL,*sound=NULL;
 
     if (!ingame){
+
+        tutorials.reset( tNEW(uMenuItemFunction)( &game_menu, "$game_menu_tutorials_text", "$game_menu_tutorials_help", &sg_TutorialMenu ) );
+
         start= new uMenuItemFunction(&game_menu,"$game_menu_start_text",
                                      "$game_menu_start_help",&sg_SinglePlayerGame);
         connect=new uMenuItemFunction
@@ -3201,7 +3217,6 @@ void MainMenu(bool ingame){
                  "$network_menu_text",
                  "$network_menu_help",
                  &net_game);
-
     }
 
     tOutput title;
@@ -3369,7 +3384,7 @@ if( !sg_ShowSpecialMenu() ) {MainMenu.RemoveItem(&spm); }
      "$display_settings_menu_help");
 
     uMenuItemSubmenu *gamemenuitem = NULL;
-    if (sn_GetNetState() != nCLIENT)
+    if (sn_GetNetState() != nCLIENT && !sg_tutorial)
     {
         char const * gamehelp;
         if (!ingame)
@@ -4132,7 +4147,7 @@ void gGame::StateUpdate(){
             rITexture::LoadAll();
             SetState(GS_PLAY,GS_PLAY);
             if (sn_GetNetState()!=nCLIENT){
-                if (rounds<=0){
+                if (!sg_tutorial && rounds<=0){
                     sn_ConsoleOut("$gamestate_resetnow_console");
                     int setsPlayed = eTeam::SetsPlayed ( );
                     // first challenge log message if needed
@@ -4375,6 +4390,25 @@ static tConfItem<tString> sg_localRespawnEnabledPlayersConf( "LOCAL_RESPAWN_ENAB
 #define RESPAWN_HACK
 
 #ifdef RESPAWN_HACK
+
+// Respawns cycles (crude test)
+void sg_RespawnAllAfter(REAL time)
+{
+    for ( int i = se_PlayerNetIDs.Len()-1; i >= 0; --i )
+    {
+        ePlayerNetID *p = se_PlayerNetIDs(i);
+
+        if ( !p->CanRespawn() )
+            continue;
+
+        eGameObject *e=p->Object();
+
+        if ( ( !e || ( !e->Alive() && e->DeathTime() < se_GameTime() - time ) ) && sn_GetNetState() != nCLIENT )
+        {
+            p->RespawnPlayer(true);
+        }
+    }
+}
 
 
 // Respawns cycles (crude test)
@@ -4818,7 +4852,7 @@ void gGame::Analysis(REAL time){
         static double nextTime = -1;
         if ( tSysTimeFloat() > nextTime || time < -10 )
         {
-            nextTime = tSysTimeFloat() + 1.0;
+            nextTime = tSysTimeFloat() + ( sg_tutorial ? .1 : 1.0 );
         }
         else
         {
@@ -4826,9 +4860,12 @@ void gGame::Analysis(REAL time){
         }
     }
 
+    if( sg_tutorial )
+    {
+        sg_tutorial->Analysis();
+    }
+
     // send timeout warnings
-
-
     if (tSysTimeFloat()-startTime>10){
         if ((startTime+sg_currentSettings->limitTime*60)-tSysTimeFloat()<10 && warning<6){
             tOutput o("$gamestate_tensecond_warn");
@@ -5151,7 +5188,7 @@ void gGame::Analysis(REAL time){
                 if ( last_team_alive >= 0 )
                     sg_currentSettings->AutoAI( eTeam::teams( last_team_alive )->NumHumanPlayers() > 0 );
 
-                if ( sg_currentSettings->gameType!=gFREESTYLE && winner > 0 )
+                if  ( sg_tutorial || sg_currentSettings->gameType!=gFREESTYLE && winner > 0 || sg_currentSettings->gameType==gFREESTYLE )
                 {
                     // check if the win was legitimate: at least one enemy team needs to bo online
                     //if ( sg_EnemyExists( winner-1 ) )
@@ -5203,6 +5240,10 @@ void gGame::Analysis(REAL time){
 
                         /*if (sg_RaceTimerEnabled)
                             gRace::End();*/
+                    }
+                    if( sg_tutorial )
+                    {
+                        sg_tutorial->OnWin( eTeam::teams[winner-1] );
                     }
                 }
                 check_hs();
@@ -5395,6 +5436,26 @@ void gGame::Analysis(REAL time){
     if (sg_currentSettings->finishType==gFINISH_EXPRESS)
         fintime=2.5;
 
+    // quicker end of round on tutorial, plus neant slomo effect
+    if (sg_tutorial)
+    {
+        REAL slowdown = 1;
+        holdBackNextRound = false;
+        if( winner && alive > 0 )
+        {
+            if( se_mainGameTimer )
+            {
+                slowdown = 0.25;
+                fintime=3.5*slowdown;
+                se_mainGameTimer->speed = slowdown;
+            }
+        }
+        else
+        {
+            fintime=4;
+        }
+    }
+
     if(( ( winner || absolute_winner ) && wintimer+fintime < time)
             || (((alive==0 && eTeam::teams.Len()>=
 #ifndef DEDICATED
@@ -5425,6 +5486,11 @@ void gGame::Analysis(REAL time){
            )
         {
             rounds++;
+            if( sg_tutorial )
+            {
+                sg_tutorial->RoundEnd( eTeam::teams[winner-1] );
+                goon = false;
+            }
             SetState(GS_PLAY,GS_DELETE_OBJECTS);
         }
 
@@ -6399,6 +6465,31 @@ static void sg_FillServerSettings()
 }
 
 static nCallbackFillServerInfo sg_fillServerSettings(sg_FillServerSettings);
+
+void sg_TutorialGame( gGameSettings & settings, gTutorialBase & tutorial )
+{
+    sn_SetNetState(nSTANDALONE);
+
+    update_settings();
+
+    gGameSettings oldSettings = *sg_currentSettings;
+    *sg_currentSettings = settings;
+
+    update_settings();
+
+    ePlayerNetID::CompleteRebuild();
+
+    //sr_SetWindowTitle(tString(tOutput("$window_title_tutorial", tOutput( (tString("$tutorial_menu_") + tutorial.Name() + "_text" ).c_str()))));
+    sg_tutorial = &tutorial;
+    own_game( nSTANDALONE );
+    sg_tutorial = NULL;
+    //sr_SetWindowTitle(tOutput("$window_title_menu"));
+
+    *sg_currentSettings = oldSettings;
+
+    sg_StopQuickExit();
+}
+
 
 static void sg_DeclareRoundWinner(std::istream &s)
 {

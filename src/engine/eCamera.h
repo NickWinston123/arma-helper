@@ -135,6 +135,7 @@ public:
     const ePlayer* LocalPlayer() const;
 
     eCamera(eGrid *grid, rViewport *vp,ePlayerNetID *owner,ePlayer *lp,eCamMode m=CAMERA_IN, bool rMain=true);
+
     virtual ~eCamera();
 
     eGameObject * Center() const;
@@ -158,6 +159,10 @@ public:
     eCoord        CameraGlancePos() const {return Glance(pos, glanceDir_);}
     REAL          CameraZ  () const {return z;}
 
+    bool SetCamMode(eCamMode m);		//! Set camera mode, return true if change is allowed and complete, otherwise false
+    void SetCameraPos(eCoord const& pPos) {pos = pPos;}
+    void SetCameraZ  (REAL pZ) {z = pZ;}
+    
     bool CenterAlive() const;
 
     bool CenterCockpitFixedBefore() const;

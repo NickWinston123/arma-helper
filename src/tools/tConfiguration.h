@@ -518,7 +518,7 @@ public:
     {
         s << static_cast< typename tTypeToConfig< T >::TOSTREAM >( value );
     }
-    
+
     void SetVal( T const & val )
     {
         if (!shouldChangeFunc_ || shouldChangeFunc_( val ))
@@ -532,7 +532,7 @@ public:
                 o << "$config_value_changed";
                 con << o;
             }
-            
+
             *target = val;
             changed = true;
         }
@@ -541,7 +541,7 @@ public:
             con << tOutput("$config_value_not_changed", title, *target, val);
         }
     }
-    
+
     const T *GetTarget() const
     {
         return target;
@@ -634,6 +634,28 @@ public:
         return false;
     }
 };
+
+
+/*
+#include <functional>
+
+template<class T>
+class tConfItemWithCommand:public tConfItem<T> {
+public:
+    typedef std::function<bool(ePlayerNetID*, tString)> CommandFunc;
+
+    CommandFunc command;
+
+    tConfItemWithCommand(const char *title, T& t, CommandFunc cmd)
+        : tConfItem<T>(title, t), command(cmd) {}
+
+    virtual ~tConfItemWithCommand(){}
+
+    virtual bool Save() {
+        return false;
+    }
+};
+*/
 
 class tConfItemLine:public tConfItem<tString>, virtual public tConfItemBase{
 private:

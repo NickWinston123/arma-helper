@@ -5022,8 +5022,8 @@ static tConfItem<tString> se_joinCommandConf("LOCAL_CHAT_COMMAND_JOIN", se_joinC
 
 static tString se_searchCommand("/search");
 static tConfItem<tString> se_searchCommandConf("LOCAL_CHAT_COMMAND_SEARCH", se_searchCommand);
-static REAL se_searchCommandMaxFileSize = 50; // 50 MB
-static tConfItem<REAL> se_searchCommandMaxFileSizeConf("LOCAL_CHAT_COMMAND_SEARCH_MAX_FILE_SIZE", se_searchCommandMaxFileSize);
+static REAL se_searchCommandMaxFileSizeMB = 50; // 50 MB
+static tConfItem<REAL> se_searchCommandMaxFileSizeMBConf("LOCAL_CHAT_COMMAND_SEARCH_MAX_FILE_SIZE", se_searchCommandMaxFileSizeMB);
 static bool se_searchCommandCaseSensitive = false;
 static tConfItem<bool> se_searchCommandCaseSensitiveConf("LOCAL_CHAT_COMMAND_CASE_SENSITIVE", se_searchCommandCaseSensitive);
 static int se_searchCommandEmptySearchNumLines = 20;
@@ -5493,7 +5493,7 @@ class JoinCommand : public ChatCommand
 public:
     bool execute(ePlayerNetID *player, tString args) override
     {
-        if (!bool(player->CurrentTeam()))
+        if (player && !bool(player->CurrentTeam()))
         {
             ePlayer::NetToLocalPlayer(player)->spectate = false;
             player->CreateNewTeamWish();
@@ -5713,7 +5713,6 @@ public:
                    << "/search chat #102-105 (by line number range)\n"
                    << "/search chat #102 copy (copy text by single line number)\n";
             con << output;
-
             return true;
         }
         else
@@ -5732,9 +5731,9 @@ public:
 
             for (const auto &searchableFile : searchableFiles)
             {
-                if (searchableFile.first == fileName)
+                if (searchableFile.first == fileName) // searchable file name
                 {
-                    fileName = searchableFile.second;
+                    fileName = searchableFile.second; // actual file name
                     break;
                 }
             }
@@ -5747,7 +5746,7 @@ public:
 
             if (tDirectories::Var().Open(i, fileName))
             {
-                std::streamoff MAX_FILE_SIZE = se_searchCommandMaxFileSize * 1024 * 1024;
+                std::streamoff MAX_FILE_SIZE = se_searchCommandMaxFileSizeMB * 1024 * 1024;
                 std::streamoff fileSize = tPath::GetFileSize(i);
                 fileSizeMB = gHelperUtility::BytesToMB(fileSize);
                 if (fileName == tString("consolelog-limited.txt"))
@@ -6006,7 +6005,7 @@ public:
         {
             con << "No usable players!\n";
             nameSpeakWords.Clear();
-            return true;;
+            return true;
         }
         con << "Name Speak: \n  - Using Player " << nameSpeakPlayerID + 1 << ". Message: '" << params << "'\n";
         nameSpeakIndex = 0;
@@ -6074,7 +6073,6 @@ public:
         tString messageToSend;
         messageToSend << "/msg " << player->lastMessagedPlayer->GetName() << " " << message;
         player->Chat(messageToSend);
-
         return true;
     }
 
@@ -6233,37 +6231,6 @@ public:
     }
 };
 
-#endif // if not dedicated
-
-void ePlayerNetID::RespawnPlayer(bool local)
-{
-    gCycle *cycle = dynamic_cast<gCycle *>(Object());
-    if ((!cycle || !cycle->Alive()))
-    {
-        eCoord pos, dir;
-
-        if (local)
-        {
-            gSpawnPoint *spawn = Arena.LeastDangerousSpawnPoint();
-            spawn->Spawn(pos, dir);
-
-            if (CurrentTeam() && !CurrentTeam()->SpawnPoint())
-                CurrentTeam()->SetSpawnPoint(spawn);
-        }
-        else
-        {
-            sg_DetermineSpawnPoint(this, pos, dir);
-        }
-
-        gCycle *cycle = new gCycle(eGrid::CurrentGrid(), pos, dir, this);
-        if (!cycle)
-            return;
-
-        ControlObject(cycle, local);
-        cycle->updateColor();
-    }
-}
-
 std::unordered_map<std::string, std::unique_ptr<ChatCommand>> createCommandMap()
 {
     std::unordered_map<std::string, std::unique_ptr<ChatCommand>> commandMap;
@@ -6321,6 +6288,7 @@ void ePlayerNetID::LocalChatCommands(ePlayerNetID *p, tString command, std::unor
         }
     }
 }
+#endif // if not dedicated
 
 void ePlayerNetID::Chat(const tString &s_orig)
 {
@@ -6329,62 +6297,64 @@ void ePlayerNetID::Chat(const tString &s_orig)
     s.NetFilter();
 
 #ifndef DEDICATED
+    if (s_orig.StartsWith("/")) {
+        std::unordered_map<std::string, std::unique_ptr<ChatCommand>> commandMap = createCommandMap();
 
-    std::unordered_map<std::string, std::unique_ptr<ChatCommand>> commandMap = createCommandMap();
+        std::string chatString(s_orig);
+        std::istringstream passedString(chatString);
 
-    std::string chatString(s_orig);
-    std::istringstream passedString(chatString);
+        tString command;
+        passedString >> command;
+        tToLower(command);
+        tConfItemBase::EatWhitespace(passedString);
 
-    tString command;
-    passedString >> command;
-    tToLower(command);
-    tConfItemBase::EatWhitespace(passedString);
+        bool isLocalCommand = false;
 
-    bool isLocalCommand = false;
-
-    // Iterate over the commandMap to find if the entered command is a local command
-    for (auto &cmd : commandMap)
-    {
-        if (command.StartsWith(cmd.first.c_str()))
+        // Iterate over the commandMap to find if the entered command is a local command
+        for (auto &cmd : commandMap)
         {
-            isLocalCommand = true;
-            break;
+            if (command.StartsWith(cmd.first.c_str()))
+            {
+                isLocalCommand = true;
+                break;
+            }
         }
-    }
 
-    if (isLocalCommand && se_enableChatCommands && (s_orig.StartsWith("/")))
-    { // con << "CALLING LOCAL CHAT COMMANDS\n";
-        LocalChatCommands(this, s_orig, commandMap);
-    }
-    else
-#endif // if not dedicated
-    {
-        tString retStr(s);
-        if (eBannedWords::BadWordTrigger(this, retStr))
+        if (isLocalCommand && se_enableChatCommands && (s_orig.StartsWith("/")))
+        { // con << "CALLING LOCAL CHAT COMMANDS\n";
+            LocalChatCommands(this, s_orig, commandMap);
             return;
-        s = tColoredString(retStr);
-
-        switch (sn_GetNetState())
-        {
-        case nCLIENT:
-        {
-            se_NewChatMessage(this, s)->BroadCast();
-            break;
-        }
-        case nSERVER:
-        {
-            se_BroadcastChat(this, s);
-
-            // falling through on purpose
-            // break;
-        }
-        default:
-        {
-            se_DisplayChatLocally(this, s);
-            break;
-        }
         }
     }
+
+#endif // if not dedicated
+
+    tString retStr(s);
+    if (eBannedWords::BadWordTrigger(this, retStr))
+        return;
+    s = tColoredString(retStr);
+
+    switch (sn_GetNetState())
+    {
+    case nCLIENT:
+    {
+        se_NewChatMessage(this, s)->BroadCast();
+        break;
+    }
+    case nSERVER:
+    {
+        se_BroadcastChat(this, s);
+
+        // falling through on purpose
+        // break;
+    }
+    default:
+    {
+        se_DisplayChatLocally(this, s);
+        break;
+    }
+    }
+
 }
 
 // identify a local human player
@@ -15179,4 +15149,34 @@ void ePlayerNetID::RequestSync(bool ack)
         return;
 
     nNetObject::RequestSync(ack);
+}
+
+
+void ePlayerNetID::RespawnPlayer(bool local)
+{
+    gCycle *cycle = dynamic_cast<gCycle *>(Object());
+    if ((!cycle || !cycle->Alive()))
+    {
+        eCoord pos, dir;
+
+        if (local)
+        {
+            gSpawnPoint *spawn = Arena.LeastDangerousSpawnPoint();
+            spawn->Spawn(pos, dir);
+
+            if (CurrentTeam() && !CurrentTeam()->SpawnPoint())
+                CurrentTeam()->SetSpawnPoint(spawn);
+        }
+        else
+        {
+            sg_DetermineSpawnPoint(this, pos, dir);
+        }
+
+        gCycle *cycle = new gCycle(eGrid::CurrentGrid(), pos, dir, this);
+        if (!cycle)
+            return;
+
+        ControlObject(cycle, local);
+        cycle->updateColor();
+    }
 }

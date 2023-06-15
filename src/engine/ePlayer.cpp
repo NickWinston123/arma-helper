@@ -1140,7 +1140,6 @@ ePlayer * ePlayer::PlayerConfig(int p)
 {
     uPlayerPrototype *P = uPlayerPrototype::PlayerConfig(p);
     return dynamic_cast<ePlayer*>(P);
-    //  return (ePlayer*)P;
 }
 
 ePlayerNetID * ePlayerNetID::GetPlayerByName(tString name)
@@ -5676,6 +5675,8 @@ static std::vector<std::pair<tString, tString>> searchableFiles = {
     {tString("console"), tString("consolelog-limited.txt")},
     {tString("console-full"), tString("consolelog.txt")}, // TOO BIG?
 };
+
+
 class SearchCommand : public ChatCommand
 {
 public:
@@ -5754,11 +5755,13 @@ public:
 
                 if (searchPhrase.empty())
                 {
+                    player->lastSearch.Clear();
                     std::deque<std::pair<std::string, int>> lastLines;
                     std::string line;
                     int lineNumber = 1; // Added a line number counter
                     while (std::getline(i, line))
                     {
+                        
                         lastLines.push_back(std::make_pair(line, lineNumber));
                         if (lastLines.size() > se_searchCommandEmptySearchNumLines)
                             lastLines.pop_front();
@@ -5770,8 +5773,10 @@ public:
 
                     con << fileNameOut << "Nothing to search. Showing last 0x8bc34a" << se_searchCommandEmptySearchNumLines << "0xffffff lines:\n";
                     int count = 1;
-                    for (const auto &linePair : lastLines) // linePair is a pair of line content and line number
+                    for (const auto &linePair : lastLines) { // linePair is a pair of line content and line number {
+                        player->lastSearch.Add(tString(linePair.first));
                         con << count++ << ") 0x8bc34aLine 0xffb900" << linePair.second << ": 0xffffff" << linePair.first << "\n";
+                        }
 
                     i.close();
                     return true;
@@ -5781,20 +5786,23 @@ public:
                 int lineNumber = 1;
                 bool found = false;
                 tString output;
-                bool copyToClipboard = false;
-                if (searchPhrase.StartsWith("#"))
+                bool copy = false;
+
+                bool copySpecificLineNum = searchPhrase.StartsWith("#");
+                bool copyNumMatch = searchPhrase.StartsWith("@");
+                if (copySpecificLineNum || copyNumMatch)
                 {
                     tString actualSearchPhrase = searchPhrase.SubStr(1);
                     int copyPos = actualSearchPhrase.StrPos(" copy");
-                    copyToClipboard = (copyPos != -1);
+                    copy = copyNumMatch || (copyPos != -1);
 
-                    if (copyToClipboard)
+                    if (!copyNumMatch && copy)
                     {
                         actualSearchPhrase = actualSearchPhrase.SubStr(0, copyPos); // Remove " copy" from the search phrase
                     }
 
 #ifndef WIN32
-                    copyToClipboard = false;
+                    copy = false;
 #endif
 
                     int startLineNumber = -1;
@@ -5804,69 +5812,64 @@ public:
                     if (dashPos != -1)
                     {
                         startLineNumber = atoi(actualSearchPhrase.SubStr(0, dashPos));
-                        endLineNumber = atoi(actualSearchPhrase.SubStr(dashPos + 1));
+                        endLineNumber   = atoi(actualSearchPhrase.SubStr(dashPos + 1));
                     }
                     else
                     {
                         startLineNumber = atoi(actualSearchPhrase);
-                        endLineNumber = startLineNumber;
+                        endLineNumber   = startLineNumber;
                     }
 
-                    while (std::getline(i, sayLine))
+                    if (copyNumMatch && startLineNumber == endLineNumber)
                     {
-                        if (lineNumber >= startLineNumber && lineNumber <= endLineNumber)
+                        if (!player->lastSearch.Len() > 0 || player->lastSearch.Len() < endLineNumber) {
+                            con << "Nothing to copy from.\n";
+                        } else {
+                            tString message(player->lastSearch[endLineNumber-1]);
+                            if (copyToClipboard(message)) {
+                                con << "Copied contents to clipboard.\n";
+                                numMatches++;
+                                output << endLineNumber << " 0xffffff" << message << "\n";
+                                found = true;
+                            }
+                        }
+                    }
+
+                    while ( !found && !copyNumMatch && std::getline(i, sayLine) )
+                    {
+                        if ( (lineNumber >= startLineNumber && lineNumber <= endLineNumber) )
                         {
-                            found = true;
                             numMatches++;
                             output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
 
-                            if (copyToClipboard && startLineNumber == endLineNumber)
+                            if (copy && startLineNumber == endLineNumber) // only copy for one line
                             {
                                 tString lineToCopy;
-                                if (found)
-                                {
-                                    lineToCopy = output.SubStr(output.StrPos(": ") + 2); // Remove everything before the line content
-                                    int lineEndPos = lineToCopy.StrPos("\n");
-                                    if (lineEndPos != -1)
-                                    {
-                                        lineToCopy = tColoredString::RemoveColors(lineToCopy.SubStr(0, lineEndPos)); // Remove newline character
-                                    }
+                                lineToCopy = output.SubStr(output.StrPos(": ") + 2); // Remove everything before the line content
 
-                                    if (OpenClipboard(0))
-                                    {
-                                        EmptyClipboard();
-
-                                        HGLOBAL hClipboardData = GlobalAlloc(GMEM_MOVEABLE, lineToCopy.Len() + 1);
-                                        char *pchData = static_cast<char *>(GlobalLock(hClipboardData));
-                                        strcpy(pchData, lineToCopy);
-                                        GlobalUnlock(hClipboardData);
-
-                                        SetClipboardData(CF_TEXT, hClipboardData);
-                                        CloseClipboard();
-                                    }
-                                }
-                                con << "Copied contents to clipboard.\n";
+                                if (copyToClipboard(lineToCopy))
+                                    con << "Copied contents to clipboard.\n";
+                                found = true;
                                 break;
                             }
                         }
 
                         if (lineNumber > endLineNumber)
-                        {
-                            break;
-                        }
+                            found = true;
 
                         lineNumber++;
                     }
                     if (!found)
                     {
-                        con << "0x8bc34aLine Range0xffb900: " << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
+                        if (!copyNumMatch)
+                            con << "0x8bc34aLine Range0xffb900: " << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
                         i.close();
                         return true;
                     }
-                    con << output;
                 }
-                else if (!copyToClipboard)
+                else if (!copy)
                 {
+                    player->lastSearch.Clear();
                     while (std::getline(i, sayLine))
                     {
                         std::string sayLineComparison = sayLine;
@@ -5887,11 +5890,12 @@ public:
                             found = true;
                             numMatches++;
                             output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
+                            player->lastSearch.Add(tString(sayLine));
                         }
                         lineNumber++;
                     }
                 }
-                if (!found && !copyToClipboard)
+                if (!found && !copy)
                 {
                     tString fileNameOut;
                     fileNameOut << "\nFile '0xffb900" << fileName << tString("0xffffff' ")
@@ -5901,7 +5905,7 @@ public:
                         << "No matches found for the search phrase: '0x8bc34a"
                         << searchPhrase << "0xffffff'";
                 }
-                else if (!copyToClipboard)
+                else if (!copy)
                 {
                     tString fileNameOut;
                     fileNameOut << "\nFile '0xffb900" << fileName                 << "0xffffff' - 0xffb900"
@@ -6052,7 +6056,6 @@ class NicknameCommand : public ChatCommand
 public:
     bool execute(ePlayerNetID* player, tString args) override
     {
-        int posCommand = args.StrPos(" ");
         if (args.empty())
         {
             // Clear all nicknames
@@ -6065,25 +6068,29 @@ public:
             return true;
         }
 
-        // Extract the "name replacement" part
-        args = args.SubStr(posCommand + 1);
-
-        int posNickname = args.StrPos(" ");
-        tString targetName;
-        if (posNickname == -1)
-            targetName = args;
-        else
-            targetName = args.SubStr(0, posNickname);
-
-
-        ePlayerNetID *target = ePlayerNetID::FindPlayerByName(targetName);
-        if (target)
+        int posSpace = args.StrPos(" ");
+        if (posSpace == -1)
         {
-            if (posNickname != -1)
+            // No space found, assume only a name is provided
+            tString targetName = args;
+            ePlayerNetID* target = ePlayerNetID::FindPlayerByName(targetName);
+            if (target)
             {
-                // nickname provided
-                tString nickname;
-                nickname << args.SubStr(posNickname + 1);
+                con << target->coloredName_ << "0xffffff's nickname has been cleared.\n";
+                target->nickname.Clear();
+                target->coloredNickname.Clear();
+                return true;
+            }
+        }
+        else
+        {
+            // Extract name and nickname parts
+            tString targetName = args.SubStr(0, posSpace);
+            tString nickname = args.SubStr(posSpace + 1);
+
+            ePlayerNetID* target = ePlayerNetID::FindPlayerByName(targetName);
+            if (target)
+            {
                 target->nickname = nickname;
 
                 REAL r, g, b;
@@ -6092,16 +6099,11 @@ public:
                 coloredNickname << tColoredString::ColorString(r, g, b) << nickname;
                 target->coloredNickname = coloredNickname;
                 con << target->coloredName_ << "0xffffff is now nicknamed '" << target->GetColoredName() << "0xffffff'\n";
+                return true;
             }
-            else
-            {
-                // no nickname
-                con << target->coloredName_ << "0xffffff's nickname has been cleared.\n";
-                target->nickname.Clear();
-                target->coloredNickname.Clear();
-            }
-            return true;
         }
+
+        con << "No matches found for nickname change.\n";
         return false;
     }
 };
@@ -6290,19 +6292,9 @@ void ePlayerNetID::Chat(const tString &s_orig)
     s.NetFilter();
 
 #ifndef DEDICATED
-    if (s_orig.StartsWith("/")) {
+    if (se_enableChatCommands && s_orig.StartsWith("/") && LocalChatCommands(this,s_orig))
+        return;
 
-        std::string chatString(s_orig);
-        std::istringstream passedString(chatString);
-
-        tString command;
-        passedString >> command;
-        tToLower(command);
-        tConfItemBase::EatWhitespace(passedString);
-
-        if ( LocalChatCommands(this,s_orig) )
-            return;
-    }
 #endif // if not dedicated
 
     tString retStr(s);

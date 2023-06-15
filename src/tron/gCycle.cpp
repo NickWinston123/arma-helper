@@ -512,6 +512,9 @@ static tConfItem<REAL> sg_lastTimeHackMultConf( "LAST_TIME_HACK_ADD", sg_lastTim
 static bool sg_localBot = false;
 static tConfItem<bool> sg_localBotConf( "LOCAL_BOT", sg_localBot );
 
+static bool sg_botActivationDualMode = false;
+static tConfItem<bool> sg_botActivationDualModeConf( "BOT_ACTIVATION_DUAL_MODE", sg_botActivationDualMode );
+
 static bool sg_localBotEnabledWhileChatting = true;
 static tConfItem<bool> sg_localBotEnabledWhileChattingConf( "LOCAL_BOT_ENABLED_WHILE_CHATTING", sg_localBotEnabledWhileChatting );
 
@@ -3051,7 +3054,7 @@ bool gCycle::Timestep(REAL currentTime){
                                                (sg_smarterBotAlwaysActive || player->IsChatting()) &&
                                                tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
 
-        bool activateLocalBotForThisPlayer = !activateSmarterBotForThisPlayer && bool(player) && sg_localBot &&
+        bool activateLocalBotForThisPlayer = (!activateSmarterBotForThisPlayer || sg_botActivationDualMode) && bool(player) && sg_localBot &&
                                              ( sg_localBotAlwaysActive || (sg_localBotEnabledWhileChatting && player->IsChatting()) ) &&
                                              tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
 
@@ -3642,6 +3645,14 @@ ePlayerNetID * gCycle::GetPlayerHuntedBy()
     return hunter;
 }
 
+
+bool sg_predictDeath = false;
+static tConfItem<bool> sg_predictDeathConf( "PREDICT_DEATH", sg_predictDeath );
+
+REAL sg_predictDeathUpdateTime = 1;
+static tConfItem<REAL> sg_predictDeathUpdateTimeConf( "PREDICT_DEATH_UPDATE_TIME", sg_predictDeathUpdateTime );
+
+
 void gCycle::KillAt( const eCoord& deathPos){
     // don't kill invulnerable cycles
     if ( !Vulnerable() )
@@ -3668,6 +3679,8 @@ void gCycle::KillAt( const eCoord& deathPos){
     if ( !hunter )
         hunter = Player();
 
+    if (sg_predictDeath) 
+        con << hunter->GetColoredName() << " 0xffffffkilled " << Player()->GetColoredName() << "\n";
 
     if ( !Alive() || sn_GetNetState()==nCLIENT && Owner() != sn_myNetID )
         return;

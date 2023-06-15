@@ -1965,7 +1965,7 @@ static bool st_IsUnderscore( char c )
 
 bool tString::isNumber() const
 {
-    std::string str = this->stdString();  
+    std::string str = this->stdString();
     if (empty())
         return false;
 
@@ -2880,4 +2880,28 @@ std::string tString::stdString() const {
 
 const char* tString::c_str() const {
     return operator const char*();
+}
+
+bool copyToClipboard(tString contents)
+{
+    int contentsPos = contents.StrPos("\n");
+    if (contentsPos != -1)
+    {
+        contents = tColoredString::RemoveColors(contents); // Remove newline character
+    }
+
+    if (OpenClipboard(0))
+    {
+        EmptyClipboard();
+
+        HGLOBAL hClipboardData = GlobalAlloc(GMEM_MOVEABLE, contents.Len() + 1);
+        char *pchData = static_cast<char *>(GlobalLock(hClipboardData));
+        strcpy(pchData, contents);
+        GlobalUnlock(hClipboardData);
+
+        SetClipboardData(CF_TEXT, hClipboardData);
+        CloseClipboard();
+        return true;
+    }
+    return false;
 }

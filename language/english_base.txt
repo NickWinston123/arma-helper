@@ -507,6 +507,8 @@ file_manager_line_out_of_range Line '\1' out of range. (\2) \n
 file_manager_created_backup Created back up. (\1) \n
 file_manager_error_creating_backup Error creating back up. (\1) \n
 file_manager_cleared_exceeding_size \1 was cleared because it's file size exeeded the set max. (\2/\3).\n
+file_manager_cleared_file Cleared file. (\1)\n
+file_manager_error_clearing_file Error clearing file. (\1)\n
 
 #********************************************
 #********************************************

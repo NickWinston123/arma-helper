@@ -1743,6 +1743,10 @@ bool FileManager::Clear(){
         cleared = true;
     }
     o.close();
+    if (cleared)
+        con << tOutput("$file_manager_cleared_file", fileName);
+    else
+        con << tOutput("$file_manager_error_clearing_file", fileName);
     return cleared;
 }
 

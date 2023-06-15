@@ -320,6 +320,7 @@ public:
     int currentShift = 0;
     int shiftIter = 0;
     int lastplayerRandomColorNameStartMode;
+    tArray<tString> lastSearch;
 private:
 
     int listID;                          // ID in the list of all players

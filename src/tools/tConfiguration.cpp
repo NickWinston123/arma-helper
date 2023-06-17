@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tCommandLine.h"
 #include "tResourceManager.h"
 #include "tError.h"
+#include "nConfig.h"
 
 #include <vector>
 #include <string.h>
@@ -2229,3 +2230,5 @@ void sg_listChangedCommands(std::istream &s)
 
 static tConfItemFunc sg_listChangedCommandsConf("LIST_CHANGED_COMMANDS", &sg_listChangedCommands);
 
+bool sn_unlocknSettings=false;
+static tConfItem<bool> sn_unlocknSettingsConf("NETWORK_SETTINGS_ALLOW_CHANGE",sn_unlocknSettings);

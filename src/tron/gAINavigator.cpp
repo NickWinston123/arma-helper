@@ -771,15 +771,16 @@ gAINavigator::FollowEvaluator::FollowEvaluator(gCycle &cycle)
         return;
     }
 
-    bool foundZone = false;
+    bool foundZoneTarget = false;
     bool foundDesiredTarget = false;
+    bool foundTeamTarget = false;
 
     if (local_p->sg_smarterBotFollowFindZone)
     {
-        foundZone = targetZone();
+        foundZoneTarget = targetZone();
     }
 
-    if (!foundZone)
+    if (!foundZoneTarget)
     {
         if (local_p->sg_smarterBotFollowFindTarget && !local_p->sg_smarterBotFollowTarget.empty())
         {
@@ -787,7 +788,12 @@ gAINavigator::FollowEvaluator::FollowEvaluator(gCycle &cycle)
         }
     }
 
-    if (!foundDesiredTarget && !foundZone)
+    if (!local_p->sg_smarterBotFollowTargetTeamList.empty())
+    {
+        foundTeamTarget = FindTeamTarget();
+    }
+
+    if (!foundDesiredTarget && !foundZoneTarget && !foundTeamTarget)
     {
         FindTarget();
     }
@@ -922,6 +928,48 @@ void gAINavigator::FollowEvaluator::SolveTurn( int direction, eCoord const & tar
     // and handle the rest primitively via dot product
     data.quality = eCoord::F( antiTurnDir, targetPosition - velocityDifference * data.turnTime );
     data.quality /= antiTurnDir.Norm();
+}
+
+bool gAINavigator::FollowEvaluator::FindTeamTarget()
+{
+    // get local player
+    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
+    tArray<tString> team = local_p->sg_smarterBotFollowTargetTeamList.SplitIncludeFirst(",");
+    gCycle *closestTeammate = nullptr;
+    gCycle *closestEnemyToTeammate = nullptr;
+    REAL closestTeammateDistanceSquared = 999999999;
+
+    // Loop through all team members
+    for (int i = 0; i < team.Len(); i++)
+    {
+        ePlayerNetID *player = ePlayerNetID::GetPlayerByName(team[i]);
+        if (player)
+        {
+            gCycle *targetCycle = ePlayerNetID::NetPlayerTogCycle(player);
+            if (targetCycle)
+            {
+                REAL positionDifference = st_GetDifference(targetCycle->Position(), cycle_.Position());
+                // if current teammate is closer than the current closest teammate
+                if (positionDifference < closestTeammateDistanceSquared)
+                {
+                    closestTeammateDistanceSquared = positionDifference;
+                    closestTeammate = targetCycle;
+
+                    // find the closest enemy to this teammate
+                    closestEnemyToTeammate = gHelperEnemiesData::getClosestEnemy(targetCycle, sg_smarterBotTeam, sg_smarterBotTeamOwner, local_p->sg_smarterBotFollowTargetTeamList);
+                }
+            }
+        }
+    }
+
+    // check if we found a teammate and an enemy
+    if(closestTeammate && closestEnemyToTeammate)
+    {
+        SetTarget((closestEnemyToTeammate));
+        return true;
+    }
+
+    return false;
 }
 
 

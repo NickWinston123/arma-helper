@@ -107,10 +107,27 @@ public:
     static void SortFiles( tArray< tString >& files );
 };
 
+#include "tConsole.h"
+
 class FileManager
 {
 public:
-    FileManager(tString fileName) { this->fileName = fileName; }
+    FileManager(const tString &fileName)
+        : fileName(fileName)
+    {
+        tDirectories::Var().Open(i, fileName);
+    }
+
+    ~FileManager()
+    {
+        if(i.is_open()){
+            i.close();
+        }
+        if(o.is_open()){
+            o.close();
+        }
+    }
+
     std::streamoff FileSize();
     tArray<tString> Load();
     bool Write(tString content);
@@ -126,5 +143,4 @@ private:
     std::ofstream o;
     std::ifstream i;
 };
-
 #endif

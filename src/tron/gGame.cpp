@@ -1619,10 +1619,17 @@ static void displayDescriptor(nDescriptor *descriptor)
 
 static void sg_FindDescriptor(std::istream &s)
 {
-    int ID;
-    s >> ID;
-    bool blankID = ID == 0;
-    con << "Using ID " << ID << "\n";
+    std::string input;
+    std::getline(s, input);
+    int ID = 0;
+    bool blankID = false;
+    try {
+        ID = std::stoi(input);
+        con << "Using ID " << ID << "\n";
+    } catch (const std::exception &e) {
+        blankID = true;
+        con << "No ID provided, displaying all descriptors\n";
+    }
 
     nDescriptor *matchingDescriptor = nullptr;
     const auto &trackedDescriptors = nDescriptor::getTrackedDescriptors();
@@ -1631,10 +1638,9 @@ static void sg_FindDescriptor(std::istream &s)
     {
         if (descriptor)
         {
-            if (descriptor->ID() == ID) {
+            if (!blankID && descriptor->ID() == ID) {
                 matchingDescriptor = descriptor;
-                if (!blankID)
-                    break;
+                break;
             }
             else if (blankID)
             {
@@ -1649,9 +1655,11 @@ static void sg_FindDescriptor(std::istream &s)
         return;
     }
 
-    // Found match
-    displayDescriptor(matchingDescriptor);
+    if (!blankID) { // Display the matched descriptor only when ID is provided
+        displayDescriptor(matchingDescriptor);
+    }
 }
+
 
 static tConfItemFunc sg_FindDescriptorConf("DESCRIPTOR_FIND", &sg_FindDescriptor);
 
@@ -1869,7 +1877,8 @@ void init_game_objects(eGrid *grid){
         if( sg_tutorial )
         {
             sg_tutorial->BeforeSpawn();
-        }        
+        }
+        
         int spawnPointsUsed = 0;
 
         if( sg_spawnAlternate == 1 )
@@ -3157,7 +3166,7 @@ void MainMenu(bool ingame){
         sg_RestrictPlayTimeStartTimWarnings++;
         return;
     }
-
+    con << "RUNNING\n";
     if (sr_consoleLogLimited)
         FileManager(tString("consolelog-limited.txt")).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
 
@@ -5592,21 +5601,25 @@ static tSettingItem<bool> sg_forceSyncAllConf("FORCE_SYNC_ALL", sg_forceSyncAll)
 static REAL sg_forceClockDelay = 0.5;
 static tConfItem<REAL> sg_forceClockDelayConf("FORCE_CLOCK_DELAY", sg_forceClockDelay);
 
-static REAL lastForcedUpdate = tSysTimeFloat();
-static REAL nextWatchCheck = tSysTimeFloat();
 
 bool gGame::GameLoop(bool input){
 
     if (sg_forceGamePause)
         se_PauseGameTimer();
 
-    if (se_watchActiveStatus && nextWatchCheck <= tSysTimeFloat()){
-        ePlayerNetID::watchPlayerStatus();
-        nextWatchCheck = tSysTimeFloat() + se_watchActiveStatusTime;
+    if (se_watchActiveStatus)
+        {
+        static REAL nextWatchCheck = tSysTimeFloat();
+        if (nextWatchCheck <= tSysTimeFloat())
+        {
+            ePlayerNetID::watchPlayerStatus();
+            nextWatchCheck = tSysTimeFloat() + se_watchActiveStatusTime;
+        }
     }
 
     if (sg_forcePlayerUpdate || sg_forceSyncAll || sg_forcePlayerRebuild)
     {
+        static REAL lastForcedUpdate = tSysTimeFloat();
         if (tSysTimeFloat() >= lastForcedUpdate + sg_forceClockDelay)
         {
 

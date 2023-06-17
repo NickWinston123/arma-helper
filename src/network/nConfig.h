@@ -31,6 +31,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tConfiguration.h"
 #include "nNetwork.h"
 
+extern bool sn_unlocknSettings;
+
 template<class T> inline bool sn_compare(T&a, T&b)
 {
     return (a!=b);

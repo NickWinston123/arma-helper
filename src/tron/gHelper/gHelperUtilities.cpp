@@ -90,22 +90,25 @@ std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, eCoor
 }
 
 std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor) {
+    int winding = owner_->Grid()->DirectionWinding(owner_->Direction());
+
+    auto createAndDetectSensor = [&](eCoord direction) {
+        std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(owner_, start, direction);
+        sensor->detect(sg_helperSensorRange, true);
+        return sensor;
+    };
+
     if (sg_helperSensorLightUsageMode && !newSensor)
     {
-        int winding = owner_->Grid()->DirectionWinding(owner_->Direction());
-
         switch (dir)
         {
             case LEFT:
             {
-                int left_winding = winding - 1;
-                eCoord left_dir = owner_->Grid()->GetDirection(left_winding);
+                eCoord left_dir = sg_helperSensorDiagonalMode 
+                                    ? owner_->Grid()->GetDirection(winding - 1)
+                                    : owner_->Direction().Turn(eCoord(0, 1));
 
-                if (sg_helperSensorDiagonalMode)
-                    left_stored->detect(sg_helperSensorRange, start, left_dir, true);
-                else
-                    left_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, 1)), true);
-
+                left_stored->detect(sg_helperSensorRange, start, left_dir, true);
                 return left_stored;
             }
             case FRONT:
@@ -117,50 +120,25 @@ std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, int d
             }
             case RIGHT:
             {
-                int right_winding = winding + 1;
-                eCoord right_dir = owner_->Grid()->GetDirection(right_winding);
-
-                if (sg_helperSensorDiagonalMode)
-                    right_stored->detect(sg_helperSensorRange, start, right_dir, true);
-                else
-                    right_stored->detect(sg_helperSensorRange, start, owner_->Direction().Turn(eCoord(0, -1)), true);
+                eCoord right_dir = sg_helperSensorDiagonalMode
+                                    ? owner_->Grid()->GetDirection(winding + 1)
+                                    : owner_->Direction().Turn(eCoord(0, -1));
+                
+                right_stored->detect(sg_helperSensorRange, start, right_dir, true);
                 return right_stored;
             }
         }
     }
     else
     {
-        int winding = owner_->Grid()->DirectionWinding(owner_->Direction());
-
-        std::shared_ptr<gHelperSensor> sensor;
         switch (dir)
         {
             case LEFT:
-            {
-                int left_winding = winding - 1;
-                eCoord left_dir = owner_->Grid()->GetDirection(left_winding);
-
-                sensor = std::make_shared<gHelperSensor>(owner_, start, left_dir);
-                sensor->detect(sg_helperSensorRange, true);
-                return sensor;
-            }
+                return createAndDetectSensor(owner_->Grid()->GetDirection(winding - 1));
             case FRONT:
-            {
-                eCoord front_dir = owner_->Grid()->GetDirection(winding);
-
-                sensor = std::make_shared<gHelperSensor>(owner_, start, front_dir);
-                sensor->detect(sg_helperSensorRange, true);
-                return sensor;
-            }
+                return createAndDetectSensor(owner_->Grid()->GetDirection(winding));
             case RIGHT:
-            {
-                int right_winding = winding + 1;
-                eCoord right_dir = owner_->Grid()->GetDirection(right_winding);
-
-                sensor = std::make_shared<gHelperSensor>(owner_, start, right_dir);
-                sensor->detect(sg_helperSensorRange, true);
-                return sensor;
-            }
+                return createAndDetectSensor(owner_->Grid()->GetDirection(winding + 1));
         }
     }
     return nullptr;
@@ -192,7 +170,7 @@ bool gHelperEnemiesData::exist(gCycle* enemy) {
     return (enemy != nullptr) && enemy->Alive();
 }
 
-gCycle * gHelperEnemiesData::getClosestEnemy(gCycle *owner_, bool ignoreLocal, bool ignoreOwner) {
+gCycle * gHelperEnemiesData::getClosestEnemy(gCycle *owner_, bool ignoreLocal, bool ignoreOwner, tString ignoreList) {
     gCycle * closestEnemy = nullptr;
     REAL closestEnemyDistanceSquared = 999999999;
     for (int i = 0; i < se_PlayerNetIDs.Len(); i++) {
@@ -200,8 +178,9 @@ gCycle * gHelperEnemiesData::getClosestEnemy(gCycle *owner_, bool ignoreLocal, b
         if (other != nullptr && other->Alive() && se_PlayerNetIDs[i]->pID != owner_->Player()->pID) {
             bool isOwner = se_PlayerNetIDs[i]->pID == 0;
             bool isLocal = !isOwner && ePlayer::NetToLocalPlayer(se_PlayerNetIDs[i]) != nullptr;
+            bool isIgnored = !ignoreList.empty() && tIsInList(ignoreList, se_PlayerNetIDs[i]->GetName());
 
-            if (ignoreLocal && isLocal || ignoreOwner && isOwner)
+            if (ignoreLocal && isLocal || ignoreOwner && isOwner || isIgnored)
                 continue;
 
             REAL positionDifference = st_GetDifference(other->Position(), owner_->Position());

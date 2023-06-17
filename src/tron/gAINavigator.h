@@ -372,6 +372,7 @@ private:
         bool FindTarget();
         bool targetZone();
         void followTail();
+        bool FindTeamTarget();
         bool SetDesiredTarget(tString target);
         //! set the target to follow
         void SetTarget( eCoord const & target, eCoord const & velocity );

@@ -46,7 +46,7 @@ struct gHelperEnemiesData
     // Clears the allEnemies set.
     // Output: returns a pointer to the closest detected enemy.
     gCycle* detectEnemies();
-    static gCycle* getClosestEnemy(gCycle *owner_, bool ignoreLocal, bool ignoreOwner);
+    static gCycle* getClosestEnemy(gCycle *owner_, bool ignoreLocal, bool ignoreOwner, tString ignoreList =tString(""));
 };
 
 

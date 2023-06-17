@@ -579,10 +579,13 @@ int nCurrentSenderID::currentSenderID_ = 0;
 bool sg_descriptorsShow = false;
 static tConfItem<bool> sg_descriptorsShowConf("DESCRIPTOR_SHOW_HANDLED",sg_descriptorsShow);
 
+tString sg_descriptorsShowIgnoreList = tString("");
+static tConfItem<tString> sg_descriptorsShowIgnoreListConf("DESCRIPTOR_SHOW_HANDLED_IGNORE_LIST",sg_descriptorsShowIgnoreList);
+
 void nDescriptor::HandleMessage(nMessage &message){
     // store sender ID for console
     nCurrentSenderID currentSender( message.SenderID() );
-    if (sg_descriptorsShow)
+    if (sg_descriptorsShow && !tIsInList(sg_descriptorsShowIgnoreList,static_cast<int>(message.descriptor)))
         con << "Handling nDescriptor message for ID: " << message.descriptor << " (" << descriptors[message.descriptor]->name << ") :\n" << con.nMessageToString(message) << "\n";
 #ifdef DEBUG_X
     if (message.descriptor>1)
@@ -1134,9 +1137,12 @@ nMessage::~nMessage(){
 bool sg_descriptorsShowBroadCasted = false;
 static tConfItem<bool> sg_descriptorsShowBroadCastedConf("DESCRIPTOR_SHOW_BROADCASTED",sg_descriptorsShowBroadCasted);
 
+tString sg_descriptorsShowBroadCastedIgnoreList = tString("");
+static tConfItem<tString> sg_descriptorsShowBroadCastedIgnoreListConf("DESCRIPTOR_SHOW_BROADCASTED_IGNORE_LIST",sg_descriptorsShowBroadCastedIgnoreList);
+
 void nMessage::BroadCast(bool ack){
 
-if (sg_descriptorsShowBroadCasted)
+if (sg_descriptorsShowBroadCasted && !tIsInList(sg_descriptorsShowBroadCastedIgnoreList,(*this).descriptor))
     con << "BroadCast message for ID " << (*this).descriptor << " (" << descriptors[(*this).Descriptor()]->name << ") :\n" << con.nMessageToString(*this) << "\n";
 
     tControlledPTR< nMessage > keep( this );
@@ -3411,7 +3417,9 @@ private:
 static nConsoleFilter sn_consoleFilter;
 #endif
 
+
 static void sn_ConsoleOut_handler(nMessage &m){
+
     if (sn_GetNetState()!=nSERVER){
         tString s;
         m >> s;

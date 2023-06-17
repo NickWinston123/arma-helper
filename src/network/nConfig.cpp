@@ -137,10 +137,14 @@ void nConfItemBase::CheckChange( bool nonDefault ){
     SendConfig();
 }
 
+
 bool nConfItemBase::Writable()
 {
+    if (sn_unlocknSettings)
+        return true;
+        
     // network settings are read only on the client
-    if ( sn_GetNetState() == nCLIENT )
+    if ( sn_GetNetState() == nCLIENT)
         return false;
 
     // on the server, we need to check for a watcher...

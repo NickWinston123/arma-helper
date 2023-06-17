@@ -170,6 +170,7 @@ public:
     bool sg_smarterBotFollowFindZone;
     bool sg_smarterBotFollowTail;
     tString sg_smarterBotFollowTarget;
+    tString sg_smarterBotFollowTargetTeamList;
     REAL sg_smarterBotFollowAlignedThresh;
     REAL sg_smarterBotPlanScale;
     REAL sg_smarterBotTailScale;
@@ -314,7 +315,7 @@ public:
     static void watchPlayerStatus();
     static ePlayerNetID  *gCycleToNetPlayer(gCycle *owner);
     static gCycle *NetPlayerTogCycle(ePlayerNetID *player);
-    static ePlayerNetID *GetPlayerByName(tString name);
+    static ePlayerNetID *GetPlayerByName(tString name, bool exact = true);
     int lastsyncedColor[3] = {0, 0, 0};
     tColoredString lastColoredName;
     int currentShift = 0;

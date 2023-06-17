@@ -92,6 +92,13 @@ protected:
     }
 
 public:
+  T* begin() { return reinterpret_cast<T *>(Base()); }
+  T* end() { return reinterpret_cast<T *>(Base()) + Len(); }
+
+  const T* begin() const { return reinterpret_cast<T *>(Base()); }
+  const T* end() const { return reinterpret_cast<T *>(Base()) + Len(); }
+  
+public:
     void Add(const T& element) {
         SetLen(Len() + 1);
         (*this)[Len() - 1] = element;

@@ -1142,18 +1142,23 @@ ePlayer * ePlayer::PlayerConfig(int p)
     return dynamic_cast<ePlayer*>(P);
 }
 
-ePlayerNetID * ePlayerNetID::GetPlayerByName(tString name)
+ePlayerNetID *ePlayerNetID::GetPlayerByName(tString name, bool exact)
 {
-    for( int i = se_PlayerNetIDs.Len()-1; i>=0; --i )
+    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
     {
-        if (se_PlayerNetIDs[i] && se_PlayerNetIDs[i]->GetName().Filter() == name.Filter())
+        if (exact)
         {
-            return se_PlayerNetIDs[i];
+            if (se_PlayerNetIDs[i] && se_PlayerNetIDs[i]->GetName().Filter() == name.Filter())
+                return se_PlayerNetIDs[i];
+        }
+        else
+        {
+            if (se_PlayerNetIDs[i]->GetName().Filter().Contains(name))
+                return se_PlayerNetIDs[i];
         }
     }
     return NULL;
 }
-
 
 ePlayer * ePlayer::NetToLocalPlayer(ePlayerNetID *player)
 {
@@ -1515,6 +1520,12 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
     confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_SET_TARGET";
     sg_smarterBotFollowTarget = tString("");
     StoreConfitem(tNEW(tConfItemLine) (confname, "Smarter Bot Follow Set Target", sg_smarterBotFollowTarget));
+
+    // sg_smarterBotFollowTargetTeamList
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_FOLLOW_TEAM_LIST";
+    sg_smarterBotFollowTargetTeamList = tString("");
+    StoreConfitem(tNEW(tConfItemLine) (confname, "Smarter Bot Follow Set Target", sg_smarterBotFollowTargetTeamList));
 
 
     // sg_smarterBotPlanScale
@@ -5035,8 +5046,8 @@ static tConfItem<int> se_nameSpeakIntervalConf("LOCAL_CHAT_COMMAND_NAMESPEAK_INT
 static bool se_nameSpeakSplitByNameSize = false;
 static tConfItem<bool> se_nameSpeakSplitByNameSizeConf("LOCAL_CHAT_COMMAND_NAMESPEAK_SPLIT_BY_NAME_SIZE", se_nameSpeakSplitByNameSize);
 
-static tString se_resCommand("/res");
-static tConfItem<tString> se_resCommandConf("LOCAL_CHAT_COMMAND_RESPAWN", se_resCommand);
+static tString se_respawnCommand("/res");
+static tConfItem<tString> se_respawnCommandConf("LOCAL_CHAT_COMMAND_RESPAWN", se_respawnCommand);
 
 static tString se_rebuildGridCommand("/regrid");
 static tConfItem<tString> se_rebuildGridCommandConf("LOCAL_CHAT_COMMAND_REBUILD_GRID", se_rebuildGridCommand);
@@ -5123,32 +5134,30 @@ public:
             }
             else
             {
-                tArray<tString> msgsExt = args.SplitIncludeFirst(" ");
-                tArray<ePlayerNetID *> foundPlayers;
                 bool playerFound = false;
+                tArray<ePlayerNetID *> foundPlayers;
+                tArray<tString> msgsExt = args.SplitIncludeFirst(" ");
+
                 con << tOutput("$player_info_text");
+
+                int j = 0;
                 for (int i = 0; i < msgsExt.Len(); i++)
                 {
                     tString word = msgsExt[i];
-
-                    for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+                    ePlayerNetID *p = ePlayerNetID::GetPlayerByName(word,false);
+                    if (p)
                     {
-                        ePlayerNetID *p = se_PlayerNetIDs(i);
-
-                        if (p->GetName().Filter().Contains(word.Filter()))
-                        {
-                            playerFound = true;
-                            con << player->gatherPlayerInfo(p);
-                        }
+                        playerFound = true;
+                        j++;
+                        con << j << ") " << player->gatherPlayerColor(p) << "\n";
                     }
                 }
 
                 if (!playerFound)
-                {
                     con << tOutput("$player_not_found_text", args);
-                }
             }
         }
+        return true;
     }
 };
 
@@ -5269,34 +5278,27 @@ public:
     bool execute(ePlayerNetID *player, tString args) override
     {
         ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
+        ePlayerNetID *targetPlayer = player;
         if (!local_p)
             return false;
-
-        std::vector<std::pair<ePlayer *, ePlayerNetID *>> activePlayers;
-
-        for (int i = 0; i < MAX_PLAYERS; ++i)
-        {
-            ePlayer *me = ePlayer::PlayerConfig(i);
-            if (bool(me->netPlayer.get()))
-                activePlayers.emplace_back(me, me->netPlayer.get());
-        }
 
         if (args.empty())
         {
             con << tOutput("$player_colors_current_text");
-            for (const auto &playerPair : activePlayers)
+            for (int i = 0; i < MAX_PLAYERS; ++i)
             {
-                tColoredString listColors;
-                listColors << ePlayerNetID::gatherPlayerColor(playerPair.second) << "\n";
-                con << listColors;
+                ePlayer *loc_p = ePlayer::PlayerConfig(i);
+                ePlayerNetID *net_p = loc_p->netPlayer.get();
+                if (bool(net_p))
+                    con << ePlayerNetID::gatherPlayerColor(net_p) << "\n";
             }
         }
         else
         {
             tArray<tString> passedString = args.SplitIncludeFirst(" ");
+            FileManager fileManager(se_colorVarFile);
             tString command = passedString[0];
             bool correctParameters = false;
-            bool hideError = false;
 
             int targetID = 0;
             if (command.isNumber() && ( ( passedString.Len() >= 2 && !passedString[1].isNumber()) || ( passedString.Len() >= 4 && passedString[4].isNumber())  ) )
@@ -5309,47 +5311,31 @@ public:
                     con << tOutput("$player_colors_changed_usage_error");
                     return true;
                 }
-                activePlayers.clear();
-                activePlayers.emplace_back(local_p,nullptr);
-
+                targetPlayer = nullptr;
                 command = passedString[0];
             }
 
             if (command == "help")
             {
-                hideError = true;
                 con << tOutput("$player_colors_command_help", se_colorVarFile);
+                return true;
             }
             else if (command == "unique")
             {
-                if (passedString.Len() == 1)
-                {
-                    // Apply random color to the player who sent the command
-                    se_UniqueColor(local_p);
-                }
+                // Apply random color to the player who sent the command
+                se_UniqueColor(local_p);
                 correctParameters = true;
             }
             else if (command == "random")
             {
-                if (passedString.Len() == 1)
-                {
-                    // Apply random color to the player who sent the command
-                    se_RandomizeColor(local_p);
-                }
+                // Apply random color to the player who sent the command
+                se_RandomizeColor(local_p);
                 correctParameters = true;
             }
             else if (command == "save")
             {
-                hideError = true;
-                bool foundPlayer = false;
-
                 if (passedString.Len() == 1)
                 {
-                    foundPlayer = true;
-                    std::ofstream o;
-
-                    bool written = false;
-                    tString message;
                     con << tOutput("$player_colors_saved");
                     tString playerColorStr;
 
@@ -5358,7 +5344,7 @@ public:
                     else
                         playerColorStr = localPlayerPreview(local_p);
 
-                    if (!FileManager(se_colorVarFile).Write(playerColorStr.Replace("0xRESETT","")))
+                    if (fileManager.Write(playerColorStr.Replace("0xRESETT","")))
                     {
                         con << tOutput("$player_colors_saved");
                         con << playerColorStr << "\n";
@@ -5367,45 +5353,32 @@ public:
                     {
                         con << tOutput("$players_color_error");
                     }
-                    o.close();
                 }
                 else if (passedString.Len() >= 2) // Save specific persons color
                 {
-                    for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
+                    ePlayerNetID *p = ePlayerNetID::GetPlayerByName(passedString[1].Filter());
+                    if (p)
                     {
-                        ePlayerNetID *p = se_PlayerNetIDs(i);
-                        if (p->GetName().Filter().Contains(passedString[2].Filter()))
+                        tString playerColorStr;
+                        playerColorStr = ePlayerNetID::gatherPlayerColor(player);
+
+                        if (fileManager.Write(playerColorStr.Replace("0xRESETT","")))
                         {
-                            foundPlayer = true;
-                            std::ofstream o;
-
-                            tString playerColorStr;
-                            if (targetID > 0)
-                                playerColorStr = ePlayerNetID::gatherPlayerColor(player);
-                            else;
-                                playerColorStr = localPlayerPreview(local_p);
-
-                            if (FileManager(se_colorVarFile).Write(playerColorStr.Replace("0xRESETT","")))
-                            {
-                                con << tOutput("$player_colors_saved");
-                                con << playerColorStr << "\n";
-                            }
-                            else
-                            {
-                                con << tOutput("$players_color_error");
-                            }
-                            o.close();
+                            con << tOutput("$player_colors_saved");
+                            con << playerColorStr << "\n";
                         }
-                    }
-                    if (!foundPlayer)
-                    {
-                        con << tOutput("$player_colors_not_found", passedString[2]);
-                    }
+                        else
+                        {
+                            con << tOutput("$players_color_error");
+                        }
+                    } else
+                        con << tOutput("$player_colors_not_found", passedString[1]);
                 }
+                return true;
             }
             else if (command == "load")
             {
-                int savedColorsCount = FileManager(se_colorVarFile).NumberOfLines();
+                int savedColorsCount = fileManager.NumberOfLines();
 
                 if (passedString.Len() == 1) // No Line #
                 {
@@ -5422,31 +5395,26 @@ public:
                     }
                     else
                     {
-                        correctParameters = false;
-                        hideError = true;
                         con << tOutput("$players_color_line_not_found", se_colorVarFile, savedColorsCount, lineNumber + 1);
+                        return true;
                     }
                 }
             }
             else if (command == "list")
             {
-                hideError = true;
-                int savedColorsCount = FileManager(se_colorVarFile).NumberOfLines();
+                int savedColorsCount = fileManager.NumberOfLines();
 
                 if (savedColorsCount > 0)
-                {
                     se_SavedColors(savedColorsCount);
-                }
                 else
-                {
                     con << tOutput("$player_colors_empty");
-                }
+                return true;
             }
             else if (command == "clear")
             {
-                hideError = true;
-                FileManager(se_colorVarFile).Clear();
+                fileManager.Clear();
                 con << tOutput("$player_colors_cleared", se_colorVarFile);
+                return true;
             }
             // Not really checking if the strings passed parameters are numbers,
             // but if someone did /rgb asd asd asd it would just make it 0 0 0.
@@ -5466,24 +5434,22 @@ public:
             {
                 con << tOutput("$player_colors_current_text");
 
-                for (const auto &playerPair : activePlayers)
-                {
-                    tString listColors;
-                    listColors << playerPair.first->ID() + 1 << ") ";
-                    if (playerPair.second != nullptr)
-                    {
-                        ePlayerNetID::Update();
-                        listColors << ePlayerNetID::gatherPlayerColor(playerPair.second);
-                    }
-                    else
-                    {
-                        listColors << localPlayerPreview(playerPair.first);
-                    }
-                    con << listColors << "\n";
-                }
-            } else if (!hideError) // If hideError is enabled we wont display the error message.
-                con << tOutput("$player_colors_changed_usage_error");
+                tString listColors;
+                listColors << local_p->ID() + 1 << ") ";
 
+                if (targetPlayer != nullptr)
+                {
+                    ePlayerNetID::Update();
+                    listColors << ePlayerNetID::gatherPlayerColor(targetPlayer);
+                }
+                else
+                {
+                    listColors << localPlayerPreview(local_p);
+                }
+                con << listColors << "\n";
+
+            } else // display the error message.
+                con << tOutput("$player_colors_changed_usage_error");
         }
         return true;
     }
@@ -5528,8 +5494,7 @@ public:
 
         tColoredString listInfo;
         listInfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n"
-                 << "Status: "
-                 << "\n"
+                 << "Status: \n"
                  << "Created: " << p->createTime_ << "\n"
                  << "Last Activity: " << p->LastActivity() << "\n"
                  << "Chatting For: " << chattingTime << "\n";
@@ -5600,34 +5565,25 @@ public:
             if (args.empty())
             {
                 con << tOutput("$player_colors_text");
-
                 for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
-                {
-                    ePlayerNetID *p = se_PlayerNetIDs(i);
-                    con << (i + 1) << ") " << player->gatherPlayerColor(p) << "\n";
-                }
+                    con << (i + 1) << ") " << player->gatherPlayerColor(se_PlayerNetIDs(i)) << "\n";
             }
             else
             {
-                tArray<tString> searchWords = args.SplitIncludeFirst(" ");
                 bool playerFound = false;
+                tArray<tString> searchWords = args.SplitIncludeFirst(" ");
 
                 con << tOutput("$player_colors_text");
 
+                int j = 0;
                 for (int i = 0; i < searchWords.Len(); i++)
                 {
-                    tString word = searchWords[i];
-                    int j = 0;
-                    for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
+                    ePlayerNetID *p = ePlayerNetID::GetPlayerByName(searchWords[i],false);
+                    if (p)
                     {
-                        ePlayerNetID *p = se_PlayerNetIDs(i);
-
-                        if (p->GetName().Filter().Contains(word.Filter()))
-                        {
-                            playerFound = true;
-                            con << (j + 1) << ") " << player->gatherPlayerColor(p) << "\n";
-                            j++;
-                        }
+                        playerFound = true;
+                        j++;
+                        con << j << ") " << player->gatherPlayerColor(p) << "\n";
                     }
                 }
                 // No one found.
@@ -5636,7 +5592,7 @@ public:
             }
         }
 
-    return true;
+        return true;
     }
 };
 
@@ -5662,7 +5618,8 @@ public:
 
         ePlayerNetID *p = ePlayerNetID::FindPlayerByName(PlayerStr);
 
-        if (p && ePlayer::NetToLocalPlayer(p)) {
+        if (p && ePlayer::NetToLocalPlayer(p))
+        {
             p->Chat(args.SubStr(pos + 1));
             return true;
         }
@@ -5700,21 +5657,29 @@ public:
                    << "/search chat hack the planet (by search phrase)\n"
                    << "/search chat #102 (by line number)\n"
                    << "/search chat #102-105 (by line number range)\n"
-                   << "/search chat #102 copy (copy text by single line number)\n";
+                   << "/search chat #102 copy (copy text by single line number)\n"
+                   << "/search chat @5 copy (copy match #5 from last search)\n"
+                   << "/search chat @5 (copy match #5 from last search)\n";
             con << output;
             return true;
         }
         else
         {
-            std::ifstream i;
+
             tString searchPhrase;
             searchPhrase << args.SubStr(pos);
-            searchPhrase = searchPhrase.TrimWhitespace();
+            searchPhrase = tColoredString::RemoveColors( searchPhrase.TrimWhitespace() );
             std::string searchValue(searchPhrase);
 
             REAL fileSizeMB;
             REAL fileSizeMaxMB;
             REAL numMatches = 0;
+
+            if (fileName.empty())
+            {
+                execute(player, args);
+                return true;
+            }
 
             tToLower(fileName);
 
@@ -5727,120 +5692,97 @@ public:
                 }
             }
 
-            if (fileName.empty())
+            FileManager fileManager(fileName);
+            auto lines = fileManager.Load();
+
+            fileSizeMB = gHelperUtility::BytesToMB(fileManager.FileSize());
+            fileSizeMaxMB = (fileName == tString("consolelog-limited.txt")) ? sr_consoleLogLimitedSize : se_searchCommandMaxFileSizeMB;
+
+            if (fileSizeMB > fileSizeMaxMB)
             {
-                execute(player, args);
+                con << "Error: File is too big: '" << fileName << "' ("
+                    << fileSizeMB                  << " MB /"
+                    << fileSizeMaxMB               << " MB)\n";
                 return true;
             }
 
-            if (tDirectories::Var().Open(i, fileName))
+            if (searchPhrase.empty())
             {
-                std::streamoff fileSize = tPath::GetFileSize(i);
-                fileSizeMB = gHelperUtility::BytesToMB(fileSize);
-                if (fileName == tString("consolelog-limited.txt"))
+                player->lastSearch.Clear();
+                int start = std::max(0, lines.Len() - se_searchCommandEmptySearchNumLines); // don't go below 0
+                int count = 1;
+                tString fileNameOut;
+                fileNameOut << "\nFile '0xffb900" << fileName   << tString("0xffffff' ")
+                            << "- 0xffb900"       << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+
+                con << fileNameOut << "Nothing to search. Showing last 0x8bc34a" << se_searchCommandEmptySearchNumLines << "0xffffff lines:\n";
+
+                for (int i = start; i < lines.Len(); ++i)
                 {
-                    fileSizeMaxMB = sr_consoleLogLimitedSize;
-                } else {
-                    fileSizeMaxMB = se_searchCommandMaxFileSizeMB;
+                    player->lastSearch.Add(lines[i]);
+                    con << count++ << ") 0x8bc34aLine 0xffb900" << (i+1) << ": 0xffffff" << lines[i] << "\n";
                 }
-                if (fileSizeMB > fileSizeMaxMB)
-                {
-                    con << "Error: File is too big: '" << fileName << "' ("
-                        << fileSizeMB                  << " MB /"
-                        << fileSizeMaxMB               << " MB)\n";
+                return true;
+            }
 
-                    i.close();
-                    return true;
+            int lineNumber = 1;
+            bool found = false;
+            tString output;
+            bool copy = false;
+
+            bool copySpecificLineNum = searchPhrase.StartsWith("#");
+            bool copyNumMatch = searchPhrase.StartsWith("@");
+            if (copySpecificLineNum || copyNumMatch)
+            {
+                tString actualSearchPhrase = searchPhrase.SubStr(1);
+                int copyPos = actualSearchPhrase.StrPos(" copy");
+                copy = copyNumMatch || (copyPos != -1);
+
+                if (!copyNumMatch && copy)
+                {
+                    actualSearchPhrase = actualSearchPhrase.SubStr(0, copyPos); // Remove " copy" from the search phrase
                 }
-
-                if (searchPhrase.empty())
-                {
-                    player->lastSearch.Clear();
-                    std::deque<std::pair<std::string, int>> lastLines;
-                    std::string line;
-                    int lineNumber = 1; // Added a line number counter
-                    while (std::getline(i, line))
-                    {
-                        
-                        lastLines.push_back(std::make_pair(line, lineNumber));
-                        if (lastLines.size() > se_searchCommandEmptySearchNumLines)
-                            lastLines.pop_front();
-                        lineNumber++;
-                    }
-                    tString fileNameOut;
-                    fileNameOut << "\nFile '0xffb900" << fileName   << tString("0xffffff' ")
-                                << "- 0xffb900"       << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
-
-                    con << fileNameOut << "Nothing to search. Showing last 0x8bc34a" << se_searchCommandEmptySearchNumLines << "0xffffff lines:\n";
-                    int count = 1;
-                    for (const auto &linePair : lastLines) { // linePair is a pair of line content and line number {
-                        player->lastSearch.Add(tString(linePair.first));
-                        con << count++ << ") 0x8bc34aLine 0xffb900" << linePair.second << ": 0xffffff" << linePair.first << "\n";
-                        }
-
-                    i.close();
-                    return true;
-                }
-
-                std::string sayLine;
-                int lineNumber = 1;
-                bool found = false;
-                tString output;
-                bool copy = false;
-
-                bool copySpecificLineNum = searchPhrase.StartsWith("#");
-                bool copyNumMatch = searchPhrase.StartsWith("@");
-                if (copySpecificLineNum || copyNumMatch)
-                {
-                    tString actualSearchPhrase = searchPhrase.SubStr(1);
-                    int copyPos = actualSearchPhrase.StrPos(" copy");
-                    copy = copyNumMatch || (copyPos != -1);
-
-                    if (!copyNumMatch && copy)
-                    {
-                        actualSearchPhrase = actualSearchPhrase.SubStr(0, copyPos); // Remove " copy" from the search phrase
-                    }
 
 #ifndef WIN32
-                    copy = false;
+                copy = false;
+                copyNumMatch = false;
 #endif
 
-                    int startLineNumber = -1;
-                    int endLineNumber = -1;
+                int startLineNumber = -1;
+                int endLineNumber = -1;
 
-                    int dashPos = actualSearchPhrase.StrPos("-");
-                    if (dashPos != -1)
-                    {
-                        startLineNumber = atoi(actualSearchPhrase.SubStr(0, dashPos));
-                        endLineNumber   = atoi(actualSearchPhrase.SubStr(dashPos + 1));
-                    }
-                    else
-                    {
-                        startLineNumber = atoi(actualSearchPhrase);
-                        endLineNumber   = startLineNumber;
-                    }
+                int dashPos = actualSearchPhrase.StrPos("-");
+                if (dashPos != -1)
+                {
+                    startLineNumber = atoi(actualSearchPhrase.SubStr(0, dashPos));
+                    endLineNumber   = atoi(actualSearchPhrase.SubStr(dashPos + 1));
+                }
+                else
+                {
+                    startLineNumber = atoi(actualSearchPhrase);
+                    endLineNumber   = startLineNumber;
+                }
 
-                    if (copyNumMatch && startLineNumber == endLineNumber)
-                    {
-                        if (!player->lastSearch.Len() > 0 || player->lastSearch.Len() < endLineNumber) {
-                            con << "Nothing to copy from.\n";
-                        } else {
-                            tString message(player->lastSearch[endLineNumber-1]);
-                            if (copyToClipboard(message)) {
-                                con << "Copied contents to clipboard.\n";
-                                numMatches++;
-                                output << endLineNumber << " 0xffffff" << message << "\n";
-                                found = true;
-                            }
+                if (copyNumMatch && startLineNumber == endLineNumber)
+                {
+                    if (!player->lastSearch.Len() > 0 || player->lastSearch.Len() < endLineNumber) {
+                        con << "Nothing to copy from.\n";
+                    } else {
+                        tString message(player->lastSearch[endLineNumber-1]);
+                        if (copyToClipboard(message)) {
+                            con << "Copied contents to clipboard.\n";
+                            numMatches++;
+                            output << endLineNumber << " 0xffffff" << message << "\n";
+                            found = true;
                         }
                     }
-
-                    while ( !found && !copyNumMatch && std::getline(i, sayLine) )
+                } else {
+                    for (auto line : lines)
                     {
                         if ( (lineNumber >= startLineNumber && lineNumber <= endLineNumber) )
                         {
                             numMatches++;
-                            output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
+                            output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << line << "\n";
 
                             if (copy && startLineNumber == endLineNumber) // only copy for one line
                             {
@@ -5854,80 +5796,77 @@ public:
                             }
                         }
 
-                        if (lineNumber > endLineNumber)
+                        if (lineNumber > endLineNumber) {
                             found = true;
+                            break;
+                        }
 
                         lineNumber++;
                     }
-                    if (!found)
+                }
+                if (!found)
+                {
+                    if (!copyNumMatch)
+                        con << "0x8bc34aLine Range0xffb900: " << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
+                    return true;
+                }
+            }
+
+            if (!copy)
+            {
+                player->lastSearch.Clear();
+                for (auto line : lines)
+                {
+                    std::string sayLineComparison(line);
+                    std::string searchValueComparison = searchValue;
+
+                    if (!se_searchCommandCaseSensitive)
                     {
-                        if (!copyNumMatch)
-                            con << "0x8bc34aLine Range0xffb900: " << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
-                        i.close();
-                        return true;
+                        std::transform(sayLineComparison.begin(), sayLineComparison.end(), sayLineComparison.begin(),
+                                        [](unsigned char c)
+                                        { return std::tolower(c); });
+                        std::transform(searchValueComparison.begin(), searchValueComparison.end(), searchValueComparison.begin(),
+                                        [](unsigned char c)
+                                        { return std::tolower(c); });
                     }
-                }
-                else if (!copy)
-                {
-                    player->lastSearch.Clear();
-                    while (std::getline(i, sayLine))
+                    std::size_t foundPos = sayLineComparison.find(searchValueComparison);
+                    if (foundPos != std::string::npos)
                     {
-                        std::string sayLineComparison = sayLine;
-                        std::string searchValueComparison = searchValue;
-
-                        if (!se_searchCommandCaseSensitive)
-                        {
-                            std::transform(sayLineComparison.begin(), sayLineComparison.end(), sayLineComparison.begin(),
-                                           [](unsigned char c)
-                                           { return std::tolower(c); });
-                            std::transform(searchValueComparison.begin(), searchValueComparison.end(), searchValueComparison.begin(),
-                                           [](unsigned char c)
-                                           { return std::tolower(c); });
-                        }
-                        std::size_t foundPos = sayLineComparison.find(searchValueComparison);
-                        if (foundPos != std::string::npos)
-                        {
-                            found = true;
-                            numMatches++;
-                            output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << sayLine << "\n";
-                            player->lastSearch.Add(tString(sayLine));
-                        }
-                        lineNumber++;
+                        found = true;
+                        numMatches++;
+                        output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << line << "\n";
+                        player->lastSearch.Add(line);
                     }
+                    lineNumber++;
                 }
-                if (!found && !copy)
-                {
-                    tString fileNameOut;
-                    fileNameOut << "\nFile '0xffb900" << fileName << tString("0xffffff' ")
-                                << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+            }
 
-                    con << fileNameOut
-                        << "No matches found for the search phrase: '0x8bc34a"
-                        << searchPhrase << "0xffffff'";
-                }
-                else if (!copy)
-                {
-                    tString fileNameOut;
-                    fileNameOut << "\nFile '0xffb900" << fileName                 << "0xffffff' - 0xffb900"
-                                << fileSizeMB         << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+            if (!found && !copy)
+            {
+                tString fileNameOut;
+                fileNameOut << "\nFile '0xffb900" << fileName << tString("0xffffff' ")
+                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
 
-                    tString matches;
-                    matches << fileNameOut << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
-
-                    output = matches << tString("'0x8bc34a")
-                                     << searchPhrase << tString("0xffffff'\n")
-                                     << output;
-
-                    con << output;
-                }
-                i.close();
+                con << fileNameOut
+                    << "No matches found for the search phrase: '0x8bc34a"
+                    << searchPhrase << "0xffffff'";
             }
             else
             {
-                con << "Error opening: "
-                    << "'" << fileName << "'.\n";
+                tString fileNameOut;
+                fileNameOut << "\nFile '0xffb900" << fileName                 << "0xffffff' - 0xffb900"
+                            << fileSizeMB         << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+
+                tString matches;
+                matches << fileNameOut << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
+
+                output = matches << tString("'0x8bc34a")
+                                 << searchPhrase << tString("0xffffff'\n")
+                                 << output;
+
+                con << output;
             }
-        }
+    }
         return true;
     }
 };
@@ -5986,7 +5925,7 @@ public:
             }
         }
 
-        if (!found || !player)
+        if (!found || !local_p)
         {
             con << "No usable players!\n";
             nameSpeakWords.Clear();
@@ -6000,7 +5939,7 @@ public:
     }
 };
 
-class ResCommand : public ChatCommand
+class RespawnCommand : public ChatCommand
 {
 public:
     bool execute(ePlayerNetID *player, tString args) override
@@ -6039,7 +5978,7 @@ class ReplyCommand : public ChatCommand
 public:
     bool execute(ePlayerNetID *player, tString args) override
     {
-        if (args.empty() || player->lastMessagedPlayer == nullptr) {
+        if (player->lastMessagedPlayer == nullptr) {
             return false;
         }
 
@@ -6114,7 +6053,6 @@ public:
     bool execute(ePlayerNetID *player, tString args) override
     {
         int pos = 0;
-
         tString PlayerNumb = args.ExtractNonBlankSubString(pos);
 
         if (PlayerNumb.empty())
@@ -6220,7 +6158,7 @@ std::unordered_map<std::string, std::unique_ptr<ChatCommand>> createCommandMap()
     commandMap.emplace(se_joinCommand.stdString(), std::make_unique<JoinCommand>());
     commandMap.emplace(se_searchCommand.stdString(), std::make_unique<SearchCommand>());
     commandMap.emplace(se_nameSpeak.stdString(), std::make_unique<NameSpeakCommand>());
-    commandMap.emplace(se_resCommand.stdString(), std::make_unique<ResCommand>());
+    commandMap.emplace(se_respawnCommand.stdString(), std::make_unique<RespawnCommand>());
     commandMap.emplace(se_rebuildGridCommand.stdString(), std::make_unique<RebuildGridCommand>());
     commandMap.emplace(se_saveConfigCommand.stdString(), std::make_unique<SaveConfigCommand>());
     commandMap.emplace(se_replyCommand.stdString(), std::make_unique<ReplyCommand>());
@@ -6811,7 +6749,6 @@ public:
             {
                 con << "PLAYER NOT FOUND\n";
                 ePlayerNetID::LocalChatCommands(NULL,*content);
-
             }
 
             se_BlockScores = false;

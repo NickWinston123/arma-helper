@@ -1608,69 +1608,61 @@ void st_PrintPathInfo(tOutput &buf) {
     << hcol << "$path_info_var"        << "0xRESETT\n" << tDirectories::Var().GetPaths();
 }
 
-
-
 int FileManager::NumberOfLines()
 {
     int count = 0;
-    if (tDirectories::Var().Open(i, fileName))
+    std::string sayLine;
+    while (std::getline(this->i, sayLine))
     {
-        while (!i.eof())
-        {
-            std::string sayLine;
-            std::getline(i, sayLine);
-            std::istringstream s(sayLine);
+        std::istringstream s(sayLine);
 
-            tString params;
-            params.ReadLine(s);
+        tString params;
+        params.ReadLine(s);
 
-            if (params.Filter() != "")
-                count++;
-        }
+        if (params.Filter() != "")
+            count++;
     }
-    i.close();
-
+    // reset file pointer
+    this->i.clear();
+    this->i.seekg(0, std::ios::beg);
     return count;
 }
 
 tArray<tString> FileManager::Load()
 {
     tArray<tString> lines;
-    if (tDirectories::Var().Open(i, fileName)) {
-        std::string sayLine;
-        while (std::getline(i, sayLine)) {
-            std::istringstream s(sayLine);
+    std::string sayLine;
+    while (std::getline(this->i, sayLine)) {
+        std::istringstream s(sayLine);
 
-            tString params;
-            params.ReadLine(s);
+        tString params;
+        params.ReadLine(s);
 
-            if (!params.Filter().empty()) {
-                lines.Insert(params);
-            }
+        if (!params.Filter().empty()) {
+            lines.Insert(params);
         }
     }
-    i.close();
-
+    // reset file pointer
+    this->i.clear();
+    this->i.seekg(0, std::ios::beg);
     return lines;
-}
-
-bool FileManager::Write(tString content)
-{
-    if (tDirectories::Var().Open(o, fileName, std::ios::app))
-    {
-        o << content;
-        return true;
-    }
-    return false;
 }
 
 std::streamoff FileManager::FileSize()
 {
-    if (tDirectories::Var().Open(i, fileName))
+    return tPath::GetFileSize(this->i);
+}
+
+bool FileManager::Write(tString content)
+{
+    bool written = false;
+    if (tDirectories::Var().Open(this->o, this->fileName, std::ios::app))
     {
-        return tPath::GetFileSize(i);
+        this->o << content;
+        written = true;
     }
-    return -1;
+    this->o.close();
+    return written;
 }
 
 bool FileManager::Clear(int lineNumber)
@@ -1682,17 +1674,17 @@ bool FileManager::Clear(int lineNumber)
         lines.RemoveAt(lineNumber);
 
         // Now write the lines back to the file
-        if (tDirectories::Var().Open(o, fileName))
+        if (tDirectories::Var().Open(this->o, this->fileName))
         {
             for (int i = 0; i < lines.Len(); ++i)
             {
-                o << lines[i];
+                this->o << lines[i];
                 if (i != lines.Len() - 1) // not the last line
-                    o << std::endl;
+                    this->o << std::endl;
             }
             cleared  = true;
         }
-        o.close();
+        this->o.close();
     }
     else
     {
@@ -1736,13 +1728,13 @@ bool FileManager::BackUp()
     return backedup;
 }
 
-bool FileManager::Clear(){
+bool FileManager::Clear()
+{
     bool cleared = false;
-    if (tDirectories::Var().Open(o, fileName)) {
-        o << "";
+    if (tDirectories::Var().Open(this->o, "ladderlog.txt", std::ios::trunc))
         cleared = true;
-    }
-    o.close();
+
+    this->o.close();
     if (cleared)
         con << tOutput("$file_manager_cleared_file", fileName);
     else
@@ -1751,20 +1743,17 @@ bool FileManager::Clear(){
 }
 
 void FileManager::CheckAndClearFileBySize(REAL maxFileSizeMB) {
-    FileManager fileManager(fileName);
-    std::streamoff fileSize = fileManager.FileSize();
-    REAL fileSizeMB = gHelperUtility::BytesToMB(fileSize);
+    REAL fileSizeMB = gHelperUtility::BytesToMB(FileSize());
 
     if (fileSizeMB <= maxFileSizeMB)
         return;
 
     // Back up and Clear the original file
-    fileManager.BackUp();
-    fileManager.Clear();
+    BackUp();
+    Clear();
     tOutput msg;
     msg.SetTemplateParameter(1,fileName);
-    msg.SetTemplateParameter(2,REAL(fileSize));
+    msg.SetTemplateParameter(2,fileSizeMB);
     msg.SetTemplateParameter(3,maxFileSizeMB);
     con << msg;
-
 }

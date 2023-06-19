@@ -70,6 +70,7 @@
 			<Add directory="../winlibs/SDL_mixer" />
 			<Add directory="../winlibs/libxml2/include" />
 			<Add directory="../winlibs/iconv/include" />
+			<Add directory="../winlibs/sqlite" />
 		</Compiler>
 		<Linker>
 			<Add library="libopengl32.a" />
@@ -89,6 +90,9 @@
 		</Unit>
 		<Unit filename="armagetron.rc">
 			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="../winlibs/sqlite/sqlite3.c">
+		<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="language/english_base.txt" />
 		<Unit filename="src/defs.h" />

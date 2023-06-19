@@ -1612,7 +1612,7 @@ int FileManager::NumberOfLines()
 {
     int count = 0;
     std::string sayLine;
-    while (std::getline(this->i, sayLine))
+    while (std::getline(i, sayLine))
     {
         std::istringstream s(sayLine);
 
@@ -1623,8 +1623,8 @@ int FileManager::NumberOfLines()
             count++;
     }
     // reset file pointer
-    this->i.clear();
-    this->i.seekg(0, std::ios::beg);
+    i.clear();
+    i.seekg(0, std::ios::beg);
     return count;
 }
 
@@ -1632,36 +1632,34 @@ tArray<tString> FileManager::Load()
 {
     tArray<tString> lines;
     std::string sayLine;
-    while (std::getline(this->i, sayLine)) {
-        std::istringstream s(sayLine);
+    while (std::getline(i, sayLine)) {
 
-        tString params;
-        params.ReadLine(s);
+        tString params(sayLine);
 
-        if (!params.Filter().empty()) {
+        if (!params.Filter().empty()) 
             lines.Insert(params);
-        }
+        
     }
     // reset file pointer
-    this->i.clear();
-    this->i.seekg(0, std::ios::beg);
+    i.clear();
+    i.seekg(0, std::ios::beg);
     return lines;
 }
 
 std::streamoff FileManager::FileSize()
 {
-    return tPath::GetFileSize(this->i);
+    return tPath::GetFileSize(i);
 }
 
 bool FileManager::Write(tString content)
 {
     bool written = false;
-    if (tDirectories::Var().Open(this->o, this->fileName, std::ios::app))
+    if (tDirectories::Var().Open(o, fileName, std::ios::app))
     {
-        this->o << content;
+        o << content;
         written = true;
     }
-    this->o.close();
+    o.close();
     return written;
 }
 
@@ -1674,17 +1672,17 @@ bool FileManager::Clear(int lineNumber)
         lines.RemoveAt(lineNumber);
 
         // Now write the lines back to the file
-        if (tDirectories::Var().Open(this->o, this->fileName))
+        if (tDirectories::Var().Open(o, fileName))
         {
             for (int i = 0; i < lines.Len(); ++i)
             {
-                this->o << lines[i];
+                o << lines[i];
                 if (i != lines.Len() - 1) // not the last line
-                    this->o << std::endl;
+                    o << std::endl;
             }
             cleared  = true;
         }
-        this->o.close();
+        o.close();
     }
     else
     {
@@ -1712,29 +1710,36 @@ bool FileManager::BackUp()
     // Get the lines from the original file
     tArray<tString> lines = Load();
 
-    // Backup the file
-    for (int i = 0; i < lines.Len(); i++) {
-        if (!Write(lines[i])){
-            backedup = false;
-            break;
+    // Open the backup file
+    std::ofstream backupFile;
+    if (tDirectories::Var().Open(backupFile, backupFileName, std::ios::trunc)) {
+        // Backup the file
+        for (int i = 0; i < lines.Len(); i++) {
+            if (!(backupFile << lines[i])) {
+                backedup = false;
+                break;
+            }
+            backedup = true;
         }
-        backedup = true;
     }
 
+    backupFile.close();
+
     if (backedup)
-        con << tOutput("$file_manager_created_backup", fileName);
+        con << tOutput("$file_manager_created_backup",  fileName);
     else
-        con << tOutput("$file_manager_error_creating_backup", fileName);
+        con << tOutput("$file_manager_error_creating_backup",  fileName);
     return backedup;
 }
+
 
 bool FileManager::Clear()
 {
     bool cleared = false;
-    if (tDirectories::Var().Open(this->o, "ladderlog.txt", std::ios::trunc))
+    if (tDirectories::Var().Open(o, fileName, std::ios::trunc))
         cleared = true;
 
-    this->o.close();
+    o.close();
     if (cleared)
         con << tOutput("$file_manager_cleared_file", fileName);
     else

@@ -2245,7 +2245,6 @@ tString tString::Truncate( int truncateAt ) const
 tString intTotString( int number )
 {
     std::string s = std::to_string(number);
-    //char const *pchar = s.c_str();
     return tString(s.c_str());
 }
 
@@ -2370,29 +2369,74 @@ bool st_StringEndsWith( tString const & test, char const * end )
 //!
 // **********************************************************************
 
+void computeLPSArray(const tString& pat, int* lps)
+{
+    int len = 0;
+    int i = 1;
+
+    lps[0] = 0;
+
+    while (i < pat.Len())
+    {
+        if (pat[i] == pat[len])
+        {
+            len++;
+            lps[i] = len;
+            i++;
+        }
+        else
+        {
+            if (len != 0)
+            {
+                len = lps[len - 1];
+            }
+            else
+            {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+}
+
 bool tString::Contains(tString tofind)
 {
-    // if the length of tofind longer than the string, quit it!
-    if (tofind.Len() > Len())
-        return false;
+    int M = tofind.Len();
+    int N = Len();
 
-    // the total legnth of tofind, minus the 1 extra garbage
-    int strCount = tofind.Len() - 1;
+    int lps[M];
+    computeLPSArray(tofind, lps);
 
-    for (int i = 0; i < Len(); i++)
+    int i = 0;
+    int j = 0;
+
+    while (i < N)
     {
-        // strip the string to the length of tofind
-        tString isThis = this->SubStr(i, strCount);
+        if (tofind[j] == (*this)[i])
+        {
+            j++;
+            i++;
+        }
 
-        // if that stripped string matches, good!
-        if (isThis == tofind)
+        if (j == M)
         {
             return true;
         }
+        else if (i < N && tofind[j] != (*this)[i])
+        {
+            if (j != 0)
+            {
+                j = lps[j - 1];
+            }
+            else
+            {
+                i++;
+            }
+        }
     }
-    // if they don't match at all, too bad!
     return false;
 }
+
 
 bool tString::Contains(const char *tofind)
 {

@@ -133,7 +133,9 @@ public:
 };
 
 void update_settings( bool const * goon = 0 );
-
+void ret_to_MainMenu();
+extern nServerInfoBase *connectedServer;
+static nServerInfoBase *CurrentServer() { return connectedServer; }
 void ConnectToServer(nServerInfoBase *server);
 
 void sg_EnterGame( nNetState enter_state );

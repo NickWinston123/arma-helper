@@ -350,6 +350,20 @@ extern tArray<tString> str_explode(tString delimiter, tString ret);
 bool copyToClipboard(tString contents);
 
 
+namespace std {
+    template <>
+    struct hash<tString> {
+        std::size_t operator()(const tString& k) const {
+            std::size_t res = 0;
+            const char* cStr = k;
+            while (*cStr != '\0') {
+                res = res * 101  +  *cStr++;
+            }
+            return res;
+        }
+    };
+}
+
 
 #endif
 

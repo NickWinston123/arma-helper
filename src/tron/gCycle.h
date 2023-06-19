@@ -55,7 +55,7 @@ class eTempEdge;
 struct gPredictPositionData;
 class gFlagZoneHack;
 class gAIBot;
-
+class PlayerStats;
 
 extern bool sg_smarterBotTeam;
 extern bool sg_smarterBotTeamOwner;
@@ -205,7 +205,6 @@ public:
 
     friend class gSmarterBot;
     std::unique_ptr< gSmarterBot > smarterBot_;
-
     bool dropWallRequested_; //!< flag indicating that someone requested a wall drop
 public:
     eCoord            lastGoodPosition_;    // the location of the last known good position
@@ -493,6 +492,8 @@ extern bool sg_cycleRespawnZone;
 extern REAL sg_cycleRespawnZoneRadius, sg_cycleRespawnZoneGrowth;
 
 extern bool sg_HideCycles, sg_HideCyclesWalls;
+#include "tDirectories.h"
+
 
 #endif
 

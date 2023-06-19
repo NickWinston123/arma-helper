@@ -945,7 +945,7 @@ bool gAINavigator::FollowEvaluator::FindTeamTarget()
         ePlayerNetID *player = ePlayerNetID::GetPlayerByName(team[i]);
         if (player)
         {
-            gCycle *targetCycle = ePlayerNetID::NetPlayerTogCycle(player);
+            gCycle *targetCycle = ePlayerNetID::NetPlayerToCycle(player);
             if (targetCycle)
             {
                 REAL positionDifference = st_GetDifference(targetCycle->Position(), cycle_.Position());

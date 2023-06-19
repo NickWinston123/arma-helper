@@ -3679,7 +3679,7 @@ void gCycle::KillAt( const eCoord& deathPos){
     if ( !hunter )
         hunter = Player();
 
-    if (sg_predictDeath) 
+    if (sg_predictDeath)
         con << hunter->GetColoredName() << " 0xffffffkilled " << Player()->GetColoredName() << "\n";
 
     if ( !Alive() || sn_GetNetState()==nCLIENT && Owner() != sn_myNetID )
@@ -6547,6 +6547,16 @@ void gCycle::ReadSync( nMessage &m )
     // killed?
     if (Alive() && sync_alive!=1 && GOID() >= 0 && grid )
     {
+        PlayerStats *stats = PlayerStats::getInstance();
+        if (stats) 
+        {
+            ePlayerNetID *killer = GetPlayerHuntedBy();
+            if (killer) {
+                stats->addKill(killer->GetName());
+            }
+            stats->addDeath(Player()->GetName());
+        }
+
         Die( lastSyncMessage_.time );
         MoveSafely( lastSyncMessage_.pos, lastTime, deathTime );
         distance=lastSyncMessage_.distance;
@@ -6555,9 +6565,9 @@ void gCycle::ReadSync( nMessage &m )
 
         tNEW(gExplosion)( grid, lastSyncMessage_.pos, lastSyncMessage_.time ,color_, this );
 
-        tString logTurnsMsg;
-        logTurnsMsg << "death " << this->MapPosition().x << " " << this->MapPosition().y << " " << this->Direction().x << " " << this->Direction().y;
-        LogPlayersCycleTurns(this, logTurnsMsg);
+        //tString logTurnsMsg;
+        //logTurnsMsg << "death " << this->MapPosition().x << " " << this->MapPosition().y << " " << this->Direction().x << " " << this->Direction().y;
+        //LogPlayersCycleTurns(this, logTurnsMsg);
 
         return;
     }
@@ -6581,11 +6591,11 @@ void gCycle::ReadSync( nMessage &m )
         if (!aft)
             aft=&emergency_aft;
 
-        //eDebugLine::SetTimeout(1);
-        //eDebugLine::SetColor( 1,0,0 );
-        //eDebugLine::Draw( bef->position, 1.5, lastSyncMessage_.pos, 3.0 );
-        //eDebugLine::SetColor( 0,1,0 );
-        //eDebugLine::Draw( lastSyncMessage_.pos, 3.0, aft->position, 5.0 );
+        // eDebugLine::SetTimeout(1);
+        // eDebugLine::SetColor( 1,0,0 );
+        // eDebugLine::Draw( bef->position, 1.5, lastSyncMessage_.pos, 3.0 );
+        // eDebugLine::SetColor( 0,1,0 );
+        // eDebugLine::Draw( lastSyncMessage_.pos, 3.0, aft->position, 5.0 );
 
     }
 

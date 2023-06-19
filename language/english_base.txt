@@ -2321,8 +2321,8 @@ player_color_randomization_unique_help 	Gives a player a semi-random unique colo
 player_color_randomization_rainbow_text  Rainbow
 player_color_randomization_rainbow_help 	Gives a player a color based on going through the rainbow each round. PLAYER_RANDOM_COLOR_RAINBOW_MAX
 
-player_color_randomization_rainbow_text  CrossFade
-player_color_randomization_rainbow_help 	Gives a player a color based on..
+player_color_randomization_crossfade_text  CrossFade
+player_color_randomization_crossfade_help  Gives a player a color based on fading between colors, using presets or a set list
 
 
 #camera prefs menu

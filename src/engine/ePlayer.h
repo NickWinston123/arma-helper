@@ -70,10 +70,10 @@ enum ColorNameCustomization {
 #include <unordered_map>
 
 extern tString se_disableCreateSpecific ;
-static void se_UniqueColor( ePlayer * local_p );
-static void se_RandomizeColor(ePlayer * l);
+static void se_UniqueColor(ePlayer *local_p );
+static void se_RandomizeColor(ePlayer *local_p);
 
-static void se_CrossFadeColor(ePlayer * p,bool reset = false);
+static void se_CrossFadeColor(ePlayer *local_p);
 
 extern bool se_watchActiveStatus;
 extern int se_watchActiveStatusTime;
@@ -299,7 +299,7 @@ private:
 
     DangerLevel dangerLevel;
 };
-
+class PlayerStats;
 // the class that identifies players across the network
 class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class ePlayer;
@@ -314,7 +314,8 @@ public:
     playerWatchStatus lastWatchStatus;
     static void watchPlayerStatus();
     static ePlayerNetID  *gCycleToNetPlayer(gCycle *owner);
-    static gCycle *NetPlayerTogCycle(ePlayerNetID *player);
+    static gCycle *NetPlayerToCycle(ePlayerNetID *player);
+    gCycle *NetPlayerToCycle();
     static ePlayerNetID *GetPlayerByName(tString name, bool exact = true);
     int lastsyncedColor[3] = {0, 0, 0};
     tColoredString lastColoredName;
@@ -553,10 +554,6 @@ public:
 
     static void scheduleNameChange();
 
-    //Grab Stuff
-    static tColoredString gatherPlayerInfo(ePlayerNetID * p);
-    static tColoredString gatherPlayerColor(ePlayerNetID * p, bool showReset = true);
-
     static void DisplayScores(); // display scores on the screen
 
     void GreetHighscores(tString &s); // tell him his positions in the
@@ -586,7 +583,7 @@ public:
 
     void Chat(const tString &s);
     static bool LocalChatCommands(ePlayerNetID *p, tString command);
-    static bool LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<std::string, std::unique_ptr<ChatCommand>>& commandMap);
+    static bool LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>>& commandFactories);
     bool RunChatCommand(ChatCommand & command, tString args);
 
     nTimeAbsolute GetTimeCreated() const { return timeCreated_; }
@@ -953,12 +950,56 @@ static ePlayer * se_chatterPlanned=NULL;
 static ePlayer * se_chatter =NULL;
 static tString se_say;
 
+//Grab Stuff
+static tColoredString gatherPlayerInfo(ePlayerNetID * p);
+static tColoredString gatherPlayerColor(ePlayerNetID * p, bool showReset = true);
+
 class ChatCommand {
 public:
     virtual bool execute(ePlayerNetID* player, tString args) = 0;
 };
 
+tColoredString cycleColorPreview(int r,int g,int b);
 
+#include "tDirectories.h"
+#include "sqlite3.h"
+#include <unordered_map>
+
+struct PlayerData {
+    int kills = 0;
+    int deaths = 0;
+    int wins = 0;
+    int losses = 0;
+    double getKDRatio() {
+        return deaths > 0 ? static_cast<double>(kills) / deaths : kills;
+    }
+};
+
+extern bool se_playerStats;
+class PlayerStats {
+public:
+    PlayerStats();
+    ~PlayerStats();
+
+    static PlayerStats* getInstance();
+
+    PlayerData& getStats(tString playerName);
+
+    void addKill(tString playerName);
+    void addDeath(tString playerName);
+    void addWin(tString playerName);
+    void addLoss(tString playerName);
+    double getKDRatio(tString playerName);
+
+private:
+    void loadStatsFromDB();
+    void saveStatsToDB();
+    void reloadStatsFromDB();
+
+    static PlayerStats* instance;
+
+    std::unordered_map<tString, PlayerData> playerStatsMap;
+};
 
 #endif
 

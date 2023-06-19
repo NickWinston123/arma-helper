@@ -1557,7 +1557,7 @@ void eCamera::Timestep(REAL ts){
 
     if (watchPlayer != nullptr)
     {
-        gCycle *cycle = ePlayerNetID::NetPlayerTogCycle(watchPlayer);
+        gCycle *cycle = ePlayerNetID::NetPlayerToCycle(watchPlayer);
         if (center != cycle && InterestingToWatch(cycle))
         {
             center = cycle;

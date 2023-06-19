@@ -2493,7 +2493,7 @@ static void sg_StopQuickExit()
         uMenu::quickexit = uMenu::QuickExit_Off;
     }
 }
-
+nServerInfoBase *connectedServer = nullptr;
 // return code: false if there was an error or abort
 bool ConnectToServerCore(nServerInfoBase *server)
 {
@@ -2534,7 +2534,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
     nConnectError error = nOK;
 
     nNetObject::ClearAll();
-
+    connectedServer = server;
     o.SetTemplateParameter(1, server->GetName());
     o << "$network_connecting_to_server";
     con << o;
@@ -2694,7 +2694,8 @@ static tConfItem<int> pc("PING_CHARITY",pingCharity);
 uMenu *sg_IngameMenu=NULL;
 uMenu *sg_HostMenu  =NULL;
 
-void ret_to_MainMenu(){
+void ret_to_MainMenu()
+{
     sg_RequestedDisconnection = true;
 
     if (sg_HostMenu)
@@ -3166,7 +3167,7 @@ void MainMenu(bool ingame){
         sg_RestrictPlayTimeStartTimWarnings++;
         return;
     }
-    con << "RUNNING\n";
+
     if (sr_consoleLogLimited)
         FileManager(tString("consolelog-limited.txt")).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
 
@@ -4433,7 +4434,7 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
         for (int pi = MAX_PLAYERS-1; pi >= 0; --pi )
         {
             ePlayer * p = ePlayer::PlayerConfig(pi);
-            if ( !p )
+            if ( !p || p->spectate)
                 continue;
             ePlayerNetID * np = p->netPlayer;
 

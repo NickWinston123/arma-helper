@@ -654,6 +654,22 @@ static tConfItem<REAL>   sp_wsu		("SP_WALLS_STAY_UP_DELAY"	,		singlePlayer.walls
 static tConfItem<REAL>   sp_wl		("SP_WALLS_LENGTH"		    ,		singlePlayer.wallsLength     );
 static tConfItem<REAL>   sp_er		("SP_EXPLOSION_RADIUS"		,		singlePlayer.explosionRadius );
 
+// #include <torch/script.h>
+
+// static void sg_torchTest(std::istream &s)
+// {
+//     torch::Tensor tensor = torch::rand({2, 3});
+//     std::stringstream ss;
+
+//     ss << tensor;
+
+//     std::string tensor_str = ss.str();
+
+//     con << "The tensor as a string: " << tensor_str << "\n";
+
+// }
+// static tConfItemFunc sg_torchTestConf("TORCH_TEST",&sg_torchTest);
+
 static void GameSettingsMP(){
     multiPlayer.Menu();
 }
@@ -1247,117 +1263,58 @@ static ladder highscore_ladder("ladder.txt",
 // ***   delayed commands
 // *************************
 
-int gDelayCommand::currentID = 0;
-std::map<int, gDelayCommand *> gDelayCommand::delayedCommands_;
-
-gDelayCommand::gDelayCommand(std::string command, REAL time, REAL interval)
-{
-    currentID++;
-
-    delayId_  = currentID;
-    command_  = command;
-    time_     = time;
-    interval_ = interval;
-
-    delayedCommands_[currentID] = this;
-}
-
-void gDelayCommand::Update()
-{
-    time_ += Interval();
-}
-
-void gDelayCommand::Run(REAL currentTime)
-{
-    if (delayedCommands_.empty()) return;
-
-    std::map<int, gDelayCommand *>::iterator it = delayedCommands_.begin(), itNext = it;
-    for (; it != delayedCommands_.end(); it=itNext)
-    {
-        itNext++;
-        gDelayCommand *delayCmd = it->second;
-        if (delayCmd && (delayCmd->Time() <= currentTime))
-        {
-            tCurrentAccessLevel elevator( tAccessLevel_Owner, true );
-
-            std::stringstream st(delayCmd->Command());
-            tConfItemBase::LoadAll(st); // run command if it's not too old, otherwise, just skip it ...
-
-            if(delayCmd->Interval() > 0) delayCmd->Update();
-            else delayedCommands_.erase(it);
-        }
-    }
-}
-
 static void sg_ClearDelayedCmd(std::istream &s)
 {
-    gDelayCommand::Clear();
+    gTaskScheduler.clear();
+    con << "Cleared all scheduled tasks\n";
 }
 static tConfItemFunc sg_ClearDelayedCmd_conf("DELAY_COMMAND_CLEAR",&sg_ClearDelayedCmd);
 
 static void sg_RemoveDelayedCmd(std::istream &s)
 {
+    int pos = 0;
     tString param;
     param.ReadLine(s);
-
-    int delayCommandID = atoi(param);
-
-    std::map<int, gDelayCommand *>::iterator it = gDelayCommand::delayedCommands_.begin();
-    for (; it != gDelayCommand::delayedCommands_.end(); it++)
-    {
-        if (it->first == delayCommandID)
-        {
-            gDelayCommand::delayedCommands_.erase(delayCommandID);
-            con << "Delay command removed ( " << delayCommandID << " )\n";
-            break;
-        }
-    }
+    std::string delayCommandID = param.ExtractNonBlankSubString(pos).c_str();
+    con << "Removing delay command ( " << delayCommandID << " )\n";
+    gTaskScheduler.remove(delayCommandID);
 }
 static tConfItemFunc sg_RemoveDelayedCmd_conf("DELAY_COMMAND_REMOVE",&sg_RemoveDelayedCmd);
 
 static void sg_AddDelayedCmd(std::istream &s)
 {
-	tString params;
-	params.ReadLine( s, true );
+    tString params;
+    params.ReadLine( s, true );
 
-	// first parse the line to get the param : delay or interval
-    // if the param start by an r then it means we have the interval
-	// if the param start by a +, assume that it's a delay relative to current game time ...
-	int pos       = 0;
+    // parsing parameters
+    int pos = 0;
     REAL interval = 0;
-	tString delay_str = params.ExtractNonBlankSubString(pos);
+    tString delay_str = params.ExtractNonBlankSubString(pos);
 
-	if (delay_str.SubStr(0, 1) == "r")
+    if (delay_str.SubStr(0, 1) == "r")
     {
-		interval = atof(delay_str.SubStr(1));
+        interval = atof(delay_str.SubStr(1));
         delay_str = params.ExtractNonBlankSubString(pos);
-	}
+    }
 
     REAL delay = atof(delay_str);
 
     if (delay_str.SubStr(0, 1) == "+")
     {
-		REAL gt = se_GameTime();
-		delay += gt;
-	}
-
-    // this will make sure it using the command if  start time has passed
-    if ((interval > 0) && (se_GameTime() > delay))
-    {
-        REAL ogt = se_GameTime() - delay;
-        int disposition = (ogt/interval)+1;
-        delay = disposition*interval+delay;
+        REAL gt = se_GameTime();
+        delay += gt;
     }
 
+    // preparing command
     tString cmd_name;
     cmd_name= params.ExtractNonBlankSubString(pos);
-	std::stringstream cmd_str;
-	cmd_str << cmd_name <<"  " << params.SubStr(pos+1);
-	if (cmd_str.str().length() == 0) return;
+    std::stringstream cmd_str;
+    cmd_str << cmd_name <<"  " << params.SubStr(pos+1);
 
+    if (cmd_str.str().length() == 0) return;
+
+    // check access level
     int cLevel = tConfItemBase::AccessLevel(cmd_str);
-
-	// add extracted command
     bool requiredAccessLevel = true;
 
     if ( sn_GetNetState() == nSERVER ) {
@@ -1366,8 +1323,12 @@ static void sg_AddDelayedCmd(std::istream &s)
 
     if (requiredAccessLevel)
     {
-        new gDelayCommand(cmd_str.str(), delay, interval);
-
+        std::string cmd = cmd_str.str();
+        gTaskScheduler.schedule(cmd, delay, [cmd]() {
+            tCurrentAccessLevel elevator( tAccessLevel_Owner, true );
+            std::stringstream st(cmd);
+            tConfItemBase::LoadAll(st);
+        },interval);
         tOutput msg;
         msg.SetTemplateParameter(1, cmd_str.str().c_str());
         msg.SetTemplateParameter(2, delay);
@@ -1384,11 +1345,11 @@ static void sg_AddDelayedCmd(std::istream &s)
                     tCurrentAccessLevel::GetName( tCurrentAccessLevel::GetAccessLevel() )
                     );
     }
-	//con << "DELAY_COMMAND " << delay << " "<< interval<<" &" << cmd_str.str() << "&\n";
 }
 
-static tConfItemFunc sg_AddDelayedCmd_conf("DELAY_COMMAND",&sg_AddDelayedCmd);
+static tConfItemFunc sg_AddDelayedCmd_conf("DELAY_COMMAND", &sg_AddDelayedCmd);
 static tAccessLevelSetter sg_AddDelayedCmdConfLevel( sg_AddDelayedCmd_conf, tAccessLevel_Owner );
+
 
 // *****************************
 // ***   end delayed commands
@@ -3617,21 +3578,12 @@ static void sg_ParseMap ( gParser * aParser )
 
 void gGame::Verify()
 {
-    std::map<int, gDelayCommand *>::iterator it = gDelayCommand::delayedCommands_.end(), itNext;
 
     // test map and load map settings
     sg_ParseMap( aParser );
     init_game_grid(grid, aParser);
     Arena.LeastDangerousSpawnPoint();
     exit_game_grid(grid);
-
-    // clear extra delayed commands
-    if(!gDelayCommand::delayedCommands_.empty()) itNext = (--it);
-    for (; it != gDelayCommand::delayedCommands_.end(); it=itNext)
-    {
-        itNext++;
-        gDelayCommand::delayedCommands_.erase(it);
-    }
 }
 
 bool * sg_GetSpecs()
@@ -4256,7 +4208,6 @@ void gGame::StateUpdate(){
 
                 Analysis(0);
 
-                gDelayCommand::Clear();
                 gZone::ClearDelay();
 
                 // log scores before players get renamed
@@ -5609,24 +5560,17 @@ bool gGame::GameLoop(bool input){
     if (sg_forceGamePause)
         se_PauseGameTimer();
 
-    gTaskScheduler.update();
-
     if (se_watchActiveStatus)
-        {
-        static REAL nextWatchCheck = tSysTimeFloat();
-        if (nextWatchCheck <= tSysTimeFloat())
-        {
+    {
+        gTaskScheduler.schedule("watchPlayerStatus", se_watchActiveStatusTime, [] {
             ePlayerNetID::watchPlayerStatus();
-            nextWatchCheck = tSysTimeFloat() + se_watchActiveStatusTime;
-        }
+        });
     }
+
 
     if (sg_forcePlayerUpdate || sg_forceSyncAll || sg_forcePlayerRebuild)
     {
-        static REAL lastForcedUpdate = tSysTimeFloat();
-        if (tSysTimeFloat() >= lastForcedUpdate + sg_forceClockDelay)
-        {
-
+        gTaskScheduler.schedule("forcedUpdate", sg_forceClockDelay, [] {
             if (sg_forcePlayerUpdate)
                 ePlayerNetID::Update();
 
@@ -5635,10 +5579,10 @@ bool gGame::GameLoop(bool input){
 
             if (sg_forceSyncAll)
                 nNetObject::SyncAll();
-
-            lastForcedUpdate = tSysTimeFloat();
-        }
+        });
     }
+
+    gTaskScheduler.update();
 
     nNetState netstate = sn_GetNetState();
 
@@ -5800,7 +5744,6 @@ bool gGame::GameLoop(bool input){
         synced_ = true;
     }
 
-	//gDelayCommand::Run(gtime);
     //con << "Running trash zone code..\n";
 	//gZone::Timesteps(gtime);
 

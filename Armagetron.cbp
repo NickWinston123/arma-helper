@@ -71,6 +71,7 @@
 			<Add directory="../winlibs/libxml2/include" />
 			<Add directory="../winlibs/iconv/include" />
 			<Add directory="../winlibs/sqlite" />
+			<Add directory="../winlibs/libtorch/include" />
 		</Compiler>
 		<Linker>
 			<Add library="libopengl32.a" />
@@ -79,6 +80,10 @@
 			<Add library="libwsock32.a" />
 			<Add library="../winlibs/SDL_image/VisualC/graphics/lib/libpng15-15.dll" />
 			<Add library="../winlibs/libxml2/lib/libxml2.lib" />
+			<Add directory="../winlibs/libtorch/lib" />
+			<Add library="../winlibs/libtorch/lib/torch.dll" />
+			<Add library="../winlibs/libtorch/lib/torch_cpu.dll" />
+			<Add library="../winlibs/libtorch/lib/c10.dll" />
 		</Linker>
 		<Unit filename="../debug/config/default.cfg" />
 		<Unit filename="../debug/config/settings.cfg" />

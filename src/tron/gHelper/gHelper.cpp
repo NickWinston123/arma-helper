@@ -1,5 +1,6 @@
 // HELPER
 #include "gHelper.h"
+#include "../gGame.h"
 #include "../gSensor.h"
 
 #include "../gAIBase.h"
@@ -487,15 +488,15 @@ void gHelper::autoBrake(gCycle &owner, REAL min, REAL max)
     bool cycleBrakeDeplete = true;
     if (min <= 0 && sg_cycleBrakeDeplete < 0)
         cycleBrakeDeplete = false;
-    
+
 
     // Check if the cycle is already braking and the used brake percentage is below the minimum brake limit
     // and brake depletion is enabled
-    if (owner.GetBraking() && brakeUsagePercent <= min && cycleBrakeDeplete)        
+    if (owner.GetBraking() && brakeUsagePercent <= min && cycleBrakeDeplete)
         owner.ActBot(&gCycle::s_brake, -1); // Stop braking
-    
+
     // Check if the cycle is not braking and the used brake percentage is above the maximum brake limit
-    if (!owner.GetBraking() && brakeUsagePercent >= max)        
+    if (!owner.GetBraking() && brakeUsagePercent >= max)
         owner.ActBot(&gCycle::s_brake, 1); // brake
 }
 
@@ -853,7 +854,6 @@ bool gHelper::aliveCheck()
     return &owner_ && owner_.Alive() && owner_.Grid();
 }
 
-
 void gHelper::trace(gHelperData &data, int dir)
 {
     if (!(owner_.pendingTurns.size() == 0)) {
@@ -862,7 +862,7 @@ void gHelper::trace(gHelperData &data, int dir)
     }
     eGrid *grid = owner_.Grid();
 
-    std::shared_ptr<gHelperSensor> sensor = data.sensors.getSensor(owner_.Position(), 
+    std::shared_ptr<gHelperSensor> sensor = data.sensors.getSensor(owner_.Position(),
                                                                    grid->GetDirection(grid->DirectionWinding(owner_.Direction()) + dir),
                                                                    1000);
 
@@ -872,7 +872,9 @@ void gHelper::trace(gHelperData &data, int dir)
 
     if (sensor->hit > (sensorDistance[index] + sg_helperTraceReactRange)) {
         gHelperUtility::Debug("Trace", (dir == LEFT) ? "Tracing left" : "Tracing right");
-        owner_.ActTurnBot(dir);
+        gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir]{
+            this->owner_.ActTurnBot(dir);
+        });
         sensorDistance[index] = 1E+30;
     }
     else {
@@ -972,14 +974,14 @@ void gHelper::Activate()
     if (sg_helperSimpleBot)
         turningBot(data_stored);
 
-    if (sg_helperTraceLeft) 
+    if (sg_helperTraceLeft)
         trace(data_stored,LEFT);
-    
 
-    if (sg_helperTraceRight) 
+
+    if (sg_helperTraceRight)
         trace(data_stored,RIGHT);
 
-    if (sg_helperHud) 
+    if (sg_helperHud)
         sg_helperActivateTimeH << (tRealSysTimeFloat() - start);
 }
 

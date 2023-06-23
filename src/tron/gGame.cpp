@@ -1262,75 +1262,123 @@ static ladder highscore_ladder("ladder.txt",
 // *************************
 // ***   delayed commands
 // *************************
+std::vector<std::string> gTaskIDs;
 
 static void sg_ClearDelayedCmd(std::istream &s)
 {
-    gTaskScheduler.clear();
-    con << "Cleared all scheduled tasks\n";
+    for (const auto& taskID : gTaskIDs) {
+        con << "Cleared task '" << taskID << "'\n";
+        gTaskScheduler.remove(taskID);
+    }
+    gTaskIDs.clear();
 }
 static tConfItemFunc sg_ClearDelayedCmd_conf("DELAY_COMMAND_CLEAR",&sg_ClearDelayedCmd);
 
 static void sg_RemoveDelayedCmd(std::istream &s)
 {
-    int pos = 0;
-    tString param;
-    param.ReadLine(s);
-    std::string delayCommandID = param.ExtractNonBlankSubString(pos).c_str();
-    con << "Removing delay command ( " << delayCommandID << " )\n";
-    gTaskScheduler.remove(delayCommandID);
+    std::string command;
+    std::getline(s, command);
+    
+    // Remove leading and trailing spaces
+    command.erase(0, command.find_first_not_of(' ')); // leading spaces
+    command.erase(command.find_last_not_of(' ') + 1); // trailing spaces
+
+    if (command.empty()){
+        con << "Usage: DELAY_COMMAND_REMOVE <command>\n";
+        con << "       <command> is the command associated with the task to be removed\n";
+        return;
+    }
+
+    // Check if the command is in the list
+    auto it = std::find(gTaskIDs.begin(), gTaskIDs.end(), command);
+    if (it == gTaskIDs.end()) {
+        con << "Error: No such delay command ( " << command << " ) found\n";
+        return;
+    }
+
+    con << "Removing delay command ( " << command << " )\n";
+    gTaskScheduler.remove(command);
+    gTaskIDs.erase(it);
 }
 static tConfItemFunc sg_RemoveDelayedCmd_conf("DELAY_COMMAND_REMOVE",&sg_RemoveDelayedCmd);
+
+static void sg_ListDelayedCmd(std::istream &s)
+{
+    auto tasks = gTaskScheduler.getTasks();
+    con << "Number of delayed commands: " << tasks.size() << "\n";
+    for (const auto& task : tasks) {
+        con << "Command: " << task.first << "\n";
+        con << "  - Due Time: " << task.second.dueTime << "\n";
+        con << "  - Interval: " << task.second.interval << "\n";
+    }
+}
+static tConfItemFunc sg_ListDelayedCmd_conf("DELAY_COMMAND_LIST", &sg_ListDelayedCmd);
 
 static void sg_AddDelayedCmd(std::istream &s)
 {
     tString params;
-    params.ReadLine( s, true );
+    params.ReadLine(s, true);
 
-    // parsing parameters
-    int pos = 0;
+    if (params.Len() <= 0) {
+        con << "Usage: DELAY_COMMAND <delay> <command>\n";
+        con << "       This will execute <command> after <delay> seconds.\n";
+        con << "       or: DELAY_COMMAND r<interval> <command>\n";
+        con << "       This will execute <command> every <interval> seconds.\n";
+        return;
+    }
+
+    // Convert tString to std::string for splitting
+    std::string params_std(params.c_str());
+
+    // Split the input into a vector of strings
+    std::vector<std::string> input_parts;
+    std::istringstream iss(params_std);
+    for(std::string s; iss >> s; )
+        input_parts.push_back(s);
+
+    // Parse parameters
     REAL interval = 0;
-    tString delay_str = params.ExtractNonBlankSubString(pos);
+    REAL delay = 0;
+    std::string delay_str;
 
-    if (delay_str.SubStr(0, 1) == "r")
-    {
-        interval = atof(delay_str.SubStr(1));
-        delay_str = params.ExtractNonBlankSubString(pos);
+    if (input_parts[0][0] == 'r') {
+        delay_str = input_parts[0].substr(1, input_parts[0].length()-1);
+        interval = std::stod(delay_str);
+        delay = 0; // if r<interval> is used, the delay should be zero to start the command immediately
+    }
+    else {
+        delay_str = input_parts[0];
+        delay = std::stod(delay_str);
     }
 
-    REAL delay = atof(delay_str);
+    // Prepare the command: join all remaining parts of the input (excluding the delay/interval) as the command string
+    std::string cmd_name;
+    for(size_t i = 1; i < input_parts.size(); ++i)
+        cmd_name += (i > 1 ? " " : "") + input_parts[i];
 
-    if (delay_str.SubStr(0, 1) == "+")
-    {
-        REAL gt = se_GameTime();
-        delay += gt;
-    }
+    // Exit if no command is provided
+    if (cmd_name.empty()) return;
 
-    // preparing command
-    tString cmd_name;
-    cmd_name= params.ExtractNonBlankSubString(pos);
-    std::stringstream cmd_str;
-    cmd_str << cmd_name <<"  " << params.SubStr(pos+1);
-
-    if (cmd_str.str().length() == 0) return;
-
-    // check access level
-    int cLevel = tConfItemBase::AccessLevel(cmd_str);
+    // Check access level
+    std::istringstream cmd_stream(cmd_name);
+    int cLevel = tConfItemBase::AccessLevel(cmd_stream);
     bool requiredAccessLevel = true;
 
-    if ( sn_GetNetState() == nSERVER ) {
+    if (sn_GetNetState() == nSERVER)
         requiredAccessLevel = tCurrentAccessLevel::GetAccessLevel() <= cLevel;
-    }
 
     if (requiredAccessLevel)
     {
-        std::string cmd = cmd_str.str();
-        gTaskScheduler.schedule(cmd, delay, [cmd]() {
-            tCurrentAccessLevel elevator( tAccessLevel_Owner, true );
-            std::stringstream st(cmd);
+        gTaskScheduler.schedule(cmd_name, delay, [cmd_name]() {
+            tCurrentAccessLevel elevator(tAccessLevel_Owner, true);
+            std::stringstream st(cmd_name);
             tConfItemBase::LoadAll(st);
-        },interval);
+        }, interval);
+
+        gTaskIDs.push_back(cmd_name);
+
         tOutput msg;
-        msg.SetTemplateParameter(1, cmd_str.str().c_str());
+        msg.SetTemplateParameter(1, cmd_name.c_str());
         msg.SetTemplateParameter(2, delay);
         msg.SetTemplateParameter(3, interval);
         msg << "$delay_command_add";
@@ -1338,18 +1386,17 @@ static void sg_AddDelayedCmd(std::istream &s)
     }
     else
     {
-        tToUpper( cmd_name );
-        con << tOutput( "$access_level_error",
-                    cmd_name,
-                    tCurrentAccessLevel::GetName( static_cast< tAccessLevel >(cLevel) ),
-                    tCurrentAccessLevel::GetName( tCurrentAccessLevel::GetAccessLevel() )
-                    );
+        tString cmd_name_upper(cmd_name.c_str());
+        tToUpper(cmd_name_upper);
+        con << tOutput("$access_level_error",
+                        cmd_name_upper,
+                        tCurrentAccessLevel::GetName(static_cast<tAccessLevel>(cLevel)),
+                        tCurrentAccessLevel::GetName(tCurrentAccessLevel::GetAccessLevel()));
     }
 }
 
 static tConfItemFunc sg_AddDelayedCmd_conf("DELAY_COMMAND", &sg_AddDelayedCmd);
-static tAccessLevelSetter sg_AddDelayedCmdConfLevel( sg_AddDelayedCmd_conf, tAccessLevel_Owner );
-
+static tAccessLevelSetter sg_AddDelayedCmdConfLevel(sg_AddDelayedCmd_conf, tAccessLevel_Owner);
 
 // *****************************
 // ***   end delayed commands

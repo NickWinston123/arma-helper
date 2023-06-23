@@ -872,10 +872,10 @@ void gHelper::trace(gHelperData &data, int dir)
 
     if (sensor->hit > (sensorDistance[index] + sg_helperTraceReactRange)) {
         gHelperUtility::Debug("Trace", (dir == LEFT) ? "Tracing left" : "Tracing right");
-        gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir]{
+        gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index]{
             this->owner_.ActTurnBot(dir);
+            sensorDistance[index] = 1E+30;
         });
-        sensorDistance[index] = 1E+30;
     }
     else {
         sensorDistance[index] = sensor->hit;

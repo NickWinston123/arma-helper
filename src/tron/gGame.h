@@ -288,7 +288,6 @@ extern void sg_DetermineSpawnPoint(ePlayerNetID *p,eCoord &pos,eCoord &dir);
 
 #include <functional>
 #include <map>
-#include <string>
 
 struct DelayedTask {
     std::string id;
@@ -305,13 +304,10 @@ class TaskScheduler {
 public:
     // Schedule a new task
     void schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0 ) {
-        // Only schedule the task if there isn't already a task with the same ID
         if (tasks.find(id) == tasks.end()) {
             tasks[id] = DelayedTask(id, tSysTimeFloat() + delayInSeconds, interval, task);
         }
     }
-
-
 
     // Remove a task
     void remove(std::string id) {
@@ -340,6 +336,21 @@ public:
                 ++it;
             }
         }
+    }
+
+    // Get all tasks
+    std::map<std::string, DelayedTask> getTasks() const {
+        return tasks;
+    }
+
+    // Get a task by id
+    DelayedTask getTask(std::string id) const {
+        auto it = tasks.find(id);
+        if (it != tasks.end()) {
+            return it->second;
+        }
+        // Return a default task if not found
+        return DelayedTask();
     }
 
 private:

@@ -393,4 +393,5 @@ static eCoord roundeCoord(eCoord coord, int precision = 1){
     return eCoord(customRound(coord.x,precision),customRound(coord.y,precision));
 }
 
+
 #endif

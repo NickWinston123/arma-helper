@@ -2368,74 +2368,97 @@ bool st_StringEndsWith( tString const & test, char const * end )
 //!    @return     true         Returns true if the string is found
 //!
 // **********************************************************************
-
-void computeLPSArray(const tString& pat, int* lps)
-{
-    int len = 0;
-    int i = 1;
-
-    lps[0] = 0;
-
-    while (i < pat.Len())
-    {
-        if (pat[i] == pat[len])
-        {
-            len++;
-            lps[i] = len;
-            i++;
-        }
-        else
-        {
-            if (len != 0)
-            {
-                len = lps[len - 1];
-            }
-            else
-            {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-}
-
 bool tString::Contains(tString tofind)
 {
-    int M = tofind.Len();
-    int N = Len();
+    // if the length of tofind longer than the string, quit it!
+    if (tofind.Len() > Len())
+        return false;
 
-    int lps[M];
-    computeLPSArray(tofind, lps);
+    // the total legnth of tofind, minus the 1 extra garbage
+    int strCount = tofind.Len() - 1;
 
-    int i = 0;
-    int j = 0;
-
-    while (i < N)
+    for (int i = 0; i < Len(); i++)
     {
-        if (tofind[j] == (*this)[i])
-        {
-            j++;
-            i++;
-        }
+        // strip the string to the length of tofind
+        tString isThis = this->SubStr(i, strCount);
 
-        if (j == M)
+        // if that stripped string matches, good!
+        if (isThis == tofind)
         {
             return true;
         }
-        else if (i < N && tofind[j] != (*this)[i])
-        {
-            if (j != 0)
-            {
-                j = lps[j - 1];
-            }
-            else
-            {
-                i++;
-            }
-        }
     }
+    // if they don't match at all, too bad!
     return false;
 }
+
+// void computeLPSArray(const tString& pat, int* lps)
+// {
+//     int len = 0;
+//     int i = 1;
+
+//     lps[0] = 0;
+
+//     while (i < pat.Len())
+//     {
+//         if (pat[i] == pat[len])
+//         {
+//             len++;
+//             lps[i] = len;
+//             i++;
+//         }
+//         else
+//         {
+//             if (len != 0)
+//             {
+//                 len = lps[len - 1];
+//             }
+//             else
+//             {
+//                 lps[i] = 0;
+//                 i++;
+//             }
+//         }
+//     }
+// }
+
+// bool tString::Contains(tString tofind)
+// {
+//     int M = tofind.Len();
+//     int N = Len();
+
+//     int lps[M];
+//     computeLPSArray(tofind, lps);
+
+//     int i = 0;
+//     int j = 0;
+
+//     while (i < N)
+//     {
+//         if (tofind[j] == (*this)[i])
+//         {
+//             j++;
+//             i++;
+//         }
+
+//         if (j == M)
+//         {
+//             return true;
+//         }
+//         else if (i < N && tofind[j] != (*this)[i])
+//         {
+//             if (j != 0)
+//             {
+//                 j = lps[j - 1];
+//             }
+//             else
+//             {
+//                 i++;
+//             }
+//         }
+//     }
+//     return false;
+// }
 
 
 bool tString::Contains(const char *tofind)

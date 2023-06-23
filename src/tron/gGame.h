@@ -315,5 +315,43 @@ void LogWinnerCycleTurns(gCycle *winner);
 
 extern void sg_DetermineSpawnPoint(ePlayerNetID *p,eCoord &pos,eCoord &dir);
 
+
+
+#include <functional>
+#include <list>
+
+struct DelayedTask {
+    REAL dueTime;
+    std::function<void()> task;
+
+    DelayedTask(REAL dueTime, std::function<void()> task) : dueTime(dueTime), task(task) {}
+};
+
+class TaskScheduler {
+public:
+    // Schedule a new task
+    void schedule(REAL delayInSeconds, std::function<void()> task) {
+        tasks.push_back(DelayedTask(tSysTimeFloat() + delayInSeconds, task));
+    }
+
+    // Check and execute due tasks
+    void update() {
+        for (auto it = tasks.begin(); it != tasks.end(); ) {
+            if (tSysTimeFloat() >= it->dueTime) {
+                it->task();
+                it = tasks.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+private:
+    std::list<DelayedTask> tasks;
+};
+
+// Global instance of the task scheduler
+extern TaskScheduler gTaskScheduler;
+
 #endif
 

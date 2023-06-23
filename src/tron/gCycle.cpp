@@ -6427,6 +6427,14 @@ void ClampForward( eCoord& newPos, const eCoord& startPos, const eCoord& dir )
 extern REAL sg_cycleBrakeRefill;
 extern REAL sg_cycleBrakeDeplete;
 
+tString sg_deathMessageSelfString = tString("");
+static tConfItem<tString> sg_deathMessageSelfStringConf("PLAYER_DEATH_MESSAGE_SELF", sg_deathMessageSelfString);
+
+tString sg_deathMessageOthersString = tString("");
+static tConfItem<tString> sg_deathMessageOthersStringConf("PLAYER_DEATH_MESSAGE_OTHERS", sg_deathMessageOthersString);
+
+
+
 void gCycle::ReadSync( nMessage &m )
 {
     // data from sync message
@@ -6547,8 +6555,24 @@ void gCycle::ReadSync( nMessage &m )
     // killed?
     if (Alive() && sync_alive!=1 && GOID() >= 0 && grid )
     {
+            if (Player()->pID != -1 && !sg_deathMessageSelfString.empty())
+            {
+                Player()->Chat(sg_deathMessageSelfString);
+            }
+            else if (Player()->pID == -1 && !sg_deathMessageOthersString.empty())
+            {
+                for (ePlayerNetID *player : se_PlayerNetIDs)
+                {
+                    ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
+                    if (local_p)
+                    {
+                        player->Chat(sg_deathMessageOthersString);
+                        break;
+                    }
+                }
+            }
         PlayerStats *stats = PlayerStats::getInstance();
-        if (stats) 
+        if (stats)
         {
             ePlayerNetID *killer = GetPlayerHuntedBy();
             if (killer) {

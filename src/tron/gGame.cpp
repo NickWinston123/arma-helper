@@ -117,6 +117,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 
+TaskScheduler gTaskScheduler;
 
 tCONFIG_ENUM( gGameType );
 tCONFIG_ENUM( gFinishType );
@@ -1878,7 +1879,7 @@ void init_game_objects(eGrid *grid){
         {
             sg_tutorial->BeforeSpawn();
         }
-        
+
         int spawnPointsUsed = 0;
 
         if( sg_spawnAlternate == 1 )
@@ -4434,7 +4435,7 @@ static void sg_Respawn( REAL time, eGrid *grid, gArena & arena )
         for (int pi = MAX_PLAYERS-1; pi >= 0; --pi )
         {
             ePlayer * p = ePlayer::PlayerConfig(pi);
-            if ( !p || p->spectate)
+            if ( !p)
                 continue;
             ePlayerNetID * np = p->netPlayer;
 
@@ -5607,6 +5608,8 @@ bool gGame::GameLoop(bool input){
 
     if (sg_forceGamePause)
         se_PauseGameTimer();
+
+    gTaskScheduler.update();
 
     if (se_watchActiveStatus)
         {

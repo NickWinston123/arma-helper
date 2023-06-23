@@ -10722,7 +10722,7 @@ static void crossfadePresetList(std::istream &s)
 {
     crossfadePresetList();
 }
-static tConfItemFunc se_crossfadePresetListConf("PLAYER_COLOR_CUSTOMIZATION_LIST_PRESETS", &crossfadePresetList);
+static tConfItemFunc se_crossfadePresetListConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_PRESET_LIST", &crossfadePresetList);
 
 
 void crossfadeUsingPreset(const Preset& preset, ePlayer *local_p)
@@ -10788,8 +10788,6 @@ void se_CrossFadeColor(ePlayer *local_p) {
     }
 }
 
-
-
 void setCustomColorSequence(std::istream &s) {
     std::getline(s, customColorSequence);
 }
@@ -10850,6 +10848,9 @@ static tConfItem<bool> se_forceTeamnameConf("FORCE_TEAMNAME", se_forceTeamname);
 
 static bool se_forceMessage = false;
 static tConfItem<bool> se_forceMessageConf("FORCE_MESS", se_forceMessage);
+
+static tString se_forceSendMessageString = tString("");
+static tConfItem<tString> se_forceSendMessageStringConf("FORCE_SEND_MESSAGE", se_forceSendMessageString);
 
 
 
@@ -11352,9 +11353,11 @@ void ePlayerNetID::Update()
                     p->Chat(tString("/teamname ") + tString(local_p->teamname));
                 }
 
-                if (se_forceMessage){
+                if (se_forceMessage)
                     p->Chat(tString("/") + RandomStr(se_SpamMaxLen-1));
-                }
+
+                if (!se_forceSendMessageString.empty())
+                    p->Chat(se_forceSendMessageString);
 
                 if (se_toggleChatFlag) {
                     //toggle This Players ChatFlag?
@@ -11470,27 +11473,29 @@ void ePlayerNetID::Update()
                     {
                     case ColorNameCustomization::OFF_NAME:
                         break;
-                    case ColorNameCustomization::GRADIENT_NAME: {
+                    case ColorNameCustomization::GRADIENT_NAME: 
+                    {
                         int rgb[3] = {p->r, p->g, p->b};
                         newName = sg_ColorGradientGeneration(rgb, nameToUse);
                         p->lastColoredName = newName;
                         break;
                     }
-                    case ColorNameCustomization::RAINBOW_NAME:{
+                    case ColorNameCustomization::RAINBOW_NAME:
+                    {
                         newName = sg_RainbowNameGeneration(nameToUse);
                         p->lastColoredName = newName;
                         break;
                     }
-                    case ColorNameCustomization::SHIFT_NAME: {
+                    case ColorNameCustomization::SHIFT_NAME:
+                    {
                         int rgb[3] = {p->r, p->g, p->b};
 
                         // Name changed or lastColoredName not set or gradient mode and color change
                         bool shouldUpdateName = newName != p->GetName() || p->lastColoredName.empty() || shouldUpdateLastName(rgb) || se_playerRandomColorNameStartMode != p->lastplayerRandomColorNameStartMode;
-                        if (shouldUpdateName) {
+                        if (shouldUpdateName) 
+                        {
                             p->lastplayerRandomColorNameStartMode = se_playerRandomColorNameStartMode;
-                            p->lastColoredName = (se_playerRandomColorNameStartMode == 1) ?
-                                                  sg_RainbowNameGeneration(nameToUse) :
-                                                  sg_ColorGradientGeneration(rgb, nameToUse);
+                            p->lastColoredName = (se_playerRandomColorNameStartMode == 1) ? sg_RainbowNameGeneration(nameToUse) : sg_ColorGradientGeneration(rgb, nameToUse);
                             p->shiftIter = 0;
                         }
 

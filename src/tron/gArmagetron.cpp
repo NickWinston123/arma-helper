@@ -862,7 +862,7 @@ int main(int argc,char **argv){
                     gLogo::SetSpinning(true);
 
                     sn_bigBrotherString = renderer_identification + "VER=" + sn_programVersion + "\n\n";
-
+                    
                     MainMenu();
 
                     // remove all players

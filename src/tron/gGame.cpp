@@ -3164,6 +3164,9 @@ int sg_RestrictPlayTimeStartTimWarningsCap = 5;
 
 void MainMenu(bool ingame){
 
+    if (se_playerTriggerMessages)
+        LoadChatTriggers();
+        
     if (sg_RestrictPlayTime && isWithinRange()) {
         tString message("You are not allowed to play within this time slot because of GAME_RESTRICT_PLAY_TIME. ");
                 message << "(Within set block time: " <<  sg_RestrictPlayTimeStartTime << ":00 - " << sg_RestrictPlayTimeEndTime << ":00)";

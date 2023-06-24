@@ -41,17 +41,20 @@ extern tList<gNetPlayerWall> sg_netPlayerWallsGridded;
 extern std::deque<gZone *> sg_Zones;
 
 static void DrawRimWalls(tList<eWallRim> &list) {
-	glColor4f(1, 1, 1, .5);
-	glBegin(GL_LINES);
-	unsigned i, len=list.Len();
-	for(i=0; i<len; i++) {
-		eWallRim *wall = list[i];
-		const eCoord &begin = wall->EndPoint(0), &end = wall->EndPoint(1);
-		glVertex2f(begin.x, begin.y);
-		glVertex2f(end.x, end.y);
-	}
-	glEnd();
+    glColor4f(1, 1, 1, .5);
+    glBegin(GL_LINES);
+    unsigned i, len = list.Len();
+    for (i = 0; i < len; i++) {
+        eWallRim *wall = list[i];
+        if (wall) {  // Checking if wall is null
+            const eCoord &begin = wall->EndPoint(0), &end = wall->EndPoint(1);
+            glVertex2f(begin.x, begin.y);
+            glVertex2f(end.x, end.y);
+        }
+    }
+    glEnd();
 }
+
 
 static void DrawWalls(tList<gNetPlayerWall> &list) {
 	unsigned i, len=list.Len();

@@ -1407,7 +1407,7 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
                                         rgb[0]));
 
     confname.Clear();
-    confname << "PLAYER_COLOR_CUSTOMIZATION_" << id+1;
+    confname << "PLAYER_COLOR_CUSTOM_" << id+1;
     colorCustomization=0;
     StoreConfitem(tNEW(tConfItem<int>) (confname,
                                          "$player_random_color_help",
@@ -1782,6 +1782,9 @@ bool se_highlightMyName = false;
 static bool se_chatTimeStamp = false;
 static tConfItem<bool> se_chatTimeStampConf("CHAT_TIMESTAMP",se_chatTimeStamp);
 
+bool se_playerTriggerMessages = false;
+static tConfItem<bool> se_playerTriggerMessagesConf("PLAYER_MESSAGE_TRIGGERS", se_playerTriggerMessages);
+
 static void se_DisplayChatLocally( ePlayerNetID* p, const tString& say )
 {
 #ifdef DEBUG_X
@@ -1901,6 +1904,22 @@ static void se_DisplayChatLocallyClient( ePlayerNetID* p, const tString& message
         }
 
         con << actualMessage << "\n";
+
+        if (se_playerTriggerMessages && p->pID == -1)
+        {
+            tString lowerMessage(message);
+            lowerMessage.ToLower();
+
+            for (const auto& triggerPair : chatTriggers)
+            {
+                if ((triggerPair.second.second && lowerMessage == triggerPair.first) // Exact match
+                    || (!triggerPair.second.second && lowerMessage.Contains(triggerPair.first))) // Substring match
+                {
+                    ePlayerNetID::sendPlayerMessage(triggerPair.second.first);
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -5512,7 +5531,7 @@ public:
                  << "Chatting For: "  << chattingTime << "\n";
 
         if (chattingTime == 0)
-            listInfo << "Last chat activity: " << p->ChattingTime(false) << " seconds ago.\n";
+            listInfo << "Last chat activity: " << p->ChattingTime() << " seconds ago.\n";
 
         con << listInfo;
         return true;
@@ -7073,7 +7092,7 @@ static void chat( ePlayer * chatter )
 }
 
 static bool se_allowControlDuringChat = false;
-static nSettingItem<bool> se_allowControlDuringChatConf("ALLOW_CONTROL_DURING_CHAT",se_allowControlDuringChat);
+static tConfItem<bool> se_allowControlDuringChatConf("ALLOW_CONTROL_DURING_CHAT",se_allowControlDuringChat);
 
 uActionPlayer se_toggleSpectator("TOGGLE_SPECTATOR", -7);
 
@@ -7451,6 +7470,9 @@ static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
 tString se_disableCreateSpecific = tString("");
 static tConfItem<tString> se_disableCreateSpecificConf("DISABLE_CREATE_SPECIFIC", se_disableCreateSpecific);
 
+static tString se_playerMessageEnter = tString("");
+static tConfItem<tString> se_playerMessageEnterConf("PLAYER_MESSAGE_ENTER", se_playerMessageEnter);
+
 ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                teamListID(-1),
                                                timeCreated_(tSysTimeFloat()),
@@ -7463,7 +7485,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                                syncIteration(0),
                                                lastMessagedPlayer(nullptr),
-                                               nickname(tString(""))
+                                               nickname(tString("")),
+                                               lastKilledPlayer(nullptr)
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -7538,6 +7561,9 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
 
     if(sn_GetNetState()==nSERVER)
         RequestSync();
+
+    if (!se_playerMessageEnter.empty())
+        sendPlayerMessage(se_playerMessageEnter);
 }
 
 
@@ -7581,10 +7607,185 @@ void ePlayerNetID::watchPlayerStatus()
 
         if (chattingTime == 0 || lastActivity != 0) {
             message << " - Last activity: "      << p->LastActivity()      << " seconds ago.\n";
-            message << " - Last chat activity: " << p->ChattingTime(false) << " seconds ago.";
+            message << " - Last chat activity: " << p->ChattingTime() << " seconds ago.";
         }
         message << "\n";
         con << message;
+    }
+}
+
+static tString se_playerMessageTargetPlayer = tString("");
+static tConfItem<tString> se_playerMessageTargetPlayerConf("PLAYER_MESSAGE_TARGET_PLAYERS", se_playerMessageTargetPlayer);
+
+static REAL se_playerMessageDelay = 0;
+static tConfItem<REAL> se_playerMessageDelayConf("PLAYER_MESSAGE_DELAY", se_playerMessageDelay);
+
+static bool se_playerMessageChatFlag = false;
+static tConfItem<bool> se_playerMessageChatFlagConf("PLAYER_MESSAGE_CHATFLAG", se_playerMessageChatFlag);
+
+static REAL se_playerMessageChatFlagStartMult = 0.5;
+static tConfItem<REAL> se_playerMessageChatFlagStartMultConf("PLAYER_MESSAGE_CHATFLAG_START_MULT", se_playerMessageChatFlagStartMult);
+
+
+std::map<tString, std::pair<tString, bool>> chatTriggers;
+
+
+void LoadChatTriggers()
+{
+    FileManager fileManager(tString("chattriggers.txt"));
+    tArray<tString> lines = fileManager.Load();
+
+    for (auto& line : lines)
+    {
+        if (line.StartsWith("\"") && line.EndsWith("\""))
+        {
+            line = line.SubStr(1, line.Len() - 2);
+        }
+
+        tArray<tString> parts = line.Split(","); 
+        if (parts.Len() == 3)
+        {
+            tString trigger = parts[0];
+            trigger.ToLower(); 
+            tString response = parts[1];
+            bool exact = atoi(parts[2].c_str()) == 1;
+            chatTriggers[trigger] = std::make_pair(response, exact);
+        }
+    }
+}
+
+static void AddChatTrigger(std::istream &s)
+{
+    tString params;
+    params.ReadLine(s, true);
+
+    if (params.empty()) {
+        con << "Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<exact>\n";
+        return;
+    }
+
+    tArray<tString> parts = params.Split(","); 
+
+    if (parts.Len() != 3) {
+        con << "Invalid input. Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<exact>\n";
+        return;
+    }
+
+    tString trigger = parts[0].TrimWhitespace();
+    tString response = parts[1].TrimWhitespace();
+    bool exact = atoi(parts[2].c_str()) == 1;
+
+    if (trigger.empty() || response.empty()) {
+        con << "Error: Trigger and response cannot be empty.\n";
+        return;
+    }
+
+    trigger.ToLower();
+
+    chatTriggers[trigger] = std::make_pair(response, exact);
+
+    if (params.Contains(",")) 
+        params = tString("\"") + params + tString("\"");
+
+    params += "\n"; 
+    FileManager fileManager(tString("chattriggers.txt"));
+    fileManager.Write(params);
+
+    con << "Trigger, Response, Exact?\n";
+    con << "Added: " << params << "\n";
+}
+
+static void RemoveChatTrigger(std::istream &s)
+{
+    tString params;
+    params.ReadLine(s, true);
+
+    if (params.empty()) {
+        con << "Usage: PLAYER_MESSAGE_TRIGGERS_REMOVE <line_number>\n";
+        return;
+    }
+
+    FileManager fileManager(tString("chattriggers.txt"));
+    
+    int lineNumber = atoi(params.c_str()) + 1;
+
+    if (fileManager.Clear(lineNumber)) 
+        con << "Removed line " << lineNumber << "\n";
+
+    chatTriggers.clear();
+    LoadChatTriggers();
+}
+
+static void ListChatTriggers(std::istream &s)
+{
+    FileManager fileManager(tString("chattriggers.txt"));
+    tArray<tString> lines = fileManager.Load();
+
+    con << "Listing all chat triggers:\n";
+    con << "Line) Trigger, Response, Exact?\n";
+
+    for (int i = 0; i < lines.Len(); ++i)
+    {
+        tArray<tString> parts = lines[i].Split(",");
+
+        if (parts.Len() != 3)
+        {
+            con << "Malformed line at index " << i << ": " << lines[i] << "\n";
+            continue;
+        }
+
+        con << i++ << ") " << parts[0] << ", " << parts[1] << ", " << (parts[2] == "1" ? "Yes" : "No") << "\n";
+    }
+}
+
+static void ClearChatTriggers(std::istream &s)
+{
+    FileManager fileManager(tString("chattriggers.txt"));
+
+    fileManager.Clear();
+    chatTriggers.clear();
+    con << "All chat triggers have been cleared.\n";
+}
+
+static tConfItemFunc ClearChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_CLEAR", &ClearChatTriggers);
+static tConfItemFunc ListChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_LIST", &ListChatTriggers);
+static tConfItemFunc AddChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
+static tConfItemFunc RemoveChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
+
+void ePlayerNetID::sendMessageAction(ePlayerNetID* netPlayer, tString message) {
+    if (se_playerMessageChatFlag) {
+        gTaskScheduler.schedule("playerMessageSetChatFlagTrue", se_playerMessageDelay*se_playerMessageChatFlagStartMult, [netPlayer] {
+            netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, true);
+            ePlayerNetID::Update();
+        });
+    }
+
+    gTaskScheduler.schedule("playerMessage", se_playerMessageDelay, [message, netPlayer] {
+        netPlayer->Chat(message);
+        if (se_playerMessageChatFlag) {
+            netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, false);
+            ePlayerNetID::Update();
+        }
+    });
+}
+
+void ePlayerNetID::sendPlayerMessage(tString message, ePlayerNetID *player) {
+    if (player != nullptr) {
+        sendMessageAction(player, message);
+    } else {
+        tArray<tString> players = se_playerMessageTargetPlayer.SplitIncludeFirst(",");
+        for (int i = 0; i < players.Len(); i++) {
+            int playerID = atoi(players[0]) - 1;
+            ePlayer *local_p = ePlayer::PlayerConfig(playerID);
+            if (!local_p)
+                continue;
+
+            ePlayerNetID *netPlayer = local_p->netPlayer;
+            if (!netPlayer)
+                continue;
+
+            sendMessageAction(netPlayer, message);
+        }
     }
 }
 
@@ -7601,7 +7802,8 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                           syncIteration(0),
                                           lastMessagedPlayer(nullptr),
-                                          nickname(tString(""))
+                                          nickname(tString("")),
+                                          lastKilledPlayer(nullptr)
 {
     flagOverrideChat = false;
     flagChatState = false;
@@ -7634,7 +7836,7 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
     se_PlayerNetIDs.Add(this,listID);
     object=NULL;
 
-    gRacePlayer *racePlayer = new gRacePlayer(this);
+    //gRacePlayer *racePlayer = new gRacePlayer(this);
 
     //sg_OutputOnlinePlayers();
 
@@ -7646,6 +7848,8 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
     score=0;
     lastScore_=IMPOSSIBLY_LOW_SCORE;
     // rubberstatus=0;
+    if (!se_playerMessageEnter.empty())
+        sendPlayerMessage(se_playerMessageEnter);
 }
 
 void ePlayerNetID::Activity()
@@ -7667,9 +7871,6 @@ void ePlayerNetID::Activity()
 #endif
         RequestSync();
     }
-
-    if (chatting_)
-        timeSinceLastChat_ = tSysTimeFloat();
 
     disconnected = false;
 
@@ -9389,6 +9590,11 @@ void ePlayerNetID::ReadSync(nMessage &m)
             chatting_   = newChat;
             spectating_ = newSpectate;
             stealth_    = newStealth;
+
+            if (chatting_) 
+                timeSinceLastChat_ = tSysTimeFloat();
+            else 
+                timeSinceLastChat_ = -1;
         }
     }
 
@@ -10520,7 +10726,7 @@ void getRainbowRGB(int iteration, int max, tColor &color) {
     color.b_ *= 15;
 }
 static int se_RandomizeColorRainbowMaxRange = 180;
-static tConfItem<int> se_RandomizeColorRainbowMaxRangeConf("PLAYER_COLOR_CUSTOMIZATION_RAINBOW_MAX", se_RandomizeColorRainbowMaxRange);
+static tConfItem<int> se_RandomizeColorRainbowMaxRangeConf("PLAYER_COLOR_CUSTOM_RAINBOW_MAX", se_RandomizeColorRainbowMaxRange);
 
 int rainbowIteration = 0;
 bool countUp = true;
@@ -10612,9 +10818,9 @@ int ticksSinceLastColor = 0;
 static int ticksPerColor = 100;
 
 int desiredCrossfadePreset = 0;
-static tConfItem<int> desiredCrossfadePresetConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_PRESET", desiredCrossfadePreset);
+static tConfItem<int> desiredCrossfadePresetConf("PLAYER_COLOR_CUSTOM_CROSSFADE_PRESET", desiredCrossfadePreset);
 
-static tConfItem<int> ticksPerColorConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_SPEED", ticksPerColor);
+static tConfItem<int> ticksPerColorConf("PLAYER_COLOR_CUSTOM_CROSSFADE_SPEED", ticksPerColor);
 
 // Preset structure
 struct Preset
@@ -10722,7 +10928,7 @@ static void crossfadePresetList(std::istream &s)
 {
     crossfadePresetList();
 }
-static tConfItemFunc se_crossfadePresetListConf("PLAYER_COLOR_CUSTOMIZATION_CROSSFADE_PRESET_LIST", &crossfadePresetList);
+static tConfItemFunc se_crossfadePresetListConf("PLAYER_COLOR_CUSTOM_CROSSFADE_PRESET_LIST", &crossfadePresetList);
 
 
 void crossfadeUsingPreset(const Preset& preset, ePlayer *local_p)
@@ -10791,7 +10997,7 @@ void se_CrossFadeColor(ePlayer *local_p) {
 void setCustomColorSequence(std::istream &s) {
     std::getline(s, customColorSequence);
 }
-static tConfItemFunc se_setCustomColorSequenceConf("PLAYER_COLOR_CUSTOMIZATION_SET_SEQUENCE", &setCustomColorSequence);
+static tConfItemFunc se_setCustomColorSequenceConf("PLAYER_COLOR_CUSTOM_SET_SEQUENCE", &setCustomColorSequence);
 
 
 
@@ -10895,6 +11101,9 @@ tColoredString sg_ShiftColors(const tColoredString& original, int shift)
     tString colorCodes = sg_ExtractColorCodes(original);
     int nameLength = nameWithoutColors.Len();
     int colorCodesLength = colorCodes.Len() / 8;
+
+    if (colorCodesLength == 0)
+        return tColoredString();
 
     for (int j = 0; j < nameLength - 1; ++j)
     {
@@ -11473,7 +11682,7 @@ void ePlayerNetID::Update()
                     {
                     case ColorNameCustomization::OFF_NAME:
                         break;
-                    case ColorNameCustomization::GRADIENT_NAME: 
+                    case ColorNameCustomization::GRADIENT_NAME:
                     {
                         int rgb[3] = {p->r, p->g, p->b};
                         newName = sg_ColorGradientGeneration(rgb, nameToUse);
@@ -11492,7 +11701,7 @@ void ePlayerNetID::Update()
 
                         // Name changed or lastColoredName not set or gradient mode and color change
                         bool shouldUpdateName = newName != p->GetName() || p->lastColoredName.empty() || shouldUpdateLastName(rgb) || se_playerRandomColorNameStartMode != p->lastplayerRandomColorNameStartMode;
-                        if (shouldUpdateName) 
+                        if (shouldUpdateName)
                         {
                             p->lastplayerRandomColorNameStartMode = se_playerRandomColorNameStartMode;
                             p->lastColoredName = (se_playerRandomColorNameStartMode == 1) ? sg_RainbowNameGeneration(nameToUse) : sg_ColorGradientGeneration(rgb, nameToUse);
@@ -12095,7 +12304,6 @@ void ePlayerNetID::SetChatting(ChatFlags flag, bool chatting)
         if (!chatting_)
         {
             this->RequestSync();
-            timeSinceLastChat_ = tSysTimeFloat();
         }
         chatting_ = true;
     }
@@ -14234,12 +14442,19 @@ REAL ePlayerNetID::LastActivity(void)
     return activity;
 }
 
-REAL ePlayerNetID::ChattingTime( bool current ) const
-{
-                     // timeSinceLastChat_ will remain after chat
-                     // so information can be used even if not current
+REAL ePlayerNetID::ChattingTime() const {
+    if (timeSinceLastChat_ == -1) 
+    {
+        // not chatting
+        return 0;
+    }
+    else 
+    {
+        // chatting
         return tSysTimeFloat() - timeSinceLastChat_;
+    }
 }
+
 
 // *******************************************************************************
 // *

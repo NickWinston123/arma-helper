@@ -70,13 +70,15 @@ enum ColorNameCustomization {
 #include <unordered_map>
 
 extern tString se_disableCreateSpecific ;
+extern std::map<tString, std::pair<tString, bool>> chatTriggers;
 static void se_UniqueColor(ePlayer *local_p );
 static void se_RandomizeColor(ePlayer *local_p);
-
+extern bool se_playerTriggerMessages;
 static void se_CrossFadeColor(ePlayer *local_p);
-
+extern void LoadChatTriggers();
 extern bool se_watchActiveStatus;
 extern int se_watchActiveStatusTime;
+
 enum playerWatchStatus {
     UNSET = 0,
     INACTIVE = 1,
@@ -308,6 +310,9 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
+    static void sendPlayerMessage(tString message, ePlayerNetID *player = nullptr);
+    static void sendMessageAction(ePlayerNetID* netPlayer, tString message);
+    ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastMessagedPlayer;
     typedef std::set< eTeam * > eTeamSet;
     bool respawnedLocally;
@@ -524,7 +529,7 @@ public:
 
     void Activity(); // call it if this player just showed some activity.
     REAL LastActivity(); //!< returns how long the last activity of this player was ago
-    REAL ChattingTime( bool current = true) const; //!< returns how long the player has been chatting
+    REAL ChattingTime() const; //!< returns how long the player has been chatting
     eNetGameObject *Object() const;
 
     void RequestSync(bool ack=true);

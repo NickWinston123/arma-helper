@@ -771,11 +771,12 @@ bool eGameObject::TimestepThis(REAL currentTime,eGameObject *c){
 
     return ret;
 }
-
 #ifdef DEDICATED
 static REAL se_maxSimulateAhead = .1f;
-static tSettingItem<REAL> se_maxSimulateAheadConf( "MAX_SIMULATE_AHEAD", se_maxSimulateAhead );
+#else
+static REAL se_maxSimulateAhead = 0;
 #endif
+static tSettingItem<REAL> se_maxSimulateAheadConf( "MAX_SIMULATE_AHEAD", se_maxSimulateAhead );
 
 // what is left of this time for the gameobject to use up
 static REAL se_maxSimulateAheadLeft = 0.0f;
@@ -821,27 +822,28 @@ void eGameObject::TimestepThisWrapper(eGrid * grid, REAL currentTime, eGameObjec
         simTime -= c->Lag();
 
     REAL maxSimTime = simTime;
-#ifdef DEDICATED
-    se_maxSimulateAheadLeft = se_maxSimulateAhead+se_lazyLag;
 
-    REAL lagThreshold = c->LagThreshold();
-    if( !c->urgentSimulationRequested_ )
+    if (se_maxSimulateAhead != 0)
     {
-        // nothing interesting happening. add an extra portion of lag compensation
-        simTime -= lagThreshold;
+        se_maxSimulateAheadLeft = se_maxSimulateAhead + se_lazyLag;
 
-        if ( simTime < c->LastTime() + minTimestep )
+        REAL lagThreshold = c->LagThreshold();
+        if (!c->urgentSimulationRequested_)
         {
-            // don't waste your time on too small timesteps
-            return;
+            // nothing interesting happening. add an extra portion of lag compensation
+            simTime -= lagThreshold;
+
+            if (simTime < c->LastTime() + minTimestep)
+            {
+                // don't waste your time on too small timesteps
+                return;
+            }
+        }
+        else
+        {
+            maxSimTime += se_maxSimulateAheadLeft;
         }
     }
-    else
-    {
-        maxSimTime += se_maxSimulateAheadLeft;
-    }
-
-#endif
 
     // check for teleports out of arena bounds
     if (!eWallRim::IsBound(c->pos, se_arenaBoundary))

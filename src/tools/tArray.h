@@ -97,13 +97,13 @@ public:
 
   const T* begin() const { return reinterpret_cast<T *>(Base()); }
   const T* end() const { return reinterpret_cast<T *>(Base()) + Len(); }
-  
+
 public:
     void Add(const T& element) {
         SetLen(Len() + 1);
         (*this)[Len() - 1] = element;
     }
-    
+
     void Clear(){
         int i;
         for(i=Size()-1;i>=0;i--){
@@ -171,14 +171,14 @@ public:
     T const& operator[](int i) const {
         tASSERT( i >= 0 && i < Len() );
 
-        return((reinterpret_cast<T *>(Base()))[i]);
-    };
+    return((reinterpret_cast<T *>(Base()))[i]);
+};
 
     T& operator()(int i) const{
-        tASSERT( i >= 0 && i < Len() );
+    tASSERT( i >= 0 && i < Len() );
 
-        return((reinterpret_cast<T *>(Base()))[i]);
-    }
+    return((reinterpret_cast<T *>(Base()))[i]);
+}
 
     T* operator+(int i) const{
     #ifdef DEBUG

@@ -28,14 +28,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef ArmageTron_INPUT_QUEUE_H
 #define ArmageTron_INPUT_QUEUE_H
 
-
 #include "defs.h"
 #include "rSDL.h"
 
 void su_FetchAndStoreSDLInput();
 
-bool su_StoreSDLEvent(const SDL_Event &tEvent);    //!< stores an event so it will be returned by GetSDLInput() later
-bool su_GetSDLInput(SDL_Event &tEvent,REAL &time); //!< fetches an event
+bool su_StoreSDLEvent(const SDL_Event &tEvent);     //!< stores an event so it will be returned by GetSDLInput() later
+bool su_GetSDLInput(SDL_Event &tEvent, REAL &time); //!< fetches an event
 
 //! have one object of this class around while processing input
 class uInputProcessGuard
@@ -49,6 +48,7 @@ public:
 class uInputScrambler
 {
     static int scrambled_;
+
 public:
     uInputScrambler();  //!< constructor initializing input record scrambling
     ~uInputScrambler(); //!< destructor deinitializing input record scrambling
@@ -56,9 +56,10 @@ public:
     static bool Scrambled();
 };
 
-inline bool su_GetSDLInput(SDL_Event &tEvent){
+inline bool su_GetSDLInput(SDL_Event &tEvent)
+{
     REAL dummy;
-    return su_GetSDLInput(tEvent,dummy);
+    return su_GetSDLInput(tEvent, dummy);
 }
 
 extern bool su_prefetchInput;
@@ -66,12 +67,12 @@ extern bool su_contInput;
 
 int su_InputThread(void *);
 
-class su_TimerCallback{
+class su_TimerCallback
+{
 public:
-    virtual REAL GetTime()=0;
+    virtual REAL GetTime() = 0;
     su_TimerCallback();
     virtual ~su_TimerCallback();
 };
 
 #endif
-

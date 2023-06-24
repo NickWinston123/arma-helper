@@ -46,15 +46,14 @@ extern void sg_RubberValues(ePlayerNetID const *player, REAL speed, REAL &max, R
 extern REAL sg_brakeCycle;
 
 gAINavigator::Settings::Settings()
-: newWallBlindness(-.1)
-, range( 1 )
-{}
-
-gAINavigator::Wish::Wish( gAINavigator const & idler )
-: turn(0)
-, maxDisadvantage( HUGE )
+    : newWallBlindness(-.1), range(1)
 {
-    gCycle & owner = *idler.Owner();
+}
+
+gAINavigator::Wish::Wish(gAINavigator const &idler)
+    : turn(0), maxDisadvantage(HUGE)
+{
+    gCycle &owner = *idler.Owner();
     minDistance = owner.GetTurnDelay() * owner.Speed();
 }
 
@@ -62,16 +61,10 @@ gAINavigator::Wish::Wish( gAINavigator const & idler )
 // * Sensors               *
 // *************************
 
-gAINavigator::Sensor::Sensor(gAINavigator & ai,const eCoord &start,const eCoord &d)
-: gHelperSensor(ai.Owner(),start,d)
-, ai_( ai )
-, hitOwner_( 0 )
-, hitTime_ ( 0 )
-, hitDistance_( ai.Owner()->MaxWallsLength() )
-, lrSuggestion_( 0 )
-, windingNumber_( 0 )
+gAINavigator::Sensor::Sensor(gAINavigator &ai, const eCoord &start, const eCoord &d)
+    : gHelperSensor(ai.Owner(), start, d), ai_(ai), hitOwner_(0), hitTime_(0), hitDistance_(ai.Owner()->MaxWallsLength()), lrSuggestion_(0), windingNumber_(0)
 {
-    if ( hitDistance_ <= 0 )
+    if (hitDistance_ <= 0)
         hitDistance_ = ai.Owner()->GetDistance();
 }
 
@@ -103,7 +96,7 @@ bool gAINavigator::Sensor::DoExtraDetectionStuff()
     // move towards the beginning of a wall
     lrSuggestion_ = -lr;
 
-    switch ( type )
+    switch (type)
     {
     case gSENSOR_NONE:
     case gSENSOR_RIM:
@@ -115,32 +108,32 @@ bool gAINavigator::Sensor::DoExtraDetectionStuff()
     case gSENSOR_SELF:
     {
         // determine whether we're hitting the front or back half of his wall
-        if ( !ehit )
+        if (!ehit)
             return true;
-        eWall * wall = ehit->GetWall();
-        if ( !wall )
+        eWall *wall = ehit->GetWall();
+        if (!wall)
             return true;
-        gPlayerWall * playerWall = dynamic_cast< gPlayerWall * >( wall );
-        if ( !playerWall )
+        gPlayerWall *playerWall = dynamic_cast<gPlayerWall *>(wall);
+        if (!playerWall)
             return true;
         hitOwner_ = playerWall->Cycle();
-        if ( !hitOwner_ )
+        if (!hitOwner_)
             return true;
 
         // gAINavigator & enemyChatBot = Get( hitOwner_ );
 
-        REAL wallAlpha = playerWall->Edge()->Ratio( before_hit );
+        REAL wallAlpha = playerWall->Edge()->Ratio(before_hit);
         // that's an unreliable source
-        if ( wallAlpha < 0 )
+        if (wallAlpha < 0)
             wallAlpha = 0;
-        if ( wallAlpha > 1 )
+        if (wallAlpha > 1)
             wallAlpha = 1;
-        hitDistance_   = hitOwner_->GetDistance() - playerWall->Pos( wallAlpha );
-        hitTime_       = playerWall->Time( wallAlpha );
+        hitDistance_ = hitOwner_->GetDistance() - playerWall->Pos(wallAlpha);
+        hitTime_ = playerWall->Time(wallAlpha);
         windingNumber_ = playerWall->WindingNumber();
 
         // don't see new walls
-        if ( hitTime_ > hitOwner_->LastTime() - ai_.settings_.newWallBlindness && hitOwner_ != owned )
+        if (hitTime_ > hitOwner_->LastTime() - ai_.settings_.newWallBlindness && hitOwner_ != owned)
         {
             ehit = NULL;
             hit = 1.01;
@@ -156,19 +149,19 @@ bool gAINavigator::Sensor::DoExtraDetectionStuff()
             // assume we can waste half our rubber waiting for the wall to get lost
             {
                 REAL rubberGranted, rubberEffectiveness;
-                sg_RubberValues( ai_.owner_->Player(), ai_.owner_->Speed(), rubberGranted, rubberEffectiveness );
-                rubberDistance = ( rubberGranted - ai_.owner_->GetRubber() ) * .5;
+                sg_RubberValues(ai_.owner_->Player(), ai_.owner_->Speed(), rubberGranted, rubberEffectiveness);
+                rubberDistance = (rubberGranted - ai_.owner_->GetRubber()) * .5;
             }
-            if( type == gSENSOR_SELF )
+            if (type == gSENSOR_SELF)
             {
                 rubberDistance *= sg_cycleRubberWallShrink;
             }
 
-            REAL timeToHit = distanceToHit/ai_.owner_->Speed();
-            if( !playerWall->IsDangerous( wallAlpha, ai_.owner_->LastTime() + timeToHit ) )
+            REAL timeToHit = distanceToHit / ai_.owner_->Speed();
+            if (!playerWall->IsDangerous(wallAlpha, ai_.owner_->LastTime() + timeToHit))
             {
                 // wall will be gone until we get there. ignore.
-	        ehit = nullptr;
+                ehit = nullptr;
                 hit = 1.01;
                 return false;
             }
@@ -193,19 +186,19 @@ bool gAINavigator::Sensor::DoExtraDetectionStuff()
 }
 
 // check how far the hit wall extends straight into the given direction
-REAL gAINavigator::Sensor::HitWallExtends( eCoord const & dir, eCoord const & origin )
+REAL gAINavigator::Sensor::HitWallExtends(eCoord const &dir, eCoord const &origin)
 {
-    if ( !ehit || !ehit->Other() )
+    if (!ehit || !ehit->Other())
     {
         return 0;
     }
 
     REAL ret = -HUGE;
-    eCoord ends[2] = { *ehit->Point(), *ehit->Other()->Point() };
-    for ( int i = 1; i>=0; --i )
+    eCoord ends[2] = {*ehit->Point(), *ehit->Other()->Point()};
+    for (int i = 1; i >= 0; --i)
     {
-        REAL newRet = eCoord::F( dir, ends[i]-origin );
-        if ( newRet > ret )
+        REAL newRet = eCoord::F(dir, ends[i] - origin);
+        if (newRet > ret)
             ret = newRet;
     }
 
@@ -218,69 +211,69 @@ REAL gAINavigator::Sensor::HitWallExtends( eCoord const & dir, eCoord const & or
 
 //!@param cycle  the cycle to execute the action
 //!@param dir    direction to turn into
-void gAINavigator::CycleController::Turn( gCycle & cycle , int dir    )
+void gAINavigator::CycleController::Turn(gCycle &cycle, int dir)
 {
 }
 
 //!@param cycle  the cycle to execute the action
 //!@param brake  whether to brake or not
-void gAINavigator::CycleController::Brake( gCycle & cycle, bool brake )
+void gAINavigator::CycleController::Brake(gCycle &cycle, bool brake)
 {
 }
 
-gAINavigator::CycleController::~CycleController(){}
+gAINavigator::CycleController::~CycleController() {}
 
-void gAINavigator::CycleControllerBasic::Turn( gCycle & cycle , int dir    )
+void gAINavigator::CycleControllerBasic::Turn(gCycle &cycle, int dir)
 {
-    cycle.Turn( dir );
+    cycle.Turn(dir);
 }
 
-void gAINavigator::CycleControllerBasic::Brake( gCycle & cycle, bool brake )
+void gAINavigator::CycleControllerBasic::Brake(gCycle &cycle, bool brake)
 {
-    cycle.Act( &gCycle::s_brake, brake ? 1 : -1 );
+    cycle.Act(&gCycle::s_brake, brake ? 1 : -1);
 }
 
-gAINavigator::CycleControllerBasic::~CycleControllerBasic(){}
+gAINavigator::CycleControllerBasic::~CycleControllerBasic() {}
 
-void gAINavigator::CycleControllerAction::Turn( gCycle & cycle , int dir    )
+void gAINavigator::CycleControllerAction::Turn(gCycle &cycle, int dir)
 {
-    cycle.Act( dir > 0 ? &gCycle::se_turnRight : &gCycle::se_turnLeft, 1 );
+    cycle.Act(dir > 0 ? &gCycle::se_turnRight : &gCycle::se_turnLeft, 1);
 }
 
-void gAINavigator::CycleControllerAction::Brake( gCycle & cycle, bool brake )
+void gAINavigator::CycleControllerAction::Brake(gCycle &cycle, bool brake)
 {
-    cycle.Act( &gCycle::s_brake, brake ? 1 : -1 );
+    cycle.Act(&gCycle::s_brake, brake ? 1 : -1);
 }
 
-gAINavigator::CycleControllerAction::~CycleControllerAction(){}
+gAINavigator::CycleControllerAction::~CycleControllerAction() {}
 
 // *************************
 // * Path                  *
 // *************************
 
-void gAINavigator::Path::Fill( gAINavigator const & navigator, Sensor const & left, Sensor const & right, eCoord const & shortDir, eCoord const & longDir, int turn )
+void gAINavigator::Path::Fill(gAINavigator const &navigator, Sensor const &left, Sensor const &right, eCoord const &shortDir, eCoord const &longDir, int turn)
 {
     // check orientation
-    tASSERT( left.Direction() * right.Direction() >= 0 );
+    tASSERT(left.Direction() * right.Direction() >= 0);
 
-    this->distance = navigator.Distance( left, right );
+    this->distance = navigator.Distance(left, right);
     this->shortTermDirection = shortDir;
     this->longTermDirection = longDir;
 
-    this->left.FillFrom( left );
-    this->right.FillFrom( right );
+    this->left.FillFrom(left);
+    this->right.FillFrom(right);
 
     // get width by checking the edges (there's a better way for sure, but for now, this suffices)
-    eHalfEdge const * leftEdge = left.ehit;
-    eHalfEdge const * rightEdge = right.ehit;
+    eHalfEdge const *leftEdge = left.ehit;
+    eHalfEdge const *rightEdge = right.ehit;
     width = HUGE;
-    if( leftEdge && rightEdge )
+    if (leftEdge && rightEdge)
     {
         // get distance of the endpoints of the edges to the extended
         // line of the other edge
-        eCoord const & leftBeg = *leftEdge->Point();
+        eCoord const &leftBeg = *leftEdge->Point();
         eCoord leftDir = leftEdge->Vec();
-        eCoord const & rightBeg = *rightEdge->Point();
+        eCoord const &rightBeg = *rightEdge->Point();
         eCoord rightDir = rightEdge->Vec();
         eCoord offset = leftBeg - rightBeg;
 
@@ -291,13 +284,13 @@ void gAINavigator::Path::Fill( gAINavigator const & navigator, Sensor const & le
 
         // take the minimum of those distances without sign change
         width = this->left.distance + this->right.distance;
-        if ( widthLeftBeg * widthLeftEnd >= 0 )
+        if (widthLeftBeg * widthLeftEnd >= 0)
         {
-            width = tMin( width, tMin( fabs(widthLeftBeg), fabs(widthLeftEnd) )/rightDir.Norm() );
+            width = tMin(width, tMin(fabs(widthLeftBeg), fabs(widthLeftEnd)) / rightDir.Norm());
         }
-        if ( widthRightBeg * widthRightEnd >= 0 )
+        if (widthRightBeg * widthRightEnd >= 0)
         {
-            width = tMin( width, tMin( fabs(widthRightBeg), fabs(widthRightEnd) )/leftDir.Norm() );
+            width = tMin(width, tMin(fabs(widthRightBeg), fabs(widthRightEnd)) / leftDir.Norm());
         }
     }
 
@@ -308,12 +301,12 @@ void gAINavigator::Path::Fill( gAINavigator const & navigator, Sensor const & le
 //!@param controller the controller to use for the execution
 //!@param cycle      the cycle to execute the action
 //!@param maxStep    maximal timestep the caller suggests
-REAL gAINavigator::Path::Take( CycleController & controller, gCycle & cycle, REAL maxStep )
+REAL gAINavigator::Path::Take(CycleController &controller, gCycle &cycle, REAL maxStep)
 {
-    if( driveOn > 0 )
+    if (driveOn > 0)
     {
-        REAL driveOnTime = driveOn/cycle.Speed();
-        if( maxStep > driveOnTime )
+        REAL driveOnTime = driveOn / cycle.Speed();
+        if (maxStep > driveOnTime)
         {
             maxStep = driveOnTime;
         }
@@ -321,14 +314,14 @@ REAL gAINavigator::Path::Take( CycleController & controller, gCycle & cycle, REA
         return maxStep;
     }
 
-    if( turn != 0 )
+    if (turn != 0)
     {
-        if( !cycle.CanMakeTurn( turn ) )
+        if (!cycle.CanMakeTurn(turn))
         {
-            return driveOn = cycle.GetNextTurn( turn ) - cycle.LastTime();
+            return driveOn = cycle.GetNextTurn(turn) - cycle.LastTime();
         }
 
-        controller.Turn( cycle, turn );
+        controller.Turn(cycle, turn);
     }
 
     return maxStep;
@@ -339,21 +332,13 @@ gAINavigator::Path::~Path()
 }
 
 gAINavigator::Path::Path()
-: distance(HUGE)
-, immediateDistance(HUGE)
-, width(HUGE)
-, shortTermDirection(0,0)
-, longTermDirection(0,0)
-, followedSince(0)
-, turn(0)
-, driveOn(0)
+    : distance(HUGE), immediateDistance(HUGE), width(HUGE), shortTermDirection(0, 0), longTermDirection(0, 0), followedSince(0), turn(0), driveOn(0)
 {
 }
 
 // *************************
 // * PathGroup             *
 // *************************
-
 
 //!@return the number of paths accessible via GetPath
 int gAINavigator::PathGroup::GetPathCount() const
@@ -363,28 +348,28 @@ int gAINavigator::PathGroup::GetPathCount() const
 
 //!@param id  the ID of the path, between 0 and GetPathCount()-1
 //!@return    the path of given ID
-gAINavigator::Path const & gAINavigator::PathGroup::GetPath( int id ) const
+gAINavigator::Path const &gAINavigator::PathGroup::GetPath(int id) const
 {
-    tASSERT( id >= 0 && id < PATH_COUNT );
-    return paths[ id ];
+    tASSERT(id >= 0 && id < PATH_COUNT);
+    return paths[id];
 }
 
 //!@param controller the controller to use for the execution
 //!@param cycle      the cycle to execute the action
 //!@param id         the ID of the path, between 0 and GetPathCount()-1
 //!@param maxStep    maximal timestep the caller suggests
-REAL gAINavigator::PathGroup::TakePath( CycleController & controller, gCycle & cycle, int id, REAL maxStep )
+REAL gAINavigator::PathGroup::TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep)
 {
     // save plan
-    last = GetPath( id );
+    last = GetPath(id);
 
     // execute plan
-    REAL ret = last.Take( controller, cycle, maxStep );
+    REAL ret = last.Take(controller, cycle, maxStep);
 
     // clear all paths
-    for( int i = GetPathCount()-1; i >= 0; --i )
+    for (int i = GetPathCount() - 1; i >= 0; --i)
     {
-        Path & path = AccessPath( i );
+        Path &path = AccessPath(i);
         path.left = path.right = WallHug();
         path.distance = path.immediateDistance = HUGE;
         path.followedSince = 0;
@@ -394,52 +379,52 @@ REAL gAINavigator::PathGroup::TakePath( CycleController & controller, gCycle & c
     last.followedSince++;
 
     // check whether execution was successful
-    if( last.driveOn > 0 )
+    if (last.driveOn > 0)
     {
         // turn was not executed. memorize that it was a good choilce
-        paths[ id ].followedSince = last.followedSince;
+        paths[id].followedSince = last.followedSince;
         return ret;
     }
 
     // transfer last use stats
-    switch( id )
+    switch (id)
     {
     case PATH_UTURN_LEFT:
-        paths[ PATH_UTURN_LEFT ].followedSince = last.followedSince;
-        paths[ PATH_TURN_LEFT  ].followedSince = last.followedSince;
+        paths[PATH_UTURN_LEFT].followedSince = last.followedSince;
+        paths[PATH_TURN_LEFT].followedSince = last.followedSince;
         break;
     case PATH_UTURN_RIGHT:
-        paths[ PATH_UTURN_RIGHT ].followedSince = last.followedSince;
-        paths[ PATH_TURN_RIGHT  ].followedSince = last.followedSince;
+        paths[PATH_UTURN_RIGHT].followedSince = last.followedSince;
+        paths[PATH_TURN_RIGHT].followedSince = last.followedSince;
         break;
     case PATH_ZIGZAG_LEFT:
-        if ( last.driveOn )
+        if (last.driveOn)
         {
-            paths[ PATH_TURN_LEFT  ].followedSince = last.followedSince;
-            paths[ PATH_ZIGZAG_LEFT].followedSince = last.followedSince;
+            paths[PATH_TURN_LEFT].followedSince = last.followedSince;
+            paths[PATH_ZIGZAG_LEFT].followedSince = last.followedSince;
         }
         else
         {
-            paths[ PATH_STRAIGHT   ].followedSince = last.followedSince;
-            paths[ PATH_TURN_RIGHT ].followedSince = last.followedSince;
+            paths[PATH_STRAIGHT].followedSince = last.followedSince;
+            paths[PATH_TURN_RIGHT].followedSince = last.followedSince;
         }
         break;
     case PATH_ZIGZAG_RIGHT:
-        if ( last.driveOn )
+        if (last.driveOn)
         {
-            paths[ PATH_TURN_RIGHT  ].followedSince = last.followedSince;
-            paths[ PATH_ZIGZAG_RIGHT].followedSince = last.followedSince;
+            paths[PATH_TURN_RIGHT].followedSince = last.followedSince;
+            paths[PATH_ZIGZAG_RIGHT].followedSince = last.followedSince;
         }
         else
         {
-            paths[ PATH_STRAIGHT  ].followedSince = last.followedSince;
-            paths[ PATH_TURN_LEFT ].followedSince = last.followedSince;
+            paths[PATH_STRAIGHT].followedSince = last.followedSince;
+            paths[PATH_TURN_LEFT].followedSince = last.followedSince;
         }
         break;
     case PATH_TURN_LEFT:
     case PATH_STRAIGHT:
     case PATH_TURN_RIGHT:
-        paths[ PATH_STRAIGHT ].followedSince = last.followedSince;
+        paths[PATH_STRAIGHT].followedSince = last.followedSince;
         break;
     }
 
@@ -447,7 +432,7 @@ REAL gAINavigator::PathGroup::TakePath( CycleController & controller, gCycle & c
 }
 
 //!@return    the path taken last time
-gAINavigator::Path const & gAINavigator::PathGroup::GetLastPath() const
+gAINavigator::Path const &gAINavigator::PathGroup::GetLastPath() const
 {
     return last;
 }
@@ -455,88 +440,86 @@ gAINavigator::Path const & gAINavigator::PathGroup::GetLastPath() const
 gAINavigator::PathGroup::PathGroup()
 {
     // pretend we went straight
-    paths[ PATH_STRAIGHT ].followedSince = 100;
+    paths[PATH_STRAIGHT].followedSince = 100;
 }
-gAINavigator::PathGroup::~PathGroup(){}
+gAINavigator::PathGroup::~PathGroup() {}
 
 //!@param id  the ID of the path, between 0 and GetPathCount()-1
 //!@return    the path of given ID
-gAINavigator::Path & gAINavigator::PathGroup::AccessPath( int id )
+gAINavigator::Path &gAINavigator::PathGroup::AccessPath(int id)
 {
-    tASSERT( id >= 0 && id < PATH_COUNT );
-    return paths[ id ];
+    tASSERT(id >= 0 && id < PATH_COUNT);
+    return paths[id];
 }
 
 // *************************
 // * Evaluation            *
 // *************************
 
-gAINavigator::PathEvaluation::PathEvaluation() : veto( false ), score( 0 ), nextThought( HUGE ){}
+gAINavigator::PathEvaluation::PathEvaluation() : veto(false), score(0), nextThought(HUGE) {}
 
 //!@param path        the path to evaluate
 //!@param evaluation  place to store the result
-void gAINavigator::PathEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const{}
-gAINavigator::PathEvaluator::~PathEvaluator(){}
+void gAINavigator::PathEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const {}
+gAINavigator::PathEvaluator::~PathEvaluator() {}
 
+gAINavigator::TailChaseEvaluator::TailChaseEvaluator(gCycle &cycle) : cycle_(cycle)
+{
+}
 
-    gAINavigator::TailChaseEvaluator::TailChaseEvaluator( gCycle & cycle ): cycle_( cycle )
+void gAINavigator::TailChaseEvaluator::Evaluate(gAINavigator::Path const &path, gAINavigator::PathEvaluation &evaluation) const
+{
+    evaluation.score = 0;
+
+    // don't do anything if we're tunneling. Danger affot.
+    if (path.left.owner == path.right.owner)
     {
+        return;
     }
 
-    void gAINavigator::TailChaseEvaluator::Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const
+    // total wall length
+    REAL len = cycle_.ThisWallsLength();
+    if (len < 0 || !cycle_.tailMoving)
+    {
+        return;
+    }
+
+    if (path.left.owner == &cycle_) // && path.left.lr == 1 )
+    {
+        evaluation.score += 200 * path.left.hitDistance / len - 100;
+    }
+    if (path.right.owner == &cycle_) // && path.right.lr == -1 )
+    {
+        evaluation.score += 200 * path.right.hitDistance / len - 100;
+    }
+    if (evaluation.score < 0)
     {
         evaluation.score = 0;
-
-        // don't do anything if we're tunneling. Danger affot.
-        if( path.left.owner == path.right.owner )
-        {
-        return;
-        }
-
-        // total wall length
-        REAL len  = cycle_.ThisWallsLength();
-        if( len < 0 || !cycle_.tailMoving)
-        {
-            return;
-        }
-
-        if( path.left.owner == &cycle_ ) // && path.left.lr == 1 )
-        {
-            evaluation.score += 200 * path.left.hitDistance/len - 100;
-        }
-        if( path.right.owner == &cycle_ ) // && path.right.lr == -1 )
-        {
-            evaluation.score +=  200 * path.right.hitDistance/len - 100;
-        }
-        if ( evaluation.score < 0 )
-        {
-            evaluation.score = 0;
-        }
     }
-
+}
 
 //!@param path        the path to evaluate
 //!@param evaluation  place to store the result
-void gAINavigator::SuicideEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+void gAINavigator::SuicideEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
     REAL speed = cycle_.Speed();
-    REAL referenceDistance = speed*timeFrame_;
+    REAL referenceDistance = speed * timeFrame_;
     REAL distance = path.distance;
-    if( path.immediateDistance < distance )
+    if (path.immediateDistance < distance)
     {
         distance = path.immediateDistance;
     }
 
     // check if this is the forward path
-    if( !emergency_ &&
-        eCoord::F( path.shortTermDirection, cycle_.Direction() ) > .99 )
+    if (!emergency_ &&
+        eCoord::F(path.shortTermDirection, cycle_.Direction()) > .99)
     {
-        distance += cycle_.GetTurnDelay()*speed;
+        distance += cycle_.GetTurnDelay() * speed;
     }
 
-    REAL timeToLive = distance/referenceDistance;
-    evaluation.score = Adjust(timeToLive/100);
-    if( timeToLive < 1 )
+    REAL timeToLive = distance / referenceDistance;
+    evaluation.score = Adjust(timeToLive / 100);
+    if (timeToLive < 1)
     {
         evaluation.veto = true;
     }
@@ -544,44 +527,43 @@ void gAINavigator::SuicideEvaluator::Evaluate( Path const & path, PathEvaluation
 
 bool gAINavigator::SuicideEvaluator::emergency_ = false;
 
-void gAINavigator::SuicideEvaluator::SetEmergency( bool emergency )
+void gAINavigator::SuicideEvaluator::SetEmergency(bool emergency)
 {
     emergency_ = emergency;
 }
 
-gAINavigator::SuicideEvaluator::SuicideEvaluator( gCycle & cycle ): cycle_( cycle ), timeFrame_( cycle.GetTurnDelay() ){}
-gAINavigator::SuicideEvaluator::SuicideEvaluator( gCycle & cycle, REAL timeFrame ): cycle_( cycle ), timeFrame_( timeFrame ){}
-gAINavigator::SuicideEvaluator::~SuicideEvaluator(){}
+gAINavigator::SuicideEvaluator::SuicideEvaluator(gCycle &cycle) : cycle_(cycle), timeFrame_(cycle.GetTurnDelay()) {}
+gAINavigator::SuicideEvaluator::SuicideEvaluator(gCycle &cycle, REAL timeFrame) : cycle_(cycle), timeFrame_(timeFrame) {}
+gAINavigator::SuicideEvaluator::~SuicideEvaluator() {}
 
 //!@param path        the path to evaluate
 //!@param evaluation  place to store the result
-void gAINavigator::TrapEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+void gAINavigator::TrapEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
-    if( space_ <= 0 )
+    if (space_ <= 0)
     {
         return;
     }
-    evaluation.score = Adjust( path.distance/space_ );
+    evaluation.score = Adjust(path.distance / space_);
     REAL trapLength = cycle_.GetTurnDelay() * cycle_.Speed();
-    if( path.distance < space_ && path.left.owner == path.right.owner && path.left.owner &&
-        ( path.immediateDistance < trapLength || ( path.left.distance < trapLength && path.right.distance < trapLength ) || path.left.owner == &cycle_ ) )
+    if (path.distance < space_ && path.left.owner == path.right.owner && path.left.owner &&
+        (path.immediateDistance < trapLength || (path.left.distance < trapLength && path.right.distance < trapLength) || path.left.owner == &cycle_))
     {
         evaluation.veto = true;
     }
 }
 
-gAINavigator::TrapEvaluator::TrapEvaluator( gCycle & cycle )
-: cycle_( cycle )
+gAINavigator::TrapEvaluator::TrapEvaluator(gCycle &cycle)
+    : cycle_(cycle)
 {
     space_ = .25 * cycle.ThisWallsLength();
 }
 
-gAINavigator::TrapEvaluator::TrapEvaluator( gCycle & cycle, REAL space )
-: cycle_( cycle )
-, space_( space ){}
-gAINavigator::TrapEvaluator::~TrapEvaluator(){}
+gAINavigator::TrapEvaluator::TrapEvaluator(gCycle &cycle, REAL space)
+    : cycle_(cycle), space_(space) {}
+gAINavigator::TrapEvaluator::~TrapEvaluator() {}
 
-void gAINavigator::RandomEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+void gAINavigator::RandomEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
     static tReproducibleRandomizer randomizer;
     ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
@@ -595,28 +577,28 @@ void gAINavigator::RandomEvaluator::Evaluate( Path const & path, PathEvaluation 
     evaluation.score = (randomizer.Get() * 100) + randomDeviation;
 }
 
-gAINavigator::RandomEvaluator::RandomEvaluator( gCycle & cycle ): cycle_( cycle ){}
-gAINavigator::RandomEvaluator::~RandomEvaluator(){}
+gAINavigator::RandomEvaluator::RandomEvaluator(gCycle &cycle) : cycle_(cycle) {}
+gAINavigator::RandomEvaluator::~RandomEvaluator() {}
 
-gAINavigator::CowardEvaluator::CowardEvaluator( gCycle & cycle ): cycle_( cycle ){}
-gAINavigator::CowardEvaluator::~CowardEvaluator(){}
+gAINavigator::CowardEvaluator::CowardEvaluator(gCycle &cycle) : cycle_(cycle) {}
+gAINavigator::CowardEvaluator::~CowardEvaluator() {}
 
-void gAINavigator::CowardEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+void gAINavigator::CowardEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
     evaluation.score = 100;
-    if( path.left.owner || path.right.owner )
+    if (path.left.owner || path.right.owner)
     {
         REAL turnDelay = cycle_.GetTurnDelay() * cycle_.Speed();
-        if( path.width < turnDelay * 2 )
+        if (path.width < turnDelay * 2)
         {
-            evaluation.score = tMax(0,(path.width/turnDelay)-1);
+            evaluation.score = tMax(0, (path.width / turnDelay) - 1);
         }
         {
-            if(  path.left.owner && path.left.owner->Alive() && path.left.owner->Team() != cycle_.Team() && path.left.lr == 1 )
+            if (path.left.owner && path.left.owner->Alive() && path.left.owner->Team() != cycle_.Team() && path.left.lr == 1)
             {
                 evaluation.score = 0;
             }
-            if( path.right.owner && path.right.owner->Alive() && path.right.owner->Team() != cycle_.Team() && path.right.lr == -1 )
+            if (path.right.owner && path.right.owner->Alive() && path.right.owner->Team() != cycle_.Team() && path.right.lr == -1)
             {
                 evaluation.score = 0;
             }
@@ -624,65 +606,65 @@ void gAINavigator::CowardEvaluator::Evaluate( Path const & path, PathEvaluation 
     }
 }
 
-gAINavigator::TunnelEvaluator::TunnelEvaluator( gCycle & cycle ): cycle_( cycle ){}
-gAINavigator::TunnelEvaluator::~TunnelEvaluator(){}
+gAINavigator::TunnelEvaluator::TunnelEvaluator(gCycle &cycle) : cycle_(cycle) {}
+gAINavigator::TunnelEvaluator::~TunnelEvaluator() {}
 
-void gAINavigator::TunnelEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+void gAINavigator::TunnelEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
     evaluation.score = 100;
 
     // check for tunnel situation
-    if( path.left.owner && path.right.owner && path.left.owner != path.right.owner )
+    if (path.left.owner && path.right.owner && path.left.owner != path.right.owner)
     {
         // the narrower, the worse the score gets
         REAL referenceWidth = cycle_.GetTurnDelay() * cycle_.Speed() * 2;
-        if( path.width < referenceWidth )
+        if (path.width < referenceWidth)
         {
-            REAL w = (path.width/referenceWidth - .25)/.75;
-            w = tMin(0,w);
-            evaluation.score = 100*w*w;
+            REAL w = (path.width / referenceWidth - .25) / .75;
+            w = tMin(0, w);
+            evaluation.score = 100 * w * w;
         }
     }
 }
 
-gAINavigator::SpaceEvaluator::SpaceEvaluator( gCycle & cycle )
-: referenceDistance_( cycle.MaxWallsLength() )
+gAINavigator::SpaceEvaluator::SpaceEvaluator(gCycle &cycle)
+    : referenceDistance_(cycle.MaxWallsLength())
 {
-    if( referenceDistance_ <= 0 )
+    if (referenceDistance_ <= 0)
     {
         referenceDistance_ = cycle.GetDistance() + cycle.Speed() * 5;
     }
 }
 
-gAINavigator::SpaceEvaluator::SpaceEvaluator( REAL referenceDistance )
-: referenceDistance_( referenceDistance )
-{}
-
-void gAINavigator::SpaceEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+gAINavigator::SpaceEvaluator::SpaceEvaluator(REAL referenceDistance)
+    : referenceDistance_(referenceDistance)
 {
-    evaluation.score = Adjust(path.distance/referenceDistance_);
 }
 
-gAINavigator::SpaceEvaluator::~SpaceEvaluator(){}
+void gAINavigator::SpaceEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
+{
+    evaluation.score = Adjust(path.distance / referenceDistance_);
+}
+
+gAINavigator::SpaceEvaluator::~SpaceEvaluator() {}
 
 //!@param path        the path to evaluate
 //!@param evaluation  place to store the result
-void gAINavigator::PlanEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+void gAINavigator::PlanEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
-    evaluation.score = Adjust( path.followedSince/3.0 );
+    evaluation.score = Adjust(path.followedSince / 3.0);
 }
 
-gAINavigator::PlanEvaluator::~PlanEvaluator(){}
+gAINavigator::PlanEvaluator::~PlanEvaluator() {}
 
 //!@param paths the path group to evaluate
-gAINavigator::EvaluationManager::EvaluationManager( PathGroup & paths )
-: paths_( paths )
-, bestPath_( -1 )
+gAINavigator::EvaluationManager::EvaluationManager(PathGroup &paths)
+    : paths_(paths), bestPath_(-1)
 {
     // evaluations_.reserve( paths.GetPathCount() );
-    for( int i = 0; i < paths.GetPathCount(); ++i )
+    for (int i = 0; i < paths.GetPathCount(); ++i)
     {
-        //evaluations_.push_back( PathEvaluation() );
+        // evaluations_.push_back( PathEvaluation() );
 
         // store preliminary 'best' path
         // if( paths.GetPath( i ).followedSince )
@@ -693,53 +675,53 @@ gAINavigator::EvaluationManager::EvaluationManager( PathGroup & paths )
 }
 
 //! evaluate a path.
-void gAINavigator::RubberEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+void gAINavigator::RubberEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
     // rubber that is about to get burned
     REAL burn = rubberLeft_ - path.immediateDistance;
-    if( burn < 0 )
+    if (burn < 0)
     {
         burn = 0;
     }
-    if( burn > maxRubber_ )
+    if (burn > maxRubber_)
     {
         burn = maxRubber_;
     }
-    evaluation.score = ( 1 - burn/maxRubber_ ) * 100;
+    evaluation.score = (1 - burn / maxRubber_) * 100;
 }
 
-gAINavigator::RubberEvaluator::RubberEvaluator( gCycle & cycle )
+gAINavigator::RubberEvaluator::RubberEvaluator(gCycle &cycle)
 {
-    Init( cycle, cycle.GetTurnDelay() );
+    Init(cycle, cycle.GetTurnDelay());
 }
 
-gAINavigator::RubberEvaluator::RubberEvaluator( gCycle & cycle, REAL maxTime )
+gAINavigator::RubberEvaluator::RubberEvaluator(gCycle &cycle, REAL maxTime)
 {
-    Init( cycle, maxTime );
+    Init(cycle, maxTime);
 }
 
 gAINavigator::RubberEvaluator::~RubberEvaluator()
 {
 }
 
-void gAINavigator::RubberEvaluator::Init( gCycle & cycle, REAL maxTime )
+void gAINavigator::RubberEvaluator::Init(gCycle &cycle, REAL maxTime)
 {
     // compensate for the addition of rubber in the stored sensor distances
     REAL rubberGranted, rubberEffectiveness;
-    REAL speed = (cycle.Speed()+cycle.Lag());
-    sg_RubberValues( cycle.Player(), speed, rubberGranted, rubberEffectiveness );
-    REAL rubberLeft = ( rubberGranted - cycle.GetRubber() )*rubberEffectiveness;
-    maxRubber_  = maxTime * speed;
+    REAL speed = (cycle.Speed() + cycle.Lag());
+    sg_RubberValues(cycle.Player(), speed, rubberGranted, rubberEffectiveness);
+    REAL rubberLeft = (rubberGranted - cycle.GetRubber()) * rubberEffectiveness;
+    maxRubber_ = maxTime * speed;
 
     // account for inevitable loss
     rubberLeft_ = rubberLeft + maxRubber_;
 
-    if( maxRubber_ > rubberLeft )
+    if (maxRubber_ > rubberLeft)
     {
         maxRubber_ = rubberLeft;
     }
 
-    if( maxRubber_ < EPS )
+    if (maxRubber_ < EPS)
     {
         maxRubber_ = EPS;
     }
@@ -805,12 +787,13 @@ gAINavigator::FollowEvaluator::~FollowEvaluator()
 
 bool gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
 {
-    ePlayerNetID *player = ePlayerNetID::FindPlayerByName(target,(ePlayerNetID *)0,false);
+    ePlayerNetID *player = ePlayerNetID::FindPlayerByName(target, (ePlayerNetID *)0, false);
 
     if (player && player->Object())
     {
-        gCycle* cycle = dynamic_cast<gCycle *>(player->Object());
-        if (cycle) {
+        gCycle *cycle = dynamic_cast<gCycle *>(player->Object());
+        if (cycle)
+        {
             SetTarget(cycle);
             return true;
         }
@@ -818,16 +801,15 @@ bool gAINavigator::FollowEvaluator::SetDesiredTarget(tString target)
     return false;
 }
 
-
 //! sensor picking up several walls between cycle and target
-class gTargetSensor:public gSensor
+class gTargetSensor : public gSensor
 {
 public:
-    int lastOwnLR; //!< the last LR value of a hit with an own wall
+    int lastOwnLR;                             //!< the last LR value of a hit with an own wall
     tCHECKED_PTR_CONST(eHalfEdge) lastOwnEHit; //!< the edge hit there
 
-    gTargetSensor(eGameObject *o,const eCoord &start,const eCoord &d)
-    :gSensor(o,start,d), lastOwnLR(0), lastOwnEHit(0) {}
+    gTargetSensor(eGameObject *o, const eCoord &start, const eCoord &d)
+        : gSensor(o, start, d), lastOwnLR(0), lastOwnEHit(0) {}
 
     virtual void PassEdge(const eWall *w, REAL time, REAL a, int i)
     {
@@ -852,12 +834,11 @@ public:
     }
 };
 
-
 //!@ param direction            direction to turn in
 //!@ param targetVelocity       velocity of the target
 //!@ param targetPosition       current position of the target relative to cycle
 //!@ param data                 solution filled in
-void gAINavigator::FollowEvaluator::SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data )
+void gAINavigator::FollowEvaluator::SolveTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data)
 {
     ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
 
@@ -867,22 +848,24 @@ void gAINavigator::FollowEvaluator::SolveTurn( int direction, eCoord const & tar
     REAL angleDifference = acos((targetPosition * cycle_.Direction()) / (targetPosition.Norm() * cycle_.Direction().Norm()));
 
     // if the angle difference is less than a certain threshold (5 degrees), go straight
-    if (local_p->sg_smarterBotFollowAlignedThresh > 0 && fabs(angleDifference) < local_p->sg_smarterBotFollowAlignedThresh * M_PI / 180.0) {
+    if (local_p->sg_smarterBotFollowAlignedThresh > 0 && fabs(angleDifference) < local_p->sg_smarterBotFollowAlignedThresh * M_PI / 180.0)
+    {
         // Go straight
         return;
     }
 
     // get the velocity after the turn
     int winding = cycle_.WindingNumber();
-    cycle_.Grid()->Turn( winding, direction );
-    eCoord turnDir = cycle_.Grid()->GetDirection( winding );
+    cycle_.Grid()->Turn(winding, direction);
+    eCoord turnDir = cycle_.Grid()->GetDirection(winding);
 
-    if (local_p->sg_smarterBotFollowCheckLogic) {
+    if (local_p->sg_smarterBotFollowCheckLogic)
+    {
         // Check if there's enough free space to turn
         gTargetSensor sensor(&cycle_, cycle_.Position(), turnDir);
         sensor.detect(.99);
         // con << "sensor.hit " << sensor.hit << "\n";
-        if ( sensor.hit < 0.2)
+        if (sensor.hit < 0.2)
         {
             // If the path is blocked, return without making a turn
             return;
@@ -893,28 +876,27 @@ void gAINavigator::FollowEvaluator::SolveTurn( int direction, eCoord const & tar
     data.turnDir = turnDir;
     eCoord turnVelocityDifference = data.turnDir * cycle_.Speed() * GetTurnSpeedFactor() - targetVelocity;
 
-
     // some little algebra to solve velocityDifference * turnTime + turnVelocityDifference * Quality == targetPosition
     REAL determinant = turnVelocityDifference * velocityDifference;
-    if( fabs( determinant ) < EPS )
+    if (fabs(determinant) < EPS)
     {
         // division by zero error, problem is not well defined. approximate.
         data.turnTime = 0;
 
         REAL velocityDifferenceLen = velocityDifference.NormSquared();
-        if( velocityDifferenceLen > EPS )
+        if (velocityDifferenceLen > EPS)
         {
-            data.turnTime = eCoord::F( velocityDifference, targetPosition )/velocityDifferenceLen;
+            data.turnTime = eCoord::F(velocityDifference, targetPosition) / velocityDifferenceLen;
         }
     }
     else
     {
         // the better case
-        data.turnTime = ( turnVelocityDifference * targetPosition )/determinant;
+        data.turnTime = (turnVelocityDifference * targetPosition) / determinant;
     }
 
     // but halt, clamp it, we can't rewind (we've gone too far)
-    if ( data.turnTime < 0 )
+    if (data.turnTime < 0)
     {
         data.turnTime = 0;
     }
@@ -922,11 +904,11 @@ void gAINavigator::FollowEvaluator::SolveTurn( int direction, eCoord const & tar
     // fetch an alternative turn direction (the same as before with 4 axes)
     // so that we have a guaranteed nonnegative positive quality outcome among the two
     winding = cycle_.WindingNumber();
-    cycle_.Grid()->Turn( winding, -direction );
-    eCoord antiTurnDir = -cycle_.Grid()->GetDirection( winding );
+    cycle_.Grid()->Turn(winding, -direction);
+    eCoord antiTurnDir = -cycle_.Grid()->GetDirection(winding);
 
     // and handle the rest primitively via dot product
-    data.quality = eCoord::F( antiTurnDir, targetPosition - velocityDifference * data.turnTime );
+    data.quality = eCoord::F(antiTurnDir, targetPosition - velocityDifference * data.turnTime);
     data.quality /= antiTurnDir.Norm();
 }
 
@@ -963,7 +945,7 @@ bool gAINavigator::FollowEvaluator::FindTeamTarget()
     }
 
     // check if we found a teammate and an enemy
-    if(closestTeammate && closestEnemyToTeammate)
+    if (closestTeammate && closestEnemyToTeammate)
     {
         SetTarget((closestEnemyToTeammate));
         return true;
@@ -972,11 +954,11 @@ bool gAINavigator::FollowEvaluator::FindTeamTarget()
     return false;
 }
 
-
 bool gAINavigator::FollowEvaluator::FindTarget()
 {
-    gCycle *target = gHelperEnemiesData::getClosestEnemy(&cycle_,sg_smarterBotTeam,sg_smarterBotTeamOwner);
-    if (target) {
+    gCycle *target = gHelperEnemiesData::getClosestEnemy(&cycle_, sg_smarterBotTeam, sg_smarterBotTeamOwner);
+    if (target)
+    {
         SetTarget(target);
         return true;
     }
@@ -985,9 +967,9 @@ bool gAINavigator::FollowEvaluator::FindTarget()
 
 bool gAINavigator::FollowEvaluator::targetZone()
 {
-    gZone * closestZone = gZoneHelper::findClosestZone(&cycle_);
+    gZone *closestZone = gZoneHelper::findClosestZone(&cycle_);
 
-    if (closestZone && ! closestZone->isInside(&cycle_))
+    if (closestZone && !closestZone->isInside(&cycle_))
     {
         SetTarget(closestZone);
         return true;
@@ -996,8 +978,7 @@ bool gAINavigator::FollowEvaluator::targetZone()
     return false;
 }
 
-
-void gAINavigator::FollowEvaluator::SetTarget( eGameObject * object )
+void gAINavigator::FollowEvaluator::SetTarget(eGameObject *object)
 {
     // // The dampening factor
     // const REAL dampeningFactor = 0.9;
@@ -1022,13 +1003,12 @@ bool gAINavigator::FollowEvaluator::WallsInPath(const eCoord &start, const eCoor
     return sensor.type != gSENSOR_NONE;
 }
 
-
-
 void gAINavigator::FollowEvaluator::TryTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data, int depth)
 {
     ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
 
-    if (depth >= MAX_SEARCH_DEPTH) {
+    if (depth >= MAX_SEARCH_DEPTH)
+    {
         data.quality = 1e10;
         return;
     }
@@ -1040,20 +1020,23 @@ void gAINavigator::FollowEvaluator::TryTurn(int direction, eCoord const &targetV
 
     // Check if there are walls in the path after the turn
     eCoord newPosition = cycle_.Position() + turnDir * cycle_.Speed();
-    if (WallsInPath(cycle_.Position(), newPosition)) {
+    if (WallsInPath(cycle_.Position(), newPosition))
+    {
         // Try turning in the opposite direction
-        if (local_p->sg_smarterBotFollowTryLogicOppositeTurn) {
+        if (local_p->sg_smarterBotFollowTryLogicOppositeTurn)
+        {
             direction = -direction;
             TryTurn(direction, targetVelocity, targetPosition, data, depth + 1);
         }
-    } else {
+    }
+    else
+    {
         // If the path is clear, call SolveTurn
         SolveTurn(direction, targetVelocity, targetPosition, data);
     }
 }
 
-
-void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord const & velocity )
+void gAINavigator::FollowEvaluator::SetTarget(eCoord const &target, eCoord const &velocity)
 {
     // determine direction to center
     // toTarget_ = target - cycle_.Position();
@@ -1066,50 +1049,50 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
     blockedBySelf_ = false;
 
     // check whether the path is blocked
-    gTargetSensor sensor( &cycle_, cycle_.Position(), toTarget_ );
+    gTargetSensor sensor(&cycle_, cycle_.Position(), toTarget_);
     // gTargetSensor sensor( &cycle_, cycle_.Position(), target);
-    sensor.detect( .99 );
-    if( sensor.type != gSENSOR_NONE )
+    sensor.detect(.99);
+    if (sensor.type != gSENSOR_NONE)
     {
-        if( sensor.lastOwnEHit && local_p->sg_smarterBotFollowBlockLogic)
+        if (sensor.lastOwnEHit && local_p->sg_smarterBotFollowBlockLogic)
         {
-            gPlayerWall const * ownWall = dynamic_cast< gPlayerWall const * >( sensor.lastOwnEHit->GetWall() );
-            if ( ownWall )
+            gPlayerWall const *ownWall = dynamic_cast<gPlayerWall const *>(sensor.lastOwnEHit->GetWall());
+            if (ownWall)
             {
                 blocker_ = ownWall->Cycle();
                 blockedBySelf_ = true;
-                tASSERT( blocker_ == &cycle_ );
-                if( ownWall->Pos(.5) > blocker_->GetDistance() - blocker_->ThisWallsLength()*.9 )
+                tASSERT(blocker_ == &cycle_);
+                if (ownWall->Pos(.5) > blocker_->GetDistance() - blocker_->ThisWallsLength() * .9)
                 {
                     int lr = toTarget_ * ownWall->Vec() > 0 ? 1 : -1;
 
                     // if we block our own recent path, turn around
-                    if( ownWall->Pos(.5) > blocker_->GetDistance() - blocker_->ThisWallsLength()*.75 )
+                    if (ownWall->Pos(.5) > blocker_->GetDistance() - blocker_->ThisWallsLength() * .75)
                     {
                         lr *= -1;
                     }
 
                     int winding = cycle_.WindingNumber();
-                    cycle_.Grid()->Turn( winding, lr );
-                    toTarget_ = cycle_.Grid()->GetDirection( winding );
+                    cycle_.Grid()->Turn(winding, lr);
+                    toTarget_ = cycle_.Grid()->GetDirection(winding);
                     return;
                 }
             }
         }
-        else if ( sensor.ehit )
+        else if (sensor.ehit)
         {
-            gPlayerWall const * w = dynamic_cast< gPlayerWall const * >( sensor.ehit->GetWall() );
-            if ( w )
+            gPlayerWall const *w = dynamic_cast<gPlayerWall const *>(sensor.ehit->GetWall());
+            if (w)
             {
                 blocker_ = w->Cycle();
 
                 // just follow enemy wall in the inverse direction, but keep an eye on the target
                 toTarget_.Normalize();
-                eCoord follow = - w->Vec();
+                eCoord follow = -w->Vec();
                 follow.Normalize();
 
                 // hah, but if we're faster than the other guy, try to overtake him.
-                if( blocker_->Speed() + blocker_->Lag() < cycle_.Speed())
+                if (blocker_->Speed() + blocker_->Lag() < cycle_.Speed())
                 {
                     follow *= -1;
                 }
@@ -1123,31 +1106,34 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
 
     // determine next possible left or right directions
     SolveTurnData left, right;
-    if (local_p->sg_smarterBotFollowTryLogic){
-        TryTurn( -1, velocity, toTarget_, left );
-        TryTurn( 1,  velocity, toTarget_, right );
-    } else {
-        SolveTurn( -1, velocity, toTarget_, left );
-        SolveTurn( 1,  velocity, toTarget_, right );
+    if (local_p->sg_smarterBotFollowTryLogic)
+    {
+        TryTurn(-1, velocity, toTarget_, left);
+        TryTurn(1, velocity, toTarget_, right);
+    }
+    else
+    {
+        SolveTurn(-1, velocity, toTarget_, left);
+        SolveTurn(1, velocity, toTarget_, right);
     }
 
     REAL quality = 0;
 
     // pick the best one
-    if( left.quality > right.quality )
+    if (left.quality > right.quality)
     {
-        quality   = left.quality;
+        quality = left.quality;
         toTarget_ = left.turnDir;
         turnTime_ = left.turnTime;
     }
     else
     {
-        quality   = right.quality;
+        quality = right.quality;
         toTarget_ = right.turnDir;
         turnTime_ = right.turnTime;
     }
 
-    if( turnTime_ < 0 )
+    if (turnTime_ < 0)
     {
         turnTime_ = HUGE;
     }
@@ -1155,23 +1141,23 @@ void gAINavigator::FollowEvaluator::SetTarget( eCoord const & target, eCoord con
     {
         // bend direction into current direction
         toTarget_.Normalize();
-        toTarget_ += cycle_.Direction()*turnTime_*20;
+        toTarget_ += cycle_.Direction() * turnTime_ * 20;
     }
 
     toTarget_.Normalize();
 }
 
-void gAINavigator::FollowEvaluator::Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const
+void gAINavigator::FollowEvaluator::Evaluate(gAINavigator::Path const &path, gAINavigator::PathEvaluation &evaluation) const
 {
-    if (toTarget_ == eCoord(0,0))
+    if (toTarget_ == eCoord(0, 0))
     {
         evaluation.score = -100;
         return;
     }
 
     eCoord pathDir = path.shortTermDirection;
-    REAL f = eCoord::F( toTarget_, pathDir );
-    if( f > 0 && f*f > .5 * pathDir.NormSquared() )
+    REAL f = eCoord::F(toTarget_, pathDir);
+    if (f > 0 && f * f > .5 * pathDir.NormSquared())
     {
         evaluation.nextThought = turnTime_;
     }
@@ -1182,22 +1168,22 @@ void gAINavigator::FollowEvaluator::Evaluate( gAINavigator::Path const & path, g
 
 //!@param evaluator  evaluator doing the core work
 //!@param scale      weight factor for that work
-void gAINavigator::EvaluationManager::Evaluate( PathEvaluator const & evaluator, BlendMode mode, REAL scale, REAL offset )
+void gAINavigator::EvaluationManager::Evaluate(PathEvaluator const &evaluator, BlendMode mode, REAL scale, REAL offset)
 {
     REAL bestScore = -HUGE;
     REAL bestDistance = HUGE;
 
-    for( int i = paths_.GetPathCount()-1; i >= 0 ; --i )
+    for (int i = paths_.GetPathCount() - 1; i >= 0; --i)
     {
-        PathEvaluation & store = evaluations_[i];
-        if( store.veto )
+        PathEvaluation &store = evaluations_[i];
+        if (store.veto)
         {
             continue;
         }
 
         PathEvaluation evaluation;
-        Path const & path = paths_.GetPath(i);
-        evaluator.Evaluate( path, evaluation );
+        Path const &path = paths_.GetPath(i);
+        evaluator.Evaluate(path, evaluation);
         // con << "GOT SCORE: " << evaluation.score << "\n";
         // if (evaluation.score <= 0 )
         //     continue;
@@ -1205,7 +1191,7 @@ void gAINavigator::EvaluationManager::Evaluate( PathEvaluator const & evaluator,
         evaluation.score = evaluation.score * scale + offset;
 
         // update stored evaluation
-        switch ( mode )
+        switch (mode)
         {
         case BLEND_ADD:
             store.score += evaluation.score;
@@ -1214,29 +1200,29 @@ void gAINavigator::EvaluationManager::Evaluate( PathEvaluator const & evaluator,
             store.score *= evaluation.score;
             break;
         case BLEND_MAX:
-            if( evaluation.score > store.score )
+            if (evaluation.score > store.score)
             {
                 store.score = evaluation.score;
             }
             break;
         case BLEND_MIN:
-            if( evaluation.score < store.score )
+            if (evaluation.score < store.score)
             {
                 store.score = evaluation.score;
             }
             break;
         }
 
-        if ( evaluation.nextThought < store.nextThought )
+        if (evaluation.nextThought < store.nextThought)
         {
             store.nextThought = evaluation.nextThought;
         }
 
-        if ( evaluation.veto )
+        if (evaluation.veto)
         {
             store.veto = true;
         }
-        else if ( bestPath_ < 0 || store.score > bestScore || ( store.score == bestScore && path.distance < bestDistance ) )
+        else if (bestPath_ < 0 || store.score > bestScore || (store.score == bestScore && path.distance < bestDistance))
         {
             bestPath_ = i;
             bestScore = store.score;
@@ -1244,32 +1230,32 @@ void gAINavigator::EvaluationManager::Evaluate( PathEvaluator const & evaluator,
         }
     }
 
-//     if( bestPath_ < 0 )
-//     {
-//         // ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle);
-// #ifdef DEBUG
-//         con << "PANIC!\n";
-// #endif
+    //     if( bestPath_ < 0 )
+    //     {
+    //         // ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle);
+    // #ifdef DEBUG
+    //         con << "PANIC!\n";
+    // #endif
 
-//         // PANIC. No path ever was not vetoed. Oh well. Take the best anyway and be done.
-//         for( int i = paths_.GetPathCount()-1; i >= 0 ; --i )
-//         {
-//             PathEvaluation & store = evaluations_[i];
-//             Path const & path = paths_.GetPath(i);
-//             if ( bestPath_ < 0 || store.score > bestScore || ( store.score == bestScore && path.distance < bestDistance ) )
-//             {
-//                 bestPath_ = i;
-//                 bestScore = store.score;
-//                 bestDistance = path.distance;
-//             }
-//         }
-//     }
+    //         // PANIC. No path ever was not vetoed. Oh well. Take the best anyway and be done.
+    //         for( int i = paths_.GetPathCount()-1; i >= 0 ; --i )
+    //         {
+    //             PathEvaluation & store = evaluations_[i];
+    //             Path const & path = paths_.GetPath(i);
+    //             if ( bestPath_ < 0 || store.score > bestScore || ( store.score == bestScore && path.distance < bestDistance ) )
+    //             {
+    //                 bestPath_ = i;
+    //                 bestScore = store.score;
+    //                 bestDistance = path.distance;
+    //             }
+    //         }
+    //     }
 }
 
 //! reset scores, but don't forget veto
 void gAINavigator::EvaluationManager::Reset()
 {
-    for( int i = paths_.GetPathCount()-1; i >= 0; --i )
+    for (int i = paths_.GetPathCount() - 1; i >= 0; --i)
     {
         evaluations_[i].score = 0;
     }
@@ -1278,15 +1264,16 @@ void gAINavigator::EvaluationManager::Reset()
 //!@param controller   controller issuing the commands
 //!@param cycle        cycle getting controlled
 //!@param maxStep      suggestion for next timestep
-REAL gAINavigator::EvaluationManager::Finish( CycleController & controller, gCycle & cycle, REAL maxStep ){
-    if( bestPath_ >= 0 )
+REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle &cycle, REAL maxStep)
+{
+    if (bestPath_ >= 0)
     {
-        REAL thisMaxStep = evaluations_[ bestPath_ ].nextThought;
-        if( maxStep > thisMaxStep )
+        REAL thisMaxStep = evaluations_[bestPath_].nextThought;
+        if (maxStep > thisMaxStep)
         {
             maxStep = thisMaxStep;
         }
-        return paths_.TakePath( controller, cycle, bestPath_, maxStep );
+        return paths_.TakePath(controller, cycle, bestPath_, maxStep);
     }
     else
     {
@@ -1294,26 +1281,23 @@ REAL gAINavigator::EvaluationManager::Finish( CycleController & controller, gCyc
     }
 }
 
-gAINavigator::gAINavigator( gCycle * owner )
-: lastTurn_( 0 )
-, nextTurn_ ( 0 )
-, turnedRecently_ ( 0 )
-, owner_ ( owner )
+gAINavigator::gAINavigator(gCycle *owner)
+    : lastTurn_(0), nextTurn_(0), turnedRecently_(0), owner_(owner)
 {
 }
 
 gAINavigator::WallHug::WallHug()
-: owner ( NULL ), lastTimeSeen ( 0 ), distance( HUGE ), lr( 0 )
+    : owner(NULL), lastTimeSeen(0), distance(HUGE), lr(0)
 {
 }
 
-void gAINavigator::WallHug::FillFrom( Sensor const & sensor )
+void gAINavigator::WallHug::FillFrom(Sensor const &sensor)
 {
     owner = sensor.hitOwner_;
     lr = sensor.lr;
     hitDistance = sensor.hitDistance_;
     distance = sensor.hit * sensor.Direction().Norm();
-    if( owner )
+    if (owner)
     {
         lastTimeSeen = owner->LastTime();
     }
@@ -1321,29 +1305,29 @@ void gAINavigator::WallHug::FillFrom( Sensor const & sensor )
 
 // determines the distance between two sensors; the size should give the likelyhood
 // to survive if you pass through a gap between the two selected walls
-REAL gAINavigator::Distance( Sensor const & a, Sensor const & b ) const
+REAL gAINavigator::Distance(Sensor const &a, Sensor const &b) const
 {
     // make sure a is left from b
-    if ( a.Direction() * b.Direction() < 0 )
-        return Distance( b, a );
+    if (a.Direction() * b.Direction() < 0)
+        return Distance(b, a);
 
     bool self = a.type == gSENSOR_SELF || b.type == gSENSOR_SELF;
-    bool rim  = a.type == gSENSOR_RIM || b.type == gSENSOR_RIM;
+    bool rim = a.type == gSENSOR_RIM || b.type == gSENSOR_RIM;
 
     // some big distance to return if we don't know anything better
     REAL bigDistance = owner_->MaxWallsLength();
-    if ( bigDistance <= 0 )
+    if (bigDistance <= 0)
         bigDistance = owner_->GetDistance();
 
     REAL totallyFree = bigDistance * 8;
-    REAL halfFree    = bigDistance * 6;
-    REAL rimTunnel   = bigDistance * 4;
-    REAL tunnel      = bigDistance * 2;
+    REAL halfFree = bigDistance * 6;
+    REAL rimTunnel = bigDistance * 4;
+    REAL tunnel = bigDistance * 2;
 
-    if ( a.type == gSENSOR_NONE || b.type == gSENSOR_NONE )
+    if (a.type == gSENSOR_NONE || b.type == gSENSOR_NONE)
     {
         // empty space! Woo!
-        if ( a.type == gSENSOR_NONE && b.type == gSENSOR_NONE )
+        if (a.type == gSENSOR_NONE && b.type == gSENSOR_NONE)
         {
             // totally empty space! groovy!
             return totallyFree;
@@ -1353,12 +1337,12 @@ REAL gAINavigator::Distance( Sensor const & a, Sensor const & b ) const
             return halfFree;
         }
     }
-    else if ( a.hitOwner_ != b.hitOwner_ )
+    else if (a.hitOwner_ != b.hitOwner_)
     {
         // different owners? Great, there has to be a way through!
-        if ( rim )
+        if (rim)
         {
-            if ( !self )
+            if (!self)
             {
                 // we love going between the rim and enemies
                 return rimTunnel;
@@ -1366,19 +1350,19 @@ REAL gAINavigator::Distance( Sensor const & a, Sensor const & b ) const
             else
             {
                 // we don't love going between own wall and rim
-                return bigDistance * .001 + ( a.before_hit - b.before_hit).Norm();
+                return bigDistance * .001 + (a.before_hit - b.before_hit).Norm();
             }
         }
 
-        if ( self )
+        if (self)
         {
             REAL trapFactor = .5;
-            if ( a.type == gSENSOR_SELF && a.lr == +1 )
+            if (a.type == gSENSOR_SELF && a.lr == +1)
             {
                 // we're trapping another player and us with him. bad idea.
                 return a.hitDistance_ * trapFactor;
             }
-            if ( b.type == gSENSOR_SELF && b.lr == -1 )
+            if (b.type == gSENSOR_SELF && b.lr == -1)
             {
                 return b.hitDistance_ * trapFactor;
             }
@@ -1386,51 +1370,51 @@ REAL gAINavigator::Distance( Sensor const & a, Sensor const & b ) const
 
         return tunnel;
     }
-    else if ( rim )
+    else if (rim)
     {
         // at least one rim wall? Take the distance between the hit positions.
-        return ( a.before_hit - b.before_hit).Norm();
+        return (a.before_hit - b.before_hit).Norm();
     }
-    else if ( a.lr != b.lr )
+    else if (a.lr != b.lr)
     {
         // well, the longer the wall segment between the two points, the better.
-        return fabsf( a.hitDistance_ - b.hitDistance_ ) * 2;
+        return fabsf(a.hitDistance_ - b.hitDistance_) * 2;
     }
 
     // default: hit distance
-    return ( a.before_hit - b.before_hit).Norm();
+    return (a.before_hit - b.before_hit).Norm();
 }
 
-bool gAINavigator::CanMakeTurn( uActionPlayer * action )
+bool gAINavigator::CanMakeTurn(uActionPlayer *action)
 {
-    return owner_->CanMakeTurn( ( action == &gCycle::se_turnRight ) ? 1 : -1 );
+    return owner_->CanMakeTurn((action == &gCycle::se_turnRight) ? 1 : -1);
 }
 
 //!@return group of future paths
-gAINavigator::PathGroup & gAINavigator::GetPaths()
+gAINavigator::PathGroup &gAINavigator::GetPaths()
 {
     return paths_;
 }
 
 // check whether two sensors effecively hit the same wall
-static inline bool sg_SameWall( gAINavigator::Sensor const & a,
-                                gAINavigator::Sensor const & b )
+static inline bool sg_SameWall(gAINavigator::Sensor const &a,
+                               gAINavigator::Sensor const &b)
 {
-    if( a.ehit == b.ehit )
+    if (a.ehit == b.ehit)
     {
         return true;
     }
-    if( a.hitOwner_ != b.hitOwner_ )
+    if (a.hitOwner_ != b.hitOwner_)
     {
         return false;
     }
-    if( b.hit == 0 && a.hit != 0 )
+    if (b.hit == 0 && a.hit != 0)
     {
         return false;
     }
 
-    REAL ratio = a.hit/b.hit;
-    if( ratio < .99 || ratio > 1.01 )
+    REAL ratio = a.hit / b.hit;
+    if (ratio < .99 || ratio > 1.01)
     {
         return false;
     }
@@ -1439,80 +1423,79 @@ static inline bool sg_SameWall( gAINavigator::Sensor const & a,
 }
 
 // generates immediate distance data from sensor
-static void sg_AddSensor( gAINavigator::Path & path, gAINavigator::Sensor const & sensor, REAL range, REAL rubber )
+static void sg_AddSensor(gAINavigator::Path &path, gAINavigator::Sensor const &sensor, REAL range, REAL rubber)
 {
     REAL r = path.distance;
-    if( sensor.type != gSENSOR_NONE )
+    if (sensor.type != gSENSOR_NONE)
     {
         // check for the direct problem that driving in that direction causes: we're about to hit a wall,
         // and rubber is going to run out eventually.
-        r  = sensor.hit * range + rubber;
+        r = sensor.hit * range + rubber;
     }
 
-    if( r < path.immediateDistance )
+    if (r < path.immediateDistance)
     {
         path.immediateDistance = r;
     }
 }
 
 // interpolates gaps of sensor data
-static void sg_FillSensorGap( gAINavigator::Sensor const & left, gAINavigator::Sensor const & right, gAINavigator::Sensor & gap )
+static void sg_FillSensorGap(gAINavigator::Sensor const &left, gAINavigator::Sensor const &right, gAINavigator::Sensor &gap)
 {
     // check orientation
-    tASSERT( left.Direction() * right.Direction() >= 0 );
+    tASSERT(left.Direction() * right.Direction() >= 0);
 
-    if( gap.type == gSENSOR_NONE )
+    if (gap.type == gSENSOR_NONE)
     {
         // do left and right sensors fit?
-        if ( left.type != gSENSOR_NONE &&
-             left.type == right.type &&
-             left.lr  == right.lr &&
-             left.hitOwner_ == right.hitOwner_ )
+        if (left.type != gSENSOR_NONE &&
+            left.type == right.type &&
+            left.lr == right.lr &&
+            left.hitOwner_ == right.hitOwner_)
         {
             gap.type = left.type;
             gap.lr = left.lr;
             gap.hitOwner_ = left.hitOwner_;
-            gap.hitTime_  = ( left.hitTime_ + right.hitTime_ )/2;
-            gap.hitDistance_  = ( left.hitDistance_ + right.hitDistance_ )/2;
+            gap.hitTime_ = (left.hitTime_ + right.hitTime_) / 2;
+            gap.hitDistance_ = (left.hitDistance_ + right.hitDistance_) / 2;
             gap.hit = 1.0;
 
             return;
         }
 
         // is there an enemy that may block?
-        if( left.type == gSENSOR_ENEMY && left.lr == 1 )
+        if (left.type == gSENSOR_ENEMY && left.lr == 1)
         {
             gap.type = left.type;
             gap.lr = left.lr;
             gap.hitOwner_ = left.hitOwner_;
-            gap.hitTime_  = left.hitTime_;
-            gap.hitDistance_  = 0;
-            gap.hit = left.hitDistance_/gap.Direction().Norm();
+            gap.hitTime_ = left.hitTime_;
+            gap.hitDistance_ = 0;
+            gap.hit = left.hitDistance_ / gap.Direction().Norm();
         }
 
         // is there an enemy that may block?
-        if( right.type == gSENSOR_ENEMY && right.lr == -1 )
+        if (right.type == gSENSOR_ENEMY && right.lr == -1)
         {
             gap.type = right.type;
             gap.lr = right.lr;
             gap.hitOwner_ = right.hitOwner_;
-            gap.hitTime_  = right.hitTime_;
-            gap.hitDistance_  = 0;
-            gap.hit = right.hitDistance_/gap.Direction().Norm();
+            gap.hitTime_ = right.hitTime_;
+            gap.hitDistance_ = 0;
+            gap.hit = right.hitDistance_ / gap.Direction().Norm();
         }
     }
 }
 
-
-static inline void sg_NoNeg( REAL & r )
+static inline void sg_NoNeg(REAL &r)
 {
-    if( r < 0 )
+    if (r < 0)
         r = 0;
 }
 
 void gAINavigator::UpdatePaths()
 {
-    REAL lookahead = settings_.range;  // seconds to plan ahead
+    REAL lookahead = settings_.range; // seconds to plan ahead
 
     // cylce data
     REAL speed = owner_->Speed();
@@ -1524,8 +1507,8 @@ void gAINavigator::UpdatePaths()
 
     // get extra time we get through rubber usage
     REAL rubberGranted, rubberEffectiveness;
-    sg_RubberValues( owner_->Player(), speed, rubberGranted, rubberEffectiveness );
-    REAL rubberLeft = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness;
+    sg_RubberValues(owner_->Player(), speed, rubberGranted, rubberEffectiveness);
+    REAL rubberLeft = (rubberGranted - owner_->GetRubber()) * rubberEffectiveness;
     // REAL rubberTime = rubberLeft/speed;
     // REAL rubberRatio = owner_->GetRubber()/rubberGranted;
 
@@ -1535,37 +1518,37 @@ void gAINavigator::UpdatePaths()
     REAL narrowFront = 1;
 
     // these checks can hit our last wall and fail. Temporarily set it to NULL.
-    tJUST_CONTROLLED_PTR< gNetPlayerWall > lastWall = owner_->lastWall;
+    tJUST_CONTROLLED_PTR<gNetPlayerWall> lastWall = owner_->lastWall;
     owner_->lastWall = NULL;
 
-    Sensor forward ( *this, pos, scanDir );
+    Sensor forward(*this, pos, scanDir);
     forward.detect(1);
 
     // cast four diagonal rays
-    Sensor forwardLeft ( *this, pos, scanDir.Turn(+1,+1 ) );
-    Sensor left        ( *this, pos, scanDir.Turn( 0,+1 ) );
-    Sensor backwardLeft( *this, pos, scanDir.Turn(-1,+narrowFront) );
+    Sensor forwardLeft(*this, pos, scanDir.Turn(+1, +1));
+    Sensor left(*this, pos, scanDir.Turn(0, +1));
+    Sensor backwardLeft(*this, pos, scanDir.Turn(-1, +narrowFront));
     forwardLeft.detect(1);
     left.detect(1);
     backwardLeft.detect(1);
-    Sensor forwardRight ( *this, pos, scanDir.Turn(+1,-1 ) );
-    Sensor right        ( *this, pos, scanDir.Turn( 0,-1 ) );
-    Sensor backwardRight( *this, pos, scanDir.Turn(-1,-narrowFront) );
+    Sensor forwardRight(*this, pos, scanDir.Turn(+1, -1));
+    Sensor right(*this, pos, scanDir.Turn(0, -1));
+    Sensor backwardRight(*this, pos, scanDir.Turn(-1, -narrowFront));
     forwardRight.detect(1);
     right.detect(1);
     backwardRight.detect(1);
 
-    sg_FillSensorGap( backwardLeft, forwardLeft, left );
-    sg_FillSensorGap( forwardLeft, forwardRight, forward );
-    sg_FillSensorGap( forwardRight, backwardRight, right );
+    sg_FillSensorGap(backwardLeft, forwardLeft, left);
+    sg_FillSensorGap(forwardLeft, forwardRight, forward);
+    sg_FillSensorGap(forwardRight, backwardRight, right);
 
     // sensor going backwards with fake entries
-    Sensor self( *this, pos, scanDir.Turn(-1, 0) );
+    Sensor self(*this, pos, scanDir.Turn(-1, 0));
     self.before_hit = pos;
     self.windingNumber_ = owner_->windingNumber_;
     self.type = gSENSOR_SELF;
     self.hit = 0;
-    if ( owner_->CurrentWall() )
+    if (owner_->CurrentWall())
     {
         self.ehit = owner_->CurrentWall()->Edge();
     }
@@ -1574,48 +1557,48 @@ void gAINavigator::UpdatePaths()
     self.hitTime_ = owner_->LastTime();
 
     // get directions
-    eCoord forwardDir  = dir;
-    eGrid * grid = owner_->Grid();
-    eCoord backwardDir = - forwardDir;
+    eCoord forwardDir = dir;
+    eGrid *grid = owner_->Grid();
+    eCoord backwardDir = -forwardDir;
     int winding = owner_->WindingNumber();
     int wl = winding, wr = winding;
-    grid->Turn( wl, -1 );
-    grid->Turn( wr, 1 );
-    eCoord leftDir = grid->GetDirection( wl );
-    eCoord rightDir = grid->GetDirection( wr );
+    grid->Turn(wl, -1);
+    grid->Turn(wr, 1);
+    eCoord leftDir = grid->GetDirection(wl);
+    eCoord rightDir = grid->GetDirection(wr);
 
     // fill paths, first the simple cases
     self.lr = -1;
     {
         // U-Turn left
-        Path & path = GetPaths().AccessPath( PathGroup::PATH_UTURN_LEFT  );
-        path.Fill( *this, self, left, leftDir, backwardDir, -1 );
-        sg_AddSensor( path, left, range, rubberLeft );
+        Path &path = GetPaths().AccessPath(PathGroup::PATH_UTURN_LEFT);
+        path.Fill(*this, self, left, leftDir, backwardDir, -1);
+        sg_AddSensor(path, left, range, rubberLeft);
 
         // see if there would be more space to the right
-        if( forward.hit > left.hit &&
+        if (forward.hit > left.hit &&
             forwardRight.hit > left.hit &&
             right.hit > left.hit &&
-            left.hit * range < close )
+            left.hit * range < close)
         {
             // calculate rubber usage of the two possibilities
-            REAL rubberOffset = owner_->GetTurnDelay() * owner_->Speed()/range;
+            REAL rubberOffset = owner_->GetTurnDelay() * owner_->Speed() / range;
             REAL pRubberUsageA = rubberOffset - right.hit;
             REAL pRubberUsageB = pRubberUsageA - left.hit;
             REAL pRubberUsageC = rubberOffset - forward.hit;
-            REAL uRubberUsage  = rubberOffset - left.hit;
-            sg_NoNeg( pRubberUsageA );
-            sg_NoNeg( pRubberUsageB );
-            sg_NoNeg( pRubberUsageC );
-            sg_NoNeg( uRubberUsage );
-            if( uRubberUsage > pRubberUsageA + pRubberUsageB + pRubberUsageC )
+            REAL uRubberUsage = rubberOffset - left.hit;
+            sg_NoNeg(pRubberUsageA);
+            sg_NoNeg(pRubberUsageB);
+            sg_NoNeg(pRubberUsageC);
+            sg_NoNeg(uRubberUsage);
+            if (uRubberUsage > pRubberUsageA + pRubberUsageB + pRubberUsageC)
             {
                 // transform it into a P-Turn
                 path.turn *= -1;
                 path.immediateDistance = HUGE;
-                sg_AddSensor( path, forward, range, rubberLeft );
-                sg_AddSensor( path, right, range, rubberLeft );
-                sg_AddSensor( path, forwardRight, range, rubberLeft );
+                sg_AddSensor(path, forward, range, rubberLeft);
+                sg_AddSensor(path, right, range, rubberLeft);
+                sg_AddSensor(path, forwardRight, range, rubberLeft);
             }
         }
     }
@@ -1623,43 +1606,43 @@ void gAINavigator::UpdatePaths()
     self.lr = 1;
     // U-Turn right
     {
-        Path & path = GetPaths().AccessPath( PathGroup::PATH_UTURN_RIGHT );
-        path.Fill( *this, right, self, rightDir, backwardDir, 1 );
-        sg_AddSensor( path, right, range, rubberLeft );
+        Path &path = GetPaths().AccessPath(PathGroup::PATH_UTURN_RIGHT);
+        path.Fill(*this, right, self, rightDir, backwardDir, 1);
+        sg_AddSensor(path, right, range, rubberLeft);
 
         // see if there would be more space to the left
-        if( forward.hit > right.hit &&
+        if (forward.hit > right.hit &&
             forwardLeft.hit > right.hit &&
             left.hit > right.hit &&
-            right.hit * range < close )
+            right.hit * range < close)
         {
             // calculate rubber usage of the two possibilities
-            REAL rubberOffset = owner_->GetTurnDelay() * owner_->Speed()/range;
+            REAL rubberOffset = owner_->GetTurnDelay() * owner_->Speed() / range;
             REAL pRubberUsageA = rubberOffset - left.hit;
             REAL pRubberUsageB = pRubberUsageA - right.hit;
             REAL pRubberUsageC = rubberOffset - forward.hit;
-            REAL uRubberUsage  = rubberOffset - right.hit;
-            sg_NoNeg( pRubberUsageA );
-            sg_NoNeg( pRubberUsageB );
-            sg_NoNeg( pRubberUsageC );
-            sg_NoNeg( uRubberUsage );
-            if( uRubberUsage > pRubberUsageA + pRubberUsageB + pRubberUsageC )
+            REAL uRubberUsage = rubberOffset - right.hit;
+            sg_NoNeg(pRubberUsageA);
+            sg_NoNeg(pRubberUsageB);
+            sg_NoNeg(pRubberUsageC);
+            sg_NoNeg(uRubberUsage);
+            if (uRubberUsage > pRubberUsageA + pRubberUsageB + pRubberUsageC)
             {
                 // transform it into a P-Turn
                 path.turn *= -1;
                 path.immediateDistance = HUGE;
-                sg_AddSensor( path, forward, range, rubberLeft );
-                sg_AddSensor( path, left, range, rubberLeft );
-                sg_AddSensor( path, forwardLeft, range, rubberLeft );
+                sg_AddSensor(path, forward, range, rubberLeft);
+                sg_AddSensor(path, left, range, rubberLeft);
+                sg_AddSensor(path, forwardLeft, range, rubberLeft);
             }
         }
     }
 
     // straight ahead
     {
-        Path & path = GetPaths().AccessPath( PathGroup::PATH_STRAIGHT );
-        path.Fill( *this, forwardLeft, forwardRight, forwardDir, forwardDir, 0 );
-        sg_AddSensor( path, forward, range, rubberLeft );
+        Path &path = GetPaths().AccessPath(PathGroup::PATH_STRAIGHT);
+        path.Fill(*this, forwardLeft, forwardRight, forwardDir, forwardDir, 0);
+        sg_AddSensor(path, forward, range, rubberLeft);
 
         // slighly favor going straight over anything else
         path.distance *= 1.0001;
@@ -1669,143 +1652,144 @@ void gAINavigator::UpdatePaths()
 
     // immediate turn right
     {
-        Path & path = GetPaths().AccessPath( PathGroup::PATH_TURN_RIGHT );
-        path.Fill( *this, forwardRight, backwardRight, rightDir, rightDir, 1 );
+        Path &path = GetPaths().AccessPath(PathGroup::PATH_TURN_RIGHT);
+        path.Fill(*this, forwardRight, backwardRight, rightDir, rightDir, 1);
 
-        REAL smallRightDistance = Distance( right, backwardRight );
-        if( sg_SameWall( backwardRight, right ) || path.distance < smallRightDistance )
+        REAL smallRightDistance = Distance(right, backwardRight);
+        if (sg_SameWall(backwardRight, right) || path.distance < smallRightDistance)
         {
             // we did not pass a kink, so the smaller distance applies
             path.distance = smallRightDistance;
         }
 
-        sg_AddSensor( path, right, range, rubberLeft );
+        sg_AddSensor(path, right, range, rubberLeft);
     }
 
     // immediate turn left
     {
-        Path & path = GetPaths().AccessPath( PathGroup::PATH_TURN_LEFT );
-        path.Fill( *this, backwardLeft, forwardLeft, leftDir, leftDir, -1 );
+        Path &path = GetPaths().AccessPath(PathGroup::PATH_TURN_LEFT);
+        path.Fill(*this, backwardLeft, forwardLeft, leftDir, leftDir, -1);
 
-        REAL smallLeftDistance = Distance( backwardLeft, left );
-        if( sg_SameWall( backwardLeft, left ) || path.distance < smallLeftDistance )
+        REAL smallLeftDistance = Distance(backwardLeft, left);
+        if (sg_SameWall(backwardLeft, left) || path.distance < smallLeftDistance)
         {
             path.distance = smallLeftDistance;
         }
 
-        sg_AddSensor( path, left, range, rubberLeft );
+        sg_AddSensor(path, left, range, rubberLeft);
     }
 
     // zigzag right
     {
-        Path & path = GetPaths().AccessPath( PathGroup::PATH_ZIGZAG_RIGHT );
-        path.Fill( *this, forward, right, rightDir, forwardDir, 1 );
+        Path &path = GetPaths().AccessPath(PathGroup::PATH_ZIGZAG_RIGHT);
+        path.Fill(*this, forward, right, rightDir, forwardDir, 1);
 
-        REAL driveOn = right.HitWallExtends( dir, pos );
-        REAL side    = forward.HitWallExtends( rightDir, pos );
-        if( driveOn > 0 && ( driveOn < forward.hit * range * ( 1-EPS ) || forward.type == gSENSOR_NONE || side > right.hit * range * ( 1+EPS ) ) )
+        REAL driveOn = right.HitWallExtends(dir, pos);
+        REAL side = forward.HitWallExtends(rightDir, pos);
+        if (driveOn > 0 && (driveOn < forward.hit * range * (1 - EPS) || forward.type == gSENSOR_NONE || side > right.hit * range * (1 + EPS)))
         {
             // there is a gap waiting for us. Wait and take it.
             path.driveOn = driveOn;
             path.shortTermDirection = forwardDir;
-            path.longTermDirection  = rightDir;
+            path.longTermDirection = rightDir;
 
-            sg_AddSensor( path, forward, range, rubberLeft );
+            sg_AddSensor(path, forward, range, rubberLeft);
         }
         else
         {
-            sg_AddSensor( path, right, range, rubberLeft );
+            sg_AddSensor(path, right, range, rubberLeft);
         }
     }
 
     // zigzag left
     {
-        Path & path = GetPaths().AccessPath( PathGroup::PATH_ZIGZAG_LEFT );
-        path.Fill( *this, left, forward, leftDir, forwardDir, -1 );
+        Path &path = GetPaths().AccessPath(PathGroup::PATH_ZIGZAG_LEFT);
+        path.Fill(*this, left, forward, leftDir, forwardDir, -1);
 
-        REAL driveOn = left.HitWallExtends( dir, pos );
-        REAL side    = forward.HitWallExtends( leftDir, pos );
-        if( driveOn > 0 && ( driveOn < forward.hit * range * ( 1-EPS ) || forward.type == gSENSOR_NONE || side > left.hit * range * ( 1+EPS ) ) )
+        REAL driveOn = left.HitWallExtends(dir, pos);
+        REAL side = forward.HitWallExtends(leftDir, pos);
+        if (driveOn > 0 && (driveOn < forward.hit * range * (1 - EPS) || forward.type == gSENSOR_NONE || side > left.hit * range * (1 + EPS)))
         {
             // there is a gap waiting for us. Wait and take it.
             path.driveOn = driveOn;
             path.shortTermDirection = forwardDir;
-            path.longTermDirection  = leftDir;
+            path.longTermDirection = leftDir;
 
-            sg_AddSensor( path, forward, range, rubberLeft );
+            sg_AddSensor(path, forward, range, rubberLeft);
         }
         else
         {
-            sg_AddSensor( path, left, range, rubberLeft );
+            sg_AddSensor(path, left, range, rubberLeft);
         }
     }
 }
 
-void displayTurn(int dir, int numberOfTurns, std::string reason){
+void displayTurn(int dir, int numberOfTurns, std::string reason)
+{
     // Log the direction of the turn made
     gHelperUtility::Debug("smartTurningFrontBot",
-                          std::to_string(numberOfTurns) +  " Turn(s) made: " + std::string(dir == -1 ? "LEFT" : "RIGHT") + " Reason: " + (reason), "");
+                          std::to_string(numberOfTurns) + " Turn(s) made: " + std::string(dir == -1 ? "LEFT" : "RIGHT") + " Reason: " + (reason), "");
 }
 
-void displayTurnAct(uActionPlayer *action, int numberOfTurns, std::string reason){
+void displayTurnAct(uActionPlayer *action, int numberOfTurns, std::string reason)
+{
     displayTurn(gTurnHelper::ActToTurn(action), numberOfTurns, reason);
 }
 
-
 //! does the main thinking at the current time, knowing the next thought can't be sooner than minstep
-REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish * wish )
+REAL gAINavigator::Activate(REAL currentTime, REAL minstep, REAL penalty, Wish *wish)
 {
-    REAL lookahead = settings_.range;  // seconds to plan ahead
+    REAL lookahead = settings_.range; // seconds to plan ahead
 
     // cylce data
     REAL speed = owner_->Speed();
     eCoord dir = owner_->Direction();
     eCoord pos = owner_->Position();
 
-    REAL range= speed * lookahead;
+    REAL range = speed * lookahead;
     eCoord scanDir = dir * range;
 
     REAL frontFactor = .5;
 
-    Sensor front(*this,pos,scanDir);
+    Sensor front(*this, pos, scanDir);
     front.detect(frontFactor);
-    owner_->enemyInfluence.AddSensor( front, penalty, owner_ );
+    owner_->enemyInfluence.AddSensor(front, penalty, owner_);
 
     REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
 
     // get extra time we get through rubber usage
     REAL rubberGranted, rubberEffectiveness;
-    sg_RubberValues( owner_->Player(), speed, rubberGranted, rubberEffectiveness );
-    REAL rubberTime = ( rubberGranted - owner_->GetRubber() )*rubberEffectiveness/speed;
-    REAL rubberRatio = owner_->GetRubber()/rubberGranted;
+    sg_RubberValues(owner_->Player(), speed, rubberGranted, rubberEffectiveness);
+    REAL rubberTime = (rubberGranted - owner_->GetRubber()) * rubberEffectiveness / speed;
+    REAL rubberRatio = owner_->GetRubber() / rubberGranted;
 
-    if ( front.ehit || wish )
+    if (front.ehit || wish)
     {
         turnedRecently_ = false;
 
         // these checks can hit our last wall and fail. Temporarily set it to NULL.
-        tJUST_CONTROLLED_PTR< gNetPlayerWall > lastWall = owner_->lastWall;
+        tJUST_CONTROLLED_PTR<gNetPlayerWall> lastWall = owner_->lastWall;
         owner_->lastWall = NULL;
 
         REAL narrowFront = 1;
 
         // cast four diagonal rays
-        Sensor forwardLeft ( *this, pos, scanDir.Turn(+1,+1 ) );
-        Sensor backwardLeft( *this, pos, scanDir.Turn(-1,+narrowFront) );
+        Sensor forwardLeft(*this, pos, scanDir.Turn(+1, +1));
+        Sensor backwardLeft(*this, pos, scanDir.Turn(-1, +narrowFront));
         forwardLeft.detect(1);
         backwardLeft.detect(1);
-        Sensor forwardRight ( *this, pos, scanDir.Turn(+1,-1 ) );
-        Sensor backwardRight( *this, pos, scanDir.Turn(-1,-narrowFront) );
+        Sensor forwardRight(*this, pos, scanDir.Turn(+1, -1));
+        Sensor backwardRight(*this, pos, scanDir.Turn(-1, -narrowFront));
         forwardRight.detect(1);
         backwardRight.detect(1);
 
         // determine survival chances in the four directions
-        REAL frontOpen = Distance ( forwardLeft, forwardRight );
-        REAL leftOpen  = Distance ( forwardLeft, backwardLeft );
-        REAL rightOpen = Distance ( forwardRight, backwardRight );
-        REAL rearOpen = Distance ( backwardLeft, backwardRight );
+        REAL frontOpen = Distance(forwardLeft, forwardRight);
+        REAL leftOpen = Distance(forwardLeft, backwardLeft);
+        REAL rightOpen = Distance(forwardRight, backwardRight);
+        REAL rearOpen = Distance(backwardLeft, backwardRight);
 
-        Sensor self( *this, pos, scanDir.Turn(-1, 0) );
+        Sensor self(*this, pos, scanDir.Turn(-1, 0));
         // fake entries
         self.before_hit = pos;
         self.windingNumber_ = owner_->windingNumber_;
@@ -1814,91 +1798,91 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
         self.hitOwner_ = owner_;
         self.hitTime_ = currentTime;
         self.lr = -1;
-        REAL rearLeftOpen = Distance( backwardLeft, self );
+        REAL rearLeftOpen = Distance(backwardLeft, self);
         self.lr = 1;
-        REAL rearRightOpen = Distance( backwardRight, self );
+        REAL rearRightOpen = Distance(backwardRight, self);
 
         // override rim hugging
-        if ( forwardRight.type == gSENSOR_SELF &&
-             forwardLeft.type == gSENSOR_RIM &&
-             backwardRight.type == gSENSOR_SELF &&
-             backwardLeft.type == gSENSOR_RIM &&
-             forwardRight.lr == -1 &&
-             backwardRight.lr == -1 )
+        if (forwardRight.type == gSENSOR_SELF &&
+            forwardLeft.type == gSENSOR_RIM &&
+            backwardRight.type == gSENSOR_SELF &&
+            backwardLeft.type == gSENSOR_RIM &&
+            forwardRight.lr == -1 &&
+            backwardRight.lr == -1)
         {
             turnedRecently_ = true;
-            if ( rightOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
+            if (rightOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
             {
-                owner_->ActBot( &gCycle::se_turnRight, 1 );
-                owner_->ActBot( &gCycle::se_turnRight, 1 );
-                displayTurn(1,2,"override rim hugging rightOpen > rubberTime");
+                owner_->ActBot(&gCycle::se_turnRight, 1);
+                owner_->ActBot(&gCycle::se_turnRight, 1);
+                displayTurn(1, 2, "override rim hugging rightOpen > rubberTime");
             }
             else
             {
-                owner_->ActBot( &gCycle::se_turnLeft, 1 );
-                owner_->ActBot( &gCycle::se_turnLeft, 1 );
-                displayTurn(-1,2,"override rim hugging rightOpen < rubberTime");
+                owner_->ActBot(&gCycle::se_turnLeft, 1);
+                owner_->ActBot(&gCycle::se_turnLeft, 1);
+                displayTurn(-1, 2, "override rim hugging rightOpen < rubberTime");
             }
         }
 
-        if ( forwardLeft.type == gSENSOR_SELF &&
-             forwardRight.type == gSENSOR_RIM &&
-             backwardLeft.type == gSENSOR_SELF &&
-             backwardRight.type == gSENSOR_RIM &&
-             forwardLeft.lr == 1 &&
-             backwardLeft.lr == 1 )
+        if (forwardLeft.type == gSENSOR_SELF &&
+            forwardRight.type == gSENSOR_RIM &&
+            backwardLeft.type == gSENSOR_SELF &&
+            backwardRight.type == gSENSOR_RIM &&
+            forwardLeft.lr == 1 &&
+            backwardLeft.lr == 1)
         {
             turnedRecently_ = true;
-            if ( leftOpen > speed * ( owner_->GetTurnDelay() - rubberTime * .8 ) )
+            if (leftOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
             {
-                owner_->ActBot( &gCycle::se_turnLeft, 1 );
-                owner_->ActBot( &gCycle::se_turnLeft, 1 );
-                displayTurn(-1,2,"override rim hugging leftOpen > rubberTime");
+                owner_->ActBot(&gCycle::se_turnLeft, 1);
+                owner_->ActBot(&gCycle::se_turnLeft, 1);
+                displayTurn(-1, 2, "override rim hugging leftOpen > rubberTime");
             }
             else
             {
-                owner_->ActBot( &gCycle::se_turnRight, 1 );
-                owner_->ActBot( &gCycle::se_turnRight, 1 );
-                displayTurn(1,2,"override rim hugging leftOpen > rubberTime");
+                owner_->ActBot(&gCycle::se_turnRight, 1);
+                owner_->ActBot(&gCycle::se_turnRight, 1);
+                displayTurn(1, 2, "override rim hugging leftOpen > rubberTime");
             }
         }
 
         // get the best turn direction
-        int             bestDir      = ( leftOpen + rearLeftOpen > rightOpen + rearRightOpen ) ? 1 : -1;
+        int bestDir = (leftOpen + rearLeftOpen > rightOpen + rearRightOpen) ? 1 : -1;
 
-        Sensor direct ( *this, pos, scanDir.Turn( 0, bestDir) );
-        direct.detect( 1 );
+        Sensor direct(*this, pos, scanDir.Turn(0, bestDir));
+        direct.detect(1);
 
         // restore last wall
         owner_->lastWall = lastWall;
 
-        if( wish && wish->turn )
+        if (wish && wish->turn)
         {
             REAL minDistance = wish->minDistance;
-            if( wish->turn > 0 )
+            if (wish->turn > 0)
             {
-                if( wish->maxDisadvantage + leftOpen + rearLeftOpen < frontOpen + rightOpen + rearRightOpen )
+                if (wish->maxDisadvantage + leftOpen + rearLeftOpen < frontOpen + rightOpen + rearRightOpen)
                 {
                     wish = 0;
                 }
-                else if ( leftOpen < wish->minDistance )
+                else if (leftOpen < wish->minDistance)
                 {
-                    if( leftOpen + rearLeftOpen < wish->minDistance || frontOpen < wish->minDistance || rightOpen < wish->minDistance )
+                    if (leftOpen + rearLeftOpen < wish->minDistance || frontOpen < wish->minDistance || rightOpen < wish->minDistance)
                     {
                         wish = 0;
                     }
-                    else if( wish->turn == -1 )
+                    else if (wish->turn == -1)
                     {
                         wish = 0;
                     }
                     else
                     {
                         // double back
-                        owner_->ActBot( &gCycle::se_turnRight, 1 );
-                        owner_->ActBot( &gCycle::se_turnRight, 1 );
-                        owner_->ActBot( &gCycle::se_turnRight, 1 );
+                        owner_->ActBot(&gCycle::se_turnRight, 1);
+                        owner_->ActBot(&gCycle::se_turnRight, 1);
+                        owner_->ActBot(&gCycle::se_turnRight, 1);
 
-                        displayTurn(1,3,"wish turn - leftOpen < wish->minDistance");
+                        displayTurn(1, 3, "wish turn - leftOpen < wish->minDistance");
                         return owner_->GetTurnDelay() * 3;
                     }
                 }
@@ -1907,29 +1891,29 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
                     bestDir = 1;
                 }
             }
-            else if( wish->turn < 0 )
+            else if (wish->turn < 0)
             {
-                if( wish->maxDisadvantage + rightOpen + rearRightOpen < frontOpen + leftOpen + rearLeftOpen )
+                if (wish->maxDisadvantage + rightOpen + rearRightOpen < frontOpen + leftOpen + rearLeftOpen)
                 {
                     wish = 0;
                 }
-                else if ( rightOpen < wish->minDistance )
+                else if (rightOpen < wish->minDistance)
                 {
-                    if( rightOpen + rearRightOpen < wish->minDistance || frontOpen < wish->minDistance || leftOpen < wish->minDistance )
+                    if (rightOpen + rearRightOpen < wish->minDistance || frontOpen < wish->minDistance || leftOpen < wish->minDistance)
                     {
                         wish = 0;
                     }
-                    else if( wish->turn == -1 )
+                    else if (wish->turn == -1)
                     {
                         wish = 0;
                     }
                     else
                     {
                         // double back
-                        owner_->ActBot( &gCycle::se_turnLeft, 1 );
-                        owner_->ActBot( &gCycle::se_turnLeft, 1 );
-                        owner_->ActBot( &gCycle::se_turnLeft, 1 );
-                        displayTurn(-1,3,"wish turn - rightOpen < wish->minDistance");
+                        owner_->ActBot(&gCycle::se_turnLeft, 1);
+                        owner_->ActBot(&gCycle::se_turnLeft, 1);
+                        owner_->ActBot(&gCycle::se_turnLeft, 1);
+                        displayTurn(-1, 3, "wish turn - rightOpen < wish->minDistance");
                         return owner_->GetTurnDelay() * 3;
                     }
                 }
@@ -1939,87 +1923,86 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
                 }
             }
 
-            if( !wish && frontOpen > minDistance )
+            if (!wish && frontOpen > minDistance)
             {
                 // going straigt is not too bad
                 return Owner()->GetTurnDelay();
             }
-
         }
 
-        uActionPlayer * bestAction = ( bestDir > 0 ) ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+        uActionPlayer *bestAction = (bestDir > 0) ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
 
-        REAL            bestOpen     = ( bestDir > 0 ) ? leftOpen : rightOpen;
-        Sensor &        bestForward  = ( bestDir > 0 ) ? forwardLeft : forwardRight;
-        Sensor &        bestBackward = ( bestDir > 0 ) ? backwardLeft : backwardRight;
+        REAL bestOpen = (bestDir > 0) ? leftOpen : rightOpen;
+        Sensor &bestForward = (bestDir > 0) ? forwardLeft : forwardRight;
+        Sensor &bestBackward = (bestDir > 0) ? backwardLeft : backwardRight;
 
         // only turn if the hole has a shape that allows better entry after we do a zig-zag, or if we're past the good turning point
         // see how the survival chance is distributed between forward and backward half
-        REAL forwardHalf  = Distance ( direct, bestForward );
-        REAL backwardHalf = Distance ( direct, bestBackward );
+        REAL forwardHalf = Distance(direct, bestForward);
+        REAL backwardHalf = Distance(direct, bestBackward);
 
-        REAL forwardOverhang  = bestForward.HitWallExtends( bestForward.Direction(), pos );
-        REAL backwardOverhang  = bestBackward.HitWallExtends( bestForward.Direction(), pos );
+        REAL forwardOverhang = bestForward.HitWallExtends(bestForward.Direction(), pos);
+        REAL backwardOverhang = bestBackward.HitWallExtends(bestForward.Direction(), pos);
 
         // we have to move forward this much before we can hope to turn
-        minMoveOn = bestBackward.HitWallExtends( dir, pos );
+        minMoveOn = bestBackward.HitWallExtends(dir, pos);
 
-        if( wish )
+        if (wish)
         {
-            if( backwardHalf < wish->minDistance )
+            if (backwardHalf < wish->minDistance)
             {
-                return (minMoveOn/owner_->Speed())*1.1;
+                return (minMoveOn / owner_->Speed()) * 1.1;
             }
 
-            if ( !CanMakeTurn( bestAction ) )
+            if (!CanMakeTurn(bestAction))
             {
-                return owner_->GetNextTurn( -bestDir ) - owner_->LastTime();
+                return owner_->GetNextTurn(-bestDir) - owner_->LastTime();
             }
 
-            owner_->ActBot( bestAction, 1 );
-            displayTurnAct(bestAction,1,"wish turn - best action - desired turn");
+            owner_->ActBot(bestAction, 1);
+            displayTurnAct(bestAction, 1, "wish turn - best action - desired turn");
             return Owner()->GetTurnDelay();
         }
 
         // maybe the direct to the side sensor is better?
-        REAL minMoveOnOther = direct.HitWallExtends( dir, pos );
+        REAL minMoveOnOther = direct.HitWallExtends(dir, pos);
 
         // determine how far we can drive on
-        maxMoveOn      = bestForward.HitWallExtends( dir, pos );
-        REAL maxMoveOnOther = front.HitWallExtends( dir, pos );
-        if ( maxMoveOn > maxMoveOnOther )
+        maxMoveOn = bestForward.HitWallExtends(dir, pos);
+        REAL maxMoveOnOther = front.HitWallExtends(dir, pos);
+        if (maxMoveOn > maxMoveOnOther)
             maxMoveOn = maxMoveOnOther;
 
-        if ( maxMoveOn > minMoveOnOther && forwardHalf > backwardHalf && direct.hitOwner_ == bestBackward.hitOwner_ )
+        if (maxMoveOn > minMoveOnOther && forwardHalf > backwardHalf && direct.hitOwner_ == bestBackward.hitOwner_)
         {
-            backwardOverhang  = direct.HitWallExtends( bestForward.Direction(), pos );
+            backwardOverhang = direct.HitWallExtends(bestForward.Direction(), pos);
             minMoveOn = minMoveOnOther;
         }
 
         // best place to turn
-        moveOn = .5 * ( minMoveOn * ( 1 + rubberRatio ) + maxMoveOn * ( 1 - rubberRatio ) );
+        moveOn = .5 * (minMoveOn * (1 + rubberRatio) + maxMoveOn * (1 - rubberRatio));
 
         // hit the brakes before you hit anything and if it's worth it
         bool brake = sg_brakeCycle > 0 &&
-        front.hit * lookahead * sg_cycleBrakeDeplete < owner_->GetBrakingReservoir() &&
-        sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_->GetBrakingReservoir() &&
-        ( maxMoveOn - minMoveOn ) > 0 &&
-        owner_->GetBrakingReservoir() * ( maxMoveOn - minMoveOn ) < speed * owner_->GetTurnDelay();
-        if ( frontOpen < bestOpen &&
-             ( forwardOverhang <= backwardOverhang || ( minMoveOn < 0 && moveOn < minstep * speed ) ) )
+                     front.hit * lookahead * sg_cycleBrakeDeplete < owner_->GetBrakingReservoir() &&
+                     sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_->GetBrakingReservoir() &&
+                     (maxMoveOn - minMoveOn) > 0 &&
+                     owner_->GetBrakingReservoir() * (maxMoveOn - minMoveOn) < speed * owner_->GetTurnDelay();
+        if (frontOpen < bestOpen &&
+            (forwardOverhang <= backwardOverhang || (minMoveOn < 0 && moveOn < minstep * speed)))
         {
             turnedRecently_ = true;
 
             minMoveOn = maxMoveOn = moveOn = 0;
 
             {
-                if ( !CanMakeTurn( bestAction ) )
+                if (!CanMakeTurn(bestAction))
                 {
-                    return owner_->GetNextTurn( -bestDir ) - owner_->LastTime();
+                    return owner_->GetNextTurn(-bestDir) - owner_->LastTime();
                 }
 
-                owner_->ActBot( bestAction, 1 );
-                displayTurnAct(bestAction,1,"best action - frontOpen < bestOpen ");
+                owner_->ActBot(bestAction, 1);
+                displayTurnAct(bestAction, 1, "best action - frontOpen < bestOpen ");
             }
 
             brake = false;
@@ -2028,9 +2011,9 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
         {
             // the best
             REAL bestSoFar = frontOpen > bestOpen ? frontOpen : bestOpen;
-            bestSoFar *= ( 10 * ( 1 - rubberRatio ) + 1 );
+            bestSoFar *= (10 * (1 - rubberRatio) + 1);
 
-            if ( rearOpen > bestSoFar && ( rearLeftOpen > bestSoFar || rearRightOpen > bestSoFar ) )
+            if (rearOpen > bestSoFar && (rearLeftOpen > bestSoFar || rearRightOpen > bestSoFar))
             {
                 brake = false;
                 turnedRecently_ = true;
@@ -2038,12 +2021,12 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
                 bool goLeft = rearLeftOpen > rearRightOpen;
 
                 // dead end. reverse into the opposite direction of the front wall
-                uActionPlayer * bestAction = goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
-                uActionPlayer * otherAction = !goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
-                Sensor &        bestForward  = goLeft ? forwardLeft : forwardRight;
-                Sensor &        bestBackward  = goLeft ? backwardLeft : backwardRight;
-                Sensor &        otherForward  = !goLeft ? forwardLeft : forwardRight;
-                Sensor &        otherBackward  = !goLeft ? backwardLeft : backwardRight;
+                uActionPlayer *bestAction = goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+                uActionPlayer *otherAction = !goLeft ? &gCycle::se_turnLeft : &gCycle::se_turnRight;
+                Sensor &bestForward = goLeft ? forwardLeft : forwardRight;
+                Sensor &bestBackward = goLeft ? backwardLeft : backwardRight;
+                Sensor &otherForward = !goLeft ? forwardLeft : forwardRight;
+                Sensor &otherBackward = !goLeft ? backwardLeft : backwardRight;
 
                 // space in the two directions available for turns
                 REAL bestHit = bestForward.hit > bestBackward.hit ? bestBackward.hit : bestForward.hit;
@@ -2051,45 +2034,45 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
 
                 bool wait = false;
 
-                if ( !CanMakeTurn( bestAction ) )
+                if (!CanMakeTurn(bestAction))
                 {
-                    return owner_->GetNextTurn( -bestDir ) - owner_->LastTime();
+                    return owner_->GetNextTurn(-bestDir) - owner_->LastTime();
                 }
 
                 // well, after a short turn to the right if space is tight
-                if ( bestHit * lookahead < owner_->GetTurnDelay() + rubberTime )
+                if (bestHit * lookahead < owner_->GetTurnDelay() + rubberTime)
                 {
-                    if ( otherHit < bestForward.hit * 2 && front.hit * lookahead > owner_->GetTurnDelay() * 2 )
+                    if (otherHit < bestForward.hit * 2 && front.hit * lookahead > owner_->GetTurnDelay() * 2)
                     {
                         // wait a bit, perhaps there will be a better spot
                         wait = true;
                     }
                     else
                     {
-                        if ( !CanMakeTurn( otherAction ) )
+                        if (!CanMakeTurn(otherAction))
                         {
-                            return owner_->GetNextTurn( bestDir ) - owner_->LastTime();
+                            return owner_->GetNextTurn(bestDir) - owner_->LastTime();
                         }
 
-                        owner_->ActBot( otherAction, 1 );
-                        displayTurnAct(otherAction,1,"other action - otherHit > bestForward.hit");
+                        owner_->ActBot(otherAction, 1);
+                        displayTurnAct(otherAction, 1, "other action - otherHit > bestForward.hit");
 
                         // there needs to be space ahead to finish the maneuver correctly
-                        if ( maxMoveOn < speed * owner_->GetTurnDelay() )
+                        if (maxMoveOn < speed * owner_->GetTurnDelay())
                         {
                             // there isn't. oh well, turn into the wrong direction completely, see if I care
-                            owner_->ActBot( otherAction, 1 );
-                            displayTurnAct(otherAction,1,"other action - (dont care) maxMoveOn < speed");
+                            owner_->ActBot(otherAction, 1);
+                            displayTurnAct(otherAction, 1, "other action - (dont care) maxMoveOn < speed");
                             wait = true;
                         }
                     }
                 }
 
-                if ( !wait )
+                if (!wait)
                 {
-                    owner_->ActBot( bestAction, 1 );
-                    owner_->ActBot( bestAction, 1 );
-                    displayTurnAct(bestAction,2,"bestAction - !wait");
+                    owner_->ActBot(bestAction, 1);
+                    owner_->ActBot(bestAction, 1);
+                    displayTurnAct(bestAction, 2, "bestAction - !wait");
                 }
 
                 minMoveOn = maxMoveOn = moveOn = 0;
@@ -2097,38 +2080,35 @@ REAL gAINavigator::Activate( REAL currentTime, REAL minstep, REAL penalty, Wish 
         }
 
         // execute brake command
-        owner_->ActBot( &gCycle::s_brake, brake ? 1 : -1 );
+        owner_->ActBot(&gCycle::s_brake, brake ? 1 : -1);
     }
 
     REAL space = moveOn;
-    REAL minTime = space/speed;
+    REAL minTime = space / speed;
 
-    if ( turnedRecently_ )
+    if (turnedRecently_)
         minTime = owner_->GetTurnDelay();
 
     return minTime;
 }
 
+gAINavigator::SpeedEvaluator::SpeedEvaluator(gCycle &cycle) : cycle_(cycle) {}
 
+gAINavigator::SpeedEvaluator::~SpeedEvaluator() {}
 
-
-gAINavigator::SpeedEvaluator::SpeedEvaluator(gCycle & cycle ): cycle_( cycle ){}
-
-gAINavigator::SpeedEvaluator::~SpeedEvaluator(){}
-
-void gAINavigator::SpeedEvaluator::Evaluate( Path const & path, PathEvaluation & evaluation ) const
+void gAINavigator::SpeedEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
     evaluation.score = 0;
-    if( path.left.owner || path.right.owner )
+    if (path.left.owner || path.right.owner)
     {
         bool closeFactor = cycle_.Speed() * 0.5;
-        //bool isClose = gHelperUtility(cycle_,enemy,)
+        // bool isClose = gHelperUtility(cycle_,enemy,)
         {
-            if(  path.left.owner && path.left.owner->Alive() && path.left.owner->Speed() < cycle_.Speed() ) // && !onOurTeam(cycle_, path.left.owner)
+            if (path.left.owner && path.left.owner->Alive() && path.left.owner->Speed() < cycle_.Speed()) // && !onOurTeam(cycle_, path.left.owner)
             {
                 evaluation.score = 100;
             }
-            if( path.right.owner && path.right.owner->Alive() && path.right.owner->Speed() < cycle_.Speed() )
+            if (path.right.owner && path.right.owner->Alive() && path.right.owner->Speed() < cycle_.Speed())
             {
                 evaluation.score = 100;
             }

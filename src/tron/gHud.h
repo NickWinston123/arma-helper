@@ -33,7 +33,8 @@ class gGLMeter
 {
 public:
     gGLMeter();
-    void Display(float value,float max, float locx, float locy, float size, const char * t,bool displayvalue = true, bool reverse = false, REAL r=.5, REAL g=.5, REAL b=1);
+    void Display(float value, float max, float locx, float locy, float size, const char *t, bool displayvalue = true, bool reverse = false, REAL r = .5, REAL g = .5, REAL b = 1);
+
 private:
     REAL oldTime_;      // last rendered game time
     REAL oldRel_;       // last rendered gauge position
@@ -43,27 +44,27 @@ private:
 template <typename T1, typename T2>
 class gTextCache
 {
-    public:
+public:
     gTextCache() : propa_{}, propb_{} {}
-    bool Call(T1 propa, T2 propb) {
-    if ( !(propa == propa_) || !(propb == propb_) )
+    bool Call(T1 propa, T2 propb)
     {
-        propa_ = propa;
-        propb_ = propb;
-        list_.Clear();
-        return false;
-    }
-    else
-    {
-        return list_.Call();
-    }
+        if (!(propa == propa_) || !(propb == propb_))
+        {
+            propa_ = propa;
+            propb_ = propb;
+            list_.Clear();
+            return false;
+        }
+        else
+        {
+            return list_.Call();
+        }
     };
     rDisplayList list_;
 
 private:
     T1 propa_;
     T2 propb_;
-
 };
 
 extern bool hud_WallTime, hud_WallTimeLabel, hud_WallTimeShowForInfinite;

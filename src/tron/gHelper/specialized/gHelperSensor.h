@@ -4,7 +4,6 @@
 #include "eSensor.h"
 #include "../../gSensor.h"
 
-
 // sensor sent out to detect near eWalls
 class gHelperSensor : public gSensor
 {
@@ -12,7 +11,6 @@ public:
     gHelperSensor(eGameObject *o, const eCoord &start, const eCoord &d)
         : gSensor(o, start, d) {}
 
-    virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
-
+    virtual void PassEdge(const eWall *w, REAL time, REAL, int = 1);
 };
 #endif

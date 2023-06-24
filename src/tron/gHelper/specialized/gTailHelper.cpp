@@ -6,21 +6,22 @@
 #include "gTailHelper.h"
 
 using namespace helperConfig;
-namespace helperConfig{
-bool sg_tailHelper = false;
-static tConfItem<bool> sg_tailHelperC("HELPER_SELF_TAIL", sg_tailHelper);
-REAL sg_tailHelperBrightness = 1;
-static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_SELF_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
-REAL sg_tailHelperHeight = 1;
-static tConfItem<REAL> sg_tailHelperHeightC("HELPER_SELF_TAIL_HEIGHT", sg_tailHelperHeight);
-REAL sg_tailHelperGridSize = 1;
-static tConfItem<REAL> sg_tailHelperGridSizeC("HELPER_SELF_TAIL_GRID_SIZE", sg_tailHelperGridSize);
-REAL sg_tailHelperDelay = 0;
-static tConfItem<REAL> sg_tailHelperDelayC("HELPER_SELF_TAIL_DELAY", sg_tailHelperDelay);
-REAL sg_tailHelperUpdateTime = 1;
-static tConfItem<REAL> sg_tailHelperUpdateTimeC("HELPER_SELF_TAIL_UPDATE_TIME", sg_tailHelperUpdateTime);
-REAL sg_tailHelperUpdateDistance = 1;
-static tConfItem<REAL> sg_tailHelperUpdateDistanceC("HELPER_SELF_TAIL_UPDATE_DISTANCE", sg_tailHelperUpdateDistance);
+namespace helperConfig
+{
+    bool sg_tailHelper = false;
+    static tConfItem<bool> sg_tailHelperC("HELPER_SELF_TAIL", sg_tailHelper);
+    REAL sg_tailHelperBrightness = 1;
+    static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_SELF_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
+    REAL sg_tailHelperHeight = 1;
+    static tConfItem<REAL> sg_tailHelperHeightC("HELPER_SELF_TAIL_HEIGHT", sg_tailHelperHeight);
+    REAL sg_tailHelperGridSize = 1;
+    static tConfItem<REAL> sg_tailHelperGridSizeC("HELPER_SELF_TAIL_GRID_SIZE", sg_tailHelperGridSize);
+    REAL sg_tailHelperDelay = 0;
+    static tConfItem<REAL> sg_tailHelperDelayC("HELPER_SELF_TAIL_DELAY", sg_tailHelperDelay);
+    REAL sg_tailHelperUpdateTime = 1;
+    static tConfItem<REAL> sg_tailHelperUpdateTimeC("HELPER_SELF_TAIL_UPDATE_TIME", sg_tailHelperUpdateTime);
+    REAL sg_tailHelperUpdateDistance = 1;
+    static tConfItem<REAL> sg_tailHelperUpdateDistanceC("HELPER_SELF_TAIL_UPDATE_DISTANCE", sg_tailHelperUpdateDistance);
 };
 
 gTailHelper::gTailHelper(gHelper &helper, gCycle &owner)
@@ -39,29 +40,32 @@ gTailHelper::gTailHelper(gHelper &helper, gCycle &owner)
 #include <unordered_map>
 #include <tuple>
 
-struct eCoordHash {
-    std::size_t operator()(const eCoord& coord) const
+struct eCoordHash
+{
+    std::size_t operator()(const eCoord &coord) const
     {
         return std::hash<double>{}(coord.x) ^ std::hash<double>{}(coord.y);
     }
 };
 
-struct eCoordEqual {
-    bool operator()(const eCoord& lhs, const eCoord& rhs) const
+struct eCoordEqual
+{
+    bool operator()(const eCoord &lhs, const eCoord &rhs) const
     {
         return lhs.x == rhs.x && lhs.y == rhs.y;
     }
 };
 
-struct CompareDist {
-    bool operator()(const std::tuple<int, eCoord>& lhs, const std::tuple<int, eCoord>& rhs) const {
+struct CompareDist
+{
+    bool operator()(const std::tuple<int, eCoord> &lhs, const std::tuple<int, eCoord> &rhs) const
+    {
         return std::get<0>(lhs) > std::get<0>(rhs);
     }
 };
 
-
 // Manhattan distance heuristic
-int manhattanDist(const eCoord& a, const eCoord& b)
+int manhattanDist(const eCoord &a, const eCoord &b)
 {
     return abs(a.x - b.x) + abs(a.y - b.y);
 }
@@ -80,8 +84,8 @@ std::vector<eCoord> gTailHelper::getPathToTail()
     std::priority_queue<std::tuple<int, eCoord>, std::vector<std::tuple<int, eCoord>>, CompareDist> pq;
     std::unordered_map<eCoord, eCoord, eCoordHash, eCoordEqual> prev;
 
-    eCoord startPos = discretize(*ownerPos,sg_tailHelperGridSize);
-    eCoord targetPos = discretize(*tailPos,sg_tailHelperGridSize);
+    eCoord startPos = discretize(*ownerPos, sg_tailHelperGridSize);
+    eCoord targetPos = discretize(*tailPos, sg_tailHelperGridSize);
 
     int initialDist = manhattanDist(startPos, targetPos);
     pq.push(std::make_tuple(initialDist, startPos));
@@ -91,8 +95,7 @@ std::vector<eCoord> gTailHelper::getPathToTail()
         eCoord(1, 0),
         eCoord(0, 1),
         eCoord(-1, 0),
-        eCoord(0, -1)
-    };
+        eCoord(0, -1)};
 
     while (!pq.empty())
     {
@@ -104,7 +107,7 @@ std::vector<eCoord> gTailHelper::getPathToTail()
             break;
         }
 
-        for (const eCoord& dir : directions)
+        for (const eCoord &dir : directions)
         {
             eCoord next = current + dir;
             if (prev.find(next) == prev.end())

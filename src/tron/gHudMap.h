@@ -45,40 +45,45 @@ struct gHudMapDrawConf
 	bool cycleWalls = true;
 	bool cycles = true;
 	bool zones = true;
-	
+
 	double cycleSize, border;
-	
+
 	double x, y, w, h;
 	double rw, rh;
 	double ix, iy;
-	
-	struct {
-		float r, g, b, a=0;
+
+	struct
+	{
+		float r, g, b, a = 0;
 	} bg;
 };
 
-
-void DrawMap( gHudMapDrawConf c );
+void DrawMap(gHudMapDrawConf c);
 
 static inline void DrawMap(bool rimWalls, bool cycleWalls, bool cycles,
-			 double cycleSize, double border,
-			 double x, double y, double w, double h,
-			 double rw, double rh, double ix, double iy)
+						   double cycleSize, double border,
+						   double x, double y, double w, double h,
+						   double rw, double rh, double ix, double iy)
 {
 	gHudMapDrawConf c;
-	
+
 	c.rimWalls = rimWalls;
 	c.cycleWalls = cycleWalls;
 	c.cycles = cycles;
-	
+
 	c.cycleSize = cycleSize;
 	c.border = border;
-	
-	c.x = x; c.y = y; c.w = w; c.h = h;
-	c.rw = rw; c.rh = rh;
-	c.ix = ix; c.iy = iy;
-	
-	DrawMap( c );
+
+	c.x = x;
+	c.y = y;
+	c.w = w;
+	c.h = h;
+	c.rw = rw;
+	c.rh = rh;
+	c.ix = ix;
+	c.iy = iy;
+
+	DrawMap(c);
 }
 
 #endif // ARMAGETRON_RMAP_H

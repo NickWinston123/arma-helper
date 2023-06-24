@@ -47,7 +47,7 @@ class gTutorial;
 class gTutorialBase
 {
 public:
-    virtual ~gTutorialBase(){}
+    virtual ~gTutorialBase() {}
 
     // analyzes the game every second, sets uMenu::quickexit if
     // the tutorial was failed or passed
@@ -60,17 +60,17 @@ public:
     virtual void AfterSpawn();
 
     // called the moment a team won
-    virtual void OnWin( eTeam * winner );
+    virtual void OnWin(eTeam *winner);
 
     // called when the round really ends
-    virtual void RoundEnd( eTeam * winner );
+    virtual void RoundEnd(eTeam *winner);
 
-    virtual tString const & Name() const = 0;
+    virtual tString const &Name() const = 0;
 };
 
 // defined in gGame.cpp
-void sg_TutorialGame( gGameSettings & settings, gTutorialBase & tutorial );
+void sg_TutorialGame(gGameSettings &settings, gTutorialBase &tutorial);
 
-static gTutorialBase * sg_tutorial = nullptr;
+static gTutorialBase *sg_tutorial = nullptr;
 
 #endif

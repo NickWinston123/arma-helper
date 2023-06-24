@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
@@ -36,19 +36,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define AI_PROPERTIES 13
 
-class gAICharacter{
+class gAICharacter
+{
 public:
-    tString name, description;  // name and detailed description
+    tString name, description; // name and detailed description
 
     int properties[AI_PROPERTIES]; // the abilities and qualifications of this AI
 
-    REAL iq;                    // estimated battle strength
+    REAL iq; // estimated battle strength
 
-    bool Load(std::istream& file); // load this description from a stream. Return value: success or not?
+    bool Load(std::istream &file); // load this description from a stream. Return value: success or not?
 
-    static tArray<gAICharacter> s_Characters;  // all loaded AI types
-    static void LoadAll(const tString& filename);
+    static tArray<gAICharacter> s_Characters; // all loaded AI types
+    static void LoadAll(const tString &filename);
 };
-
 
 #endif

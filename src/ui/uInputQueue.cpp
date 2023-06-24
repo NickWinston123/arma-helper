@@ -34,68 +34,71 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rSDL.h"
 #endif
 
-#include  "tRecorder.h"
+#include "tRecorder.h"
 
-#include  "uMenu.h"
+#include "uMenu.h"
 
-static su_TimerCallback *timer=NULL;
+static su_TimerCallback *timer = NULL;
 
-su_TimerCallback::su_TimerCallback(){
+su_TimerCallback::su_TimerCallback()
+{
     timer = this;
 }
 
-su_TimerCallback::~su_TimerCallback(){
+su_TimerCallback::~su_TimerCallback()
+{
     if (timer == this)
         timer = NULL;
 }
 
-static inline REAL Time(){
+static inline REAL Time()
+{
     if (timer)
         return timer->GetTime();
     else
         return 0;
 }
 
-bool su_prefetchInput=false;
-bool su_contInput=true;
+bool su_prefetchInput = false;
+bool su_contInput = true;
 
 #define MAX_PENDING_INPUT 100
 
 static REAL times[MAX_PENDING_INPUT];
 static SDL_Event tEvents[MAX_PENDING_INPUT];
 
-static int   currentIn=0,current_out=0,next_in=1;
+static int currentIn = 0, current_out = 0, next_in = 1;
 
-
-static inline void increase(int &i){
+static inline void increase(int &i)
+{
     i++;
-    if (i>=MAX_PENDING_INPUT)
-        i=0;
+    if (i >= MAX_PENDING_INPUT)
+        i = 0;
 }
 
-
-static bool input_get=false;
+static bool input_get = false;
 
 void su_FetchAndStoreSDLInput()
 {
 #ifndef DEDICATED
 #ifndef WIN32
 #ifndef MACOSX
-    if (!tRecorder::IsRunning() )
+    if (!tRecorder::IsRunning())
         SDL_PumpEvents();
 #endif
 #endif
 #endif
 }
 
-
-bool su_StoreSDLEvent(const SDL_Event &tEvent){
-    if (next_in!=current_out && !input_get){
-        //con << "Extra input!\n";
-        tEvents[currentIn]=tEvent;
-        times[currentIn]=Time();
+bool su_StoreSDLEvent(const SDL_Event &tEvent)
+{
+    if (next_in != current_out && !input_get)
+    {
+        // con << "Extra input!\n";
+        tEvents[currentIn] = tEvent;
+        times[currentIn] = Time();
         increase(currentIn);
-        next_in=currentIn;
+        next_in = currentIn;
         increase(next_in);
         return false;
     }
@@ -104,41 +107,42 @@ bool su_StoreSDLEvent(const SDL_Event &tEvent){
 
 #ifndef DEDICATED
 // read and write operators for keysyms
-tRECORDING_ENUM( SDLKey );
-tRECORDING_ENUM( SDLMod );
+tRECORDING_ENUM(SDLKey);
+tRECORDING_ENUM(SDLMod);
 #endif
 
-static char const * recordingSection = "INPUT";
+static char const *recordingSection = "INPUT";
 
 //! Read or write event data
-template< class Archiver > class EventArchiver
+template <class Archiver>
+class EventArchiver
 {
 public:
 #ifndef DEDICATED
-    static void ArchiveKey( Archiver & archive, SDL_KeyboardEvent & key )
+    static void ArchiveKey(Archiver &archive, SDL_KeyboardEvent &key)
     {
         archive.Archive(key.state).Archive(key.keysym.scancode).Archive(key.keysym.sym).Archive(key.keysym.mod).Archive(key.keysym.unicode);
     }
 #endif
 
-    static bool Archive( SDL_Event & event, REAL & time, bool & ret )
+    static bool Archive(SDL_Event &event, REAL &time, bool &ret)
     {
         // start archive block if archiving is active
         Archiver archive;
-        if ( archive.Initialize( recordingSection ) )
+        if (archive.Initialize(recordingSection))
         {
 #ifndef DEDICATED
-            archive.Archive( ret );
-            if ( !ret )
+            archive.Archive(ret);
+            if (!ret)
                 return false;
 
             // write or read data
             archive.Archive(time).Archive(event.type);
-            switch ( event.type )
+            switch (event.type)
             {
             case SDL_ACTIVEEVENT:
             {
-                SDL_ActiveEvent & active = event.active;
+                SDL_ActiveEvent &active = event.active;
 
                 archive.Archive(active.gain).Archive(active.state);
             }
@@ -146,13 +150,13 @@ public:
             case SDL_KEYDOWN:
             case SDL_KEYUP:
             {
-                SDL_KeyboardEvent & key = event.key;
-                ArchiveKey( archive, key );
+                SDL_KeyboardEvent &key = event.key;
+                ArchiveKey(archive, key);
             }
             break;
             case SDL_MOUSEMOTION:
             {
-                SDL_MouseMotionEvent & motion = event.motion;
+                SDL_MouseMotionEvent &motion = event.motion;
 
                 archive.Archive(motion.state).Archive(motion.x).Archive(motion.y).Archive(motion.xrel).Archive(motion.yrel);
             }
@@ -160,7 +164,7 @@ public:
             case SDL_MOUSEBUTTONUP:
             case SDL_MOUSEBUTTONDOWN:
             {
-                SDL_MouseButtonEvent & button = event.button;
+                SDL_MouseButtonEvent &button = event.button;
 
                 archive.Archive(button.button).Archive(button.state).Archive(button.x).Archive(button.y);
             }
@@ -170,7 +174,7 @@ public:
                 break;
             }
 
-#endif  // DEDICATED
+#endif // DEDICATED
 
             return true;
         }
@@ -181,13 +185,13 @@ public:
 
 #ifndef DEDICATED
 //! Read or write event data
-template<>
-void EventArchiver< tRecordingBlock >::ArchiveKey( tRecordingBlock & archive, SDL_KeyboardEvent & orig )
+template <>
+void EventArchiver<tRecordingBlock>::ArchiveKey(tRecordingBlock &archive, SDL_KeyboardEvent &orig)
 {
     SDL_KeyboardEvent key = orig;
-    if ( uInputScrambler::Scrambled() )
+    if (uInputScrambler::Scrambled())
     {
-        switch( key.keysym.sym )
+        switch (key.keysym.sym)
         {
         case SDLK_ESCAPE:
         case SDLK_SPACE:
@@ -212,15 +216,15 @@ void EventArchiver< tRecordingBlock >::ArchiveKey( tRecordingBlock & archive, SD
 }
 #endif
 
-static const char * su_end = "END";
-static const char * su_endInput = "ENDINPUT";
+static const char *su_end = "END";
+static const char *su_endInput = "ENDINPUT";
 
 // flag indicating input was made and an input start marker is needed for the next input loop
 static bool su_markerRequired = false;
 
 void su_EndGetSDLInput()
 {
-    if ( su_markerRequired )
+    if (su_markerRequired)
     {
         // record end of input fetching
         tRecorder::Playback(su_endInput);
@@ -230,7 +234,8 @@ void su_EndGetSDLInput()
 }
 
 uInputProcessGuard::uInputProcessGuard()
-{}
+{
+}
 uInputProcessGuard::~uInputProcessGuard()
 {
     su_EndGetSDLInput();
@@ -240,7 +245,7 @@ int uInputScrambler::scrambled_ = 0;
 
 uInputScrambler::uInputScrambler()
 {
-    scrambled_ ++;
+    scrambled_++;
 }
 
 uInputScrambler::~uInputScrambler()
@@ -253,34 +258,37 @@ bool uInputScrambler::Scrambled()
     return scrambled_ > 0;
 }
 
-bool su_GetSDLInput(SDL_Event &tEvent,REAL &time){
-    bool ret=false;
+bool su_GetSDLInput(SDL_Event &tEvent, REAL &time)
+{
+    bool ret = false;
 
     // clear out data
-    memset( &tEvent, 0, sizeof( SDL_Event ) );
+    memset(&tEvent, 0, sizeof(SDL_Event));
 
     // find end of recording in playback
-    if ( tRecorder::Playback(su_end) )
+    if (tRecorder::Playback(su_end))
     {
         tRecorder::Record(su_end);
-        uMenu::quickexit=uMenu::QuickExit_Total;
+        uMenu::quickexit = uMenu::QuickExit_Total;
     }
 
     // try to fetch event from playback
-    if ( !EventArchiver< tPlaybackBlock >::Archive( tEvent, time, ret ) )
+    if (!EventArchiver<tPlaybackBlock>::Archive(tEvent, time, ret))
     {
         // get real event
         sr_LockSDL();
-        input_get=true;
-        if (current_out!=currentIn){
-            time=times[current_out];
-            tEvent=tEvents[current_out];
+        input_get = true;
+        if (current_out != currentIn)
+        {
+            time = times[current_out];
+            tEvent = tEvents[current_out];
             increase(current_out);
-            ret=true;
+            ret = true;
         }
-        else{
-            time=Time();
-            ret=
+        else
+        {
+            time = Time();
+            ret =
 #ifndef DEDICATED
                 SDL_PollEvent(&tEvent);
 #else
@@ -288,28 +296,28 @@ bool su_GetSDLInput(SDL_Event &tEvent,REAL &time){
 #endif
         }
         sr_UnlockSDL();
-        input_get=false;
+        input_get = false;
     }
 
     su_markerRequired |= ret;
 
     // store event in recording
-    if ( ret )
-        EventArchiver< tRecordingBlock >::Archive( tEvent, time, ret );
+    if (ret)
+        EventArchiver<tRecordingBlock>::Archive(tEvent, time, ret);
 
 #ifndef DEDICATED
     // filter bogus events. Some keys cause key events with wrong keysyms.
     static unsigned short blockedScancode = 0xffff;
     static SDLKey blockedKeysym = SDLK_LAST;
 
-    if( tEvent.type == SDL_KEYDOWN )
+    if (tEvent.type == SDL_KEYDOWN)
     {
         // you can spot them by zero unicode; control keys are allowed to have that,
         // but not letter and number and sign keys
-        if( tEvent.key.keysym.unicode == 0 )
+        if (tEvent.key.keysym.unicode == 0)
         {
-            if ( tEvent.key.keysym.sym >= SDLK_ESCAPE && 
-                 tEvent.key.keysym.sym <= SDLK_z )
+            if (tEvent.key.keysym.sym >= SDLK_ESCAPE &&
+                tEvent.key.keysym.sym <= SDLK_z)
             {
                 ret = false;
 
@@ -318,10 +326,10 @@ bool su_GetSDLInput(SDL_Event &tEvent,REAL &time){
             }
         }
     }
-    else if ( tEvent.type == SDL_KEYUP )
+    else if (tEvent.type == SDL_KEYUP)
     {
-        if( blockedScancode == tEvent.key.keysym.scancode && 
-            blockedKeysym == tEvent.key.keysym.sym )
+        if (blockedScancode == tEvent.key.keysym.scancode &&
+            blockedKeysym == tEvent.key.keysym.sym)
         {
             ret = false;
 
@@ -351,5 +359,3 @@ int su_InputThread(void *){
     return 0;
 }
 */
-
-

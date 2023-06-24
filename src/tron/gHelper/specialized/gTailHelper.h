@@ -27,11 +27,10 @@ private:
     std::vector<eCoord> path;
     REAL updateTime;
 
-    static eCoord discretize(const eCoord& position, REAL gridSize)
+    static eCoord discretize(const eCoord &position, REAL gridSize)
     {
         return eCoord(std::round(position.x / gridSize) * gridSize, std::round(position.y / gridSize) * gridSize);
     }
-
 };
 
 #endif

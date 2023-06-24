@@ -4,16 +4,19 @@
 #include "gZoneHelper.h"
 using namespace helperConfig;
 
-void gHelperSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
+void gHelperSensor::PassEdge(const eWall *ww, REAL time, REAL a, int r)
+{
     if (!ww)
         return;
 
-    try{
-        gSensor::PassEdge(ww,time,a,r);
-    }
-    catch( eSensorFinished & e )
+    try
     {
-        if (sg_helperSensorsZoneDetection && !sg_gSensorsZoneDetection) {
+        gSensor::PassEdge(ww, time, a, r);
+    }
+    catch (eSensorFinished &e)
+    {
+        if (sg_helperSensorsZoneDetection && !sg_gSensorsZoneDetection)
+        {
             gZoneHelper::zoneIntersects(this);
         }
         throw;

@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 tArray<gAICharacter> gAICharacter::s_Characters(0);
 
-static REAL weight[AI_PROPERTIES]=
+static REAL weight[AI_PROPERTIES] =
     {
         10,
         10,
@@ -48,69 +48,66 @@ static REAL weight[AI_PROPERTIES]=
         10,
         0,
         0,
-        0
-    };
+        0};
 
 // load this description from a stream. Return value: success or not?
-bool gAICharacter::Load(std::istream& file)
+bool gAICharacter::Load(std::istream &file)
 {
     file >> name;
 
-    iq  = 1;
+    iq = 1;
     REAL iqt = 1;
 
-    for (int i=0; i< AI_PROPERTIES; i++)
+    for (int i = 0; i < AI_PROPERTIES; i++)
     {
         if (file.eof())
             return false;
 
         file >> properties[i];
-        iq  += properties[i] * weight[i];
+        iq += properties[i] * weight[i];
         iqt += weight[i];
     }
-    iq *= 10/iqt;
+    iq *= 10 / iqt;
 
     description.ReadLine(file);
     return true;
 }
 
 // loads and adds a single AI from a string to the array
-static bool LoadSingleAI( tString const & line )
+static bool LoadSingleAI(tString const &line)
 {
     // build stream from
-    std::stringstream str(static_cast< char const * >( line ) );
+    std::stringstream str(static_cast<char const *>(line));
 
     // gets new character and lets it load the stream
     int i = gAICharacter::s_Characters.Len();
-    gAICharacter& c = gAICharacter::s_Characters[i];
+    gAICharacter &c = gAICharacter::s_Characters[i];
     bool ret = c.Load(str);
 
     // remove character on failure
-    if ( !ret )
+    if (!ret)
         gAICharacter::s_Characters.SetLen(i);
 
     return ret;
 }
 
-void gAICharacter::LoadAll(const tString& filename)
+void gAICharacter::LoadAll(const tString &filename)
 {
     std::ifstream f;
 
-    tTextFileRecorder stream( tDirectories::Config(), filename );
-    while( !stream.EndOfFile() )
+    tTextFileRecorder stream(tDirectories::Config(), filename);
+    while (!stream.EndOfFile())
     {
-        tString line( stream.GetLine().c_str() );
-        if ( line[0] != '#' )
-            LoadSingleAI( line );
+        tString line(stream.GetLine().c_str());
+        if (line[0] != '#')
+            LoadSingleAI(line);
     }
 }
-
 
 static void sg_AIReload(std::istream &s)
 {
     gAICharacter::s_Characters.Clear();
-    gAICharacter::LoadAll(tString( "aiplayers.cfg" ));
+    gAICharacter::LoadAll(tString("aiplayers.cfg"));
     con << gAICharacter::s_Characters.Len() << " AIs loaded\n";
 }
-static tConfItemFunc sg_reai( "AI_RELOAD", &sg_AIReload );
-
+static tConfItemFunc sg_reai("AI_RELOAD", &sg_AIReload);

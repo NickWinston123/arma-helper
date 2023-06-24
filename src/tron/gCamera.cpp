@@ -32,29 +32,32 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ePlayer.h"
 #include "rFont.h"
 
-void gCamera::MyInit(){
+void gCamera::MyInit()
+{
     if (mode == CAMERA_SMART)
-        if (sg_currentSettings->finishType==gFINISH_EXPRESS && sn_GetNetState() != nCLIENT )
-            pos=CenterPos()+dir.Turn(eCoord(-2,-10)) ;
+        if (sg_currentSettings->finishType == gFINISH_EXPRESS && sn_GetNetState() != nCLIENT)
+            pos = CenterPos() + dir.Turn(eCoord(-2, -10));
 
-    lastCenter=Center();
+    lastCenter = Center();
 }
 
-gCamera::gCamera(eGrid *grid, rViewport *view,ePlayerNetID *p,ePlayer *lp,eCamMode m)
-        :eCamera(grid, view,p,lp,m), lastCenter(NULL){
+gCamera::gCamera(eGrid *grid, rViewport *view, ePlayerNetID *p, ePlayer *lp, eCamMode m)
+    : eCamera(grid, view, p, lp, m), lastCenter(NULL)
+{
     MyInit();
 }
 
-
-gCamera::~gCamera(){
+gCamera::~gCamera()
+{
 #ifdef DEBUG
     int x;
-    x =0;
+    x = 0;
 #endif
 }
 
-eCoord gCamera::CenterCycleDir() const {
-    gCycle *c = dynamic_cast<gCycle *>( Center());
+eCoord gCamera::CenterCycleDir() const
+{
+    gCycle *c = dynamic_cast<gCycle *>(Center());
     if (c)
         return c->CamDir();
     else
@@ -66,18 +69,24 @@ REAL gCamera::SpeedMultiplier() const
     return gCycle::SpeedMultiplier();
 }
 
-void gCamera::Timestep(REAL ts){
+void gCamera::Timestep(REAL ts)
+{
     eCamera::Timestep(ts);
-    if (Center()!=lastCenter){
+    if (Center() != lastCenter)
+    {
         if (!netPlayer || !netPlayer->Object() ||
-                netPlayer->Object()!=center){
-            if (dynamic_cast<gCycle *>(Center())){
-                eNetGameObject *x=dynamic_cast<eNetGameObject *>(Center());
-                if (x){
-                    const ePlayerNetID *p=x->Player();
-                    if (p==NULL)
+            netPlayer->Object() != center)
+        {
+            if (dynamic_cast<gCycle *>(Center()))
+            {
+                eNetGameObject *x = dynamic_cast<eNetGameObject *>(Center());
+                if (x)
+                {
+                    const ePlayerNetID *p = x->Player();
+                    if (p == NULL)
                         con << tOutput("$camera_watching_ai");
-                    else{
+                    else
+                    {
                         tOutput o;
                         o.SetTemplateParameter(1, p->GetName());
                         o << "$camera_watching_player";
@@ -85,13 +94,7 @@ void gCamera::Timestep(REAL ts){
                     }
                 }
             }
-            lastCenter=Center();
+            lastCenter = Center();
         }
     }
 }
-
-
-
-
-
-

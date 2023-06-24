@@ -5,7 +5,6 @@
 #ifndef ArmageTron_GHELPER_SMARTTURNING
 #define ArmageTron_GHELPER_SMARTTURNING
 
-
 class gSmartTurning
 {
 public:
@@ -31,10 +30,8 @@ public:
     // function to make the cycle follow its tail
     void followTail(gHelperData &data);
 
-
     // Activate function to activate the smart turning feature
     void Activate(gHelperData &data);
-
 
     // function to get the instance of gSmartTurning
     static gSmartTurning &Get(gHelper &helper, gCycle &owner);

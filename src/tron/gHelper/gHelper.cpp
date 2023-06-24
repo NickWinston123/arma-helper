@@ -18,7 +18,6 @@ namespace helperConfig
     bool sg_helper = false;
     static tConfItem<bool> sg_helperConf("HELPER", sg_helper);
 
-
     bool sg_helperCurrentTimeLocal = true; // Determines if the helper uses its own internal clock or the games to sync actions
     static tConfItem<bool> sg_helperCurrentTimeLocalConf("HELPER_CONF_CURRENT_TIME_LOCAL", sg_helperCurrentTimeLocal);
     REAL sg_helperBrightness = 1;
@@ -32,8 +31,6 @@ namespace helperConfig
     bool sg_helperSensorDiagonalMode = false;
     static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_CONF_SENSOR_DIAGONAL_MODE", sg_helperSensorDiagonalMode);
 
-
-
     bool sg_helperDebug = false;
     static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
     bool sg_helperDebugLog = false;
@@ -46,8 +43,6 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperDebugDelayConf("HELPER_DEBUG_DELAY", sg_helperDebugDelay);
     bool sg_helperDebugTimeStamp = true;
     static tConfItem<bool> sg_helperDebugTimeStampConf("HELPER_DEBUG_TIMESTAMP", sg_helperDebugTimeStamp);
-
-
 
     bool sg_helperAutoBrake = false;
     static tConfItem<bool> sg_helperAutoBrakeConf("HELPER_SELF_AUTO_BRAKE", sg_helperAutoBrake);
@@ -84,7 +79,7 @@ namespace helperConfig
     bool sg_helperShowCorners = false;
     static tConfItem<bool> sg_helperShowCornersConf("HELPER_SELF_SHOW_CORNERS", sg_helperShowCorners);
     bool sg_helperShowCornersPassed = 0;
-    static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_SELF_SHOW_CORNERS_PASSED",sg_helperShowCornersPassed);
+    static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_SELF_SHOW_CORNERS_PASSED", sg_helperShowCornersPassed);
     REAL sg_helperShowCornersPassedRange = 1;
     static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_SELF_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
     REAL sg_helperShowCornersBoundary = 10;
@@ -159,8 +154,6 @@ namespace helperConfig
     REAL sg_helperTraceDelay = 0.01;
     static tConfItem<REAL> sg_helperTraceDelayConf("HELPER_SELF_TRACE_DELAY", sg_helperTraceDelay);
 
-
-
     bool sg_helperShowEnemyTail = false;
     static tConfItem<bool> sg_helperShowEnemyTailConf("HELPER_ENEMY_TAIL", sg_helperShowEnemyTail);
     REAL sg_helperShowEnemyTailHeight = 1;
@@ -201,29 +194,29 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperEnemyTracersBrightnessConf("HELPER_ENEMY_TRACERS_BRIGHTNESS", sg_helperEnemyTracersBrightness);
 }
 
-//HUD ITEMS
-gHelperHudItemRef<bool> sg_helperSmartTurningH("Smart Turning",sg_helperSmartTurning);
-gHelperHudItemRef<bool> sg_pathHelperH("Path Helper",sg_pathHelper);
+// HUD ITEMS
+gHelperHudItemRef<bool> sg_helperSmartTurningH("Smart Turning", sg_helperSmartTurning);
+gHelperHudItemRef<bool> sg_pathHelperH("Path Helper", sg_pathHelper);
 
-gHelperHudItem<eCoord> ownerPosH("Owner Pos",eCoord(0,0));
-gHelperHudItem<eCoord> ownerDirH("Owner Dir",eCoord(0,0));
+gHelperHudItem<eCoord> ownerPosH("Owner Pos", eCoord(0, 0));
+gHelperHudItem<eCoord> ownerDirH("Owner Dir", eCoord(0, 0));
 
-gHelperHudItem<eCoord> tailPosH("Tail Pos",eCoord(0,0));
-gHelperHudItem<eCoord> tailDirH("Tail Dir",eCoord(0,0));
+gHelperHudItem<eCoord> tailPosH("Tail Pos", eCoord(0, 0));
+gHelperHudItem<eCoord> tailDirH("Tail Dir", eCoord(0, 0));
 
-gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut",sg_helperDetectCut);
-gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug",tColoredString("None"),"Detect Cut");
+gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut", sg_helperDetectCut);
+gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug", tColoredString("None"), "Detect Cut");
 
-gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy",tColoredString("None"), "Detect Cut");
-gHelperHudItem<tColoredString> cutTurnDirectionH("Cut Turn Dir",tColoredString("0xdd0000None"), "Detect Cut");
+gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy", tColoredString("None"), "Detect Cut");
+gHelperHudItem<tColoredString> cutTurnDirectionH("Cut Turn Dir", tColoredString("0xdd0000None"), "Detect Cut");
 
-gHelperHudItem<tColoredString> helperDebugH("Debug",tColoredString("0xdd0000None"));
+gHelperHudItem<tColoredString> helperDebugH("Debug", tColoredString("0xdd0000None"));
 
-gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit",sg_helperShowHit);
-gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist",1000,"Show Hit");
+gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit", sg_helperShowHit);
+gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist", 1000, "Show Hit");
 
-gHelperHudItem<REAL> sg_helperActivateTimeH("Active Time",0);
-gHelperHudItem<REAL> sg_helperGameTimeH("Game Time",0);
+gHelperHudItem<REAL> sg_helperActivateTimeH("Active Time", 0);
+gHelperHudItem<REAL> sg_helperGameTimeH("Game Time", 0);
 
 // gHelper::getCorner retrieves a pointer to the gSmartTurningCornerData instance for the given direction
 // dir: the direction (LEFT or RIGHT) to retrieve the gSmartTurningCornerData instance for
@@ -244,79 +237,78 @@ gSmartTurningCornerData &gHelper::getCorner(int dir)
     }
 }
 
-REAL gHelper::CurrentTime() {
+REAL gHelper::CurrentTime()
+{
     return sg_helperCurrentTimeLocal ? owner_.localCurrentTime : se_GameTime();
 }
 
-void gHelper::turningBot(gHelperData &data){
-    //data.rubberData.calculate();
+void gHelper::turningBot(gHelperData &data)
+{
+    // data.rubberData.calculate();
     REAL rubberUsedRatio = data.rubberData.rubberUsedRatioF();
 
     std::shared_ptr<gHelperSensor> front = data.sensors.getSensor(FRONT);
-    if ( (sg_helperSimpleBotActivationRubber > 0 && rubberUsedRatio >= sg_helperSimpleBotActivationRubber) ||
-         (sg_helperSimpleBotActivationSpace  > 0 && front->hit <= sg_helperSimpleBotActivationSpace)
-       )
+    if ((sg_helperSimpleBotActivationRubber > 0 && rubberUsedRatio >= sg_helperSimpleBotActivationRubber) ||
+        (sg_helperSimpleBotActivationSpace > 0 && front->hit <= sg_helperSimpleBotActivationSpace))
     {
         // int dir = owner_.lastBotTurnDir;
-        std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT,true);
-        std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT,true);
+        std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT, true);
+        std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT, true);
         // if (direction == -999)
         int dir = left->hit > right->hit ? LEFT : RIGHT;
 
         // else
         //     direction = direction * -1;
 
-        for (int i = 0; i < sg_helperSimpleBotTurns; i++) {
+        for (int i = 0; i < sg_helperSimpleBotTurns; i++)
+        {
             turnHelper->makeTurnIfPossible(data, dir);
         }
     }
 }
 
-
 gHelper::gHelper(gCycle &owner)
-    :   owner_(owner),
-        player_(*(owner.Player())),
-        data_stored(*(new gHelperData())),
-        ownerWallLength(owner.ThisWallsLength()),
-        ownerTurnDelay(owner.GetTurnDelay()),
-        ownerPos(owner.pos),
-        ownerDir(owner.dir),
-        tailPos(owner.tailPos),
-        ownerSpeed(owner.verletSpeed_),
-        closestEnemy(owner)
+    : owner_(owner),
+      player_(*(owner.Player())),
+      data_stored(*(new gHelperData())),
+      ownerWallLength(owner.ThisWallsLength()),
+      ownerTurnDelay(owner.GetTurnDelay()),
+      ownerPos(owner.pos),
+      ownerDir(owner.dir),
+      tailPos(owner.tailPos),
+      ownerSpeed(owner.verletSpeed_),
+      closestEnemy(owner)
 {
 
-    data_stored.ownerData.owner_   = &owner_;
-    data_stored.sensors.owner_     = &owner_;
-    data_stored.enemies.owner_     = &owner_;
-    data_stored.rubberData.owner_  = &owner_;
+    data_stored.ownerData.owner_ = &owner_;
+    data_stored.sensors.owner_ = &owner_;
+    data_stored.enemies.owner_ = &owner_;
+    data_stored.rubberData.owner_ = &owner_;
     data_stored.rubberData.helper_ = this;
     data_stored.leftCorner.linkLastCorner(&(data_stored.lastLeftCorner));
     data_stored.rightCorner.linkLastCorner(&(data_stored.lastRightCorner));
 
-      gTurnHelper::Get(*this, owner_);
+    gTurnHelper::Get(*this, owner_);
     gSmartTurning::Get(*this, owner_);
-      gPathHelper::Get(*this, owner_);
-      gTailHelper::Get(*this, owner_);
-      gZoneHelper::Get(*this, owner_);
-
-
+    gPathHelper::Get(*this, owner_);
+    gTailHelper::Get(*this, owner_);
+    gZoneHelper::Get(*this, owner_);
 }
 
-
-bool gHelper::drivingStraight() {
+bool gHelper::drivingStraight()
+{
     return ((fabs(ownerDir.x) == 1 || fabs(ownerDir.y) == 1));
 }
 
-
 /**
-* @brief Check if the target is visible from the owner's current position
-* This function uses a gHelperSensor to detect if the target is visible from the owner's current position
-* @param target The target coordinate to check visibility for
-* @param passthrough The minimum value of the sensor hit to be considered as visible
-* @return True if the target is visible, False otherwise
-*/
-bool gHelper::canSeeTarget(eCoord target, REAL passthrough) {
+ * @brief Check if the target is visible from the owner's current position
+ * This function uses a gHelperSensor to detect if the target is visible from the owner's current position
+ * @param target The target coordinate to check visibility for
+ * @param passthrough The minimum value of the sensor hit to be considered as visible
+ * @return True if the target is visible, False otherwise
+ */
+bool gHelper::canSeeTarget(eCoord target, REAL passthrough)
+{
     gHelperSensor sensor(&owner_, ownerPos, target - (ownerPos));
     sensor.detect(REAL(.98));
     return (sensor.hit >= passthrough);
@@ -459,7 +451,7 @@ static REAL nextUpdateTime = tSysTimeFloat();
 void gHelper::autoBrake()
 {
     // Check if the cycle is still alive
-    if (!aliveCheck() || tSysTimeFloat() <= nextUpdateTime )
+    if (!aliveCheck() || tSysTimeFloat() <= nextUpdateTime)
         return;
 
     REAL min = sg_helperAutoBrakeMin;
@@ -474,9 +466,8 @@ void gHelper::autoBrake()
         REAL random = randomizer.GetFloat(0.0, sg_helperAutoBrakeRandomness); // Get a random REAL between 0 and 1
 
         nextUpdateTime = tSysTimeFloat() + random;
-
     }
-    autoBrake(owner_,min,max);
+    autoBrake(owner_, min, max);
 }
 
 void gHelper::autoBrake(gCycle &owner, REAL min, REAL max)
@@ -488,7 +479,6 @@ void gHelper::autoBrake(gCycle &owner, REAL min, REAL max)
     bool cycleBrakeDeplete = true;
     if (min <= 0 && sg_cycleBrakeDeplete < 0)
         cycleBrakeDeplete = false;
-
 
     // Check if the cycle is already braking and the used brake percentage is below the minimum brake limit
     // and brake depletion is enabled
@@ -523,7 +513,7 @@ void gHelper::enemyTracers(gHelperData &data)
         // Check if the enemy is close to the player
         bool isClose = gHelperUtility::isClose(&owner_, enemyPos, sg_helperEnemyTracersDetectionRange + data.ownerData.turnSpeedFactorF());
         // Check if the enemy cycle is faster than the player cycle
-        bool enemyFaster = ((other->Speed() > ((ownerSpeed) * sg_helperEnemyTracersSpeedMult)));
+        bool enemyFaster = ((other->Speed() > ((ownerSpeed)*sg_helperEnemyTracersSpeedMult)));
         // Check if the enemy cycle is a teammate
         bool isTeammate = (owner_.Team() == other->Team());
 
@@ -543,7 +533,6 @@ void gHelper::enemyTracers(gHelperData &data)
         gHelperUtility::debugLine(tColor(R, G, B), sg_helperEnemyTracersHeight, sg_helperEnemyTracersTimeout * data.ownerData.speedFactorF(), ownerPos, enemyPos, sg_helperEnemyTracersBrightness);
     }
 }
-
 
 /**
  * gHelper::showTail
@@ -613,11 +602,9 @@ void gHelper::showEnemyTail(gHelperData &data)
             timeout * sg_helperShowEnemyTailTimeoutMult,
             other->tailPos,
             other->tailPos,
-            sg_helperShowEnemyTailBrightness
-        );
+            sg_helperShowEnemyTailBrightness);
     }
 }
-
 
 /**
  * gHelper::showTailTracer
@@ -655,7 +642,6 @@ void gHelper::showTailTracer(gHelperData &data)
     gHelperUtility::debugLine(tColor(1, 1, 1), sg_helperShowTailTracerHeight, timeout * sg_helperShowTailTracerTimeoutMult, tailPos, tailPos, sg_helperShowTailTracerBrightness);
 }
 
-
 // Function: findCorners
 // Purpose: Finds the corners on the left and right of the vehicle.
 // Input: data - A reference to the gHelperData object containing all necessary data for the helper.
@@ -665,9 +651,9 @@ void gHelper::findCorners(gHelperData &data)
     std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT);
     std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT);
     // Find the left corner
-    data.leftCorner.findCorner(left,*this);
+    data.leftCorner.findCorner(left, *this);
     // Find the right corner
-    data.rightCorner.findCorner(right,*this);
+    data.rightCorner.findCorner(right, *this);
 }
 
 // Function: showCornergHelperUtiltiy::
@@ -676,7 +662,7 @@ void gHelper::findCorners(gHelperData &data)
 //        corner - The corner information to be visualized.
 //        timeout - The time for which the visualization should be shown.
 // Output: None.
-void gHelper::showCorner(gHelperData &data, gSmartTurningCornerData & corner, REAL timeout)
+void gHelper::showCorner(gHelperData &data, gSmartTurningCornerData &corner, REAL timeout)
 {
     // Check if the corner exists
     if (!corner.exist)
@@ -711,22 +697,20 @@ void gHelper::showCorners(gHelperData &data)
     showCorner(data, data.rightCorner, timeout);
 }
 
-
 /**
-* @brief Display a visual representation of the hit data from the sensors
-* If the cycle is alive and driving straight, the function calculates the distance
-* to the wall in front using the sensor information. If the wall is close enough,
-* it draws lines to represent the wall's location. The height, color and timeout of
-* these lines can be configured using config items. The lines can start from the
-* hit position or the cycle's position, which can also be configured using config items.
-* @param data The data object containing information about the cycle and its surroundings
-*/
+ * @brief Display a visual representation of the hit data from the sensors
+ * If the cycle is alive and driving straight, the function calculates the distance
+ * to the wall in front using the sensor information. If the wall is close enough,
+ * it draws lines to represent the wall's location. The height, color and timeout of
+ * these lines can be configured using config items. The lines can start from the
+ * hit position or the cycle's position, which can also be configured using config items.
+ * @param data The data object containing information about the cycle and its surroundings
+ */
 void gHelper::showHit(gHelperData &data)
 {
     // check if the owner is alive and driving straight
     if (!aliveCheck() || !drivingStraight())
         return;
-
 
     // get the front hit distance and check if it's close to the wall
     REAL frontHit = data.sensors.getSensor(FRONT)->hit;
@@ -737,7 +721,7 @@ void gHelper::showHit(gHelperData &data)
 
     // write the front hit distance to the stream
     if (sg_helperHud)
-        sg_helperShowHitFrontDistH << (customRound(frontHit,2));
+        sg_helperShowHitFrontDistH << (customRound(frontHit, 2));
 
     // return if the wall is not close
     if (!wallClose)
@@ -750,30 +734,31 @@ void gHelper::showHit(gHelperData &data)
     gHelperUtility::debugLine(tColor(1, .5, 0), sg_showHitDataHeightFront, timeout, ownerPos, frontBeforeHit);
 
     if (sg_helperShowHitFrontLine)
-        gHelperUtility::debugLine(gHelperUtility::tStringTotColor(sg_helperShowHitFrontLineColor),sg_helperShowHitFrontLineHeight, timeout, frontBeforeHit, frontBeforeHit);
+        gHelperUtility::debugLine(gHelperUtility::tStringTotColor(sg_helperShowHitFrontLineColor), sg_helperShowHitFrontLineHeight, timeout, frontBeforeHit, frontBeforeHit);
 
-    auto drawDebugLinesFromPosition = [&](eCoord position){
-        showHitDebugLines(position, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT,true);
-        showHitDebugLines(position, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT,true);
+    auto drawDebugLinesFromPosition = [&](eCoord position)
+    {
+        showHitDebugLines(position, owner_.Direction().Turn(LEFT), timeout, data, sg_showHitDataRecursion, LEFT, true);
+        showHitDebugLines(position, owner_.Direction().Turn(RIGHT), timeout, data, sg_showHitDataRecursion, RIGHT, true);
     };
 
     // check if the start position is at the hit position or not
     switch (sg_helperShowHitStartMode)
     {
-        case 2:
-            // draw debug lines from the owner's current position in the left and right directions
-            drawDebugLinesFromPosition(ownerPos);
-            // fall through
-        case 0:
-            // draw debug lines from the front before hit position in the left and right directions
-            drawDebugLinesFromPosition(frontBeforeHit);
-            break;
-        case 1:
-            // draw debug lines from the owner's current position in the left and right directions
-            drawDebugLinesFromPosition(ownerPos);
-            break;
-        default:
-            break;
+    case 2:
+        // draw debug lines from the owner's current position in the left and right directions
+        drawDebugLinesFromPosition(ownerPos);
+        // fall through
+    case 0:
+        // draw debug lines from the front before hit position in the left and right directions
+        drawDebugLinesFromPosition(frontBeforeHit);
+        break;
+    case 1:
+        // draw debug lines from the owner's current position in the left and right directions
+        drawDebugLinesFromPosition(ownerPos);
+        break;
+    default:
+        break;
     }
 }
 
@@ -809,22 +794,24 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     bool open = hitDistance > data.ownerData.turnSpeedFactorF() * sg_showHitDataFreeRange;
     bool other = false;
 
-    if (firstRun && sg_helperDetectCut) {
+    if (firstRun && sg_helperDetectCut)
+    {
         gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
 
         // Only care when enemy is driving toward us, or same direction
-        if ( !( enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight )) {
+        if (!(enemyData.enemyIsFacingOurLeft || enemyData.enemyIsFacingOurRight))
+        {
             open = open && (enemyData.canCutEnemy || sensorDir != enemyData.enemySide);
 
             if (!open && !enemyData.canCutUs && sensorDir == enemyData.enemySide)
                 other = true;
         }
-
     }
 
-    auto drawDebugLine = [&](tColor color){
-        gHelperUtility::debugLine(color, sg_showHitDataHeightSides, timeout, currentPos, hitPos,sg_showHitDataBrightness);
-        gHelperUtility::debugLine(color, sg_showHitDataHeightSides, timeout, hitPos, hitPos,sg_showHitDataBrightness);
+    auto drawDebugLine = [&](tColor color)
+    {
+        gHelperUtility::debugLine(color, sg_showHitDataHeightSides, timeout, currentPos, hitPos, sg_showHitDataBrightness);
+        gHelperUtility::debugLine(color, sg_showHitDataHeightSides, timeout, hitPos, hitPos, sg_showHitDataBrightness);
     };
 
     // Draw a green line if the hit distance is greater than the specified value, indicating that the path is clear.
@@ -832,7 +819,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     {
         drawDebugLine(tColor(0, 1, 0));
     }
-    //Gray line - special case when enemy cant cut us and we cant cut them
+    // Gray line - special case when enemy cant cut us and we cant cut them
     else if (other)
     {
         drawDebugLine(tColor(.4, .4, .4));
@@ -856,7 +843,8 @@ bool gHelper::aliveCheck()
 
 void gHelper::trace(gHelperData &data, int dir)
 {
-    if (!(owner_.pendingTurns.size() == 0)) {
+    if (!(owner_.pendingTurns.size() == 0))
+    {
         gHelperUtility::Debug("Trace", "Not tracing due to pending turns.");
         return;
     }
@@ -870,19 +858,19 @@ void gHelper::trace(gHelperData &data, int dir)
     static float sensorDistance[2] = {1E+30, 1E+30};
     int index = (dir == LEFT) ? 0 : 1;
 
-    if (sensor->hit > (sensorDistance[index] + sg_helperTraceReactRange)) {
+    if (sensor->hit > (sensorDistance[index] + sg_helperTraceReactRange))
+    {
         gHelperUtility::Debug("Trace", (dir == LEFT) ? "Tracing left" : "Tracing right");
-        gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index]{
+        gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index]
+                                {
             this->owner_.ActTurnBot(dir);
-            sensorDistance[index] = 1E+30;
-        });
+            sensorDistance[index] = 1E+30; });
     }
-    else {
+    else
+    {
         sensorDistance[index] = sensor->hit;
     }
 }
-
-
 
 // void gHelper::trace(gHelperData &data, int dir)
 // {
@@ -914,7 +902,8 @@ void gHelper::Activate()
 
     REAL start;
 
-    if (sg_helperHud) {
+    if (sg_helperHud)
+    {
         start = tRealSysTimeFloat();
 
         tColoredString debug;
@@ -923,10 +912,10 @@ void gHelper::Activate()
         debug << "eGameObjects: " << eGrid::CurrentGrid()->gameObjects.Len() << "\n";
 
         helperDebugH << debug;
-        ownerPosH    << roundeCoord(ownerPos);
-        ownerDirH    << roundeCoord(ownerDir);
-        tailPosH     << roundeCoord(tailPos);
-        tailDirH     << roundeCoord(owner_.tailDir);
+        ownerPosH << roundeCoord(ownerPos);
+        ownerDirH << roundeCoord(ownerDir);
+        tailPosH << roundeCoord(tailPos);
+        tailDirH << roundeCoord(owner_.tailDir);
         sg_helperGameTimeH << se_GameTime();
     }
 
@@ -967,7 +956,6 @@ void gHelper::Activate()
     if (sg_helperShowEnemyTail)
         showEnemyTail(data_stored);
 
-
     if (sg_helperAutoBrake)
         autoBrake();
 
@@ -975,11 +963,10 @@ void gHelper::Activate()
         turningBot(data_stored);
 
     if (sg_helperTraceLeft)
-        trace(data_stored,LEFT);
-
+        trace(data_stored, LEFT);
 
     if (sg_helperTraceRight)
-        trace(data_stored,RIGHT);
+        trace(data_stored, RIGHT);
 
     if (sg_helperHud)
         sg_helperActivateTimeH << (tRealSysTimeFloat() - start);
@@ -993,7 +980,7 @@ gHelper &gHelper::Get(gCycle &cycle)
     if (cycle.helper_.get() == 0)
         cycle.helper_.reset(new gHelper(cycle));
 
-    return  *cycle.helper_;
+    return *cycle.helper_;
 }
 
 gHelper::~gHelper()

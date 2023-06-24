@@ -39,12 +39,13 @@ class gCycle;
 class gAINavigator
 {
     gAINavigator();
+
 public:
     //! settings used by the idler bot
     struct Settings
     {
         REAL newWallBlindness; //!< number of seconds new walls are invisible to the idler
-        REAL range; //!< seconds to plan ahead
+        REAL range;            //!< seconds to plan ahead
 
         Settings();
     };
@@ -54,33 +55,34 @@ public:
     //! turn wish passed from outside
     struct Wish
     {
-        int turn;             //!< direction to turn into (values >1 turn multiple times)
+        int turn; //!< direction to turn into (values >1 turn multiple times)
 
         REAL maxDisadvantage; //!< maximal disadvantage of the wish direction over others to have it still accepted
         REAL minDistance;     //!< minimal 'distance' value of the wish direction to have it accepted
 
-        Wish( gAINavigator const & idler );
+        Wish(gAINavigator const &idler);
+
     private:
         Wish();
     };
 
     // sensor with additional data
-    class Sensor: public gHelperSensor
+    class Sensor : public gHelperSensor
     {
     public:
-        Sensor(gAINavigator & ai,const eCoord &start,const eCoord &d);
+        Sensor(gAINavigator &ai, const eCoord &start, const eCoord &d);
 
-        virtual void PassEdge(const eWall *ww,REAL time,REAL a,int r);
+        virtual void PassEdge(const eWall *ww, REAL time, REAL a, int r);
 
         // check how far the hit wall extends straight into the given direction
-        REAL HitWallExtends( eCoord const & dir, eCoord const & origin );
+        REAL HitWallExtends(eCoord const &dir, eCoord const &origin);
 
-        gAINavigator & ai_;          // AI using this sensor
-        gCycle * hitOwner_;     // the owner of the hit wall
-        REAL     hitTime_;      // the time the hit wall was built at
-        REAL     hitDistance_;  // the distance of the wall to the cycle that built it
-        short    lrSuggestion_; // sensor's oppinon on whether moving to the left or right of the hit wall is recommended (-1 for left, +1 for right)
-        int      windingNumber_; // the number of turns (with sign) the cycle has taken
+        gAINavigator &ai_;   // AI using this sensor
+        gCycle *hitOwner_;   // the owner of the hit wall
+        REAL hitTime_;       // the time the hit wall was built at
+        REAL hitDistance_;   // the distance of the wall to the cycle that built it
+        short lrSuggestion_; // sensor's oppinon on whether moving to the left or right of the hit wall is recommended (-1 for left, +1 for right)
+        int windingNumber_;  // the number of turns (with sign) the cycle has taken
 
     private:
         bool DoExtraDetectionStuff();
@@ -90,42 +92,42 @@ public:
     class CycleController
     {
     public:
-        virtual void Turn( gCycle & cycle , int dir    ) = 0; //!< turns a cycle. dir < 0 turns left.
-        virtual void Brake( gCycle & cycle, bool brake ) = 0; //!< brakes a cycle
+        virtual void Turn(gCycle &cycle, int dir) = 0;     //!< turns a cycle. dir < 0 turns left.
+        virtual void Brake(gCycle &cycle, bool brake) = 0; //!< brakes a cycle
         virtual ~CycleController();
     };
 
     //! use direct control
-    class CycleControllerBasic: public CycleController
+    class CycleControllerBasic : public CycleController
     {
     public:
-        virtual void Turn( gCycle & cycle , int dir    ); //!< turns a cycle.
-        virtual void Brake( gCycle & cycle, bool brake ); //!< brakes a cycle
+        virtual void Turn(gCycle &cycle, int dir);     //!< turns a cycle.
+        virtual void Brake(gCycle &cycle, bool brake); //!< brakes a cycle
         virtual ~CycleControllerBasic();
     };
 
     //! use actions
-    class CycleControllerAction: public CycleController
+    class CycleControllerAction : public CycleController
     {
     public:
-        virtual void Turn( gCycle & cycle , int dir    ); //!< turns a cycle.
-        virtual void Brake( gCycle & cycle, bool brake ); //!< brakes a cycle
+        virtual void Turn(gCycle &cycle, int dir);     //!< turns a cycle.
+        virtual void Brake(gCycle &cycle, bool brake); //!< brakes a cycle
         virtual ~CycleControllerAction();
     };
 
     //! describes walls
     struct WallHug
     {
-        gCycle * owner;  //! the cycle the walls we like belong to
-        REAL lastTimeSeen;     //! the last time we saw such a wall
-        REAL hitDistance;      //! driving distance of the wall that was hit
-        REAL distance;         //! distance to the hit wall
-        int  lr;               //! direction the wall is running to as seen from us
+        gCycle *owner;     //! the cycle the walls we like belong to
+        REAL lastTimeSeen; //! the last time we saw such a wall
+        REAL hitDistance;  //! driving distance of the wall that was hit
+        REAL distance;     //! distance to the hit wall
+        int lr;            //! direction the wall is running to as seen from us
 
         WallHug();
 
         // fill data from sensor
-        void FillFrom( Sensor const & sensor );
+        void FillFrom(Sensor const &sensor);
     };
 
     class PathGroup;
@@ -135,62 +137,65 @@ public:
     {
         friend class gAINavigator;
         friend class PathGroup;
+
     public:
-        REAL   distance;           //!< expected distance possible to travel this path without getting killed
-        REAL   immediateDistance;  //!< distance to next problem
-        REAL   width;              //!< width of the narrowest bit of the path
+        REAL distance;             //!< expected distance possible to travel this path without getting killed
+        REAL immediateDistance;    //!< distance to next problem
+        REAL width;                //!< width of the narrowest bit of the path
         eCoord shortTermDirection; //!< direction to travel in in the short run
         eCoord longTermDirection;  //!< direction to travel in in the long run
-        int    followedSince;      //!< number of turns this path is already being followed
+        int followedSince;         //!< number of turns this path is already being followed
 
-        WallHug left, right;       //!< walls to the left and right of the path
+        WallHug left, right; //!< walls to the left and right of the path
     private:
         // fill in relevant data from sensors
-        void Fill( gAINavigator const & navigator, Sensor const & left, Sensor const & right, eCoord const & shortDir, eCoord const & longDir, int turn );
-        REAL Take( CycleController & controller, gCycle & cycle, REAL maxStep ); //!< take that path. Return value: time to next check
+        void Fill(gAINavigator const &navigator, Sensor const &left, Sensor const &right, eCoord const &shortDir, eCoord const &longDir, int turn);
+        REAL Take(CycleController &controller, gCycle &cycle, REAL maxStep); //!< take that path. Return value: time to next check
         ~Path();
         Path();
 
-        int  turn;    //!< direction to turn to next
+        int turn;     //!< direction to turn to next
         REAL driveOn; //!< how long to drive straight before doing something (in distance)
     };
 
     class PathGroup
     {
         friend class gAINavigator;
+
     public:
         //! types of paths
         enum PathID
         {
-            PATH_UTURN_LEFT = 0,   //!< turn around completely
-            PATH_TURN_LEFT,        //!< turn left
-            PATH_ZIGZAG_LEFT,      //!< turn left, then right, or wait, then turn left, looking for a hole
-            PATH_STRAIGHT,         //!< go straight
+            PATH_UTURN_LEFT = 0, //!< turn around completely
+            PATH_TURN_LEFT,      //!< turn left
+            PATH_ZIGZAG_LEFT,    //!< turn left, then right, or wait, then turn left, looking for a hole
+            PATH_STRAIGHT,       //!< go straight
             PATH_ZIGZAG_RIGHT,
             PATH_TURN_RIGHT,
             PATH_UTURN_RIGHT,
             PATH_COUNT
         };
 
-        int GetPathCount() const;                   //!< returns the current number of paths
-        Path const & GetPath( int id ) const;       //!< returns a path
-        REAL TakePath( CycleController & controller, gCycle & cycle, int id, REAL maxStep = 1E+30 );    //!< takes a path
-        Path const & GetLastPath() const;           //!< the last path taken, with old info
+        int GetPathCount() const;                                                                //!< returns the current number of paths
+        Path const &GetPath(int id) const;                                                       //!< returns a path
+        REAL TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep = 1E+30); //!< takes a path
+        Path const &GetLastPath() const;                                                         //!< the last path taken, with old info
 
         PathGroup();
         ~PathGroup();
-    private:
-        Path & AccessPath( int id );          //!< returns a path
 
-        Path last;                        //!< last path
-        Path paths[ PATH_COUNT ];         //!< fixed path list. Maybe add dynamic paths later.
+    private:
+        Path &AccessPath(int id); //!< returns a path
+
+        Path last;              //!< last path
+        Path paths[PATH_COUNT]; //!< fixed path list. Maybe add dynamic paths later.
     };
 
     //! evaluation of a path
     struct PathEvaluation
     {
-        bool veto;  //!< was this path vetoed?
-        REAL score; //!< score of the path. 0: pointless suicide, 100: pretty good.
+        bool veto;        //!< was this path vetoed?
+        REAL score;       //!< score of the path. 0: pointless suicide, 100: pretty good.
         REAL nextThought; //!< seconds to next thought
 
         PathEvaluation();
@@ -201,159 +206,166 @@ public:
     {
     public:
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const = 0;
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const = 0;
         virtual ~PathEvaluator();
 
         //! turns a value between 0 and infinity, where 1 would be an expected value, into a value
         //! between 0 and 100
-        static REAL Adjust( REAL input )
+        static REAL Adjust(REAL input)
         {
-            return 100*(1-1/(1+input));
+            return 100 * (1 - 1 / (1 + input));
         }
     };
 
     //! simple evaluator: vetoes certain death moves, picks best space move
-    class SuicideEvaluator: public PathEvaluator
+    class SuicideEvaluator : public PathEvaluator
     {
     public:
-        SuicideEvaluator( gCycle & cycle, REAL timeFrame );
-        explicit SuicideEvaluator( gCycle & cycle );
+        SuicideEvaluator(gCycle &cycle, REAL timeFrame);
+        explicit SuicideEvaluator(gCycle &cycle);
 
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
         ~SuicideEvaluator();
 
-        static void SetEmergency( bool emergency );
+        static void SetEmergency(bool emergency);
+
     private:
-        gCycle & cycle_;
-        REAL   timeFrame_;
+        gCycle &cycle_;
+        REAL timeFrame_;
         static bool emergency_;
     };
 
-// likes to chase its own tail
-class TailChaseEvaluator: public PathEvaluator
-{
-public:
-    TailChaseEvaluator( gCycle & cycle );
-
-    void Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const;
-private:
-    gCycle & cycle_; //!< the owning cycle
-};
-
-
-    //! simple evaluator: vetoes moves that trap self
-    class TrapEvaluator: public PathEvaluator
+    // likes to chase its own tail
+    class TailChaseEvaluator : public PathEvaluator
     {
     public:
-        TrapEvaluator( gCycle & cycle, REAL space );
-        explicit TrapEvaluator( gCycle & cycle );
+        TailChaseEvaluator(gCycle &cycle);
+
+        void Evaluate(gAINavigator::Path const &path, gAINavigator::PathEvaluation &evaluation) const;
+
+    private:
+        gCycle &cycle_; //!< the owning cycle
+    };
+
+    //! simple evaluator: vetoes moves that trap self
+    class TrapEvaluator : public PathEvaluator
+    {
+    public:
+        TrapEvaluator(gCycle &cycle, REAL space);
+        explicit TrapEvaluator(gCycle &cycle);
 
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
         ~TrapEvaluator();
 
-        static void SetEmergency( bool emergency );
+        static void SetEmergency(bool emergency);
+
     private:
-        gCycle & cycle_;
-        REAL   space_;
+        gCycle &cycle_;
+        REAL space_;
     };
 
     //! simple evaluator: random noise
-    class RandomEvaluator: public PathEvaluator
+    class RandomEvaluator : public PathEvaluator
     {
     public:
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
-        RandomEvaluator(gCycle & cycle );
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
+        RandomEvaluator(gCycle &cycle);
         ~RandomEvaluator();
+
     private:
-        gCycle & cycle_;
+        gCycle &cycle_;
     };
 
     //! cowardly evaluator: try to move backwards on enemy walls
-    class CowardEvaluator: public PathEvaluator
+    class CowardEvaluator : public PathEvaluator
     {
     public:
-        explicit CowardEvaluator( gCycle & cycle );
+        explicit CowardEvaluator(gCycle &cycle);
         ~CowardEvaluator();
 
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
+
     private:
-        gCycle & cycle_;
+        gCycle &cycle_;
     };
 
     //! cowardly evaluator: try to move backwards on enemy walls
-    class SpeedEvaluator: public PathEvaluator
+    class SpeedEvaluator : public PathEvaluator
     {
     public:
-        explicit SpeedEvaluator( gCycle & cycle );
+        explicit SpeedEvaluator(gCycle &cycle);
         ~SpeedEvaluator();
 
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
+
     private:
-        gCycle & cycle_;
+        gCycle &cycle_;
     };
 
-
     //! tunnel evaluator: avoids tunneling between walls of different cycles
-    class TunnelEvaluator: public PathEvaluator
+    class TunnelEvaluator : public PathEvaluator
     {
     public:
-        explicit TunnelEvaluator( gCycle & cycle );
+        explicit TunnelEvaluator(gCycle &cycle);
         ~TunnelEvaluator();
 
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
+
     private:
-        gCycle & cycle_;
+        gCycle &cycle_;
     };
 
     //! simple evaluator: measures available space compared to a passed-in value
-    class SpaceEvaluator: public PathEvaluator
+    class SpaceEvaluator : public PathEvaluator
     {
     public:
-        explicit SpaceEvaluator( gCycle & cycle );
-        explicit SpaceEvaluator( REAL referenceDistance );
+        explicit SpaceEvaluator(gCycle &cycle);
+        explicit SpaceEvaluator(REAL referenceDistance);
 
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
         ~SpaceEvaluator();
+
     private:
         REAL referenceDistance_;
     };
 
     //! simple evaluator: likes to follow through with the plan
-    class PlanEvaluator: public PathEvaluator
+    class PlanEvaluator : public PathEvaluator
     {
     public:
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
         ~PlanEvaluator();
     };
 
     //! simple evaluator: does not like it if rubber gets burned
-    class RubberEvaluator: public PathEvaluator
+    class RubberEvaluator : public PathEvaluator
     {
     public:
         //! evaluate a path.
-        virtual void Evaluate( Path const & path, PathEvaluation & evaluation ) const;
-        explicit RubberEvaluator( gCycle & cylce );
-        RubberEvaluator( gCycle & cycle, REAL maxTime );
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
+        explicit RubberEvaluator(gCycle &cylce);
+        RubberEvaluator(gCycle &cycle, REAL maxTime);
         ~RubberEvaluator();
+
     private:
-        void Init( gCycle & cycle, REAL maxTime );
+        void Init(gCycle &cycle, REAL maxTime);
         REAL rubberLeft_; //!< amount of rubber left to burn with inevitable loss due to turn delay factored in
         REAL maxRubber_;  //!< maximal rubber possible to burn
     };
 
     //! evaluator for following a moving target
-    class FollowEvaluator: public PathEvaluator
+    class FollowEvaluator : public PathEvaluator
     {
     public:
-        FollowEvaluator( gCycle & cycle);
+        FollowEvaluator(gCycle &cycle);
         ~FollowEvaluator();
 
         //! return data of SolveTurn
@@ -363,11 +375,11 @@ private:
             REAL quality;   //!< quality of the turn
             eCoord turnDir; //!< direction to drive in
 
-            SolveTurnData(): turnTime(0), quality(0){}
+            SolveTurnData() : turnTime(0), quality(0) {}
         };
 
         //! determine when we need to turn in order to catch the target.
-        void SolveTurn( int direction, eCoord const & targetVelocity, eCoord const & targetPosition, SolveTurnData & data );
+        void SolveTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data);
         void TryTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data, int depth = 0);
         bool FindTarget();
         bool targetZone();
@@ -375,26 +387,26 @@ private:
         bool FindTeamTarget();
         bool SetDesiredTarget(tString target);
         //! set the target to follow
-        void SetTarget( eCoord const & target, eCoord const & velocity );
-        void SetTarget( eGameObject * object );
+        void SetTarget(eCoord const &target, eCoord const &velocity);
+        void SetTarget(eGameObject *object);
         bool WallsInPath(const eCoord &start, const eCoord &target);
-        virtual void Evaluate( gAINavigator::Path const & path, gAINavigator::PathEvaluation & evaluation ) const;
+        virtual void Evaluate(gAINavigator::Path const &path, gAINavigator::PathEvaluation &evaluation) const;
 
-        gCycle * GetBlocker() const { return blocker_; }
+        gCycle *GetBlocker() const { return blocker_; }
+
     protected:
-        gCycle  &cycle_; //!< the owning cycle
-        gCycle * blocker_;     //!< other cycle blocking the path to the target
-        bool   blockedBySelf_; //!< flag indicating the path is blocked by the cycle itself
-        eCoord toTarget_;      //!< direction to target, roughly normalized
-        REAL   turnTime_;      //!< time to make the next turn
+        gCycle &cycle_;      //!< the owning cycle
+        gCycle *blocker_;    //!< other cycle blocking the path to the target
+        bool blockedBySelf_; //!< flag indicating the path is blocked by the cycle itself
+        eCoord toTarget_;    //!< direction to target, roughly normalized
+        REAL turnTime_;      //!< time to make the next turn
         eCoord smoothedDirection = eCoord(0, 0);
     };
-
 
     class EvaluationManager
     {
     public:
-        EvaluationManager( PathGroup & paths );
+        EvaluationManager(PathGroup &paths);
 
         //! ways to combine new evaluation with previous results
         enum BlendMode
@@ -406,66 +418,66 @@ private:
         };
 
         //! evaluate all paths using the evaluator
-        void Evaluate( PathEvaluator const & evaluator, BlendMode mode = BLEND_ADD, REAL scale = 1.0, REAL offset = 0.0 );
+        void Evaluate(PathEvaluator const &evaluator, BlendMode mode = BLEND_ADD, REAL scale = 1.0, REAL offset = 0.0);
 
         //! evaluate all paths using the evaluator, adding results
-        void Evaluate( PathEvaluator const & evaluator, REAL scale )
+        void Evaluate(PathEvaluator const &evaluator, REAL scale)
         {
-            Evaluate( evaluator, BLEND_ADD, scale );
+            Evaluate(evaluator, BLEND_ADD, scale);
         }
 
         //! reset scores, but don't forget veto
         void Reset();
 
         //! execute
-        REAL Finish( CycleController & controller, gCycle & cycle, REAL maxStep = 1E+30 );
-    private:
-        PathGroup & paths_; //!< the path group
+        REAL Finish(CycleController &controller, gCycle &cycle, REAL maxStep = 1E+30);
 
-        int  bestPath_;  //!< best path
+    private:
+        PathGroup &paths_; //!< the path group
+
+        int bestPath_; //!< best path
 
         //! list of evaluations fitting to those in the
-        PathEvaluation evaluations_[ PathGroup::PATH_COUNT ];
+        PathEvaluation evaluations_[PathGroup::PATH_COUNT];
     };
 
-    PathGroup & GetPaths(); //!< returns the paths the navigator knows about
-    void UpdatePaths();     //!< updates the paths to the new cycle position
+    PathGroup &GetPaths(); //!< returns the paths the navigator knows about
+    void UpdatePaths();    //!< updates the paths to the new cycle position
 
-    gAINavigator( gCycle * owner );
+    gAINavigator(gCycle *owner);
 
     // returns the controlled cycle
 
-    gCycle * Owner() const
+    gCycle *Owner() const
     {
         return owner_;
     }
 
     // determines the distance between two sensors; the size should give the likelyhood
     // to survive if you pass through a gap between the two selected walls
-    REAL Distance( Sensor const & a, Sensor const & b ) const;
+    REAL Distance(Sensor const &a, Sensor const &b) const;
 
-    bool CanMakeTurn( uActionPlayer * action );
+    bool CanMakeTurn(uActionPlayer *action);
 
     //! does the main thinking at the current time, knowing the next thought can't be sooner than minstep
-    REAL Activate( REAL currentTime, REAL minstep, REAL penalty = 0, Wish * wish = 0 );
+    REAL Activate(REAL currentTime, REAL minstep, REAL penalty = 0, Wish *wish = 0);
 
 private:
-    short lastTurn_;         //!< the last turn the chat AI made
-    REAL nextTurn_;          //!< the next turn if one is planned
-    bool turnedRecently_;    //!< whether the cycle was turned or almost turned recently
-    gCycle * owner_;         //!< owner of chatbot
-    PathGroup paths_;        //!< possible future paths
+    short lastTurn_;      //!< the last turn the chat AI made
+    REAL nextTurn_;       //!< the next turn if one is planned
+    bool turnedRecently_; //!< whether the cycle was turned or almost turned recently
+    gCycle *owner_;       //!< owner of chatbot
+    PathGroup paths_;     //!< possible future paths
 };
 
-class gSmarterBot: public gAINavigator
+class gSmarterBot : public gAINavigator
 {
     friend class gCycle;
 
-    REAL nextChatAI_;        //!< the next time the chat AI can be active
+    REAL nextChatAI_; //!< the next time the chat AI can be active
     gCycle *owner_;
     ePlayerNetID *player_;
     ePlayer *local_player;
-
 
 public:
     gSmarterBot(gCycle *owner);
@@ -474,7 +486,7 @@ public:
     REAL Think(REAL minStep);
     void Activate(REAL currentTime);
 
-    static gSmarterBot& Get(gCycle *cycle);
+    static gSmarterBot &Get(gCycle *cycle);
     ~gSmarterBot();
 };
 #endif

@@ -25,8 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef     ARMAGETRONAD_SRC_TRON_GCYCLEMOVEMENT_H_INCLUDED
-#define     ARMAGETRONAD_SRC_TRON_GCYCLEMOVEMENT_H_INCLUDED
+#ifndef ARMAGETRONAD_SRC_TRON_GCYCLEMOVEMENT_H_INCLUDED
+#define ARMAGETRONAD_SRC_TRON_GCYCLEMOVEMENT_H_INCLUDED
 
 #include "eNetGameObject.h"
 #include <deque>
@@ -42,35 +42,37 @@ struct gMaxSpaceAheadHitInfo;
 class gMaxSpaceAheadHitInfoClearer
 {
 public:
-    gMaxSpaceAheadHitInfoClearer( gMaxSpaceAheadHitInfo * & info );
+    gMaxSpaceAheadHitInfoClearer(gMaxSpaceAheadHitInfo *&info);
     ~gMaxSpaceAheadHitInfoClearer();
+
 private:
-    gMaxSpaceAheadHitInfo * & info_;
+    gMaxSpaceAheadHitInfo *&info_;
 };
 
 REAL GetTurnSpeedFactor(void);
 
-class gEnemyInfluence{
+class gEnemyInfluence
+{
 private:
-    nObserverPtr< ePlayerNetID >	lastEnemyInfluence;  	// the last enemy wall we encountered
-    REAL							lastTime;				// the time it was drawn at
+    nObserverPtr<ePlayerNetID> lastEnemyInfluence; // the last enemy wall we encountered
+    REAL lastTime;                                 // the time it was drawn at
 
 public:
     gEnemyInfluence();
 
-    ePlayerNetID const *            GetEnemy() const;	    // the last enemy possibly responsible for our death
-    REAL                            GetTime() const;        // the time of the influence
-    void							AddSensor( const gSensor& sensor, REAL timePenalty, gCycleMovement * thisCycle ); // add the result of the sensor scan to our data
-    void							AddWall( const eWall * wall, eCoord const & point, REAL timePenalty, gCycleMovement * thisCycle ); // add the interaction with a wall to our data
-    void							AddWall( const gPlayerWall * wall, REAL timeBuilt, REAL timePenalty, gCycleMovement * thisCycle ); // add the interaction with a wall to our data
+    ePlayerNetID const *GetEnemy() const;                                                               // the last enemy possibly responsible for our death
+    REAL GetTime() const;                                                                               // the time of the influence
+    void AddSensor(const gSensor &sensor, REAL timePenalty, gCycleMovement *thisCycle);                 // add the result of the sensor scan to our data
+    void AddWall(const eWall *wall, eCoord const &point, REAL timePenalty, gCycleMovement *thisCycle);  // add the interaction with a wall to our data
+    void AddWall(const gPlayerWall *wall, REAL timeBuilt, REAL timePenalty, gCycleMovement *thisCycle); // add the interaction with a wall to our data
 };
 
-struct gRealColor {
-    REAL r,g,b;
+struct gRealColor
+{
+    REAL r, g, b;
 
-    gRealColor():r(1), g(1), b(1){}
-    gRealColor(REAL r_, REAL g_, REAL b_):r(r_), g(g_), b(b_){}
-
+    gRealColor() : r(1), g(1), b(1) {}
+    gRealColor(REAL r_, REAL g_, REAL b_) : r(r_), g(g_), b(b_) {}
 };
 
 //! class handling lightcycle movement aspects ( not networking beyond construction, no rendering, no wall building )
@@ -78,182 +80,167 @@ class gCycleMovement : public eNetGameObject
 {
 public:
     // accessors
-    static float            RubberSpeed             ()                                              ;   //!< returns the rubber speed (decay rate of the distance to the wall in front)
-    static float            SpeedMultiplier         ()                                              ;   //!< returns the current speed multiplier
-    static void             SetSpeedMultiplier      ( REAL                  mult        )           ;   //!< sets the current speed multiplier
-    static float            MaximalSpeed            ()                                              ;   //!< returns the maximal speed a cycle can reach on its own
+    static float RubberSpeed();                //!< returns the rubber speed (decay rate of the distance to the wall in front)
+    static float SpeedMultiplier();            //!< returns the current speed multiplier
+    static void SetSpeedMultiplier(REAL mult); //!< sets the current speed multiplier
+    static float MaximalSpeed();               //!< returns the maximal speed a cycle can reach on its own
 
     // AI info
-    int    	                WindingNumber           ()                                    const     ;   //!< returns the current winding number
-    void   	                SetWindingNumberWrapped ( int newWindingNumberWrapped )                 ;   //!< sets the new wrapped winding number
+    int WindingNumber() const;                                 //!< returns the current winding number
+    void SetWindingNumberWrapped(int newWindingNumberWrapped); //!< sets the new wrapped winding number
 
     // information about physics state
-    virtual eCoord          Direction               ()                                    const     ;   //!< returns the current driving direction
-    virtual eCoord          LastDirection           ()                                    const     ;   //!< returns the last driving direction
-    virtual REAL            Speed                   ()                                    const     ;   //!< returns the current speed
-    virtual bool            Alive                   ()                                    const     ;   //!< returns whether the cycle is still alive
-    virtual bool            Vulnerable              ()                                    const     ;   //!< returns whether the cycle can be killed
-    REAL GetAcceleration(void) const  { return acceleration; };  //!< Gets the cycle's acceleration
+    virtual eCoord Direction() const;                          //!< returns the current driving direction
+    virtual eCoord LastDirection() const;                      //!< returns the last driving direction
+    virtual REAL Speed() const;                                //!< returns the current speed
+    virtual bool Alive() const;                                //!< returns whether the cycle is still alive
+    virtual bool Vulnerable() const;                           //!< returns whether the cycle can be killed
+    REAL GetAcceleration(void) const { return acceleration; }; //!< Gets the cycle's acceleration
 
-    bool                    CanMakeTurn             (int direction)                                    const     ;   //!< returns whether a turn is currently possible
-    bool                    CanMakeTurn             ( REAL time, int direction                         ) const     ;   //!< returns whether a turn is possible at the given time
-    inline  REAL            GetDistanceSinceLastTurn(                                   ) const     ;   //!< returns the distance since the last turn
-    REAL                    GetTurnDelay            (                                   ) const     ;   //!< returns the time between turns in different directions
-    REAL                    GetTurnDelayDb            (                                   ) const     ;   //!< returns the time between turns in the same direcion
-    REAL                    GetNextTurn             (int direction                                   ) const     ;   //!< returns the time of the next turn
+    bool CanMakeTurn(int direction) const;            //!< returns whether a turn is currently possible
+    bool CanMakeTurn(REAL time, int direction) const; //!< returns whether a turn is possible at the given time
+    inline REAL GetDistanceSinceLastTurn() const;     //!< returns the distance since the last turn
+    REAL GetTurnDelay() const;                        //!< returns the time between turns in different directions
+    REAL GetTurnDelayDb() const;                      //!< returns the time between turns in the same direcion
+    REAL GetNextTurn(int direction) const;            //!< returns the time of the next turn
 
     // destination handling
-    void                    AddDestination          ()                                              ;   //!< adds current position as destination
-    void                    AdvanceDestination      ()                                              ;   //!< proceeds to the next destination
-    void                    AddDestination          ( gDestination *        dest        )           ;   //!< adds given destination
-    gDestination*           GetCurrentDestination   ()                                    const     ;   //!< returns the current destination
-    void                    NotifyNewDestination    ( gDestination *        dest        )           ;   //!< notifies cycle of the insertion of a new destination ( don't call manually )
-    bool                    IsDestinationUsed       ( const gDestination *  dest        ) const     ;   //!< returns whether the given destination is in active use
+    void AddDestination();                                  //!< adds current position as destination
+    void AdvanceDestination();                              //!< proceeds to the next destination
+    void AddDestination(gDestination *dest);                //!< adds given destination
+    gDestination *GetCurrentDestination() const;            //!< returns the current destination
+    void NotifyNewDestination(gDestination *dest);          //!< notifies cycle of the insertion of a new destination ( don't call manually )
+    bool IsDestinationUsed(const gDestination *dest) const; //!< returns whether the given destination is in active use
 
-    inline void            DropTempWall             ( gPlayerWall *         wall
-            ,                                         eCoord const &        pos
-            ,                                         eCoord const &        dir         )           ;   //!< called when another cycle grinds a wall; this cycle should then drop its current wall if the grinding is too close.
+    inline void DropTempWall(gPlayerWall *wall, eCoord const &pos, eCoord const &dir); //!< called when another cycle grinds a wall; this cycle should then drop its current wall if the grinding is too close.
     // information query
-    virtual bool            EdgeIsDangerous         ( const eWall *         wall
-            ,                                         REAL                  time
-            ,                                         REAL                  alpha       ) const     ;   //!< returns whether a given wall is dangerous to this cycle
+    virtual bool EdgeIsDangerous(const eWall *wall, REAL time, REAL alpha) const; //!< returns whether a given wall is dangerous to this cycle
 
     // movement commands
-    bool                    Turn                    ( REAL                  dir         )           ;   //!< Turn left for positive argument, right for negative argument
-    bool                    Turn                    ( int                   dir         )           ;   //!< Turn left for positive argument, right for negative argument
-    bool                    BotTurn                 ( int                   dir         )           ;   //!< Turn left for positive argument, right for negative argument
-    
-    void                    MoveSafely              (const eCoord &         dest
-            ,                                        REAL                   startTime
-            ,                                        REAL                   endTime     )           ;   //!< move without throwing exceptions on passing a wall
+    bool Turn(REAL dir);   //!< Turn left for positive argument, right for negative argument
+    bool Turn(int dir);    //!< Turn left for positive argument, right for negative argument
+    bool BotTurn(int dir); //!< Turn left for positive argument, right for negative argument
 
-    virtual bool            Timestep                ( REAL                  currentTime )           ;   //!< advance to the given time
+    void MoveSafely(const eCoord &dest, REAL startTime, REAL endTime); //!< move without throwing exceptions on passing a wall
+
+    virtual bool Timestep(REAL currentTime); //!< advance to the given time
 
     // existence management
-    virtual void            AddRef                  ()                                              ;   //!< increase reference count
+    virtual void AddRef(); //!< increase reference count
 
-    gCycleMovement    	                            ( eGrid *               grid
-            ,                                         const eCoord &        pos
-            ,                                         const eCoord &        dir
-            ,                                         ePlayerNetID *        p=NULL
-                    ,                                 bool                  autodelete=1 )          ;   //!< local constructor
-    gCycleMovement                                  ( nMessage &            message      )          ;   //!< remote constructor
-    virtual ~gCycleMovement                         ()                                              ;   //!< destructor
-    virtual void OnRemoveFromGame(); // called when the cycle is physically removed from the game
+    gCycleMovement(eGrid *grid, const eCoord &pos, const eCoord &dir, ePlayerNetID *p = NULL, bool autodelete = 1); //!< local constructor
+    gCycleMovement(nMessage &message);                                                                              //!< remote constructor
+    virtual ~gCycleMovement();                                                                                      //!< destructor
+    virtual void OnRemoveFromGame();                                                                                // called when the cycle is physically removed from the game
 
     void RequestSyncBypass();
-    void RequestSync(bool ack=true);     //!< request a sync
-    void RequestSync(int user,bool ack); //!< only for a single user
+    void RequestSync(bool ack = true);    //!< request a sync
+    void RequestSync(int user, bool ack); //!< only for a single user
 
-    //void SetSpeed(REAL speed);
-    REAL            verletSpeed_;               //!< object speed according to verlet (speed of half a frame ago)
+    // void SetSpeed(REAL speed);
+    REAL verletSpeed_; //!< object speed according to verlet (speed of half a frame ago)
 protected:
     //! data from sync message
     struct SyncData
     {
         eCoord pos, dir, lastTurn;
         REAL distance, speed, time, rubber, rubberMalus, brakingReservoir;
-        unsigned short turns,braking,messageID;
+        unsigned short turns, braking, messageID;
 
         SyncData()
-                :distance(0), speed(0), time(-10000), rubber(0), rubberMalus(0), brakingReservoir(0)
-                ,turns(0),braking(0),messageID(0)
-        {}
+            : distance(0), speed(0), time(-10000), rubber(0), rubberMalus(0), brakingReservoir(0), turns(0), braking(0), messageID(0)
+        {
+        }
     };
 
-    void            CopyFrom                        ( const gCycleMovement & other      )           ;   //!< copies relevant info from other cylce
+    void CopyFrom(const gCycleMovement &other); //!< copies relevant info from other cylce
 
-    void            CopyFrom                        ( const SyncData &       sync
-            ,                                         const gCycleMovement & other      )           ;   //!< copies relevant info from sync data and everything else from other cycle
+    void CopyFrom(const SyncData &sync, const gCycleMovement &other); //!< copies relevant info from sync data and everything else from other cycle
 
-    virtual void            InitAfterCreation       ()                                              ;   //!< shared initialization routine
+    virtual void InitAfterCreation(); //!< shared initialization routine
 
     // acceleration handling
-    virtual void            AccelerationDiscontinuity ()                                            ;   //!< call when you know the acceleration makes a sharp jump now
-    virtual void            CalculateAcceleration   (                                   )           ;   //!< calculate acceleration to apply later
-    virtual void            ApplyAcceleration       ( REAL                  dt          )           ;   //!< apply acceleration calculated earlier
+    virtual void AccelerationDiscontinuity(); //!< call when you know the acceleration makes a sharp jump now
+    virtual void CalculateAcceleration();     //!< calculate acceleration to apply later
+    virtual void ApplyAcceleration(REAL dt);  //!< apply acceleration calculated earlier
 
     // destination handling
-    REAL                    DistanceToDestination   ( gDestination &        dest        ) const     ;   //!< calculates the distance to the given destination
-    virtual void            OnNotifyNewDestination  ( gDestination *        dest        )           ;   //!< notifies cycle of the insertion of a new destination
-    virtual void            OnDropTempWall          ( gPlayerWall *         wall
-            ,                                         eCoord const &        pos
-            ,                                         eCoord const &        dir         )           ;   //!< called when another cycle grinds a wall; this cycle should then drop its current wall if the grinding is too close.
-    virtual bool            DoIsDestinationUsed     ( const gDestination *  dest        ) const     ;   //!< returns whether the given destination is in active use
-    static  gDestination*   GetDestinationBefore    ( const SyncData &      sync
-            ,                                         gDestination*         first       ) 		    ;   //!< determine the destination from before the sync message
+    REAL DistanceToDestination(gDestination &dest) const;                                 //!< calculates the distance to the given destination
+    virtual void OnNotifyNewDestination(gDestination *dest);                              //!< notifies cycle of the insertion of a new destination
+    virtual void OnDropTempWall(gPlayerWall *wall, eCoord const &pos, eCoord const &dir); //!< called when another cycle grinds a wall; this cycle should then drop its current wall if the grinding is too close.
+    virtual bool DoIsDestinationUsed(const gDestination *dest) const;                     //!< returns whether the given destination is in active use
+    static gDestination *GetDestinationBefore(const SyncData &sync, gDestination *first); //!< determine the destination from before the sync message
 
-    virtual bool            DoTurn                  ( int                   dir, bool botTurn         )           ;   //!< turns the cycle in the given direction
-    virtual REAL            DoGetDistanceSinceLastTurn  (                               ) const     ;   //!< returns the distance since the last turn
+    virtual bool DoTurn(int dir, bool botTurn);      //!< turns the cycle in the given direction
+    virtual REAL DoGetDistanceSinceLastTurn() const; //!< returns the distance since the last turn
 
-    virtual void            RightBeforeDeath        ( int                   numTries    )           ;   //!< called when the cycle is very close to a wall and about to crash
-    virtual void            Die                     ( REAL time                         )           ;  //!< dies at the specified time
+    virtual void RightBeforeDeath(int numTries); //!< called when the cycle is very close to a wall and about to crash
+    virtual void Die(REAL time);                 //!< dies at the specified time
 
-    virtual bool            TimestepCore            ( REAL                  currentTime
-            ,                                         bool                  calculateAcceleration = true )           ;   //!< core physics simulation routine
+    virtual bool TimestepCore(REAL currentTime, bool calculateAcceleration = true); //!< core physics simulation routine
 private:
-    void                    MyInitAfterCreation     ()                                              ;   //!< private shared initialization code
+    void MyInitAfterCreation(); //!< private shared initialization code
 
     //      void            Init_gCycleCore         ()                                              ;   //!< initialisation function
     //      void            Finit_gCycleCore        ()                                              ;   //!< finalisation function
 
-    gCycleMovement                                  ()                                              ;   //!< default constructor
-    gCycleMovement                                  ( gCycleMovement const & other      )           ;   //!< copy constructor
-    gCycleMovement& operator =                      ( gCycleMovement const & other      )           ;   //!< copy operator
+    gCycleMovement();                                       //!< default constructor
+    gCycleMovement(gCycleMovement const &other);            //!< copy constructor
+    gCycleMovement &operator=(gCycleMovement const &other); //!< copy operator
 
-//private:
+    // private:
 protected:
-    short           alive_;                     //!< status: 1: cycle is alive, -1: cycle just died, 0: cycle is dead
+    short alive_; //!< status: 1: cycle is alive, -1: cycle just died, 0: cycle is dead
 
 public:
-    gEnemyInfluence				enemyInfluence; //!< keeps track of enemies that influenced this cycle
+    gEnemyInfluence enemyInfluence; //!< keeps track of enemies that influenced this cycle
 protected:
-    gDestination*   destinationList;            //!< the list of destinations that belong to this cycle ( for memory management )
-    gDestination*   currentDestination;         //!< the destination this cycle aims for now
-    gDestination*   lastDestination;            //!< the last destination that was passed
+    gDestination *destinationList;    //!< the list of destinations that belong to this cycle ( for memory management )
+    gDestination *currentDestination; //!< the destination this cycle aims for now
+    gDestination *lastDestination;    //!< the last destination that was passed
 
-    eCoord          dirDrive;                   //!< the direction we are facing
-    eCoord          lastDirDrive;               //!< the direction we were facing before the last turn
-    REAL            acceleration;               //!< current acceleration
+    eCoord dirDrive;     //!< the direction we are facing
+    eCoord lastDirDrive; //!< the direction we were facing before the last turn
+    REAL acceleration;   //!< current acceleration
 
-    REAL            lastTimestep_;              //!< the length of the last timestep
+    REAL lastTimestep_; //!< the length of the last timestep
 
-
-    REAL            distance;                   //!< the distance traveled so far
+    REAL distance; //!< the distance traveled so far
     // REAL         wallContDistance;           //!< distance at which the walls will start to build up ( negative if the wall is already building )
 
-    mutable bool    refreshSpaceAhead_;         //!< flag to set when maximum space in front of cycle should be recalculated
-    REAL            maxSpaceMaxCast_;           //!< the maximum raycast length to determine the above value
-    mutable gMaxSpaceAheadHitInfo * maxSpaceHit_; //!< detailed information about the wall in front
+    mutable bool refreshSpaceAhead_;             //!< flag to set when maximum space in front of cycle should be recalculated
+    REAL maxSpaceMaxCast_;                       //!< the maximum raycast length to determine the above value
+    mutable gMaxSpaceAheadHitInfo *maxSpaceHit_; //!< detailed information about the wall in front
 public:
-    int             windingNumber_;             //!< number that gets increased on every right turn and decreased on every left turn ( used by the AI )
+    int windingNumber_; //!< number that gets increased on every right turn and decreased on every left turn ( used by the AI )
 
-    unsigned short  turns;                      //!< the number of turns taken so far
-    unsigned short  braking;                    //!< flag indicating status of brakes ( on/off )
-    std::deque<int> pendingTurns; 
+    unsigned short turns;   //!< the number of turns taken so far
+    unsigned short braking; //!< flag indicating status of brakes ( on/off )
+    std::deque<int> pendingTurns;
+
 protected:
-    bool            uncannyTimingToReport_;     //!< flag indicating whether we have uncanny timing to report from the last turn
+    bool uncannyTimingToReport_; //!< flag indicating whether we have uncanny timing to report from the last turn
 
-   int             windingNumberWrapped_;      //!< winding number wrapped to be used as an index to the axes code
+    int windingNumberWrapped_; //!< winding number wrapped to be used as an index to the axes code
 
-    mutable REAL    gap_[2];                    //!< when driving towards a wall, this is set to the maximal distance we need to approach it so that when the cycle turns, it can squeeze through any gaps
-    mutable bool    keepLookingForGap_[2];      //!< flags telling the system whether it is worthwile to look for further, smaller, gaps
-    mutable bool    gapIsBackdoor_[2];          //!< flags indicating whether gaps are backdoors
+    mutable REAL gap_[2];               //!< when driving towards a wall, this is set to the maximal distance we need to approach it so that when the cycle turns, it can squeeze through any gaps
+    mutable bool keepLookingForGap_[2]; //!< flags telling the system whether it is worthwile to look for further, smaller, gaps
+    mutable bool gapIsBackdoor_[2];     //!< flags indicating whether gaps are backdoors
 
-    eCoord			lastTurnPos_;	            //!< the location of the last turn
-    REAL            lastTurnTimeRight_;         //!< the time of the last turn right
-    REAL            lastTurnTimeLeft_;          //!< the time of the last turn left
-    REAL            lastTimeAlive_;             //!< the time of the last timestep where we would not have been killed
-              //!< stores turns ordered by the user, but not yet executed
+    eCoord lastTurnPos_;     //!< the location of the last turn
+    REAL lastTurnTimeRight_; //!< the time of the last turn right
+    REAL lastTurnTimeLeft_;  //!< the time of the last turn left
+    REAL lastTimeAlive_;     //!< the time of the last timestep where we would not have been killed
+                             //!< stores turns ordered by the user, but not yet executed
 
-    REAL            brakingReservoir;           //!< the reservoir for braking. 1 means full, 0 is empty
-    REAL            rubber;                     //!< the amount rubber used up by the cycle
-    REAL            rubberMalus;                //!< additional rubber usage factor
-    REAL            rubberSpeedFactor;          //!< the factor by which the speed is currently multiplied by rubber
-    REAL            rubberDepleteTime_;         //!< the time rubber got depleted
+    REAL brakingReservoir;   //!< the reservoir for braking. 1 means full, 0 is empty
+    REAL rubber;             //!< the amount rubber used up by the cycle
+    REAL rubberMalus;        //!< additional rubber usage factor
+    REAL rubberSpeedFactor;  //!< the factor by which the speed is currently multiplied by rubber
+    REAL rubberDepleteTime_; //!< the time rubber got depleted
 
-    REAL            brakeUsage;                 //!< current brake usage
-    REAL            rubberUsage;                //!< current rubber usage (not from hitting a wall, but from tunneling. Without taking efficiency into account.)
+    REAL brakeUsage;  //!< current brake usage
+    REAL rubberUsage; //!< current rubber usage (not from hitting a wall, but from tunneling. Without taking efficiency into account.)
 
     // room for accessors
 public:
@@ -265,58 +252,59 @@ public:
     {
         return windingNumber_;
     }
-    std::deque<eCoord>   turnedPositions;            //!< stores the positions turned
-    std::deque<eCoord>   turnedDirections;           //!< stores the directions turned
+    std::deque<eCoord> turnedPositions;  //!< stores the positions turned
+    std::deque<eCoord> turnedDirections; //!< stores the directions turned
 
-    REAL RubberDepleteTime() const;                //!< returns the time rubber got fully used (or 0 if it hasn't)
+    REAL RubberDepleteTime() const; //!< returns the time rubber got fully used (or 0 if it hasn't)
 
-    REAL GetMaxSpaceAhead( REAL maxReport ) const; //< Returns the current maximal space ahead
+    REAL GetMaxSpaceAhead(REAL maxReport) const; //< Returns the current maximal space ahead
 
-    inline REAL GetDistance( void ) const;  //!< Gets the distance traveled so far
-    inline gCycleMovement const & GetDistance( REAL & distance ) const; //!< Gets the distance traveled so far
-    inline REAL GetRubber( void ) const;    //!< Gets the amount rubber used up by the cycle
-    inline gCycleMovement const & GetRubber( REAL & rubber ) const; //!< Gets the amount rubber used up by the cycle
-    inline unsigned short GetTurns( void ) const;   //!< Gets the number of turns taken so far
-    inline gCycleMovement const & GetTurns( unsigned short & turns ) const; //!< Gets the number of turns taken so far
-    inline unsigned short GetBraking( void ) const; //!< Gets flag indicating status of brakes ( on/off )
-    inline gCycleMovement const & GetBraking( unsigned short & braking ) const; //!< Gets flag indicating status of brakes ( on/off )
-    inline REAL GetBrakingReservoir( void ) const;	//!< Gets the reservoir for braking. 1 means full, 0 is empty
-    inline gCycleMovement const & GetBrakingReservoir( REAL & brakingReservoir ) const;	//!< Gets the reservoir for braking. 1 means full, 0 is empty
-    inline REAL GetRubberMalus( void ) const;	//!< Gets additional rubber usage factor
-    inline gCycleMovement const & GetRubberMalus( REAL & rubberMalus ) const;	//!< Gets additional rubber usage factor
-    static bool RubberMalusActive( void ) ; //!< Returns whether rubber malus code is active
-    inline eCoord const & GetLastTurnPos( void ) const;	//!< Gets the location of the last turn
-    inline gCycleMovement const & GetLastTurnPos( eCoord & lastTurnPos ) const;	//!< Gets the location of the last turn
-    inline REAL const & GetLastTurnTime( void ) const;	//!< Gets the time of the last turn
-    inline gCycleMovement const & GetLastTurnTime( REAL & lastTurnTime ) const;	//!< Gets the time of the last turn
-    inline gCycleMovement & SetRubber( REAL rubber );   //!< Sets the amount rubber used up by the cycle
-    inline gCycleMovement & SetBraking( unsigned short braking );   //!< Sets flag indicating status of brakes ( on/off )
+    inline REAL GetDistance(void) const;                                            //!< Gets the distance traveled so far
+    inline gCycleMovement const &GetDistance(REAL &distance) const;                 //!< Gets the distance traveled so far
+    inline REAL GetRubber(void) const;                                              //!< Gets the amount rubber used up by the cycle
+    inline gCycleMovement const &GetRubber(REAL &rubber) const;                     //!< Gets the amount rubber used up by the cycle
+    inline unsigned short GetTurns(void) const;                                     //!< Gets the number of turns taken so far
+    inline gCycleMovement const &GetTurns(unsigned short &turns) const;             //!< Gets the number of turns taken so far
+    inline unsigned short GetBraking(void) const;                                   //!< Gets flag indicating status of brakes ( on/off )
+    inline gCycleMovement const &GetBraking(unsigned short &braking) const;         //!< Gets flag indicating status of brakes ( on/off )
+    inline REAL GetBrakingReservoir(void) const;                                    //!< Gets the reservoir for braking. 1 means full, 0 is empty
+    inline gCycleMovement const &GetBrakingReservoir(REAL &brakingReservoir) const; //!< Gets the reservoir for braking. 1 means full, 0 is empty
+    inline REAL GetRubberMalus(void) const;                                         //!< Gets additional rubber usage factor
+    inline gCycleMovement const &GetRubberMalus(REAL &rubberMalus) const;           //!< Gets additional rubber usage factor
+    static bool RubberMalusActive(void);                                            //!< Returns whether rubber malus code is active
+    inline eCoord const &GetLastTurnPos(void) const;                                //!< Gets the location of the last turn
+    inline gCycleMovement const &GetLastTurnPos(eCoord &lastTurnPos) const;         //!< Gets the location of the last turn
+    inline REAL const &GetLastTurnTime(void) const;                                 //!< Gets the time of the last turn
+    inline gCycleMovement const &GetLastTurnTime(REAL &lastTurnTime) const;         //!< Gets the time of the last turn
+    inline gCycleMovement &SetRubber(REAL rubber);                                  //!< Sets the amount rubber used up by the cycle
+    inline gCycleMovement &SetBraking(unsigned short braking);                      //!< Sets flag indicating status of brakes ( on/off )
 protected:
-    inline gCycleMovement & SetLastTurnPos( eCoord const & lastTurnPos );	//!< Sets the location of the last turn
-    inline gCycleMovement & SetLastTurnTime( REAL const & lastTurnTime );	//!< Sets the time of the last turn
+    inline gCycleMovement &SetLastTurnPos(eCoord const &lastTurnPos); //!< Sets the location of the last turn
+    inline gCycleMovement &SetLastTurnTime(REAL const &lastTurnTime); //!< Sets the time of the last turn
 private:
-    inline gCycleMovement & SetDistance( REAL distance );   //!< Sets the distance traveled so far
-    inline gCycleMovement & SetTurns( unsigned short turns );   //!< Sets the number of turns taken so far
-    inline gCycleMovement & SetBrakingReservoir( REAL brakingReservoir );	//!< Sets the reservoir for braking. 1 means full, 0 is empty
-    inline gCycleMovement & SetRubberMalus( REAL rubberMalus );	//!< Sets additional rubber usage factor
+    inline gCycleMovement &SetDistance(REAL distance);                 //!< Sets the distance traveled so far
+    inline gCycleMovement &SetTurns(unsigned short turns);             //!< Sets the number of turns taken so far
+    inline gCycleMovement &SetBrakingReservoir(REAL brakingReservoir); //!< Sets the reservoir for braking. 1 means full, 0 is empty
+    inline gCycleMovement &SetRubberMalus(REAL rubberMalus);           //!< Sets additional rubber usage factor
 };
 
 //! Determines the maximum space ahead of a cycle
 // float MaxSpaceAhead( const gCycleMovement* cycle, float ts, float lookAhead, float maxReport );
 
 //! Exception to throw when cycle dies in a simulation frame
-class gCycleDeath: public eDeath
+class gCycleDeath : public eDeath
 {
 public:
-    gCycleDeath( eCoord const & pos )
-            : pos_(pos)
-    {}
+    gCycleDeath(eCoord const &pos)
+        : pos_(pos)
+    {
+    }
 
     eCoord pos_;
 };
 
 //! Exception thrown to indicate simulation should be held for a while
-class gCycleStop: public eDeath
+class gCycleStop : public eDeath
 {
 };
 
@@ -324,26 +312,27 @@ class gCycleStop: public eDeath
 // computer of the game IS at. The copies of the cycle on the
 // other computers try to reach this position by making the right
 // turns.
-class gDestination{
+class gDestination
+{
     friend class gCycleMovement;
-    friend class gCycle;				// todo: remove me
-    friend class gCycleExtrapolator;	// todo: remove me
+    friend class gCycle;             // todo: remove me
+    friend class gCycleExtrapolator; // todo: remove me
     friend class gHelper;
 
-    eCoord position;			// position of turn/brake command
-    eCoord direction;			// driving direction after the command
-    REAL  gameTime;				// game time of the command
-    REAL  distance;				// distance travelled so far
-    REAL  speed;				// speed at the time of the command
-    bool  braking;				// flag telling whether the brake was active
-    bool  chatting;				// flag indicating chat status
+    eCoord position;  // position of turn/brake command
+    eCoord direction; // driving direction after the command
+    REAL gameTime;    // game time of the command
+    REAL distance;    // distance travelled so far
+    REAL speed;       // speed at the time of the command
+    bool braking;     // flag telling whether the brake was active
+    bool chatting;    // flag indicating chat status
 
-    unsigned short turns;	// the number of turns taken by the cycle so far
-    bool hasBeenUsed;			// flag indicating whether the sync code has already used this command
-    unsigned short messageID;	// ID of the message this command came from
-    bool missable;		// flag indicating that this destination is not to be treated as the one after a missed destination
+    unsigned short turns;     // the number of turns taken by the cycle so far
+    bool hasBeenUsed;         // flag indicating whether the sync code has already used this command
+    unsigned short messageID; // ID of the message this command came from
+    bool missable;            // flag indicating that this destination is not to be treated as the one after a missed destination
 
-    gDestination *next; // so they can form a list
+    gDestination *next;  // so they can form a list
     gDestination **list; // the list we are in
 public:
     // take pos,dir and time from a cycle
@@ -351,17 +340,17 @@ public:
     explicit gDestination(const gCycle &takeitfrom);
 
     // or from a message
-    explicit gDestination( nMessage &m, unsigned short & cycle_id );
+    explicit gDestination(nMessage &m, unsigned short &cycle_id);
 
     // take pos,dir and time from a cycle
     void CopyFrom(const gCycleMovement &other);
     void CopyFrom(const gCycle &other);
 
     //! compare two destinations
-    int CompareWith( const gDestination& other ) const;
+    int CompareWith(const gDestination &other) const;
 
     // write all the data into a nMessage
-    void WriteCreate( nMessage &m, unsigned short cycle_id );
+    void WriteCreate(nMessage &m, unsigned short cycle_id);
 
     // insert yourself into a list ordered by distance
     void InsertIntoList(gDestination **list);
@@ -375,13 +364,13 @@ public:
     // remove yourself again
     void RemoveFromList();
 
-    bool Chatting(){ return chatting; }
+    bool Chatting() { return chatting; }
 
-    ~gDestination(){RemoveFromList();}
+    ~gDestination() { RemoveFromList(); }
 
-    gDestination & SetGameTime( REAL gameTime );	//!< Sets game time of the command
-    REAL GetGameTime( void ) const;	//!< Gets game time of the command
-    gDestination const & GetGameTime( REAL & gameTime ) const;	//!< Gets game time of the command
+    gDestination &SetGameTime(REAL gameTime);              //!< Sets game time of the command
+    REAL GetGameTime(void) const;                          //!< Gets game time of the command
+    gDestination const &GetGameTime(REAL &gameTime) const; //!< Gets game time of the command
 };
 
 // *******************************************************************************************
@@ -395,10 +384,10 @@ public:
 //!
 // *******************************************************************************************
 
-inline bool gCycleMovement::IsDestinationUsed( const gDestination * dest ) const
+inline bool gCycleMovement::IsDestinationUsed(const gDestination *dest) const
 {
     // delegate to virtual function
-    return DoIsDestinationUsed( dest );
+    return DoIsDestinationUsed(dest);
 }
 
 // *******************************************************************************************
@@ -413,9 +402,9 @@ inline bool gCycleMovement::IsDestinationUsed( const gDestination * dest ) const
 //!
 // *******************************************************************************************
 
-inline void gCycleMovement::DropTempWall( gPlayerWall * wall, eCoord const & pos, eCoord const & dir )
+inline void gCycleMovement::DropTempWall(gPlayerWall *wall, eCoord const &pos, eCoord const &dir)
 {
-    this->OnDropTempWall( wall, pos, dir );
+    this->OnDropTempWall(wall, pos, dir);
 }
 
 // *******************************************************************************************
@@ -442,7 +431,7 @@ inline REAL gCycleMovement::RubberDepleteTime() const
 //!
 // *******************************************************************************************
 
-inline REAL gCycleMovement::GetDistance( void ) const
+inline REAL gCycleMovement::GetDistance(void) const
 {
     return this->distance;
 }
@@ -458,7 +447,7 @@ inline REAL gCycleMovement::GetDistance( void ) const
 //!
 // *******************************************************************************************
 
-inline gCycleMovement const & gCycleMovement::GetDistance( REAL & distance ) const
+inline gCycleMovement const &gCycleMovement::GetDistance(REAL &distance) const
 {
     distance = this->distance;
     return *this;
@@ -475,7 +464,7 @@ inline gCycleMovement const & gCycleMovement::GetDistance( REAL & distance ) con
 //!
 // *******************************************************************************************
 
-inline gCycleMovement & gCycleMovement::SetDistance( REAL distance )
+inline gCycleMovement &gCycleMovement::SetDistance(REAL distance)
 {
     this->distance = distance;
     return *this;
@@ -491,7 +480,7 @@ inline gCycleMovement & gCycleMovement::SetDistance( REAL distance )
 //!
 // *******************************************************************************************
 
-inline REAL gCycleMovement::GetRubber( void ) const
+inline REAL gCycleMovement::GetRubber(void) const
 {
     return this->rubber;
 }
@@ -507,7 +496,7 @@ inline REAL gCycleMovement::GetRubber( void ) const
 //!
 // *******************************************************************************************
 
-inline gCycleMovement const & gCycleMovement::GetRubber( REAL & rubber ) const
+inline gCycleMovement const &gCycleMovement::GetRubber(REAL &rubber) const
 {
     rubber = this->rubber;
     return *this;
@@ -524,7 +513,7 @@ inline gCycleMovement const & gCycleMovement::GetRubber( REAL & rubber ) const
 //!
 // *******************************************************************************************
 
-inline gCycleMovement & gCycleMovement::SetRubber( REAL rubber )
+inline gCycleMovement &gCycleMovement::SetRubber(REAL rubber)
 {
     this->rubber = rubber;
     return *this;
@@ -540,7 +529,7 @@ inline gCycleMovement & gCycleMovement::SetRubber( REAL rubber )
 //!
 // *******************************************************************************************
 
-inline unsigned short gCycleMovement::GetTurns( void ) const
+inline unsigned short gCycleMovement::GetTurns(void) const
 {
     return this->turns;
 }
@@ -556,7 +545,7 @@ inline unsigned short gCycleMovement::GetTurns( void ) const
 //!
 // *******************************************************************************************
 
-inline gCycleMovement const & gCycleMovement::GetTurns( unsigned short & turns ) const
+inline gCycleMovement const &gCycleMovement::GetTurns(unsigned short &turns) const
 {
     turns = this->turns;
     return *this;
@@ -573,7 +562,7 @@ inline gCycleMovement const & gCycleMovement::GetTurns( unsigned short & turns )
 //!
 // *******************************************************************************************
 
-inline gCycleMovement & gCycleMovement::SetTurns( unsigned short turns )
+inline gCycleMovement &gCycleMovement::SetTurns(unsigned short turns)
 {
     this->turns = turns;
     return *this;
@@ -589,7 +578,7 @@ inline gCycleMovement & gCycleMovement::SetTurns( unsigned short turns )
 //!
 // *******************************************************************************************
 
-inline unsigned short gCycleMovement::GetBraking( void ) const
+inline unsigned short gCycleMovement::GetBraking(void) const
 {
     return this->braking;
 }
@@ -605,7 +594,7 @@ inline unsigned short gCycleMovement::GetBraking( void ) const
 //!
 // *******************************************************************************************
 
-inline gCycleMovement const & gCycleMovement::GetBraking( unsigned short & braking ) const
+inline gCycleMovement const &gCycleMovement::GetBraking(unsigned short &braking) const
 {
     braking = this->braking;
     return *this;
@@ -622,7 +611,7 @@ inline gCycleMovement const & gCycleMovement::GetBraking( unsigned short & braki
 //!
 // *******************************************************************************************
 
-inline gCycleMovement & gCycleMovement::SetBraking( unsigned short braking )
+inline gCycleMovement &gCycleMovement::SetBraking(unsigned short braking)
 {
     this->braking = braking;
     return *this;
@@ -638,7 +627,7 @@ inline gCycleMovement & gCycleMovement::SetBraking( unsigned short braking )
 //!
 // *******************************************************************************************
 
-inline REAL gCycleMovement::GetBrakingReservoir( void ) const
+inline REAL gCycleMovement::GetBrakingReservoir(void) const
 {
     return this->brakingReservoir;
 }
@@ -654,7 +643,7 @@ inline REAL gCycleMovement::GetBrakingReservoir( void ) const
 //!
 // *******************************************************************************************
 
-inline gCycleMovement const & gCycleMovement::GetBrakingReservoir( REAL & brakingReservoir ) const
+inline gCycleMovement const &gCycleMovement::GetBrakingReservoir(REAL &brakingReservoir) const
 {
     brakingReservoir = this->brakingReservoir;
     return *this;
@@ -671,7 +660,7 @@ inline gCycleMovement const & gCycleMovement::GetBrakingReservoir( REAL & brakin
 //!
 // *******************************************************************************************
 
-inline gCycleMovement & gCycleMovement::SetBrakingReservoir( REAL brakingReservoir )
+inline gCycleMovement &gCycleMovement::SetBrakingReservoir(REAL brakingReservoir)
 {
     this->brakingReservoir = brakingReservoir;
     return *this;
@@ -687,7 +676,7 @@ inline gCycleMovement & gCycleMovement::SetBrakingReservoir( REAL brakingReservo
 //!
 // *******************************************************************************************
 
-inline REAL gCycleMovement::GetDistanceSinceLastTurn( void ) const
+inline REAL gCycleMovement::GetDistanceSinceLastTurn(void) const
 {
     return this->DoGetDistanceSinceLastTurn();
 }
@@ -702,7 +691,7 @@ inline REAL gCycleMovement::GetDistanceSinceLastTurn( void ) const
 //!
 // *******************************************************************************************
 
-inline REAL gCycleMovement::GetRubberMalus( void ) const
+inline REAL gCycleMovement::GetRubberMalus(void) const
 {
     return this->rubberMalus;
 }
@@ -718,7 +707,7 @@ inline REAL gCycleMovement::GetRubberMalus( void ) const
 //!
 // *******************************************************************************************
 
-inline gCycleMovement const & gCycleMovement::GetRubberMalus( REAL & rubberMalus ) const
+inline gCycleMovement const &gCycleMovement::GetRubberMalus(REAL &rubberMalus) const
 {
     rubberMalus = this->rubberMalus;
     return *this;
@@ -735,7 +724,7 @@ inline gCycleMovement const & gCycleMovement::GetRubberMalus( REAL & rubberMalus
 //!
 // *******************************************************************************************
 
-inline gCycleMovement & gCycleMovement::SetRubberMalus( REAL rubberMalus )
+inline gCycleMovement &gCycleMovement::SetRubberMalus(REAL rubberMalus)
 {
     this->rubberMalus = rubberMalus;
     return *this;
@@ -751,7 +740,7 @@ inline gCycleMovement & gCycleMovement::SetRubberMalus( REAL rubberMalus )
 //!
 // *******************************************************************************************
 
-eCoord const & gCycleMovement::GetLastTurnPos( void ) const
+eCoord const &gCycleMovement::GetLastTurnPos(void) const
 {
     return this->lastTurnPos_;
 }
@@ -767,7 +756,7 @@ eCoord const & gCycleMovement::GetLastTurnPos( void ) const
 //!
 // *******************************************************************************************
 
-gCycleMovement const & gCycleMovement::GetLastTurnPos( eCoord & lastTurnPos ) const
+gCycleMovement const &gCycleMovement::GetLastTurnPos(eCoord &lastTurnPos) const
 {
     lastTurnPos = this->lastTurnPos_;
     return *this;
@@ -784,7 +773,7 @@ gCycleMovement const & gCycleMovement::GetLastTurnPos( eCoord & lastTurnPos ) co
 //!
 // *******************************************************************************************
 
-gCycleMovement & gCycleMovement::SetLastTurnPos( eCoord const & lastTurnPos )
+gCycleMovement &gCycleMovement::SetLastTurnPos(eCoord const &lastTurnPos)
 {
     this->lastTurnPos_ = lastTurnPos;
     return *this;
@@ -800,7 +789,7 @@ gCycleMovement & gCycleMovement::SetLastTurnPos( eCoord const & lastTurnPos )
 //!
 // *******************************************************************************************
 
-REAL const & gCycleMovement::GetLastTurnTime( void ) const
+REAL const &gCycleMovement::GetLastTurnTime(void) const
 {
     return lastTurnTimeRight_ > lastTurnTimeLeft_ ? lastTurnTimeRight_ : lastTurnTimeLeft_;
 }
@@ -816,7 +805,7 @@ REAL const & gCycleMovement::GetLastTurnTime( void ) const
 //!
 // *******************************************************************************************
 
-gCycleMovement const & gCycleMovement::GetLastTurnTime( REAL & lastTurnTime ) const
+gCycleMovement const &gCycleMovement::GetLastTurnTime(REAL &lastTurnTime) const
 {
     lastTurnTime = GetLastTurnTime();
     return *this;
@@ -833,7 +822,7 @@ gCycleMovement const & gCycleMovement::GetLastTurnTime( REAL & lastTurnTime ) co
 //!
 // *******************************************************************************************
 
-gCycleMovement & gCycleMovement::SetLastTurnTime( REAL const & lastTurnTime )
+gCycleMovement &gCycleMovement::SetLastTurnTime(REAL const &lastTurnTime)
 {
     lastTurnTimeRight_ = lastTurnTimeLeft_ = lastTurnTime;
     return *this;

@@ -176,7 +176,7 @@ void gPathHelper::RenderTurn(gHelperData &data)
         eCoord intermediate = opos + owner_.Direction() * eCoord::F(odir, owner_.Direction());
 
         // assigns a hit pointer to the memory location of the hit
-        std::shared_ptr<gHelperSensor> sensor = data.sensors.getSensor(opos,intermediate - opos,1.1f);
+        std::shared_ptr<gHelperSensor> sensor = data.sensors.getSensor(opos, intermediate - opos, 1.1f);
         nogood = (sensor->hit <= .999999999 || eCoord::F(path_.CurrentOffset(), odir) < 0);
         if (!nogood)
         {
@@ -269,7 +269,7 @@ void gPathHelper::Activate(gHelperData &orig_data)
         return;
 
     // Copy of data to limit global changes to helper data
-    //gHelperData data = orig_data;
+    // gHelperData data = orig_data;
 
     bool success = false;
     switch (sg_pathHelperMode)

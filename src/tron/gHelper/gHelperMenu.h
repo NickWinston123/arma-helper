@@ -4,22 +4,24 @@
 #include "uMenu.h"
 
 using namespace helperConfig;
-void enemyTracersMenu() {
+void enemyTracersMenu()
+{
     uMenu enemyTracersMenu("Enemy Tracers Settings");
 
-    uMenuItemReal enemyTracersDetectionRange(&enemyTracersMenu, "Tracer Detection Range", "Range for displaying enemy tracers", sg_helperEnemyTracersDetectionRange,0, 10, 0.1);
-    uMenuItemReal enemyTracersSpeedMult(&enemyTracersMenu, "Tracer Speed Multiplier", "Speed multiplier for displaying enemy tracers", sg_helperEnemyTracersSpeedMult,0, 10, 0.1);
-    uMenuItemReal enemyTracersPassthrough(&enemyTracersMenu, "Tracer Passthrough", "Passthrough for displaying enemy tracers", sg_helperEnemyTracersPassthrough,0, 10, 0.1);
-    uMenuItemReal enemyTracersDelayMult(&enemyTracersMenu, "Tracer Delay Multiplier", "Delay multiplier for displaying enemy tracers", sg_helperEnemyTracersDelayMult,0, 10, 0.1);
-    uMenuItemReal enemyTracersTimeout(&enemyTracersMenu, "Tracer Timeout", "Timeout for displaying enemy tracers", sg_helperEnemyTracersTimeout,0, 10, 0.1);
-    uMenuItemReal enemyTracersBrightness(&enemyTracersMenu, "Tracer Brightness", "Brightness for displaying enemy tracers", sg_helperEnemyTracersBrightness,0, 10, 0.1);
-    uMenuItemReal enemyTracersHeight(&enemyTracersMenu, "Tracer Height", "Height for displaying enemy tracers", sg_helperEnemyTracersHeight,0, 10, 0.1);
+    uMenuItemReal enemyTracersDetectionRange(&enemyTracersMenu, "Tracer Detection Range", "Range for displaying enemy tracers", sg_helperEnemyTracersDetectionRange, 0, 10, 0.1);
+    uMenuItemReal enemyTracersSpeedMult(&enemyTracersMenu, "Tracer Speed Multiplier", "Speed multiplier for displaying enemy tracers", sg_helperEnemyTracersSpeedMult, 0, 10, 0.1);
+    uMenuItemReal enemyTracersPassthrough(&enemyTracersMenu, "Tracer Passthrough", "Passthrough for displaying enemy tracers", sg_helperEnemyTracersPassthrough, 0, 10, 0.1);
+    uMenuItemReal enemyTracersDelayMult(&enemyTracersMenu, "Tracer Delay Multiplier", "Delay multiplier for displaying enemy tracers", sg_helperEnemyTracersDelayMult, 0, 10, 0.1);
+    uMenuItemReal enemyTracersTimeout(&enemyTracersMenu, "Tracer Timeout", "Timeout for displaying enemy tracers", sg_helperEnemyTracersTimeout, 0, 10, 0.1);
+    uMenuItemReal enemyTracersBrightness(&enemyTracersMenu, "Tracer Brightness", "Brightness for displaying enemy tracers", sg_helperEnemyTracersBrightness, 0, 10, 0.1);
+    uMenuItemReal enemyTracersHeight(&enemyTracersMenu, "Tracer Height", "Height for displaying enemy tracers", sg_helperEnemyTracersHeight, 0, 10, 0.1);
     uMenuItemToggle enemyTracers(&enemyTracersMenu, "Show Enemy Tracers", "Toggle display of enemy tracers", sg_helperEnemyTracers);
 
     enemyTracersMenu.Enter();
 }
 
-void enemyTailMenu() {
+void enemyTailMenu()
+{
     uMenu enemyTailMenu("Enemy Tail Settings");
 
     uMenuItemReal enemyTailDistanceMult(&enemyTailMenu, "Enemy Tail Distance Multiplier", "Distance multiplier for displaying enemy tail", sg_helperShowEnemyTailDistanceMult, 0, 10, 0.1);
@@ -31,7 +33,8 @@ void enemyTailMenu() {
     enemyTailMenu.Enter();
 }
 
-void enemyDetectCutMenu() {
+void enemyDetectCutMenu()
+{
     uMenu detectCutMenu("Enemy Cut Detection Settings");
 
     uMenuItemReal detectCutRange(&detectCutMenu, "Detection Range", "Range for detecting enemy cuts", sg_helperDetectCutDetectionRange, 0, 300, 1);
@@ -54,7 +57,8 @@ void helperEnemyMenu()
     enemyMenu.Enter();
 }
 
-void helperCornersMenu() {
+void helperCornersMenu()
+{
     uMenu cornersMenu("Corners Settings");
 
     uMenuItemReal cornersPassedRange(&cornersMenu, "Passed Corners Range", "Range for showing passed corners", sg_helperShowCornersPassedRange, 0, 10, 0.1);
@@ -68,23 +72,25 @@ void helperCornersMenu() {
     cornersMenu.Enter();
 }
 
-void helperShowHitMenu() {
+void helperShowHitMenu()
+{
     uMenu showHitMenu("Show Hit Settings");
 
-    uMenuItemInt showHitStartAtHitPos(&showHitMenu, "Start at Hit Mode", "Position where calculation for side debug lines begins. 0 - At front hit point, 1 - At owners position, 2 - Both ", sg_helperShowHitStartMode,0, 2, 1);
+    uMenuItemInt showHitStartAtHitPos(&showHitMenu, "Start at Hit Mode", "Position where calculation for side debug lines begins. 0 - At front hit point, 1 - At owners position, 2 - Both ", sg_helperShowHitStartMode, 0, 2, 1);
 
-    uMenuItemReal showHitHeightFront(&showHitMenu, "Hit Height (Front)", "Height for displaying hit in front", sg_showHitDataHeightFront,0, 5, 0.1);
-    uMenuItemReal showHitHeightSides(&showHitMenu, "Hit Height (Sides)", "Height for displaying hit on sides", sg_showHitDataHeightSides,0, 5, 0.1);
-    uMenuItemReal showHitRange(&showHitMenu, "Hit Range", "Range for displaying hit", sg_showHitDataRange,0, 1000, 5);
-    uMenuItemReal showHitFreeRange(&showHitMenu, "Hit Open Range", "Open range for displaying hit", sg_showHitDataFreeRange,0, 20, 1);
+    uMenuItemReal showHitHeightFront(&showHitMenu, "Hit Height (Front)", "Height for displaying hit in front", sg_showHitDataHeightFront, 0, 5, 0.1);
+    uMenuItemReal showHitHeightSides(&showHitMenu, "Hit Height (Sides)", "Height for displaying hit on sides", sg_showHitDataHeightSides, 0, 5, 0.1);
+    uMenuItemReal showHitRange(&showHitMenu, "Hit Range", "Range for displaying hit", sg_showHitDataRange, 0, 1000, 5);
+    uMenuItemReal showHitFreeRange(&showHitMenu, "Hit Open Range", "Open range for displaying hit", sg_showHitDataFreeRange, 0, 20, 1);
     uMenuItemInt showHitRecursion(&showHitMenu, "Hit Recursion", "Recursion level for displaying hit", sg_showHitDataRecursion, 1, 10);
-    uMenuItemReal showHitTimeout(&showHitMenu, "Hit Timeout", "Timeout for displaying hit", sg_showHitDataTimeout,0, 10, 0.1);
+    uMenuItemReal showHitTimeout(&showHitMenu, "Hit Timeout", "Timeout for displaying hit", sg_showHitDataTimeout, 0, 10, 0.1);
     uMenuItemToggle showHit(&showHitMenu, "Show Hit", "Toggle display of hit", sg_helperShowHit);
 
     showHitMenu.Enter();
 }
 
-void tailHelperMenu () {
+void tailHelperMenu()
+{
     uMenu tailHelperMenu("Tail Helper Settings");
 
     uMenuItemToggle tailHelperToggle(&tailHelperMenu, "Tail Helper", "Toggle tail helper on/off", sg_tailHelper);
@@ -93,7 +99,8 @@ void tailHelperMenu () {
     tailHelperMenu.Enter();
 }
 
-void tailTracerMenu() {
+void tailTracerMenu()
+{
     uMenu tailTracerMenu("Tail Tracer Settings");
 
     uMenuItemToggle showTailTracer(&tailTracerMenu, "Show Tail Tracer", "Toggle tail tracer on/off", sg_helperShowTailTracer);
@@ -104,20 +111,22 @@ void tailTracerMenu() {
     tailTracerMenu.Enter();
 }
 
-void helperTailMenu () {
+void helperTailMenu()
+{
     uMenu tailMenu("Tail Settings");
 
     uMenuItemFunction tailTracer(&tailMenu, "Tail Tracer", "Settings for Tail Tracer", &tailTracerMenu);
     uMenuItemFunction tailHelper(&tailMenu, "Tail Helper", "Settings for Tail Helper", &tailHelperMenu);
-    uMenuItemReal tailPassthrough(&tailMenu, "Tail Passthrough", "Passthrough for displaying tail", sg_helperShowTailPassthrough,0, 10, 0.1);
-    uMenuItemReal tailHeight(&tailMenu, "Tail Height", "Height for displaying tail", sg_helperShowTailHeight,0, 10, 0.1);
-    uMenuItemReal tailTimeout(&tailMenu, "Tail Timeout", "Timeout for displaying tail", sg_helperShowTailTimeout,0, 10, 0.1);
+    uMenuItemReal tailPassthrough(&tailMenu, "Tail Passthrough", "Passthrough for displaying tail", sg_helperShowTailPassthrough, 0, 10, 0.1);
+    uMenuItemReal tailHeight(&tailMenu, "Tail Height", "Height for displaying tail", sg_helperShowTailHeight, 0, 10, 0.1);
+    uMenuItemReal tailTimeout(&tailMenu, "Tail Timeout", "Timeout for displaying tail", sg_helperShowTailTimeout, 0, 10, 0.1);
     uMenuItemToggle showTail(&tailMenu, "Show Tail", "Toggle display of tail", sg_helperShowTail);
 
     tailMenu.Enter();
 }
 
-void helperPathMenu() {
+void helperPathMenu()
+{
     uMenu pathMenu("Path Settings");
 
     uMenuItemReal showTurnAhead(&pathMenu, "Show Turn Ahead", "Distance from owner to current path target must be less than this value before rendering turn", sg_pathHelperShowTurnAhead, 0, 30, 0.1);
@@ -133,7 +142,8 @@ void helperPathMenu() {
     pathMenu.Enter();
 }
 
-void helperAutoBrakeMenu(){
+void helperAutoBrakeMenu()
+{
     uMenu helperAutoBrakeMenu("Auto Brake");
 
     // uMenuItemToggle autoBrakeDeplete(&helperAutoBrakeMenu, "Auto Brake Deplete", "Toggle auto brake deplete on/off - when on, will try to keep brake down", sg_helperAutoBrakeDeplete);
@@ -143,7 +153,6 @@ void helperAutoBrakeMenu(){
 
     helperAutoBrakeMenu.Enter();
 }
-
 
 void helperSelfMenu()
 {
@@ -158,7 +167,8 @@ void helperSelfMenu()
     helperSelfMenu.Enter();
 }
 
-void helperSmartTurningSurviveTraceMenu(){
+void helperSmartTurningSurviveTraceMenu()
+{
     uMenu helperSmartTurningSurviveTraceMenu("Trace");
 
     uMenuItemReal surviveTraceTurnTime(&helperSmartTurningSurviveTraceMenu, "Survive Trace Turn Time", "Turn time for survive trace", sg_helperSmartTurningSurviveTraceTurnTime, 0, 10, 0.1);
@@ -169,7 +179,8 @@ void helperSmartTurningSurviveTraceMenu(){
     helperSmartTurningSurviveTraceMenu.Enter();
 }
 
-void helperSmartTurningSurviveFrontBotMenu(){
+void helperSmartTurningSurviveFrontBotMenu()
+{
     uMenu helperSmartTurningSurviveFrontBotMenu("Front Bot");
 
     uMenuItemReal frontBotActivationRange(&helperSmartTurningSurviveFrontBotMenu, "Front Bot Think Range", "Think range for front bot", sg_helperSmartTurningFrontBotThinkRange, 0, 10, 0.1);
@@ -181,18 +192,19 @@ void helperSmartTurningSurviveFrontBotMenu(){
     helperSmartTurningSurviveFrontBotMenu.Enter();
 }
 
-
-void helperSmartTurningSurviveFollowTailMenu(){
+void helperSmartTurningSurviveFollowTailMenu()
+{
     uMenu helperSmartTurningSurviveFollowTailMenu("Follow Tail");
 
-   uMenuItemReal followTailDelayMult(&helperSmartTurningSurviveFollowTailMenu, "Follow Tail Delay Mult", "Multiplier for follow tail delay", sg_helperSmartTurningFollowTailDelayMult, 0, 10, 0.1);
+    uMenuItemReal followTailDelayMult(&helperSmartTurningSurviveFollowTailMenu, "Follow Tail Delay Mult", "Multiplier for follow tail delay", sg_helperSmartTurningFollowTailDelayMult, 0, 10, 0.1);
     uMenuItemReal followTailFreeSpaceMult(&helperSmartTurningSurviveFollowTailMenu, "Follow Tail Free Space Mult", "Multiplier for follow tail free space", sg_helperSmartTurningFollowTailFreeSpaceMult, 0, 10, 0.1);
     uMenuItemToggle followTail(&helperSmartTurningSurviveFollowTailMenu, "Follow Tail", "Toggle follow tail on/off", sg_helperSmartTurningFollowTail);
 
     helperSmartTurningSurviveFollowTailMenu.Enter();
 }
 
-void helperSmartTurningMenu() {
+void helperSmartTurningMenu()
+{
     uMenu smartTurningMenu("Smart Turning Settings");
 
     uMenuItemReal closedInMult(&smartTurningMenu, "Closed In Mult", "Multiplier for closed in", sg_helperSmartTurningClosedInMult, 0, 10, 0.1);
@@ -213,35 +225,36 @@ void helperSmartTurningMenu() {
     smartTurningMenu.Enter();
 }
 
-void helperDebugMenu() {
+void helperDebugMenu()
+{
     uMenu smartDebugMenu("Debug Menu");
 
     uMenuItemReal helperDebugDelay(&smartDebugMenu,
-                                    "Helper Debug Delay",
-                                    "Helper Debug Message delay",
-                                    sg_helperDebugDelay,
-                                    0,
-                                    1,
-                                    0.01);
+                                   "Helper Debug Delay",
+                                   "Helper Debug Message delay",
+                                   sg_helperDebugDelay,
+                                   0,
+                                   1,
+                                   0.01);
 
     uMenuItemToggle helperDebugTimeStamp(&smartDebugMenu,
-                                        "Helper Debug Timestamp",
-                                        "Helper Debug Timestamp",
-                                        sg_helperDebugTimeStamp);
+                                         "Helper Debug Timestamp",
+                                         "Helper Debug Timestamp",
+                                         sg_helperDebugTimeStamp);
 
     uMenuItemString helperDebugIgnoreLis(&smartDebugMenu, "Helper Debug Ignore",
-                                        "Comma delimited list, any helper debug with a sensor matching any values will be suppressed",
-                                        sg_helperDebugIgnoreList);
+                                         "Comma delimited list, any helper debug with a sensor matching any values will be suppressed",
+                                         sg_helperDebugIgnoreList);
 
     uMenuItemToggle helperDebug(&smartDebugMenu,
-                                       "Helper Debug",
-                                       "Enable Helper Debug",
-                                       sg_helperDebug);
+                                "Helper Debug",
+                                "Enable Helper Debug",
+                                sg_helperDebug);
     smartDebugMenu.Enter();
-
 }
 
-void helperConfigMenu() {
+void helperConfigMenu()
+{
     uMenu helperConfigMenu("Config Settings");
 
     uMenuItemReal brightness(&helperConfigMenu, "Brightness", "Adjust the brightness of debug lines", sg_helperBrightness, 0, 10, 0.1);
@@ -251,14 +264,16 @@ void helperConfigMenu() {
     helperConfigMenu.Enter();
 }
 
-void helperZoneMenu() {
+void helperZoneMenu()
+{
     uMenu helperZoneMenu("Zone Helper Settings");
 
     uMenuItemToggle zoneHelper(&helperZoneMenu, "Zone Helper", "Enable or disable zone helper", sg_zoneHelper);
     helperZoneMenu.Enter();
 }
 
-void helperExperimentalMenu(){
+void helperExperimentalMenu()
+{
     uMenu helperExperimentalMenu("Experimental Settings");
 
     uMenuItemFunction zoneMenu(&helperExperimentalMenu,
@@ -269,7 +284,8 @@ void helperExperimentalMenu(){
     helperExperimentalMenu.Enter();
 }
 
-void helperHudMenu() {
+void helperHudMenu()
+{
     uMenu helperHudMenu("Helper HUD Settings");
     uMenuItemToggle helperHud(&helperHudMenu, "Helper HUD", "Toggle the visibility of the helper HUD", sg_helperHud);
 
@@ -285,49 +301,50 @@ void helperMenu()
     uMenu helperSettingsMenu("Helper Settings");
 
     uMenuItemFunction experimentalMenu(&helperSettingsMenu,
-                            "Helper Experimental",
-                            "Helper Experimental Settings",
-                            helperExperimentalMenu);
+                                       "Helper Experimental",
+                                       "Helper Experimental Settings",
+                                       helperExperimentalMenu);
 
     uMenuItemFunction hudMenu(&helperSettingsMenu,
-                            sg_helperHud ? "0x00dd00Helper Hud" : "0xdd0000Helper Hud",
-                            "Helper HUD Settings",
-                            helperHudMenu);
+                              sg_helperHud ? "0x00dd00Helper Hud" : "0xdd0000Helper Hud",
+                              "Helper HUD Settings",
+                              helperHudMenu);
 
     uMenuItemFunction debugMenu(&helperSettingsMenu,
-                            sg_helperDebug ? "0x00dd00Helper Debug" : "0xdd0000Helper Debug",
-                            "Helper Debug Settings",
-                            helperDebugMenu);
+                                sg_helperDebug ? "0x00dd00Helper Debug" : "0xdd0000Helper Debug",
+                                "Helper Debug Settings",
+                                helperDebugMenu);
 
     uMenuItemFunction configMenu(&helperSettingsMenu,
-                            "Helper Config",
-                            "Helper Config Settings",
-                            helperConfigMenu);
+                                 "Helper Config",
+                                 "Helper Config Settings",
+                                 helperConfigMenu);
 
     uMenuItemFunction smartTurningMenu(&helperSettingsMenu,
-                            sg_helperSmartTurning ? "0x00dd00Smart Turning" : "0xdd0000Smart Turning",
-                            "Smart turning tools",
-                            helperSmartTurningMenu);
+                                       sg_helperSmartTurning ? "0x00dd00Smart Turning" : "0xdd0000Smart Turning",
+                                       "Smart turning tools",
+                                       helperSmartTurningMenu);
 
     uMenuItemFunction selfMenu(&helperSettingsMenu,
-                            "Self",
-                            "Helper tools for your self",
-                            helperSelfMenu);
+                               "Self",
+                               "Helper tools for your self",
+                               helperSelfMenu);
 
     uMenuItemFunction enemiesMenu(&helperSettingsMenu,
-                            "Enemies",
-                            "Helper tools for enemies",
-                            helperEnemyMenu);
+                                  "Enemies",
+                                  "Helper tools for enemies",
+                                  helperEnemyMenu);
 
     uMenuItemToggle helper(&helperSettingsMenu,
-                                "Helper",
-                                "Enable Helper",
-                                sg_helper);
+                           "Helper",
+                           "Enable Helper",
+                           sg_helper);
 
     helperSettingsMenu.Enter();
 }
 
-void helperMenuPub(std::istream &s) {
+void helperMenuPub(std::istream &s)
+{
     helperMenu();
 }
-static tConfItemFunc HelperMenuConf("HELPER_MENU",&helperMenuPub);
+static tConfItemFunc HelperMenuConf("HELPER_MENU", &helperMenuPub);

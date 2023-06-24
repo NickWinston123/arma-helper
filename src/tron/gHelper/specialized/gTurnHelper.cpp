@@ -54,7 +54,7 @@ public:
         default:
         // unless it is an enemy, follow his wall instead (uncomment for a nasty
         // cowardy campbot)
-        //lrSuggestion_ *= -1;
+        // lrSuggestion_ *= -1;
         case gSENSOR_SELF:
         {
             // determine whether we're hitting the front or back half of his wall
@@ -79,7 +79,6 @@ public:
             hitDistance_ = hitOwner_->GetDistance() - playerWall->Pos(wallAlpha);
             hitTime_ = playerWall->Time(wallAlpha);
             windingNumber_ = playerWall->WindingNumber();
-
         }
         }
 
@@ -116,7 +115,6 @@ public:
     int windingNumber_;  // the number of turns (with sign) the cycle has taken
 };
 
-
 // The function returns whether the cycle can survive a turn in the specific direction
 bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceFactor)
 {
@@ -142,7 +140,7 @@ bool gTurnHelper::canSurviveTurnSpecific(gHelperData &data, int dir, REAL spaceF
 
 bool gTurnHelper::makeTurnIfPossible(int dir, REAL spaceFactor)
 {
-    return makeTurnIfPossible((helper_.data_stored),dir,spaceFactor);
+    return makeTurnIfPossible((helper_.data_stored), dir, spaceFactor);
 }
 
 // This function checks if a turn is possible in the specified direction (dir)
@@ -161,7 +159,6 @@ bool gTurnHelper::makeTurnIfPossible(gHelperData &data, int dir, REAL spaceFacto
     return false;
 }
 
-
 // Function that checks if a turn can be survived by the player.
 gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor, bool driveStraight)
 {
@@ -178,7 +175,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
 
     // Calculate the rubber factor.
     REAL rubberFactor = data.rubberData.rubberFactorF();
-    REAL turnFactor   = data.ownerData.turnSpeedFactorF();
+    REAL turnFactor = data.ownerData.turnSpeedFactorF();
     // REAL turnTime = data.ownerData.turnTimeF(1) - se_GameTime();
     // con << "TURN TIME: " << turnTime << "\n";
     if (freeSpaceFactor > 0)
@@ -188,19 +185,19 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     // gHelperUtility::Debug("CAN_SURVIVE_TURN", "Rubber factor: ", rubberFactor);
 
     // Get the left, front, and right sensors.
-    std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT,true);
+    std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT, true);
     std::shared_ptr<gHelperSensor> front = data.sensors.getSensor(FRONT, true);
-    std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT,true);
+    std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT, true);
 
     // Calculate the closed-in factor based on the turn speed factor and the closed-in mult.
     REAL closedInFactor = turnFactor * sg_helperSmartTurningClosedInMult;
     // Check if the player is closed in on the front, left and right sides.
     surviveData.closedIn = (front->hit < closedInFactor &&
-                           (left->hit < closedInFactor || right->hit < closedInFactor));
+                            (left->hit < closedInFactor || right->hit < closedInFactor));
     // gHelperUtility::Debug("CAN_SURVIVE_TURN", "Closed in: ", surviveData.closedIn ? "TRUE" : "FALSE");
 
     // Check if the player is blocked by itself on the front, left and right sides.
-    surviveData.blockedBySelf = left->type  == gSENSOR_SELF &&
+    surviveData.blockedBySelf = left->type == gSENSOR_SELF &&
                                 right->type == gSENSOR_SELF &&
                                 front->type == gSENSOR_SELF;
     // gHelperUtility::Debug("CAN_SURVIVE_TURN", "Blocked by self: ", surviveData.blockedBySelf  ? "TRUE" : "FALSE");
@@ -215,21 +212,21 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     {
         // If the left hit is less than the turn speed factor multiplied by the free space factor and the front and right hits are greater than the turn speed factor multiplied by the free space factor, the turn left cannot be survived.
         if (left->hit < freeSpaceFactor &&
-            //front->hit > freeSpaceFactor &&
+            // front->hit > freeSpaceFactor &&
             right->hit >= freeSpaceFactor)
         {
-             surviveData.debug << "BECAUSE: RUBBER: "  << surviveData.canTurnLeftRubber << " SPACE: " << surviveData.canTurnLeftSpace << "\nREASON: " << left->hit  << " < " << freeSpaceFactor << " = " << bool(left->hit < freeSpaceFactor) << " && "
-                                             << right->hit  << " > " << freeSpaceFactor << " = " << bool(right->hit > freeSpaceFactor) << "\n";
+            surviveData.debug << "BECAUSE: RUBBER: " << surviveData.canTurnLeftRubber << " SPACE: " << surviveData.canTurnLeftSpace << "\nREASON: " << left->hit << " < " << freeSpaceFactor << " = " << bool(left->hit < freeSpaceFactor) << " && "
+                              << right->hit << " > " << freeSpaceFactor << " = " << bool(right->hit > freeSpaceFactor) << "\n";
             surviveData.canTurnLeftSpace = false;
             // gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnLeftSpace false");
         }
         // If the right hit is less than the turn speed factor multiplied by the free space factor and the front and left hits are greater than the turn speed factor multiplied by the free space factor, the turn right cannot be survived.
         if (right->hit < freeSpaceFactor &&
-            //front->hit > freeSpaceFactor &&
+            // front->hit > freeSpaceFactor &&
             left->hit >= freeSpaceFactor)
         {
-            surviveData.debug << "BECAUSE: RUBBER: " << surviveData.canTurnRightRubber << " SPACE: " << surviveData.canTurnRightSpace << "\nREASON: " << right->hit  << " < " << freeSpaceFactor << " = " << bool(right->hit < freeSpaceFactor) << " && "
-                                            << left->hit  << " > " << freeSpaceFactor << " = " << bool(left->hit > freeSpaceFactor) << "\n";
+            surviveData.debug << "BECAUSE: RUBBER: " << surviveData.canTurnRightRubber << " SPACE: " << surviveData.canTurnRightSpace << "\nREASON: " << right->hit << " < " << freeSpaceFactor << " = " << bool(right->hit < freeSpaceFactor) << " && "
+                              << left->hit << " > " << freeSpaceFactor << " = " << bool(left->hit > freeSpaceFactor) << "\n";
             surviveData.canTurnRightSpace = false;
             // gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnRightSpace false");
             // gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnRightSpace: ", canTurnRightSpace  ? "TRUE" : "FALSE");
@@ -257,7 +254,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
         // con << "surviveData.canSurviveLeftTurn == " << surviveData.canSurviveLeftTurn << "\n";
         // If the player is not closed in and both canTurnRightRubber and canTurnRightSpace are true,
         // then the right turn can be survived.
-        surviveData.canSurviveRightTurn = !surviveData.closedIn ? surviveData.canTurnRightRubber && surviveData.canTurnRightSpace :surviveData.canTurnRightRubber;
+        surviveData.canSurviveRightTurn = !surviveData.closedIn ? surviveData.canTurnRightRubber && surviveData.canTurnRightSpace : surviveData.canTurnRightRubber;
         // con << "surviveData.canSurviveRightTurn == "  <<  surviveData.canSurviveRightTurn << "\n";
     }
     else
@@ -269,7 +266,6 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     }
     return surviveData;
 }
-
 
 int gTurnHelper::ActToTurn(uActionPlayer *action)
 {
@@ -286,7 +282,6 @@ void gTurnHelper::BotDebug(std::string description)
 {
     gHelperUtility::Debug("gTurnHelper", description, "");
 }
-
 
 // determines the distance between two sensors; the size should give the
 // likelyhood to survive if you pass through a gap between the two selected
@@ -336,7 +331,7 @@ REAL gTurnHelper::Distance(Sensor const &a, Sensor const &b)
         if (rim)
         {
             ret = bigDistance * .001 + ret * .01 +
-                    (a.before_hit - b.before_hit).Norm();
+                  (a.before_hit - b.before_hit).Norm();
 
             // we love going between the rim and enemies
             if (!self)
@@ -367,11 +362,11 @@ REAL gTurnHelper::Distance(Sensor const &a, Sensor const &b)
     {
         // different directions? Also great!
         return (fabsf(a.hitDistance_ - b.hitDistance_) + .25 * bigDistance) *
-                selfHatred;
+               selfHatred;
     }
 
     else if (-2 * a.lr * (a.windingNumber_ - b.windingNumber_) >
-                owner_.Grid()->WindingNumber())
+             owner_.Grid()->WindingNumber())
     {
         // this looks like a way out to me
         return fabsf(a.hitDistance_ - b.hitDistance_) * 10 * selfHatred;
@@ -386,7 +381,6 @@ REAL gTurnHelper::Distance(Sensor const &a, Sensor const &b)
     // default: hit distance
     return (a.before_hit - b.before_hit).Norm() * selfHatred;
 }
-
 
 // does the main thinking
 gTurnData &gTurnHelper::getTurn()
@@ -414,12 +408,12 @@ gTurnData &gTurnHelper::getTurn()
         return turnData;
     }
 
-    owner_.enemyInfluence.AddSensor( front, 0, &owner_ );
+    owner_.enemyInfluence.AddSensor(front, 0, &owner_);
 
     REAL minMoveOn = 0, maxMoveOn = 0, moveOn = 0;
 
     // get extra time we get through rubber usage
-//    helper_.rubberData->calculate();
+    //    helper_.rubberData->calculate();
     REAL rubberTime = helper_.data_stored.rubberData.rubberTimeLeft;
     REAL rubberRatio = helper_.data_stored.rubberData.rubberUsedRatio;
 
@@ -591,10 +585,10 @@ gTurnData &gTurnHelper::getTurn()
 
     // hit the brakes before you hit anything and if it's worth it
     bool brake = sg_brakeCycle > 0 &&
-                    front.hit * lookahead * sg_cycleBrakeDeplete < owner_.GetBrakingReservoir() &&
-                    sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_.GetBrakingReservoir() &&
-                    (maxMoveOn - minMoveOn) > 0 &&
-                    owner_.GetBrakingReservoir() * (maxMoveOn - minMoveOn) < speed * owner_.GetTurnDelay();
+                 front.hit * lookahead * sg_cycleBrakeDeplete < owner_.GetBrakingReservoir() &&
+                 sg_brakeCycle * front.hit * lookahead < 2 * speed * owner_.GetBrakingReservoir() &&
+                 (maxMoveOn - minMoveOn) > 0 &&
+                 owner_.GetBrakingReservoir() * (maxMoveOn - minMoveOn) < speed * owner_.GetTurnDelay();
 
     if (frontOpen < bestOpen &&
         (forwardOverhang <= backwardOverhang || (minMoveOn < 0 && moveOn < minstep * speed)))
@@ -678,7 +672,6 @@ gTurnHelper::gTurnHelper(gHelper &helper, gCycle &owner) : helper_(helper),
 {
     // other initialization code
 }
-
 
 gTurnHelper &gTurnHelper::Get(gHelper &helper, gCycle &owner)
 {

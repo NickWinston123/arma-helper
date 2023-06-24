@@ -30,12 +30,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "eCamera.h"
 
-class gCamera:public eCamera{
+class gCamera : public eCamera
+{
     void MyInit();
-public:
-    eGameObject * lastCenter; // the gameobject we were last watching
 
-    gCamera(eGrid *grid, rViewport *vp,ePlayerNetID *owner,ePlayer *lp,eCamMode m=CAMERA_IN);
+public:
+    eGameObject *lastCenter; // the gameobject we were last watching
+
+    gCamera(eGrid *grid, rViewport *vp, ePlayerNetID *owner, ePlayer *lp, eCamMode m = CAMERA_IN);
     virtual ~gCamera();
 
     virtual eCoord CenterCycleDir() const;

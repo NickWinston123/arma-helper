@@ -52,23 +52,29 @@ class uActionTooltip;
 
 // the possible actions; player actions and global actions
 
-class uAction:public tListItem<uAction>{
+class uAction : public tListItem<uAction>
+{
     friend class uActionTooltip;
 
     uActionTooltip *tooltip_;
+
 protected:
     int localID;  // unique id on this host
     int globalID; // unique ID send from the server
 public:
-    typedef enum {uINPUT_DIGITAL,uINPUT_ANALOG} uInputType;
+    typedef enum
+    {
+        uINPUT_DIGITAL,
+        uINPUT_ANALOG
+    } uInputType;
 
-    uInputType     	type;
-    int				priority;
-    tString        	internalName;
-    const tOutput  	description;
-    const tOutput  	helpText;
+    uInputType type;
+    int priority;
+    tString internalName;
+    const tOutput description;
+    const tOutput helpText;
 
-    uActionTooltip * GetTooltip() const
+    uActionTooltip *GetTooltip() const
     {
         return tooltip_;
     }
@@ -77,71 +83,71 @@ public:
     //  uAction(uAction *&anchor,const char *name,const char *desc,const char *help,
     //	 uInputType t=uINPUT_DIGITAL);
 #endif
-    uAction(uAction *&anchor,const char* name,
+    uAction(uAction *&anchor, const char *name,
             int priority = 0,
-            uInputType t=uINPUT_DIGITAL);
+            uInputType t = uINPUT_DIGITAL);
 
-    uAction(uAction *&anchor,const char* name,
-            const tOutput& desc,
-            const tOutput& help,
+    uAction(uAction *&anchor, const char *name,
+            const tOutput &desc,
+            const tOutput &help,
             int priority = 0,
-            uInputType t=uINPUT_DIGITAL);
+            uInputType t = uINPUT_DIGITAL);
 
     virtual ~uAction();
 
     //! find an action of the given name
-    static uAction * Find( char const * name );
+    static uAction *Find(char const *name);
 
-    unsigned short ID() const{return globalID;}
+    unsigned short ID() const { return globalID; }
 };
-
 
 // tooltips, little help messages popping up, reminding the player
 // of keybindings
-class uActionTooltip: public tConfItemBase
+class uActionTooltip : public tConfItemBase
 {
 public:
     typedef bool VETOFUNC(int player);
-    uActionTooltip( uAction & action, int numHelp, VETOFUNC * veto = NULL );
+    uActionTooltip(uAction &action, int numHelp, VETOFUNC *veto = NULL);
     ~uActionTooltip();
 
     //! presents help to the specified player, starting counting at 1.
     //! player = 0 helps on global actions. Returns true if help was given.
-    static bool Help( int player = 0 );
+    static bool Help(int player = 0);
 
     //! sets remaining tooltip counts to 0, preventing further appearance
     //! player = 0 helps on global actions. Returns true if help was given.
-    static void Disable( int player = 0 );
+    static void Disable(int player = 0);
 
     //! call if an action was triggered
-    void Count( int player );
+    void Count(int player);
     void ShowAgain();
+
 private:
-    virtual void WriteVal(std::ostream & s );
-    virtual void ReadVal(std::istream & s );
+    virtual void WriteVal(std::ostream &s);
+    virtual void ReadVal(std::istream &s);
     virtual void FetchVal(tString &val){};
 
     //! counts how many activations are required to make the tip go away
-    int activationsLeft_[uMAX_PLAYERS+1];
-    tString help_;        //!< help languate item
-    uAction & action_;    //!< action this belongs to
-    VETOFUNC * veto_;  //!< function that can block help display
+    int activationsLeft_[uMAX_PLAYERS + 1];
+    tString help_;    //!< help languate item
+    uAction &action_; //!< action this belongs to
+    VETOFUNC *veto_;  //!< function that can block help display
 };
-
 
 // player actions (move,shoot) and global actions (stop game, pause..)
 
-class uActionPlayer:public uAction{
+class uActionPlayer : public uAction
+{
 public:
     uActionPlayer(const char *name,
                   int priority = 0,
-                  uInputType 	t=uINPUT_DIGITAL);
+                  uInputType t = uINPUT_DIGITAL);
 
     uActionPlayer(const char *name,
-                  const tOutput& desc,
-                  const tOutput& help,
+                  const tOutput &desc,
+                  const tOutput &help,
                   int priority = 0,
-                  uInputType t=uINPUT_DIGITAL);
+                  uInputType t = uINPUT_DIGITAL);
 
     virtual ~uActionPlayer();
 
@@ -150,11 +156,12 @@ public:
     static uActionPlayer *Find(int globalID);
 };
 
-class uActionCamera:public uAction{
+class uActionCamera : public uAction
+{
 public:
     uActionCamera(const char *name,
                   int priority = 0,
-                  uInputType 	t=uINPUT_DIGITAL);
+                  uInputType t = uINPUT_DIGITAL);
 
     virtual ~uActionCamera();
 
@@ -162,11 +169,12 @@ public:
 };
 
 // global actions
-class uActionGlobal:public uAction{
+class uActionGlobal : public uAction
+{
 public:
     uActionGlobal(const char *name,
                   int priority = 0,
-                  uInputType 	t=uINPUT_DIGITAL);
+                  uInputType t = uINPUT_DIGITAL);
 
     virtual ~uActionGlobal();
 
@@ -176,19 +184,16 @@ public:
     static bool IsBreakingGlobalBind(int sym);
 };
 
-
-
-
 // *********************************************
 // generic keypress/mouse movement binding class
 // *********************************************
 
-class uBind: public tReferencable< uBind >
+class uBind : public tReferencable<uBind>
 {
     friend class uMenuItemInput;
 
-    virtual bool Delayable()=0;
-    virtual bool DoActivate(REAL x)=0;
+    virtual bool Delayable() = 0;
+    virtual bool DoActivate(REAL x) = 0;
     REAL lastValue_;
     REAL delayedValue_;
 
@@ -198,57 +203,59 @@ class uBind: public tReferencable< uBind >
 public:
     uAction *act;
 
-    uBind(uAction *a );
+    uBind(uAction *a);
     uBind(std::istream &s);
     virtual ~uBind();
 
     virtual void Write(std::ostream &s);
 
-    virtual bool CheckPlayer(int p)=0;
+    virtual bool CheckPlayer(int p) = 0;
 
-    bool Activate(REAL x, bool delayed );
+    bool Activate(REAL x, bool delayed);
     void HanldeDelayed();
 
     //! checks if the sym is used for double binding, return true
-    bool IsDoubleBind( int sym );
+    bool IsDoubleBind(int sym);
 };
 
 // extra binds for mouse (and joystick, as soon as SDL supports it) movement:
-#define SDLK_MOUSE_X_PLUS   (SDLK_LAST+1)
-#define SDLK_MOUSE_X_MINUS  (SDLK_LAST+2)
-#define SDLK_MOUSE_Y_PLUS   (SDLK_LAST+3)
-#define SDLK_MOUSE_Y_MINUS  (SDLK_LAST+4)
-#define SDLK_MOUSE_Z_PLUS   (SDLK_LAST+5)
-#define SDLK_MOUSE_Z_MINUS  (SDLK_LAST+6)
-#define SDLK_MOUSE_BUTTON_1 (SDLK_LAST+7)
-#define SDLK_MOUSE_BUTTON_2 (SDLK_LAST+8)
-#define SDLK_MOUSE_BUTTON_3 (SDLK_LAST+9)
-#define SDLK_MOUSE_BUTTON_4 (SDLK_LAST+10)
-#define SDLK_MOUSE_BUTTON_5 (SDLK_LAST+11)
-#define SDLK_MOUSE_BUTTON_6 (SDLK_LAST+12)
-#define SDLK_MOUSE_BUTTON_7 (SDLK_LAST+13)
-#define SDLK_NEWLAST        (SDLK_LAST+14)
+#define SDLK_MOUSE_X_PLUS (SDLK_LAST + 1)
+#define SDLK_MOUSE_X_MINUS (SDLK_LAST + 2)
+#define SDLK_MOUSE_Y_PLUS (SDLK_LAST + 3)
+#define SDLK_MOUSE_Y_MINUS (SDLK_LAST + 4)
+#define SDLK_MOUSE_Z_PLUS (SDLK_LAST + 5)
+#define SDLK_MOUSE_Z_MINUS (SDLK_LAST + 6)
+#define SDLK_MOUSE_BUTTON_1 (SDLK_LAST + 7)
+#define SDLK_MOUSE_BUTTON_2 (SDLK_LAST + 8)
+#define SDLK_MOUSE_BUTTON_3 (SDLK_LAST + 9)
+#define SDLK_MOUSE_BUTTON_4 (SDLK_LAST + 10)
+#define SDLK_MOUSE_BUTTON_5 (SDLK_LAST + 11)
+#define SDLK_MOUSE_BUTTON_6 (SDLK_LAST + 12)
+#define SDLK_MOUSE_BUTTON_7 (SDLK_LAST + 13)
+#define SDLK_NEWLAST (SDLK_LAST + 14)
 #define MOUSE_BUTTONS 7
 
 // one key_action for every keysym
-extern tJUST_CONTROLLED_PTR< uBind > keymap[SDLK_NEWLAST];
+extern tJUST_CONTROLLED_PTR<uBind> keymap[SDLK_NEWLAST];
 
 // *****************
 // Player binds
 // *****************
 
-class uBindPlayer:public uBind{
-    int            ePlayer;
+class uBindPlayer : public uBind
+{
+    int ePlayer;
 
     virtual bool Delayable();
     virtual bool DoActivate(REAL x);
 
-    uBindPlayer(uAction *a,int p);
+    uBindPlayer(uAction *a, int p);
+
 public:
     virtual ~uBindPlayer();
 
-    static uBindPlayer * NewBind( uAction * action, int player );
-    static uBindPlayer * NewBind( std::istream & s );
+    static uBindPlayer *NewBind(uAction *action, int player);
+    static uBindPlayer *NewBind(std::istream &s);
 
     static bool IsKeyWord(const char *n);
 
@@ -257,68 +264,74 @@ public:
     virtual void Write(std::ostream &s);
 };
 
-
 // *****************
 // Global actions
 // *****************
 
 typedef bool ACTION_FUNC(REAL x);
 
-class uActionGlobalFunc: public tListItem<uActionGlobalFunc>{
-    ACTION_FUNC   *func;
+class uActionGlobalFunc : public tListItem<uActionGlobalFunc>
+{
+    ACTION_FUNC *func;
     uActionGlobal *act;
-    bool           rebindable;
+    bool rebindable;
 
 public:
-    uActionGlobalFunc(uActionGlobal *a, ACTION_FUNC *f, bool rebind = true );
+    uActionGlobalFunc(uActionGlobal *a, ACTION_FUNC *f, bool rebind = true);
     static bool IsBreakingGlobalBind(uAction *act);
     static bool GlobalAct(uAction *act, REAL x);
 };
-
 
 // ***************************
 //      player prototype
 // ***************************
 
-class uPlayerPrototype{
+class uPlayerPrototype
+{
 protected:
-    static uPlayerPrototype* playerConfig[uMAX_PLAYERS];
+    static uPlayerPrototype *playerConfig[uMAX_PLAYERS];
     int id;
+
 public:
     uPlayerPrototype();
     virtual ~uPlayerPrototype();
 
-    virtual bool         Act(uAction *act, REAL x)=0;
-    virtual const char * Name() const            =0;
+    virtual bool Act(uAction *act, REAL x) = 0;
+    virtual const char *Name() const = 0;
 
-    static uPlayerPrototype* PlayerConfig(int i);
+    static uPlayerPrototype *PlayerConfig(int i);
     static int Num();
 };
 
-class uMenuItemInput: uMenuItem{
-    uAction      *act;
-    int         ePlayer;
-    bool        active;
+class uMenuItemInput : uMenuItem
+{
+    uAction *act;
+    int ePlayer;
+    bool active;
+
 public:
-    uMenuItemInput(uMenu *M,uAction *a,int p)
-            :uMenuItem(M,a->helpText),act(a),ePlayer(p),active(0){
+    uMenuItemInput(uMenu *M, uAction *a, int p)
+        : uMenuItem(M, a->helpText), act(a), ePlayer(p), active(0)
+    {
     }
 
-    virtual ~uMenuItemInput(){}
+    virtual ~uMenuItemInput() {}
 
-    virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0);
+    virtual void Render(REAL x, REAL y, REAL alpha = 1, bool selected = 0);
 
-    virtual void Enter(){
-        active=1;
+    virtual void Enter()
+    {
+        active = 1;
     }
 
-    virtual bool ConsiderMenuActive(){return !active;}
+    virtual bool ConsiderMenuActive() { return !active; }
 
 #ifndef DEDICATED
     virtual bool Event(SDL_Event &e);
 #endif
 
-    virtual tString Help(){
+    virtual tString Help()
+    {
         tString ret;
         ret << helpText << "\n";
         ret << tOutput("$input_item_help");
@@ -326,17 +339,14 @@ public:
     }
 };
 
-
-
 // the input configuration menu
 void su_InputConfig(int player);
 void su_InputConfigCamera(int player);
 void su_InputConfigGlobal();
-bool su_HandleEvent(SDL_Event &e, bool delayed );	// handle event during gameplay
-void su_HandleDelayedEvents( );				// set menu state
+bool su_HandleEvent(SDL_Event &e, bool delayed); // handle event during gameplay
+void su_HandleDelayedEvents();                   // set menu state
 
 void su_InputSync(); // tells the input system that a new frame has been drawn;
 // autorepeat functions may be called.
 void su_ClearKeys(); // clears all keys into the unpressed state.
 #endif
-

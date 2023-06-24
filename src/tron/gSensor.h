@@ -34,24 +34,25 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 class eEdge;
 
 // sensor sent out to detect near eWalls
-class gSensor: public eSensor{
+class gSensor : public eSensor
+{
 public:
     gSensorWallType type;
 
-    gCycle * wallOwner;
+    gCycle *wallOwner;
 
+    gCycle *hitWallOwner() { return wallOwner; }
 
-    gCycle * hitWallOwner() {return wallOwner;}
-
-    gSensor(eGameObject *o,const eCoord &start,const eCoord &d)
-            :eSensor(o,start,d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction_(d), wallOwner(NULL) {
-            }
+    gSensor(eGameObject *o, const eCoord &start, const eCoord &d)
+        : eSensor(o, start, d), type(gSENSOR_NONE), owner_(o), gameObjects(owner_->Grid()->GameObjects()), start_(start), direction_(d), wallOwner(NULL)
+    {
+    }
 
     eCoord start_;
     eCoord direction_;
     eGameObject *owner_;
-    const tList<eGameObject>& gameObjects;
-    virtual void PassEdge(const eWall *w,REAL time,REAL,int =1);
+    const tList<eGameObject> &gameObjects;
+    virtual void PassEdge(const eWall *w, REAL time, REAL, int = 1);
     void detect(REAL range, const eCoord &newPos, const eCoord &newDir, bool render = false);
     void detect(REAL range, bool render = true);
 };

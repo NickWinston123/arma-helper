@@ -6,12 +6,13 @@
 #include "tConfiguration.h"
 #include "tString.h"
 
-namespace helperConfig {
-extern bool sg_helperHud;
-extern bool sg_helperHudFreeze;
-extern REAL sg_helperHudX;
-extern REAL sg_helperHudY;
-extern REAL sg_helperHudSize;
+namespace helperConfig
+{
+    extern bool sg_helperHud;
+    extern bool sg_helperHudFreeze;
+    extern REAL sg_helperHudX;
+    extern REAL sg_helperHudY;
+    extern REAL sg_helperHudSize;
 }
 class gHelperHudBase
 {
@@ -21,12 +22,13 @@ public:
 protected:
     const std::string label;
     std::string parent;
+
 public:
     gHelperHudBase(int id_, std::string label_, std::string parent = "");
 
     virtual std::string getLabel() { return label; }
     virtual tString getLabelStr() { return tString(label); }
-    virtual std::string getParent() { return parent;}
+    virtual std::string getParent() { return parent; }
     virtual tString getValue() { return tString("Default"); };
     virtual tString getLastValue() { return tString("Default"); }
     virtual bool valueSame() { return true; }
@@ -44,7 +46,7 @@ template <typename T>
 class gHelperHudItem : virtual public gHelperHudBase
 {
 public:
-    gHelperHudItem(std::string label_, T value_, std::string parent_ = "" )
+    gHelperHudItem(std::string label_, T value_, std::string parent_ = "")
         : label(label_), value(value_), id(0), parentID(0), gHelperHudBase(0, label_, parent_)
     {
         setLastValue();
@@ -74,26 +76,32 @@ public:
         return valueStr;
     };
 
-    virtual void setValue(T val) {
+    virtual void setValue(T val)
+    {
         if (!helperConfig::sg_helperHud || helperConfig::sg_helperHudFreeze)
             return;
 
-        if (val != value){
+        if (val != value)
+        {
             value = val;
             setLastValue();
         }
     };
 
-    gHelperHudItem& operator<<(T val) {
-      setValue(val);
-      return *this;
+    gHelperHudItem &operator<<(T val)
+    {
+        setValue(val);
+        return *this;
     }
 
     virtual bool valueSame() { return getLastValue() == getValue(); }
 
-    virtual void setLastValue() { if (helperConfig::sg_helperHudFreeze)
-                                    return;
-                                  lastValue = value; }
+    virtual void setLastValue()
+    {
+        if (helperConfig::sg_helperHudFreeze)
+            return;
+        lastValue = value;
+    }
 
     virtual tString displayString()
     {

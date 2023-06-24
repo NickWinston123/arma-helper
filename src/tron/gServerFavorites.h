@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
@@ -45,11 +45,10 @@ public:
     static void CustomConnectMenu();
 
     //! add a server to the list of favorites
-    static bool AddFavorite( nServerInfoBase const * server );
+    static bool AddFavorite(nServerInfoBase const *server);
 
     //! test whether a server is bookmarked
-    static bool IsFavorite( nServerInfoBase const * server );
+    static bool IsFavorite(nServerInfoBase const *server);
 };
 
 #endif
-

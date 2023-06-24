@@ -9,7 +9,8 @@
 class gSmarterBot;
 class Sensor;
 
-struct gSurviveData {
+struct gSurviveData
+{
     bool canSurviveLeftTurn = true;
     bool canSurviveRightTurn = true;
     bool canTurnLeftRubber = true;
@@ -19,14 +20,14 @@ struct gSurviveData {
     bool trapped;
     bool closedIn;
     bool blockedBySelf;
-    bool exist; 
+    bool exist;
     tString debug = tString("");
 
-    gSurviveData(): exist(true) {};
-    gSurviveData(bool): exist(false) {};
+    gSurviveData() : exist(true){};
+    gSurviveData(bool) : exist(false){};
 };
 // gTurnHelper is a class that manages emergency turning for a cycle in the game
-// using the chatbot logic to get a turn 
+// using the chatbot logic to get a turn
 class gTurnHelper
 {
 public:
@@ -50,7 +51,6 @@ public:
     gSurviveData canSurviveTurn(gHelperData &data,
                                 REAL freeSpaceFactor = 0,
                                 bool driveStraight = false);
-                        
 
     // convert uActionPlayer to DIR
     static int ActToTurn(uActionPlayer *action);
@@ -71,8 +71,7 @@ public:
 
     // solve the turn required to escape the situation based on AIBase logic
     // returns a pointer to the gTurnData object that stores the turn data
-    gTurnData &getTurnAIBase() {};
-    
+    gTurnData &getTurnAIBase(){};
 
 private:
     // pointer to the gTurnData object that stores the turn data
@@ -80,11 +79,10 @@ private:
 
     gSmarterBot &smarterBot;
     // the owner of the chatbot
-    gCycle &owner_; 
+    gCycle &owner_;
 
     // pointer to the gHelper instance
     gHelper &helper_;
 };
-
 
 #endif

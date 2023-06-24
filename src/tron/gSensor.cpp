@@ -39,86 +39,92 @@ static tConfItem<bool> sg_gSensorsZoneDetectionC("SENSORS_GSENSOR_ZONE_DETECTION
 
 extern REAL sg_delayCycle;
 
-//Reuse existing sensor
-void gSensor::detect(REAL range, const eCoord &newPos, const eCoord &newDir,bool render){
+// Reuse existing sensor
+void gSensor::detect(REAL range, const eCoord &newPos, const eCoord &newDir, bool render)
+{
     pos = newPos;
     dir = newDir;
-    //before_hit = eCoord();
+    // before_hit = eCoord();
     hit = (1000);
     ehit = (NULL);
     lr = 0;
     detect(range, render);
 }
 
-void gSensor::detect(REAL range, bool render){
+void gSensor::detect(REAL range, bool render)
+{
     //  eCoord start = pos;
     //  pos=pos+dir*.01;
-    //con << "Starting detection at point " << pos << " In direction: " << dir << "\n";
-    //con << "Moving from " << pos << " to " << pos+dir*range << "\n";
+    // con << "Starting detection at point " << pos << " In direction: " << dir << "\n";
+    // con << "Moving from " << pos << " to " << pos+dir*range << "\n";
     start_ = pos;
     direction_ = dir;
-    before_hit=pos+dir*(range-.001);
-    hit=range+.00001f;
+    before_hit = pos + dir * (range - .001);
+    hit = range + .00001f;
     ehit = 0;
 
     try
     {
-        //calculateZoneHit(range);
-        Move(pos+dir*range,0,range);
+        // calculateZoneHit(range);
+        Move(pos + dir * range, 0, range);
     }
-    catch( eSensorFinished & e )
+    catch (eSensorFinished &e)
     {
     }
 
-    if (!render || !sg_sensorsRender){
+    if (!render || !sg_sensorsRender)
+    {
         return;
     }
-        if (hit < range)
+    if (hit < range)
     {
         eDebugLine::SetTimeout(0.01);
-        eDebugLine::SetColor  (0, 1, 1);
+        eDebugLine::SetColor(0, 1, 1);
         eDebugLine::Draw(start_, .1, before_hit, .1);
 
-        eDebugLine::SetColor  (0, .5, 1);
+        eDebugLine::SetColor(0, .5, 1);
         eDebugLine::Draw(before_hit, .1, before_hit, 2.0);
     }
     else
     {
-        eDebugLine::SetColor  (1, 0, 0);
+        eDebugLine::SetColor(1, 0, 0);
         eDebugLine::Draw(start_, .5, pos, .5);
     }
 }
 
-void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
+void gSensor::PassEdge(const eWall *ww, REAL time, REAL a, int r)
+{
     if (!ww)
         return;
 
-    try{
-        eSensor::PassEdge(ww,time,a,r);
-    }
-    catch( eSensorFinished & e )
+    try
     {
-        if (sg_gSensorsZoneDetection) {
+        eSensor::PassEdge(ww, time, a, r);
+    }
+    catch (eSensorFinished &e)
+    {
+        if (sg_gSensorsZoneDetection)
+        {
             gZoneHelper::zoneIntersects(this);
 
-        if (type == gSENSOR_ZONE) {
-            type == gSENSOR_ENEMY;
-            // con << "found zone..\n";
-            // type = gSENSOR_RIM;
-            throw;
+            if (type == gSENSOR_ZONE)
+            {
+                type == gSENSOR_ENEMY;
+                // con << "found zone..\n";
+                // type = gSENSOR_RIM;
+                throw;
+            }
         }
 
-        }
-
-        const gPlayerWall *w=dynamic_cast<const gPlayerWall*>(ww);
+        const gPlayerWall *w = dynamic_cast<const gPlayerWall *>(ww);
         if (w)
         {
             wallOwner = w->Cycle();
-            if (wallOwner && wallOwner->IsMe( owned ) )
+            if (wallOwner && wallOwner->IsMe(owned))
             {
                 type = gSENSOR_SELF;
             }
-            else if ( wallOwner && owned && wallOwner->Team() == owned->Team() )
+            else if (wallOwner && owned && wallOwner->Team() == owned->Team())
             {
                 type = gSENSOR_TEAMMATE;
             }
@@ -128,14 +134,11 @@ void gSensor::PassEdge(const eWall *ww,REAL time,REAL a,int r){
             }
 
             if (w->EndTime() < w->BegTime())
-                lr=-lr;
+                lr = -lr;
         }
-        else if (dynamic_cast<const gWallRim*>(ww))
+        else if (dynamic_cast<const gWallRim *>(ww))
             type = gSENSOR_RIM;
 
         throw;
     }
-
-
 }
-

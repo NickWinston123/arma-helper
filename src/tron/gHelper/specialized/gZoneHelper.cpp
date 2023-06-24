@@ -8,45 +8,46 @@
 
 using namespace helperConfig;
 
-namespace helperConfig {
-bool sg_zoneHelper = false;
-static tConfItem<bool> sg_zoneHelperC("HELPER_ZONE", sg_zoneHelper);
+namespace helperConfig
+{
+    bool sg_zoneHelper = false;
+    static tConfItem<bool> sg_zoneHelperC("HELPER_ZONE", sg_zoneHelper);
 
-// bool sg_zoneHelperSensor = false;
-// static tConfItem<bool> sg_zoneHelperSensorC("HELPER_ZONE_SENSOR", sg_zoneHelperSensor);
+    // bool sg_zoneHelperSensor = false;
+    // static tConfItem<bool> sg_zoneHelperSensorC("HELPER_ZONE_SENSOR", sg_zoneHelperSensor);
 
-bool sg_helperZoneShowOwnerOnly = false;
-static tConfItem<bool> sg_helperZoneShowOwnerOnlyC("HELPER_ZONE_SHOW_OWNER_ONLY", sg_helperZoneShowOwnerOnly);
+    bool sg_helperZoneShowOwnerOnly = false;
+    static tConfItem<bool> sg_helperZoneShowOwnerOnlyC("HELPER_ZONE_SHOW_OWNER_ONLY", sg_helperZoneShowOwnerOnly);
 
-bool sg_helperZoneShow = false;
-static tConfItem<bool> sg_helperZoneShowConf("HELPER_ZONE_SHOW", sg_helperZoneShow);
+    bool sg_helperZoneShow = false;
+    static tConfItem<bool> sg_helperZoneShowConf("HELPER_ZONE_SHOW", sg_helperZoneShow);
 
-REAL sg_helperZoneShowHeight = 1;
-static tConfItem<REAL> sg_helperZoneShowHeightConf("HELPER_ZONE_SHOW_HEIGHT", sg_helperZoneShowHeight);
+    REAL sg_helperZoneShowHeight = 1;
+    static tConfItem<REAL> sg_helperZoneShowHeightConf("HELPER_ZONE_SHOW_HEIGHT", sg_helperZoneShowHeight);
 
-REAL sg_helperZoneShowBonusRadius = 0;
-static tConfItem<REAL> sg_helperZoneShowBonusRadiusConf("HELPER_ZONE_SHOW_RADIUS_BONUS", sg_helperZoneShowBonusRadius);
+    REAL sg_helperZoneShowBonusRadius = 0;
+    static tConfItem<REAL> sg_helperZoneShowBonusRadiusConf("HELPER_ZONE_SHOW_RADIUS_BONUS", sg_helperZoneShowBonusRadius);
 
-bool sg_helperZoneEnemyZonesColor = false;
-static tConfItem<bool> sg_helperZoneEnemyZonesColorConf("HELPER_ZONE_SHOW_ENEMY_RED", sg_helperZoneEnemyZonesColor);
+    bool sg_helperZoneEnemyZonesColor = false;
+    static tConfItem<bool> sg_helperZoneEnemyZonesColorConf("HELPER_ZONE_SHOW_ENEMY_RED", sg_helperZoneEnemyZonesColor);
 
-bool sg_helperZoneTracer = false;
-static tConfItem<bool> sg_helperZoneTracerConf("HELPER_ZONE_TRACER", sg_helperZoneTracer);
+    bool sg_helperZoneTracer = false;
+    static tConfItem<bool> sg_helperZoneTracerConf("HELPER_ZONE_TRACER", sg_helperZoneTracer);
 
-bool sg_helperZoneTracerClosestCorner = false;
-static tConfItem<bool> sg_helperZoneTracerClosestCornerConf("HELPER_ZONE_TRACER_CLOSEST_CORNER", sg_helperZoneTracerClosestCorner);
+    bool sg_helperZoneTracerClosestCorner = false;
+    static tConfItem<bool> sg_helperZoneTracerClosestCornerConf("HELPER_ZONE_TRACER_CLOSEST_CORNER", sg_helperZoneTracerClosestCorner);
 
-REAL sg_helperZoneTracerTimeoutMult = 1;
-static tConfItem<REAL> sg_helperZoneTracerTimeoutMultConf("HELPER_ZONE_TRACER_TIMEOUT_MULT", sg_helperZoneTracerTimeoutMult);
+    REAL sg_helperZoneTracerTimeoutMult = 1;
+    static tConfItem<REAL> sg_helperZoneTracerTimeoutMultConf("HELPER_ZONE_TRACER_TIMEOUT_MULT", sg_helperZoneTracerTimeoutMult);
 
-REAL sg_helperZoneTracerBrightness = 1;
-static tConfItem<REAL> sg_helperZoneTracerBrightnessConf("HELPER_ZONE_TRACER_BRIGHTNESS", sg_helperZoneTracerBrightness);
+    REAL sg_helperZoneTracerBrightness = 1;
+    static tConfItem<REAL> sg_helperZoneTracerBrightnessConf("HELPER_ZONE_TRACER_BRIGHTNESS", sg_helperZoneTracerBrightness);
 
-REAL sg_helperZoneTracerHeight = 0;
-static tConfItem<REAL> sg_helperZoneTracerHeightConf("HELPER_ZONE_TRACER_HEIGHT", sg_helperZoneTracerHeight);
+    REAL sg_helperZoneTracerHeight = 0;
+    static tConfItem<REAL> sg_helperZoneTracerHeightConf("HELPER_ZONE_TRACER_HEIGHT", sg_helperZoneTracerHeight);
 
-REAL sg_zoneSensorRadiusBonus = 0;
-static tConfItem<REAL> sg_zoneSensorRadiusBonusConf("ZONE_SENSOR_RADIUS_BONUS", sg_zoneSensorRadiusBonus);
+    REAL sg_zoneSensorRadiusBonus = 0;
+    static tConfItem<REAL> sg_zoneSensorRadiusBonusConf("ZONE_SENSOR_RADIUS_BONUS", sg_zoneSensorRadiusBonus);
 
 }
 
@@ -57,15 +58,17 @@ gHelperHudItem<REAL> zoneHitH("Zone Hit", 0);
 
 void debugZone(gZone *zone, tColor color, REAL timeout)
 {
-    gHelperUtility::debugBox(color, zone->Position(), zone->GetRadius()+sg_helperZoneShowBonusRadius, timeout, sg_helperZoneShowHeight);
+    gHelperUtility::debugBox(color, zone->Position(), zone->GetRadius() + sg_helperZoneShowBonusRadius, timeout, sg_helperZoneShowHeight);
 }
 
 gZoneHelper::gZoneHelper(gHelper &helper, gCycle &owner)
     : helper_(helper),
       owner_(owner)
-{}
+{
+}
 
-void gZoneHelper::zoneIntersects(gSensor *sensor) {
+void gZoneHelper::zoneIntersects(gSensor *sensor)
+{
 
     for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
     {
@@ -81,13 +84,14 @@ void gZoneHelper::zoneIntersects(gSensor *sensor) {
         REAL projection = toZone.Dot(sensorDirection);
 
         // Check if the zone is in the direction of the sensor's movement
-        if (projection < 0) 
+        if (projection < 0)
             continue;
 
         eCoord nearestPoint = sensor->start_ + sensorDirection.GetNormalized() * (projection / sensorDirection.Norm());
         REAL distanceToCenter = (nearestPoint - zonePos).Norm();
 
-        if (distanceToCenter > zoneRadius) {
+        if (distanceToCenter > zoneRadius)
+        {
             continue;
         }
 
@@ -103,7 +107,8 @@ void gZoneHelper::zoneIntersects(gSensor *sensor) {
         REAL zoneHitDistance = (intercept - sensor->start_).Norm();
 
         // Update data if zone hit distance is less than initial hit
-        if (zoneHitDistance < sensor->hit && zoneHitDistance >= 0) {
+        if (zoneHitDistance < sensor->hit && zoneHitDistance >= 0)
+        {
             sensor->before_hit = intercept;
             sensor->hit = zoneHitDistance;
             sensor->type = gSENSOR_ZONE;
@@ -115,7 +120,7 @@ void gZoneHelper::zoneIntersects(gSensor *sensor) {
 // center: the center of the corners
 // radius: the distance from the center to the corners
 // Returns: the closest corner
-eCoord gZoneHelper::closestCorner(gZone * zone)
+eCoord gZoneHelper::closestCorner(gZone *zone)
 {
     eCoord ourPos = owner_.Position();
     eCoord center = zone->Position();
@@ -144,26 +149,28 @@ eCoord gZoneHelper::closestCorner(gZone * zone)
 
 void gZoneHelper::zoneTracer(gHelperData &data)
 {
-    gZone * zone = findClosestZone();
+    gZone *zone = findClosestZone();
     if (!zone)
         return;
 
     // Draw the tracer line to the nearest corner of the zone
     gHelperUtility::debugLine(tColor(1, 0, 0), sg_helperZoneTracerHeight,
-                                data.ownerData.speedFactorF() *sg_helperZoneTracerTimeoutMult,
-                                owner_.Position(), closestCorner(zone), sg_helperZoneTracerBrightness);
+                              data.ownerData.speedFactorF() * sg_helperZoneTracerTimeoutMult,
+                              owner_.Position(), closestCorner(zone), sg_helperZoneTracerBrightness);
 }
 
-gZone* gZoneHelper::findClosestZone(eGameObject * owner_)
+gZone *gZoneHelper::findClosestZone(eGameObject *owner_)
 {
     gZone *closestZone = nullptr;
     REAL closestZoneDistanceSquared = 999999999;
     for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
     {
         gZone *zone = *i;
-        if (zone) {
+        if (zone)
+        {
             REAL positionDifference = st_GetDifference(zone->Position(), owner_->Position());
-            if (positionDifference < closestZoneDistanceSquared) {
+            if (positionDifference < closestZoneDistanceSquared)
+            {
                 closestZoneDistanceSquared = positionDifference;
                 closestZone = zone;
             }
@@ -172,16 +179,18 @@ gZone* gZoneHelper::findClosestZone(eGameObject * owner_)
     return closestZone;
 }
 
-gZone* gZoneHelper::findClosestZone()
+gZone *gZoneHelper::findClosestZone()
 {
     gZone *closestZone = nullptr;
     REAL closestZoneDistanceSquared = 999999999;
     for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
     {
         gZone *zone = *i;
-        if (zone) {
+        if (zone)
+        {
             REAL positionDifference = st_GetDifference(zone->Position(), owner_.Position());
-            if (positionDifference < closestZoneDistanceSquared) {
+            if (positionDifference < closestZoneDistanceSquared)
+            {
                 closestZoneDistanceSquared = positionDifference;
                 closestZone = zone;
             }
@@ -205,29 +214,31 @@ void gZoneHelper::showZones(gHelperData &data)
         {
             tColor color(zone->GetColor().r, zone->GetColor().g, zone->GetColor().b);
 
-            if (sg_helperZoneEnemyZonesColor && !zoneIsOurs) {
-                color = tColor(1,0,0);
+            if (sg_helperZoneEnemyZonesColor && !zoneIsOurs)
+            {
+                color = tColor(1, 0, 0);
             }
             zoneVelocity = zone->GetVelocity().Norm();
             timeout = zoneVelocity > 0 ? 1 / zoneVelocity : .005;
-            debugZone(zone,color,timeout);
+            debugZone(zone, color, timeout);
         }
     }
 }
 
-
 void gZoneHelper::zoneData(gHelperData &data)
 {
-    gZone * zone = findClosestZone();
+    gZone *zone = findClosestZone();
     if (!zone)
         return;
-    gBaseZoneHack * fortZone = dynamic_cast<gBaseZoneHack *>(zone);
-    if (fortZone) {
-    tColoredString info;
+    gBaseZoneHack *fortZone = dynamic_cast<gBaseZoneHack *>(zone);
+    if (fortZone)
+    {
+        tColoredString info;
 
-    info << "FORT ZONE " << " conquered " << fortZone->conquered_;
-    info << "\n";
-    zoneInfoH << info;
+        info << "FORT ZONE "
+             << " conquered " << fortZone->conquered_;
+        info << "\n";
+        zoneInfoH << info;
     }
 }
 
@@ -236,7 +247,8 @@ void gZoneHelper::Activate(gHelperData &data)
     if (sg_HelperTrackedZones.size() <= 0)
         return;
 
-    if (sg_helperHud) {
+    if (sg_helperHud)
+    {
         tColoredString debug;
         debug << "Zones size " << sg_HelperTrackedZones.size() << "\n";
         zoneDebugH << debug;

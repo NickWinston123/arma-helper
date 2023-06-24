@@ -304,7 +304,7 @@ class TaskScheduler {
 public:
     // Schedule a new task
     void schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0 ) {
-        if (tasks.find(id) == tasks.end()) {
+        if (tasks.find(id) == tasks.end()) { // only one task per id at a time
             tasks[id] = DelayedTask(id, tSysTimeFloat() + delayInSeconds, interval, task);
         }
     }
@@ -320,7 +320,7 @@ public:
     }
 
     // Check and execute due tasks
-    void update() {
+    void update() { 
         for (auto it = tasks.begin(); it != tasks.end(); ) {
             if (tSysTimeFloat() >= it->second.dueTime) {
                 it->second.task();
@@ -359,7 +359,5 @@ private:
 
 // Global instance of the task scheduler
 extern TaskScheduler gTaskScheduler;
-
-
 #endif
 

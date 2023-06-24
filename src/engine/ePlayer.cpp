@@ -1904,22 +1904,7 @@ static void se_DisplayChatLocallyClient( ePlayerNetID* p, const tString& message
         }
 
         con << actualMessage << "\n";
-
-        if (se_playerTriggerMessages && p->pID == -1)
-        {
-            tString lowerMessage(message);
-            lowerMessage.ToLower();
-
-            for (const auto& triggerPair : chatTriggers)
-            {
-                if ((triggerPair.second.second && lowerMessage == triggerPair.first) // Exact match
-                    || (!triggerPair.second.second && lowerMessage.Contains(triggerPair.first))) // Substring match
-                {
-                    ePlayerNetID::sendPlayerMessage(triggerPair.second.first);
-                    break;
-                }
-            }
-        }
+        handleTriggerMessages(p, actualMessage);
     }
 }
 
@@ -5687,7 +5672,7 @@ public:
 
         ePlayerNetID *targetPlayer = ePlayerNetID::FindPlayerByName(PlayerStr);
 
-        if (targetPlayer && ePlayer::NetToLocalPlayer(targetPlayer))
+        if (targetPlayer && targetPlayer->pID == -1)
             targetPlayer->Chat(args.SubStr(pos + 1));
         else
             con << "No player found for: " << PlayerStr << "\n";
@@ -7562,8 +7547,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
     if(sn_GetNetState()==nSERVER)
         RequestSync();
 
-    if (!se_playerMessageEnter.empty())
-        sendPlayerMessage(se_playerMessageEnter);
+    if (!se_playerMessageEnter.empty() && !tIsInList(se_disableCreateSpecific, pID+1))
+        connectPlayerMessageToPlayer(se_playerMessageEnter,0);
 }
 
 
@@ -7627,7 +7612,8 @@ static REAL se_playerMessageChatFlagStartMult = 0.5;
 static tConfItem<REAL> se_playerMessageChatFlagStartMultConf("PLAYER_MESSAGE_CHATFLAG_START_MULT", se_playerMessageChatFlagStartMult);
 
 
-std::map<tString, std::pair<tString, bool>> chatTriggers;
+std::map<tString, std::tuple<tString, REAL, bool>> chatTriggers;
+
 
 
 void LoadChatTriggers()
@@ -7643,16 +7629,18 @@ void LoadChatTriggers()
         }
 
         tArray<tString> parts = line.Split(","); 
-        if (parts.Len() == 3)
+        if (parts.Len() == 4)
         {
             tString trigger = parts[0];
             trigger.ToLower(); 
             tString response = parts[1];
-            bool exact = atoi(parts[2].c_str()) == 1;
-            chatTriggers[trigger] = std::make_pair(response, exact);
+            REAL extraDelay = atof(parts[2].c_str());
+            bool exact = atoi(parts[3].c_str()) == 1;
+            chatTriggers[trigger] = std::make_tuple(response, extraDelay, exact);
         }
     }
 }
+
 
 static void AddChatTrigger(std::istream &s)
 {
@@ -7660,20 +7648,21 @@ static void AddChatTrigger(std::istream &s)
     params.ReadLine(s, true);
 
     if (params.empty()) {
-        con << "Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<exact>\n";
+        con << "Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<extraDelay>,<exact>\n";
         return;
     }
 
     tArray<tString> parts = params.Split(","); 
 
-    if (parts.Len() != 3) {
-        con << "Invalid input. Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<exact>\n";
+    if (parts.Len() != 4) {
+        con << "Invalid input. Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<extraDelay>,<exact>\n";
         return;
     }
 
     tString trigger = parts[0].TrimWhitespace();
     tString response = parts[1].TrimWhitespace();
-    bool exact = atoi(parts[2].c_str()) == 1;
+    REAL extraDelay = atof(parts[2].c_str());
+    bool exact = atoi(parts[3].c_str()) == 1;
 
     if (trigger.empty() || response.empty()) {
         con << "Error: Trigger and response cannot be empty.\n";
@@ -7682,18 +7671,16 @@ static void AddChatTrigger(std::istream &s)
 
     trigger.ToLower();
 
-    chatTriggers[trigger] = std::make_pair(response, exact);
-
-    if (params.Contains(",")) 
-        params = tString("\"") + params + tString("\"");
+    chatTriggers[trigger] = std::make_tuple(response, extraDelay, exact);
 
     params += "\n"; 
     FileManager fileManager(tString("chattriggers.txt"));
     fileManager.Write(params);
 
-    con << "Trigger, Response, Exact?\n";
+    con << "Trigger, Response, Extra Delay, Exact?\n";
     con << "Added: " << params << "\n";
 }
+
 
 static void RemoveChatTrigger(std::istream &s)
 {
@@ -7707,10 +7694,10 @@ static void RemoveChatTrigger(std::istream &s)
 
     FileManager fileManager(tString("chattriggers.txt"));
     
-    int lineNumber = atoi(params.c_str()) + 1;
+    int lineNumber = atoi(params.c_str()) - 1;
 
     if (fileManager.Clear(lineNumber)) 
-        con << "Removed line " << lineNumber << "\n";
+        con << "Removed line " << lineNumber+1 << "\n";
 
     chatTriggers.clear();
     LoadChatTriggers();
@@ -7722,19 +7709,19 @@ static void ListChatTriggers(std::istream &s)
     tArray<tString> lines = fileManager.Load();
 
     con << "Listing all chat triggers:\n";
-    con << "Line) Trigger, Response, Exact?\n";
+    con << "Line) Trigger, Response, Extra Delay, Exact?\n";
 
     for (int i = 0; i < lines.Len(); ++i)
     {
         tArray<tString> parts = lines[i].Split(",");
 
-        if (parts.Len() != 3)
+        if (parts.Len() != 4)
         {
             con << "Malformed line at index " << i << ": " << lines[i] << "\n";
             continue;
         }
 
-        con << i++ << ") " << parts[0] << ", " << parts[1] << ", " << (parts[2] == "1" ? "Yes" : "No") << "\n";
+        con << i+1 << ") " << parts[0] << ", " << parts[1] << ", " << parts[2] << ", " << (parts[3] == "1" ? "Yes" : "No") << "\n";
     }
 }
 
@@ -7752,15 +7739,17 @@ static tConfItemFunc ListChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_LIST", &List
 static tConfItemFunc AddChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
 static tConfItemFunc RemoveChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
 
-void ePlayerNetID::sendMessageAction(ePlayerNetID* netPlayer, tString message) {
+void ePlayerNetID::scheduleMessageTask(ePlayerNetID* netPlayer, tString message, float extraDelay) {
+    float totalDelay = se_playerMessageDelay + extraDelay;
+    
     if (se_playerMessageChatFlag) {
-        gTaskScheduler.schedule("playerMessageSetChatFlagTrue", se_playerMessageDelay*se_playerMessageChatFlagStartMult, [netPlayer] {
+        gTaskScheduler.schedule("playerMessageSetChatFlagTrue", totalDelay * se_playerMessageChatFlagStartMult, [netPlayer] {
             netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, true);
             ePlayerNetID::Update();
         });
     }
 
-    gTaskScheduler.schedule("playerMessage", se_playerMessageDelay, [message, netPlayer] {
+    gTaskScheduler.schedule("playerMessage", totalDelay, [message, netPlayer] {
         netPlayer->Chat(message);
         if (se_playerMessageChatFlag) {
             netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, false);
@@ -7769,9 +7758,10 @@ void ePlayerNetID::sendMessageAction(ePlayerNetID* netPlayer, tString message) {
     });
 }
 
-void ePlayerNetID::sendPlayerMessage(tString message, ePlayerNetID *player) {
+void ePlayerNetID::connectPlayerMessageToPlayer(tString message, float extraDelay, ePlayerNetID *player) {
+
     if (player != nullptr) {
-        sendMessageAction(player, message);
+        scheduleMessageTask(player, message, extraDelay);
     } else {
         tArray<tString> players = se_playerMessageTargetPlayer.SplitIncludeFirst(",");
         for (int i = 0; i < players.Len(); i++) {
@@ -7784,11 +7774,34 @@ void ePlayerNetID::sendPlayerMessage(tString message, ePlayerNetID *player) {
             if (!netPlayer)
                 continue;
 
-            sendMessageAction(netPlayer, message);
+            scheduleMessageTask(netPlayer, message, extraDelay);
         }
     }
 }
 
+static void handleTriggerMessages(ePlayerNetID *chatPlayer, tString chatMessage)
+{
+    if (se_playerTriggerMessages && chatPlayer->pID == -1)
+    {
+        tString lowerMessage(chatMessage);
+        lowerMessage.ToLower();
+
+        for (const auto& triggerPair : chatTriggers)
+        {
+            if ((std::get<2>(triggerPair.second) && lowerMessage == triggerPair.first) // Exact match
+                || (!std::get<2>(triggerPair.second) && lowerMessage.Contains(triggerPair.first))) // Substring match
+            {
+                if (( triggerPair.first == "wd" || triggerPair.first == "gf" ) && 
+                       ( chatPlayer->lastKilledByPlayer == nullptr || chatPlayer->lastKilledByPlayer->pID == -1 ))
+                    continue;
+
+                REAL extraDelay = std::get<1>(triggerPair.second);
+                ePlayerNetID::connectPlayerMessageToPlayer(std::get<0>(triggerPair.second), extraDelay);
+                break;
+            }
+        }
+    }
+}
 
 ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           listID(-1),
@@ -7849,7 +7862,7 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
     lastScore_=IMPOSSIBLY_LOW_SCORE;
     // rubberstatus=0;
     if (!se_playerMessageEnter.empty())
-        sendPlayerMessage(se_playerMessageEnter);
+        connectPlayerMessageToPlayer(se_playerMessageEnter,0);
 }
 
 void ePlayerNetID::Activity()
@@ -8202,6 +8215,8 @@ ePlayerNetID::~ePlayerNetID()
     }
 }
 
+static tString se_playerMessageLeave = tString("");
+static tConfItem<tString> se_playerMessageLeaveConf("PLAYER_MESSAGE_LEAVE", se_playerMessageLeave);
 static void player_removed_from_game_handler(nMessage &m)
 {
     // and the ID of the player that was removed
@@ -8210,6 +8225,9 @@ static void player_removed_from_game_handler(nMessage &m)
     ePlayerNetID* p = dynamic_cast< ePlayerNetID* >( nNetObject::ObjectDangerous( id ) );
     if ( p && sn_GetNetState() != nSERVER )
     {
+        if (!!se_playerMessageLeave.empty())
+            ePlayerNetID::connectPlayerMessageToPlayer(se_playerMessageLeave,0);
+        
         p->RemoveFromGame();
     }
 }

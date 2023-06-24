@@ -70,12 +70,14 @@ enum ColorNameCustomization {
 #include <unordered_map>
 
 extern tString se_disableCreateSpecific ;
-extern std::map<tString, std::pair<tString, bool>> chatTriggers;
+extern std::map<tString, std::tuple<tString, REAL, bool>> chatTriggers;
+
 static void se_UniqueColor(ePlayer *local_p );
 static void se_RandomizeColor(ePlayer *local_p);
 extern bool se_playerTriggerMessages;
 static void se_CrossFadeColor(ePlayer *local_p);
 extern void LoadChatTriggers();
+static void handleTriggerMessages(ePlayerNetID *p, tString message);
 extern bool se_watchActiveStatus;
 extern int se_watchActiveStatusTime;
 
@@ -310,9 +312,10 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
-    static void sendPlayerMessage(tString message, ePlayerNetID *player = nullptr);
-    static void sendMessageAction(ePlayerNetID* netPlayer, tString message);
+    static void connectPlayerMessageToPlayer(tString message, float extraDelay, ePlayerNetID *player = nullptr);
+    static void scheduleMessageTask(ePlayerNetID* netPlayer, tString message, float extraDelay);
     ePlayerNetID * lastKilledPlayer;
+    ePlayerNetID * lastKilledByPlayer = nullptr;
     ePlayerNetID * lastMessagedPlayer;
     typedef std::set< eTeam * > eTeamSet;
     bool respawnedLocally;

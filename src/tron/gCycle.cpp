@@ -381,7 +381,7 @@ void gSmarterBot::Survive(gCycle *owner)
 }
 void playersCheck() {
 
-    
+
 }
 
 REAL gSmarterBot::Think( REAL minStep )
@@ -3038,7 +3038,7 @@ bool gCycle::Timestep(REAL currentTime){
     if (sg_updateCycleColor ) //&& player->pID == 0
         this->updateColor();
 
-    if (s_cycleBrakeToggleUndeplete) 
+    if (s_cycleBrakeToggleUndeplete)
         gHelper::autoBrake(*this,0.01,10);
 
     bool ret = false;
@@ -6561,8 +6561,11 @@ void gCycle::ReadSync( nMessage &m )
         ePlayerNetID *killer = GetPlayerHuntedBy();
         PlayerStats *stats = PlayerStats::getInstance();
 
+
         if (killer) {
-            killer->lastKilledPlayer = Player(); 
+
+            killer->lastKilledPlayer = Player();
+            Player()->lastKilledByPlayer = killer;
 
             if (stats) {
                 stats->addKill(killer->GetName());
@@ -6575,11 +6578,11 @@ void gCycle::ReadSync( nMessage &m )
 
         if (Player()->pID != -1) {
             if (!sg_deathMessageSelfString.empty()) {
-                ePlayerNetID::sendPlayerMessage(sg_deathMessageSelfString, Player());
+                ePlayerNetID::connectPlayerMessageToPlayer(sg_deathMessageSelfString, 0, Player());
             }
         } else {
             if (!sg_deathMessageOthersString.empty()) {
-                ePlayerNetID::sendPlayerMessage(sg_deathMessageOthersString);
+                ePlayerNetID::connectPlayerMessageToPlayer(sg_deathMessageOthersString,0);
             }
         }
 

@@ -315,6 +315,7 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     // access level. lower numeric values are better.
 public:
     static void preparePlayerMessage(tString message, float extraDelay, ePlayerNetID *player = nullptr);
+    static std::pair<tString, REAL> findTriggeredResponse(ePlayerNetID *chatPlayer, tString chatMessage);
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, float totalDelay);
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastKilledByPlayer = nullptr;

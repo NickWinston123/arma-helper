@@ -6518,11 +6518,11 @@ void ClampForward(eCoord &newPos, const eCoord &startPos, const eCoord &dir)
 extern REAL sg_cycleBrakeRefill;
 extern REAL sg_cycleBrakeDeplete;
 
-tString sg_deathMessageSelfString = tString("");
-static tConfItem<tString> sg_deathMessageSelfStringConf("PLAYER_MESSAGE_DEATH_SELF", sg_deathMessageSelfString);
+bool sg_playerMessageDeathSelf = false;
+static tConfItem<bool> sg_playerMessageDeathSelfConf("PLAYER_MESSAGE_DEATH_SELF", sg_playerMessageDeathSelf);
 
-tString sg_deathMessageOthersString = tString("");
-static tConfItem<tString> sg_deathMessageOthersStringConf("PLAYER_MESSAGE_DEATH_OTHERS", sg_deathMessageOthersString);
+bool sg_playerMessageDeathOther = false;
+static tConfItem<bool> sg_playerMessageDeathOtherConf("PLAYER_MESSAGE_DEATH_OTHER", sg_playerMessageDeathOther);
 
 void gCycle::ReadSync(nMessage &m)
 {
@@ -6666,13 +6666,26 @@ void gCycle::ReadSync(nMessage &m)
 
         if (Player()->pID != -1)
         {
-            if (!sg_deathMessageSelfString.empty())
-                ePlayerNetID::preparePlayerMessage(sg_deathMessageSelfString, 0, Player());
+            if (sg_playerMessageDeathSelf)
+            {
+                auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(Player(), tString("$died"));
+                if (triggeredResponse.empty())
+                    con << "No trigger set for $died\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+                else
+                    ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, Player());
+            }
         }
         else
         {
-            if (!sg_deathMessageOthersString.empty())
-                ePlayerNetID::preparePlayerMessage(sg_deathMessageOthersString, 0);
+            if (sg_playerMessageDeathOther)
+            {
+                auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(Player(), tString("$diedother"));
+                if (triggeredResponse.empty())
+                    con << "No trigger set for $diedother\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+                else
+                    ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, Player());
+            }
+
         }
 
         Die(lastSyncMessage_.time);

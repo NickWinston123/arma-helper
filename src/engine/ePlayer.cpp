@@ -7438,8 +7438,8 @@ static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
 tString se_disableCreateSpecific = tString("");
 static tConfItem<tString> se_disableCreateSpecificConf("DISABLE_CREATE_SPECIFIC", se_disableCreateSpecific);
 
-static tString se_playerMessageEnter = tString("");
-static tConfItem<tString> se_playerMessageEnterConf("PLAYER_MESSAGE_ENTER", se_playerMessageEnter);
+static bool se_playerMessageEnter = false;
+static tConfItem<bool> se_playerMessageEnterConf("PLAYER_MESSAGE_ENTER", se_playerMessageEnter);
 
 ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                teamListID(-1),
@@ -7530,8 +7530,14 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
     if (sn_GetNetState() == nSERVER)
         RequestSync();
 
-    if (!se_playerMessageEnter.empty() && !tIsInList(se_disableCreateSpecific, pID + 1))
-        preparePlayerMessage(se_playerMessageEnter, 0);
+    if (se_playerMessageEnter && !tIsInList(se_disableCreateSpecific, pID + 1))
+    {
+        auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$entered"));
+        if (triggeredResponse.empty())
+            con << "No trigger set for $entered\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+        else
+            ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay);
+    }
 }
 
 tColoredString playerWatchStatusToStr(playerWatchStatus status)
@@ -7584,6 +7590,9 @@ void ePlayerNetID::watchPlayerStatus()
 
 static tString se_playerMessageTargetPlayer = tString("");
 static tConfItem<tString> se_playerMessageTargetPlayerConf("PLAYER_MESSAGE_TARGET_PLAYERS", se_playerMessageTargetPlayer);
+
+static REAL se_playerMessageDelayRandMult = 0;
+static tConfItem<REAL> se_playerMessageDelayRandMultConf("PLAYER_MESSAGE_DELAY_RANDOM_MULT", se_playerMessageDelayRandMult);
 
 static REAL se_playerMessageDelay = 0;
 static tConfItem<REAL> se_playerMessageDelayConf("PLAYER_MESSAGE_DELAY", se_playerMessageDelay);
@@ -7746,14 +7755,47 @@ void ePlayerNetID::scheduleMessageTask(ePlayerNetID *netPlayer, tString message,
     });
 }
 
-void ePlayerNetID::preparePlayerMessage(tString message, float extraDelay, ePlayerNetID *player)
+std::pair<tString, REAL> ePlayerNetID::findTriggeredResponse(ePlayerNetID *chatPlayer, tString chatMessage)
 {
+    tString lowerMessage(chatMessage);
+    lowerMessage.ToLower();
+    REAL extraDelay = 0.0;
+
+    for (const auto &triggerPair : chatTriggers)
+    {
+        if ((std::get<2>(triggerPair.second) && lowerMessage == triggerPair.first) // Exact match
+            || (!std::get<2>(triggerPair.second) && lowerMessage.Contains(triggerPair.first))) // Substring match
+        {
+            if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, triggerPair.first) &&
+                (chatPlayer != nullptr && ((chatPlayer->lastKilledByPlayer == nullptr || chatPlayer->lastKilledByPlayer->pID == -1))))
+                continue;
+
+            extraDelay = std::get<1>(triggerPair.second);
+            // vector of possible responses
+            std::vector<tString> possibleResponses = std::get<0>(triggerPair.second);
+            // random response from the vector
+            tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
+            return std::make_pair(chosenResponse, extraDelay);
+        }
+    }
+
+    // Return empty message and 0 delay if no triggers match
+    return std::make_pair(tString(""), 0.0);
+}
+
+
+void ePlayerNetID::preparePlayerMessage(tString messageToSend, float extraDelay, ePlayerNetID *player)
+{
+
     float totalDelay = se_playerMessageDelay + extraDelay;
+
+    if (se_playerMessageDelayRandMult > 0)
+        totalDelay += (float)rand() / RAND_MAX * se_playerMessageDelayRandMult;
 
     if (player != nullptr)
     {
-        if (tIsInList(se_playerMessageTargetPlayer,player->pID+1))
-            scheduleMessageTask(player, message, se_playerMessageChatFlag, totalDelay);
+        if (tIsInList(se_playerMessageTargetPlayer, player->pID+1))
+            scheduleMessageTask(player, messageToSend, se_playerMessageChatFlag, totalDelay); // Use triggeredMessage here
     }
     else
     {
@@ -7769,7 +7811,7 @@ void ePlayerNetID::preparePlayerMessage(tString message, float extraDelay, ePlay
             if (!netPlayer)
                 continue;
 
-            scheduleMessageTask(netPlayer, message, se_playerMessageChatFlag, totalDelay);
+            scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, totalDelay); // And here
         }
     }
 }
@@ -7778,28 +7820,12 @@ static void handleTriggerMessages(ePlayerNetID *chatPlayer, tString chatMessage)
 {
     if (se_playerTriggerMessages)
     {
-        tString lowerMessage(chatMessage);
-        lowerMessage.ToLower();
+       
+        auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(chatPlayer, chatMessage);
 
-        for (const auto &triggerPair : chatTriggers)
-        {
-            if ((std::get<2>(triggerPair.second) && lowerMessage == triggerPair.first)             // Exact match
-                || (!std::get<2>(triggerPair.second) && lowerMessage.Contains(triggerPair.first))) // Substring match
-            {
-                if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, triggerPair.first) &&
-                    (chatPlayer->lastKilledByPlayer == nullptr || chatPlayer->lastKilledByPlayer->pID == -1))
-                    continue;
-
-                REAL extraDelay = std::get<1>(triggerPair.second);
-                // vector of possible responses
-                std::vector<tString> possibleResponses = std::get<0>(triggerPair.second);
-                // random response from the vector
-                tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
-
-                ePlayerNetID::preparePlayerMessage(chosenResponse, extraDelay);
-                break;
-            }
-        }
+        
+        if (!triggeredResponse.empty())
+            ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay);
     }
 }
 
@@ -7861,8 +7887,15 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
     score = 0;
     lastScore_ = IMPOSSIBLY_LOW_SCORE;
     // rubberstatus=0;
-    if (!se_playerMessageEnter.empty())
-        preparePlayerMessage(se_playerMessageEnter, 0);
+
+    if (se_playerMessageEnter)
+    {
+        auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$entered"));
+        if (triggeredResponse.empty())
+            con << "No trigger set for $entered\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+        else
+            ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay);
+    }
 }
 
 void ePlayerNetID::Activity()
@@ -8211,8 +8244,8 @@ ePlayerNetID::~ePlayerNetID()
     }
 }
 
-static tString se_playerMessageLeave = tString("");
-static tConfItem<tString> se_playerMessageLeaveConf("PLAYER_MESSAGE_LEAVE", se_playerMessageLeave);
+static bool se_playerMessageLeave = false;
+static tConfItem<bool> se_playerMessageLeaveConf("PLAYER_MESSAGE_LEAVE", se_playerMessageLeave);
 static void player_removed_from_game_handler(nMessage &m)
 {
     // and the ID of the player that was removed
@@ -8221,9 +8254,15 @@ static void player_removed_from_game_handler(nMessage &m)
     ePlayerNetID *p = dynamic_cast<ePlayerNetID *>(nNetObject::ObjectDangerous(id));
     if (p && sn_GetNetState() != nSERVER)
     {
-        if (!!se_playerMessageLeave.empty())
-            ePlayerNetID::preparePlayerMessage(se_playerMessageLeave, 0);
 
+        if (se_playerMessageLeave)
+        {
+            auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$left"));
+            if (triggeredResponse.empty())
+                con << "No trigger set for $left\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+            else
+                ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay);
+        }
         p->RemoveFromGame();
     }
 }

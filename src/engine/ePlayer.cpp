@@ -1754,6 +1754,13 @@ static tConfItem<bool> se_chatTimeStampConf("CHAT_TIMESTAMP", se_chatTimeStamp);
 bool se_playerTriggerMessages = false;
 static tConfItem<bool> se_playerTriggerMessagesConf("PLAYER_MESSAGE_TRIGGERS", se_playerTriggerMessages);
 
+bool se_playerTriggerMessagesReactToSelf = false;
+static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerTriggerMessagesReactToSelf);
+
+static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("wd,gf");
+static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf("PLAYER_MESSAGE_KILL_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
+
+
 static void se_DisplayChatLocally(ePlayerNetID *p, const tString &say)
 {
 #ifdef DEBUG_X
@@ -1878,7 +1885,8 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         }
 
         con << actualMessage << "\n";
-        handleTriggerMessages(p, actualMessage);
+        if (se_playerTriggerMessagesReactToSelf || p->pID == -1)
+            handleTriggerMessages(p, actualMessage);
     }
 }
 
@@ -4991,6 +4999,10 @@ static tConfItem<tString> se_browserCommandConf("LOCAL_CHAT_COMMAND_BROWSER", se
 
 static tString se_speakCommand("/speak");
 static tConfItem<tString> se_speakCommandConf("LOCAL_CHAT_COMMAND_SPEAK", se_speakCommand);
+static bool se_speakCommandChatFlag = false;
+static tConfItem<bool> se_speakCommandChatFlagConf("LOCAL_CHAT_COMMAND_SPEAK_CHAT_FLAG", se_speakCommandChatFlag);
+static REAL se_speakCommandDelay = 0;
+static tConfItem<REAL> se_speakCommandDelayConf("LOCAL_CHAT_COMMAND_SPEAK_DELAY", se_speakCommandDelay);
 
 static tString se_rebuildCommand("/rebuild");
 static tConfItem<tString> se_rebuildCommandConf("LOCAL_CHAT_COMMAND_REBUILD", se_rebuildCommand);
@@ -5643,10 +5655,10 @@ public:
 
         ePlayerNetID *targetPlayer = ePlayerNetID::FindPlayerByName(PlayerStr);
 
-        if (targetPlayer && targetPlayer->pID == -1)
-            targetPlayer->Chat(args.SubStr(pos + 1));
-        else
-            con << "No player found for: " << PlayerStr << "\n";
+        if (targetPlayer && targetPlayer->pID != -1)
+            ePlayerNetID::scheduleMessageTask(targetPlayer,args.SubStr(pos + 1), se_speakCommandChatFlag, se_speakCommandDelay);
+        else if (targetPlayer && targetPlayer->pID == -1)
+            con << "Not a local player.\n";
         return true;
     }
 };
@@ -6228,50 +6240,28 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
         commandFactories.emplace(commandName.ToLower(), commandFunc);
     };
 
-    addCommand(se_consoleCommand, []()
-               { return std::make_unique<ConsoleCommand>(); });
-    addCommand(se_colorsCommand, []()
-               { return std::make_unique<ColorsCommand>(); });
-    addCommand(se_infoCommand, []()
-               { return std::make_unique<listPlayerInfoCommand>(); });
-    addCommand(se_rgbCommand, []()
-               { return std::make_unique<RgbCommand>(); });
-    addCommand(se_browserCommand, []()
-               { return std::make_unique<BrowserCommand>(); });
-    addCommand(se_speakCommand, []()
-               { return std::make_unique<SpeakCommand>(); });
-    addCommand(se_rebuildCommand, []()
-               { return std::make_unique<RebuildCommand>(); });
-    addCommand(se_watchCommand, []()
-               { return std::make_unique<WatchCommand>(); });
-    addCommand(se_activeStatusCommand, []()
-               { return std::make_unique<ActiveStatusCommand>(); });
-    addCommand(se_reverseCommand, []()
-               { return std::make_unique<ReverseCommand>(); });
-    addCommand(se_spectateCommand, []()
-               { return std::make_unique<SpectateCommand>(); });
-    addCommand(se_joinCommand, []()
-               { return std::make_unique<JoinCommand>(); });
-    addCommand(se_searchCommand, []()
-               { return std::make_unique<SearchCommand>(); });
-    addCommand(se_nameSpeakCommand, []()
-               { return std::make_unique<NameSpeakCommand>(); });
-    addCommand(se_respawnCommand, []()
-               { return std::make_unique<RespawnCommand>(); });
-    addCommand(se_rebuildGridCommand, []()
-               { return std::make_unique<RebuildGridCommand>(); });
-    addCommand(se_saveConfigCommand, []()
-               { return std::make_unique<SaveConfigCommand>(); });
-    addCommand(se_replyCommand, []()
-               { return std::make_unique<ReplyCommand>(); });
-    addCommand(se_nicknameCommand, []()
-               { return std::make_unique<NicknameCommand>(); });
-    addCommand(se_statsCommand, []()
-               { return std::make_unique<StatsCommand>(); });
-    addCommand(se_reconnectCommand, []()
-               { return std::make_unique<ReconnectCommand>(); });
-    commandFactories.emplace("/msg", []()
-                             { return std::make_unique<MsgCommand>(); });
+    addCommand(se_consoleCommand, []() { return std::make_unique<ConsoleCommand>(); });
+    addCommand(se_colorsCommand, []() { return std::make_unique<ColorsCommand>(); });
+    addCommand(se_infoCommand, []() { return std::make_unique<listPlayerInfoCommand>(); });
+    addCommand(se_rgbCommand, []() { return std::make_unique<RgbCommand>(); });
+    addCommand(se_browserCommand, []() { return std::make_unique<BrowserCommand>(); });
+    addCommand(se_speakCommand, []() { return std::make_unique<SpeakCommand>(); });
+    addCommand(se_rebuildCommand, []() { return std::make_unique<RebuildCommand>(); });
+    addCommand(se_watchCommand, []() { return std::make_unique<WatchCommand>(); });
+    addCommand(se_activeStatusCommand, []() { return std::make_unique<ActiveStatusCommand>(); });
+    addCommand(se_reverseCommand, []() { return std::make_unique<ReverseCommand>(); });
+    addCommand(se_spectateCommand, []() { return std::make_unique<SpectateCommand>(); });
+    addCommand(se_joinCommand, []() { return std::make_unique<JoinCommand>(); });
+    addCommand(se_searchCommand, []() { return std::make_unique<SearchCommand>(); });
+    addCommand(se_nameSpeakCommand, []() { return std::make_unique<NameSpeakCommand>(); });
+    addCommand(se_respawnCommand, []() { return std::make_unique<RespawnCommand>(); });
+    addCommand(se_rebuildGridCommand, []() { return std::make_unique<RebuildGridCommand>(); });
+    addCommand(se_saveConfigCommand, []() { return std::make_unique<SaveConfigCommand>(); });
+    addCommand(se_replyCommand, []() { return std::make_unique<ReplyCommand>(); });
+    addCommand(se_nicknameCommand, []() { return std::make_unique<NicknameCommand>(); });
+    addCommand(se_statsCommand, []() { return std::make_unique<StatsCommand>(); });
+    addCommand(se_reconnectCommand, []() { return std::make_unique<ReconnectCommand>(); });
+    commandFactories.emplace("/msg", []() { return std::make_unique<MsgCommand>(); });
 
     return commandFactories;
 }
@@ -7541,7 +7531,7 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
         RequestSync();
 
     if (!se_playerMessageEnter.empty() && !tIsInList(se_disableCreateSpecific, pID + 1))
-        connectPlayerMessageToPlayer(se_playerMessageEnter, 0);
+        preparePlayerMessage(se_playerMessageEnter, 0);
 }
 
 tColoredString playerWatchStatusToStr(playerWatchStatus status)
@@ -7604,7 +7594,8 @@ static tConfItem<bool> se_playerMessageChatFlagConf("PLAYER_MESSAGE_CHATFLAG", s
 static REAL se_playerMessageChatFlagStartMult = 0.5;
 static tConfItem<REAL> se_playerMessageChatFlagStartMultConf("PLAYER_MESSAGE_CHATFLAG_START_MULT", se_playerMessageChatFlagStartMult);
 
-std::map<tString, std::tuple<tString, REAL, bool>> chatTriggers;
+std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
+
 
 void LoadChatTriggers()
 {
@@ -7623,10 +7614,13 @@ void LoadChatTriggers()
         {
             tString trigger = parts[0];
             trigger.ToLower();
-            tString response = parts[1];
+            // Split the responses by semicolon
+            tArray<tString> responsesArray = parts[1].Split(";");
+            std::vector<tString> responses(responsesArray.begin(), responsesArray.end()); // convert tArray to std::vector
             REAL extraDelay = atof(parts[2].c_str());
             bool exact = atoi(parts[3].c_str()) == 1;
-            chatTriggers[trigger] = std::make_tuple(response, extraDelay, exact);
+            // Store the vector of responses
+            chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
         }
     }
 }
@@ -7651,19 +7645,20 @@ static void AddChatTrigger(std::istream &s)
     }
 
     tString trigger = parts[0].TrimWhitespace();
-    tString response = parts[1].TrimWhitespace();
+    tArray<tString> responsesArray = parts[1].Split(";");
+    std::vector<tString> responses(responsesArray.begin(), responsesArray.end()); // convert tArray to std::vector
     REAL extraDelay = atof(parts[2].c_str());
     bool exact = atoi(parts[3].c_str()) == 1;
 
-    if (trigger.empty() || response.empty())
+    if (trigger.empty() || responses.empty())  // Checking if responses vector is empty
     {
-        con << "Error: Trigger and response cannot be empty.\n";
+        con << "Error: Trigger and responses cannot be empty.\n";
         return;
     }
 
     trigger.ToLower();
 
-    chatTriggers[trigger] = std::make_tuple(response, extraDelay, exact);
+    chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
 
     params += "\n";
     FileManager fileManager(tString("chattriggers.txt"));
@@ -7731,33 +7726,34 @@ static tConfItemFunc ListChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_LIST", &List
 static tConfItemFunc AddChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
 static tConfItemFunc RemoveChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
 
-void ePlayerNetID::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, float extraDelay)
+void ePlayerNetID::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, float totalDelay)
+{
+    gTaskScheduler.schedule("playerMessageTask", totalDelay, [netPlayer, message, chatFlag, totalDelay] {
+        if (chatFlag)
+        {
+            netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, true);
+            ePlayerNetID::Update();
+
+            // Schedule another task to turn off the flag after a short delay
+            gTaskScheduler.schedule("playerMessageSetChatFlagFalse", totalDelay * se_playerMessageChatFlagStartMult, [netPlayer, message, chatFlag] {
+                netPlayer->Chat(message);
+                if (chatFlag)
+                    netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, false);
+                ePlayerNetID::Update();
+            });
+        }
+
+    });
+}
+
+void ePlayerNetID::preparePlayerMessage(tString message, float extraDelay, ePlayerNetID *player)
 {
     float totalDelay = se_playerMessageDelay + extraDelay;
 
-    if (se_playerMessageChatFlag)
-    {
-        gTaskScheduler.schedule("playerMessageSetChatFlagTrue", totalDelay * se_playerMessageChatFlagStartMult, [netPlayer]
-                                {
-            netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, true);
-            ePlayerNetID::Update(); });
-    }
-
-    gTaskScheduler.schedule("playerMessage", totalDelay, [message, netPlayer]
-                            {
-        netPlayer->Chat(message);
-        if (se_playerMessageChatFlag) {
-            netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, false);
-            ePlayerNetID::Update();
-        } });
-}
-
-void ePlayerNetID::connectPlayerMessageToPlayer(tString message, float extraDelay, ePlayerNetID *player)
-{
-
     if (player != nullptr)
     {
-        scheduleMessageTask(player, message, extraDelay);
+        if (tIsInList(se_playerMessageTargetPlayer,player->pID+1))
+            scheduleMessageTask(player, message, se_playerMessageChatFlag, totalDelay);
     }
     else
     {
@@ -7773,14 +7769,14 @@ void ePlayerNetID::connectPlayerMessageToPlayer(tString message, float extraDela
             if (!netPlayer)
                 continue;
 
-            scheduleMessageTask(netPlayer, message, extraDelay);
+            scheduleMessageTask(netPlayer, message, se_playerMessageChatFlag, totalDelay);
         }
     }
 }
 
 static void handleTriggerMessages(ePlayerNetID *chatPlayer, tString chatMessage)
 {
-    if (se_playerTriggerMessages && chatPlayer->pID == -1)
+    if (se_playerTriggerMessages)
     {
         tString lowerMessage(chatMessage);
         lowerMessage.ToLower();
@@ -7790,12 +7786,17 @@ static void handleTriggerMessages(ePlayerNetID *chatPlayer, tString chatMessage)
             if ((std::get<2>(triggerPair.second) && lowerMessage == triggerPair.first)             // Exact match
                 || (!std::get<2>(triggerPair.second) && lowerMessage.Contains(triggerPair.first))) // Substring match
             {
-                if ((triggerPair.first == "wd" || triggerPair.first == "gf") &&
+                if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, triggerPair.first) &&
                     (chatPlayer->lastKilledByPlayer == nullptr || chatPlayer->lastKilledByPlayer->pID == -1))
                     continue;
 
                 REAL extraDelay = std::get<1>(triggerPair.second);
-                ePlayerNetID::connectPlayerMessageToPlayer(std::get<0>(triggerPair.second), extraDelay);
+                // vector of possible responses
+                std::vector<tString> possibleResponses = std::get<0>(triggerPair.second);
+                // random response from the vector
+                tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
+
+                ePlayerNetID::preparePlayerMessage(chosenResponse, extraDelay);
                 break;
             }
         }
@@ -7861,7 +7862,7 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
     lastScore_ = IMPOSSIBLY_LOW_SCORE;
     // rubberstatus=0;
     if (!se_playerMessageEnter.empty())
-        connectPlayerMessageToPlayer(se_playerMessageEnter, 0);
+        preparePlayerMessage(se_playerMessageEnter, 0);
 }
 
 void ePlayerNetID::Activity()
@@ -8221,7 +8222,7 @@ static void player_removed_from_game_handler(nMessage &m)
     if (p && sn_GetNetState() != nSERVER)
     {
         if (!!se_playerMessageLeave.empty())
-            ePlayerNetID::connectPlayerMessageToPlayer(se_playerMessageLeave, 0);
+            ePlayerNetID::preparePlayerMessage(se_playerMessageLeave, 0);
 
         p->RemoveFromGame();
     }

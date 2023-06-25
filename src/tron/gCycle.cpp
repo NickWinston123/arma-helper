@@ -6667,16 +6667,12 @@ void gCycle::ReadSync(nMessage &m)
         if (Player()->pID != -1)
         {
             if (!sg_deathMessageSelfString.empty())
-            {
-                ePlayerNetID::connectPlayerMessageToPlayer(sg_deathMessageSelfString, 0, Player());
-            }
+                ePlayerNetID::preparePlayerMessage(sg_deathMessageSelfString, 0, Player());
         }
         else
         {
             if (!sg_deathMessageOthersString.empty())
-            {
-                ePlayerNetID::connectPlayerMessageToPlayer(sg_deathMessageOthersString, 0);
-            }
+                ePlayerNetID::preparePlayerMessage(sg_deathMessageOthersString, 0);
         }
 
         Die(lastSyncMessage_.time);

@@ -463,7 +463,7 @@ void gHelper::autoBrake()
             sg_helperAutoBrakeRandomness = 2;
 
         tRandomizer &randomizer = tReproducibleRandomizer::GetInstance();
-        REAL random = randomizer.GetFloat(0.0, sg_helperAutoBrakeRandomness); // Get a random REAL between 0 and 1
+        REAL random = randomizer.Get(0.0, sg_helperAutoBrakeRandomness); // Get a random REAL between 0 and 1
 
         nextUpdateTime = tSysTimeFloat() + random;
     }

@@ -150,7 +150,7 @@ public:
     private:
         // fill in relevant data from sensors
         void Fill(gAINavigator const &navigator, Sensor const &left, Sensor const &right, eCoord const &shortDir, eCoord const &longDir, int turn);
-        REAL Take(CycleController &controller, gCycle &cycle, REAL maxStep); //!< take that path. Return value: time to next check
+        REAL Take(CycleController &controller, gCycle &cycle, REAL maxStep,REAL turnDelay); //!< take that path. Return value: time to next check
         ~Path();
         Path();
 
@@ -178,7 +178,7 @@ public:
 
         int GetPathCount() const;                                                                //!< returns the current number of paths
         Path const &GetPath(int id) const;                                                       //!< returns a path
-        REAL TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep = 1E+30); //!< takes a path
+        REAL TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep,REAL turnDelay); //!< takes a path
         Path const &GetLastPath() const;                                                         //!< the last path taken, with old info
 
         PathGroup();
@@ -430,7 +430,7 @@ public:
         void Reset();
 
         //! execute
-        REAL Finish(CycleController &controller, gCycle &cycle, REAL maxStep = 1E+30);
+        REAL Finish(CycleController &controller, gCycle &cycle, REAL maxStep, REAL turnDelay = 0);
 
     private:
         PathGroup &paths_; //!< the path group

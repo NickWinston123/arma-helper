@@ -1413,7 +1413,7 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
     // sg_smarterBotRange
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_RANGE";
-    sg_smarterBotRange = 2;
+    sg_smarterBotRange = 10;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Range", sg_smarterBotRange));
 
     // sg_smarterBotRandomScale
@@ -1425,25 +1425,25 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
     // sg_smarterBotRubberEval
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_RUBBER";
-    sg_smarterBotRubberEval = 1;
+    sg_smarterBotRubberEval = 4;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Rubber", sg_smarterBotRubberEval));
 
     // sg_smarterBotSuicideEval
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_SUICIDE";
-    sg_smarterBotSuicideEval = 50;
+    sg_smarterBotSuicideEval = 100;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Suicide", sg_smarterBotSuicideEval));
 
     // sg_smarterBotTrapScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_TRAP";
-    sg_smarterBotTrapScale = 1;
+    sg_smarterBotTrapScale = 0;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Trap", sg_smarterBotTrapScale));
 
     // sg_smarterBotFollowScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW";
-    sg_smarterBotFollowScale = 0;
+    sg_smarterBotFollowScale = 0.5;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Follow", sg_smarterBotFollowScale));
 
     // sg_smarterBotFollowFindTarget
@@ -1479,7 +1479,7 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
     // sg_smarterBotFollowTryLogicOppositeTurn
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_TRY_LOGIC_OPPOSITE_TURN";
-    sg_smarterBotFollowTryLogicOppositeTurn = true;
+    sg_smarterBotFollowTryLogicOppositeTurn = false;
     StoreConfitem(tNEW(tConfItem<bool>)(confname, "Smarter Bot try logic - try other direction", sg_smarterBotFollowTryLogicOppositeTurn));
 
     // sg_smarterBotFollowCheckLogic
@@ -1491,13 +1491,13 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
     // sg_smarterBotFollowPredictionTime
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_PREDICT_TIME";
-    sg_smarterBotFollowPredictionTime = 0;
+    sg_smarterBotFollowPredictionTime = 0.1;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Predict time - determines how far to push ahead pos", sg_smarterBotFollowPredictionTime));
 
     // sg_smarterBotFollowAlignedThresh
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_ALIGNED_THRESHOLD";
-    sg_smarterBotFollowAlignedThresh = 3;
+    sg_smarterBotFollowAlignedThresh = 10;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot aligned threshhold - Intened to prevent wiggling if we are within this threshhold", sg_smarterBotFollowAlignedThresh));
 
     // sg_smarterBotFollowTarget
@@ -1527,37 +1527,43 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
     // sg_smarterBotSpaceScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_SPACE";
-    sg_smarterBotSpaceScale = 1;
+    sg_smarterBotSpaceScale = 32;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Space", sg_smarterBotSpaceScale));
 
     // sg_smarterBotCowardScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_COWARD";
-    sg_smarterBotCowardScale = 0.25;
+    sg_smarterBotCowardScale = 0;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Coward", sg_smarterBotCowardScale));
 
     // sg_smarterBotTunnelScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_TUNNEL";
-    sg_smarterBotTunnelScale = 3;
+    sg_smarterBotTunnelScale = 0;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Tunnel", sg_smarterBotTunnelScale));
 
     // sg_smarterBotSpeedScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_SPEED";
-    sg_smarterBotSpeedScale = 3;
+    sg_smarterBotSpeedScale = 0;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Speed", sg_smarterBotSpeedScale));
 
     // sg_smarterBotNextThinkMult
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_NEXT_TIME_MULT";
-    sg_smarterBotNextThinkMult = 0.25;
+    sg_smarterBotNextThinkMult = 1;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Next Time Mult", sg_smarterBotNextThinkMult));
+
+    // sg_smarterBotTurnRandMult
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id + 1 << "_TURN_TIME_RAND_MULT";
+    sg_smarterBotTurnRandMult = 0;
+    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot turn time random Mult", sg_smarterBotTurnRandMult));
 
     // sg_smarterBotState
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_STATE";
-    sg_smarterBotState = 5;
+    sg_smarterBotState = 1;
     StoreConfitem(tNEW(tConfItem<int>)(confname, "Smarter Bot State", sg_smarterBotState));
 
 #endif
@@ -1754,11 +1760,16 @@ static tConfItem<bool> se_chatTimeStampConf("CHAT_TIMESTAMP", se_chatTimeStamp);
 bool se_playerTriggerMessages = false;
 static tConfItem<bool> se_playerTriggerMessagesConf("PLAYER_MESSAGE_TRIGGERS", se_playerTriggerMessages);
 
+
 bool se_playerTriggerMessagesReactToSelf = false;
 static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerTriggerMessagesReactToSelf);
 
-static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("wd,gf");
-static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf("PLAYER_MESSAGE_KILL_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
+static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("");
+static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf("PLAYER_MESSAGE_TRIGGERS_KILLED_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
+
+static tString se_playerTriggerMessagesKillByVerifiedTriggers = tString("wd");
+static tConfItem<tString> se_playerTriggerMessagesKillByVerifiedTriggersConf("PLAYER_MESSAGE_TRIGGER_KILLED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillByVerifiedTriggers);
+
 
 
 static void se_DisplayChatLocally(ePlayerNetID *p, const tString &say)
@@ -1885,8 +1896,19 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         }
 
         con << actualMessage << "\n";
-        if (se_playerTriggerMessagesReactToSelf || p->pID == -1)
-            handleTriggerMessages(p, actualMessage);
+
+        if (se_playerTriggerMessages && (se_playerTriggerMessagesReactToSelf || p->pID == -1))
+        {
+            actualMessage = tColoredString::RemoveColors(actualMessage);
+            const int timestampLength = 9;
+            const int nameLength = p->GetName().Len();
+
+            actualMessage = actualMessage.SubStr(timestampLength + nameLength + 2);
+            auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(p, actualMessage);
+
+            if (!triggeredResponse.empty())
+                ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay);
+        }
     }
 }
 
@@ -5480,13 +5502,13 @@ public:
 
         tString PlayerStr = args.ExtractNonBlankSubString(pos);
 
-        ePlayerNetID *p;
+        ePlayerNetID *p = nullptr;
         if (!PlayerStr.empty())
             p = ePlayerNetID::FindPlayerByName(PlayerStr);
         else if (player)
             p = player;
 
-        if (!p)
+        if (p == nullptr)
             return false;
 
         REAL chattingTime = p->ChattingTime();
@@ -5520,13 +5542,13 @@ public:
 
         tString PlayerStr = args.ExtractNonBlankSubString(pos);
 
-        ePlayerNetID *p;
+        ePlayerNetID *p = nullptr;
         if (!PlayerStr.empty())
             p = ePlayerNetID::FindPlayerByName(PlayerStr);
         else if (player)
             p = player;
 
-        if (!p)
+        if (p == nullptr)
             return false;
 
         PlayerStats *playerStats = PlayerStats::getInstance();
@@ -5644,7 +5666,6 @@ public:
         return true;
     }
 };
-
 class SpeakCommand : public ChatCommand
 {
 public:
@@ -5655,8 +5676,13 @@ public:
 
         ePlayerNetID *targetPlayer = ePlayerNetID::FindPlayerByName(PlayerStr);
 
-        if (targetPlayer && targetPlayer->pID != -1)
-            ePlayerNetID::scheduleMessageTask(targetPlayer,args.SubStr(pos + 1), se_speakCommandChatFlag, se_speakCommandDelay);
+        if (targetPlayer && targetPlayer->pID != -1) {
+            tString chatString = args.SubStr(pos + 1);
+            REAL delay = se_speakCommandDelay;
+            gTaskScheduler.remove("playerMessageTask");
+            con << "Sending message with delay: " << delay << "\n";
+            ePlayerNetID::scheduleMessageTask(targetPlayer, chatString, se_speakCommandChatFlag, delay, delay * 0.5);
+        }
         else if (targetPlayer && targetPlayer->pID == -1)
             con << "Not a local player.\n";
         return true;
@@ -6188,9 +6214,9 @@ public:
             targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
             if (!targetPlayer || !targetPlayer->Object() ||
                 !targetPlayer->CurrentTeam() ||
-                targetPlayer->Object()->GOID() == localPlayer->cam->center->GOID())
+                (targetPlayer != nullptr && localPlayer->cam->watchPlayer == targetPlayer) )
             {
-                con << "Player not found or already being spectated.\n";
+                con << "Player not found or already set to the watch player.\n";
                 return true;
             }
             else
@@ -7593,15 +7619,21 @@ static tConfItem<tString> se_playerMessageTargetPlayerConf("PLAYER_MESSAGE_TARGE
 
 static REAL se_playerMessageDelayRandMult = 0;
 static tConfItem<REAL> se_playerMessageDelayRandMultConf("PLAYER_MESSAGE_DELAY_RANDOM_MULT", se_playerMessageDelayRandMult);
-
 static REAL se_playerMessageDelay = 0;
 static tConfItem<REAL> se_playerMessageDelayConf("PLAYER_MESSAGE_DELAY", se_playerMessageDelay);
+static bool se_playerMessageSmartDelay = false;
+static tConfItem<bool> se_playerMessageSmartDelayConf("PLAYER_MESSAGE_DELAY_SMART", se_playerMessageSmartDelay);
+static REAL se_playerMessageSmartDelayWPM = 80;
+static tConfItem<REAL> se_playerMessageSmartDelayWPMConf("PLAYER_MESSAGE_DELAY_SMART_WPM", se_playerMessageSmartDelayWPM);
 
 static bool se_playerMessageChatFlag = false;
 static tConfItem<bool> se_playerMessageChatFlagConf("PLAYER_MESSAGE_CHATFLAG", se_playerMessageChatFlag);
 
 static REAL se_playerMessageChatFlagStartMult = 0.5;
 static tConfItem<REAL> se_playerMessageChatFlagStartMultConf("PLAYER_MESSAGE_CHATFLAG_START_MULT", se_playerMessageChatFlagStartMult);
+
+static bool se_playerMessageDisplayScheduledMessages = false;
+static tConfItem<bool> se_playerMessageDisplayScheduledMessagesConf("PLAYER_MESSAGE_DISPLAY_SCHEDULED_MESSAGES", se_playerMessageDisplayScheduledMessages);
 
 std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
 
@@ -7735,42 +7767,66 @@ static tConfItemFunc ListChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_LIST", &List
 static tConfItemFunc AddChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
 static tConfItemFunc RemoveChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
 
-void ePlayerNetID::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, float totalDelay)
+void ePlayerNetID::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay )
 {
-    gTaskScheduler.schedule("playerMessageTask", totalDelay, [netPlayer, message, chatFlag, totalDelay] {
+    float messageDelay = totalDelay - flagDelay;
+
+    gTaskScheduler.schedule("playerMessageTask", flagDelay, [netPlayer, message, chatFlag, messageDelay]
+    {
         if (chatFlag)
         {
             netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, true);
             ePlayerNetID::Update();
 
             // Schedule another task to turn off the flag after a short delay
-            gTaskScheduler.schedule("playerMessageSetChatFlagFalse", totalDelay * se_playerMessageChatFlagStartMult, [netPlayer, message, chatFlag] {
+            gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag]
+            {
                 netPlayer->Chat(message);
                 if (chatFlag)
                     netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, false);
                 ePlayerNetID::Update();
             });
         }
+        else
+        {
+            netPlayer->Chat(message);
+        }
+    },0,true); // allow multiple
+}
 
-    });
+REAL ePlayerNetID::calculateResponseSmartDelay(tString response, REAL wpm)
+{
+    REAL delay = 0;
+
+    int chatLen = response.Len();
+    REAL delayPerChar = 60.0 / (5 * wpm); // in seconds
+    delay = chatLen * delayPerChar;
+    return delay;
 }
 
 std::pair<tString, REAL> ePlayerNetID::findTriggeredResponse(ePlayerNetID *chatPlayer, tString chatMessage)
 {
-    tString lowerMessage(chatMessage);
-    lowerMessage.ToLower();
-    REAL extraDelay = 0.0;
+    tString lowerMessage(chatMessage.TrimWhitespace());
+    tToLower(lowerMessage);
 
     for (const auto &triggerPair : chatTriggers)
     {
-        if ((std::get<2>(triggerPair.second) && lowerMessage == triggerPair.first) // Exact match
-            || (!std::get<2>(triggerPair.second) && lowerMessage.Contains(triggerPair.first))) // Substring match
+        bool exact = std::get<2>(triggerPair.second);
+        tString trigger = triggerPair.first;
+
+        if ((exact && lowerMessage == trigger) // Exact match
+            || (!exact && lowerMessage.Contains(trigger))) // Substring match
         {
-            if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, triggerPair.first) &&
+
+            if (tIsInList(se_playerTriggerMessagesKillByVerifiedTriggers, trigger) &&
                 (chatPlayer != nullptr && ((chatPlayer->lastKilledByPlayer == nullptr || chatPlayer->lastKilledByPlayer->pID == -1))))
                 continue;
 
-            extraDelay = std::get<1>(triggerPair.second);
+            if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, trigger) &&
+                (chatPlayer != nullptr && ((chatPlayer->lastKilledPlayer == nullptr || chatPlayer->lastKilledPlayer->pID == -1))))
+                continue;
+
+            REAL extraDelay     = std::get<1>(triggerPair.second);
             // vector of possible responses
             std::vector<tString> possibleResponses = std::get<0>(triggerPair.second);
             // random response from the vector
@@ -7784,26 +7840,35 @@ std::pair<tString, REAL> ePlayerNetID::findTriggeredResponse(ePlayerNetID *chatP
 }
 
 
-void ePlayerNetID::preparePlayerMessage(tString messageToSend, float extraDelay, ePlayerNetID *player)
+void ePlayerNetID::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player)
 {
-
-    float totalDelay = se_playerMessageDelay + extraDelay;
+    REAL totalDelay;
+    if (se_playerMessageSmartDelay) {
+        se_playerMessageDelay = 0;
+        totalDelay = ePlayerNetID::calculateResponseSmartDelay(messageToSend,se_playerMessageSmartDelayWPM);
+    }
+    else
+        totalDelay = se_playerMessageDelay + extraDelay;
 
     if (se_playerMessageDelayRandMult > 0)
-        totalDelay += (float)rand() / RAND_MAX * se_playerMessageDelayRandMult;
+        totalDelay += (REAL)rand() / RAND_MAX * se_playerMessageDelayRandMult;
 
+    REAL flagDelay = totalDelay * se_playerMessageChatFlagStartMult;
+
+    if (se_playerMessageDisplayScheduledMessages)
+        con << "Scheduling message \"" << messageToSend << "\" with delay " << totalDelay << " and flag delay " << flagDelay << "seconds.\n";
+    
     if (player != nullptr)
     {
         if (tIsInList(se_playerMessageTargetPlayer, player->pID+1))
-            scheduleMessageTask(player, messageToSend, se_playerMessageChatFlag, totalDelay); // Use triggeredMessage here
+            scheduleMessageTask(player, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
     }
     else
     {
         tArray<tString> players = se_playerMessageTargetPlayer.SplitIncludeFirst(",");
         for (int i = 0; i < players.Len(); i++)
         {
-            int playerID = atoi(players[0]) - 1;
-            ePlayer *local_p = ePlayer::PlayerConfig(playerID);
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
             if (!local_p)
                 continue;
 
@@ -7811,21 +7876,8 @@ void ePlayerNetID::preparePlayerMessage(tString messageToSend, float extraDelay,
             if (!netPlayer)
                 continue;
 
-            scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, totalDelay); // And here
+            scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
         }
-    }
-}
-
-static void handleTriggerMessages(ePlayerNetID *chatPlayer, tString chatMessage)
-{
-    if (se_playerTriggerMessages)
-    {
-       
-        auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(chatPlayer, chatMessage);
-
-        
-        if (!triggeredResponse.empty())
-            ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay);
     }
 }
 
@@ -10854,8 +10906,8 @@ tColor crossfade(const tColor &start, const tColor &end, float progress)
 }
 
 // Global state
-int currentCrossfadePreset = 0;
-int currentCrossadeColorIndex = 0;
+size_t currentCrossfadePreset = 0;
+size_t currentCrossadeColorIndex = 0;
 int ticksSinceLastColor = 0;
 static int ticksPerColor = 100;
 
@@ -10919,11 +10971,11 @@ std::vector<Preset> convertCrossfadePresets(const std::vector<std::pair<const ch
 
 std::vector<Preset> presets = convertCrossfadePresets(crossfadePresets);
 
-static bool loadCrossfadePresetValidation(int selection)
+static bool loadCrossfadePresetValidation(size_t selection)
 {
     size_t numPresets = presets.size();
 
-    if (selection < 0)
+    if (selection == 0)
     {
         con << "Preset must be 1 and above.\n";
         return false;
@@ -10939,7 +10991,7 @@ static bool loadCrossfadePresetValidation(int selection)
     return true;
 }
 
-static void loadCrossfadePreset(int selection)
+static void loadCrossfadePreset(size_t selection)
 {
 
     currentCrossfadePreset = selection;
@@ -10976,10 +11028,11 @@ static tConfItemFunc se_crossfadePresetListConf("PLAYER_COLOR_CUSTOM_CROSSFADE_P
 
 void crossfadeUsingPreset(const Preset &preset, ePlayer *local_p)
 {
-    if (currentCrossfadePreset != desiredCrossfadePreset - 1)
+    size_t desiredCrossfadePresetSizeT = static_cast<size_t>(desiredCrossfadePreset);
+    if (currentCrossfadePreset != desiredCrossfadePresetSizeT - 1)
     {
-        if (loadCrossfadePresetValidation(desiredCrossfadePreset - 1))
-            loadCrossfadePreset(desiredCrossfadePreset - 1);
+        if (loadCrossfadePresetValidation(desiredCrossfadePresetSizeT - 1))
+            loadCrossfadePreset(desiredCrossfadePresetSizeT - 1);
         else
         {
             con << "Error invalid preset, using preset 1. Available presets: \n";

@@ -68,6 +68,7 @@ extern  bool sn_decorateTS;
 
 extern tString sn_DenyReason;		// the reason the server gave for sending a login_deny packet
 
+extern bool sg_descriptorsTrackLastDataAlways;
 // rate control
 extern int sn_maxRateIn,sn_maxRateOut;
 
@@ -383,6 +384,7 @@ class nDescriptor:public tListItem<nDescriptor>{
     const bool acceptWithoutLogin;
     std::vector<unsigned short> lastSentData; //  last sent data
 public:
+    REAL lastReceivedTime; //  time of last received message
     nDescriptor(unsigned short identification, nHandler *handle, const char *name, bool acceptEvenIfNotLoggedIn = false);
     //  nDescriptor(nHandler *handle,
     //      const char *name);

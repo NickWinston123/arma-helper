@@ -716,6 +716,10 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
 
     //  std::cout << line << " lines read.\n";
 }
+tConfItemBase *tConfItemBase::GetConfigItem(std::string const &name) {
+    return tConfItemBase::GetConfigItem(tString(name));
+}
+
 
 tConfItemBase *tConfItemBase::GetConfigItem(tString const &name) {
     tConfItemMap & confmap = ConfItemMap();

@@ -65,6 +65,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 #include <algorithm>
 
+gZone* gZone::lastCreatedZone = nullptr;
+
+gZone* gZone::GetLastCreatedZone() { return lastCreatedZone; }
+
 std::deque<gZone *> sg_Zones;
 std::deque<gZone *> sg_HelperTrackedZones;
 
@@ -582,6 +586,8 @@ gZone::gZone(eGrid *grid, const eCoord &pos, bool dynamicCreation, bool delayCre
     con << "GOT CREATION EVENT gZone 1"
         << "\n";
 #endif
+    lastCreatedZone = this;
+    actualCreateTime_ = tSysTimeFloat();
     // store creation time
     referenceTime_ = createTime_ = lastTime = 0;
 
@@ -721,6 +727,8 @@ gZone::gZone(nMessage &m)
     con << "GOT CREATION EVENT gZone 2"
         << "\n";
 #endif
+    lastCreatedZone = this;
+    actualCreateTime_ = tSysTimeFloat();
     // con.nMessage(m);;
     destroyed_ = false;
     helperDestroyed_ = false;
@@ -743,7 +751,6 @@ gZone::gZone(nMessage &m)
     seeking_ = false;
     name_ = tString("");
     effect_ = tString("");
-
     // read creation time
     m >> createTime_;
     referenceTime_ = lastTime = createTime_;

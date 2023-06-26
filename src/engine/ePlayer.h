@@ -185,6 +185,7 @@ public:
     REAL sg_smarterBotTunnelScale;
     REAL sg_smarterBotSpeedScale;
     REAL sg_smarterBotNextThinkMult;
+    REAL sg_smarterBotTurnRandMult;
     int sg_smarterBotState;
 
 
@@ -314,9 +315,10 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
-    static void preparePlayerMessage(tString message, float extraDelay, ePlayerNetID *player = nullptr);
+    static void preparePlayerMessage(tString message, REAL extraDelay, ePlayerNetID *player = nullptr);
     static std::pair<tString, REAL> findTriggeredResponse(ePlayerNetID *chatPlayer, tString chatMessage);
-    static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, float totalDelay);
+    static REAL calculateResponseSmartDelay(tString response,REAL wpm);
+    static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastKilledByPlayer = nullptr;
     ePlayerNetID * lastMessagedPlayer;

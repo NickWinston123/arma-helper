@@ -242,6 +242,9 @@ public:
     void WriteLadderLog();
     static void GridPosLadderLog(); //  gridpos ladderlog for the zones
 
+    static gZone* lastCreatedZone;
+    static gZone* GetLastCreatedZone();
+
 protected:
     int id_;
 
@@ -280,7 +283,9 @@ protected:
     tString effect_;
     gRealColor color_; //!< the zone's color
     REAL createTime_;  //!< the time the zone was created at
-
+    public:
+    REAL actualCreateTime_;  //!< the actual time the zone was created at
+    protected:
     REAL referenceTime_;      //!< reference time for function evaluations
     tFunction posx_;          //!< time dependence of x component of position
     tFunction posy_;          //!< time dependence of y component of position
@@ -1100,5 +1105,4 @@ tArray<gCheckpointZoneHack *> sg_GetCheckpointZones();
 
 extern bool sg_deathZoneRotation;
 extern REAL sg_deathZoneRotationSpeed;
-
 #endif

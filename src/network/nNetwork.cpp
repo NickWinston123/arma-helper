@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <fstream>
 #include "tMath.h"
+#include "ePlayer.h"
 #include <string.h>
 
 #ifndef WIN32
@@ -560,7 +561,8 @@ std::vector<nDescriptor*>& nDescriptor::getTrackedDescriptors() {
 nDescriptor::nDescriptor(unsigned short identification,
                          nHandler *handle, const char *Name, bool awl)
         :tListItem<nDescriptor>(nDescriptor_anchor),
-        id(identification), handler(handle), name(Name), acceptWithoutLogin(awl)
+        id(identification), handler(handle), name(Name), acceptWithoutLogin(awl),
+        lastReceivedTime(0)
 {
     if (MAXDESCRIPTORS <= id || descriptors[id] != nullptr) {
         con << "Descriptor " << id << " already used!\n";
@@ -577,10 +579,13 @@ nDescriptor::nDescriptor(unsigned short identification,
 int nCurrentSenderID::currentSenderID_ = 0;
 
 bool sg_descriptorsShow = false;
-static tConfItem<bool> sg_descriptorsShowConf("DESCRIPTOR_SHOW_HANDLED",sg_descriptorsShow);
+static tConfItem<bool> sg_descriptorsShowConf("DESCRIPTOR_HANDLED_SHOW",sg_descriptorsShow);
+
+bool sg_descriptorsTrackLastDataAlways = false;
+static tConfItem<bool> sg_descriptorsTrackLastDataAlwaysConf("DESCRIPTOR_HANDLED_TRACK_LAST_DATA_ALWAYS",sg_descriptorsTrackLastDataAlways);
 
 tString sg_descriptorsShowIgnoreList = tString("");
-static tConfItem<tString> sg_descriptorsShowIgnoreListConf("DESCRIPTOR_SHOW_HANDLED_IGNORE_LIST",sg_descriptorsShowIgnoreList);
+static tConfItem<tString> sg_descriptorsShowIgnoreListConf("DESCRIPTOR_HANDLED_SHOW_IGNORE_LIST",sg_descriptorsShowIgnoreList);
 
 void nDescriptor::HandleMessage(nMessage &message){
     // store sender ID for console
@@ -603,7 +608,9 @@ void nDescriptor::HandleMessage(nMessage &message){
 
         if (nd){
             if ((message.SenderID() <= MAXCLIENTS) || nd->acceptWithoutLogin) {
-                nd->SetLastSentData(nMessage::nMessageToDataVector(message)); // Store last sent data
+                //nd->lastReceivedTime = tSysTimeFloat();
+                if(sg_descriptorsTrackLastDataAlways || sg_descriptorsShow)
+                    nd->SetLastSentData(nMessage::nMessageToDataVector(message)); // Store last sent data
                 nd->handler(message);
             }
         }
@@ -1135,10 +1142,10 @@ nMessage::~nMessage(){
 
 
 bool sg_descriptorsShowBroadCasted = false;
-static tConfItem<bool> sg_descriptorsShowBroadCastedConf("DESCRIPTOR_SHOW_BROADCASTED",sg_descriptorsShowBroadCasted);
+static tConfItem<bool> sg_descriptorsShowBroadCastedConf("DESCRIPTOR_BROADCASTED_SHOW",sg_descriptorsShowBroadCasted);
 
 tString sg_descriptorsShowBroadCastedIgnoreList = tString("");
-static tConfItem<tString> sg_descriptorsShowBroadCastedIgnoreListConf("DESCRIPTOR_SHOW_BROADCASTED_IGNORE_LIST",sg_descriptorsShowBroadCastedIgnoreList);
+static tConfItem<tString> sg_descriptorsShowBroadCastedIgnoreListConf("DESCRIPTOR_BROADCASTED_SHOW_IGNORE_LIST",sg_descriptorsShowBroadCastedIgnoreList);
 
 void nMessage::BroadCast(bool ack){
 
@@ -3417,16 +3424,28 @@ private:
 static nConsoleFilter sn_consoleFilter;
 #endif
 
+bool sg_playerMessageMatchWinner = false;
+static tConfItem<bool> sg_playerMessageMatchWinnerConf("PLAYER_MESSAGE_MATCH_WINNER", sg_playerMessageMatchWinner);
 
-static void sn_ConsoleOut_handler(nMessage &m){
-
-    if (sn_GetNetState()!=nSERVER){
+static void sn_ConsoleOut_handler(nMessage &m)
+{
+    if (sn_GetNetState() != nSERVER)
+    {
         tString s;
         m >> s;
         con << s;
+
+        if (sg_playerMessageMatchWinner && s.Contains("Overall Winner"))
+        {
+            auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$matchwinner"));
+            if (triggeredResponse.empty())
+                con << "No trigger set for $matchwinner\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+            else
+                ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, nullptr);
+        }
+        
     }
 }
-
 
 static nDescriptor sn_ConsoleOut_nd(8,sn_ConsoleOut_handler,"sn_ConsoleOut");
 

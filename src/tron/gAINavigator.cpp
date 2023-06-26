@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "tRandom.h"
 #include "tSysTime.h"
 #include "tMath.h"
-
+#include "gGame.h"
 #include "eGrid.h"
 
 #include "gCycle.h"
@@ -301,7 +301,7 @@ void gAINavigator::Path::Fill(gAINavigator const &navigator, Sensor const &left,
 //!@param controller the controller to use for the execution
 //!@param cycle      the cycle to execute the action
 //!@param maxStep    maximal timestep the caller suggests
-REAL gAINavigator::Path::Take(CycleController &controller, gCycle &cycle, REAL maxStep)
+REAL gAINavigator::Path::Take(CycleController &controller, gCycle &cycle, REAL maxStep, REAL turnDelay)
 {
     if (driveOn > 0)
     {
@@ -321,7 +321,21 @@ REAL gAINavigator::Path::Take(CycleController &controller, gCycle &cycle, REAL m
             return driveOn = cycle.GetNextTurn(turn) - cycle.LastTime();
         }
 
-        controller.Turn(cycle, turn);
+        // if (turnDelay > 0)
+        // {
+        //     REAL localTurn = turn; // make a copy of turn
+        //     // con << "schedule turn " << localTurn << " for cycle " << cycle.Owner() << " with id " 
+        //     //     << "gAINavigatorTurn" + std::to_string(cycle.Owner()) << " with delay " << turnDelay << "\n";
+        //     gTaskScheduler.schedule("gAINavigatorTurn" + std::to_string(cycle.Owner()), turnDelay, [localTurn, &cycle]()
+        //     { 
+        //         //con << "EXECUTING TURN\n";
+        //         cycle.Turn(localTurn);
+        //     });
+        // }
+        // else
+        {
+            cycle.Turn(turn);
+        }
     }
 
     return maxStep;
@@ -358,13 +372,13 @@ gAINavigator::Path const &gAINavigator::PathGroup::GetPath(int id) const
 //!@param cycle      the cycle to execute the action
 //!@param id         the ID of the path, between 0 and GetPathCount()-1
 //!@param maxStep    maximal timestep the caller suggests
-REAL gAINavigator::PathGroup::TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep)
+REAL gAINavigator::PathGroup::TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep, REAL turnDelay)
 {
     // save plan
     last = GetPath(id);
 
     // execute plan
-    REAL ret = last.Take(controller, cycle, maxStep);
+    REAL ret = last.Take(controller, cycle, maxStep, turnDelay);
 
     // clear all paths
     for (int i = GetPathCount() - 1; i >= 0; --i)
@@ -1264,7 +1278,7 @@ void gAINavigator::EvaluationManager::Reset()
 //!@param controller   controller issuing the commands
 //!@param cycle        cycle getting controlled
 //!@param maxStep      suggestion for next timestep
-REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle &cycle, REAL maxStep)
+REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle &cycle, REAL maxStep, REAL turnDelay)
 {
     if (bestPath_ >= 0)
     {
@@ -1273,7 +1287,7 @@ REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle
         {
             maxStep = thisMaxStep;
         }
-        return paths_.TakePath(controller, cycle, bestPath_, maxStep);
+        return paths_.TakePath(controller, cycle, bestPath_, maxStep, turnDelay);
     }
     else
     {

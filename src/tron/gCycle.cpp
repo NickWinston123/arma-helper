@@ -349,6 +349,54 @@ static tConfItem<bool> sg_smarterBotTeamConf("SMARTER_BOT_TEAM", sg_smarterBotTe
 bool sg_smarterBotTeamOwner = false; // absolute unit
 static tConfItem<bool> sg_smarterBotTeamOwnerConf("SMARTER_BOT_TEAM_OWNER", sg_smarterBotTeamOwner);
 
+static void gSmarterBotReset(std::istream &s)
+{
+    if (s.eof()){
+        con << "Need a ID\n Usage: SMARTER_BOT_RESET <ID>\n";
+        return;
+    }
+
+    int ID;
+    s >> ID;
+
+    ePlayer *local_p = ePlayer::PlayerConfig(ID-1);
+
+    if (!local_p){
+        con << "No player found with ID " << ID << "\n";
+        return;
+    }
+
+    con << "Setting smarter bot defaults for Player " << ID << "\n";
+
+    // Define function to verify and set default
+    auto verifyAndSet = [](std::string commandName) {
+        tConfItemBase* item = tConfItemBase::GetConfigItem(commandName);
+        if (item)
+            item->SetDefault();
+    };
+    
+    // List of command name suffixes
+    std::vector<std::string> commandSuffixes = {
+        "THINK", "RANGE", "RANDOMNESS", "RUBBER", "SUICIDE", "TRAP",
+        "FOLLOW", "FOLLOW_TARGET", "FOLLOW_ZONE", "FOLLOW_TAIL",
+        "FOLLOW_BLOCKED_LOGIC", "FOLLOW_TRY_LOGIC",
+        "FOLLOW_TRY_LOGIC_OPPOSITE_TURN", "FOLLOW_CHECK_LOGIC",
+        "FOLLOW_PREDICT_TIME", "FOLLOW_ALIGNED_THRESHOLD",
+        "FOLLOW_SET_TARGET", "FOLLOW_TEAM_LIST", "PLAN",
+        "TAIL", "SPACE", "COWARD", "TUNNEL", "SPEED",
+        "NEXT_TIME_MULT", "TURN_TIME_RAND_MULT", "STATE"
+    };
+
+    // Build command name and verify and set default for each command
+    for (const auto& suffix : commandSuffixes) {
+        std::string confname = "SMARTER_BOT_" + std::to_string(ID) + "_" + suffix;
+        verifyAndSet(confname);
+    }
+}
+
+static tConfItemFunc gSmarterBotResetConf("SMARTER_BOT_RESET", &gSmarterBotReset);
+
+
 gSmarterBot::~gSmarterBot()
 {
 }
@@ -494,8 +542,15 @@ REAL gSmarterBot::Think(REAL minStep)
     if (local_player->sg_smarterBotSpeedScale > 0)
         manager.Evaluate(SpeedEvaluator(*Owner()), local_player->sg_smarterBotSpeedScale);
 
+    REAL turnDelay = 0;
+    if (local_player->sg_smarterBotTurnRandMult > 0) 
+    {
+        tRandomizer &randomizer = tReproducibleRandomizer::GetInstance();
+        turnDelay = randomizer.Get(0.0, local_player->sg_smarterBotTurnRandMult); 
+    }
+
     CycleControllerAction controller;
-    return manager.Finish(controller, *Owner(), minStep);
+    return manager.Finish(controller, *Owner(), minStep, turnDelay);
 }
 
 void gSmarterBot::Activate(REAL currentTime)
@@ -6524,6 +6579,8 @@ static tConfItem<bool> sg_playerMessageDeathSelfConf("PLAYER_MESSAGE_DEATH_SELF"
 bool sg_playerMessageDeathOther = false;
 static tConfItem<bool> sg_playerMessageDeathOtherConf("PLAYER_MESSAGE_DEATH_OTHER", sg_playerMessageDeathOther);
 
+bool se_playerTriggerMessagesZoneVerify = false;
+static tConfItem<bool> se_playerTriggerMessagesZoneVerifyConf("PLAYER_MESSAGE_TRIGGERS_ZONE_VERIFY", se_playerTriggerMessagesZoneVerify);
 void gCycle::ReadSync(nMessage &m)
 {
     // data from sync message
@@ -6664,9 +6721,16 @@ void gCycle::ReadSync(nMessage &m)
             stats->addDeath(Player()->GetName());
         }
 
-        if (Player()->pID != -1)
+        if (sg_playerMessageDeathSelf || sg_playerMessageDeathOther)
         {
-            if (sg_playerMessageDeathSelf)
+            bool zoneSpawnedRecently = false;
+
+            if (se_playerTriggerMessagesZoneVerify) {
+                gZone *lastCreatedZone = gZone::GetLastCreatedZone();
+                zoneSpawnedRecently = lastCreatedZone && lastCreatedZone->actualCreateTime_ >= tSysTimeFloat() - 5;
+            }
+
+            if (Player()->pID != -1 && !zoneSpawnedRecently && sg_playerMessageDeathSelf)
             {
                 auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(Player(), tString("$died"));
                 if (triggeredResponse.empty())
@@ -6674,10 +6738,7 @@ void gCycle::ReadSync(nMessage &m)
                 else
                     ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, Player());
             }
-        }
-        else
-        {
-            if (sg_playerMessageDeathOther)
+            else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
             {
                 auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(Player(), tString("$diedother"));
                 if (triggeredResponse.empty())
@@ -6685,7 +6746,6 @@ void gCycle::ReadSync(nMessage &m)
                 else
                     ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, Player());
             }
-
         }
 
         Die(lastSyncMessage_.time);

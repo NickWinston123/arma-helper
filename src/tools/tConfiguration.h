@@ -295,6 +295,7 @@ public:
     static std::deque<tString> GetCommands(void);
     static tString FindConfigItem(tString name,int pos = 0);    //! Returns the config name of the searching string name
     static tConfItemBase *GetConfigItem(tString const &name);
+    static tConfItemBase *GetConfigItem(std::string const &name);
     static void SetAllAccessLevel(int newLevel);
 
     static void DownloadSettings_Go(nMessage &m);

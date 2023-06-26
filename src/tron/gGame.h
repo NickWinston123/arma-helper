@@ -310,14 +310,32 @@ class TaskScheduler
 {
 public:
     // Schedule a new task
-    void schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0)
+
+    bool schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0, bool allowMultiple = false)
     {
         if (tasks.find(id) == tasks.end())
-        { // only one task per id at a time
+        {
             tasks[id] = DelayedTask(id, tSysTimeFloat() + delayInSeconds, interval, task);
-        }
-    }
+            return true;
+        } 
+        else if (allowMultiple)
+        {
+            if (taskCounts.find(id) == taskCounts.end())
+            {
+                taskCounts[id] = 1;
+            }
+            else
+            {
+                taskCounts[id]++;
+            }
 
+            std::string newId = id + "_" + std::to_string(taskCounts[id]);
+            tasks[newId] = DelayedTask(newId, tSysTimeFloat() + delayInSeconds, interval, task);
+            return true;
+        }
+        return false;
+    }
+    
     // Remove a task
     void remove(std::string id)
     {
@@ -375,6 +393,7 @@ public:
 
 private:
     std::map<std::string, DelayedTask> tasks;
+    std::map<std::string, int> taskCounts;
 };
 
 // Global instance of the task scheduler

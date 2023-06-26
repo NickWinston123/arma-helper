@@ -1665,6 +1665,8 @@ static void sg_FindDescriptor(std::istream &s)
         blankID = true;
         con << "No ID provided, displaying all descriptors\n";
     }
+    
+    con << "Descriptor last sent data tracking always enabled?: " << (sg_descriptorsTrackLastDataAlways ? "true" : "false") << "\n";
 
     nDescriptor *matchingDescriptor = nullptr;
     const auto &trackedDescriptors = nDescriptor::getTrackedDescriptors();

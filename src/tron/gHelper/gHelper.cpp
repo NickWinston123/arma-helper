@@ -845,7 +845,8 @@ void gHelper::trace(gHelperData &data, int dir)
 {
     if (!(owner_.pendingTurns.size() == 0))
     {
-        gHelperUtility::Debug("Trace", "Not tracing due to pending turns.");
+        if (helperConfig::sg_helperDebug)
+            gHelperUtility::Debug("Trace", "Not tracing due to pending turns.");
         return;
     }
     eGrid *grid = owner_.Grid();
@@ -860,11 +861,13 @@ void gHelper::trace(gHelperData &data, int dir)
 
     if (sensor->hit > (sensorDistance[index] + sg_helperTraceReactRange))
     {
-        gHelperUtility::Debug("Trace", (dir == LEFT) ? "Tracing left" : "Tracing right");
+        if (helperConfig::sg_helperDebug)
+            gHelperUtility::Debug("Trace", (dir == LEFT) ? "Tracing left" : "Tracing right");
         gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index]
-                                {
+        {
             this->owner_.ActTurnBot(dir);
-            sensorDistance[index] = 1E+30; });
+        });
+        sensorDistance[index] = 1E+30; 
     }
     else
     {
@@ -872,27 +875,6 @@ void gHelper::trace(gHelperData &data, int dir)
     }
 }
 
-// void gHelper::trace(gHelperData &data, int dir)
-// {
-//     if (!aliveCheck())
-//     {
-//         return;
-//     }
-
-//     gSmartTurningCornerData& corner = getCorner(dir);
-
-//     if (!corner.exist)
-//         return;
-
-//     REAL turnTimeFactor = corner.getTimeUntilTurn(owner_.Speed());
-
-//     if (gHelperUtility::isClose(&owner_, corner.currentPos, data.ownerData.turnSpeedFactorF()) &&
-//         corner.getTimeUntilTurn(owner_.Speed()) > 0 &&
-//         (turnTimeFactor <= sg_helperSmartTurningSurviveTraceTurnTime))
-//     {
-//         turnHelper->makeTurnIfPossible(data, dir, 1);
-//     }
-// }
 
 #include "../gWall.h"
 void gHelper::Activate()

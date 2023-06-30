@@ -2368,29 +2368,34 @@ bool st_StringEndsWith( tString const & test, char const * end )
 //!    @return     true         Returns true if the string is found
 //!
 // **********************************************************************
+#include <cstring>
+
 bool tString::Contains(tString tofind)
 {
     // if the length of tofind longer than the string, quit it!
     if (tofind.Len() > Len())
         return false;
 
-    // the total legnth of tofind, minus the 1 extra garbage
+    // Convert both strings to const char* for simpler comparison
+    const char* thisStr = this->c_str();
+    const char* tofindStr = tofind.c_str();
+
+    // the total length of tofind, minus the 1 extra garbage
     int strCount = tofind.Len() - 1;
 
-    for (int i = 0; i < Len(); i++)
+    for (int i = 0; i < Len() - strCount; ++i)
     {
-        // strip the string to the length of tofind
-        tString isThis = this->SubStr(i, strCount);
-
-        // if that stripped string matches, good!
-        if (isThis == tofind)
+        // Check if the substring starting from index i in thisStr matches tofindStr
+        if (std::strncmp(thisStr + i, tofindStr, strCount) == 0)
         {
             return true;
         }
     }
+
     // if they don't match at all, too bad!
     return false;
 }
+
 
 // void computeLPSArray(const tString& pat, int* lps)
 // {

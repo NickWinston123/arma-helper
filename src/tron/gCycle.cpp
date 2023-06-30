@@ -508,8 +508,8 @@ REAL gSmarterBot::Think(REAL minStep)
 
     manager.Reset();
 
-    if (local_player->sg_smarterBotSuicideEval > 0)
-        manager.Evaluate(SuicideEvaluator(*Owner()), local_player->sg_smarterBotSuicideEval);
+    if (local_player->sg_smarterBotSurviveEval > 0)
+        manager.Evaluate(SuicideEvaluator(*Owner()), local_player->sg_smarterBotSurviveEval);
 
     if (local_player->sg_smarterBotRubberEval > 0)
         manager.Evaluate(RubberEvaluator(*Owner()), local_player->sg_smarterBotRubberEval);
@@ -6721,7 +6721,7 @@ void gCycle::ReadSync(nMessage &m)
             stats->addDeath(Player()->GetName());
         }
 
-        if (sg_playerMessageDeathSelf || sg_playerMessageDeathOther)
+        if (se_playerTriggerMessages && (sg_playerMessageDeathSelf || sg_playerMessageDeathOther))
         {
             bool zoneSpawnedRecently = false;
 

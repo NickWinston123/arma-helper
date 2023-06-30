@@ -164,7 +164,7 @@ public:
     REAL sg_smarterBotRange;
     REAL sg_smarterBotRandomScale;
     REAL sg_smarterBotRubberEval;
-    REAL sg_smarterBotSuicideEval;
+    REAL sg_smarterBotSurviveEval;
     REAL sg_smarterBotTrapScale;
     REAL sg_smarterBotFollowScale;
     bool sg_smarterBotFollowBlockLogic;

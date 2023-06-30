@@ -291,9 +291,10 @@ void LogPlayersCycleTurns(gCycle *cycle, tString msg);
 void LogWinnerCycleTurns(gCycle *winner);
 
 extern void sg_DetermineSpawnPoint(ePlayerNetID *p, eCoord &pos, eCoord &dir);
-
+#include <queue>
+#include <unordered_map>
 #include <functional>
-#include <map>
+#include <set>
 
 struct DelayedTask
 {
@@ -301,99 +302,95 @@ struct DelayedTask
     REAL dueTime;
     REAL interval;
     std::function<void()> task;
+    DelayedTask() {}
 
-    DelayedTask() : id(""), dueTime(0), task([]() {}) {}
-    DelayedTask(const std::string &id, REAL dueTime, REAL interval, std::function<void()> task) : id(id), dueTime(dueTime), interval(interval), task(task) {}
+    DelayedTask(const std::string &id, REAL dueTime, REAL interval, std::function<void()> task)
+        : id(id), dueTime(dueTime), interval(interval), task(std::move(task)) {}
+
+    bool operator<(const DelayedTask& other) const
+    {
+        return dueTime > other.dueTime;
+    }
 };
 
 class TaskScheduler
 {
 public:
     // Schedule a new task
-
     bool schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0, bool allowMultiple = false)
     {
-        if (tasks.find(id) == tasks.end())
-        {
-            tasks[id] = DelayedTask(id, tSysTimeFloat() + delayInSeconds, interval, task);
-            return true;
-        } 
-        else if (allowMultiple)
-        {
-            if (taskCounts.find(id) == taskCounts.end())
-            {
-                taskCounts[id] = 1;
-            }
-            else
-            {
-                taskCounts[id]++;
-            }
-
-            std::string newId = id + "_" + std::to_string(taskCounts[id]);
-            tasks[newId] = DelayedTask(newId, tSysTimeFloat() + delayInSeconds, interval, task);
-            return true;
+        if (!allowMultiple && tasksMap.count(id) > 0) {
+            return false;
         }
-        return false;
+
+        REAL dueTime = tSysTimeFloat() + delayInSeconds;
+        if (allowMultiple && taskCounts.find(id) != taskCounts.end()) {
+            id = id + "_" + std::to_string(++taskCounts[id]);
+        }
+        auto delayedTask = DelayedTask(id, dueTime, interval, std::move(task));
+        tasksQueue.push(delayedTask);
+        tasksMap[id] = delayedTask;
+        return true;
     }
     
-    // Remove a task
-    void remove(std::string id)
+    // Check and execute due tasks
+    void update()
     {
-        tasks.erase(id);
+        while (!tasksQueue.empty() && tSysTimeFloat() >= tasksQueue.top().dueTime)
+        {
+            DelayedTask task = tasksQueue.top();
+            tasksQueue.pop();
+            tasksMap.erase(task.id);
+
+            task.task();
+
+            if (task.interval > 0)
+            {
+                task.dueTime += task.interval;
+                tasksQueue.push(task);
+                tasksMap[task.id] = task;
+            }
+        }
+    }
+
+    // Remove a task
+    void remove(const std::string& id)
+    {
+        if (tasksMap.count(id) > 0) {
+            tasksMap.erase(id);
+            rebuildQueue();
+        }
     }
 
     // Remove all tasks
     void clear()
     {
-        tasks.clear();
-    }
-
-    // Check and execute due tasks
-    void update()
-    {
-        for (auto it = tasks.begin(); it != tasks.end();)
-        {
-            if (tSysTimeFloat() >= it->second.dueTime)
-            {
-                it->second.task();
-                if (it->second.interval > 0)
-                {
-                    it->second.dueTime += it->second.interval;
-                    ++it;
-                }
-                else
-                {
-                    it = tasks.erase(it);
-                }
-            }
-            else
-            {
-                ++it;
-            }
+        while (!tasksQueue.empty()) {
+            tasksQueue.pop();
         }
+        tasksMap.clear();
+    }
+    
+    std::unordered_map<std::string, DelayedTask> getTasks() const
+    {
+        return tasksMap;
     }
 
-    // Get all tasks
-    std::map<std::string, DelayedTask> getTasks() const
-    {
-        return tasks;
-    }
-
-    // Get a task by id
-    DelayedTask getTask(std::string id) const
-    {
-        auto it = tasks.find(id);
-        if (it != tasks.end())
-        {
-            return it->second;
-        }
-        // Return a default task if not found
-        return DelayedTask();
-    }
 
 private:
-    std::map<std::string, DelayedTask> tasks;
-    std::map<std::string, int> taskCounts;
+    std::priority_queue<DelayedTask> tasksQueue;
+    std::unordered_map<std::string, DelayedTask> tasksMap;
+    std::unordered_map<std::string, int> taskCounts;
+
+    void rebuildQueue()
+    {
+        while (!tasksQueue.empty()) {
+            tasksQueue.pop();
+        }
+        for (const auto& taskPair : tasksMap) {
+            tasksQueue.push(taskPair.second);
+        }
+    }
 };
 
 // Global instance of the task scheduler

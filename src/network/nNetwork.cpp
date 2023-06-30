@@ -3435,7 +3435,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
         m >> s;
         con << s;
 
-        if (sg_playerMessageMatchWinner && s.Contains("Overall Winner"))
+        if (se_playerTriggerMessages && sg_playerMessageMatchWinner && s.Contains("Overall Winner"))
         {
             auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$matchwinner"));
             if (triggeredResponse.empty())

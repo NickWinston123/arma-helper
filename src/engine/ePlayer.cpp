@@ -1428,11 +1428,11 @@ ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
     sg_smarterBotRubberEval = 4;
     StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Rubber", sg_smarterBotRubberEval));
 
-    // sg_smarterBotSuicideEval
+    // sg_smarterBotSurviveEval
     confname.Clear();
-    confname << "SMARTER_BOT_" << id + 1 << "_SUICIDE";
-    sg_smarterBotSuicideEval = 100;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Suicide", sg_smarterBotSuicideEval));
+    confname << "SMARTER_BOT_" << id + 1 << "_SURVIVE";
+    sg_smarterBotSurviveEval = 100;
+    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Survive", sg_smarterBotSurviveEval));
 
     // sg_smarterBotTrapScale
     confname.Clear();
@@ -5678,10 +5678,10 @@ public:
 
         if (targetPlayer && targetPlayer->pID != -1) {
             tString chatString = args.SubStr(pos + 1);
-            REAL delay = se_speakCommandDelay;
-            gTaskScheduler.remove("playerMessageTask");
-            con << "Sending message with delay: " << delay << "\n";
-            ePlayerNetID::scheduleMessageTask(targetPlayer, chatString, se_speakCommandChatFlag, delay, delay * 0.5);
+
+            if (se_speakCommandDelay > 0)
+                con << "Sending message with delay: " << se_speakCommandDelay << "\n";
+            ePlayerNetID::scheduleMessageTask(targetPlayer, chatString, se_speakCommandChatFlag, se_speakCommandDelay, se_speakCommandDelay * 0.5);
         }
         else if (targetPlayer && targetPlayer->pID == -1)
             con << "Not a local player.\n";
@@ -7556,7 +7556,7 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
     if (sn_GetNetState() == nSERVER)
         RequestSync();
 
-    if (se_playerMessageEnter && !tIsInList(se_disableCreateSpecific, pID + 1))
+    if (se_playerTriggerMessages && se_playerMessageEnter && !tIsInList(se_disableCreateSpecific, pID + 1))
     {
         auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$entered"));
         if (triggeredResponse.empty())
@@ -7856,7 +7856,7 @@ void ePlayerNetID::preparePlayerMessage(tString messageToSend, REAL extraDelay, 
     REAL flagDelay = totalDelay * se_playerMessageChatFlagStartMult;
 
     if (se_playerMessageDisplayScheduledMessages)
-        con << "Scheduling message \"" << messageToSend << "\" with delay " << totalDelay << " and flag delay " << flagDelay << "seconds.\n";
+        con << "Scheduling message \"" << messageToSend << "\" with delay " << totalDelay << " and flag delay " << flagDelay << " seconds.\n";
     
     if (player != nullptr)
     {
@@ -7940,7 +7940,7 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
     lastScore_ = IMPOSSIBLY_LOW_SCORE;
     // rubberstatus=0;
 
-    if (se_playerMessageEnter)
+    if (se_playerTriggerMessages && se_playerMessageEnter)
     {
         auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$entered"));
         if (triggeredResponse.empty())
@@ -8307,7 +8307,7 @@ static void player_removed_from_game_handler(nMessage &m)
     if (p && sn_GetNetState() != nSERVER)
     {
 
-        if (se_playerMessageLeave)
+        if (se_playerTriggerMessages && se_playerMessageLeave)
         {
             auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$left"));
             if (triggeredResponse.empty())

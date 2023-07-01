@@ -5001,6 +5001,23 @@ static bool IsLegalPlayerName(tString const &name)
 bool se_enableChatCommands = true;
 static tConfItem<bool> se_enableChatCommandsConf("LOCAL_CHAT_COMMANDS", se_enableChatCommands);
 
+// Bright Red for headers
+static tString se_chatCommandsThemeHeader("0xff0000");
+static tConfItem<tString> se_chatCommandsThemeHeaderConf("LOCAL_CHAT_COMMANDS_THEME_HEADER", se_chatCommandsThemeHeader);
+
+// White for main
+static tString se_chatCommandsThemeMain("0xffffff");
+static tConfItem<tString> se_chatCommandsThemeMainConf("LOCAL_CHAT_COMMANDS_THEME_MAIN", se_chatCommandsThemeMain);
+
+// Light Pink for items
+static tString se_chatCommandsThemeItem("0xffb6c1");
+static tConfItem<tString> se_chatCommandsThemeItemConf("LOCAL_CHAT_COMMANDS_THEME_ITEM", se_chatCommandsThemeItem);
+
+// Hot Pink for error messages as an accent color
+static tString se_chatCommandsThemeError("0xff69b4");
+static tConfItem<tString> se_chatCommandsThemeErrorConf("LOCAL_CHAT_COMMANDS_THEME_ERROR", se_chatCommandsThemeError);
+
+
 // our local commands (should always be lowercase)
 static tString se_consoleCommand("/console");
 static tConfItem<tString> se_consoleCommandConf("LOCAL_CHAT_COMMAND_CONSOLE", se_consoleCommand);
@@ -5084,19 +5101,21 @@ static tConfItem<tString> se_reconnectCommandConf("LOCAL_CHAT_COMMAND_RECONNECT"
 tColoredString gatherPlayerInfo(ePlayerNetID *p)
 {
     tColoredString listinfo;
-    listinfo << "\nResults for " << p->GetColoredName() << "0xRESETT:";
-    listinfo << "\nColor: " << gatherPlayerColor(p) << "\n";
+    listinfo << "\n" << se_chatCommandsThemeHeader << "Results for " << p->GetColoredName()  << se_chatCommandsThemeMain << ":"
+             << "\n" << se_chatCommandsThemeMain   << "Color: "      << gatherPlayerColor(p) << "\n";
 
     gRealColor color(p->r, p->g, p->b);
     // p->Color(color);
     se_removeDarkColors(color);
-    listinfo << "\nFiltered Color: ("
+    listinfo << se_chatCommandsThemeHeader
+             << "\nFiltered Color: " << se_chatCommandsThemeMain << "("
              << p->r << ", "
              << p->g << ", "
              << p->b << ")\n";
 
     // Status. Includes player type, spectating or playing, and if the player is chatting.
-    listinfo << "Status: " << (p->IsHuman() ? "Human" : "Bot")
+    listinfo << se_chatCommandsThemeHeader
+             << "Status: " << (p->IsHuman() ? "Human" : "Bot")
              << ", " << (p->CurrentTeam() ? "Playing" : "Spectating")
              << (p->IsChatting() ? ", Chatting" : "");
 
@@ -5148,7 +5167,8 @@ public:
         {
             if (args.empty())
             {
-                con << tOutput("$player_info_text");
+                con << se_chatCommandsThemeHeader
+                    << tOutput("$player_info_text");
                 ePlayerNetID *p = se_GetLocalPlayer();
                 con << gatherPlayerInfo(p);
             }
@@ -5158,7 +5178,8 @@ public:
                 tArray<ePlayerNetID *> foundPlayers;
                 tArray<tString> msgsExt = args.SplitIncludeFirst(" ");
 
-                con << tOutput("$player_info_text");
+                con << se_chatCommandsThemeHeader
+                    << tOutput("$player_info_text");
 
                 int j = 0;
                 for (int i = 0; i < msgsExt.Len(); i++)
@@ -5174,7 +5195,8 @@ public:
                 }
 
                 if (!playerFound)
-                    con << tOutput("$player_not_found_text", args);
+                    con << se_chatCommandsThemeError
+                        << tOutput("$player_not_found_text", args);
             }
         }
         return true;
@@ -5198,7 +5220,8 @@ static void se_outputColorInfo(int index, const tString &Name, REAL r, REAL g, R
     if (tColoredString::HasColors(Name))
     {
         con << (index + 1) << ") "
-            << Name << "0xRESETT ("
+            << Name << se_chatCommandsThemeMain
+            << " ("
             << r << ", "
             << g << ", "
             << b << ") "
@@ -5208,7 +5231,8 @@ static void se_outputColorInfo(int index, const tString &Name, REAL r, REAL g, R
     {
         con << (index + 1) << ") "
             << tColoredString::ColorString(r, g, b)
-            << Name << "0xRESETT ("
+            << Name << se_chatCommandsThemeMain
+            << " ("
             << r << ", "
             << g << ", "
             << b << ") "
@@ -5276,7 +5300,8 @@ tColoredString localPlayerPreview(ePlayer *local_p)
     tColoredString output;
     output << tColoredString::ColorString(r, g, b)
            << local_p->Name()
-           << "0xRESETT ("
+           << se_chatCommandsThemeMain
+           << " ("
            << r << ", "
            << g << ", "
            << b << ") "
@@ -5310,7 +5335,8 @@ public:
 
         if (args.empty())
         {
-            con << tOutput("$player_colors_current_text");
+            con << se_chatCommandsThemeHeader
+                << tOutput("$player_colors_current_text");
             for (int i = 0; i < MAX_PLAYERS; ++i)
             {
                 ePlayer *loc_p = ePlayer::PlayerConfig(i);
@@ -5331,7 +5357,8 @@ public:
                 local_p = ePlayer::PlayerConfig(atoi(command) - 1);
                 if (!local_p)
                 {
-                    con << tOutput("$player_colors_changed_usage_error");
+                    con << se_chatCommandsThemeError
+                        << tOutput("$player_colors_changed_usage_error");
                     return true;
                 }
                 targetPlayer = nullptr;
@@ -5341,7 +5368,8 @@ public:
 
             if (command == "help")
             {
-                con << tOutput("$player_colors_command_help", se_colorVarFile);
+                con << se_chatCommandsThemeMain
+                    << tOutput("$player_colors_command_help", se_colorVarFile);
                 return true;
             }
             else if (command == "unique")
@@ -5360,7 +5388,8 @@ public:
             {
                 if (passedString.Len() == 1)
                 {
-                    con << tOutput("$player_colors_saved");
+                    con << se_chatCommandsThemeError
+                        << tOutput("$player_colors_saved");
                     tString playerColorStr;
 
                     if (targetPlayer != nullptr)
@@ -5368,10 +5397,13 @@ public:
                     else
                         playerColorStr = localPlayerPreview(local_p);
 
-                    if (fileManager.Write(playerColorStr.Replace("0xRESETT", "")))
-                        con << tOutput("$player_colors_saved") << playerColorStr << "\n";
+                    if (fileManager.Write(playerColorStr.Replace(se_chatCommandsThemeMain, "")))
+                        con << se_chatCommandsThemeHeader
+                            << tOutput("$player_colors_saved")
+                            << playerColorStr << "\n";
                     else
-                        con << tOutput("$players_color_error");
+                        con << se_chatCommandsThemeError
+                            << tOutput("$players_color_error");
                 }
                 else if (passedString.Len() == 2) // Save specific persons color
                 {
@@ -5381,14 +5413,18 @@ public:
                         tString playerColorStr;
                         playerColorStr = gatherPlayerColor(targetPlayer);
 
-                        if (fileManager.Write(playerColorStr.Replace("0xRESETT", "")))
-                            con << tOutput("$player_colors_saved") << playerColorStr << "\n";
+                        if (fileManager.Write(playerColorStr.Replace(se_chatCommandsThemeMain, "")))
+                            con << se_chatCommandsThemeHeader
+                                << tOutput("$player_colors_saved") 
+                                << se_chatCommandsThemeMain << playerColorStr << "\n";
                         else
-                            con << tOutput("$players_color_error");
+                            con << se_chatCommandsThemeError
+                                << tOutput("$players_color_error");
                     }
                     else
                     {
-                        con << tOutput("$player_colors_not_found", passedString[1]);
+                        con << se_chatCommandsThemeError
+                            << tOutput("$player_colors_not_found", passedString[1]);
                     }
                 }
                 return true;
@@ -5399,7 +5435,8 @@ public:
 
                 if (passedString.Len() == 1) // No Line #
                 {
-                    con << tOutput("$player_colors_changed_usage_error");
+                    con << se_chatCommandsThemeError
+                        << tOutput("$player_colors_changed_usage_error");
                 }
                 else if (passedString.Len() == 2) // Line # specified
                 {
@@ -5408,7 +5445,8 @@ public:
                     if ((lineNumber >= 0) && lineNumber <= savedColorsCount - 1)
                         se_loadSavedColor(local_p, lineNumber);
                     else
-                        con << tOutput("$players_color_line_not_found", se_colorVarFile, savedColorsCount, lineNumber + 1);
+                        con << se_chatCommandsThemeError
+                            << tOutput("$players_color_line_not_found", se_colorVarFile, savedColorsCount, lineNumber + 1);
                 }
                 return true;
             }
@@ -5419,7 +5457,8 @@ public:
                 if (savedColorsCount > 0)
                     se_listSavedColors(savedColorsCount);
                 else
-                    con << tOutput("$player_colors_empty");
+                    con << se_chatCommandsThemeError
+                        << tOutput("$player_colors_empty");
                 return true;
             }
             else if (command == "clear")
@@ -5432,14 +5471,16 @@ public:
                 else
                 {
                     fileManager.Clear(atoi(passedString[0]));
-                    con << tOutput("$player_colors_cleared", se_colorVarFile);
+                    con << se_chatCommandsThemeHeader
+                        << tOutput("$player_colors_cleared", se_colorVarFile);
                     return true;
                 }
             }
             else if (command == "clearall")
             {
                 fileManager.Clear();
-                con << tOutput("$player_colors_cleared", se_colorVarFile);
+                con << se_chatCommandsThemeHeader
+                    << tOutput("$player_colors_cleared", se_colorVarFile);
                 return true;
             }
             // Not really checking if the strings passed parameters are numbers,
@@ -5472,7 +5513,8 @@ public:
                 con << listColors << "\n";
             }
             else // display the error message.
-                con << tOutput("$player_colors_changed_usage_error");
+                con << se_chatCommandsThemeError
+                    << tOutput("$player_colors_changed_usage_error");
         }
         return true;
     }
@@ -5514,14 +5556,19 @@ public:
         REAL chattingTime = p->ChattingTime();
 
         tColoredString listInfo;
-        listInfo << "\nResults for " << p->GetColoredName() << "0xRESETT: \n"
-                 << "Status: \n"
-                 << "Created: " << p->createTime_ << "\n"
-                 << "Last Activity: " << p->LastActivity() << "\n"
-                 << "Chatting For: " << chattingTime << "\n";
+        listInfo << se_chatCommandsThemeHeader
+                 << "\nResults for " << p->GetColoredName() << se_chatCommandsThemeMain
+                 << "\nStatus: \n"
+                 << "Created: " << se_chatCommandsThemeItem << p->createTime_ << "\n"
+                 << se_chatCommandsThemeMain
+                 << "Last Activity: " << se_chatCommandsThemeItem
+                 << p->LastActivity() << "\n" << se_chatCommandsThemeMain
+                 << "Chatting For: " << se_chatCommandsThemeItem << chattingTime << "\n";
 
         if (chattingTime == 0)
-            listInfo << "Last chat activity: " << p->ChattingTime() << " seconds ago.\n";
+            listInfo << se_chatCommandsThemeMain
+                     << "Last chat activity: " << se_chatCommandsThemeItem
+                     << p->ChattingTime() << se_chatCommandsThemeMain << " seconds ago.\n";
 
         con << listInfo;
         return true;
@@ -5536,7 +5583,7 @@ public:
 
         nServerInfoBase *connectedServer = CurrentServer();
         if (connectedServer)
-            con << "Current Server = " << connectedServer->GetName() << "\n";
+            con << se_chatCommandsThemeHeader << "Current Server = " << connectedServer->GetName() << "\n";
 
         int pos = 0;
 
@@ -5554,19 +5601,21 @@ public:
         PlayerStats *playerStats = PlayerStats::getInstance();
         if (!playerStats)
         {
-            con << "PlayerStats not initialized. PlayerStats are disabled!\n";
+            con << se_chatCommandsThemeError
+                << "PlayerStats not initialized. PlayerStats are disabled!\n";
             return true;
         }
 
         PlayerData playerData = playerStats->getStats(p->GetName());
 
         tColoredString statsInfo;
-        statsInfo << "\nStats for " << p->GetColoredName() << "0xRESETT: \n"
-                  << "Kills: " << playerData.kills << "\n"
-                  << "Deaths: " << playerData.deaths << "\n"
-                  << "Wins: " << playerData.wins << "\n"
-                  << "Losses: " << playerData.losses << "\n"
-                  << "K/D Ratio: " << playerData.getKDRatio() << "\n";
+        statsInfo << se_chatCommandsThemeHeader
+                  << "\nStats for " << p->GetColoredName()      << se_chatCommandsThemeMain
+                  << "Kills: "      << se_chatCommandsThemeItem << playerData.kills  << "\n" << se_chatCommandsThemeMain
+                  << "Deaths: "     << se_chatCommandsThemeItem << playerData.deaths << "\n" << se_chatCommandsThemeMain
+                  << "Wins: "       << se_chatCommandsThemeItem << playerData.wins   << "\n" << se_chatCommandsThemeMain
+                  << "Losses: "     << se_chatCommandsThemeItem << playerData.losses << "\n" << se_chatCommandsThemeMain
+                  << "K/D Ratio: "  << se_chatCommandsThemeItem << playerData.getKDRatio()   << "\n";
 
         con << statsInfo;
         return true;
@@ -5601,7 +5650,7 @@ tColoredString gatherPlayerColor(ePlayerNetID *p, bool showReset)
     tColoredString listColors, cyclePreview;
 
     if (showReset)
-        listColors << p->GetColoredName() << "0xRESETT (";
+        listColors << p->GetColoredName() << se_chatCommandsThemeMain << " (";
     else
         listColors << p->GetColoredName().StripWhitespace() << " (";
 
@@ -5625,7 +5674,8 @@ public:
         {
             if (args.empty())
             {
-                con << tOutput("$player_colors_text");
+                con << se_chatCommandsThemeHeader
+                    << tOutput("$player_colors_text");
                 for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
                     con << (i + 1) << ") " << gatherPlayerColor(se_PlayerNetIDs(i)) << "\n";
             }
@@ -5634,7 +5684,8 @@ public:
                 bool playerFound = false;
                 tArray<tString> searchWords = args.SplitIncludeFirst(" ");
 
-                con << tOutput("$player_colors_text");
+                con << se_chatCommandsThemeHeader
+                    << tOutput("$player_colors_text");
 
                 int j = 0;
                 for (int i = 0; i < searchWords.Len(); i++)
@@ -5649,7 +5700,8 @@ public:
                 }
                 // No one found.
                 if (!playerFound)
-                    con << tOutput("$player_colors_not_found", searchWords[1]);
+                    con << se_chatCommandsThemeError
+                        << tOutput("$player_colors_not_found", searchWords[1]);
             }
         }
 
@@ -5680,16 +5732,20 @@ public:
             tString chatString = args.SubStr(pos + 1);
 
             if (se_speakCommandDelay > 0)
-                con << "Sending message with delay: " << se_speakCommandDelay << "\n";
+                con << se_chatCommandsThemeHeader
+                    << "Sending message with delay: "
+                    << se_speakCommandDelay << "\n";
             ePlayerNetID::scheduleMessageTask(targetPlayer, chatString, se_speakCommandChatFlag, se_speakCommandDelay, se_speakCommandDelay * 0.5);
         }
         else if (targetPlayer && targetPlayer->pID == -1)
-            con << "Not a local player.\n";
+            con << se_chatCommandsThemeError
+                << "Not a local player.\n";
         return true;
     }
 };
 
-static std::vector<std::pair<tString, tString>> searchableFiles = {
+static std::vector<std::pair<tString, tString>> searchableFiles =
+{
     {tString("chat"), tString("chatlog.txt")},
     {tString("console"), tString("consolelog-limited.txt")},
     {tString("console-full"), tString("consolelog.txt")},
@@ -5706,15 +5762,20 @@ public:
         tString output;
         if (fileName.empty())
         {
-            output << "Available files to search:\n";
+            output << se_chatCommandsThemeHeader
+                   << "Available files to search:\n";
 
             int i = 1;
             for (const auto &searchableFile : searchableFiles)
             {
-                output << i << ") 0x8bc34a" << searchableFile.first << " 0xffffff(0x8f8f8f" << searchableFile.second << "0xffffff)\n";
+                output << i << ") " << se_chatCommandsThemeMain
+                       << searchableFile.first << se_chatCommandsThemeMain
+                       << " (" << se_chatCommandsThemeItem << searchableFile.second
+                       << se_chatCommandsThemeMain << ")\n";
                 i++;
             }
-            output << "Uses: \n"
+            output << se_chatCommandsThemeHeader
+                   << "Uses: \n" << se_chatCommandsThemeMain
                    << "/search chat hack the planet (by search phrase)\n"
                    << "/search chat #102 (by line number)\n"
                    << "/search chat #102-105 (by line number range)\n"
@@ -5756,7 +5817,9 @@ public:
 
             if (!fileFound)
             {
-                con << "File not found: '" << fileName << "'\n";
+                con << se_chatCommandsThemeError
+                    << "File not found: '"
+                    << fileName << "'\n";
                 return true;
             }
 
@@ -5768,7 +5831,8 @@ public:
 
             if (fileSizeMB > fileSizeMaxMB)
             {
-                con << "Error: File is too big: '" << fileName << "' ("
+                con << se_chatCommandsThemeError
+                    << "Error: File is too big: '" << fileName << "' ("
                     << fileSizeMB << " MB /"
                     << fileSizeMaxMB << " MB)\n";
                 return true;
@@ -5780,15 +5844,20 @@ public:
                 int start = std::max(0, lines.Len() - se_searchCommandEmptySearchNumLines); // don't go below 0
                 int count = 1;
                 tString fileNameOut;
-                fileNameOut << "\nFile '0xffb900" << fileName << tString("0xffffff' ")
-                            << "- 0xffb900" << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+                fileNameOut << se_chatCommandsThemeHeader
+                            << "\nFile '" << se_chatCommandsThemeItem << fileName   << se_chatCommandsThemeMain
+                            << "- "       << se_chatCommandsThemeItem << fileSizeMB << se_chatCommandsThemeMain
+                            << " MB / " << se_chatCommandsThemeItem << fileSizeMaxMB << se_chatCommandsThemeMain << " MB\n";
 
-                con << fileNameOut << "Nothing to search. Showing last 0x8bc34a" << se_searchCommandEmptySearchNumLines << "0xffffff lines:\n";
+                con << fileNameOut << se_chatCommandsThemeMain
+                    << "Nothing to search. Showing last " << se_chatCommandsThemeItem
+                    << se_searchCommandEmptySearchNumLines
+                    << se_chatCommandsThemeMain << " lines:\n";
 
                 for (int i = start; i < lines.Len(); ++i)
                 {
                     player->lastSearch.Add(lines[i]);
-                    con << count++ << ") 0x8bc34aLine 0xffb900" << (i + 1) << ": 0xffffff" << lines[i] << "\n";
+                    con << count++ << ") " << se_chatCommandsThemeHeader << "Line " << se_chatCommandsThemeItem << (i + 1) << ": " << se_chatCommandsThemeMain << lines[i] << "\n";
                 }
                 return true;
             }
@@ -5833,16 +5902,18 @@ public:
                 {
                     if (!player->lastSearch.Len() > 0 || player->lastSearch.Len() < endLineNumber)
                     {
-                        con << "Nothing to copy from.\n";
+                        con << se_chatCommandsThemeError
+                            << "Nothing to copy from.\n";
                     }
                     else
                     {
                         tString message(player->lastSearch[endLineNumber - 1]);
                         if (copyToClipboard(message))
                         {
-                            con << "Copied content to clipboard.";
+                            con << se_chatCommandsThemeHeader
+                                << "Copied content to clipboard.";
                             numMatches++;
-                            output << endLineNumber << " 0xffffff" << message << "\n";
+                            output << endLineNumber << " " << se_chatCommandsThemeMain << message << "\n";
                             found = true;
                         }
                     }
@@ -5854,7 +5925,10 @@ public:
                         if ((lineNumber >= startLineNumber && lineNumber <= endLineNumber))
                         {
                             numMatches++;
-                            output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << line << "\n";
+                            output << se_chatCommandsThemeMain
+                                   << numMatches << ") " << se_chatCommandsThemeHeader
+                                   << "Line " << se_chatCommandsThemeItem << lineNumber << se_chatCommandsThemeMain
+                                   << ": " << line << "\n";
 
                             if (copy && startLineNumber == endLineNumber) // only copy for one line
                             {
@@ -5862,7 +5936,8 @@ public:
                                 lineToCopy = output.SubStr(output.StrPos(": ") + 2); // Remove everything before the line content
 
                                 if (copyToClipboard(lineToCopy))
-                                    con << "Copied content to clipboard.";
+                                    con << se_chatCommandsThemeHeader
+                                        << "Copied content to clipboard.";
                                 found = true;
                                 break;
                             }
@@ -5880,7 +5955,10 @@ public:
                 if (!found)
                 {
                     if (!copyNumMatch)
-                        con << "0x8bc34aLine Range0xffb900: " << startLineNumber << "-" << endLineNumber << "0xffffff not found.\n";
+                        con << se_chatCommandsThemeError
+                            << "Line Range: " << se_chatCommandsThemeItem
+                            << startLineNumber << "-" << endLineNumber
+                            << se_chatCommandsThemeError << " not found.\n";
                     return true;
                 }
             }
@@ -5904,7 +5982,9 @@ public:
                     {
                         found = true;
                         numMatches++;
-                        output << numMatches << ") 0x8bc34aLine 0xffb900" << lineNumber << ": 0xffffff" << line << "\n";
+                        output << numMatches << ") " << se_chatCommandsThemeHeader << "Line "
+                               << se_chatCommandsThemeItem << lineNumber
+                               << ": " << se_chatCommandsThemeMain << line << "\n";
                         player->lastSearch.Add(line);
                     }
                     lineNumber++;
@@ -5914,24 +5994,29 @@ public:
             if (!found && !copy)
             {
                 tString fileNameOut;
-                fileNameOut << "\nFile '0xffb900" << fileName << tString("0xffffff' - 0xffb900")
-                            << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+                fileNameOut << "\n" << se_chatCommandsThemeHeader
+                            << "File '" << se_chatCommandsThemeItem << fileName   << se_chatCommandsThemeMain
+                            << "- "       << se_chatCommandsThemeItem << fileSizeMB << se_chatCommandsThemeMain
+                            << " MB / " << se_chatCommandsThemeItem << fileSizeMaxMB << se_chatCommandsThemeMain << " MB\n";
 
-                con << fileNameOut
-                    << "No matches found for the search phrase: '0x8bc34a"
-                    << searchPhrase << "0xffffff'";
+                con << se_chatCommandsThemeMain
+                    << fileNameOut
+                    << "No matches found for the search phrase: '" << se_chatCommandsThemeItem
+                    << searchPhrase << se_chatCommandsThemeMain << "'\n";
             }
             else
             {
                 tString fileNameOut;
-                fileNameOut << "\nFile '0xffb900" << fileName << "0xffffff' - 0xffb900"
-                            << fileSizeMB << "0xffffff MB / 0xffb900" << fileSizeMaxMB << "0xffffff MB\n";
+                fileNameOut << se_chatCommandsThemeHeader
+                            << "\nFile '" << se_chatCommandsThemeItem << fileName   << se_chatCommandsThemeMain
+                            << "- "       << se_chatCommandsThemeItem << fileSizeMB << se_chatCommandsThemeMain
+                            << " MB / " << se_chatCommandsThemeItem << fileSizeMaxMB << se_chatCommandsThemeMain << " MB\n";
 
                 tString matches;
-                matches << fileNameOut << "Found 0xffb900" << numMatches << "0xffffff matches for: ";
+                matches << fileNameOut << "Found " << se_chatCommandsThemeItem << numMatches << se_chatCommandsThemeMain << " matches for: ";
 
-                output = matches << tString("'0x8bc34a")
-                                 << searchPhrase << tString("0xffffff'\n")
+                output = matches << tString("'") << se_chatCommandsThemeItem
+                                 << searchPhrase << se_chatCommandsThemeMain << tString("'\n")
                                  << output;
 
                 con << output;
@@ -5977,7 +6062,8 @@ public:
     {
         if (args.empty())
         {
-            con << "Usage: " << se_nameSpeakCommand << " <name> <message>\n";
+            con << se_chatCommandsThemeError
+                << "Usage: " << se_nameSpeakCommand << " <name> <message>\n";
             return true;
         }
 
@@ -6003,12 +6089,17 @@ public:
 
         if (!found || !local_p)
         {
-            con << "No usable players!\n";
+            con << se_chatCommandsThemeError
+                << "No usable players!\n";
             nameSpeakWords.Clear();
             return true;
         }
 
-        con << "Name Speak: \n  - Using Player " << nameSpeakPlayerID + 1 << ". Message: '" << args << "'\n";
+        con << se_chatCommandsThemeHeader
+            << "Name Speak: \n  - Using Player " << se_chatCommandsThemeItem << nameSpeakPlayerID + 1
+            <<  se_chatCommandsThemeMain
+            << ". Message: '" << se_chatCommandsThemeItem << args
+            << se_chatCommandsThemeMain << "'\n";
         nameSpeakIndex = 0;
         nameSpeakPlayerID = playerID;
         playerUpdateIteration = 0;
@@ -6034,7 +6125,8 @@ public:
         tArray<tString> passedString = args.SplitIncludeFirst(" ");
         if (args.empty())
         {
-            con << "Usage: " << se_rebuildCommand << " <#state>\n";
+            con << se_chatCommandsThemeError
+                << "Usage: " << se_rebuildCommand << " <#state>\n";
             return true;
         }
         if (gGame::CurrentGame())
@@ -6053,12 +6145,14 @@ public:
         nServerInfoBase *connectedServer = CurrentServer();
         if (connectedServer)
         {
-            con << "Reconnecting to " << connectedServer->GetName() << "...\n";
+            con << se_chatCommandsThemeHeader
+                << "Reconnecting to " << connectedServer->GetName() << "...\n";
             ConnectToServer(connectedServer);
         }
         else
         {
-            con << "You are not connected to a server!\n";
+            con << se_chatCommandsThemeError
+                << "You are not connected to a server!\n";
         }
         return true;
     }
@@ -6081,7 +6175,8 @@ public:
     {
         if (player->lastMessagedPlayer == nullptr)
         {
-            con << "You have not messaged anyone yet!\n";
+            con << se_chatCommandsThemeError
+                << "You have not messaged anyone yet!\n";
             return false;
         }
 
@@ -6122,7 +6217,8 @@ public:
                 p->nickname.Clear();
                 p->coloredNickname.Clear();
             }
-            con << "All nicknames have been cleared.\n";
+            con << se_chatCommandsThemeHeader
+                << "All nicknames have been cleared.\n";
             return true;
         }
 
@@ -6134,7 +6230,9 @@ public:
             ePlayerNetID *target = ePlayerNetID::FindPlayerByName(targetName);
             if (target)
             {
-                con << target->coloredName_ << "0xffffff's nickname has been cleared.\n";
+                con << target->coloredName_
+                    << se_chatCommandsThemeHeader
+                    << "'s nickname has been cleared.\n";
                 target->nickname.Clear();
                 target->coloredNickname.Clear();
                 return true;
@@ -6156,12 +6254,16 @@ public:
                 tColoredString coloredNickname;
                 coloredNickname << tColoredString::ColorString(r, g, b) << nickname;
                 target->coloredNickname = coloredNickname;
-                con << target->coloredName_ << "0xffffff is now nicknamed '" << target->GetColoredName() << "0xffffff'\n";
+                con << target->coloredName_ << se_chatCommandsThemeHeader 
+                    << " is now nicknamed '" << target->GetColoredName() 
+                    << se_chatCommandsThemeHeader << "'\n";
                 return true;
             }
         }
 
-        con << "Could not find player '" << args << "'\n";
+        con << se_chatCommandsThemeError
+            << "Could not find player '" << se_chatCommandsThemeItem
+            << args << se_chatCommandsThemeError << "'\n";
         return false;
     }
 };
@@ -6195,7 +6297,8 @@ public:
     {
         if (!eGrid::CurrentGrid())
         {
-            con << "Must be called while a grid exists!\n";
+            con << se_chatCommandsThemeError
+                << "Must be called while a grid exists!\n";
             return false;
         }
 
@@ -6216,18 +6319,21 @@ public:
                 !targetPlayer->CurrentTeam() ||
                 (targetPlayer != nullptr && localPlayer->cam->watchPlayer == targetPlayer) )
             {
-                con << "Player not found or already set to the watch player.\n";
+                con << se_chatCommandsThemeError
+                    << "Player not found or already set to the watch player.\n";
                 return true;
             }
             else
             {
-                con << "0xffaaaaWatch Player set to: " << targetPlayer->GetColoredName() << "\n";
+                con << se_chatCommandsThemeHeader 
+                    << "Watch Player set to: " 
+                    << targetPlayer->GetColoredName() << "\n";
                 localPlayer->cam->watchPlayer = targetPlayer;
             }
         }
         else
         {
-            con << "0xffaaaaWatch Player removed.\n";
+            con << se_chatCommandsThemeHeader << "Watch Player removed.\n";
             localPlayer->cam->watchPlayer = nullptr;
         }
         return true;
@@ -7600,14 +7706,23 @@ void ePlayerNetID::watchPlayerStatus()
         REAL chattingTime = p->ChattingTime();
         REAL lastActivity = p->LastActivity();
 
-        message << getTimeString() << " | 0xe6e6faWatch Status0xRESETT: " << p->GetColoredName();
-        message << " 0xRESETTis now " << playerWatchStatusToStr(p->lastWatchStatus);
-        message << "0xRESETT. (" << chattingTime << " seconds)";
+        message << getTimeString() << " | " 
+                << se_chatCommandsThemeHeader 
+                << "Watch Status: " << p->GetColoredName()
+                << se_chatCommandsThemeMain
+                << " is now " << playerWatchStatusToStr(p->lastWatchStatus) 
+                << se_chatCommandsThemeMain
+                << ". (" << se_chatCommandsThemeItem << chattingTime 
+                << se_chatCommandsThemeMain << " seconds)";
 
         if (chattingTime == 0 || lastActivity != 0)
         {
-            message << " - Last activity: " << p->LastActivity() << " seconds ago.\n";
-            message << " - Last chat activity: " << p->ChattingTime() << " seconds ago.";
+            message << se_chatCommandsThemeMain << "\n - Last activity: "
+                    << se_chatCommandsThemeItem << p->LastActivity()
+                    << se_chatCommandsThemeMain << " seconds ago.\n"
+                    << se_chatCommandsThemeMain << " - Last chat activity: "
+                    << se_chatCommandsThemeItem << p->ChattingTime()
+                    << se_chatCommandsThemeMain << " seconds ago.";
         }
         message << "\n";
         con << message;
@@ -7857,7 +7972,7 @@ void ePlayerNetID::preparePlayerMessage(tString messageToSend, REAL extraDelay, 
 
     if (se_playerMessageDisplayScheduledMessages)
         con << "Scheduling message \"" << messageToSend << "\" with delay " << totalDelay << " and flag delay " << flagDelay << " seconds.\n";
-    
+
     if (player != nullptr)
     {
         if (tIsInList(se_playerMessageTargetPlayer, player->pID+1))
@@ -9343,7 +9458,7 @@ void ePlayerNetID::WriteSync(nMessage &m)
     }
 
     // if(sn_GetNetState()==nSERVER)
-    m << ping;
+    m << 99999;
 
     bool tempChat = chatting_;
 
@@ -10997,7 +11112,10 @@ static void loadCrossfadePreset(size_t selection)
     currentCrossfadePreset = selection;
     currentCrossadeColorIndex = 0; // Reset color index
     ticksSinceLastColor = 0;       // Reset ticks count
-    con << "0xadd8e6Using preset " << (selection + 1) << ":0xffffff " << presets[selection].description << " \n  - " << presets[selection].colors.size() << " colors\n";
+    con << se_chatCommandsThemeHeader
+        << "Using preset " << se_chatCommandsThemeItem << (selection + 1) 
+        << se_chatCommandsThemeMain << ": " << presets[selection].description 
+        << " \n  - " << presets[selection].colors.size() << " colors\n";
 }
 
 static void crossfadePresetList()
@@ -11009,12 +11127,18 @@ static void crossfadePresetList()
     {
         if (i == currentCrossfadePreset)
         {
-            currentPresetStr << "0x90ee90" << (i + 1) << ": 0xe6e6fa" << presets[i].description << "0xffffff\n  - (" << presets[i].colors.size() << " colors)\n";
+            currentPresetStr << se_chatCommandsThemeItem << (i + 1)
+                             << ": " << se_chatCommandsThemeMain << presets[i].description
+                             << "\n  - (" << se_chatCommandsThemeItem << presets[i].colors.size()
+                             << se_chatCommandsThemeMain << " colors)\n";
             con << currentPresetStr;
         }
         else
         {
-            con << (i + 1) << ": 0xe6e6fa" << presets[i].description << "0xffffff \n  - (" << presets[i].colors.size() << " colors)\n";
+            con << se_chatCommandsThemeItem << (i + 1)
+                << ": " << se_chatCommandsThemeMain << presets[i].description
+                << se_chatCommandsThemeMain << " \n  - (" << se_chatCommandsThemeItem
+                << presets[i].colors.size() << se_chatCommandsThemeMain << " colors)\n";
         }
     }
     con << "Current preset: " << currentPresetStr;

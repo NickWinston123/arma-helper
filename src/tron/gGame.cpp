@@ -5713,13 +5713,15 @@ bool gGame::GameLoop(bool input)
     if (se_watchActiveStatus)
     {
         gTaskScheduler.schedule("watchPlayerStatus", se_watchActiveStatusTime, []
-                                { ePlayerNetID::watchPlayerStatus(); });
+        {
+             ePlayerNetID::watchPlayerStatus(); 
+        });
     }
 
     if (sg_forcePlayerUpdate || sg_forceSyncAll || sg_forcePlayerRebuild)
     {
         gTaskScheduler.schedule("forcedUpdate", sg_forceClockDelay, []
-                                {
+        {
             if (sg_forcePlayerUpdate)
                 ePlayerNetID::Update();
 
@@ -5727,7 +5729,8 @@ bool gGame::GameLoop(bool input)
                 ePlayerNetID::CompleteRebuild();
 
             if (sg_forceSyncAll)
-                nNetObject::SyncAll(); });
+                nNetObject::SyncAll(); 
+        });
     }
 
     gTaskScheduler.update();

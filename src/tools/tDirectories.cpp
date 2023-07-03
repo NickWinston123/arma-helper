@@ -1632,13 +1632,14 @@ tArray<tString> FileManager::Load()
 {
     tArray<tString> lines;
     std::string sayLine;
-    while (std::getline(i, sayLine)) {
+    while (std::getline(i, sayLine)) 
+    {
 
         tString params(sayLine);
 
-        if (!params.Filter().empty()) 
+        if (!params.Filter().empty())
             lines.Insert(params);
-        
+
     }
     // reset file pointer
     i.clear();
@@ -1691,7 +1692,7 @@ bool FileManager::Clear(int lineNumber)
     return cleared;
 }
 
-bool FileManager::BackUp()
+bool FileManager::Backup()
 {
     bool backedup = false;
     // Get the current date and time
@@ -1712,10 +1713,11 @@ bool FileManager::BackUp()
 
     // Open the backup file
     std::ofstream backupFile;
-    if (tDirectories::Var().Open(backupFile, backupFileName, std::ios::trunc)) {
+    if (tDirectories::Var().Open(backupFile, backupFileName, std::ios::trunc)) 
+    {
         // Backup the file
         for (int i = 0; i < lines.Len(); i++) {
-            if (!(backupFile << lines[i])) {
+            if (!(backupFile << lines[i] << "\n")) {
                 backedup = false;
                 break;
             }
@@ -1726,7 +1728,7 @@ bool FileManager::BackUp()
     backupFile.close();
 
     if (backedup)
-        con << tOutput("$file_manager_created_backup",  fileName);
+        con << tOutput("$file_manager_created_backup",  backupFileName);
     else
         con << tOutput("$file_manager_error_creating_backup",  fileName);
     return backedup;
@@ -1747,14 +1749,15 @@ bool FileManager::Clear()
     return cleared;
 }
 
-void FileManager::CheckAndClearFileBySize(REAL maxFileSizeMB) {
+void FileManager::CheckAndClearFileBySize(REAL maxFileSizeMB) 
+{
     REAL fileSizeMB = gHelperUtility::BytesToMB(FileSize());
 
     if (fileSizeMB <= maxFileSizeMB)
         return;
 
     // Back up and Clear the original file
-    BackUp();
+    Backup();
     Clear();
     tOutput msg;
     msg.SetTemplateParameter(1,fileName);
@@ -1762,3 +1765,44 @@ void FileManager::CheckAndClearFileBySize(REAL maxFileSizeMB) {
     msg.SetTemplateParameter(3,maxFileSizeMB);
     con << msg;
 }
+
+
+static void fileClear(std::istream& s) 
+{
+    tString fileName;
+    fileName.ReadLine(s);
+
+    if (fileName.empty())
+    {
+        con << "Usage: FILE_CLEAR <filename>\n";
+        return;
+    }
+
+    con << "Clearing '" << fileName << "'\n";
+
+    FileManager fileManager(fileName);
+    fileManager.Clear();
+}
+
+static tConfItemFunc fileClearConf("FILE_CLEAR", &fileClear);
+
+static void fileClearAndBackUp(std::istream& s) 
+{
+    tString fileName;
+    fileName.ReadLine(s);
+
+    if (fileName.empty())
+    {
+        con << "Usage: FILE_CLEAR_AND_BACK_UP <filename>\n";
+        return;
+    }
+
+    con << "Clearing and backing up '" << fileName << "'\n";
+
+    FileManager fileManager(fileName);
+    fileManager.Backup();
+    fileManager.Clear();
+}
+
+static tConfItemFunc fileClearAndBackUpConf("FILE_CLEAR_AND_BACK_UP", &fileClearAndBackUp);
+

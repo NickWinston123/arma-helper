@@ -18,6 +18,7 @@ static std::string lastHelperDebugMessage = "", lastHelperDebugSender = "";
 namespace helperConfig
 {
     extern bool sg_helper;
+    extern int  sg_helperEnabledPlayer;
     extern REAL sg_helperBrightness;
     extern REAL sg_helperSensorRange;
     extern bool sg_helperSensorsZoneDetection;
@@ -66,6 +67,10 @@ namespace helperConfig
     extern REAL sg_helperAutoBrakeMin;
     extern REAL sg_helperAutoBrakeMax;
     extern REAL sg_helperAutoBrakeRandomness;
+
+    extern bool sg_helperRubberRatioBrake;
+    extern REAL sg_helperRubberRatioBrakeDifference;
+    extern REAL sg_helperRubberRatioBrakeRubberToBrakeRatio;
 
     extern bool sg_helperSmartTurningFollowTail;
     extern REAL sg_helperSmartTurningFollowTailDelayMult;

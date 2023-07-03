@@ -499,6 +499,14 @@ REAL gSmarterBot::Think(REAL minStep)
         manager.Reset();
         break;
     }
+    case 8:
+    {
+        manager.Evaluate(SuicideEvaluator(*Owner()), 1);
+        manager.Evaluate(SuicideEvaluator(*Owner(), 0), 1);
+        manager.Evaluate(TrapEvaluator(*Owner()), 5);
+        manager.Reset();
+        manager.Evaluate(SpaceEvaluator(*Owner()), 1);
+    }
     default:
     {
         local_player->sg_smarterBotState = 1;
@@ -2781,12 +2789,22 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos, const eCoord &d, ePlayerNetID *p)
     startPos_ = this->pos;
     startDir_ = this->dir;
 
-    tString logTurnsMsg;
-    logTurnsMsg << "spawned " << this->MapPosition().x << " " << this->MapPosition().y << " " << this->Direction().x << " " << this->Direction().y;
-    LogPlayersCycleTurns(this, logTurnsMsg);
-
+    if (sg_LogTurns) 
+    {
+        tString logTurnsMsg;
+        logTurnsMsg << "spawned " << this->MapPosition().x << " " << this->MapPosition().y << " " << this->Direction().x << " " << this->Direction().y;
+        LogPlayersCycleTurns(this, logTurnsMsg);
+    }
+    
     turnedPositions.push_back(startPos_);
     turnedDirections.push_back(startDir_);
+
+    if (Player()) 
+    {
+        Player()->lastKilledPlayer = nullptr;
+        Player()->lastDiedByPlayer = nullptr;
+
+    }
 }
 
 gCycle::~gCycle()
@@ -2796,18 +2814,21 @@ gCycle::~gCycle()
 #endif
     // clear the destination list
 
-    // Search the list for zones that could be referencing us
-    const tList<eGameObject> &gameObjects = Grid()->GameObjects();
-    gZone *zone = NULL;
-    for (int i = gameObjects.Len() - 1; i >= 0; i--)
+    if (sn_GetNetState() == nSERVER)
     {
-        zone = dynamic_cast<gZone *>(gameObjects(i));
-
-        if (zone)
+        // Search the list for zones that could be referencing us
+        const tList<eGameObject> &gameObjects = Grid()->GameObjects();
+        gZone *zone = NULL;
+        for (int i = gameObjects.Len() - 1; i >= 0; i--)
         {
-            if (zone->GetSeekingCycle() == this)
+            zone = dynamic_cast<gZone *>(gameObjects(i));
+
+            if (zone)
             {
-                zone->SetSeekingCycle(NULL);
+                if (zone->GetSeekingCycle() == this)
+                {
+                    zone->SetSeekingCycle(NULL);
+                }
             }
         }
     }
@@ -3090,7 +3111,7 @@ bool gCycle::Timestep(REAL currentTime)
 
     bool playerExist = bool(player);
     bool playerIsMe = playerExist && player->IsHuman() && player->Owner() == sn_myNetID;
-    if (helperConfig::sg_helper && playerIsMe && player->pID == 0)
+    if (helperConfig::sg_helper && playerIsMe && player->pID == helperConfig::sg_helperEnabledPlayer)
     {
         gHelper &helper = gHelper::Get(*this);
         helper.Activate();
@@ -3112,28 +3133,42 @@ bool gCycle::Timestep(REAL currentTime)
     // no targets are given
     else if (!currentDestination && pendingTurns.empty())
     {
+        // These three booleans represent whether a player has certain types of bots activated.
         bool chatFlagHackEnabled = se_toggleChatFlagAlways || se_toggleChatFlag;
+
+        // A "smarter" bot is activated for the player under these conditions:
+        // 1. The player exists.
+        // 2. The 'smarter bot' is enabled globally.
+        // 3. The 'smarter bot' is always active OR the player is currently chatting and the 'smarter bot' is enabled during chatting.
+        // 4. The player's ID is in the list of players for whom the 'smarter bot' is enabled.
         bool activateSmarterBotForThisPlayer = playerExist && sg_smarterBot &&
-                                               ((sg_smarterBotAlwaysActive && (!player->IsChatting() || sg_smarterBotEnabledWhileChatting)) ||
-                                                (!sg_smarterBotAlwaysActive && player->IsChatting() && sg_smarterBotEnabledWhileChatting)) &&
-                                               tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
+            ((sg_smarterBotAlwaysActive && (!player->IsChatting() || sg_smarterBotEnabledWhileChatting)) ||
+            (!sg_smarterBotAlwaysActive && player->IsChatting() && sg_smarterBotEnabledWhileChatting)) &&
+            tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
 
+        // A local bot is activated for the player under these conditions:
+        // 1. Either the 'smarter bot' is not activated for this player OR both types of bots can be activated simultaneously.
+        // 2. The player exists.
+        // 3. The 'local bot' is enabled globally.
+        // 4. The 'local bot' is always active OR the player is currently chatting and the 'local bot' is enabled during chatting.
+        // 5. The player's ID is in the list of players for whom the 'local bot' is enabled.
         bool activateLocalBotForThisPlayer = (!activateSmarterBotForThisPlayer || sg_botActivationDualMode) && playerExist && sg_localBot &&
-                                             ((sg_localBotAlwaysActive && (!player->IsChatting() || sg_localBotEnabledWhileChatting)) ||
-                                              (!sg_localBotAlwaysActive && player->IsChatting() && sg_localBotEnabledWhileChatting)) &&
-                                             tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
+            ((sg_localBotAlwaysActive && (!player->IsChatting() || sg_localBotEnabledWhileChatting)) ||
+            (!sg_localBotAlwaysActive && player->IsChatting() && sg_localBotEnabledWhileChatting)) &&
+            tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
 
+        // A chat bot is activated for the player under these conditions:
+        // 1. The local bot is not activated for this player.
+        // 2. The player's ID is in the list of players for whom the 'chat bot' is enabled AND the 'chat flag hack' is not enabled.
+        // 3. The 'chat bot' is always active OR the player is currently chatting.
         bool activateChatbotForThisPlayer = !activateLocalBotForThisPlayer &&
-                                            (playerExist ? tIsInList(sg_chatBotEnabledForPlayers, player->pID + 1) && !chatFlagHackEnabled : false) &&
-                                            (sg_chatBotAlwaysActive || player->IsChatting());
+            (playerExist ? tIsInList(sg_chatBotEnabledForPlayers, player->pID + 1) && !chatFlagHackEnabled : false) &&
+            (sg_chatBotAlwaysActive || player->IsChatting());
 
-        bool activateChatbotControlByServer = !activateChatbotForThisPlayer && sg_chatBotControlByServer && sn_GetNetState() == nSERVER;
-
-        // chatting? activate chatbot
+        // If the conditions for activating a chat bot or local bot are met, the relevant bot is activated.
         if (playerIsMe &&
-                activateChatbotForThisPlayer ||
+            activateChatbotForThisPlayer ||
             activateLocalBotForThisPlayer)
-        //(activateChatbotControlByServer)))
         {
             gCycleChatBot &bot = gCycleChatBot::Get(this);
             bot.Activate(currentTime, activateLocalBotForThisPlayer);
@@ -3143,6 +3178,7 @@ bool gCycle::Timestep(REAL currentTime)
             chatBot_->nextChatAI_ = 0;
         }
 
+        // If the conditions for activating a 'smarter' bot are met, the 'smarter' bot is activated.
         if (playerIsMe && activateSmarterBotForThisPlayer)
         {
             gSmarterBot &smarterBot = gSmarterBot::Get(this);
@@ -6198,14 +6234,24 @@ gCycle::gCycle(nMessage &m)
     startPos_ = this->pos;
     startDir_ = this->dir;
 
-    tString logTurnsMsg;
-    logTurnsMsg << "spawned " << this->MapPosition().x << " " << this->MapPosition().y << " " << this->Direction().x << " " << this->Direction().y;
-    LogPlayersCycleTurns(this, logTurnsMsg);
+
+    if (sg_LogTurns) 
+    {
+        tString logTurnsMsg;
+        logTurnsMsg << "spawned " << this->MapPosition().x << " " << this->MapPosition().y << " " << this->Direction().x << " " << this->Direction().y;
+        LogPlayersCycleTurns(this, logTurnsMsg);
+    }
 
     turnedPositions.push_back(startPos_);
     turnedDirections.push_back(startDir_);
-}
+    
+    if (Player()) 
+    {
+        Player()->lastKilledPlayer = nullptr;
+        Player()->lastDiedByPlayer = nullptr;
 
+    }
+}
 void gCycle::WriteCreate(nMessage &m)
 {
     eNetGameObject::WriteCreate(m);
@@ -6706,9 +6752,8 @@ void gCycle::ReadSync(nMessage &m)
 
         if (killer)
         {
-
             killer->lastKilledPlayer = Player();
-            Player()->lastKilledByPlayer = killer;
+            Player()->lastDiedByPlayer = killer;
 
             if (stats)
             {
@@ -6725,12 +6770,13 @@ void gCycle::ReadSync(nMessage &m)
         {
             bool zoneSpawnedRecently = false;
 
-            if (se_playerTriggerMessagesZoneVerify) {
+            if (se_playerTriggerMessagesZoneVerify) 
+            {
                 gZone *lastCreatedZone = gZone::GetLastCreatedZone();
                 zoneSpawnedRecently = lastCreatedZone && lastCreatedZone->actualCreateTime_ >= tSysTimeFloat() - 5;
             }
 
-            if (Player()->pID != -1 && !zoneSpawnedRecently && sg_playerMessageDeathSelf)
+            if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently )
             {
                 auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(Player(), tString("$died"));
                 if (triggeredResponse.empty())

@@ -333,9 +333,7 @@ REAL gAINavigator::Path::Take(CycleController &controller, gCycle &cycle, REAL m
         //     });
         // }
         // else
-        {
-            cycle.Turn(turn);
-        }
+        controller.Turn(cycle, turn);
     }
 
     return maxStep;

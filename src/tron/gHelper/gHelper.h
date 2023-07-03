@@ -131,6 +131,9 @@ public:
     void autoBrake();
     static void autoBrake(gCycle &owner, REAL min, REAL max);
 
+
+    void rubberRatioBrake(gHelperData &data);
+    
     /**
      * showEnemyTail - Visualize the tail of the closest enemy cycle
      * @param data: structure to store the data gathered by the sensors

@@ -143,7 +143,7 @@ public:
     bool Clear();
     bool Clear(int lineNumber);
     int NumberOfLines();
-    bool BackUp();
+    bool Backup();
     void CheckAndClearFileBySize(REAL maxFileSizeMB);
 
 private:

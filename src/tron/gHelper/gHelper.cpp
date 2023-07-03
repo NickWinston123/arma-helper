@@ -18,6 +18,10 @@ namespace helperConfig
     bool sg_helper = false;
     static tConfItem<bool> sg_helperConf("HELPER", sg_helper);
 
+
+    int sg_helperEnabledPlayer = 0;
+    static tConfItem<int> sg_helperEnabledPlayerConf("HELPER_ENABLED_PLAYER", sg_helperEnabledPlayer);
+
     bool sg_helperCurrentTimeLocal = true; // Determines if the helper uses its own internal clock or the games to sync actions
     static tConfItem<bool> sg_helperCurrentTimeLocalConf("HELPER_CONF_CURRENT_TIME_LOCAL", sg_helperCurrentTimeLocal);
     REAL sg_helperBrightness = 1;
@@ -52,6 +56,14 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperAutoBrakeMaxConf("HELPER_SELF_AUTO_BRAKE_MAX", sg_helperAutoBrakeMax);
     REAL sg_helperAutoBrakeRandomness = 0;
     static tConfItem<REAL> sg_helperAutoBrakeRandomnessConf("HELPER_SELF_AUTO_BRAKE_RANDOMNESS", sg_helperAutoBrakeRandomness);
+
+    bool sg_helperRubberRatioBrake = false;
+    static tConfItem<bool> sg_helperRubberRatioBrakeConf("HELPER_SELF_RUBBER_RATIO_BRAKE", sg_helperRubberRatioBrake);
+    REAL sg_helperRubberRatioBrakeRubberToBrakeRatio = 0.5;
+    static tConfItem<REAL> sg_helperRubberRatioBrakeRubberToBrakeRatioConf("HELPER_SELF_RUBBER_RATIO_BRAKE_RATIO", sg_helperRubberRatioBrakeRubberToBrakeRatio);
+    REAL sg_helperRubberRatioBrakeDifference = 0.3;
+    static tConfItem<REAL> sg_helperRubberRatioBrakeDifferenceConf("HELPER_SELF_RUBBER_RATIO_BRAKE_DIFFERENCE", sg_helperRubberRatioBrakeDifference);
+
 
     bool sg_pathHelper = false;
     static tConfItem<bool> sg_pathHelperC("HELPER_SELF_PATH", sg_pathHelper);
@@ -257,13 +269,8 @@ void gHelper::turningBot(gHelperData &data)
         // if (direction == -999)
         int dir = left->hit > right->hit ? LEFT : RIGHT;
 
-        // else
-        //     direction = direction * -1;
-
         for (int i = 0; i < sg_helperSimpleBotTurns; i++)
-        {
             turnHelper->makeTurnIfPossible(data, dir);
-        }
     }
 }
 
@@ -383,25 +390,17 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     // If the enemy is facing opposite direction of ours, flip the relative position
     if (enemyData.oppositeDirectionofEnemy)
-    {
         relEnemyPos.y *= -1;
-    }
     // If the enemy is facing right direction of ours and on the left side, rotate the relative position
     else if (enemyData.enemyIsOnLeft && enemyData.enemyIsFacingOurRight)
-    {
         relEnemyPos = relEnemyPos.Turn(LEFT);
-    }
     // If the enemy is facing left direction of ours and on the right side, rotate the relative position
     else if (enemyData.enemyIsOnRight && enemyData.enemyIsFacingOurLeft)
-    {
         relEnemyPos = relEnemyPos.Turn(RIGHT);
-    }
 
     // If the enemy is on the left side, flip the relative position
     if (relEnemyPos.x < 0)
-    {
         relEnemyPos.x *= -1;
-    }
 
     // now we can even assume the enemy is on our right side.
     // consider his ping and our reaction time
@@ -434,17 +433,36 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     enemyData.canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed;
 
     if (enemyData.canCutUs)
-    {
         gHelperUtility::debugLine(tColor(1, 0, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
-    }
     else if (enemyData.canCutEnemy)
-    {
         gHelperUtility::debugLine(tColor(0, 1, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
-    }
     else
-    {
         gHelperUtility::debugLine(tColor(.4, .4, .4), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
-    }
+}
+
+
+void gHelper::rubberRatioBrake(gHelperData &data)
+{
+    if (!aliveCheck())
+        return;
+
+    // calculate rubber used ratio
+    REAL rubberUsedRatio = data.rubberData.rubberUsedRatioF();
+
+    // configurable rubber to brake ratio
+    REAL rubberToBrakeRatio = sg_helperRubberRatioBrakeRubberToBrakeRatio;
+
+    // Calculate the target braking based on rubber usage.
+    REAL targetBrake = rubberUsedRatio * rubberToBrakeRatio;
+
+    // Get the current used braking percentage of the cycle ( always out of 1 )
+    REAL brakeUsagePercent = 1 - owner_.GetBrakingReservoir();
+
+    // If rubber is being used, engage the brake.
+    if (targetBrake > brakeUsagePercent && !owner_.GetBraking())
+        owner_.ActBot(&gCycle::s_brake, 1); // brake
+    else if (owner_.GetBraking())
+        owner_.ActBot(&gCycle::s_brake, -1); // stop braking
 }
 
 static REAL nextUpdateTime = tSysTimeFloat();
@@ -867,7 +885,7 @@ void gHelper::trace(gHelperData &data, int dir)
         {
             this->owner_.ActTurnBot(dir);
         });
-        sensorDistance[index] = 1E+30; 
+        sensorDistance[index] = 1E+30;
     }
     else
     {
@@ -940,6 +958,9 @@ void gHelper::Activate()
 
     if (sg_helperAutoBrake)
         autoBrake();
+
+    if (sg_helperRubberRatioBrake)
+        rubberRatioBrake(data_stored);
 
     if (sg_helperSimpleBot)
         turningBot(data_stored);

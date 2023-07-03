@@ -1217,7 +1217,7 @@ static const tString &se_UserName()
     return ret;
 }
 
-ePlayer::ePlayer() : colorIteration(0), updateIteration(0)
+ePlayer::ePlayer() : updateIteration(0)
 {
     nAuthentication::SetUserPasswordCallback(&PasswordCallback);
 #ifdef KRAWALL_SERVER
@@ -1767,8 +1767,8 @@ static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf("PLAYER_MESSAGE_T
 static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("");
 static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf("PLAYER_MESSAGE_TRIGGERS_KILLED_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
 
-static tString se_playerTriggerMessagesKillByVerifiedTriggers = tString("wd");
-static tConfItem<tString> se_playerTriggerMessagesKillByVerifiedTriggersConf("PLAYER_MESSAGE_TRIGGER_KILLED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillByVerifiedTriggers);
+static tString se_playerTriggerMessagesDiedByVerifiedTriggers = tString("wd");
+static tConfItem<tString> se_playerTriggerMessagesDiedByVerifiedTriggersConf("PLAYER_MESSAGE_TRIGGER_DIED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesDiedByVerifiedTriggers);
 
 
 
@@ -5002,21 +5002,17 @@ bool se_enableChatCommands = true;
 static tConfItem<bool> se_enableChatCommandsConf("LOCAL_CHAT_COMMANDS", se_enableChatCommands);
 
 // Bright Red for headers
-static tString se_chatCommandsThemeHeader("0xff0000");
+tString se_chatCommandsThemeHeader("0xff0033");
 static tConfItem<tString> se_chatCommandsThemeHeaderConf("LOCAL_CHAT_COMMANDS_THEME_HEADER", se_chatCommandsThemeHeader);
-
 // White for main
-static tString se_chatCommandsThemeMain("0xffffff");
+tString se_chatCommandsThemeMain("0xffffff");
 static tConfItem<tString> se_chatCommandsThemeMainConf("LOCAL_CHAT_COMMANDS_THEME_MAIN", se_chatCommandsThemeMain);
-
-// Light Pink for items
-static tString se_chatCommandsThemeItem("0xffb6c1");
+// Dark Red for items
+tString se_chatCommandsThemeItem("0xee0000");
 static tConfItem<tString> se_chatCommandsThemeItemConf("LOCAL_CHAT_COMMANDS_THEME_ITEM", se_chatCommandsThemeItem);
-
-// Hot Pink for error messages as an accent color
-static tString se_chatCommandsThemeError("0xff69b4");
+// Pinkish red for error messages as an accent color
+tString se_chatCommandsThemeError("0xee5577");
 static tConfItem<tString> se_chatCommandsThemeErrorConf("LOCAL_CHAT_COMMANDS_THEME_ERROR", se_chatCommandsThemeError);
-
 
 // our local commands (should always be lowercase)
 static tString se_consoleCommand("/console");
@@ -5098,46 +5094,195 @@ static tConfItem<tString> se_statsCommandConf("LOCAL_CHAT_COMMAND_STATS", se_sta
 static tString se_reconnectCommand("/reconnect");
 static tConfItem<tString> se_reconnectCommandConf("LOCAL_CHAT_COMMAND_RECONNECT", se_reconnectCommand);
 
+static tString se_calculateCommand("/calc");
+static tConfItem<tString> se_calculateCommandConf("LOCAL_CHAT_COMMAND_CALCULATE", se_calculateCommand);
+
+class MsgCommand : public ChatCommand
+{
+public:
+    MsgCommand() : ChatCommand("MsgCommand") {}
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        int pos = 0;
+        ePlayerNetID *msgTarget = ePlayerNetID::GetPlayerByName(args.ExtractNonBlankSubString(pos), false);
+        if (msgTarget)
+            player->lastMessagedPlayer = msgTarget;
+
+        tString messageToSend;
+        messageToSend << "/msg " << args;
+        se_NewChatMessage(player, messageToSend)->BroadCast();
+        return true;
+    }
+};
+
+class ConsoleCommand : public ChatCommand
+{
+public:
+    ConsoleCommand() : ChatCommand("ConsoleCommand") {}
+
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        tCurrentAccessLevel level(tAccessLevel_Owner, true);
+
+        if (args.empty())
+            return false;
+
+        if (tRecorder::IsPlayingBack())
+        {
+            tConfItemBase::LoadPlayback();
+        }
+        else
+        {
+            std::stringstream s(static_cast<char const *>(args));
+            tConfItemBase::LoadAll(s);
+        }
+        return true;
+    }
+};
+
+tColoredString cycleColorPreview(int r, int g, int b)
+{
+    r /= 15;
+    g /= 15;
+    b /= 15;
+
+    tColoredString cyclePreview;
+    REAL sr = r, sg = g, sb = b;
+    while (sr > 1.f)
+        sr -= 1.f;
+    while (sg > 1.f)
+        sg -= 1.f;
+    while (sb > 1.f)
+        sb -= 1.f;
+    cyclePreview << tColoredString::ColorString(r, g, b) << "<" << tColoredString::ColorString(sr, sg, sb) << "==" << ChatCommand::MainText();
+    return cyclePreview;
+}
+
+tColoredString localPlayerPreview(ePlayer *local_p)
+{
+    int r = local_p->rgb[0];
+    int g = local_p->rgb[1];
+    int b = local_p->rgb[2];
+
+    tColoredString output;
+    output << tColoredString::ColorString(r, g, b)
+           << local_p->Name()
+           << ChatCommand::MainText()
+           << " ("
+           << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
+           << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
+           << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
+           << cycleColorPreview(r, g, b);
+
+    return output;
+}
+
+tColoredString gatherPlayerColor(ePlayerNetID *p, bool showReset)
+{
+    tColoredString listColors, cyclePreview;
+
+    if (showReset)
+        listColors << p->GetColoredName() << ChatCommand::MainText() << " (";
+    else
+        listColors << p->GetColoredName().StripWhitespace() << ChatCommand::MainText() << " (";
+
+    listColors << ChatCommand::ItemText() << p->r << ChatCommand::MainText() << ", "
+               << ChatCommand::ItemText() << p->g << ChatCommand::MainText() << ", "
+               << ChatCommand::ItemText() << p->b << ChatCommand::MainText() << ") "
+               << cycleColorPreview(p->r, p->g, p->b);
+
+    return listColors;
+}
+
+// Gather all the rgb colors and put them in a nice list.
+// Usage /colors with no parameters returns all players and their colors.
+//       /colors playername returns that specific players color or more depending if the search term is found in other player names
+class ColorsCommand : public ChatCommand
+{
+public:
+    ColorsCommand() : ChatCommand("ColorsCommand") {}
+
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        if (se_PlayerNetIDs.Len() > 0)
+        {
+            if (args.empty())
+            {
+                con << CommandText() << tOutput("$player_colors_text") << MainText();
+                for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
+                    con << ItemText() << (i + 1) << MainText() << ") " << gatherPlayerColor(se_PlayerNetIDs(i)) << "\n";
+            }
+            else
+            {
+                bool playerFound = false;
+                tArray<tString> searchWords = args.SplitIncludeFirst(" ");
+
+                con << CommandText() << tOutput("$player_colors_text") << MainText();
+
+                int j = 0;
+                for (int i = 0; i < searchWords.Len(); i++)
+                {
+                    ePlayerNetID *p = ePlayerNetID::GetPlayerByName(searchWords[i], false);
+                    if (p)
+                    {
+                        playerFound = true;
+                        j++;
+                        con << ItemText() << j << MainText() << ") " << gatherPlayerColor(p) << "\n";
+                    }
+                }
+                // No one found.
+                if (!playerFound)
+                    con << ErrorText() << tOutput("$player_colors_not_found", searchWords[1]) << MainText();
+            }
+        }
+
+        return true;
+    }
+};
+
 tColoredString gatherPlayerInfo(ePlayerNetID *p)
 {
     tColoredString listinfo;
-    listinfo << "\n" << se_chatCommandsThemeHeader << "Results for " << p->GetColoredName()  << se_chatCommandsThemeMain << ":"
-             << "\n" << se_chatCommandsThemeMain   << "Color: "      << gatherPlayerColor(p) << "\n";
+    listinfo << "\n" << ChatCommand::MainText() << "Results for " << p->GetColoredName()  << ChatCommand::MainText() << ":"
+             << "\n" << ChatCommand::MainText()   << "Color: "      << gatherPlayerColor(p) << "\n";
 
     gRealColor color(p->r, p->g, p->b);
     // p->Color(color);
     se_removeDarkColors(color);
-    listinfo << se_chatCommandsThemeHeader
-             << "\nFiltered Color: " << se_chatCommandsThemeMain << "("
-             << p->r << ", "
-             << p->g << ", "
-             << p->b << ")\n";
+    listinfo << ChatCommand::MainText()
+             << "Filtered Color: " << ChatCommand::MainText() << "("
+             << ChatCommand::ItemText() << p->r << ChatCommand::MainText() << ", "
+             << ChatCommand::ItemText() << p->g << ChatCommand::MainText() << ", "
+             << ChatCommand::ItemText() << p->b << ChatCommand::MainText() << ")\n";
 
     // Status. Includes player type, spectating or playing, and if the player is chatting.
-    listinfo << se_chatCommandsThemeHeader
-             << "Status: " << (p->IsHuman() ? "Human" : "Bot")
-             << ", " << (p->CurrentTeam() ? "Playing" : "Spectating")
-             << (p->IsChatting() ? ", Chatting" : "");
+    listinfo << ChatCommand::MainText()
+             << "Status: " << ChatCommand::ItemText() << (p->IsHuman() ? "Human" : "Bot")
+             << ChatCommand::MainText()
+             << ", " << ChatCommand::ItemText()
+             << (p->CurrentTeam() ? "Playing" : "Spectating")
+             << (p->IsChatting() ? (ChatCommand::MainText() << "," <<  ChatCommand::ItemText() << " Chatting") : "");
 
     // Only grab this information if the player is an active object.
     if (p->Object() && p->CurrentTeam())
     {
         // If the player is an active object, are they alive?
-        listinfo << (p->Object()->Alive() ? ", Alive" : ", Dead") << '\n'
-                 << "Lag: " << p->Object()->Lag() << "\n";
+        listinfo << (p->Object()->Alive() ? (ChatCommand::MainText() << "," <<  ChatCommand::ItemText() << " Alive"): ", Dead") << '\n'
+                 << ChatCommand::MainText() << "Lag: " << ChatCommand::ItemText() << p->Object()->Lag() << ChatCommand::MainText() << "\n";
 
         // Only grab this information if the player is an alive object.
         gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
         if (p->Object()->Alive())
         {
 
-            listinfo << "Position: x: " << pCycle->Position().x
-                     << ", y: " << pCycle->Position().y << '\n'
-                     << "Map Direction: x: " << pCycle->Direction().x
-                     << ", y: " << pCycle->Direction().y << '\n'
-                     << "Speed: " << pCycle->verletSpeed_ << '\n'
-                     << "Rubber: " << pCycle->GetRubber() << "/"
-                     << sg_rubberCycle << '\n';
+            listinfo << ChatCommand::MainText()
+                     << "Position: x: " << ChatCommand::ItemText() << pCycle->Position().x << ChatCommand::MainText()
+                     << ", y: " << ChatCommand::ItemText() << pCycle->Position().y << ChatCommand::MainText() << '\n'
+                     << "Map Direction: x: " << ChatCommand::ItemText() << pCycle->Direction().x << ChatCommand::MainText()
+                     << ", y: " << ChatCommand::ItemText() << pCycle->Direction().y << ChatCommand::MainText() << '\n'
+                     << "Speed: " << ChatCommand::ItemText() << pCycle->verletSpeed_ << ChatCommand::MainText() << '\n'
+                     << "Rubber: " << ChatCommand::ItemText() << pCycle->GetRubber() << "/"
+                     << sg_rubberCycle << ChatCommand::MainText() << '\n';
         }
     }
 
@@ -5161,13 +5306,14 @@ Usage: /info - Returns own information
 class listPlayerInfoCommand : public ChatCommand
 {
 public:
+    listPlayerInfoCommand() : ChatCommand("listPlayerInfoCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
         if (se_PlayerNetIDs.Len() > 0)
         {
             if (args.empty())
             {
-                con << se_chatCommandsThemeHeader
+                con << CommandText()
                     << tOutput("$player_info_text");
                 ePlayerNetID *p = se_GetLocalPlayer();
                 con << gatherPlayerInfo(p);
@@ -5178,7 +5324,7 @@ public:
                 tArray<ePlayerNetID *> foundPlayers;
                 tArray<tString> msgsExt = args.SplitIncludeFirst(" ");
 
-                con << se_chatCommandsThemeHeader
+                con << CommandText()
                     << tOutput("$player_info_text");
 
                 int j = 0;
@@ -5195,7 +5341,8 @@ public:
                 }
 
                 if (!playerFound)
-                    con << se_chatCommandsThemeError
+                    con << CommandText()
+                        << ErrorText()
                         << tOutput("$player_not_found_text", args);
             }
         }
@@ -5220,22 +5367,22 @@ static void se_outputColorInfo(int index, const tString &Name, REAL r, REAL g, R
     if (tColoredString::HasColors(Name))
     {
         con << (index + 1) << ") "
-            << Name << se_chatCommandsThemeMain
+            << Name << ChatCommand::MainText()
             << " ("
-            << r << ", "
-            << g << ", "
-            << b << ") "
+            << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
+            << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
+            << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
             << cycleColorPreview(r, g, b) << "\n";
     }
     else
     {
         con << (index + 1) << ") "
             << tColoredString::ColorString(r, g, b)
-            << Name << se_chatCommandsThemeMain
+            << Name << ChatCommand::MainText()
             << " ("
-            << r << ", "
-            << g << ", "
-            << b << ") "
+            << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
+            << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
+            << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
             << cycleColorPreview(r, g, b) << "\n";
     }
 }
@@ -5273,42 +5420,6 @@ static void se_listSavedColors(int savedColorsCount)
     }
 }
 
-tColoredString cycleColorPreview(int r, int g, int b)
-{
-    r /= 15;
-    g /= 15;
-    b /= 15;
-
-    tColoredString cyclePreview;
-    REAL sr = r, sg = g, sb = b;
-    while (sr > 1.f)
-        sr -= 1.f;
-    while (sg > 1.f)
-        sg -= 1.f;
-    while (sb > 1.f)
-        sb -= 1.f;
-    cyclePreview << tColoredString::ColorString(r, g, b) << "<" << tColoredString::ColorString(sr, sg, sb) << "==0xffffff";
-    return cyclePreview;
-}
-
-tColoredString localPlayerPreview(ePlayer *local_p)
-{
-    int r = local_p->rgb[0];
-    int g = local_p->rgb[1];
-    int b = local_p->rgb[2];
-
-    tColoredString output;
-    output << tColoredString::ColorString(r, g, b)
-           << local_p->Name()
-           << se_chatCommandsThemeMain
-           << " ("
-           << r << ", "
-           << g << ", "
-           << b << ") "
-           << cycleColorPreview(r, g, b);
-
-    return output;
-}
 
 /* Allow us to change our current RGB easily.
 Usage:
@@ -5326,6 +5437,7 @@ Usage:
 class RgbCommand : public ChatCommand
 {
 public:
+    RgbCommand() : ChatCommand("RgbCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
         ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
@@ -5335,7 +5447,7 @@ public:
 
         if (args.empty())
         {
-            con << se_chatCommandsThemeHeader
+            con << CommandText()
                 << tOutput("$player_colors_current_text");
             for (int i = 0; i < MAX_PLAYERS; ++i)
             {
@@ -5357,7 +5469,8 @@ public:
                 local_p = ePlayer::PlayerConfig(atoi(command) - 1);
                 if (!local_p)
                 {
-                    con << se_chatCommandsThemeError
+                    con << CommandText()
+                        << ErrorText()
                         << tOutput("$player_colors_changed_usage_error");
                     return true;
                 }
@@ -5368,7 +5481,7 @@ public:
 
             if (command == "help")
             {
-                con << se_chatCommandsThemeMain
+                con << CommandText() << "\n"
                     << tOutput("$player_colors_command_help", se_colorVarFile);
                 return true;
             }
@@ -5388,7 +5501,8 @@ public:
             {
                 if (passedString.Len() == 1)
                 {
-                    con << se_chatCommandsThemeError
+                    con << CommandText()
+                        << ErrorText()
                         << tOutput("$player_colors_saved");
                     tString playerColorStr;
 
@@ -5397,12 +5511,13 @@ public:
                     else
                         playerColorStr = localPlayerPreview(local_p);
 
-                    if (fileManager.Write(playerColorStr.Replace(se_chatCommandsThemeMain, "")))
-                        con << se_chatCommandsThemeHeader
+                    if (fileManager.Write(playerColorStr.Replace(MainText(), "")))
+                        con << CommandText()
                             << tOutput("$player_colors_saved")
                             << playerColorStr << "\n";
                     else
-                        con << se_chatCommandsThemeError
+                        con << CommandText()
+                            << ErrorText()
                             << tOutput("$players_color_error");
                 }
                 else if (passedString.Len() == 2) // Save specific persons color
@@ -5413,17 +5528,19 @@ public:
                         tString playerColorStr;
                         playerColorStr = gatherPlayerColor(targetPlayer);
 
-                        if (fileManager.Write(playerColorStr.Replace(se_chatCommandsThemeMain, "")))
-                            con << se_chatCommandsThemeHeader
-                                << tOutput("$player_colors_saved") 
-                                << se_chatCommandsThemeMain << playerColorStr << "\n";
+                        if (fileManager.Write(playerColorStr.Replace(MainText(), "")))
+                            con << CommandText()
+                                << tOutput("$player_colors_saved")
+                                << MainText() << playerColorStr << "\n";
                         else
-                            con << se_chatCommandsThemeError
+                            con << CommandText()
+                                << ErrorText()
                                 << tOutput("$players_color_error");
                     }
                     else
                     {
-                        con << se_chatCommandsThemeError
+                        con << CommandText()
+                            << ErrorText()
                             << tOutput("$player_colors_not_found", passedString[1]);
                     }
                 }
@@ -5435,7 +5552,8 @@ public:
 
                 if (passedString.Len() == 1) // No Line #
                 {
-                    con << se_chatCommandsThemeError
+                    con << CommandText()
+                        << ErrorText()
                         << tOutput("$player_colors_changed_usage_error");
                 }
                 else if (passedString.Len() == 2) // Line # specified
@@ -5445,7 +5563,8 @@ public:
                     if ((lineNumber >= 0) && lineNumber <= savedColorsCount - 1)
                         se_loadSavedColor(local_p, lineNumber);
                     else
-                        con << se_chatCommandsThemeError
+                        con << CommandText()
+                            << ErrorText()
                             << tOutput("$players_color_line_not_found", se_colorVarFile, savedColorsCount, lineNumber + 1);
                 }
                 return true;
@@ -5457,7 +5576,8 @@ public:
                 if (savedColorsCount > 0)
                     se_listSavedColors(savedColorsCount);
                 else
-                    con << se_chatCommandsThemeError
+                    con << CommandText()
+                        << ErrorText()
                         << tOutput("$player_colors_empty");
                 return true;
             }
@@ -5471,7 +5591,7 @@ public:
                 else
                 {
                     fileManager.Clear(atoi(passedString[0]));
-                    con << se_chatCommandsThemeHeader
+                    con << CommandText() << "\n"
                         << tOutput("$player_colors_cleared", se_colorVarFile);
                     return true;
                 }
@@ -5479,7 +5599,7 @@ public:
             else if (command == "clearall")
             {
                 fileManager.Clear();
-                con << se_chatCommandsThemeHeader
+                con << CommandText()
                     << tOutput("$player_colors_cleared", se_colorVarFile);
                 return true;
             }
@@ -5496,7 +5616,8 @@ public:
             // If the correct parameters are passed, display the changes.
             if (correctParameters)
             {
-                con << tOutput("$player_colors_current_text");
+                con << CommandText()
+                    << tOutput("$player_colors_current_text");
 
                 tString listColors;
                 listColors << local_p->ID() + 1 << ") ";
@@ -5513,23 +5634,141 @@ public:
                 con << listColors << "\n";
             }
             else // display the error message.
-                con << se_chatCommandsThemeError
+                con << CommandText()
+                    << ErrorText()
                     << tOutput("$player_colors_changed_usage_error");
         }
         return true;
     }
 };
 
-class JoinCommand : public ChatCommand
+class BrowserCommand : public ChatCommand
 {
 public:
+    BrowserCommand() : ChatCommand("BrowserCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
-        if (player && !bool(player->CurrentTeam()))
+        gServerBrowser::BrowseMaster();
+        return true;
+    }
+};
+
+class SpeakCommand : public ChatCommand
+{
+public:
+    SpeakCommand() : ChatCommand("SpeakCommand") {}
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        int pos = 0;
+        tString PlayerStr = args.ExtractNonBlankSubString(pos);
+
+        ePlayerNetID *targetPlayer = ePlayerNetID::FindPlayerByName(PlayerStr);
+
+        if (targetPlayer && targetPlayer->pID != -1) {
+            tString chatString = args.SubStr(pos + 1);
+
+            if (se_speakCommandDelay > 0)
+                con << CommandText()
+                    << "Sending message with delay: '"
+                    << ItemText()
+                    << se_speakCommandDelay
+                    << HeaderText() << "'\n";
+
+            ePlayerNetID::scheduleMessageTask(targetPlayer, chatString, se_speakCommandChatFlag, se_speakCommandDelay, se_speakCommandDelay * 0.5);
+        }
+        else if (targetPlayer && targetPlayer->pID == -1)
+            con << CommandText()
+                << ErrorText()
+                << "Not a local player.\n";
+        return true;
+    }
+};
+
+class RebuildCommand : public ChatCommand
+{
+public:
+    RebuildCommand() : ChatCommand("RebuildCommand") {}
+
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        int pos = 0;
+        tString PlayerNumb = args.ExtractNonBlankSubString(pos);
+
+        if (PlayerNumb.empty())
         {
-            ePlayer::NetToLocalPlayer(player)->spectate = false;
-            player->CreateNewTeamWish();
-            player->Update();
+            con << CommandText()
+                << "Rebuilding all players...\n";
+            ePlayerNetID::CompleteRebuild();
+        }
+        else
+        {
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb) - 1);
+            if (local_p)
+            {
+                con << CommandText()
+                    << "Rebuilding player '"
+                    << ItemText()
+                    << local_p->Name()
+                    << MainText() << "'\n";
+
+                player->Clear(local_p);
+                player->Update();
+            }
+        }
+        return true;
+    }
+};
+
+class WatchCommand : public ChatCommand
+{
+public:
+    WatchCommand() : ChatCommand("WatchCommand") {}
+
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        if (!eGrid::CurrentGrid())
+        {
+            con << CommandText()
+                << ErrorText()
+                << "Must be called while a grid exists!\n";
+            return false;
+        }
+
+        ePlayer *localPlayer = ePlayer::NetToLocalPlayer(player);
+        if (!localPlayer || !localPlayer->cam)
+            return false;
+
+        // Extract the target player name from the input string
+        int pos = 0;
+        tString targetPlayerName = args.ExtractNonBlankSubString(pos);
+
+        // Find the player by name, if specified
+        ePlayerNetID *targetPlayer = nullptr;
+        if (!targetPlayerName.empty())
+        {
+            targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
+            if (!targetPlayer || !targetPlayer->Object() ||
+                !targetPlayer->CurrentTeam() ||
+                (targetPlayer != nullptr && localPlayer->cam->watchPlayer == targetPlayer) )
+            {
+                con << CommandText()
+                    << ErrorText()
+                    << "Player not found or already set to the watch player.\n";
+                return true;
+            }
+            else
+            {
+                con << CommandText()
+                    << "Watch Player set to: '"
+                    << targetPlayer->GetColoredName()
+                    << MainText() << "'\n";
+                localPlayer->cam->watchPlayer = targetPlayer;
+            }
+        }
+        else
+        {
+            con << CommandText() << "Watch Player removed.\n";
+            localPlayer->cam->watchPlayer = nullptr;
         }
         return true;
     }
@@ -5538,6 +5777,9 @@ public:
 class ActiveStatusCommand : public ChatCommand
 {
 public:
+
+    ActiveStatusCommand() : ChatCommand("ActiveStatusCommand") {}
+
     bool execute(ePlayerNetID *player, tString args) override
     {
         int pos = 0;
@@ -5556,190 +5798,65 @@ public:
         REAL chattingTime = p->ChattingTime();
 
         tColoredString listInfo;
-        listInfo << se_chatCommandsThemeHeader
-                 << "\nResults for " << p->GetColoredName() << se_chatCommandsThemeMain
+        listInfo << CommandText()
+                 << "\nResults for " << p->GetColoredName() << MainText()
                  << "\nStatus: \n"
-                 << "Created: " << se_chatCommandsThemeItem << p->createTime_ << "\n"
-                 << se_chatCommandsThemeMain
-                 << "Last Activity: " << se_chatCommandsThemeItem
-                 << p->LastActivity() << "\n" << se_chatCommandsThemeMain
-                 << "Chatting For: " << se_chatCommandsThemeItem << chattingTime << "\n";
+                 << "Created: " << ItemText() << p->createTime_ << MainText() << "\n"
+                 << "Last Activity: " << ItemText()
+                 << p->LastActivity() << MainText() << "\n"
+                 << "Chatting For: " << ItemText() << chattingTime << MainText() << "\n";
 
         if (chattingTime == 0)
-            listInfo << se_chatCommandsThemeMain
-                     << "Last chat activity: " << se_chatCommandsThemeItem
-                     << p->ChattingTime() << se_chatCommandsThemeMain << " seconds ago.\n";
+            listInfo << "Last chat activity: " << ItemText()
+                     << p->ChattingTime() << MainText() << " seconds ago.\n";
 
         con << listInfo;
         return true;
     }
 };
 
-class StatsCommand : public ChatCommand
+class ReverseCommand : public ChatCommand
 {
 public:
+    ReverseCommand() : ChatCommand("ReverseCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
-
-        nServerInfoBase *connectedServer = CurrentServer();
-        if (connectedServer)
-            con << se_chatCommandsThemeHeader << "Current Server = " << connectedServer->GetName() << "\n";
-
-        int pos = 0;
-
-        tString PlayerStr = args.ExtractNonBlankSubString(pos);
-
-        ePlayerNetID *p = nullptr;
-        if (!PlayerStr.empty())
-            p = ePlayerNetID::FindPlayerByName(PlayerStr);
-        else if (player)
-            p = player;
-
-        if (p == nullptr)
-            return false;
-
-        PlayerStats *playerStats = PlayerStats::getInstance();
-        if (!playerStats)
-        {
-            con << se_chatCommandsThemeError
-                << "PlayerStats not initialized. PlayerStats are disabled!\n";
-            return true;
-        }
-
-        PlayerData playerData = playerStats->getStats(p->GetName());
-
-        tColoredString statsInfo;
-        statsInfo << se_chatCommandsThemeHeader
-                  << "\nStats for " << p->GetColoredName()      << se_chatCommandsThemeMain
-                  << "Kills: "      << se_chatCommandsThemeItem << playerData.kills  << "\n" << se_chatCommandsThemeMain
-                  << "Deaths: "     << se_chatCommandsThemeItem << playerData.deaths << "\n" << se_chatCommandsThemeMain
-                  << "Wins: "       << se_chatCommandsThemeItem << playerData.wins   << "\n" << se_chatCommandsThemeMain
-                  << "Losses: "     << se_chatCommandsThemeItem << playerData.losses << "\n" << se_chatCommandsThemeMain
-                  << "K/D Ratio: "  << se_chatCommandsThemeItem << playerData.getKDRatio()   << "\n";
-
-        con << statsInfo;
+        player->Chat(args.Reverse());
         return true;
     }
 };
 
-class ConsoleCommand : public ChatCommand
+class SpectateCommand : public ChatCommand
 {
 public:
+    SpectateCommand() : ChatCommand("SpectateCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
-        tCurrentAccessLevel level(tAccessLevel_Owner, true);
-
-        if (args.empty())
-            return false;
-
-        if (tRecorder::IsPlayingBack())
-        {
-            tConfItemBase::LoadPlayback();
-        }
-        else
-        {
-            std::stringstream s(static_cast<char const *>(args));
-            tConfItemBase::LoadAll(s);
-        }
+        ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
+        local_p->spectate = true;
+        player->Clear(local_p);
+        player->Update();
         return true;
     }
 };
 
-tColoredString gatherPlayerColor(ePlayerNetID *p, bool showReset)
-{
-    tColoredString listColors, cyclePreview;
-
-    if (showReset)
-        listColors << p->GetColoredName() << se_chatCommandsThemeMain << " (";
-    else
-        listColors << p->GetColoredName().StripWhitespace() << " (";
-
-    listColors << p->r << ", "
-               << p->g << ", "
-               << p->b << ") "
-               << cycleColorPreview(p->r, p->g, p->b);
-
-    return listColors;
-}
-
-// Gather all the rgb colors and put them in a nice list.
-// Usage /colors with no parameters returns all players and their colors.
-//       /colors playername returns that specific players color or more depending if the search term is found in other player names
-class ColorsCommand : public ChatCommand
+class JoinCommand : public ChatCommand
 {
 public:
+
+    JoinCommand() : ChatCommand("JoinCommand") {}
+
     bool execute(ePlayerNetID *player, tString args) override
     {
-        if (se_PlayerNetIDs.Len() > 0)
+        if (player && !bool(player->CurrentTeam()))
         {
-            if (args.empty())
-            {
-                con << se_chatCommandsThemeHeader
-                    << tOutput("$player_colors_text");
-                for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
-                    con << (i + 1) << ") " << gatherPlayerColor(se_PlayerNetIDs(i)) << "\n";
-            }
-            else
-            {
-                bool playerFound = false;
-                tArray<tString> searchWords = args.SplitIncludeFirst(" ");
+            con << CommandText()
+                << "Joining the game...\n";
 
-                con << se_chatCommandsThemeHeader
-                    << tOutput("$player_colors_text");
-
-                int j = 0;
-                for (int i = 0; i < searchWords.Len(); i++)
-                {
-                    ePlayerNetID *p = ePlayerNetID::GetPlayerByName(searchWords[i], false);
-                    if (p)
-                    {
-                        playerFound = true;
-                        j++;
-                        con << j << ") " << gatherPlayerColor(p) << "\n";
-                    }
-                }
-                // No one found.
-                if (!playerFound)
-                    con << se_chatCommandsThemeError
-                        << tOutput("$player_colors_not_found", searchWords[1]);
-            }
+            ePlayer::NetToLocalPlayer(player)->spectate = false;
+            player->CreateNewTeamWish();
+            player->Update();
         }
-
-        return true;
-    }
-};
-
-class BrowserCommand : public ChatCommand
-{
-public:
-    bool execute(ePlayerNetID *player, tString args) override
-    {
-        gServerBrowser::BrowseMaster();
-        return true;
-    }
-};
-class SpeakCommand : public ChatCommand
-{
-public:
-    bool execute(ePlayerNetID *player, tString args) override
-    {
-        int pos = 0;
-        tString PlayerStr = args.ExtractNonBlankSubString(pos);
-
-        ePlayerNetID *targetPlayer = ePlayerNetID::FindPlayerByName(PlayerStr);
-
-        if (targetPlayer && targetPlayer->pID != -1) {
-            tString chatString = args.SubStr(pos + 1);
-
-            if (se_speakCommandDelay > 0)
-                con << se_chatCommandsThemeHeader
-                    << "Sending message with delay: "
-                    << se_speakCommandDelay << "\n";
-            ePlayerNetID::scheduleMessageTask(targetPlayer, chatString, se_speakCommandChatFlag, se_speakCommandDelay, se_speakCommandDelay * 0.5);
-        }
-        else if (targetPlayer && targetPlayer->pID == -1)
-            con << se_chatCommandsThemeError
-                << "Not a local player.\n";
         return true;
     }
 };
@@ -5754,6 +5871,7 @@ static std::vector<std::pair<tString, tString>> searchableFiles =
 class SearchCommand : public ChatCommand
 {
 public:
+    SearchCommand() : ChatCommand("SearchCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
         int pos = 0;
@@ -5762,26 +5880,29 @@ public:
         tString output;
         if (fileName.empty())
         {
-            output << se_chatCommandsThemeHeader
-                   << "Available files to search:\n";
+            output << CommandText()
+                   << "Available files to search:\n" 
+                   << MainText();
 
             int i = 1;
             for (const auto &searchableFile : searchableFiles)
             {
-                output << i << ") " << se_chatCommandsThemeMain
-                       << searchableFile.first << se_chatCommandsThemeMain
-                       << " (" << se_chatCommandsThemeItem << searchableFile.second
-                       << se_chatCommandsThemeMain << ")\n";
+                output << i << ") " << ItemText()
+                        << searchableFile.first << MainText()
+                        << " (" << searchableFile.second
+                        << ")\n";
                 i++;
             }
-            output << se_chatCommandsThemeHeader
-                   << "Uses: \n" << se_chatCommandsThemeMain
-                   << "/search chat hack the planet (by search phrase)\n"
-                   << "/search chat #102 (by line number)\n"
-                   << "/search chat #102-105 (by line number range)\n"
-                   << "/search chat #102 copy (copy text by single line number)\n"
-                   << "/search chat @5 copy (copy match #5 from last search)\n"
-                   << "/search chat @5 (copy match #5 from last search)\n";
+
+        output << CommandText()
+               << "Uses: \n" << MainText()
+               << ItemText() << "/search chat hack the planet (by search phrase)\n"
+               << ItemText() << "/search chat #102 (by line number)\n"
+               << ItemText() << "/search chat #102-105 (by line number range)\n"
+               << ItemText() << "/search chat #102 copy (copy text by single line number)\n"
+               << ItemText() << "/search chat @5 copy (copy match #5 from last search)\n"
+               << ItemText() << "/search chat @5 (copy match #5 from last search)\n";
+
             con << output;
             return true;
         }
@@ -5817,7 +5938,8 @@ public:
 
             if (!fileFound)
             {
-                con << se_chatCommandsThemeError
+                con << CommandText()
+                    << ErrorText()
                     << "File not found: '"
                     << fileName << "'\n";
                 return true;
@@ -5831,7 +5953,8 @@ public:
 
             if (fileSizeMB > fileSizeMaxMB)
             {
-                con << se_chatCommandsThemeError
+                con << CommandText()
+                    << ErrorText()
                     << "Error: File is too big: '" << fileName << "' ("
                     << fileSizeMB << " MB /"
                     << fileSizeMaxMB << " MB)\n";
@@ -5844,20 +5967,23 @@ public:
                 int start = std::max(0, lines.Len() - se_searchCommandEmptySearchNumLines); // don't go below 0
                 int count = 1;
                 tString fileNameOut;
-                fileNameOut << se_chatCommandsThemeHeader
-                            << "\nFile '" << se_chatCommandsThemeItem << fileName   << se_chatCommandsThemeMain
-                            << "- "       << se_chatCommandsThemeItem << fileSizeMB << se_chatCommandsThemeMain
-                            << " MB / " << se_chatCommandsThemeItem << fileSizeMaxMB << se_chatCommandsThemeMain << " MB\n";
+                fileNameOut << CommandText()
+                            << "\nFile '" << ItemText() << fileName   << MainText()
+                            << "- "       << ItemText() << fileSizeMB << MainText()
+                            << " MB / " << ItemText() << fileSizeMaxMB << MainText() << " MB\n";
 
-                con << fileNameOut << se_chatCommandsThemeMain
-                    << "Nothing to search. Showing last " << se_chatCommandsThemeItem
+                con << fileNameOut << MainText()
+                    << "Nothing to search. Showing last " << ItemText()
                     << se_searchCommandEmptySearchNumLines
-                    << se_chatCommandsThemeMain << " lines:\n";
+                    << MainText() << " lines:\n";
 
                 for (int i = start; i < lines.Len(); ++i)
                 {
                     player->lastSearch.Add(lines[i]);
-                    con << count++ << ") " << se_chatCommandsThemeHeader << "Line " << se_chatCommandsThemeItem << (i + 1) << ": " << se_chatCommandsThemeMain << lines[i] << "\n";
+                    con << count++ << ") " << HeaderText() 
+                        << "Line " << MainText() << (i + 1) 
+                        << ": " << lines[i] << "\n";
+
                 }
                 return true;
             }
@@ -5902,7 +6028,8 @@ public:
                 {
                     if (!player->lastSearch.Len() > 0 || player->lastSearch.Len() < endLineNumber)
                     {
-                        con << se_chatCommandsThemeError
+                        con << CommandText()
+                            << ErrorText()
                             << "Nothing to copy from.\n";
                     }
                     else
@@ -5910,10 +6037,10 @@ public:
                         tString message(player->lastSearch[endLineNumber - 1]);
                         if (copyToClipboard(message))
                         {
-                            con << se_chatCommandsThemeHeader
+                            con << CommandText()
                                 << "Copied content to clipboard.";
                             numMatches++;
-                            output << endLineNumber << " " << se_chatCommandsThemeMain << message << "\n";
+                            output << endLineNumber << " " << MainText() << message << "\n";
                             found = true;
                         }
                     }
@@ -5925,9 +6052,9 @@ public:
                         if ((lineNumber >= startLineNumber && lineNumber <= endLineNumber))
                         {
                             numMatches++;
-                            output << se_chatCommandsThemeMain
-                                   << numMatches << ") " << se_chatCommandsThemeHeader
-                                   << "Line " << se_chatCommandsThemeItem << lineNumber << se_chatCommandsThemeMain
+                            output << MainText()
+                                   << numMatches << ") "       << HeaderText()
+                                   << "Line "    << ItemText() << lineNumber << MainText()
                                    << ": " << line << "\n";
 
                             if (copy && startLineNumber == endLineNumber) // only copy for one line
@@ -5936,7 +6063,7 @@ public:
                                 lineToCopy = output.SubStr(output.StrPos(": ") + 2); // Remove everything before the line content
 
                                 if (copyToClipboard(lineToCopy))
-                                    con << se_chatCommandsThemeHeader
+                                    con << HeaderText()
                                         << "Copied content to clipboard.";
                                 found = true;
                                 break;
@@ -5955,10 +6082,11 @@ public:
                 if (!found)
                 {
                     if (!copyNumMatch)
-                        con << se_chatCommandsThemeError
-                            << "Line Range: " << se_chatCommandsThemeItem
+                        con << CommandText()
+                            << ErrorText()
+                            << "Line Range: " << ItemText()
                             << startLineNumber << "-" << endLineNumber
-                            << se_chatCommandsThemeError << " not found.\n";
+                            << ErrorText() << " not found.\n";
                     return true;
                 }
             }
@@ -5982,10 +6110,12 @@ public:
                     {
                         found = true;
                         numMatches++;
-                        output << numMatches << ") " << se_chatCommandsThemeHeader << "Line "
-                               << se_chatCommandsThemeItem << lineNumber
-                               << ": " << se_chatCommandsThemeMain << line << "\n";
+                        output << numMatches << ") " << HeaderText() << "Line "
+                               << ItemText() << lineNumber
+                               << MainText()
+                               << ": "       << line << "\n";
                         player->lastSearch.Add(line);
+
                     }
                     lineNumber++;
                 }
@@ -5994,30 +6124,35 @@ public:
             if (!found && !copy)
             {
                 tString fileNameOut;
-                fileNameOut << "\n" << se_chatCommandsThemeHeader
-                            << "File '" << se_chatCommandsThemeItem << fileName   << se_chatCommandsThemeMain
-                            << "- "       << se_chatCommandsThemeItem << fileSizeMB << se_chatCommandsThemeMain
-                            << " MB / " << se_chatCommandsThemeItem << fileSizeMaxMB << se_chatCommandsThemeMain << " MB\n";
+                fileNameOut << "\n"     << HeaderText()
+                            << "File '" << ItemText() << fileName      << MainText()
+                            << "- "     << ItemText() << fileSizeMB    << MainText()
+                            << " MB / " << ItemText() << fileSizeMaxMB << MainText() << " MB\n";
 
-                con << se_chatCommandsThemeMain
+                con << CommandText()
                     << fileNameOut
-                    << "No matches found for the search phrase: '" << se_chatCommandsThemeItem
-                    << searchPhrase << se_chatCommandsThemeMain << "'\n";
+                    << "No matches found for the search phrase: '" << ItemText()
+                    << searchPhrase << MainText() << "'\n";
+
             }
             else
             {
                 tString fileNameOut;
-                fileNameOut << se_chatCommandsThemeHeader
-                            << "\nFile '" << se_chatCommandsThemeItem << fileName   << se_chatCommandsThemeMain
-                            << "- "       << se_chatCommandsThemeItem << fileSizeMB << se_chatCommandsThemeMain
-                            << " MB / " << se_chatCommandsThemeItem << fileSizeMaxMB << se_chatCommandsThemeMain << " MB\n";
+                fileNameOut << HeaderText()
+                            << "\nFile '" << ItemText() << fileName      << MainText()
+                            << "- "       << ItemText() << fileSizeMB    << MainText()
+                            << " MB / "   << ItemText() << fileSizeMaxMB << MainText() << " MB\n";
 
                 tString matches;
-                matches << fileNameOut << "Found " << se_chatCommandsThemeItem << numMatches << se_chatCommandsThemeMain << " matches for: ";
+                matches << fileNameOut << "Found " 
+                        << ItemText()  << numMatches 
+                        << MainText()  << " matches for: ";
 
-                output = matches << tString("'") << se_chatCommandsThemeItem
-                                 << searchPhrase << se_chatCommandsThemeMain << tString("'\n")
-                                 << output;
+                output = CommandText()
+                       << matches      << tString("'") << ItemText()
+                       << searchPhrase << MainText()   << tString("'\n")
+                       << output;
+
 
                 con << output;
             }
@@ -6058,11 +6193,13 @@ void ePlayerNetID::scheduleNameChange()
 class NameSpeakCommand : public ChatCommand
 {
 public:
+    NameSpeakCommand() : ChatCommand("NameSpeakCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
         if (args.empty())
         {
-            con << se_chatCommandsThemeError
+            con << CommandText()
+                << ErrorText()
                 << "Usage: " << se_nameSpeakCommand << " <name> <message>\n";
             return true;
         }
@@ -6089,17 +6226,19 @@ public:
 
         if (!found || !local_p)
         {
-            con << se_chatCommandsThemeError
+            con << CommandText()
+                << ErrorText()
                 << "No usable players!\n";
             nameSpeakWords.Clear();
             return true;
         }
 
-        con << se_chatCommandsThemeHeader
-            << "Name Speak: \n  - Using Player " << se_chatCommandsThemeItem << nameSpeakPlayerID + 1
-            <<  se_chatCommandsThemeMain
-            << ". Message: '" << se_chatCommandsThemeItem << args
-            << se_chatCommandsThemeMain << "'\n";
+        con << CommandText()
+            << "\n  - Using Player '"
+            << ItemText() << nameSpeakPlayerID + 1
+            << MainText()
+            << "'. Message: '" << ItemText() << args
+            << MainText() << "'\n";
         nameSpeakIndex = 0;
         nameSpeakPlayerID = playerID;
         playerUpdateIteration = 0;
@@ -6110,8 +6249,11 @@ public:
 class RespawnCommand : public ChatCommand
 {
 public:
+    RespawnCommand() : ChatCommand("RespawnCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
+        con << CommandText()
+            << "Respawning player '" << player->GetName() << "'\n";
         player->RespawnPlayer();
         return true;
     }
@@ -6120,40 +6262,20 @@ public:
 class RebuildGridCommand : public ChatCommand
 {
 public:
+    RebuildGridCommand() : ChatCommand("RebuildGridCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
         tArray<tString> passedString = args.SplitIncludeFirst(" ");
         if (args.empty())
         {
-            con << se_chatCommandsThemeError
+            con << CommandText()
+                << ErrorText()
                 << "Usage: " << se_rebuildCommand << " <#state>\n";
             return true;
         }
         if (gGame::CurrentGame())
-        {
             gGame::CurrentGame()->RebuildGrid(atoi(passedString[1]));
-        }
-        return true;
-    }
-};
 
-class ReconnectCommand : public ChatCommand
-{
-public:
-    bool execute(ePlayerNetID *player, tString args) override
-    {
-        nServerInfoBase *connectedServer = CurrentServer();
-        if (connectedServer)
-        {
-            con << se_chatCommandsThemeHeader
-                << "Reconnecting to " << connectedServer->GetName() << "...\n";
-            ConnectToServer(connectedServer);
-        }
-        else
-        {
-            con << se_chatCommandsThemeError
-                << "You are not connected to a server!\n";
-        }
         return true;
     }
 };
@@ -6161,6 +6283,7 @@ public:
 class SaveConfigCommand : public ChatCommand
 {
 public:
+    SaveConfigCommand() : ChatCommand("SaveConfigCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
         con << st_AddToUserExt(args.SplitIncludeFirst(" "));
@@ -6171,11 +6294,13 @@ public:
 class ReplyCommand : public ChatCommand
 {
 public:
+    ReplyCommand() : ChatCommand("ReplyCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
         if (player->lastMessagedPlayer == nullptr)
         {
-            con << se_chatCommandsThemeError
+            con << CommandText()
+                << ErrorText()
                 << "You have not messaged anyone yet!\n";
             return false;
         }
@@ -6187,26 +6312,10 @@ public:
     }
 };
 
-class MsgCommand : public ChatCommand
-{
-public:
-    bool execute(ePlayerNetID *player, tString args) override
-    {
-        int pos = 0;
-        ePlayerNetID *msgTarget = ePlayerNetID::GetPlayerByName(args.ExtractNonBlankSubString(pos), false);
-        if (msgTarget)
-            player->lastMessagedPlayer = msgTarget;
-
-        tString messageToSend;
-        messageToSend << "/msg " << args;
-        se_NewChatMessage(player, messageToSend)->BroadCast();
-        return true;
-    }
-};
-
 class NicknameCommand : public ChatCommand
 {
 public:
+    NicknameCommand() : ChatCommand("NicknameCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
         if (args.empty())
@@ -6217,7 +6326,7 @@ public:
                 p->nickname.Clear();
                 p->coloredNickname.Clear();
             }
-            con << se_chatCommandsThemeHeader
+            con << CommandText()
                 << "All nicknames have been cleared.\n";
             return true;
         }
@@ -6230,8 +6339,9 @@ public:
             ePlayerNetID *target = ePlayerNetID::FindPlayerByName(targetName);
             if (target)
             {
-                con << target->coloredName_
-                    << se_chatCommandsThemeHeader
+                con << CommandText()
+                    << target->coloredName_
+                    << MainText()
                     << "'s nickname has been cleared.\n";
                 target->nickname.Clear();
                 target->coloredNickname.Clear();
@@ -6254,112 +6364,231 @@ public:
                 tColoredString coloredNickname;
                 coloredNickname << tColoredString::ColorString(r, g, b) << nickname;
                 target->coloredNickname = coloredNickname;
-                con << target->coloredName_ << se_chatCommandsThemeHeader 
-                    << " is now nicknamed '" << target->GetColoredName() 
-                    << se_chatCommandsThemeHeader << "'\n";
+                con << CommandText()
+                    << target->coloredName_
+                    << MainText()
+                    << " is now nicknamed '" << target->GetColoredName()
+                    << MainText() << "'\n";
                 return true;
             }
         }
 
-        con << se_chatCommandsThemeError
-            << "Could not find player '" << se_chatCommandsThemeItem
-            << args << se_chatCommandsThemeError << "'\n";
+        con << CommandText()
+            << ErrorText()
+            << "Could not find player '" << ItemText()
+            << args << ErrorText() << "'\n";
         return false;
     }
 };
 
-class RebuildCommand : public ChatCommand
+class StatsCommand : public ChatCommand
 {
 public:
+
+    StatsCommand() : ChatCommand("StatsCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
-        int pos = 0;
-        tString PlayerNumb = args.ExtractNonBlankSubString(pos);
 
-        if (PlayerNumb.empty())
+        nServerInfoBase *connectedServer = CurrentServer();
+        if (connectedServer)
+            con << CommandText() 
+                << "Current Server = " 
+                << connectedServer->GetName() 
+                << "\n";
+
+        int pos = 0;
+
+        tString PlayerStr = args.ExtractNonBlankSubString(pos);
+
+        ePlayerNetID *p = nullptr;
+        if (!PlayerStr.empty())
+            p = ePlayerNetID::FindPlayerByName(PlayerStr);
+        else if (player)
+            p = player;
+
+        if (p == nullptr)
+            return false;
+
+        PlayerStats *playerStats = PlayerStats::getInstance();
+        if (!playerStats)
         {
-            ePlayerNetID::CompleteRebuild();
+            con << CommandText()
+                << ErrorText()
+                << "PlayerStats not initialized. PlayerStats are disabled!\n";
+            return true;
+        }
+
+        PlayerData playerData = playerStats->getStats(p->GetName());
+
+        tColoredString statsInfo;
+        statsInfo << CommandText()
+                  << "\nStats for " << ItemText() << p->GetColoredName()     << "\n" << MainText()
+                  << "Kills: "      << ItemText() << playerData.kills        << "\n" << MainText()
+                  << "Deaths: "     << ItemText() << playerData.deaths       << "\n" << MainText()
+                  << "Wins: "       << ItemText() << playerData.wins         << "\n" << MainText()
+                  << "Losses: "     << ItemText() << playerData.losses       << "\n" << MainText()
+                  << "K/D Ratio: "  << ItemText() << playerData.getKDRatio() << "\n";
+
+        con << statsInfo;
+        return true;
+    }
+};
+
+class ReconnectCommand : public ChatCommand
+{
+public:
+    ReconnectCommand() : ChatCommand("ReconnectCommand") {}
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        nServerInfoBase *connectedServer = CurrentServer();
+        if (connectedServer)
+        {
+            con << CommandText()
+                << "Reconnecting to '" << connectedServer->GetName() << "'...\n";
+            ConnectToServer(connectedServer);
         }
         else
         {
-            ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb) - 1);
-            player->Clear(local_p);
-            player->Update();
+            con << CommandText()
+                << ErrorText()
+                << "You are not connected to a server!\n";
         }
         return true;
     }
 };
 
-class WatchCommand : public ChatCommand
+#include <stack>
+#include <queue>
+class CalculateCommand : public ChatCommand
 {
 public:
+    CalculateCommand() : ChatCommand("CalculateCommand") {}
     bool execute(ePlayerNetID *player, tString args) override
     {
-        if (!eGrid::CurrentGrid())
+        con << CommandText()
+            << "Performing calculation: '" << ItemText()
+            << args << MainText() << "'\n";
+        std::stack<double> values;
+        std::queue<tString> postfix = infixToPostfix(preprocess(args));
+
+
+        tString token;
+        while (!postfix.empty())
         {
-            con << se_chatCommandsThemeError
-                << "Must be called while a grid exists!\n";
-            return false;
-        }
-
-        ePlayer *localPlayer = ePlayer::NetToLocalPlayer(player);
-        if (!localPlayer || !localPlayer->cam)
-            return false;
-
-        // Extract the target player name from the input string
-        int pos = 0;
-        tString targetPlayerName = args.ExtractNonBlankSubString(pos);
-
-        // Find the player by name, if specified
-        ePlayerNetID *targetPlayer = nullptr;
-        if (!targetPlayerName.empty())
-        {
-            targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
-            if (!targetPlayer || !targetPlayer->Object() ||
-                !targetPlayer->CurrentTeam() ||
-                (targetPlayer != nullptr && localPlayer->cam->watchPlayer == targetPlayer) )
+            token = postfix.front();
+            postfix.pop();
+            if (std::isdigit(token[0]))
             {
-                con << se_chatCommandsThemeError
-                    << "Player not found or already set to the watch player.\n";
-                return true;
+                values.push(std::stod(token.c_str()));
             }
             else
             {
-                con << se_chatCommandsThemeHeader 
-                    << "Watch Player set to: " 
-                    << targetPlayer->GetColoredName() << "\n";
-                localPlayer->cam->watchPlayer = targetPlayer;
+                if (values.size() < 2)
+                {
+                    con << ErrorText()
+                        << "Error: Not enough values for operation\n";
+                    return false;
+                }
+
+                double rhs = values.top(); values.pop();
+                double lhs = values.top(); values.pop();
+
+                if (token == "+")
+                    values.push(lhs + rhs);
+                else if (token == "-")
+                    values.push(lhs - rhs);
+                else if (token == "*")
+                    values.push(lhs * rhs);
+                else if (token == "/")
+                {
+                    if (rhs == 0)
+                    {
+                        con << ErrorText()
+                            << "Error: Division by zero\n";
+                        return false;
+                    }
+                    values.push(lhs / rhs);
+                }
+                else if (token == "^")
+                    values.push(std::pow(lhs, rhs));
             }
         }
-        else
+
+        if (values.size() != 1)
         {
-            con << se_chatCommandsThemeHeader << "Watch Player removed.\n";
-            localPlayer->cam->watchPlayer = nullptr;
+            con << ErrorText()
+                << "Error: Too many values\n";
+            return false;
         }
+
+        con << MainText()
+            << "Result: '" << ItemText()
+            << values.top()
+            << MainText() << "'\n";
         return true;
     }
-};
 
-class ReverseCommand : public ChatCommand
-{
-public:
-    bool execute(ePlayerNetID *player, tString args) override
+private:
+    tString preprocess(const tString& input)
     {
-        player->Chat(args.Reverse());
-        return true;
+        std::string str(input.c_str());
+        std::string processed;
+        for (char& ch : str)
+        {
+            if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^')
+            {
+                processed += ' ';
+                processed += ch;
+                processed += ' ';
+            }
+            else
+            {
+                processed += ch;
+            }
+        }
+        return tString(processed.c_str());
     }
-};
 
-class SpectateCommand : public ChatCommand
-{
-public:
-    bool execute(ePlayerNetID *player, tString args) override
+    std::queue<tString> infixToPostfix(const tString& infix)
     {
-        ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
-        local_p->spectate = true;
-        player->Clear(local_p);
-        player->Update();
-        return true;
+        std::map<char, int> prec;
+        prec['^'] = 3;
+        prec['*'] = 2;
+        prec['/'] = 2;
+        prec['+'] = 1;
+        prec['-'] = 1;
+
+        std::queue<tString> queue;
+        std::stack<tString> stack;
+
+        std::istringstream tokens(infix.c_str());
+        std::string token;
+        while (tokens >> token)
+        {
+            tString tToken(token.c_str());
+            if (std::isdigit(tToken[0]))
+            {
+                queue.push(tToken);
+            }
+                else if (tToken == "+" || tToken == "-" || tToken == "*" || tToken == "/" || tToken == "^")
+                {
+                    while (!stack.empty() && prec[tToken[0]] <= prec[stack.top()[0]])
+                    {
+                        queue.push(stack.top());
+                        stack.pop();
+                    }
+
+                    stack.push(tToken);
+                }
+            }
+
+        while (!stack.empty())
+        {
+            queue.push(stack.top());
+            stack.pop();
+        }
+
+        return queue;
     }
 };
 
@@ -6372,6 +6601,7 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
         commandFactories.emplace(commandName.ToLower(), commandFunc);
     };
 
+    commandFactories.emplace("/msg", []() { return std::make_unique<MsgCommand>(); });
     addCommand(se_consoleCommand, []() { return std::make_unique<ConsoleCommand>(); });
     addCommand(se_colorsCommand, []() { return std::make_unique<ColorsCommand>(); });
     addCommand(se_infoCommand, []() { return std::make_unique<listPlayerInfoCommand>(); });
@@ -6393,7 +6623,7 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
     addCommand(se_nicknameCommand, []() { return std::make_unique<NicknameCommand>(); });
     addCommand(se_statsCommand, []() { return std::make_unique<StatsCommand>(); });
     addCommand(se_reconnectCommand, []() { return std::make_unique<ReconnectCommand>(); });
-    commandFactories.emplace("/msg", []() { return std::make_unique<MsgCommand>(); });
+    addCommand(se_calculateCommand, []() { return std::make_unique<CalculateCommand>(); });
 
     return commandFactories;
 }
@@ -6458,7 +6688,6 @@ void ePlayerNetID::Chat(const tString &s_orig)
 #ifndef DEDICATED
     if (se_enableChatCommands && s_orig.StartsWith("/") && LocalChatCommands(this, s_orig))
         return;
-
 #endif // if not dedicated
 
     tString retStr(s);
@@ -7706,23 +7935,23 @@ void ePlayerNetID::watchPlayerStatus()
         REAL chattingTime = p->ChattingTime();
         REAL lastActivity = p->LastActivity();
 
-        message << getTimeString() << " | " 
-                << se_chatCommandsThemeHeader 
+        message << getTimeString() << " | "
+                << ChatCommand::HeaderText()
                 << "Watch Status: " << p->GetColoredName()
-                << se_chatCommandsThemeMain
-                << " is now " << playerWatchStatusToStr(p->lastWatchStatus) 
-                << se_chatCommandsThemeMain
-                << ". (" << se_chatCommandsThemeItem << chattingTime 
-                << se_chatCommandsThemeMain << " seconds)";
+                << ChatCommand::MainText()
+                << " is now " << playerWatchStatusToStr(p->lastWatchStatus)
+                << ChatCommand::MainText()
+                << ". (" << ChatCommand::ItemText() << chattingTime
+                << ChatCommand::MainText() << " seconds)";
 
         if (chattingTime == 0 || lastActivity != 0)
         {
-            message << se_chatCommandsThemeMain << "\n - Last activity: "
-                    << se_chatCommandsThemeItem << p->LastActivity()
-                    << se_chatCommandsThemeMain << " seconds ago.\n"
-                    << se_chatCommandsThemeMain << " - Last chat activity: "
-                    << se_chatCommandsThemeItem << p->ChattingTime()
-                    << se_chatCommandsThemeMain << " seconds ago.";
+            message << ChatCommand::MainText() << "\n - Last activity: "
+                    << ChatCommand::ItemText() << p->LastActivity()
+                    << ChatCommand::MainText() << " seconds ago.\n"
+                    << ChatCommand::MainText() << " - Last chat activity: "
+                    << ChatCommand::ItemText() << p->ChattingTime()
+                    << ChatCommand::MainText() << " seconds ago.";
         }
         message << "\n";
         con << message;
@@ -7751,21 +7980,19 @@ static bool se_playerMessageDisplayScheduledMessages = false;
 static tConfItem<bool> se_playerMessageDisplayScheduledMessagesConf("PLAYER_MESSAGE_DISPLAY_SCHEDULED_MESSAGES", se_playerMessageDisplayScheduledMessages);
 
 std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
-
-
 void LoadChatTriggers()
 {
     FileManager fileManager(tString("chattriggers.txt"));
     tArray<tString> lines = fileManager.Load();
 
-    for (auto &line : lines)
+    for (int i = 0; i < lines.Len(); ++i)
     {
-        if (line.StartsWith("\"") && line.EndsWith("\""))
+        if (lines[i].StartsWith("\"") && lines[i].EndsWith("\""))
         {
-            line = line.SubStr(1, line.Len() - 2);
+            lines[i] = lines[i].SubStr(1, lines[i].Len() - 2);
         }
 
-        tArray<tString> parts = line.Split(",");
+        tArray<tString> parts = lines[i].Split(",");
         if (parts.Len() == 4)
         {
             tString trigger = parts[0];
@@ -7777,6 +8004,11 @@ void LoadChatTriggers()
             bool exact = atoi(parts[3].c_str()) == 1;
             // Store the vector of responses
             chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
+        }
+        else
+        {
+            con << "LoadChatTriggers Error:\nMalformed line at index " << i+1 << ": " << lines[i] << "\n";
+            continue;
         }
     }
 }
@@ -7860,7 +8092,7 @@ static void ListChatTriggers(std::istream &s)
 
         if (parts.Len() != 4)
         {
-            con << "Malformed line at index " << i << ": " << lines[i] << "\n";
+            con << "Malformed line at index " << i+1 << ": " << lines[i] << "\n";
             continue;
         }
 
@@ -7933,14 +8165,16 @@ std::pair<tString, REAL> ePlayerNetID::findTriggeredResponse(ePlayerNetID *chatP
             || (!exact && lowerMessage.Contains(trigger))) // Substring match
         {
 
-            if (tIsInList(se_playerTriggerMessagesKillByVerifiedTriggers, trigger) &&
-                (chatPlayer != nullptr && ((chatPlayer->lastKilledByPlayer == nullptr || chatPlayer->lastKilledByPlayer->pID == -1))))
-                continue;
+            if (chatPlayer != nullptr)
+            {
+                if (tIsInList(se_playerTriggerMessagesDiedByVerifiedTriggers, trigger) && // WE MUST HAVE DIED BY A PLAYER FOR THIS MESSAGE
+                    ((chatPlayer->lastDiedByPlayer == nullptr || chatPlayer->lastDiedByPlayer->pID == -1)))
+                    continue;
 
-            if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, trigger) &&
-                (chatPlayer != nullptr && ((chatPlayer->lastKilledPlayer == nullptr || chatPlayer->lastKilledPlayer->pID == -1))))
-                continue;
-
+                if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, trigger) && // WE MUST HAVE KILLED A PLAYER FOR THIS MESSAGE
+                    ((chatPlayer->lastKilledPlayer == nullptr || chatPlayer->lastKilledPlayer->pID == -1)))
+                    continue;
+            }
             REAL extraDelay     = std::get<1>(triggerPair.second);
             // vector of possible responses
             std::vector<tString> possibleResponses = std::get<0>(triggerPair.second);
@@ -7958,25 +8192,28 @@ std::pair<tString, REAL> ePlayerNetID::findTriggeredResponse(ePlayerNetID *chatP
 void ePlayerNetID::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player)
 {
     REAL totalDelay;
-    if (se_playerMessageSmartDelay) {
+    if (se_playerMessageSmartDelay)
+    {
         se_playerMessageDelay = 0;
         totalDelay = ePlayerNetID::calculateResponseSmartDelay(messageToSend,se_playerMessageSmartDelayWPM);
     }
     else
+    {
         totalDelay = se_playerMessageDelay + extraDelay;
+    }
 
     if (se_playerMessageDelayRandMult > 0)
         totalDelay += (REAL)rand() / RAND_MAX * se_playerMessageDelayRandMult;
 
     REAL flagDelay = totalDelay * se_playerMessageChatFlagStartMult;
-
-    if (se_playerMessageDisplayScheduledMessages)
-        con << "Scheduling message \"" << messageToSend << "\" with delay " << totalDelay << " and flag delay " << flagDelay << " seconds.\n";
+    bool scheduled = false;
 
     if (player != nullptr)
     {
-        if (tIsInList(se_playerMessageTargetPlayer, player->pID+1))
+        if (tIsInList(se_playerMessageTargetPlayer, player->pID+1)) {
+            scheduled = true;
             scheduleMessageTask(player, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
+        }
     }
     else
     {
@@ -7990,10 +8227,13 @@ void ePlayerNetID::preparePlayerMessage(tString messageToSend, REAL extraDelay, 
             ePlayerNetID *netPlayer = local_p->netPlayer;
             if (!netPlayer)
                 continue;
-
+            scheduled = true;
             scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
         }
     }
+
+    if (se_playerMessageDisplayScheduledMessages && scheduled)
+        con << "Scheduled message \"" << messageToSend << "\" with delay " << totalDelay << " and flag delay " << flagDelay << " seconds.\n";
 }
 
 ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
@@ -11112,9 +11352,9 @@ static void loadCrossfadePreset(size_t selection)
     currentCrossfadePreset = selection;
     currentCrossadeColorIndex = 0; // Reset color index
     ticksSinceLastColor = 0;       // Reset ticks count
-    con << se_chatCommandsThemeHeader
-        << "Using preset " << se_chatCommandsThemeItem << (selection + 1) 
-        << se_chatCommandsThemeMain << ": " << presets[selection].description 
+    con << ChatCommand::HeaderText()
+        << "Using preset " << ChatCommand::ItemText() << (selection + 1)
+        << ChatCommand::MainText() << ": " << presets[selection].description
         << " \n  - " << presets[selection].colors.size() << " colors\n";
 }
 
@@ -11127,18 +11367,18 @@ static void crossfadePresetList()
     {
         if (i == currentCrossfadePreset)
         {
-            currentPresetStr << se_chatCommandsThemeItem << (i + 1)
-                             << ": " << se_chatCommandsThemeMain << presets[i].description
-                             << "\n  - (" << se_chatCommandsThemeItem << presets[i].colors.size()
-                             << se_chatCommandsThemeMain << " colors)\n";
+            currentPresetStr << ChatCommand::ItemText() << (i + 1)
+                             << ": " << ChatCommand::MainText() << presets[i].description
+                             << "\n  - (" << ChatCommand::ItemText() << presets[i].colors.size()
+                             << ChatCommand::MainText() << " colors)\n";
             con << currentPresetStr;
         }
         else
         {
-            con << se_chatCommandsThemeItem << (i + 1)
-                << ": " << se_chatCommandsThemeMain << presets[i].description
-                << se_chatCommandsThemeMain << " \n  - (" << se_chatCommandsThemeItem
-                << presets[i].colors.size() << se_chatCommandsThemeMain << " colors)\n";
+            con << ChatCommand::ItemText() << (i + 1)
+                << ": " << ChatCommand::MainText() << presets[i].description
+                << ChatCommand::MainText() << " \n  - (" << ChatCommand::ItemText()
+                << presets[i].colors.size() << ChatCommand::MainText() << " colors)\n";
         }
     }
     con << "Current preset: " << currentPresetStr;
@@ -11159,7 +11399,9 @@ void crossfadeUsingPreset(const Preset &preset, ePlayer *local_p)
             loadCrossfadePreset(desiredCrossfadePresetSizeT - 1);
         else
         {
-            con << "Error invalid preset, using preset 1. Available presets: \n";
+            con << ChatCommand::ErrorText()
+                << "Error invalid preset, using preset 1. Available presets: \n"
+                << ChatCommand::MainText();
             currentCrossfadePreset = 0;
             desiredCrossfadePreset = 1;
             crossfadePresetList();

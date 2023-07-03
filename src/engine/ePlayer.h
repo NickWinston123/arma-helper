@@ -72,6 +72,10 @@ enum ColorNameCustomization {
 extern tString se_disableCreateSpecific ;
 extern std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
 
+extern tString se_chatCommandsThemeHeader;
+extern tString se_chatCommandsThemeMain;
+extern tString se_chatCommandsThemeItem;
+extern tString se_chatCommandsThemeError;
 
 
 static void se_UniqueColor(ePlayer *local_p );
@@ -142,7 +146,6 @@ class ePlayer: public uPlayerPrototype{
     double lastTooltip_;
 public:
     int updateIteration;
-    int colorIteration;
     tString    name;                 // the player's screen name
     tString    globalID;             // the global ID of the player in user@authority form
     // REAL	   rubberstatus;
@@ -315,12 +318,13 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
+    bool isLocal() { return pID != -1; }
     static void preparePlayerMessage(tString message, REAL extraDelay, ePlayerNetID *player = nullptr);
     static std::pair<tString, REAL> findTriggeredResponse(ePlayerNetID *chatPlayer, tString chatMessage);
     static REAL calculateResponseSmartDelay(tString response,REAL wpm);
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
     ePlayerNetID * lastKilledPlayer;
-    ePlayerNetID * lastKilledByPlayer = nullptr;
+    ePlayerNetID * lastDiedByPlayer = nullptr;
     ePlayerNetID * lastMessagedPlayer;
     typedef std::set< eTeam * > eTeamSet;
     bool respawnedLocally;
@@ -970,7 +974,35 @@ static tColoredString gatherPlayerColor(ePlayerNetID * p, bool showReset = true)
 class ChatCommand {
 public:
     virtual bool execute(ePlayerNetID* player, tString args) = 0;
+
+    static tString HeaderText() { return se_chatCommandsThemeHeader;}
+    static tString MainText() { return se_chatCommandsThemeMain;}
+    static tString ItemText() { return se_chatCommandsThemeItem;}
+    static tString ErrorText() { return se_chatCommandsThemeError;}
+
+    tString CommandText() 
+    {
+        tString output;
+        
+        output << HeaderText()
+               << commandName
+               << " - "
+               << MainText();
+        return output;
+    }
+    
+    const std::string& getCommandName() const {
+        return commandName;
+    }
+
+protected:
+    ChatCommand(const std::string& name) : commandName(name) {}
+
+private:
+    std::string commandName;
 };
+
+
 
 tColoredString cycleColorPreview(int r,int g,int b);
 

@@ -361,7 +361,8 @@ static void gSmarterBotReset(std::istream &s)
 
     ePlayer *local_p = ePlayer::PlayerConfig(ID-1);
 
-    if (!local_p){
+    if (!local_p)
+    {
         con << "No player found with ID " << ID << "\n";
         return;
     }
@@ -369,12 +370,13 @@ static void gSmarterBotReset(std::istream &s)
     con << "Setting smarter bot defaults for Player " << ID << "\n";
 
     // Define function to verify and set default
-    auto verifyAndSet = [](std::string commandName) {
+    auto verifyAndSet = [](std::string commandName)
+    {
         tConfItemBase* item = tConfItemBase::GetConfigItem(commandName);
         if (item)
             item->SetDefault();
     };
-    
+
     // List of command name suffixes
     std::vector<std::string> commandSuffixes = {
         "THINK", "RANGE", "RANDOMNESS", "RUBBER", "SUICIDE", "TRAP",
@@ -506,6 +508,7 @@ REAL gSmarterBot::Think(REAL minStep)
         manager.Evaluate(TrapEvaluator(*Owner()), 5);
         manager.Reset();
         manager.Evaluate(SpaceEvaluator(*Owner()), 1);
+        break;
     }
     default:
     {
@@ -529,9 +532,8 @@ REAL gSmarterBot::Think(REAL minStep)
         manager.Evaluate(TrapEvaluator(*Owner()), local_player->sg_smarterBotTrapScale);
 
     if (local_player->sg_smarterBotFollowScale > 0)
-    {
         manager.Evaluate(FollowEvaluator(*Owner()), local_player->sg_smarterBotFollowScale);
-    }
+
     if (local_player->sg_smarterBotPlanScale > 0)
         manager.Evaluate(PlanEvaluator(), local_player->sg_smarterBotPlanScale);
 
@@ -551,10 +553,10 @@ REAL gSmarterBot::Think(REAL minStep)
         manager.Evaluate(SpeedEvaluator(*Owner()), local_player->sg_smarterBotSpeedScale);
 
     REAL turnDelay = 0;
-    if (local_player->sg_smarterBotTurnRandMult > 0) 
+    if (local_player->sg_smarterBotTurnRandMult > 0)
     {
         tRandomizer &randomizer = tReproducibleRandomizer::GetInstance();
-        turnDelay = randomizer.Get(0.0, local_player->sg_smarterBotTurnRandMult); 
+        turnDelay = randomizer.Get(0.0, local_player->sg_smarterBotTurnRandMult);
     }
 
     CycleControllerAction controller;
@@ -2789,17 +2791,17 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos, const eCoord &d, ePlayerNetID *p)
     startPos_ = this->pos;
     startDir_ = this->dir;
 
-    if (sg_LogTurns) 
+    if (sg_LogTurns)
     {
         tString logTurnsMsg;
         logTurnsMsg << "spawned " << this->MapPosition().x << " " << this->MapPosition().y << " " << this->Direction().x << " " << this->Direction().y;
         LogPlayersCycleTurns(this, logTurnsMsg);
     }
-    
+
     turnedPositions.push_back(startPos_);
     turnedDirections.push_back(startDir_);
 
-    if (Player()) 
+    if (Player())
     {
         Player()->lastKilledPlayer = nullptr;
         Player()->lastDiedByPlayer = nullptr;
@@ -6235,7 +6237,7 @@ gCycle::gCycle(nMessage &m)
     startDir_ = this->dir;
 
 
-    if (sg_LogTurns) 
+    if (sg_LogTurns)
     {
         tString logTurnsMsg;
         logTurnsMsg << "spawned " << this->MapPosition().x << " " << this->MapPosition().y << " " << this->Direction().x << " " << this->Direction().y;
@@ -6244,8 +6246,8 @@ gCycle::gCycle(nMessage &m)
 
     turnedPositions.push_back(startPos_);
     turnedDirections.push_back(startDir_);
-    
-    if (Player()) 
+
+    if (Player())
     {
         Player()->lastKilledPlayer = nullptr;
         Player()->lastDiedByPlayer = nullptr;
@@ -6620,10 +6622,10 @@ extern REAL sg_cycleBrakeRefill;
 extern REAL sg_cycleBrakeDeplete;
 
 bool sg_playerMessageDeathSelf = false;
-static tConfItem<bool> sg_playerMessageDeathSelfConf("PLAYER_MESSAGE_DEATH_SELF", sg_playerMessageDeathSelf);
+static tConfItem<bool> sg_playerMessageDeathSelfConf("PLAYER_MESSAGE_TRIGGER_DEATH_SELF", sg_playerMessageDeathSelf);
 
 bool sg_playerMessageDeathOther = false;
-static tConfItem<bool> sg_playerMessageDeathOtherConf("PLAYER_MESSAGE_DEATH_OTHER", sg_playerMessageDeathOther);
+static tConfItem<bool> sg_playerMessageDeathOtherConf("PLAYER_MESSAGE_TRIGGER_DEATH_OTHER", sg_playerMessageDeathOther);
 
 bool se_playerTriggerMessagesZoneVerify = false;
 static tConfItem<bool> se_playerTriggerMessagesZoneVerifyConf("PLAYER_MESSAGE_TRIGGERS_ZONE_VERIFY", se_playerTriggerMessagesZoneVerify);
@@ -6770,7 +6772,7 @@ void gCycle::ReadSync(nMessage &m)
         {
             bool zoneSpawnedRecently = false;
 
-            if (se_playerTriggerMessagesZoneVerify) 
+            if (se_playerTriggerMessagesZoneVerify)
             {
                 gZone *lastCreatedZone = gZone::GetLastCreatedZone();
                 zoneSpawnedRecently = lastCreatedZone && lastCreatedZone->actualCreateTime_ >= tSysTimeFloat() - 5;
@@ -6778,19 +6780,19 @@ void gCycle::ReadSync(nMessage &m)
 
             if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently )
             {
-                auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(Player(), tString("$died"));
+                auto [triggeredResponse, extraDelay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(killer, tString("$died"));
                 if (triggeredResponse.empty())
                     con << "No trigger set for $died\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
                 else
-                    ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, Player());
+                    ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, sendingPlayer);
             }
             else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
             {
-                auto [triggeredResponse, extraDelay] = ePlayerNetID::findTriggeredResponse(Player(), tString("$diedother"));
+                auto [triggeredResponse, extraDelay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(killer, tString("$diedother"));
                 if (triggeredResponse.empty())
                     con << "No trigger set for $diedother\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
                 else
-                    ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, Player());
+                    ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, sendingPlayer);
             }
         }
 

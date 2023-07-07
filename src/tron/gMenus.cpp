@@ -489,7 +489,7 @@ static tConfItem<bool> crexp("EXPLOSION",sg_crashExplosion);
 
 #ifndef DEDICATED
 // both from ePlayer.cpp
-static tConfItem<bool> se_highlightMyNameConf("HIGHLIGHT_NAME", se_highlightMyName);
+static tConfItem<bool> se_highlightNamesConf("HIGHLIGHT_NAMES", se_highlightNames);
 
 static tConfItem<bool> se_tabCompletionConf("TAB_COMPLETION", se_tabCompletion);
 static tConfItem<bool> se_tabCompletionColors("TAB_COMPLETION_WITH_COLORS", se_tabCompletionWithColors);
@@ -505,7 +505,7 @@ void sg_SpecialMenu()
 
     uMenuItemFunction cm(&menu, "My Color Configuration", "", sg_ColorMenu);
 
-    uMenuItemToggle hlm(&menu, "$highlight_name_menu_text", "$highlight_name_menu_help", se_highlightMyName);
+    uMenuItemToggle hlm(&menu, "$highlight_name_menu_text", "$highlight_name_menu_help", se_highlightNames);
     uMenuItemToggle tcwc(&menu, "$tab_completion_with_colors_menu_text", "$tab_completion_with_colors_menu_help", se_tabCompletionWithColors);
     uMenuItemToggle tc(&menu, "$tab_completion_menu_text", "$tab_completion_menu_help", se_tabCompletion);
 

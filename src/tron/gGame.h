@@ -319,20 +319,21 @@ public:
     // Schedule a new task
     bool schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0, bool allowMultiple = false)
     {
+        if (allowMultiple && taskCounts.find(id) != taskCounts.end()) {
+            id = id + "_" + std::to_string(++taskCounts[id]);
+        }
+
         if (!allowMultiple && tasksMap.count(id) > 0) {
             return false;
         }
 
         REAL dueTime = tSysTimeFloat() + delayInSeconds;
-        if (allowMultiple && taskCounts.find(id) != taskCounts.end()) {
-            id = id + "_" + std::to_string(++taskCounts[id]);
-        }
         auto delayedTask = DelayedTask(id, dueTime, interval, std::move(task));
         tasksQueue.push(delayedTask);
         tasksMap[id] = delayedTask;
         return true;
     }
-    
+
     // Check and execute due tasks
     void update()
     {

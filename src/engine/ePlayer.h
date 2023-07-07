@@ -320,7 +320,7 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
 public:
     bool isLocal() { return pID != -1; }
     static void preparePlayerMessage(tString message, REAL extraDelay, ePlayerNetID *player = nullptr);
-    static std::pair<tString, REAL> findTriggeredResponse(ePlayerNetID *chatPlayer, tString chatMessage);
+    static std::tuple<tString, REAL, ePlayerNetID*> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage);
     static REAL calculateResponseSmartDelay(tString response,REAL wpm);
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
     ePlayerNetID * lastKilledPlayer;
@@ -960,7 +960,7 @@ ePlayerNetID & ePlayerNetID::SetUserName( tString const & userName )
 
 ePlayerNetID *se_GetLocalPlayer();
 
-extern bool se_highlightMyName, se_tabCompletion, se_tabCompletionWithColors,se_tabCompletionColon;
+extern bool se_highlightNames, se_tabCompletion, se_tabCompletionWithColors,se_tabCompletionColon;
 
 
 static ePlayer * se_chatterPlanned=NULL;

@@ -204,8 +204,12 @@ static nSettingItemWatched<REAL> c_dt("CYCLE_DELAY_TIMEBASED",
                                       7);
 
 // extra factor to sg_delayCycle applied locally
+#ifdef DEDICATED
 REAL sg_delayCycleBonus = .95;
-static tSettingItem<REAL> c_db("CYCLE_DELAY_BONUS",
+#else
+REAL sg_delayCycleBonus = 1;
+#endif
+static tConfItem<REAL> c_db("CYCLE_DELAY_BONUS",
                                sg_delayCycleBonus);
 
 REAL sg_delayDbCycleBonus = .95;

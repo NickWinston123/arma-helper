@@ -1217,7 +1217,7 @@ static const tString &se_UserName()
     return ret;
 }
 
-ePlayer::ePlayer() : updateIteration(0)
+ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
 {
     nAuthentication::SetUserPasswordCallback(&PasswordCallback);
 #ifdef KRAWALL_SERVER
@@ -5747,7 +5747,7 @@ public:
             targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
             if (!targetPlayer || !targetPlayer->Object() ||
                 !targetPlayer->CurrentTeam() ||
-                (targetPlayer != nullptr && localPlayer->cam->watchPlayer == targetPlayer) )
+                (targetPlayer != nullptr && localPlayer->watchPlayer == targetPlayer) )
             {
                 con << CommandText()
                     << ErrorText()
@@ -5757,16 +5757,16 @@ public:
             else
             {
                 con << CommandText()
-                    << "Watch Player set to: '"
+                    << "Watch Player set to '"
                     << targetPlayer->GetColoredName()
                     << MainText() << "'\n";
-                localPlayer->cam->watchPlayer = targetPlayer;
+                localPlayer->watchPlayer = targetPlayer;
             }
         }
         else
         {
             con << CommandText() << "Watch Player removed.\n";
-            localPlayer->cam->watchPlayer = nullptr;
+            localPlayer->watchPlayer = nullptr;
         }
         return true;
     }

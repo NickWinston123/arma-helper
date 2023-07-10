@@ -1556,10 +1556,10 @@ void gAIPlayer::AddToPath(eCoord const &target, bool mindless)
     gAI_STATE desiredState = mindless ? AI_PATH_MINDLESS : AI_PATH_GIVEN;
     if (state != desiredState)
     {
-        // if( state != AI_PATH_GIVEN && state != AI_PATH_MINDLESS )
-        // {
-        //     path.Clear();
-        // }
+        if( state != AI_PATH_GIVEN && state != AI_PATH_MINDLESS )
+        {
+            path.Clear();
+        }
 
         // hard state change, avoid random changes back from it
         state = desiredState;
@@ -2519,7 +2519,23 @@ REAL gAIPlayer::Think(REAL maxStep)
 
     // con << "Think!\n";
 
+    if ( !simpleAI_ )
+    {
+        gSimpleAIFactory * factory = gSimpleAIFactory::Get();
+        if ( factory )
+        {
+            simpleAI_ = factory->Create( Object() );
+        }
+    }
+
     CreateNavigator();
+
+    if ( simpleAI_ )
+    {
+        simpleAI_->Think( maxStep );
+    }
+
+
     REAL nextThink = 10;
 
     if (GetTarget() && (!GetTarget()->Alive() || IsTrapped(GetTarget(), Object())))
@@ -2604,9 +2620,15 @@ REAL gAIPlayer::Think(REAL maxStep)
         }
         ActOnData(data);
         ret = data.thinkAgain;
+        return nextThink;
     }
-
-    return nextThink;
+    else if (state_)
+    {
+        tJUST_CONTROLLED_PTR<State> keepalive(state_);
+        return state_->Think(maxStep);
+    }
+    else
+        return 10;
 }
 
 void gAIPlayer::Timestep(REAL time)

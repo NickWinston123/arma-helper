@@ -1332,7 +1332,7 @@ static void sg_AddDelayedCmd(std::istream &s)
     tString params;
     params.ReadLine(s, true);
 
-    if (params.Len() <= 0)
+    if (params.empty())
     {
         con << "Usage: DELAY_COMMAND <delay> <command>\n";
         con << "       This will execute <command> after <delay> seconds.\n";

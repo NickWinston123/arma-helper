@@ -440,7 +440,8 @@ eCamera::eCamera(eGrid *g, rViewport *view,ePlayerNetID *p,
         :id(-1),grid(g),netPlayer(p),localPlayer(lp),
         // centerID(0),
         mode(m),pos(0,0),dir(1,0),top(0,0),
-vp(view), cameraMain_(rMain), watchPlayer(nullptr){
+        vp(view), cameraMain_(rMain) 
+    {
     /*
       if (p->pID>=0)
       localPlayer=playerConfig[p->pID];
@@ -1555,9 +1556,9 @@ void eCamera::Timestep(REAL ts){
         fov = localPlayer->FOV;
     }
 
-    if (watchPlayer != nullptr)
+    if (localPlayer->watchPlayer != nullptr)
     {
-        gCycle *cycle = ePlayerNetID::NetPlayerToCycle(watchPlayer);
+        gCycle *cycle = ePlayerNetID::NetPlayerToCycle(localPlayer->watchPlayer);
         if (center != cycle && InterestingToWatch(cycle))
         {
             center = cycle;

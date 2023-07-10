@@ -69,7 +69,6 @@ protected:
   public:
     // mutable nObserverPtr<eNetGameObject> center; // the game object we watch
     tJUST_CONTROLLED_PTR<eGameObject> center; // the game object we watch
-    ePlayerNetID * watchPlayer; // the player we want to watch
 protected:
     // mutable int  centerID; // the game id of the object we are watching
     //int        lastCenterID; // the game id of the object we are watching

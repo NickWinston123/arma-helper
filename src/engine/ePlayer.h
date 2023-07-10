@@ -161,6 +161,7 @@ public:
     bool 		nameTeamAfterMe; // player prefers to call his team after his name
     int			favoriteNumberOfPlayersPerTeam;
 
+    ePlayerNetID * watchPlayer; // the player we want to watch
 
     //Smarter bot
     bool sg_smarterBotThink;

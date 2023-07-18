@@ -579,7 +579,7 @@ public:
 
     static ePlayerNetID * ReadPlayer( std::istream & s ); //!< reads a player from the stream
 
-    static void Update();           // creates ePlayerNetIDs for new players
+    static void Update(ePlayer *updatePlayer = nullptr);           // creates ePlayerNetIDs for new players
     // and destroys those of players that have left
 
 #ifdef KRAWALL_SERVER

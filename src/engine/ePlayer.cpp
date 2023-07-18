@@ -5095,6 +5095,9 @@ static tConfItem<tString> se_reconnectCommandConf("LOCAL_CHAT_COMMAND_RECONNECT"
 static tString se_calculateCommand("/calc");
 static tConfItem<tString> se_calculateCommandConf("LOCAL_CHAT_COMMAND_CALCULATE", se_calculateCommand);
 
+static tString se_updateCommand("/update");
+static tConfItem<tString> se_updateCommandConf("LOCAL_CHAT_COMMAND_UPDATE", se_updateCommand);
+
 class MsgCommand : public ChatCommand
 {
 public:
@@ -6589,6 +6592,46 @@ private:
     }
 };
 
+
+class UpdateCommand : public ChatCommand
+{
+public:
+    UpdateCommand() : ChatCommand("UpdateCommand") {}
+
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        int pos = 0;
+        tString PlayerNumb = args.ExtractNonBlankSubString(pos);
+
+        if (PlayerNumb.empty())
+        {
+            con << CommandText()
+                << "Updating all players...\n";
+            ePlayerNetID::Update();
+        }
+        else
+        {
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb) - 1);
+            if (local_p && local_p->netPlayer)
+            {
+                con << CommandText()
+                    << "Updating player '"
+                    << ItemText()
+                    << local_p->Name()
+                    << MainText() << "'\n";
+                    
+                ePlayerNetID::Update(local_p);
+            }
+            else
+            {
+                con << local_p->Name() << " is not in game.\n";
+            }
+        }
+        return true;
+    }
+};
+
+
 std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> CommandFactory()
 {
     std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> commandFactories;
@@ -6621,6 +6664,7 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
     addCommand(se_statsCommand, []() { return std::make_unique<StatsCommand>(); });
     addCommand(se_reconnectCommand, []() { return std::make_unique<ReconnectCommand>(); });
     addCommand(se_calculateCommand, []() { return std::make_unique<CalculateCommand>(); });
+    addCommand(se_updateCommand, []() { return std::make_unique<UpdateCommand>(); });
 
     return commandFactories;
 }
@@ -7890,7 +7934,7 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
 
     if (se_playerTriggerMessages && se_playerMessageEnter && !tIsInList(se_disableCreateSpecific, pID + 1))
     {
-        auto [triggeredResponse, extraDelay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$entered"));
+        auto [triggeredResponse, extraDelay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(this, tString("$enter"));
         if (triggeredResponse.empty())
             con << "No trigger set for $entered\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
         else
@@ -8159,7 +8203,7 @@ std::tuple<tString, REAL, ePlayerNetID *> ePlayerNetID::findTriggeredResponse(eP
 {
     tString lowerMessage(chatMessage.TrimWhitespace());
     tToLower(lowerMessage);
-
+    tString triggeredPlayerName = tString("");
     ePlayerNetID *sendingPlayer = nullptr; // who should send this message?
 
     for (const auto &triggerPair : chatTriggers)
@@ -8172,6 +8216,8 @@ std::tuple<tString, REAL, ePlayerNetID *> ePlayerNetID::findTriggeredResponse(eP
             // Determine the sending player based on the type of trigger
             if (triggeredPlayer != nullptr)
             {
+                // con << "triggeredPlayer NOT NULL\n";
+
                 ePlayerNetID *potentialSender = nullptr;
                 if (tIsInList(se_playerTriggerMessagesDiedByVerifiedTriggers, trigger)) 
                 {
@@ -8190,6 +8236,10 @@ std::tuple<tString, REAL, ePlayerNetID *> ePlayerNetID::findTriggeredResponse(eP
 
                 if (potentialSender != nullptr && potentialSender->isLocal()) 
                     sendingPlayer = potentialSender;
+                // con << "SETTING NAME TO " << triggeredPlayer->GetName() << "\n";
+                triggeredPlayerName = triggeredPlayer->GetName();
+            } else {
+                // con << "TRIGGERED PLAYER NULL? " << "\n";
             }
 
             REAL extraDelay = std::get<1>(triggerPair.second);
@@ -8197,6 +8247,12 @@ std::tuple<tString, REAL, ePlayerNetID *> ePlayerNetID::findTriggeredResponse(eP
             std::vector<tString> possibleResponses = std::get<0>(triggerPair.second);
             // random response from the vector
             tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
+
+            // con << "BEFORE: " << chosenResponse << "\n";
+            // con << "triggeredPlayerName " << triggeredPlayerName << "\n";
+            if (chosenResponse.Contains("$p"))
+                chosenResponse = chosenResponse.Replace(tString("$p"),triggeredPlayerName);
+
             return std::make_tuple(chosenResponse, extraDelay, sendingPlayer);
         }
     }
@@ -8321,9 +8377,9 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
 
     if (se_playerTriggerMessages && se_playerMessageEnter)
     {
-        auto [triggeredResponse, extraDelay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$entered"));
+        auto [triggeredResponse, extraDelay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(this, tString("$enter"));
         if (triggeredResponse.empty())
-            con << "No trigger set for $entered\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+            con << "No trigger set for $enter\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
         else
             ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, sendingPlayer);
     }
@@ -11961,7 +12017,7 @@ tString RandomStr(int maxLength)
 }
 
 // Update the netPlayer_id list
-void ePlayerNetID::Update()
+void ePlayerNetID::Update(ePlayer* updatePlayer)
 {
 #ifdef KRAWALL_SERVER
     // update access level
@@ -12009,6 +12065,10 @@ void ePlayerNetID::Update()
         {
             ePlayer *local_p = ePlayer::PlayerConfig(i);
             tASSERT(local_p);
+
+            if (updatePlayer != nullptr && updatePlayer != local_p)
+                continue;
+
             tCONTROLLED_PTR(ePlayerNetID) &p = local_p->netPlayer;
             bool in_game = ePlayer::PlayerIsInGame(i) ||
                            (local_p && local_p->ID() != 0 &&

@@ -1341,12 +1341,9 @@ static void sg_AddDelayedCmd(std::istream &s)
         return;
     }
 
-    // Convert tString to std::string for splitting
-    std::string params_std(params.c_str());
-
     // Split the input into a vector of strings
     std::vector<std::string> input_parts;
-    std::istringstream iss(params_std);
+    std::istringstream iss(params.stdString());
     for (std::string s; iss >> s;)
         input_parts.push_back(s);
 

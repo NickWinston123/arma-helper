@@ -2781,7 +2781,7 @@ tString tString::Replace(tString old_word, tString new_word)
         if (putWordTogether.Filter() == old_word.Filter())
         {
             strString << new_word;
-            i += count_word - 1;
+            i += count_word;// - 1;
         }
         else
             strString << ret[i];

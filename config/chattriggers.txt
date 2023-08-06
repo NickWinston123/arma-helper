@@ -1,0 +1,53 @@
+$died,wd;gj;WD,0,1
+$enter,hey $p;hi $p;hello $p;o/ $p;hi $p!;hia $p,0,1
+$left,noo;rip;aw,0,1
+$matchwinner;gf;wd;g1;gm;ghz;gz,gg,0,1
+$diedother,gg,0,1
+$rename,i like the new name $p,0,1
+real;human;fun,yes,0,0
+w1;nice;d,ty,0,1
+handle it,I can handle it,0,0
+good to see,ya,0,0
+bye,bye gg,0,0
+great grandma;grandma,the great grandmyzer,0,0
+ping,pong,0,1
+ss;XD,ss,0,1
+cya;bb,bye!,0,1
+nelg;what are you,a noob!!!!!,0,0
+helo;hello;hey;hi,o/,0,1
+lol;butt,lol,0,0
+noice;good job,tyy,0,0
+gj,ty,0,0
+aaa,!!!,0,1
+rq,imagine;never that,0,0
+who;?,0,0
+hmm;hm,hmmmm;mmmm,0,1
+k;ok,kk;okay;ok;uh k,0,1
+what,huh?,0,0
+:|,:),0,0
+cheat;fu,no,0,0
+gl;u2,u2,0,1
+annoying,sorry :x,0,0
+where,idk,0,0
+chump,:O,0,0
+yes,no,0,1
+no,yes,0,1
+stop,no!!;nvr;nah;nope;no,0,0
+haha,:D,0,0
+is a bot;bot,no;nope;negative,0,0
+knowns;you are,$p is,0,0
+nein,nein?,0,0
+gay,ayo?,0,0
+handled,WOW!,0,0
+tossed,like a salad,0,0
+scared,who,0,0
+hehe,:p;heh,0,0
+1,2,0,1
+wow,YEAH,0,0
+pause,play,0,1
+police,oh no,0,0
+called,did you really,0,0
+lame, u r?,0,1
+you,not me,0,1
+trig1;trig2,response,0,0
+nubbin,stop him,0,1

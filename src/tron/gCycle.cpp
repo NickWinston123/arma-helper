@@ -6780,19 +6780,19 @@ void gCycle::ReadSync(nMessage &m)
 
             if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently )
             {
-                auto [triggeredResponse, extraDelay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(killer, tString("$died"));
-                if (triggeredResponse.empty())
+                auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(killer, tString("$died"));
+                if (response.empty())
                     con << "No trigger set for $died\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
                 else
-                    ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, sendingPlayer);
+                    ePlayerNetID::preparePlayerMessage(response, delay, sendingPlayer);
             }
             else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
             {
-                auto [triggeredResponse, extraDelay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(killer, tString("$diedother"));
-                if (triggeredResponse.empty())
+                auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(killer, tString("$diedother"));
+                if (response.empty())
                     con << "No trigger set for $diedother\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
                 else
-                    ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, sendingPlayer);
+                    ePlayerNetID::preparePlayerMessage(response, delay, sendingPlayer);
             }
         }
 

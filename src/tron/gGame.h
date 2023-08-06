@@ -291,11 +291,11 @@ void LogPlayersCycleTurns(gCycle *cycle, tString msg);
 void LogWinnerCycleTurns(gCycle *winner);
 
 extern void sg_DetermineSpawnPoint(ePlayerNetID *p, eCoord &pos, eCoord &dir);
+
 #include <queue>
 #include <unordered_map>
 #include <functional>
 #include <set>
-
 struct DelayedTask
 {
     std::string id;

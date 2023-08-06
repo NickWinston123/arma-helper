@@ -323,6 +323,7 @@ public:
     static void preparePlayerMessage(tString message, REAL extraDelay, ePlayerNetID *player = nullptr);
     static std::tuple<tString, REAL, ePlayerNetID*> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage);
     static REAL calculateResponseSmartDelay(tString response,REAL wpm);
+    static REAL determineReadingDelay(tString message);
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastDiedByPlayer = nullptr;
@@ -341,13 +342,13 @@ public:
     int shiftIter = 0;
     int lastplayerRandomColorNameStartMode;
     tArray<tString> lastSearch;
+    bool nameFirstSync  = true;
 private:
 
     int listID;                          // ID in the list of all players
     int teamListID;                      // ID in the list of the team
 
     bool							silenced_;		    // flag indicating whether the player has been silenced
-
     int                             suspended_;         //! number of rounds the player is currently suspended from playing
     tString                         suspendReason_;     // what was the reason for suspending this person...?
 
@@ -981,17 +982,17 @@ public:
     static tString ItemText() { return se_chatCommandsThemeItem;}
     static tString ErrorText() { return se_chatCommandsThemeError;}
 
-    tString CommandText() 
+    tString CommandText()
     {
         tString output;
-        
+
         output << HeaderText()
                << commandName
                << " - "
                << MainText();
         return output;
     }
-    
+
     const std::string& getCommandName() const {
         return commandName;
     }

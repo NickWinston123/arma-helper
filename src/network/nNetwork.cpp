@@ -3437,11 +3437,11 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
         if (se_playerTriggerMessages && sg_playerMessageMatchWinner && s.Contains("Overall Winner"))
         {
-            auto [triggeredResponse, extraDelay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$matchwinner"));
-            if (triggeredResponse.empty())
+            auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$matchwinner"));
+            if (response.empty())
                 con << "No trigger set for $matchwinner\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
             else
-                ePlayerNetID::preparePlayerMessage(triggeredResponse, extraDelay, sendingPlayer);
+                ePlayerNetID::preparePlayerMessage(response, delay, sendingPlayer);
         }
 
     }

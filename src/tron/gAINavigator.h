@@ -475,6 +475,7 @@ class gSmarterBot : public gAINavigator
     friend class gCycle;
 
     REAL nextChatAI_; //!< the next time the chat AI can be active
+    REAL nextAFKCheck_;
     gCycle *owner_;
     ePlayerNetID *player_;
     ePlayer *local_player;
@@ -483,8 +484,9 @@ public:
     gSmarterBot(gCycle *owner);
     static void Survive(gCycle *owner);
 
-    REAL Think(REAL minStep);
+    REAL Think(REAL currentTime, REAL minStep);
     void Activate(REAL currentTime);
+    REAL annoyanceCheck();
 
     static gSmarterBot &Get(gCycle *cycle);
     ~gSmarterBot();

@@ -404,7 +404,7 @@ gSmarterBot::~gSmarterBot()
 }
 
 gSmarterBot::gSmarterBot(gCycle *owner)
-    : gAINavigator(owner), owner_(owner), nextChatAI_(0), player_(owner->netPlayer_), local_player(ePlayer::gCycleToLocalPlayer(owner))
+    : gAINavigator(owner), owner_(owner), nextChatAI_(0), nextAFKCheck_(0), player_(owner->netPlayer_), local_player(ePlayer::gCycleToLocalPlayer(owner))
 
 {
     settings_.range = owner_->Speed() * local_player->sg_smarterBotRange;
@@ -431,11 +431,88 @@ void gSmarterBot::Survive(gCycle *owner)
 void playersCheck()
 {
 }
+REAL gSmarterBot::annoyanceCheck()
+{
+    if (!owner_ || !owner_->Alive())
+    {
+        return false;
+    }
 
-REAL gSmarterBot::Think(REAL minStep)
+    ePlayerNetID* alivePlayer = nullptr;
+    int alivePlayerCount = 0;
+    int totalPlayerCount = 0;
+
+    for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+    {
+        auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
+        bool isDifferentPlayer = se_PlayerNetIDs[i]->pID != owner_->Player()->pID;
+
+        if (se_PlayerNetIDs[i]->CurrentTeam() && isDifferentPlayer)
+        {
+            totalPlayerCount++;
+            if (other && other->Alive())
+            {
+                if (alivePlayer) 
+                {
+                    alivePlayerCount++;
+                    break;
+                }
+                alivePlayer = se_PlayerNetIDs[i];
+                alivePlayerCount++;
+            }
+        }
+    }
+
+    // con << "Total players: " << totalPlayerCount << ", Alive players: " << alivePlayerCount << "\n";
+
+    if (alivePlayerCount == 1 && totalPlayerCount > 1 && alivePlayer)
+    {
+        // con << "ONLY ONE PLAYER ALIVE\n";
+
+        if (alivePlayer->ChattingTime() > sg_smarterBotAFKCheckTime)
+        {
+            con << "SmarterBot: The alive player is chatting for too long.\n";
+            return sg_smarterBotAFKCheckTime;
+        }
+
+        if (alivePlayer->isLocal() && alivePlayer->NetPlayerToCycle())
+        {
+            double timeSinceLastTurn = se_GameTime() - alivePlayer->NetPlayerToCycle()->lastTurnTime;
+            if (timeSinceLastTurn > sg_smarterBotAFKCheckTime * 2)
+            {
+                con << "SmarterBot: The alive player hasn't turned for too long.\n";
+                return sg_smarterBotAFKCheckTime;
+            }
+        }
+    }
+    return 0;
+}
+
+
+REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
 {
     if (!local_player)
         return 5;
+
+    if (sg_smarterBotAFKCheck && nextAFKCheck_ < tSysTimeFloat())
+    {
+        REAL nextTime = annoyanceCheck();
+        if (nextTime != 0)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                owner_->Turn(1);
+            }
+
+            nextAFKCheck_ = tSysTimeFloat() + nextTime;
+            return 5;
+        }
+        else
+        {
+            nextAFKCheck_ = tSysTimeFloat() + sg_smarterBotAFKCheckTime;
+        }
+    }
+
 
     UpdatePaths();
     EvaluationManager manager(GetPaths());
@@ -575,7 +652,7 @@ void gSmarterBot::Activate(REAL currentTime)
 
     if (nextChatAI_ <= se_GameTime())
     {
-        REAL nextThought = Think(0);
+        REAL nextThought = Think(currentTime,0);
         nextChatAI_ = (nextThought * local_player->sg_smarterBotNextThinkMult) + se_GameTime();
     }
 }
@@ -585,6 +662,12 @@ static tConfItem<tString> sg_smarterBotEnableForPlayersConf("SMARTER_BOT_ENABLED
 
 static bool sg_smarterBotAlwaysActive = false;
 static tConfItem<bool> sg_smarterBotAlwaysActiveConf("SMARTER_BOT_ALWAYS_ACTIVE", sg_smarterBotAlwaysActive);
+
+bool sg_smarterBotAFKCheck = false;
+static tConfItem<bool> sg_smarterBotAFKCheckConf("SMARTER_BOT_AFK_CHECK", sg_smarterBotAFKCheck);
+
+REAL sg_smarterBotAFKCheckTime = 8;
+static tConfItem<REAL> sg_smarterBotAFKCheckTimeConf("SMARTER_BOT_AFK_CHECK_TIME", sg_smarterBotAFKCheckTime);
 
 static REAL sg_lastTimeHackMult = 0;
 static tConfItem<REAL> sg_lastTimeHackMultConf("CYCLE_LAST_TIME_HACK_ADD", sg_lastTimeHackMult);

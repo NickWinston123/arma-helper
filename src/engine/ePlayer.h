@@ -76,7 +76,7 @@ extern tString se_chatCommandsThemeHeader;
 extern tString se_chatCommandsThemeMain;
 extern tString se_chatCommandsThemeItem;
 extern tString se_chatCommandsThemeError;
-
+extern tString se_playerTriggerMessagesIgnoreList;
 
 static void se_UniqueColor(ePlayer *local_p );
 static void se_RandomizeColor(ePlayer *local_p);

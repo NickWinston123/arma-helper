@@ -1760,6 +1760,8 @@ static tConfItem<bool> se_chatTimeStampConf("CHAT_TIMESTAMP", se_chatTimeStamp);
 bool se_playerTriggerMessages = false;
 static tConfItem<bool> se_playerTriggerMessagesConf("PLAYER_MESSAGE_TRIGGERS", se_playerTriggerMessages);
 
+tString se_playerTriggerMessagesIgnoreList = tString("");
+static tConfItem<tString> se_playerTriggerMessagesIgnoreListConf("PLAYER_MESSAGE_TRIGGERS_IGNORE_LIST", se_playerTriggerMessagesIgnoreList);
 
 bool se_playerTriggerMessagesReactToSelf = false;
 static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerTriggerMessagesReactToSelf);
@@ -8052,8 +8054,8 @@ void LoadChatTriggers()
                 // Split the responses by semicolon
                 std::vector<tString> responses(responsesArray.begin(), responsesArray.end());
 
-                REAL extraDelay = atof(parts[2].c_str());
-                bool exact = atoi(parts[3].c_str()) == 1;
+                REAL extraDelay = atof(parts[2]);
+                bool exact = atoi(parts[3]) == 1;
 
                 // Store the trigger and its corresponding responses, delay and exact value
                 chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
@@ -8213,103 +8215,135 @@ REAL ePlayerNetID::calculateResponseSmartDelay(tString response, REAL wpm)
 
 /*
 triggeredPlayer: who triggered the message
-chatMessage: the message that will be sent
+chatMessage: the message potentially containing a trigger
 */
 std::tuple<tString, REAL, ePlayerNetID *> ePlayerNetID::findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage)
 {
+    // if (!se_playerTriggerMessagesIgnoreList.empty())
+    // {
+    //     tString playerName = triggeredPlayer->GetName().ToLower();
+    //     tArray<tString> players = se_playerTriggerMessagesIgnoreList.Split(",");
+    //     for (int i = 0; i < players.Len(); i++)
+    //     {
+    //         if (playerName.Contains(players[i].ToLower()))
+    //             return std::make_tuple(tString(""), 0.0, nullptr);
+    //     }
+    // }
+    
     tString lowerMessage(chatMessage.TrimWhitespace());
     tToLower(lowerMessage);
     tString triggeredPlayerName = tString("");
     ePlayerNetID *sendingPlayer = nullptr; // who should send this message?
 
+    bool hasSearchedForPlayer = false;
+    ePlayerNetID *foundPlayer = nullptr;
+
     for (const auto &triggerPair : chatTriggers)
     {
-        bool exact = std::get<2>(triggerPair.second);
+        bool exact = std::get<2>(triggerPair.second), match = false;
         tString trigger = triggerPair.first;
 
-            if ((exact && lowerMessage == trigger) || (!exact && lowerMessage.Contains(trigger)))
+        ePlayerNetID *potentialSender = nullptr;
+
+        if (trigger.Contains("$p"))
+        {
+            if (!hasSearchedForPlayer)
             {
-                // Determine the sending player based on the type of trigger
-                if (triggeredPlayer != nullptr)
+                for (int i = MAX_PLAYERS - 1; i >= 0; i--)
                 {
-                    ePlayerNetID *potentialSender = nullptr;
-                    if (tIsInList(se_playerTriggerMessagesDiedByVerifiedTriggers, trigger))
+                    ePlayer *p = ePlayer::PlayerConfig(i);
+
+                    if (p)
                     {
-                        if (triggeredPlayer->lastKilledPlayer == nullptr || triggeredPlayer->lastKilledPlayer->pID == -1)
-                            continue;
-                        else
-                            potentialSender = triggeredPlayer->lastKilledPlayer;
-                    }
-                    else if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, trigger))
-                    {
-                        if (triggeredPlayer->lastDiedByPlayer == nullptr || triggeredPlayer->lastDiedByPlayer->pID == -1)
-                            continue;
-                        else
-                            potentialSender = triggeredPlayer->lastDiedByPlayer;
-                    }
+                        ePlayerNetID *netp = p->netPlayer;
 
-                    if (potentialSender != nullptr && potentialSender->isLocal())
-                        sendingPlayer = potentialSender;
+                        if (netp)
+                        {
+                            tString ourName = netp->GetName().ToLower();
 
-                    triggeredPlayerName = triggeredPlayer->GetName();
+                            tString triggerWithoutName = trigger.Replace("$p", "").TrimWhitespace();
+                            if (!lowerMessage.Contains(triggerWithoutName))
+                            {
+                                continue; 
+                            }
+
+                            if (exact)
+                            {
+                                if (lowerMessage.Contains(ourName))
+                                {
+                                    match = true;
+                                    foundPlayer = netp;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                tArray<tString> nameParts = ourName.Split(" ");
+
+                                for (const auto &namePart : nameParts)
+                                {
+                                    if (lowerMessage.Contains(namePart))
+                                    {
+                                        match = true;
+                                        foundPlayer = netp;
+                                        break;
+                                    }
+                                }
+
+                                if (match)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
-
-                REAL extraDelay = std::get<1>(triggerPair.second);
-
-                // vector of possible responses
-                std::vector<tString> possibleResponses = std::get<0>(triggerPair.second);
-                // random response from the vector
-                tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
-
-                if (chosenResponse.Contains("$p"))
-                {
-                    std::string responseStr = chosenResponse.stdString();
-
-                    std::size_t pos;
-                    while ((pos = responseStr.find("$p")) != std::string::npos) {
-                        responseStr.replace(pos, 2, triggeredPlayerName);
-                    }
-
-                    chosenResponse = tString(responseStr);
-                }
-
-                return std::make_tuple(chosenResponse, extraDelay, sendingPlayer);
+                hasSearchedForPlayer = true;
+            }
+            else
+            {
+                match = foundPlayer != nullptr;
+                potentialSender = foundPlayer;
             }
         }
-
+        else
+        {
+            match = (exact && lowerMessage == trigger) || (!exact && lowerMessage.Contains(trigger));
+        }
+    }
     // Return empty message and 0 delay if no triggers match
     return std::make_tuple(tString(""), 0.0, nullptr);
 }
 
 REAL ePlayerNetID::determineReadingDelay(tString message)
 {
-    return se_playerMessageSmartDelayReadingWPM > 0 ? 0 : ePlayerNetID::calculateResponseSmartDelay(message, se_playerMessageSmartDelayReadingWPM);
-
+    return se_playerMessageSmartDelayReadingWPM > 0 ? ePlayerNetID::calculateResponseSmartDelay(message, se_playerMessageSmartDelayReadingWPM) : 0;
 }
 
 void ePlayerNetID::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player)
 {
-    REAL typingDelay;
+    REAL totalDelay;
 
     if (se_playerMessageSmartDelay)
     {
         se_playerMessageDelay = 0;
-        typingDelay = ePlayerNetID::calculateResponseSmartDelay(messageToSend, se_playerMessageSmartDelayTypingWPM);
+        totalDelay = ePlayerNetID::calculateResponseSmartDelay(messageToSend, se_playerMessageSmartDelayTypingWPM);
     }
     else
     {
-        typingDelay = se_playerMessageDelay;
+        totalDelay = se_playerMessageDelay;
     }
 
     if (se_playerMessageDelayRandMult > 0)
-        typingDelay += (REAL)rand() / RAND_MAX * se_playerMessageDelayRandMult;
+        totalDelay += (REAL)rand() / RAND_MAX * se_playerMessageDelayRandMult;
 
-    REAL flagDelay = se_playerMessageSmartDelayReactionTime + typingDelay * se_playerMessageChatFlagStartMult;
+    totalDelay += extraDelay;
 
-    if (flagDelay > typingDelay)
-        flagDelay = typingDelay * 0.9;
+    REAL flagDelay = se_playerMessageSmartDelayReactionTime + totalDelay * se_playerMessageChatFlagStartMult;
 
-    typingDelay += extraDelay;
+    if (flagDelay > totalDelay)
+        flagDelay = totalDelay * 0.9;
+
 
     bool scheduled = false;
 
@@ -8318,7 +8352,7 @@ void ePlayerNetID::preparePlayerMessage(tString messageToSend, REAL extraDelay, 
         if (tIsInList(se_playerMessageTargetPlayer, player->pID+1))
         {
             scheduled = true;
-            scheduleMessageTask(player, messageToSend, se_playerMessageChatFlag, typingDelay, flagDelay);
+            scheduleMessageTask(player, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
         }
     }
     else
@@ -8335,15 +8369,16 @@ void ePlayerNetID::preparePlayerMessage(tString messageToSend, REAL extraDelay, 
                 continue;
 
             scheduled = true;
-            scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, typingDelay, flagDelay);
+            scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
         }
     }
 
     if (se_playerMessageDisplayScheduledMessages && scheduled)
         con << "Scheduled message \"" << messageToSend
             << "\" with extra delay " << extraDelay
-            << ", typing delay " << typingDelay
-            << " and flag delay " << flagDelay << " seconds.\n";
+            << ", total delay "       << totalDelay
+            << " and flag delay "     << flagDelay
+            << " seconds.\n";
 }
 
 ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
@@ -14352,7 +14387,7 @@ void ePlayerNetID::UpdateName(void)
     coloredName_ << tColoredString::ColorString(r, g, b) << nameFromServer_;
 
     bool nameChange = name_ != newName;
-    if (nameChange|| lastAccessLevel != GetAccessLevel())
+    if (nameChange || lastAccessLevel != GetAccessLevel())
     {
         // copy it to the name, removing colors of course
         name_ = newName;
@@ -14366,7 +14401,7 @@ void ePlayerNetID::UpdateName(void)
             RequestSync();
         }
 
-        if (!nameFirstSync && !isLocal() && nameChange && se_playerTriggerMessages && se_playerMessageRename)
+        if (!nameFirstSync && !isLocal() && sn_GetNetState() == nCLIENT && nameChange && se_playerTriggerMessages && se_playerMessageRename)
         {
 
             auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(this, tString("$rename"));

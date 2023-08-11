@@ -80,10 +80,10 @@ struct gHelperRubberData
     gHelper *helper_;
     gCycle *owner_;
     REAL rubberAvailable,
-        rubberEffectiveness,
-        rubberFactor,
-        rubberUsedRatio,
-        rubberTimeLeft;
+         rubberEffectiveness,
+         rubberFactor,
+         rubberUsedRatio,
+         rubberTimeLeft;
 
     REAL rubberAvailableF()
     {

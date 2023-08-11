@@ -331,8 +331,8 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     REAL timeout = data.ownerData.speedFactorF() + sg_helperDetectCutTimeout;
 
     // Get the closest enemy
-    gCycle *enemy = data.enemies.closestEnemy.owner_;
     gHelperClosestEnemyData &enemyData = data.enemies.closestEnemy;
+    gCycle *enemy = enemyData.owner_;
 
     // If there's no enemy, return
     if (!data.enemies.exist(enemy))

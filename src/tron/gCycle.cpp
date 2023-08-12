@@ -6861,21 +6861,29 @@ void gCycle::ReadSync(nMessage &m)
                 zoneSpawnedRecently = lastCreatedZone && lastCreatedZone->actualCreateTime_ >= tSysTimeFloat() - 5;
             }
 
-            if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently )
+            if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently)
             {
-                auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(killer, tString("$died"));
-                if (response.empty())
-                    con << "No trigger set for $died\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-                else
-                    ePlayerNetID::preparePlayerMessage(response, delay, sendingPlayer);
+                eChatBot &bot = eChatBot::getInstance();
+                if (bot.ShouldAnalyze())
+                {
+                    auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(killer, tString("$died"));
+                    if (response.empty())
+                        con << "No trigger set for $died\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+                    else
+                        bot.preparePlayerMessage(response, delay, sendingPlayer);
+                }
             }
             else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
             {
-                auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(killer, tString("$diedother"));
-                if (response.empty())
-                    con << "No trigger set for $diedother\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-                else
-                    ePlayerNetID::preparePlayerMessage(response, delay, sendingPlayer);
+                eChatBot &bot = eChatBot::getInstance();
+                if (bot.ShouldAnalyze())
+                {
+                    auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(killer, tString("$diedother"));
+                    if (response.empty())
+                        con << "No trigger set for $diedother\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+                    else
+                        bot.preparePlayerMessage(response, delay, sendingPlayer);
+                }
             }
         }
 

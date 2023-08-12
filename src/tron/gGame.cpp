@@ -3217,8 +3217,10 @@ int sg_RestrictPlayTimeStartTimWarningsCap = 5;
 void MainMenu(bool ingame)
 {
 
-    if (se_playerTriggerMessages)
-        LoadChatTriggers();
+    if (se_playerTriggerMessages) {
+        eChatBot& bot = eChatBot::getInstance();
+        bot.LoadChatTriggers();
+    }
 
     if (sg_RestrictPlayTime && isWithinRange())
     {

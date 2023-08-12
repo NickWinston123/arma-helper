@@ -1904,10 +1904,14 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             const int nameLength = p->GetName().Len();
 
             actualMessage = actualMessage.SubStr(timestampLength + nameLength + 2);
-            auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(p, actualMessage);
+            eChatBot& bot = eChatBot::getInstance();
+            if (bot.ShouldAnalyze())
+            {
+                auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(p, actualMessage);
 
-            if (!response.empty())
-                ePlayerNetID::preparePlayerMessage(response, delay + ePlayerNetID::determineReadingDelay(actualMessage), sendingPlayer);
+                if (!response.empty())
+                    bot.preparePlayerMessage(response, delay + bot.determineReadingDelay(actualMessage), sendingPlayer);
+            }
         }
     }
 }
@@ -5684,7 +5688,7 @@ public:
                     << delay
                     << HeaderText() << "'\n";
 
-            ePlayerNetID::scheduleMessageTask(targetPlayer, chatString, flag, delay, delay * 0.5);
+            eChatBot::scheduleMessageTask(targetPlayer, chatString, flag, delay, delay * 0.5);
         }
         else if (targetPlayer && targetPlayer->pID == -1)
             con << CommandText()
@@ -8028,358 +8032,6 @@ static tConfItem<REAL> se_playerMessageChatFlagStartMultConf("PLAYER_MESSAGE_CHA
 static bool se_playerMessageDisplayScheduledMessages = false;
 static tConfItem<bool> se_playerMessageDisplayScheduledMessagesConf("PLAYER_MESSAGE_DISPLAY_SCHEDULED_MESSAGES", se_playerMessageDisplayScheduledMessages);
 
-std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
-void LoadChatTriggers()
-{
-    FileManager fileManager(tString("chattriggers.txt"));
-    tArray<tString> lines = fileManager.Load();
-
-    for (int i = 0; i < lines.Len(); ++i)
-    {
-        if (lines[i].StartsWith("\"") && lines[i].EndsWith("\""))
-        {
-            lines[i] = lines[i].SubStr(1, lines[i].Len() - 2);
-        }
-
-        tArray<tString> parts = lines[i].Split(",");
-        if (parts.Len() == 4)
-        {
-            // Split the triggers by semicolon
-            tArray<tString> triggersArray = parts[0].Split(";");
-            tArray<tString> responsesArray = parts[1].Split(";");
-
-            for(auto &trigger : triggersArray) {
-                trigger = trigger.ToLower();
-
-                // Split the responses by semicolon
-                std::vector<tString> responses(responsesArray.begin(), responsesArray.end());
-
-                REAL extraDelay = atof(parts[2]);
-                bool exact = atoi(parts[3]) == 1;
-
-                // Store the trigger and its corresponding responses, delay and exact value
-                chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
-            }
-        }
-        else
-        {
-            con << "LoadChatTriggers Error:\nMalformed line at index " << i+1 << ": " << lines[i] << "\n";
-            continue;
-        }
-    }
-}
-
-static void AddChatTrigger(std::istream &s)
-{
-    tString params;
-    params.ReadLine(s, true);
-
-    if (params.empty())
-    {
-        con << "Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<extraDelay>,<exact>\n";
-        return;
-    }
-
-    tArray<tString> parts = params.Split(",");
-
-    if (parts.Len() != 4)
-    {
-        con << "Invalid input. Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<extraDelay>,<exact>\n";
-        return;
-    }
-
-    tArray<tString> triggersArray = parts[0].Split(";");
-
-    for(auto &trigger : triggersArray) {
-        trigger = trigger.TrimWhitespace();
-        trigger = trigger.ToLower();
-
-        tArray<tString> responsesArray = parts[1].Split(";");
-        std::vector<tString> responses(responsesArray.begin(), responsesArray.end()); // convert tArray to std::vector
-
-        REAL extraDelay = atof(parts[2].c_str());
-        bool exact = atoi(parts[3].c_str()) == 1;
-
-        if (trigger.empty() || responses.empty())  // Checking if responses vector is empty
-        {
-            con << "Error: Trigger and responses cannot be empty.\n";
-            return;
-        }
-
-        chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
-
-        params += "\n";
-        FileManager fileManager(tString("chattriggers.txt"));
-        fileManager.Write(params);
-
-        con << "Trigger, Response, Extra Delay, Exact?\n";
-        con << "Added: " << params << "\n";
-    }
-}
-
-
-static void RemoveChatTrigger(std::istream &s)
-{
-    tString params;
-    params.ReadLine(s, true);
-
-    if (params.empty())
-    {
-        con << "Usage: PLAYER_MESSAGE_TRIGGERS_REMOVE <line_number>\n";
-        return;
-    }
-
-    FileManager fileManager(tString("chattriggers.txt"));
-
-    int lineNumber = atoi(params.c_str()) - 1;
-
-    if (fileManager.Clear(lineNumber))
-        con << "Removed line " << lineNumber + 1 << "\n";
-
-    chatTriggers.clear();
-    LoadChatTriggers();
-}
-
-static void ListChatTriggers(std::istream &s)
-{
-    FileManager fileManager(tString("chattriggers.txt"));
-    tArray<tString> lines = fileManager.Load();
-
-    con << "Listing all chat triggers:\n";
-    con << "Line) Trigger, Response, Extra Delay, Exact?\n";
-
-    for (int i = 0; i < lines.Len(); ++i)
-    {
-        tArray<tString> parts = lines[i].Split(",");
-
-        if (parts.Len() != 4)
-        {
-            con << "Malformed line at index " << i+1 << ": " << lines[i] << "\n";
-            continue;
-        }
-
-        con << i + 1 << ") " << parts[0] << ", " << parts[1] << ", " << parts[2] << ", " << (parts[3] == "1" ? "Yes" : "No") << "\n";
-    }
-}
-
-static void ClearChatTriggers(std::istream &s)
-{
-    FileManager fileManager(tString("chattriggers.txt"));
-
-    fileManager.Clear();
-    chatTriggers.clear();
-    con << "All chat triggers have been cleared.\n";
-}
-
-static tConfItemFunc ClearChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_CLEAR", &ClearChatTriggers);
-static tConfItemFunc ListChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_LIST", &ListChatTriggers);
-static tConfItemFunc AddChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
-static tConfItemFunc RemoveChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
-
-void ePlayerNetID::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay )
-{
-    float messageDelay = totalDelay - flagDelay;
-
-    gTaskScheduler.schedule("playerMessageTask", flagDelay, [netPlayer, message, chatFlag, messageDelay] // When we start typing
-    {
-        if (chatFlag)
-        {
-            netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, true);
-            ePlayerNetID::Update();
-
-            // Schedule another task to turn off the flag after a short delay
-            gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag] // When we send the message and stop typing
-            {
-                netPlayer->Chat(message);
-                if (chatFlag)
-                    netPlayer->SetChatting(ChatFlags::ChatFlags_Chat, false);
-                ePlayerNetID::Update();
-            });
-        }
-        else
-        {
-            netPlayer->Chat(message);
-        }
-    },0,true); // allow multiple
-}
-
-REAL ePlayerNetID::calculateResponseSmartDelay(tString response, REAL wpm)
-{
-    REAL delay = 0;
-
-    int chatLen = response.Len();
-    REAL delayPerChar = 60.0 / (5 * wpm); // in seconds
-    delay = chatLen * delayPerChar;
-    return delay;
-}
-
-/*
-triggeredPlayer: who triggered the message
-chatMessage: the message potentially containing a trigger
-*/
-std::tuple<tString, REAL, ePlayerNetID *> ePlayerNetID::findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage)
-{
-    // if (!se_playerTriggerMessagesIgnoreList.empty())
-    // {
-    //     tString playerName = triggeredPlayer->GetName().ToLower();
-    //     tArray<tString> players = se_playerTriggerMessagesIgnoreList.Split(",");
-    //     for (int i = 0; i < players.Len(); i++)
-    //     {
-    //         if (playerName.Contains(players[i].ToLower()))
-    //             return std::make_tuple(tString(""), 0.0, nullptr);
-    //     }
-    // }
-    
-    tString lowerMessage(chatMessage.TrimWhitespace());
-    tToLower(lowerMessage);
-    tString triggeredPlayerName = tString("");
-    ePlayerNetID *sendingPlayer = nullptr; // who should send this message?
-
-    bool hasSearchedForPlayer = false;
-    ePlayerNetID *foundPlayer = nullptr;
-
-    for (const auto &triggerPair : chatTriggers)
-    {
-        bool exact = std::get<2>(triggerPair.second), match = false;
-        tString trigger = triggerPair.first;
-
-        ePlayerNetID *potentialSender = nullptr;
-
-        if (trigger.Contains("$p"))
-        {
-            if (!hasSearchedForPlayer)
-            {
-                for (int i = MAX_PLAYERS - 1; i >= 0; i--)
-                {
-                    ePlayer *p = ePlayer::PlayerConfig(i);
-
-                    if (p)
-                    {
-                        ePlayerNetID *netp = p->netPlayer;
-
-                        if (netp)
-                        {
-                            tString ourName = netp->GetName().ToLower();
-
-                            tString triggerWithoutName = trigger.Replace("$p", "").TrimWhitespace();
-                            if (!lowerMessage.Contains(triggerWithoutName))
-                            {
-                                continue; 
-                            }
-
-                            if (exact)
-                            {
-                                if (lowerMessage.Contains(ourName))
-                                {
-                                    match = true;
-                                    foundPlayer = netp;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                tArray<tString> nameParts = ourName.Split(" ");
-
-                                for (const auto &namePart : nameParts)
-                                {
-                                    if (lowerMessage.Contains(namePart))
-                                    {
-                                        match = true;
-                                        foundPlayer = netp;
-                                        break;
-                                    }
-                                }
-
-                                if (match)
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                hasSearchedForPlayer = true;
-            }
-            else
-            {
-                match = foundPlayer != nullptr;
-                potentialSender = foundPlayer;
-            }
-        }
-        else
-        {
-            match = (exact && lowerMessage == trigger) || (!exact && lowerMessage.Contains(trigger));
-        }
-    }
-    // Return empty message and 0 delay if no triggers match
-    return std::make_tuple(tString(""), 0.0, nullptr);
-}
-
-REAL ePlayerNetID::determineReadingDelay(tString message)
-{
-    return se_playerMessageSmartDelayReadingWPM > 0 ? ePlayerNetID::calculateResponseSmartDelay(message, se_playerMessageSmartDelayReadingWPM) : 0;
-}
-
-void ePlayerNetID::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player)
-{
-    REAL totalDelay;
-
-    if (se_playerMessageSmartDelay)
-    {
-        se_playerMessageDelay = 0;
-        totalDelay = ePlayerNetID::calculateResponseSmartDelay(messageToSend, se_playerMessageSmartDelayTypingWPM);
-    }
-    else
-    {
-        totalDelay = se_playerMessageDelay;
-    }
-
-    if (se_playerMessageDelayRandMult > 0)
-        totalDelay += (REAL)rand() / RAND_MAX * se_playerMessageDelayRandMult;
-
-    totalDelay += extraDelay;
-
-    REAL flagDelay = se_playerMessageSmartDelayReactionTime + totalDelay * se_playerMessageChatFlagStartMult;
-
-    if (flagDelay > totalDelay)
-        flagDelay = totalDelay * 0.9;
-
-
-    bool scheduled = false;
-
-    if (player != nullptr)
-    {
-        if (tIsInList(se_playerMessageTargetPlayer, player->pID+1))
-        {
-            scheduled = true;
-            scheduleMessageTask(player, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
-        }
-    }
-    else
-    {
-        tArray<tString> players = se_playerMessageTargetPlayer.SplitIncludeFirst(",");
-        for (int i = 0; i < players.Len(); i++)
-        {
-            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
-            if (!local_p)
-                continue;
-
-            ePlayerNetID *netPlayer = local_p->netPlayer;
-            if (!netPlayer)
-                continue;
-
-            scheduled = true;
-            scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
-        }
-    }
-
-    if (se_playerMessageDisplayScheduledMessages && scheduled)
-        con << "Scheduled message \"" << messageToSend
-            << "\" with extra delay " << extraDelay
-            << ", total delay "       << totalDelay
-            << " and flag delay "     << flagDelay
-            << " seconds.\n";
-}
 
 ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           listID(-1),
@@ -8801,11 +8453,15 @@ static void player_removed_from_game_handler(nMessage &m)
 
         if (se_playerTriggerMessages && se_playerMessageLeave)
         {
-            auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(nullptr, tString("$left"));
-            if (response.empty())
-                con << "No trigger set for $left\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-            else
-                ePlayerNetID::preparePlayerMessage(response, delay, sendingPlayer);
+            eChatBot& bot = eChatBot::getInstance();
+            if (bot.ShouldAnalyze())
+            {
+                auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(nullptr, tString("$left"));
+                if (response.empty())
+                    con << "No trigger set for $left\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+                else
+                    bot.preparePlayerMessage(response, delay, sendingPlayer);
+            }
         }
         p->RemoveFromGame();
     }
@@ -14404,11 +14060,15 @@ void ePlayerNetID::UpdateName(void)
         if (!nameFirstSync && !isLocal() && sn_GetNetState() == nCLIENT && nameChange && se_playerTriggerMessages && se_playerMessageRename)
         {
 
-            auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(this, tString("$rename"));
-            if (response.empty())
-                con << "No trigger set for $rename\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-            else
-                ePlayerNetID::preparePlayerMessage(response, delay, sendingPlayer);
+            eChatBot& bot = eChatBot::getInstance();
+            if (bot.ShouldAnalyze())
+            {
+                auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(this, tString("$rename"));
+                if (response.empty())
+                    con << "No trigger set for $rename\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+                else
+                    bot.preparePlayerMessage(response, delay, sendingPlayer);
+            }
         }
     }
 
@@ -14419,13 +14079,17 @@ void ePlayerNetID::UpdateName(void)
     {
         if (se_playerTriggerMessages && se_playerMessageEnter)
         {
-            auto [response, delay, sendingPlayer] = ePlayerNetID::findTriggeredResponse(this, tString("$enter"));
-            if (response.empty())
-                con << "No trigger set for $enter\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-            else
-                ePlayerNetID::preparePlayerMessage(response, delay, sendingPlayer);
+            eChatBot &bot = eChatBot::getInstance();
+            if (bot.ShouldAnalyze())
+            {
+                auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(this, tString("$enter"));
+                if (response.empty())
+                    con << "No trigger set for $enter\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+                else
+                    bot.preparePlayerMessage(response, delay, sendingPlayer);
+            }
         }
-        nameFirstSync= false;
+        nameFirstSync = false;
     }
 
 #ifdef KRAWALL_SERVER
@@ -16059,3 +15723,416 @@ void PlayerStats::saveStatsToDB()
 
     sqlite3_close(db);
 }
+
+void eChatBot::LoadChatTriggers()
+{
+    FileManager fileManager(tString("chattriggers.txt"));
+    tArray<tString> lines = fileManager.Load();
+
+    for (int i = 0; i < lines.Len(); ++i)
+    {
+        if (lines[i].StartsWith("\"") && lines[i].EndsWith("\""))
+        {
+            lines[i] = lines[i].SubStr(1, lines[i].Len() - 2);
+        }
+
+        tArray<tString> parts = lines[i].Split(",");
+        if (parts.Len() == 4)
+        {
+            // Split the triggers by semicolon
+            tArray<tString> triggersArray = parts[0].Split(";");
+            tArray<tString> responsesArray = parts[1].Split(";");
+
+            for (auto &trigger : triggersArray)
+            {
+                trigger = trigger.ToLower();
+
+                // Split the responses by semicolon
+                std::vector<tString> responses(responsesArray.begin(), responsesArray.end());
+
+                REAL extraDelay = atof(parts[2]);
+                bool exact = atoi(parts[3]) == 1;
+
+                // Store the trigger and its corresponding responses, delay and exact value
+                chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
+            }
+        }
+        else
+        {
+            con << "LoadChatTriggers Error:\nMalformed line at index " << i + 1 << ": " << lines[i] << "\n";
+            continue;
+        }
+    }
+}
+
+bool eChatBot::ShouldAnalyze()
+{
+    for (int i = MAX_PLAYERS - 1; i >= 0; i--)
+    {
+        ePlayer *p = ePlayer::PlayerConfig(i);
+
+        if (p)
+        {
+            ePlayerNetID *netp = p->netPlayer;
+
+            if (netp && tIsInList(se_playerMessageTargetPlayer, netp->pID + 1))
+                return true;
+        }
+    }
+    return false;
+}
+
+REAL eChatBot::determineReadingDelay(tString message)
+{
+    return se_playerMessageSmartDelayReadingWPM > 0 ? calculateResponseSmartDelay(message, se_playerMessageSmartDelayReadingWPM) : 0;
+}
+
+REAL eChatBot::calculateResponseSmartDelay(tString response, REAL wpm)
+{
+    REAL delay = 0;
+
+    int chatLen = response.Len();
+    REAL delayPerChar = 60.0 / (5 * wpm); // in seconds
+    delay = chatLen * delayPerChar;
+    return delay;
+}
+
+void eChatBot::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay)
+{
+    float messageDelay = totalDelay - flagDelay;
+
+    gTaskScheduler.schedule(
+        "playerMessageTask", flagDelay, [netPlayer, message, chatFlag, messageDelay] // When we start typing
+        {
+        if (chatFlag)
+        {
+            netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
+            ePlayerNetID::Update();
+
+            // Schedule another task to turn off the flag after a short delay
+            gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag] // When we send the message and stop typing
+            {
+                netPlayer->Chat(message);
+                if (chatFlag)
+                    netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
+                ePlayerNetID::Update();
+            });
+        }
+        else
+        {
+            netPlayer->Chat(message);
+        } },
+        0, true); // allow multiple
+}
+
+/*
+triggeredPlayer: who triggered the message
+chatMessage: the message potentially containing a trigger
+*/
+std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage)
+{
+    // if (!se_playerTriggerMessagesIgnoreList.empty())
+    // {
+    //     tString playerName = triggeredPlayer->GetName().ToLower();
+    //     tArray<tString> players = se_playerTriggerMessagesIgnoreList.Split(",");
+    //     for (int i = 0; i < players.Len(); i++)
+    //     {
+    //         if (playerName.Contains(players[i].ToLower()))
+    //             return std::make_tuple(tString(""), 0.0, nullptr);
+    //     }
+
+    // }
+    tString lowerMessage(chatMessage.TrimWhitespace());
+    tToLower(lowerMessage);
+    tString triggeredPlayerName = tString("");
+    ePlayerNetID *sendingPlayer = nullptr; // who should send this message?
+
+    for (const auto &triggerPair : chatTriggers)
+    {
+        bool exact = std::get<2>(triggerPair.second), match = false;
+        tString trigger = triggerPair.first;
+
+        ePlayerNetID *potentialSender = nullptr;
+
+        if (trigger.Contains("$p"))
+        {
+            for (int i = MAX_PLAYERS - 1; i >= 0; i--)
+            {
+                ePlayer *p = ePlayer::PlayerConfig(i);
+
+                if (p)
+                {
+                    ePlayerNetID *netp = p->netPlayer;
+
+                    if (netp)
+                    {
+                        tString ourName = netp->GetName().ToLower();
+
+                        tString triggerWithoutName = trigger.Replace("$p", "").TrimWhitespace();
+                        if (!lowerMessage.Contains(triggerWithoutName))
+                        {
+                            continue; // Move to the next player
+                        }
+
+                        if (exact)
+                        {
+                            if (lowerMessage.Contains(ourName))
+                            {
+                                match = true;
+                                potentialSender = netp;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            tArray<tString> nameParts = ourName.Split(" ");
+
+                            for (const auto &namePart : nameParts)
+                            {
+                                if (lowerMessage.Contains(namePart))
+                                {
+                                    match = true;
+                                    potentialSender = netp;
+                                    break;
+                                }
+                            }
+
+                            if (match)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            match = (exact && lowerMessage == trigger) || (!exact && lowerMessage.Contains(trigger));
+        }
+
+        if (match)
+        {
+            // Determine the sending player based on the type of trigger
+            if (triggeredPlayer != nullptr)
+            {
+                if (potentialSender == nullptr)
+                {
+
+                    if (tIsInList(se_playerTriggerMessagesDiedByVerifiedTriggers, trigger))
+                    {
+                        if (triggeredPlayer->lastKilledPlayer == nullptr || triggeredPlayer->lastKilledPlayer->pID == -1)
+                            continue;
+                        else
+                            potentialSender = triggeredPlayer->lastKilledPlayer;
+                    }
+                    else if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, trigger))
+                    {
+                        if (triggeredPlayer->lastDiedByPlayer == nullptr || triggeredPlayer->lastDiedByPlayer->pID == -1)
+                            continue;
+                        else
+                            potentialSender = triggeredPlayer->lastDiedByPlayer;
+                    }
+
+                    if (potentialSender != nullptr && potentialSender->isLocal())
+                        sendingPlayer = potentialSender;
+                }
+                triggeredPlayerName = triggeredPlayer->GetName();
+            }
+
+            REAL extraDelay = std::get<1>(triggerPair.second);
+
+            // vector of possible responses
+            std::vector<tString> possibleResponses = std::get<0>(triggerPair.second);
+            // random response from the vector
+            tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
+
+            if (chosenResponse.Contains("$p"))
+            {
+                std::string responseStr = chosenResponse.stdString();
+
+                std::size_t pos;
+                while ((pos = responseStr.find("$p")) != std::string::npos)
+                {
+                    responseStr.replace(pos, 2, triggeredPlayerName);
+                }
+
+                chosenResponse = tString(responseStr);
+            }
+
+            return std::make_tuple(chosenResponse, extraDelay, sendingPlayer);
+        }
+    }
+
+    // Return empty message and 0 delay if no triggers match
+    return std::make_tuple(tString(""), 0.0, nullptr);
+}
+
+void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player)
+{
+    REAL totalDelay;
+
+    if (se_playerMessageSmartDelay)
+    {
+        se_playerMessageDelay = 0;
+        totalDelay = calculateResponseSmartDelay(messageToSend, se_playerMessageSmartDelayTypingWPM);
+    }
+    else
+    {
+        totalDelay = se_playerMessageDelay;
+    }
+
+    if (se_playerMessageDelayRandMult > 0)
+        totalDelay += (REAL)rand() / RAND_MAX * se_playerMessageDelayRandMult;
+
+    totalDelay += extraDelay;
+
+    REAL flagDelay = se_playerMessageSmartDelayReactionTime + totalDelay * se_playerMessageChatFlagStartMult;
+
+    if (flagDelay > totalDelay)
+        flagDelay = totalDelay * 0.9;
+
+    bool scheduled = false;
+
+    if (player != nullptr)
+    {
+        if (tIsInList(se_playerMessageTargetPlayer, player->pID + 1))
+        {
+            scheduled = true;
+            scheduleMessageTask(player, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
+        }
+    }
+    else
+    {
+        tArray<tString> players = se_playerMessageTargetPlayer.SplitIncludeFirst(",");
+        for (int i = 0; i < players.Len(); i++)
+        {
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
+            if (!local_p)
+                continue;
+
+            ePlayerNetID *netPlayer = local_p->netPlayer;
+            if (!netPlayer)
+                continue;
+
+            scheduled = true;
+            scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
+        }
+    }
+
+    if (se_playerMessageDisplayScheduledMessages && scheduled)
+        con << "Scheduled message \"" << messageToSend
+            << "\" with extra delay " << extraDelay
+            << ", total delay " << totalDelay
+            << " and flag delay " << flagDelay
+            << " seconds.\n";
+}
+
+static void AddChatTrigger(std::istream &s)
+{
+    tString params;
+    params.ReadLine(s, true);
+
+    if (params.empty())
+    {
+        con << "Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<extraDelay>,<exact>\n";
+        return;
+    }
+
+    tArray<tString> parts = params.Split(",");
+
+    if (parts.Len() != 4)
+    {
+        con << "Invalid input. Usage: PLAYER_MESSAGE_TRIGGERS_ADD <trigger>,<response>,<extraDelay>,<exact>\n";
+        return;
+    }
+
+    tArray<tString> triggersArray = parts[0].Split(";");
+
+    eChatBot &bot = eChatBot::getInstance();
+
+    for (auto &trigger : triggersArray)
+    {
+        trigger = trigger.TrimWhitespace();
+        trigger = trigger.ToLower();
+
+        tArray<tString> responsesArray = parts[1].Split(";");
+        std::vector<tString> responses(responsesArray.begin(), responsesArray.end()); // convert tArray to std::vector
+
+        REAL extraDelay = atof(parts[2].c_str());
+        bool exact = atoi(parts[3].c_str()) == 1;
+
+        if (trigger.empty() || responses.empty()) // Checking if responses vector is empty
+        {
+            con << "Error: Trigger and responses cannot be empty.\n";
+            return;
+        }
+
+        bot.chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
+
+        params += "\n";
+        FileManager fileManager(tString("chattriggers.txt"));
+        fileManager.Write(params);
+
+        con << "Trigger, Response, Extra Delay, Exact?\n";
+        con << "Added: " << params << "\n";
+    }
+}
+
+static void RemoveChatTrigger(std::istream &s)
+{
+    tString params;
+    params.ReadLine(s, true);
+
+    if (params.empty())
+    {
+        con << "Usage: PLAYER_MESSAGE_TRIGGERS_REMOVE <line_number>\n";
+        return;
+    }
+
+    FileManager fileManager(tString("chattriggers.txt"));
+
+    int lineNumber = atoi(params.c_str()) - 1;
+
+    if (fileManager.Clear(lineNumber))
+        con << "Removed line " << lineNumber + 1 << "\n";
+    eChatBot &bot = eChatBot::getInstance();
+    bot.chatTriggers.clear();
+    bot.LoadChatTriggers();
+}
+
+static void ListChatTriggers(std::istream &s)
+{
+    FileManager fileManager(tString("chattriggers.txt"));
+    tArray<tString> lines = fileManager.Load();
+
+    con << "Listing all chat triggers:\n";
+    con << "Line) Trigger, Response, Extra Delay, Exact?\n";
+
+    for (int i = 0; i < lines.Len(); ++i)
+    {
+        tArray<tString> parts = lines[i].Split(",");
+
+        if (parts.Len() != 4)
+        {
+            con << "Malformed line at index " << i + 1 << ": " << lines[i] << "\n";
+            continue;
+        }
+
+        con << i + 1 << ") " << parts[0] << ", " << parts[1] << ", " << parts[2] << ", " << (parts[3] == "1" ? "Yes" : "No") << "\n";
+    }
+}
+
+static void ClearChatTriggers(std::istream &s)
+{
+    FileManager fileManager(tString("chattriggers.txt"));
+    eChatBot &bot = eChatBot::getInstance();
+    fileManager.Clear();
+    bot.chatTriggers.clear();
+    con << "All chat triggers have been cleared.\n";
+}
+
+static tConfItemFunc ClearChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_CLEAR", &ClearChatTriggers);
+static tConfItemFunc ListChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_LIST", &ListChatTriggers);
+static tConfItemFunc AddChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
+static tConfItemFunc RemoveChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);

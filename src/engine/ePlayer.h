@@ -320,11 +320,6 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     // access level. lower numeric values are better.
 public:
     bool isLocal() { return pID != -1; }
-    static void preparePlayerMessage(tString message, REAL extraDelay, ePlayerNetID *player = nullptr);
-    static std::tuple<tString, REAL, ePlayerNetID*> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage);
-    static REAL calculateResponseSmartDelay(tString response,REAL wpm);
-    static REAL determineReadingDelay(tString message);
-    static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastDiedByPlayer = nullptr;
     ePlayerNetID * lastMessagedPlayer;
@@ -1047,6 +1042,34 @@ private:
 
     std::unordered_map<tString, PlayerData> playerStatsMap;
 };
+
+
+class eChatBot {
+private:
+    eChatBot() {}
+
+    eChatBot(const eChatBot&) = delete; 
+    eChatBot& operator=(const eChatBot&) = delete;
+
+public:
+    std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
+        
+    // instance
+    static eChatBot& getInstance() {
+        static eChatBot instance;
+        return instance;
+    }
+
+    void LoadChatTriggers();
+    
+    std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage);
+    void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player);
+    REAL determineReadingDelay(tString message);
+    static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay );
+    REAL calculateResponseSmartDelay(tString response, REAL wpm);
+    bool ShouldAnalyze();
+};
+
 
 #endif
 

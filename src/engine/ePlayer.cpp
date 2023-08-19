@@ -64,6 +64,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 #include <climits>
 
+#include "../tron/gMenus.h"
 // /rgb
 #include "eFloor.h"
 
@@ -1766,7 +1767,7 @@ static tConfItem<tString> se_playerTriggerMessagesIgnoreListConf("PLAYER_MESSAGE
 bool se_playerTriggerMessagesReactToSelf = false;
 static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerTriggerMessagesReactToSelf);
 
-static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("wd,nice,gj,$diedother");
+static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("wd,nice,wp,gj,$diedother,annoying,n1");
 static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf("PLAYER_MESSAGE_TRIGGER_KILLED_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
 
 static tString se_playerTriggerMessagesDiedByVerifiedTriggers = tString("$died");
@@ -5108,14 +5109,14 @@ static tConfItem<tString> se_calculateCommandConf("LOCAL_CHAT_COMMAND_CALCULATE"
 static tString se_updateCommand("/update");
 static tConfItem<tString> se_updateCommandConf("LOCAL_CHAT_COMMAND_UPDATE", se_updateCommand);
 
-static tString se_encryptCommand("/enc");
+tString se_encryptCommand("/enc");
 static tConfItem<tString> se_encryptCommandConf("LOCAL_CHAT_COMMAND_ENCRYPT", se_encryptCommand);
 bool se_encryptCommandWatch = false;
 static tConfItem<bool> se_encryptCommandWatchConf("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH", se_encryptCommandWatch);
 bool se_encryptCommandWatchFeedback = true;
 static tConfItem<bool> se_encryptCommandWatchFeedbackConf("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH_FEEDBACK", se_encryptCommandWatchFeedback);
-static REAL se_encryptCommandWatchValidateWindow = 1;
-static tConfItem<REAL> se_encryptCommandWatchValidateWindowConf("LOCAL_CHAT_COMMAND_ENCRYPT_VALIDATE_WINDOW", se_encryptCommandWatchValidateWindow);
+static int se_encryptCommandWatchValidateWindow = 1;
+static tConfItem<int> se_encryptCommandWatchValidateWindowConf("LOCAL_CHAT_COMMAND_ENCRYPT_VALIDATE_WINDOW", se_encryptCommandWatchValidateWindow);
 static int se_encryptCommandLength = 15;
 static tConfItem<int> se_encryptCommandLengthConf("LOCAL_CHAT_COMMAND_ENCRYPT_LENGTH", se_encryptCommandLength);
 static tString se_encryptCommandPrefix = tString("@$#");
@@ -6662,17 +6663,11 @@ public:
     }
 };
 
-REAL getCurrentTime()
+
+
+REAL getEncryptLocaltime()
 {
-    static int lastTime = 0;
-    static char theTime[13 * 3];
-    struct tm *thisTime;
-    time_t rawtime;
-
-    time(&rawtime);
-    thisTime = localtime(&rawtime);
-
-    return thisTime->tm_min;
+    return getCurrentLocalTime()->tm_sec;
 }
 
 tString GenerateHash(double time)
@@ -6694,12 +6689,13 @@ tString GenerateHash(double time)
 
 bool ValidateHash(tString givenHash, double time)
 {
-
-    if (GenerateHash(time) == givenHash ||
-        GenerateHash(time - (se_encryptCommandWatchValidateWindow * 60.0)) == givenHash ||
-        GenerateHash(time + (se_encryptCommandWatchValidateWindow * 60.0)) == givenHash)
-    {
+    if (GenerateHash(time) == givenHash)
         return true;
+
+    for (int i = 1; i <= se_encryptCommandWatchValidateWindow; i++)
+    {
+        if ((GenerateHash(time - i) == givenHash) || (GenerateHash(time + i) == givenHash))
+            return true;
     }
     return false;
 }
@@ -6723,7 +6719,7 @@ bool handleEncryptCommandAction(ePlayerNetID *player, tString message)
 
     tString hashStr = actualMessage.SubStr(startIndex, se_encryptCommandLength);
 
-    REAL currentTime = getCurrentTime();
+    REAL currentTime = getEncryptLocaltime();
     bool valid = ValidateHash(hashStr, currentTime);
 
     if (!valid)
@@ -6785,7 +6781,7 @@ public:
 
         if (encTarget)
         {
-            REAL currentTime = getCurrentTime();
+            REAL currentTime = getEncryptLocaltime();
 
             con << CommandText()
                 << "Creating hash at time: '"
@@ -6809,8 +6805,9 @@ public:
         {
             con << CommandText()
                 << ErrorText()
-                << "Player not found"
-                << "\n";
+                << "Player not found for '"
+                << args 
+                << "'\n";
         }
 
         return true;
@@ -7442,10 +7439,24 @@ public:
         }
         else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_TAB)
         {
+            bool encryptCommand = (*content).StartsWith(se_encryptCommand);
+
             static tString lastContent;
-            bool changeLast = (lastContent == *content);
-            ChatTabCompletition(*content, cursorPos, changeLast);
-            lastContent = *content;
+            static tString lastEncContent;
+            bool changeLast;
+
+            if (!encryptCommand) 
+            {
+                changeLast = (lastContent == *content);
+                ChatTabCompletition(*content, cursorPos, changeLast);
+                lastContent = *content; 
+            }
+            else 
+            {
+                changeLast = (lastEncContent == *content);
+                ConTabCompletition(*content, cursorPos, changeLast);
+                lastEncContent = *content;
+            }
             return true;
         }
         else if (e.type == SDL_KEYDOWN &&
@@ -11748,13 +11759,14 @@ public:
             sg -= 1.f;
         while (sb > 1.f)
             sb -= 1.f;
-
+#ifndef DEDICATED
         // RenderEnd();
         glColor3f(r, g, b);
         glRectf(.8, -.8, .98, -.98);
 
         glColor3f(sr, sg, sb);
         glRectf(-.8, -.8, -.98, -.98);
+ #endif
     }
 
     virtual void LeftRight(int x)
@@ -11924,7 +11936,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
         }
     }
 #endif
-
+#ifndef DEDICATED
     if (playerUpdateIteration % se_nameSpeakCommandInterval == 0)
     {
         if (nameSpeakIndex < nameSpeakWords.Len())
@@ -11938,7 +11950,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
     }
 
     playerUpdateIteration++;
-
+#endif // DEDICATED
 #ifdef DEDICATED
     if (sr_glOut)
 #endif
@@ -15769,6 +15781,7 @@ void ePlayerNetID::RespawnPlayer(bool local)
 bool se_playerStats = false;
 static tConfItem<bool> se_playerStatsConf("PLAYER_STATS", se_playerStats);
 
+#ifndef DEDICATED
 #include "sqlite3.h"
 #include "sqlite3.h"
 #include <sstream>
@@ -15908,6 +15921,8 @@ void PlayerStats::saveStatsToDB()
     sqlite3_close(db);
 }
 
+#endif
+
 void eChatBot::LoadChatTriggers()
 {
     FileManager fileManager(tString("chattriggers.txt"));
@@ -16016,17 +16031,6 @@ chatMessage: the message potentially containing a trigger
 */
 std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage)
 {
-    // if (!se_playerTriggerMessagesIgnoreList.empty())
-    // {
-    //     tString playerName = triggeredPlayer->GetName().ToLower();
-    //     tArray<tString> players = se_playerTriggerMessagesIgnoreList.Split(",");
-    //     for (int i = 0; i < players.Len(); i++)
-    //     {
-    //         if (playerName.Contains(players[i].ToLower()))
-    //             return std::make_tuple(tString(""), 0.0, nullptr);
-    //     }
-
-    // }
     tString lowerMessage(chatMessage.TrimWhitespace());
     tToLower(lowerMessage);
     tString triggeredPlayerName = tString("");
@@ -16056,12 +16060,12 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                         tString triggerWithoutName = trigger.Replace("$p", "").TrimWhitespace();
                         if (!lowerMessage.Contains(triggerWithoutName))
                         {
-                            continue; // Move to the next player
+                            continue;
                         }
 
                         if (exact)
                         {
-                            if (lowerMessage.Contains(ourName))
+                            if (lowerMessage == ourName)
                             {
                                 match = true;
                                 potentialSender = netp;

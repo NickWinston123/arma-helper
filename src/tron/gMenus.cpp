@@ -988,7 +988,7 @@ static tString FindClosestMatch(const tString &word, const std::deque<tString> &
     return closestMatch;
 }
 
-static void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast) {
+void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast) {
     static tString oldString;
     static int cfgPos;
     static int lastPos;

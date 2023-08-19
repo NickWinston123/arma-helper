@@ -409,15 +409,23 @@ double tRealSysTimeFloat ()
     return ( timeRealRelative.seconds + timeRealRelative.microseconds*1E-6 ) * st_timeFactor;
 }
 
-std::string getTimeString(bool showTime24hour)
+struct tm * getCurrentLocalTime()
 {
-    static int lastTime = 0;
-    static char theTime[13 * 3];
-    struct tm* thisTime;
+    struct tm *thisTime;
     time_t rawtime;
 
     time(&rawtime);
     thisTime = localtime(&rawtime);
+
+    return thisTime;
+}
+
+std::string getTimeString(bool showTime24hour)
+{
+    static int lastTime = 0;
+    static char theTime[13 * 3];
+    struct tm* thisTime = getCurrentLocalTime();
+    time_t rawtime;
 
     if (thisTime->tm_min != lastTime)
     {

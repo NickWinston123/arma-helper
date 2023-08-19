@@ -1662,7 +1662,7 @@ static void sg_FindDescriptor(std::istream &s)
         blankID = true;
         con << "No ID provided, displaying all descriptors\n";
     }
-    
+
     con << "Descriptor last sent data tracking always enabled?: " << (sg_descriptorsTrackLastDataAlways ? "true" : "false") << "\n";
 
     nDescriptor *matchingDescriptor = nullptr;
@@ -3284,9 +3284,9 @@ void MainMenu(bool ingame)
 
     if (!ingame)
     {
-
+        #ifndef DEDICATED
         tutorials.reset(tNEW(uMenuItemFunction)(&game_menu, "$game_menu_tutorials_text", "$game_menu_tutorials_help", &sg_TutorialMenu));
-
+        #endif // DEDICATED
         start = new uMenuItemFunction(&game_menu, "$game_menu_start_text",
                                       "$game_menu_start_help", &sg_SinglePlayerGame);
         connect = new uMenuItemFunction(&game_menu,
@@ -5713,7 +5713,7 @@ bool gGame::GameLoop(bool input)
     {
         gTaskScheduler.schedule("watchPlayerStatus", se_watchActiveStatusTime, []
         {
-             ePlayerNetID::watchPlayerStatus(); 
+             ePlayerNetID::watchPlayerStatus();
         });
     }
 
@@ -5728,7 +5728,7 @@ bool gGame::GameLoop(bool input)
                 ePlayerNetID::CompleteRebuild();
 
             if (sg_forceSyncAll)
-                nNetObject::SyncAll(); 
+                nNetObject::SyncAll();
         });
     }
 

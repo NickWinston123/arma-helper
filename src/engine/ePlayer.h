@@ -102,6 +102,7 @@ static int nameSpeakIndex;
 static int nameSpeakPlayerID;
 static int playerUpdateIteration;
 
+extern tString se_encryptCommand;
 static int forceCreatePlayer = -1;
 extern bool se_disableCreate;
 // maximal length of chat message
@@ -1003,6 +1004,7 @@ private:
 
 tColoredString cycleColorPreview(int r,int g,int b);
 
+#ifndef DEDICATED
 #include "tDirectories.h"
 #include "sqlite3.h"
 #include <unordered_map>
@@ -1043,6 +1045,7 @@ private:
     std::unordered_map<tString, PlayerData> playerStatsMap;
 };
 
+#endif
 
 class eChatBot {
 private:

@@ -34,4 +34,5 @@ extern void  sg_PlayerMenu(), sg_SpecialMenu(), sg_ConfigMenu();
 extern uMenu sg_screenMenu;
 void         sg_ConsoleInput(); // let the player enter one line of console input
 
+extern void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast);
 #endif

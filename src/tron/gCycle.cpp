@@ -452,7 +452,7 @@ REAL gSmarterBot::annoyanceCheck()
             totalPlayerCount++;
             if (other && other->Alive())
             {
-                if (alivePlayer) 
+                if (alivePlayer)
                 {
                     alivePlayerCount++;
                     break;
@@ -6833,24 +6833,26 @@ void gCycle::ReadSync(nMessage &m)
     if (Alive() && sync_alive != 1 && GOID() >= 0 && grid)
     {
         ePlayerNetID *killer = GetPlayerHuntedBy();
+        #ifndef DEDICATED
         PlayerStats *stats = PlayerStats::getInstance();
-
+        #endif // DEDICATED
         if (killer)
         {
             killer->lastKilledPlayer = Player();
             Player()->lastDiedByPlayer = killer;
-
+            #ifndef DEDICATED
             if (stats)
             {
                 stats->addKill(killer->GetName());
             }
+            #endif // DEDICATED
         }
-
+        #ifndef DEDICATED
         if (stats)
         {
             stats->addDeath(Player()->GetName());
         }
-
+        #endif // DEDICATED
         if (se_playerTriggerMessages && (sg_playerMessageDeathSelf || sg_playerMessageDeathOther))
         {
             bool zoneSpawnedRecently = false;
@@ -8491,6 +8493,7 @@ struct gWallInfoTemp
 // @param totalLenght total length of wall to assume
 void gCycle::FillWallInfoFlexible(WallInfo &info, REAL totalLength) const
 {
+    #ifndef DEDICATED
     gWallInfoTemp temp;
 
     gNetPlayerWall *run = displayList_.wallList_;
@@ -8516,6 +8519,7 @@ void gCycle::FillWallInfoFlexible(WallInfo &info, REAL totalLength) const
     {
         info.centerOfMass = temp.com * (1 / temp.weight);
     }
+    #endif
 }
 
 // @param info the info to fill

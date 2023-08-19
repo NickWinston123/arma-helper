@@ -1874,7 +1874,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         se_SaveToChatLog(actualMessage);
         se_SaveToChatLogC(actualMessage);
-
+        bool encyptedMessage = false;
         if (actualMessage.Contains("-->"))
         {
             tString expectedString;
@@ -1888,6 +1888,9 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
                 if (ourPlayer)
                     ourPlayer->lastMessagedPlayer = p;
             }
+
+            if (se_encryptCommandWatch)
+                encyptedMessage = handleEncryptCommandAction(actualMessage);
         }
 
         if (se_chatTimeStamp && !sr_consoleTimeStamp)
@@ -1897,7 +1900,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         con << actualMessage << "\n";
 
-        if (se_playerTriggerMessages && (se_playerTriggerMessagesReactToSelf || p->pID == -1))
+        if (se_playerTriggerMessages && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
         {
             actualMessage = tColoredString::RemoveColors(actualMessage);
             const int timestampLength = 9;
@@ -5104,6 +5107,17 @@ static tConfItem<tString> se_calculateCommandConf("LOCAL_CHAT_COMMAND_CALCULATE"
 static tString se_updateCommand("/update");
 static tConfItem<tString> se_updateCommandConf("LOCAL_CHAT_COMMAND_UPDATE", se_updateCommand);
 
+static tString se_encryptCommand("/enc");
+static tConfItem<tString> se_encryptCommandConf("LOCAL_CHAT_COMMAND_ENCRYPT", se_encryptCommand);
+bool se_encryptCommandWatch = false;
+static tConfItem<bool> se_encryptCommandWatchConf("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH", se_encryptCommandWatch);
+static REAL se_encryptCommandWatchValidateWindow = 1;
+static tConfItem<REAL> se_encryptCommandWatchValidateWindowConf("LOCAL_CHAT_COMMAND_ENCRYPT_VALIDATE_WINDOW", se_encryptCommandWatchValidateWindow);
+static int se_encryptCommandLength = 15;
+static tConfItem<int> se_encryptCommandLengthConf("LOCAL_CHAT_COMMAND_ENCRYPT_LENGTH", se_encryptCommandLength);
+static tString se_encryptCommandPrefix = tString("@$#");
+static tConfItem<tString> se_encryptCommandPrefixConf("LOCAL_CHAT_COMMAND_ENCRYPT_PREFIX", se_encryptCommandPrefix);
+
 class MsgCommand : public ChatCommand
 {
 public:
@@ -5255,12 +5269,13 @@ tColoredString gatherPlayerInfo(ePlayerNetID *p)
 
     gRealColor color(p->r, p->g, p->b);
     // p->Color(color);
+    se_MakeColorValid(color.r,color.g,color.b,1.0f);
     se_removeDarkColors(color);
     listinfo << ChatCommand::MainText()
              << "Filtered Color: " << ChatCommand::MainText() << "("
-             << ChatCommand::ItemText() << p->r << ChatCommand::MainText() << ", "
-             << ChatCommand::ItemText() << p->g << ChatCommand::MainText() << ", "
-             << ChatCommand::ItemText() << p->b << ChatCommand::MainText() << ")\n";
+             << ChatCommand::ItemText() << color.r << ChatCommand::MainText() << ", "
+             << ChatCommand::ItemText() << color.g << ChatCommand::MainText() << ", "
+             << ChatCommand::ItemText() << color.b << ChatCommand::MainText() << ")\n";
 
     // Status. Includes player type, spectating or playing, and if the player is chatting.
     listinfo << ChatCommand::MainText()
@@ -5343,7 +5358,7 @@ public:
                     {
                         playerFound = true;
                         j++;
-                        con << j << ") " << gatherPlayerColor(p) << "\n";
+                        con << j << ") " << gatherPlayerInfo(p) << "\n";
                     }
                 }
 
@@ -6644,6 +6659,138 @@ public:
     }
 };
 
+REAL getCurrentTime()
+{
+    static int lastTime = 0;
+    static char theTime[13 * 3];
+    struct tm *thisTime;
+    time_t rawtime;
+
+    time(&rawtime);
+    thisTime = localtime(&rawtime);
+
+    return thisTime->tm_min;
+}
+
+tString GenerateHash(double time)
+{
+    std::stringstream ss;
+    ss << time;
+
+    std::hash<std::string> hash_fn;
+    size_t hash_value = hash_fn(ss.str());
+
+    std::ostringstream os;
+    os << hash_value;
+
+    std::string hash = os.str();
+
+    size_t length = (hash.size() > se_encryptCommandLength) ? se_encryptCommandLength : hash.size();
+    return tString(hash.substr(0, length));
+}
+
+bool ValidateHash(tString givenHash, double time)
+{
+
+    if (GenerateHash(time) == givenHash ||
+        GenerateHash(time - (se_encryptCommandWatchValidateWindow * 60.0)) == givenHash ||
+        GenerateHash(time + (se_encryptCommandWatchValidateWindow * 60.0)) == givenHash)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool handleEncryptCommandAction(tString message)
+{
+    int colonPos = message.StrPos(":");
+
+    if (colonPos == -1)
+    {
+        return false;
+    }
+
+    tString actualMessage = message.SubStr(colonPos + 2);
+    if (!actualMessage.Contains(se_encryptCommandPrefix))
+    {
+        return false;
+    }
+
+    int startIndex = actualMessage.StrPos(se_encryptCommandPrefix) + se_encryptCommandPrefix.Len();
+
+    tString hashStr = actualMessage.SubStr(startIndex, se_encryptCommandLength);
+
+    REAL currentTime = getCurrentTime();
+    bool valid = ValidateHash(hashStr, currentTime);
+
+    if (!valid)
+    {
+        con << "EncryptCommand: Hash Invalid '" << hashStr << "' at time: " << currentTime;
+        return false;
+    }
+
+    int argsStartIndex = startIndex + se_encryptCommandLength + 1;
+    if (argsStartIndex < actualMessage.Len())
+    {
+        tString args = actualMessage.SubStr(argsStartIndex);
+        con << "EncryptCommand: Loading command '" << args << "'\n";
+
+        tCurrentAccessLevel level(tAccessLevel_Owner, true);
+        std::stringstream s(static_cast<char const *>(args));
+        tConfItemBase::LoadAll(s);
+        return true;
+    }
+    else
+    {
+        con << "EncryptCommand: No arguments found after the hash.\n";
+        return true;
+    }
+}
+
+class EncryptCommand : public ChatCommand
+{
+public:
+    EncryptCommand() : ChatCommand("EncryptCommand") {}
+
+    bool execute(ePlayerNetID *player, tString args) override
+    {
+        int pos = 0;
+        tString name = args.ExtractNonBlankSubString(pos);
+        ePlayerNetID *encTarget = ePlayerNetID::GetPlayerByName(name, false);
+
+        if (encTarget)
+        {
+            REAL currentTime = getCurrentTime();
+
+            con << CommandText()
+                << "Creating hash at time: '"
+                << ItemText()
+                << currentTime
+                << MainText() << "'\n";
+
+            tString hash = GenerateHash(currentTime);
+
+            tString messageToSend;
+            messageToSend << "/msg " << name << " " << se_encryptCommandPrefix << hash;
+
+            if (pos < args.Len())
+            {
+                messageToSend << args.SubStr(pos);
+            }
+
+            se_NewChatMessage(player, messageToSend)->BroadCast();
+        }
+        else
+        {
+            con << CommandText()
+                << ErrorText()
+                << "Player not found"
+                << "\n";
+        }
+
+        return true;
+    }
+};
 
 std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> CommandFactory()
 {
@@ -6678,6 +6825,7 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
     addCommand(se_reconnectCommand, []() { return std::make_unique<ReconnectCommand>(); });
     addCommand(se_calculateCommand, []() { return std::make_unique<CalculateCommand>(); });
     addCommand(se_updateCommand, []() { return std::make_unique<UpdateCommand>(); });
+    addCommand(se_encryptCommand, []() { return std::make_unique<EncryptCommand>(); });
 
     return commandFactories;
 }
@@ -15767,17 +15915,18 @@ void eChatBot::LoadChatTriggers()
 
 bool eChatBot::ShouldAnalyze()
 {
-    for (int i = MAX_PLAYERS - 1; i >= 0; i--)
+    tArray<tString> players = se_playerMessageTargetPlayer.SplitIncludeFirst(",");
+    for (int i = 0; i < players.Len(); i++)
     {
-        ePlayer *p = ePlayer::PlayerConfig(i);
+        ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
+        if (!local_p)
+            continue;
 
-        if (p)
-        {
-            ePlayerNetID *netp = p->netPlayer;
+        ePlayerNetID *netPlayer = local_p->netPlayer;
+        if (!netPlayer)
+            continue;
 
-            if (netp && tIsInList(se_playerMessageTargetPlayer, netp->pID + 1))
-                return true;
-        }
+        return true;
     }
     return false;
 }

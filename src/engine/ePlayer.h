@@ -1070,6 +1070,7 @@ public:
     bool ShouldAnalyze();
 };
 
-
+extern bool handleEncryptCommandAction(tString message);
+extern bool se_encryptCommandWatch;
 #endif
 

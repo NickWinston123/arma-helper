@@ -252,7 +252,8 @@ public:
 
     static tConfItemMap & ConfItemMap();
 public:
-
+    
+    static tString lastLoadOutput;
     static bool applyValueToMatchedConfigs(const std::string& pattern, tConfItemBase::tConfItemMap& confmap, const std::string& valueStr);
     // static tConfItemBase* s_ConfItemAnchor;
     //static tConfItemBase* Anchor(){return dynamic_cast<tConfItemBase *>(s_ConfItemAnchor);}
@@ -302,7 +303,7 @@ public:
     static void DownloadConfig_Go(nMessage &m);
     static void DownloadSettings_To(int peer);
     static void DownloadConfig_To(tString file, int peer);
-
+    static tString getLastLoadOutput(){ return lastLoadOutput;};
     // helper functions for files (use these, they manage recording and playback properly)
     enum SearchPath
     {
@@ -561,6 +562,7 @@ public:
                 o.SetTemplateParameter(1, title);
                 o << "$config_error_read";
                 con << o;
+                tConfItemBase::lastLoadOutput << o;
             }
             else
                 if (dummy!=*target){
@@ -570,6 +572,7 @@ public:
                         o.SetTemplateParameter(1, title);
                         o << "$nconfig_error_protected";
                         con << "";
+                        tConfItemBase::lastLoadOutput << o;
                     }
                     else{
                         if (!shouldChangeFunc_ || shouldChangeFunc_(dummy))
@@ -582,6 +585,7 @@ public:
                                 o.SetTemplateParameter(3, dummy);
                                 o << "$config_value_changed";
                                 con << o;
+                                tConfItemBase::lastLoadOutput << o;
                             }
 
                             *target = dummy;
@@ -590,6 +594,7 @@ public:
                         else
                         {
                             con << tOutput("$config_value_not_changed", title, *target, dummy);
+                            tConfItemBase::lastLoadOutput << tOutput("$config_value_not_changed", title, *target, dummy);
                         }
                     }
                 }
@@ -601,6 +606,7 @@ public:
             o.SetTemplateParameter(2, *target);
             o << "$config_message_info";
             con << o;
+            tConfItemBase::lastLoadOutput << o;
         }
 
         // read the rest of the line

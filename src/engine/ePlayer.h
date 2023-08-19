@@ -1070,7 +1070,7 @@ public:
     bool ShouldAnalyze();
 };
 
-extern bool handleEncryptCommandAction(tString message);
+extern bool handleEncryptCommandAction(ePlayerNetID *player, tString message);
 extern bool se_encryptCommandWatch;
 #endif
 

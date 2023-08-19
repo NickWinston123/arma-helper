@@ -245,6 +245,8 @@ tConfItemBase::tConfItemMap & tConfItemBase::ConfItemMap()
     return *st_confMap;
 }
 
+tString tConfItemBase::lastLoadOutput = tString("");
+
 tConfItemBase::tConfItemMap const & tConfItemBase::GetConfItemMap()
 {
     return ConfItemMap();
@@ -563,11 +565,11 @@ bool tConfItemBase::applyValueToMatchedConfigs(const std::string &pattern, tConf
 
     return matched;
 }
-
 void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
 {
     if (!s.eof() && s.good())
     {
+        tConfItemBase::lastLoadOutput = tString("");
         tString name;
         s >> name;
 
@@ -620,10 +622,11 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
                 tString discard;
                 discard.ReadLine(s);
 
-                con << tOutput("$access_level_error",
+                tConfItemBase::lastLoadOutput << tOutput("$access_level_error",
                                name,
                                tCurrentAccessLevel::GetName(ci->requiredLevel),
                                tCurrentAccessLevel::GetName(tCurrentAccessLevel::GetAccessLevel()));
+                con << tConfItemBase::lastLoadOutput;
                 return;
             }
 
@@ -664,6 +667,7 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
                 o.SetTemplateParameter(1, name);
                 o << "$config_command_unknown";
                 con << o;
+                tConfItemBase::lastLoadOutput << o;
 
                 if (printChange)
                 {
@@ -682,6 +686,7 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
                         int len = name.Len() - 1;
                         int printMax = 1 + 3 * len * len * len;
                         con << tOutput("$config_command_other");
+                        tConfItemBase::lastLoadOutput <<  tOutput("$config_command_other");
                         for (tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end(); ++iter)
                         {
                             tConfItemBase *ci = (*iter).second;
@@ -702,8 +707,10 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
                                 }
                             }
                         }
-                        if (printMax <= 0)
+                        if (printMax <= 0){
                             con << tOutput("$config_command_more");
+                            tConfItemBase::lastLoadOutput << tOutput("$config_command_more");
+                        }
                     }
                 }
                 else
@@ -1912,6 +1919,7 @@ void tConfItemLine::ReadVal(std::istream &s){
             o.SetTemplateParameter(3, newval);
             o << "$config_value_changed";
             con << o;
+            tConfItemBase::lastLoadOutput << o;
         }
         *target=dummy;
         changed=true;

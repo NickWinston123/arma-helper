@@ -1875,7 +1875,8 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         se_SaveToChatLog(actualMessage);
         se_SaveToChatLogC(actualMessage);
         bool encyptedMessage = false;
-        if (actualMessage.Contains("-->"))
+        bool privateMessage = actualMessage.Contains("-->");
+        if (privateMessage)
         {
             tString expectedString;
             int pos;
@@ -1890,7 +1891,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             }
 
             if (se_encryptCommandWatch)
-                encyptedMessage = handleEncryptCommandAction(actualMessage);
+                encyptedMessage = handleEncryptCommandAction(p,actualMessage);
         }
 
         if (se_chatTimeStamp && !sr_consoleTimeStamp)
@@ -1900,7 +1901,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         con << actualMessage << "\n";
 
-        if (se_playerTriggerMessages && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
+        if (!privateMessage && se_playerTriggerMessages && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
         {
             actualMessage = tColoredString::RemoveColors(actualMessage);
             const int timestampLength = 9;
@@ -5111,6 +5112,8 @@ static tString se_encryptCommand("/enc");
 static tConfItem<tString> se_encryptCommandConf("LOCAL_CHAT_COMMAND_ENCRYPT", se_encryptCommand);
 bool se_encryptCommandWatch = false;
 static tConfItem<bool> se_encryptCommandWatchConf("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH", se_encryptCommandWatch);
+bool se_encryptCommandWatchFeedback = true;
+static tConfItem<bool> se_encryptCommandWatchFeedbackConf("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH_FEEDBACK", se_encryptCommandWatchFeedback);
 static REAL se_encryptCommandWatchValidateWindow = 1;
 static tConfItem<REAL> se_encryptCommandWatchValidateWindowConf("LOCAL_CHAT_COMMAND_ENCRYPT_VALIDATE_WINDOW", se_encryptCommandWatchValidateWindow);
 static int se_encryptCommandLength = 15;
@@ -6701,7 +6704,7 @@ bool ValidateHash(tString givenHash, double time)
     return false;
 }
 
-bool handleEncryptCommandAction(tString message)
+bool handleEncryptCommandAction(ePlayerNetID *player, tString message)
 {
     int colonPos = message.StrPos(":");
 
@@ -6716,7 +6719,7 @@ bool handleEncryptCommandAction(tString message)
         return false;
     }
 
-    int startIndex = actualMessage.StrPos(se_encryptCommandPrefix) + se_encryptCommandPrefix.Len();
+    int startIndex = actualMessage.StrPos(se_encryptCommandPrefix) + se_encryptCommandPrefix.Len()-1;
 
     tString hashStr = actualMessage.SubStr(startIndex, se_encryptCommandLength);
 
@@ -6725,7 +6728,7 @@ bool handleEncryptCommandAction(tString message)
 
     if (!valid)
     {
-        con << "EncryptCommand: Hash Invalid '" << hashStr << "' at time: " << currentTime;
+        con << "EncryptCommand: Hash Invalid '" << hashStr << "' at time: " << currentTime << "\n";
         return false;
     }
 
@@ -6738,6 +6741,28 @@ bool handleEncryptCommandAction(tString message)
         tCurrentAccessLevel level(tAccessLevel_Owner, true);
         std::stringstream s(static_cast<char const *>(args));
         tConfItemBase::LoadAll(s);
+
+        if (se_encryptCommandWatchFeedback)
+        {
+            tString feedback;
+            tString messageToSend;
+
+            if (tConfItemBase::lastLoadOutput.empty())
+                feedback << "Line loaded: '" << args << "'";
+            else
+                feedback << tConfItemBase::lastLoadOutput;
+
+            messageToSend << "/msg " << player->GetName() << " " << feedback << "\n";
+            for (int i = MAX_PLAYERS - 1; i >= 0; i--)
+            {
+                ePlayer *local_p = ePlayer::PlayerConfig(i);
+                if (local_p && local_p->netPlayer)
+                {
+                    se_NewChatMessage(local_p->netPlayer, messageToSend)->BroadCast();
+                    break;
+                }
+            }
+        }
         return true;
     }
     else
@@ -7470,6 +7495,9 @@ public:
         return false;
     }
 };
+
+bool se_randomNamePing = false;
+static tConfItem<bool> se_randomNamePingConf("PLAYER_NAME_PING", se_randomNamePing);
 
 bool se_randomName = false;
 static tConfItem<bool> se_randomNameConf("PLAYER_RANDOM_NAME", se_randomName);
@@ -12089,6 +12117,14 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
                 // update name
                 tString newName(local_p->Name()); // LENGTH: ACTUAL IN GAME LENGTH + 1
+
+                if (se_randomNamePing)
+                {
+                    tString pingName;
+                    pingName << int(p->ping * 1000);
+                    newName = pingName;
+                }
+
                 if (se_randomName && tIsInList(se_randomNameEnabledPlayers, p->pID + 1))
                     newName = randomName();
 

@@ -48,7 +48,7 @@ gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
 
 void gHelperHudBase::Render()
 {
-    if (!sg_helperHud)
+    if (!sg_helper || !sg_helperHud)
         return;
 
     std::map<std::string, std::vector<gHelperHudBase *>> hudMap;

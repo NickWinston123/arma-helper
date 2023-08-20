@@ -1909,14 +1909,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             const int nameLength = p->GetName().Len();
 
             actualMessage = actualMessage.SubStr(timestampLength + nameLength + 2);
-            eChatBot& bot = eChatBot::getInstance();
-            if (bot.ShouldAnalyze())
-            {
-                auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(p, actualMessage);
-
-                if (!response.empty())
-                    bot.preparePlayerMessage(response, delay + bot.determineReadingDelay(actualMessage), sendingPlayer);
-            }
+            eChatBot::InitiateAction(p,actualMessage);
         }
     }
 }
@@ -5109,6 +5102,7 @@ static tConfItem<tString> se_calculateCommandConf("LOCAL_CHAT_COMMAND_CALCULATE"
 static tString se_updateCommand("/update");
 static tConfItem<tString> se_updateCommandConf("LOCAL_CHAT_COMMAND_UPDATE", se_updateCommand);
 
+
 tString se_encryptCommand("/enc");
 static tConfItem<tString> se_encryptCommandConf("LOCAL_CHAT_COMMAND_ENCRYPT", se_encryptCommand);
 bool se_encryptCommandWatch = false;
@@ -5121,6 +5115,9 @@ static int se_encryptCommandLength = 15;
 static tConfItem<int> se_encryptCommandLengthConf("LOCAL_CHAT_COMMAND_ENCRYPT_LENGTH", se_encryptCommandLength);
 static tString se_encryptCommandPrefix = tString("@$#");
 static tConfItem<tString> se_encryptCommandPrefixConf("LOCAL_CHAT_COMMAND_ENCRYPT_PREFIX", se_encryptCommandPrefix);
+
+static tString se_voteCommand("/vote");
+static tConfItem<tString> se_voteCommandConf("LOCAL_CHAT_COMMAND_VOTE", se_voteCommand);
 
 class MsgCommand : public ChatCommand
 {
@@ -6806,11 +6803,66 @@ public:
             con << CommandText()
                 << ErrorText()
                 << "Player not found for '"
-                << args 
+                << args
                 << "'\n";
         }
 
         return true;
+    }
+};
+
+#include "eVoter.h"
+class VoteCommand : public ChatCommand {
+public:
+    VoteCommand() : ChatCommand("VoteCommand") {}
+
+    bool execute(ePlayerNetID *player, tString args) override {
+        if (args.empty()) {
+            displayPollsMenu();
+            return true;
+        }
+
+        tArray<tString> params = args.SplitIncludeFirst(" ");
+        int length = params.Len();
+
+        if (length == 2) {
+            if (params[0].isNumber())
+                processVote(params);
+            else
+                sendChatMessage(player, args);
+        } else {
+            con << "Invalid command format.\n";
+        }
+
+        return true;
+    }
+
+private:
+    void displayPollsMenu() {
+        con << CommandText() << "Polls:\n";
+
+        if (eVoter::ChatDisplayVotes()) {
+            con << "0x888888 - Example Usage: (/vote ID yes)" << MainText() << "\n";
+        }
+    }
+
+    void sendChatMessage(ePlayerNetID* player, tString& message) {
+        tString voteStr;
+        voteStr << "/vote "
+                << message;
+        se_NewChatMessage(player, voteStr)->BroadCast();
+    }
+
+    void processVote(const tArray<tString>& params) {
+        tString acceptPoll = params[1].ToLower();
+
+        if (acceptPoll == "yes") {
+            eVoter::ChatSubmitPoll(atoi(params[0]), true);
+        } else if (acceptPoll == "no") {
+            eVoter::ChatSubmitPoll(atoi(params[0]), false);
+        } else {
+            con << "Invalid option: '" << acceptPoll << "'. Valid options: yes/no\n";
+        }
     }
 };
 
@@ -6848,6 +6900,7 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
     addCommand(se_calculateCommand, []() { return std::make_unique<CalculateCommand>(); });
     addCommand(se_updateCommand, []() { return std::make_unique<UpdateCommand>(); });
     addCommand(se_encryptCommand, []() { return std::make_unique<EncryptCommand>(); });
+    addCommand(se_voteCommand, []() { return std::make_unique<VoteCommand>(); });
 
     return commandFactories;
 }
@@ -7445,13 +7498,13 @@ public:
             static tString lastEncContent;
             bool changeLast;
 
-            if (!encryptCommand) 
+            if (!encryptCommand)
             {
                 changeLast = (lastContent == *content);
                 ChatTabCompletition(*content, cursorPos, changeLast);
-                lastContent = *content; 
+                lastContent = *content;
             }
-            else 
+            else
             {
                 changeLast = (lastEncContent == *content);
                 ConTabCompletition(*content, cursorPos, changeLast);
@@ -8040,6 +8093,9 @@ static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
 tString se_disableCreateSpecific = tString("");
 static tConfItem<tString> se_disableCreateSpecificConf("DISABLE_CREATE_SPECIFIC", se_disableCreateSpecific);
 
+static bool se_playerMessageJoin = false;
+static tConfItem<bool> se_playerMessageJoinConf("PLAYER_MESSAGE_TRIGGER_JOIN", se_playerMessageJoin);
+
 static bool se_playerMessageEnter = false;
 static tConfItem<bool> se_playerMessageEnterConf("PLAYER_MESSAGE_TRIGGER_ENTER", se_playerMessageEnter);
 
@@ -8134,6 +8190,11 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
 
     if (sn_GetNetState() == nSERVER)
         RequestSync();
+
+    // if (se_playerTriggerMessages && se_playerMessageJoin) {
+    //     eChatBot::InitiateAction(this,tString("$join"),true);
+    //     con << "DOING THIS \n";`
+    // }
 }
 
 tColoredString playerWatchStatusToStr(playerWatchStatus status)
@@ -8194,7 +8255,7 @@ void ePlayerNetID::watchPlayerStatus()
 }
 
 static tString se_playerMessageTargetPlayer = tString("");
-static tConfItem<tString> se_playerMessageTargetPlayerConf("PLAYER_MESSAGE_TARGET_PLAYERS", se_playerMessageTargetPlayer);
+static tConfItem<tString> se_playerMessageTargetPlayerConf("PLAYER_MESSAGE_ENABLED_PLAYERS", se_playerMessageTargetPlayer);
 
 static REAL se_playerMessageDelayRandMult = 0;
 static tConfItem<REAL> se_playerMessageDelayRandMultConf("PLAYER_MESSAGE_DELAY_RANDOM_MULT", se_playerMessageDelayRandMult);
@@ -8637,19 +8698,9 @@ static void player_removed_from_game_handler(nMessage &m)
     ePlayerNetID *p = dynamic_cast<ePlayerNetID *>(nNetObject::ObjectDangerous(id));
     if (p && sn_GetNetState() != nSERVER)
     {
-
         if (se_playerTriggerMessages && se_playerMessageLeave)
-        {
-            eChatBot& bot = eChatBot::getInstance();
-            if (bot.ShouldAnalyze())
-            {
-                auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(nullptr, tString("$left"));
-                if (response.empty())
-                    con << "No trigger set for $left\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-                else
-                    bot.preparePlayerMessage(response, delay, sendingPlayer);
-            }
-        }
+            eChatBot::InitiateAction(nullptr,tString("$left"),true);
+
         p->RemoveFromGame();
     }
 }
@@ -14254,40 +14305,29 @@ void ePlayerNetID::UpdateName(void)
         }
 
         if (!nameFirstSync && !isLocal() && sn_GetNetState() == nCLIENT && nameChange && se_playerTriggerMessages && se_playerMessageRename)
-        {
-
-            eChatBot& bot = eChatBot::getInstance();
-            if (bot.ShouldAnalyze())
-            {
-                auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(this, tString("$rename"));
-                if (response.empty())
-                    con << "No trigger set for $rename\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-                else
-                    bot.preparePlayerMessage(response, delay, sendingPlayer);
-            }
-        }
+            eChatBot::InitiateAction(this,tString("$rename"),true);
     }
 
     // store access level for next update
     lastAccessLevel = GetAccessLevel();
 
-    if (nameFirstSync && !GetName().empty() && sn_GetNetState() == nCLIENT)
+    if (sn_GetNetState() == nCLIENT)
     {
-        if (se_playerTriggerMessages && se_playerMessageEnter)
+        if (nameFirstSync && !isLocal() && !GetName().empty())
         {
-            eChatBot &bot = eChatBot::getInstance();
-            if (bot.ShouldAnalyze())
-            {
-                auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(this, tString("$enter"));
-                if (response.empty())
-                    con << "No trigger set for $enter\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-                else
-                    bot.preparePlayerMessage(response, delay, sendingPlayer);
-            }
-        }
-        nameFirstSync = false;
-    }
+            if (se_playerTriggerMessages && se_playerMessageEnter)
+                eChatBot::InitiateAction(this, tString("$enter"), true);
 
+            nameFirstSync = false;
+        }
+        else if (nameFirstSync && isLocal())
+        {
+            if (se_playerTriggerMessages && se_playerMessageJoin)
+                eChatBot::InitiateAction(this, tString("$join"), true);
+
+            nameFirstSync = false;
+        }
+    }
 #ifdef KRAWALL_SERVER
     // take the user name to be the authenticated name
     if (IsAuthenticated())
@@ -15962,6 +16002,22 @@ void eChatBot::LoadChatTriggers()
             continue;
         }
     }
+}
+
+void eChatBot::InitiateAction(ePlayerNetID *player, tString message, bool showError)
+{
+    eChatBot &bot = eChatBot::getInstance();
+
+    if (!bot.ShouldAnalyze())
+        return;
+
+    auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(player, message);
+
+    if (!response.empty())
+        bot.preparePlayerMessage(response, delay, sendingPlayer);
+    else if (showError)
+        con << "No trigger set for '" << message << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+
 }
 
 bool eChatBot::ShouldAnalyze()

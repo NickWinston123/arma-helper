@@ -2157,6 +2157,47 @@ void eVoter::VotingMenu()						// activate voting menu ( you can vote about sugg
     }
 }
 
+bool eVoter::ChatDisplayVotes() 
+{
+    const tList< eVoteItem >& voteItems = eVoteItem::GetItems();
+
+    int size = voteItems.Len();
+
+    if (size <= 0) {
+        con << "There are currently no polls.\n";
+        return false;
+    }
+
+    for (int i = 0; i < size ; i++) {
+        con << i+1 << ") " << voteItems[i]->GetDescription() << "\n";
+    }
+
+    return true;
+}
+
+void eVoter::ChatSubmitPoll(int pollID, bool accept) 
+{
+    const tList< eVoteItem >& voteItems = eVoteItem::GetItems();
+
+    int size = voteItems.Len();
+
+    if (pollID > size || pollID <= 0) {
+        con << "No poll found with ID '" << pollID << "'\n";
+        return;
+    }
+
+    eVoteItem* voteItem = eVoteItem::GetItems()(pollID-1);
+
+    if (!voteItem) {
+        con << "No poll found with ID '" << pollID << "'\n";
+        return;
+    }
+
+    voteItem->Vote(accept);
+}
+
+
+
 bool eVoter::VotingPossible()
 {
     // expire old items

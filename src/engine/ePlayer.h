@@ -1066,6 +1066,7 @@ public:
     void LoadChatTriggers();
     
     std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage);
+    static void InitiateAction(ePlayerNetID *player, tString message, bool showError = false);
     void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player);
     REAL determineReadingDelay(tString message);
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay );

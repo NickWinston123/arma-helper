@@ -61,6 +61,8 @@ class eVoter: public tReferencable< eVoter >, public tListMember, public nMachin
 public:
     eVoter( nMachine & machine );
     ~eVoter();
+    static bool ChatDisplayVotes();
+    static void ChatSubmitPoll(int pollID,bool accept);
 
     void PlayerChanged();                                       //!< call when a player changed (logged in or changed name). He'll be blocked from issuing kick votes for a while.
 

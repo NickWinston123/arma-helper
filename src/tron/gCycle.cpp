@@ -373,7 +373,7 @@ static void gSmarterBotReset(std::istream &s)
     auto verifyAndSet = [](std::string commandName)
     {
         tConfItemBase* item = tConfItemBase::GetConfigItem(commandName);
-        if (item)
+        if (item && !item->IsDefault())
             item->SetDefault();
     };
 
@@ -6864,29 +6864,9 @@ void gCycle::ReadSync(nMessage &m)
             }
 
             if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently)
-            {
-                eChatBot &bot = eChatBot::getInstance();
-                if (bot.ShouldAnalyze())
-                {
-                    auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(killer, tString("$died"));
-                    if (response.empty())
-                        con << "No trigger set for $died\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-                    else
-                        bot.preparePlayerMessage(response, delay, sendingPlayer);
-                }
-            }
+                eChatBot::InitiateAction(killer,tString("$died"),true);
             else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
-            {
-                eChatBot &bot = eChatBot::getInstance();
-                if (bot.ShouldAnalyze())
-                {
-                    auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(killer, tString("$diedother"));
-                    if (response.empty())
-                        con << "No trigger set for $diedother\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-                    else
-                        bot.preparePlayerMessage(response, delay, sendingPlayer);
-                }
-            }
+                eChatBot::InitiateAction(killer,tString("$diedother"),true);
         }
 
         Die(lastSyncMessage_.time);

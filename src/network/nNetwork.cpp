@@ -3436,18 +3436,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
         con << s;
 
         if (se_playerTriggerMessages && sg_playerMessageMatchWinner && s.Contains("Overall Winner"))
-        {
-            eChatBot &bot = eChatBot::getInstance();
-            if (bot.ShouldAnalyze())
-            {
-                auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(nullptr, tString("$matchwinner"));
-                if (response.empty())
-                    con << "No trigger set for $matchwinner\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-                else
-                    bot.preparePlayerMessage(response, delay, sendingPlayer);
-            }
-        }
-
+            eChatBot::InitiateAction(nullptr,tString("$matchwinner"),true);
     }
 }
 

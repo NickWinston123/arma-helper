@@ -6660,8 +6660,6 @@ public:
     }
 };
 
-
-
 REAL getEncryptLocaltime()
 {
     return getCurrentLocalTime()->tm_sec;
@@ -15968,6 +15966,8 @@ void eChatBot::LoadChatTriggers()
     FileManager fileManager(tString("chattriggers.txt"));
     tArray<tString> lines = fileManager.Load();
 
+    chatTriggerKeys.clear();
+    chatTriggers.clear();
     for (int i = 0; i < lines.Len(); ++i)
     {
         if (lines[i].StartsWith("\"") && lines[i].EndsWith("\""))
@@ -15994,6 +15994,9 @@ void eChatBot::LoadChatTriggers()
 
                 // Store the trigger and its corresponding responses, delay and exact value
                 chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
+
+                // store order
+                chatTriggerKeys.push_back(trigger);
             }
         }
         else
@@ -16092,10 +16095,14 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
     tString triggeredPlayerName = tString("");
     ePlayerNetID *sendingPlayer = nullptr; // who should send this message?
 
-    for (const auto &triggerPair : chatTriggers)
-    {
-        bool exact = std::get<2>(triggerPair.second), match = false;
-        tString trigger = triggerPair.first;
+    for (const auto& triggerKey : chatTriggerKeys) {
+        auto triggerPair = chatTriggers.find(triggerKey);
+
+        if (triggerPair == chatTriggers.end()) 
+            continue;
+        
+        bool exact = std::get<2>(triggerPair->second), match = false;
+        tString trigger = triggerPair->first;
 
         ePlayerNetID *potentialSender = nullptr;
 
@@ -16185,10 +16192,10 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 triggeredPlayerName = triggeredPlayer->GetName();
             }
 
-            REAL extraDelay = std::get<1>(triggerPair.second);
+            REAL extraDelay = std::get<1>(triggerPair->second);
 
             // vector of possible responses
-            std::vector<tString> possibleResponses = std::get<0>(triggerPair.second);
+            std::vector<tString> possibleResponses = std::get<0>(triggerPair->second);
             // random response from the vector
             tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
 
@@ -16346,27 +16353,61 @@ static void RemoveChatTrigger(std::istream &s)
     bot.LoadChatTriggers();
 }
 
+
 static void ListChatTriggers(std::istream &s)
 {
-    FileManager fileManager(tString("chattriggers.txt"));
-    tArray<tString> lines = fileManager.Load();
+    eChatBot& chatBot = eChatBot::getInstance();
 
-    con << "Listing all chat triggers:\n";
-    con << "Line) Trigger, Response, Extra Delay, Exact?\n";
-
-    for (int i = 0; i < lines.Len(); ++i)
+    if (!chatBot.chatTriggers.empty())
     {
-        tArray<tString> parts = lines[i].Split(",");
-
-        if (parts.Len() != 4)
+        con << "Listing all loaded chat triggers:\n";
+        con << "Line) Trigger, Response, Extra Delay, Exact?\n";
+        
+        int i = 1; // Line number counter
+        for (const auto& triggerPair : chatBot.chatTriggers)
         {
-            con << "Malformed line at index " << i + 1 << ": " << lines[i] << "\n";
-            continue;
-        }
+            const tString& trigger = triggerPair.first;
+            const auto& details = triggerPair.second;
+            const std::vector<tString>& responses = std::get<0>(details);
+            REAL extraDelay = std::get<1>(details);
+            bool exact = std::get<2>(details);
 
-        con << i + 1 << ") " << parts[0] << ", " << parts[1] << ", " << parts[2] << ", " << (parts[3] == "1" ? "Yes" : "No") << "\n";
+            // Combine multiple responses into a single string separated by semicolons
+            std::string combinedResponses;
+            for (const auto& response : responses) {
+                if (!combinedResponses.empty()) {
+                    combinedResponses += ";";
+                }
+                combinedResponses += response;
+            }
+
+            con << i << ") " << trigger << ", " << combinedResponses << ", " << extraDelay << ", " << (exact ? "Yes" : "No") << "\n";
+            i++;
+        }
+    }
+    else
+    {
+        FileManager fileManager(tString("chattriggers.txt"));
+        tArray<tString> lines = fileManager.Load();
+
+        con << "Chat triggers not loaded. Reading from file:\n";
+        con << "Line) Trigger, Response, Extra Delay, Exact?\n";
+
+        for (int i = 0; i < lines.Len(); ++i)
+        {
+            tArray<tString> parts = lines[i].Split(",");
+
+            if (parts.Len() != 4)
+            {
+                con << "Malformed line at index " << i + 1 << ": " << lines[i] << "\n";
+                continue;
+            }
+
+            con << i + 1 << ") " << parts[0] << ", " << parts[1] << ", " << parts[2] << ", " << (parts[3] == "1" ? "Yes" : "No") << "\n";
+        }
     }
 }
+
 
 static void ClearChatTriggers(std::istream &s)
 {
@@ -16377,7 +16418,14 @@ static void ClearChatTriggers(std::istream &s)
     con << "All chat triggers have been cleared.\n";
 }
 
+static void ReloadChatTriggers(std::istream &s)
+{
+    eChatBot &bot = eChatBot::getInstance();
+    bot.LoadChatTriggers();
+}
+
 static tConfItemFunc ClearChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_CLEAR", &ClearChatTriggers);
 static tConfItemFunc ListChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_LIST", &ListChatTriggers);
 static tConfItemFunc AddChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
 static tConfItemFunc RemoveChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
+static tConfItemFunc ReloadChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_RELOAD", &ReloadChatTriggers);

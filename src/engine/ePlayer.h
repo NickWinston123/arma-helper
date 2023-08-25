@@ -1056,7 +1056,8 @@ private:
 
 public:
     std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
-        
+    std::vector<tString> chatTriggerKeys;  
+
     // instance
     static eChatBot& getInstance() {
         static eChatBot instance;

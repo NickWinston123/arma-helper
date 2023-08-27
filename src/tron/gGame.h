@@ -145,12 +145,15 @@ void update_settings(bool const *goon = 0);
 void ret_to_MainMenu();
 extern nServerInfoBase *connectedServer;
 static nServerInfoBase *CurrentServer() { return connectedServer; }
+extern nServerInfoBase *lastServer;
+static nServerInfoBase *LastServer() { return connectedServer; }
 void ConnectToServer(nServerInfoBase *server);
 
 void sg_EnterGame(nNetState enter_state);
 void sg_HostGame();
 void sg_HostGameMenu();
 
+void ConnectToLastServer();
 // runs a single player game
 void sg_SinglePlayerGame();
 

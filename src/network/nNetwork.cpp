@@ -3651,7 +3651,7 @@ static REAL sn_SendPlanned1(){
         tERR_ERROR("Timer hiccup!");
     }
 #else
-    {
+    { 
         tERR_WARN("Timer hiccup!");
         lastTime=time;
     }

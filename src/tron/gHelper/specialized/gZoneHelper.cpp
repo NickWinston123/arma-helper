@@ -259,7 +259,7 @@ void gZoneHelper::Activate(gHelperData &data)
     if (sg_helperZoneTracer)
         zoneTracer(data);
 
-    zoneData(data);
+    // zoneData(data);
 }
 
 gZoneHelper &gZoneHelper::Get(gHelper &helper, gCycle &owner)

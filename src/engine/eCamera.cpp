@@ -1556,7 +1556,7 @@ void eCamera::Timestep(REAL ts){
         fov = localPlayer->FOV;
     }
 
-    if (localPlayer->watchPlayer != nullptr)
+    if ((!netPlayer || (netPlayer && !InterestingToWatch(netPlayer->Object())) ) && localPlayer->watchPlayer != nullptr)
     {
         gCycle *cycle = ePlayerNetID::NetPlayerToCycle(localPlayer->watchPlayer);
         if (center != cycle && InterestingToWatch(cycle))

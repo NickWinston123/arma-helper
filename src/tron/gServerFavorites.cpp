@@ -48,7 +48,7 @@ static bool sg_ConnectionStress = false;
 
 enum
 {
-    NUM_FAVORITES = 10
+    NUM_FAVORITES = 100
 };
 
 //! favorite server information, just to connect

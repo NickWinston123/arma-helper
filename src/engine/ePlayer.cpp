@@ -6474,6 +6474,7 @@ public:
         {
             con << CommandText()
                 << "Reconnecting to '" << connectedServer->GetName() << "'...\n";
+            ret_to_MainMenu();
             ConnectToServer(connectedServer);
         }
         else
@@ -6705,7 +6706,7 @@ bool handleEncryptCommandAction(ePlayerNetID *player, tString message)
     }
 
     tString actualMessage = message.SubStr(colonPos + 2);
-    if (!actualMessage.Contains(se_encryptCommandPrefix))
+    if (!actualMessage.StartsWith(se_encryptCommandPrefix))
     {
         return false;
     }
@@ -6854,13 +6855,12 @@ private:
     void processVote(const tArray<tString>& params) {
         tString acceptPoll = params[1].ToLower();
 
-        if (acceptPoll == "yes") {
+        if (acceptPoll == "yes")
             eVoter::ChatSubmitPoll(atoi(params[0]), true);
-        } else if (acceptPoll == "no") {
+        else if (acceptPoll == "no")
             eVoter::ChatSubmitPoll(atoi(params[0]), false);
-        } else {
+        else
             con << "Invalid option: '" << acceptPoll << "'. Valid options: yes/no\n";
-        }
     }
 };
 
@@ -16098,11 +16098,11 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
     for (const auto& triggerKey : chatTriggerKeys) {
         auto triggerPair = chatTriggers.find(triggerKey);
 
-        if (triggerPair == chatTriggers.end()) 
+        if (triggerPair == chatTriggers.end())
             continue;
-        
+
         bool exact = std::get<2>(triggerPair->second), match = false;
-        tString trigger = triggerPair->first;
+        tString trigger = triggerPair->first.ToLower();
 
         ePlayerNetID *potentialSender = nullptr;
 
@@ -16119,6 +16119,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                     if (netp)
                     {
                         tString ourName = netp->GetName().ToLower();
+                        tArray<tString> nameParts = ourName.Split(" ");
 
                         tString triggerWithoutName = trigger.Replace("$p", "").TrimWhitespace();
                         if (!lowerMessage.Contains(triggerWithoutName))
@@ -16126,33 +16127,42 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                             continue;
                         }
 
+                        bool nameFound = false;
                         if (exact)
                         {
-                            if (lowerMessage == ourName)
+                            if (lowerMessage == ourName || ourName.Contains(lowerMessage))
                             {
-                                match = true;
-                                potentialSender = netp;
-                                break;
+                                nameFound = true;
+                            }
+                            else
+                            {
+                                for (const auto &namePart : nameParts)
+                                {
+                                    if (lowerMessage == namePart)
+                                    {
+                                        nameFound = true;
+                                        break;
+                                    }
+                                }
                             }
                         }
                         else
                         {
-                            tArray<tString> nameParts = ourName.Split(" ");
-
                             for (const auto &namePart : nameParts)
                             {
                                 if (lowerMessage.Contains(namePart))
                                 {
-                                    match = true;
-                                    potentialSender = netp;
+                                    nameFound = true;
                                     break;
                                 }
                             }
+                        }
 
-                            if (match)
-                            {
-                                break;
-                            }
+                        if (nameFound)
+                        {
+                            match = true;
+                            potentialSender = netp;
+                            break;
                         }
                     }
                 }
@@ -16362,7 +16372,7 @@ static void ListChatTriggers(std::istream &s)
     {
         con << "Listing all loaded chat triggers:\n";
         con << "Line) Trigger, Response, Extra Delay, Exact?\n";
-        
+
         int i = 1; // Line number counter
         for (const auto& triggerPair : chatBot.chatTriggers)
         {

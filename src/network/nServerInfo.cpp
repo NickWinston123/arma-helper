@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "nServerInfo.h"
 #include "nNetObject.h"
+#include "../tron/gServerFavorites.h"
 
 #include <fstream>
 
@@ -460,6 +461,12 @@ void nServerInfo::Sort( PrimaryKey key )
                 if ( ascend->score > prev->score )
                     compare = 1;
                 else if ( ascend->score < prev->score )
+                    compare = -1;
+                break;
+            case KEY_FAVORITE:
+                if ( gServerFavorites::IsFavorite(ascend) && !gServerFavorites::IsFavorite(prev))
+                    compare = 1;
+                else if ( !gServerFavorites::IsFavorite(ascend) && gServerFavorites::IsFavorite(prev))
                     compare = -1;
                 break;
             case KEY_MAX:

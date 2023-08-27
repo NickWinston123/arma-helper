@@ -116,11 +116,13 @@ public:
     virtual void HandleEvent(SDL_Event event);
 
     void Render(REAL y,
-                const tString &servername, const tOutput &score,
+                const tString &servername, const tOutput &favorite,
+                const tOutput &score,
                 const tOutput &users, const tOutput &ping);
 
     void Render(REAL y,
-                const tString &servername, const tString &score,
+                const tString &servername, const tString &favorite,
+                const tString &score,
                 const tString &users, const tString &ping);
 
     void Render(REAL x, REAL y, tString &c, int center, int cursor, int cursorPos);
@@ -581,7 +583,8 @@ void gServerMenu::Render(REAL x, REAL y, tString &c, int center = 0, int cursor 
 }
 
 void gServerMenu::Render(REAL y,
-                         const tString &servername, const tString &score,
+                         const tString &servername, const tString &favorite,
+                         const tString &score,
                          const tString &users, const tString &ping)
 {
     if (sr_glOut)
@@ -602,7 +605,7 @@ void gServerMenu::Render(REAL y,
 
         if (ping.Len() > 1)
         {
-            text.SetPos(static_cast<int>((2.0 - 0.45 * aspect - 0.2) / c.GetCWidth()) - tColoredString::RemoveColors(ping).Len() - 1, true);
+            text.SetPos(static_cast<int>((1.92 - 0.45 * aspect - 0.2) / c.GetCWidth()) - tColoredString::RemoveColors(ping).Len() - 1, true);
             text << "0xRESETT";
             text << " " << ping;
         }
@@ -613,14 +616,20 @@ void gServerMenu::Render(REAL y,
 
         if (users.Len() > 1)
         {
-            text.SetPos(static_cast<int>((2.0 - 0.2 * aspect - 0.2) / c.GetCWidth()) - tColoredString::RemoveColors(users).Len(), false);
+            text.SetPos(static_cast<int>((1.9 - 0.2 * aspect - 0.2) / c.GetCWidth()) - tColoredString::RemoveColors(users).Len(), false);
             text << users;
         }
 
         if (score.Len() > 1)
         {
-            text.SetPos(static_cast<int>(1.8 / c.GetCWidth()) - tColoredString::RemoveColors(score).Len(), false);
+            text.SetPos(static_cast<int>(1.7 / c.GetCWidth() ) - tColoredString::RemoveColors(score).Len(), false);
             text << score;
+        }
+
+        if (favorite.Len() > 1)
+        {
+            text.SetPos(static_cast<int>(1.8 / c.GetCWidth()) - tColoredString::RemoveColors(favorite).Len(), false);
+            text << favorite;
         }
 
         c << text;
@@ -628,16 +637,18 @@ void gServerMenu::Render(REAL y,
 }
 
 void gServerMenu::Render(REAL y,
-                         const tString &servername, const tOutput &score,
+                         const tString &servername,  const tOutput &favorite,
+                         const tOutput &score,
                          const tOutput &users, const tOutput &ping)
 {
     tColoredString highlight, normal;
     highlight << tColoredString::ColorString(1, .7, .7);
     normal << tColoredString::ColorString(.7, .3, .3);
 
-    tString sn, s, u, p;
+    tString sn, f, s, u, p;
 
     sn << normal;
+    f << normal;
     s << normal;
     u << normal;
     p << normal;
@@ -656,16 +667,20 @@ void gServerMenu::Render(REAL y,
     case nServerInfo::KEY_SCORE:
         s = highlight;
         break;
+    case nServerInfo::KEY_FAVORITE:
+        f = highlight;
+        break;
     case nServerInfo::KEY_MAX:
         break;
     }
 
     sn << servername; // tColoredString::RemoveColors( servername );
+    f << favorite;
     s << score;
     u << users;
     p << ping;
 
-    Render(y, sn, s, u, p);
+    Render(y, sn, f, s, u, p);
 }
 
 #endif /* DEDICATED */
@@ -686,6 +701,7 @@ void gServerMenuItem::Render(REAL x, REAL y, REAL alpha, bool selected)
     if (server)
     {
         tColoredString name;
+        tString favorite;
         tString score;
         tString users;
         tString ping;
@@ -734,9 +750,9 @@ void gServerMenuItem::Render(REAL x, REAL y, REAL alpha, bool selected)
         else
         {
             if (favorite_)
-            {
-                score << "B ";
-            }
+                favorite << "*";
+            else
+                favorite << "";
 
             score << s;
             users << server->Users() << "/" << server->MaxUsers();
@@ -753,7 +769,7 @@ void gServerMenuItem::Render(REAL x, REAL y, REAL alpha, bool selected)
         }
 
         serverMenu->Render(y * shrink + displace,
-                           name,
+                           name, favorite,
                            score, users, ping);
     }
     else
@@ -762,7 +778,7 @@ void gServerMenuItem::Render(REAL x, REAL y, REAL alpha, bool selected)
         tString s;
         s << o;
         serverMenu->Render(y * shrink + displace,
-                           s,
+                           s, tString(""),
                            tString(""), tString(""), tString(""));
     }
 #endif
@@ -970,6 +986,7 @@ void gBrowserMenuItem::RenderBackground()
 
     static_cast<gServerMenu *>(menu)->Render(.62,
                                              sn2,
+                                             tOutput("$network_master_favorite"),
                                              tOutput("$network_master_score"),
                                              tOutput("$network_master_users"),
                                              tOutput("$network_master_ping"));
@@ -1051,7 +1068,7 @@ void gServerStartMenuItem::Render(REAL x, REAL y, REAL alpha, bool selected)
     tString s;
     s << tOutput("$network_master_start");
     static_cast<gServerMenu *>(menu)->Render(y * shrink + displace,
-                                             s,
+                                             s, tString(),
                                              tString(), tString(), tString());
 #endif
 }

@@ -2551,6 +2551,7 @@ static void sg_StopQuickExit()
     }
 }
 nServerInfoBase *connectedServer = nullptr;
+nServerInfoBase *lastServer = nullptr;
 // return code: false if there was an error or abort
 bool ConnectToServerCore(nServerInfoBase *server)
 {
@@ -2592,6 +2593,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
 
         nNetObject::ClearAll();
         connectedServer = server;
+        lastServer = connectedServer;
         o.SetTemplateParameter(1, server->GetName());
         o << "$network_connecting_to_server";
         con << o;
@@ -6858,3 +6860,19 @@ static void sg_reportsClear(std::istream &s)
 }
 static tConfItemFunc sg_reportsClearConf("CLEAR_REPORTS", &sg_reportsClear);
 static tAccessLevelSetter sg_reportsClearConfLevel(sg_reportsClearConf, tAccessLevel_Owner);
+
+
+void ConnectToLastServer()
+{
+    nServerInfoBase *server = LastServer();
+    if (server != nullptr)
+        ConnectToServer(server);
+    else
+        con << "Last server not set!\n";
+}
+static void ConnectToLastServer(std::istream &s)
+{
+    ConnectToLastServer();
+}
+
+static tConfItemFunc ReloadChatTriggers_conf("CONNECT_TO_LAST_SERVER", &ConnectToLastServer);

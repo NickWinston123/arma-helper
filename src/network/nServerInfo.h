@@ -224,6 +224,7 @@ public:
         KEY_PING,       // by ping
         KEY_USERS,      // by number of players
         KEY_SCORE,      // by combined score
+        KEY_FAVORITE,
         KEY_MAX         // max value
     };
 

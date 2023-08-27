@@ -78,14 +78,15 @@ extern tString se_chatCommandsThemeItem;
 extern tString se_chatCommandsThemeError;
 extern tString se_playerTriggerMessagesIgnoreList;
 
-static void se_UniqueColor(ePlayer *local_p );
-static void se_RandomizeColor(ePlayer *local_p);
 extern bool se_playerTriggerMessages;
-static void se_CrossFadeColor(ePlayer *local_p);
-extern void LoadChatTriggers();
-static void handleTriggerMessages(ePlayerNetID *p, tString message);
 extern bool se_watchActiveStatus;
 extern int se_watchActiveStatusTime;
+
+extern void se_UniqueColor(ePlayer *local_p );
+extern void se_RandomizeColor(ePlayer *local_p);
+static void se_CrossFadeColor(ePlayer *local_p);
+
+nMessage *se_NewChatMessage(ePlayerNetID const *player, tString const &message);
 
 enum playerWatchStatus {
     UNSET = 0,
@@ -597,9 +598,6 @@ public:
     void GetScoreFromDisconnectedCopy(); // get the player's data from the previous login
 
     void Chat(const tString &s);
-    static bool LocalChatCommands(ePlayerNetID *p, tString command);
-    static bool LocalChatCommands(ePlayerNetID *p, tString command, std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>>& commandFactories);
-    bool RunChatCommand(ChatCommand & command, tString args);
 
     nTimeAbsolute GetTimeCreated() const { return timeCreated_; }
 
@@ -965,44 +963,6 @@ static ePlayer * se_chatterPlanned=NULL;
 static ePlayer * se_chatter =NULL;
 static tString se_say;
 
-//Grab Stuff
-static tColoredString gatherPlayerInfo(ePlayerNetID * p);
-static tColoredString gatherPlayerColor(ePlayerNetID * p, bool showReset = true);
-
-class ChatCommand {
-public:
-    virtual bool execute(ePlayerNetID* player, tString args) = 0;
-
-    static tString HeaderText() { return se_chatCommandsThemeHeader;}
-    static tString MainText() { return se_chatCommandsThemeMain;}
-    static tString ItemText() { return se_chatCommandsThemeItem;}
-    static tString ErrorText() { return se_chatCommandsThemeError;}
-
-    tString CommandText()
-    {
-        tString output;
-
-        output << HeaderText()
-               << commandName
-               << " - "
-               << MainText();
-        return output;
-    }
-
-    const std::string& getCommandName() const {
-        return commandName;
-    }
-
-protected:
-    ChatCommand(const std::string& name) : commandName(name) {}
-
-private:
-    std::string commandName;
-};
-
-
-
-tColoredString cycleColorPreview(int r,int g,int b);
 
 #ifndef DEDICATED
 #include "tDirectories.h"
@@ -1075,7 +1035,5 @@ public:
     bool ShouldAnalyze();
 };
 
-extern bool handleEncryptCommandAction(ePlayerNetID *player, tString message);
-extern bool se_encryptCommandWatch;
 #endif
 

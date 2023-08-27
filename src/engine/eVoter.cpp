@@ -1178,7 +1178,7 @@ protected:
         {
             return true;
         }
-        
+
         eVoter * sender = eVoter::GetVoter( senderID  );
 
         double time = tSysTimeFloat();
@@ -1197,7 +1197,7 @@ protected:
                     sn_ConsoleOut( message, senderID );
                     return false;
                 }
-                
+
                 if( senderPlayer->GetTimeCreated() < timeCreated )
                 {
                     timeCreated = senderPlayer->GetTimeCreated();
@@ -1526,7 +1526,7 @@ public:
 protected:
     // get the language string prefix
     virtual char const * DoGetPrefix() const{ return "silence"; }
- 
+
 #ifdef KRAWALL_SERVER
     // access level required for this kind of vote
     virtual tAccessLevel DoGetAccessLevel() const
@@ -1549,7 +1549,7 @@ protected:
         }
     }
 };
- 
+
 //  vote on giving players their voice back (not really harmful, but it's a convenient base class)
 class eVoteItemVoice: public virtual eVoteItemHarmServerControlled
 {
@@ -1559,7 +1559,7 @@ public:
         : eVoteItemHarm( player )
         {}
 
- 
+
     ~eVoteItemVoice()
     {}
 protected:
@@ -1572,13 +1572,13 @@ protected:
         return se_accessLevelVoteSilence;
     }
 #endif
- 
+
     // return vote-specific extra bias
     virtual int DoGetExtraBias() const
     {
         return se_votingBiasVoice;
     }
- 
+
     virtual bool DoCheckValid( int senderID )
     {
         if(!CheckValidNoHarm(senderID))
@@ -2156,8 +2156,9 @@ void eVoter::VotingMenu()						// activate voting menu ( you can vote about sugg
 #endif
     }
 }
-#include "ePlayer.h"
-bool eVoter::ChatDisplayVotes() 
+
+#include "eChatCommands.h"
+bool eVoter::ChatDisplayVotes()
 {
     const tList< eVoteItem >& voteItems = eVoteItem::GetItems();
 
@@ -2175,7 +2176,7 @@ bool eVoter::ChatDisplayVotes()
     return true;
 }
 
-void eVoter::ChatSubmitPoll(int pollID, bool accept) 
+void eVoter::ChatSubmitPoll(int pollID, bool accept)
 {
     const tList< eVoteItem >& voteItems = eVoteItem::GetItems();
 
@@ -2195,8 +2196,6 @@ void eVoter::ChatSubmitPoll(int pollID, bool accept)
 
     voteItem->Vote(accept);
 }
-
-
 
 bool eVoter::VotingPossible()
 {

@@ -2521,6 +2521,64 @@ tString tString::RemoveWord(const char *find_word)
     return RemoveWord(tString(find_word));
 }
 
+tArray<tString> tString::SplitBySize(int size, bool fullWords)
+{
+    tString ret(*this);
+    tArray<tString> arrayString;
+
+    if (size <= 0)
+    {
+        return arrayString; 
+    }
+
+    if (!fullWords)  
+    {
+        int strLength = ret.Len();
+        int numberOfChunks = (strLength + size - 1) / size; 
+
+        for (int i = 0; i < numberOfChunks; i++)
+        {
+            int startIndex = i * size;
+            int endIndex = std::min(startIndex + size, strLength);
+            arrayString[i] = ret.SubStr(startIndex, endIndex - startIndex);
+        }
+    }
+    else  
+    {
+        int index = 0;
+        int arrayKey = 0;
+
+        while (index < ret.Len())
+        {
+            int currentSize = 0;
+            int lastSpace = -1;
+
+            while (currentSize < size && index < ret.Len())
+            {
+                if (ret[index] == ' ')
+                {
+                    lastSpace = index;
+                }
+                currentSize++;
+                index++;
+            }
+
+            if (index < ret.Len() && lastSpace != -1)
+            {
+                arrayString[arrayKey] = ret.SubStr(index - currentSize, lastSpace - (index - currentSize) + 1);
+                index = lastSpace + 1;
+            }
+            else
+            {
+                arrayString[arrayKey] = ret.SubStr(index - currentSize, currentSize);
+            }
+            arrayKey++;
+        }
+    }
+
+    return arrayString;
+}
+
 
 // **********************************************************************
 // *
@@ -2532,149 +2590,10 @@ tString tString::RemoveWord(const char *find_word)
 //!    @return     arrayString     Returns string in array before and after "delimiter"
 //!
 // **********************************************************************
-
-tArray<tString> tString::SplitBySize(int size)
-{
-    tString ret(*this);
-    tArray<tString> arrayString;
-
-    if (size <= 0)
-    {
-        return arrayString; // No change
-    }
-
-    int strLength = ret.Len();
-    int numberOfChunks = (strLength + size - 1) / size; // Calculate the number of chunks, rounding up
-
-    for (int i = 0; i < numberOfChunks; i++)
-    {
-        int startIndex = i * size;
-        int endIndex = std::min(startIndex + size, strLength);
-        arrayString[i] = ret.SubStr(startIndex, endIndex - startIndex);
-    }
-
-    return arrayString;
-}
-
-tArray<tString> tString::SplitBySizeWithFullWords(int maxSize)
-{
-    tString ret(*this);
-    tArray<tString> arrayString;
-
-    if (maxSize <= 0)
-    {
-        arrayString[0] = ret;
-        return arrayString;
-    }
-
-    int index = 0;
-    int arrayKey = 0;
-
-    while (index < ret.Len())
-    {
-        int currentSize = 0;
-        int lastSpace = -1;
-
-        while (currentSize < maxSize && index < ret.Len())
-        {
-            if (ret[index] == ' ')
-            {
-                lastSpace = index;
-            }
-            currentSize++;
-            index++;
-        }
-
-        if (index < ret.Len() && lastSpace != -1)
-        {
-            arrayString[arrayKey] = ret.SubStr(index - currentSize, lastSpace - (index - currentSize) + 1);
-            index = lastSpace + 1;
-        }
-        else
-        {
-            arrayString[arrayKey] = ret.SubStr(index - currentSize, currentSize);
-        }
-        arrayKey++;
-    }
-
-    return arrayString;
-}
-
-tArray<tString> tString::SplitIncludeFirst(tString delimiter)
-{
-    tArray<tString> arrayString;
-
-    int strleng = Len() - 1;
-    int delleng = delimiter.Len() - 1;
-    if (delleng == 0)
-    {
-        arrayString.Add(*this);  // No change, add the entire string as the only element
-        return arrayString;
-    }
-
-    int i = 0;
-    int k = 0;
-    while (i < strleng)
-    {
-        int j = 0;
-        while (i + j < strleng && j < delleng && (*this)[i + j] == delimiter[j])
-            j++;
-
-        if (j == delleng)  // Found delimiter
-        {
-            arrayString.Add(SubStr(k, i - k));  // Add the substring from k to i-k
-            i += delleng;
-            k = i;
-        }
-        else
-        {
-            i++;
-        }
-    }
-    arrayString.Add(SubStr(k, i - k));  // Add the remaining substring from k to i-k
-
-    return arrayString;
-}
-
-tArray<tString> tString::SplitIncludeFirst(const char* delimiter)
-{
-    return SplitIncludeFirst(tString(delimiter));
-}
-
 tArray<tString> tString::Split(tString delimiter)
 {
     tString ret(*this);
     tArray<tString> arrayString;
-
-    /*  Old Method
-    if (delimiter.Len() > ret.Len())
-        return arrayString;
-    else if (delimiter == "")
-    {
-        arrayString[0] = ret;
-        return arrayString;
-    }
-
-    int count_word = delimiter.Len() - 1;
-    int this_word = ret.Len();
-    int arrayKey = 0;
-
-    for(int i = 0; i < this_word; i++)
-    {
-        tString putWordTogether;
-        for(int j = 0; j < count_word; j++)
-        {
-            putWordTogether << ret[i+j];
-        }
-
-        if (putWordTogether == delimiter)
-        {
-            i += count_word - 1;
-            arrayKey++;
-        }
-        else arrayString[arrayKey] << ret[i];
-    }
-    */
 
     //  New Method
     int strleng = ret.Len() - 1;

@@ -131,6 +131,8 @@
 		<Unit filename="src/engine/eNetGameObject.h" />
 		<Unit filename="src/engine/ePath.cpp" />
 		<Unit filename="src/engine/ePath.h" />
+		<Unit filename="src/engine/eChatCommands.cpp" />
+		<Unit filename="src/engine/eChatCommands.h" />
 		<Unit filename="src/engine/ePlayer.cpp" />
 		<Unit filename="src/engine/ePlayer.h" />
 		<Unit filename="src/engine/eRectangle.cpp" />

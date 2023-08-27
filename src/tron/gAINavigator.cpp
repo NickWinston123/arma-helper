@@ -928,7 +928,7 @@ bool gAINavigator::FollowEvaluator::FindTeamTarget()
 {
     // get local player
     ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
-    tArray<tString> team = local_p->sg_smarterBotFollowTargetTeamList.SplitIncludeFirst(",");
+    tArray<tString> team = local_p->sg_smarterBotFollowTargetTeamList.Split(",");
     gCycle *closestTeammate = nullptr;
     gCycle *closestEnemyToTeammate = nullptr;
     REAL closestTeammateDistanceSquared = 999999999;

@@ -536,8 +536,20 @@ void gServerMenu::Update()
     }
 }
 
+static int sg_browserDefaultSort = 3;
+static tConfItem<int> sg_browserDefaultSortConf("BROWSER_DEFAULT_SORT", sg_browserDefaultSort);
+
+nServerInfo::PrimaryKey getDefaultSort()
+{
+    if (sg_browserDefaultSort > nServerInfo::PrimaryKey::KEY_MAX || sg_browserDefaultSort <= 0) {
+        sg_browserDefaultSort = nServerInfo::PrimaryKey::KEY_USERS; 
+    }
+
+    return static_cast<nServerInfo::PrimaryKey>(sg_browserDefaultSort - 1);
+}
+
 gServerMenu::gServerMenu(const char *title)
-    : uMenu(title, false), sortKey_(nServerInfo::KEY_SCORE)
+    : uMenu(title, false), sortKey_(getDefaultSort())
 {
     nServerInfo *run = nServerInfo::GetFirstServer();
     while (run)

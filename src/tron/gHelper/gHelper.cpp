@@ -488,6 +488,27 @@ void gHelper::autoBrake()
     autoBrake(owner_, min, max);
 }
 
+bool gHelper::autoBrakeShouldBrake(gCycle &owner, REAL min, REAL max, bool current)
+{
+    // Get the current used braking percentage of the cycle ( always out of 1 )
+    REAL brakeUsagePercent = owner.GetBrakingReservoir();
+
+    // Check if the brake depletion is enabled
+    bool cycleBrakeDeplete = true;
+    if (min <= 0 && sg_cycleBrakeDeplete < 0)
+        cycleBrakeDeplete = false;
+
+    // Check if the cycle is already braking and the used brake percentage is below the minimum brake limit
+    // and brake depletion is enabled
+    if (current && brakeUsagePercent <= min && cycleBrakeDeplete)
+        return false;
+
+    // Check if the cycle is not braking and the used brake percentage is above the maximum brake limit
+    if (!current && brakeUsagePercent >= max)
+        return true;
+    return current;
+}
+
 void gHelper::autoBrake(gCycle &owner, REAL min, REAL max)
 {
     // Get the current used braking percentage of the cycle ( always out of 1 )

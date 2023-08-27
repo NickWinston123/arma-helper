@@ -3205,7 +3205,7 @@ bool gCycle::Timestep(REAL currentTime)
     if (sg_updateCycleColor) //&& player->pID == 0
         this->updateColor();
 
-    if (s_cycleBrakeToggleUndeplete)
+    if (s_cycleBrakeToggleUndeplete && this->GetBraking())
         gHelper::autoBrake(*this, 0.01, 10);
 
     bool ret = false;
@@ -3218,56 +3218,53 @@ bool gCycle::Timestep(REAL currentTime)
     // no targets are given
     else if (!currentDestination && pendingTurns.empty())
     {
-        // These three booleans represent whether a player has certain types of bots activated.
-        bool chatFlagHackEnabled = se_toggleChatFlagAlways || se_toggleChatFlag;
+        //bool chatFlagHackEnabled = se_toggleChatFlagAlways || se_toggleChatFlag;
 
-        // A "smarter" bot is activated for the player under these conditions:
-        // 1. The player exists.
-        // 2. The 'smarter bot' is enabled globally.
-        // 3. The 'smarter bot' is always active OR the player is currently chatting and the 'smarter bot' is enabled during chatting.
-        // 4. The player's ID is in the list of players for whom the 'smarter bot' is enabled.
-        bool activateSmarterBotForThisPlayer = playerExist && sg_smarterBot &&
-            ((sg_smarterBotAlwaysActive && (!player->IsChatting() || sg_smarterBotEnabledWhileChatting)) ||
-            (!sg_smarterBotAlwaysActive && player->IsChatting() && sg_smarterBotEnabledWhileChatting)) &&
-            tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
-
-        // A local bot is activated for the player under these conditions:
-        // 1. Either the 'smarter bot' is not activated for this player OR both types of bots can be activated simultaneously.
-        // 2. The player exists.
-        // 3. The 'local bot' is enabled globally.
-        // 4. The 'local bot' is always active OR the player is currently chatting and the 'local bot' is enabled during chatting.
-        // 5. The player's ID is in the list of players for whom the 'local bot' is enabled.
-        bool activateLocalBotForThisPlayer = (!activateSmarterBotForThisPlayer || sg_botActivationDualMode) && playerExist && sg_localBot &&
-            ((sg_localBotAlwaysActive && (!player->IsChatting() || sg_localBotEnabledWhileChatting)) ||
-            (!sg_localBotAlwaysActive && player->IsChatting() && sg_localBotEnabledWhileChatting)) &&
-            tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
-
-        // A chat bot is activated for the player under these conditions:
-        // 1. The local bot is not activated for this player.
-        // 2. The player's ID is in the list of players for whom the 'chat bot' is enabled AND the 'chat flag hack' is not enabled.
-        // 3. The 'chat bot' is always active OR the player is currently chatting.
-        bool activateChatbotForThisPlayer = !activateLocalBotForThisPlayer &&
-            (playerExist ? tIsInList(sg_chatBotEnabledForPlayers, player->pID + 1) && !chatFlagHackEnabled : false) &&
-            (sg_chatBotAlwaysActive || player->IsChatting());
-
-        // If the conditions for activating a chat bot or local bot are met, the relevant bot is activated.
-        if (playerIsMe &&
-            activateChatbotForThisPlayer ||
-            activateLocalBotForThisPlayer)
+        if (playerIsMe)
         {
-            gCycleChatBot &bot = gCycleChatBot::Get(this);
-            bot.Activate(currentTime, activateLocalBotForThisPlayer);
-        }
-        else if (chatBot_.get())
-        {
-            chatBot_->nextChatAI_ = 0;
-        }
+            // A "smarter" bot is activated for the player under these conditions:
+            // 1. The player exists.
+            // 2. The 'smarter bot' is enabled globally.
+            // 3. The 'smarter bot' is always active OR the player is currently chatting and the 'smarter bot' is enabled during chatting.
+            // 4. The player's ID is in the list of players for whom the 'smarter bot' is enabled.
+            bool activateSmarterBotForThisPlayer = sg_smarterBot &&
+                ((sg_smarterBotAlwaysActive && (!player->IsChatting() || sg_smarterBotEnabledWhileChatting)) ||
+                (!sg_smarterBotAlwaysActive && player->IsChatting() && sg_smarterBotEnabledWhileChatting)) &&
+                tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
 
-        // If the conditions for activating a 'smarter' bot are met, the 'smarter' bot is activated.
-        if (playerIsMe && activateSmarterBotForThisPlayer)
-        {
-            gSmarterBot &smarterBot = gSmarterBot::Get(this);
-            smarterBot.Activate(currentTime);
+            // A local bot is activated for the player under these conditions:
+            // 1. Either the 'smarter bot' is not activated for this player OR both types of bots can be activated simultaneously.
+            // 2. The player exists.
+            // 3. The 'local bot' is enabled globally.
+            // 4. The 'local bot' is always active OR the player is currently chatting and the 'local bot' is enabled during chatting.
+            // 5. The player's ID is in the list of players for whom the 'local bot' is enabled.
+            bool activateLocalBotForThisPlayer = (!activateSmarterBotForThisPlayer || sg_botActivationDualMode) && sg_localBot &&
+                ((sg_localBotAlwaysActive && (!player->IsChatting() || sg_localBotEnabledWhileChatting)) ||
+                (!sg_localBotAlwaysActive && player->IsChatting() && sg_localBotEnabledWhileChatting)) &&
+                tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
+
+            // A chat bot is activated for the player under these conditions:
+            // 1. The local bot is not activated for this player.
+            // 2. The player's ID is in the list of players for whom the 'chat bot' is enabled AND the 'chat flag hack' is not enabled.
+            // 3. The 'chat bot' is always active OR the player is currently chatting.
+            bool activateChatBotForThisPlayer = !activateLocalBotForThisPlayer && 
+                tIsInList(sg_chatBotEnabledForPlayers, player->pID + 1) &&
+                (sg_chatBotAlwaysActive || player->IsChatting());
+            if (activateChatBotForThisPlayer || activateLocalBotForThisPlayer)
+            {
+                gCycleChatBot &bot = gCycleChatBot::Get(this);
+                bot.Activate(currentTime, activateLocalBotForThisPlayer);
+            }
+            else if (chatBot_.get())
+            {
+                chatBot_->nextChatAI_ = 0;
+            }
+
+            if (activateSmarterBotForThisPlayer)
+            {
+                gSmarterBot &smarterBot = gSmarterBot::Get(this);
+                smarterBot.Activate(currentTime);
+            }
         }
 
         bool simulate = Alive();

@@ -10014,6 +10014,35 @@ tString RandomStr(int maxLength)
     return randomStr;
 }
 
+void ePlayerNetID::scheduleNameChange()
+{
+    if (nameSpeakIndex < nameSpeakWords.Len())
+    {
+        ePlayer *player = ePlayer::PlayerConfig(nameSpeakPlayerID);
+
+        if (playerUpdateIteration % se_nameSpeakCommandInterval == 0)
+        {
+            if (!nameSpeakWords[nameSpeakIndex].empty())
+            {
+                player->name = nameSpeakWords[nameSpeakIndex];
+            }
+            forceCreatePlayer = nameSpeakPlayerID;
+            nameSpeakIndex++;
+            Clear(player);
+        }
+        else
+        {
+            forceCreatePlayer = -1;
+            Clear(player);
+        }
+    }
+    else
+    {
+        forceCreatePlayer = -1;
+        nameSpeakWords.Clear();
+    }
+}
+
 // Update the netPlayer_id list
 void ePlayerNetID::Update(ePlayer* updatePlayer)
 {
@@ -13826,6 +13855,7 @@ void ePlayerNetID::RequestSyncForce(bool ack)
 {
     nNetObject::RequestSync(ack);
 }
+
 void ePlayerNetID::RequestSync(bool ack)
 {
     if (se_disableCreate || tIsInList(se_disableCreateSpecific, pID + 1))
@@ -14336,8 +14366,8 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
     if (se_playerMessageDisplayScheduledMessages && scheduled)
         con << "Scheduled message \"" << messageToSend
             << "\" with extra delay " << extraDelay
-            << ", total delay " << totalDelay
-            << " and flag delay " << flagDelay
+            << ", total delay "       << totalDelay
+            << " and flag delay "     << flagDelay
             << " seconds.\n";
 }
 
@@ -14366,7 +14396,6 @@ static void AddChatTrigger(std::istream &s)
 
     for (auto &trigger : triggersArray)
     {
-        trigger = trigger.TrimWhitespace();
         trigger = trigger.ToLower();
 
         tArray<tString> responsesArray = parts[1].Split(";");

@@ -10,63 +10,63 @@ using namespace helperConfig;
 namespace helperConfig
 {
     bool sg_helperSmartTurning = false;
-    static tConfItem<bool> sg_helperSmartTurningConf("HELPER_SMART_TURNING", sg_helperSmartTurning);
+    static tConfItem<bool> sg_helperSmartTurningConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING", sg_helperSmartTurning);
 
     bool sg_helperSmartTurningFrontBot = false;
-    static tConfItem<bool> sg_helperSmartTurningFrontBotConf("HELPER_SMART_TURNING_FRONT_BOT", sg_helperSmartTurningFrontBot);
+    static tConfItem<bool> sg_helperSmartTurningFrontBotConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_FRONT_BOT", sg_helperSmartTurningFrontBot);
     REAL sg_helperSmartTurningFrontBotThinkRange = 1;
-    static tConfItem<REAL> sg_helperSmartTurningFrontBotThinkRangeConf("HELPER_SMART_TURNING_FRONT_BOT_THINK_RANGE", sg_helperSmartTurningFrontBotThinkRange);
+    static tConfItem<REAL> sg_helperSmartTurningFrontBotThinkRangeConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_FRONT_BOT_THINK_RANGE", sg_helperSmartTurningFrontBotThinkRange);
     bool sg_helperSmartTurningFrontBotTurnOnce = true;
-    static tConfItem<bool> sg_helperSmartTurningFrontBotTurnOnceConf("HELPER_SMART_TURNING_FRONT_BOT_TURN_ONCE", sg_helperSmartTurningFrontBotTurnOnce);
+    static tConfItem<bool> sg_helperSmartTurningFrontBotTurnOnceConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_FRONT_BOT_TURN_ONCE", sg_helperSmartTurningFrontBotTurnOnce);
 
     REAL sg_helperSmartTurningFrontBotActivationRubber = 0.98;
-    static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationRubberConf("HELPER_SMART_TURNING_FRONT_BOT_RUBBER", sg_helperSmartTurningFrontBotActivationRubber);
+    static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationRubberConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_FRONT_BOT_RUBBER", sg_helperSmartTurningFrontBotActivationRubber);
     REAL sg_helperSmartTurningFrontBotActivationSpace = 1;
-    static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationSpaceConf("HELPER_SMART_TURNING_FRONT_BOT_SPACE", sg_helperSmartTurningFrontBotActivationSpace);
+    static tConfItem<REAL> sg_helperSmartTurningFrontBotActivationSpaceConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_FRONT_BOT_SPACE", sg_helperSmartTurningFrontBotActivationSpace);
     REAL sg_helperSmartTurningFrontBotDisableTime = 0;
-    static tConfItem<REAL> sg_helperSmartTurningFrontBotDisableTimeConf("HELPER_SMART_TURNING_FRONT_BOT_DISABLE_TIME", sg_helperSmartTurningFrontBotDisableTime);
+    static tConfItem<REAL> sg_helperSmartTurningFrontBotDisableTimeConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_FRONT_BOT_DISABLE_TIME", sg_helperSmartTurningFrontBotDisableTime);
 
     bool sg_helperSmartTurningAutoTrace = false;
-    static tConfItem<bool> sg_helperSmartTurningAutoTraceConf("HELPER_SMART_TURNING_AUTO_TRACE", sg_helperSmartTurningAutoTrace);
+    static tConfItem<bool> sg_helperSmartTurningAutoTraceConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_AUTO_TRACE", sg_helperSmartTurningAutoTrace);
 
     REAL sg_helperSmartTurningAutoTraceDistance = 1;
-    static tConfItem<REAL> sg_helperSmartTurningAutoTraceDistanceConf("HELPER_SMART_TURNING_AUTO_TRACE_DISTANCE", sg_helperSmartTurningAutoTraceDistance);
+    static tConfItem<REAL> sg_helperSmartTurningAutoTraceDistanceConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_AUTO_TRACE_DISTANCE", sg_helperSmartTurningAutoTraceDistance);
 
     bool sg_helperSmartTurningSurvive = false;
-    static tConfItem<bool> sg_helperSmartTurningSurviveConf("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
+    static tConfItem<bool> sg_helperSmartTurningSurviveConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_SURVIVE", sg_helperSmartTurningSurvive);
     bool sg_helperSmartTurningSurviveTrace = false;
-    static tConfItem<bool> sg_helperSmartTurningSurviveTraceConf("HELPER_SMART_TURNING_SURVIVE_TRACE", sg_helperSmartTurningSurviveTrace);
+    static tConfItem<bool> sg_helperSmartTurningSurviveTraceConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_SURVIVE_TRACE", sg_helperSmartTurningSurviveTrace);
     bool sg_helperSmartTurningSurviveTraceTurnOnce = false;
-    static tConfItem<bool> sg_helperSmartTurningSurviveTraceTurnOnceConf("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_ONCE", sg_helperSmartTurningSurviveTraceTurnOnce);
+    static tConfItem<bool> sg_helperSmartTurningSurviveTraceTurnOnceConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_ONCE", sg_helperSmartTurningSurviveTraceTurnOnce);
     REAL sg_helperSmartTurningSurviveTraceTurnTime = 0.02;
-    static tConfItem<REAL> sg_helperSmartTurningSurviveTraceTurnTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_TIME", sg_helperSmartTurningSurviveTraceTurnTime);
+    static tConfItem<REAL> sg_helperSmartTurningSurviveTraceTurnTimeConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_SURVIVE_TRACE_TURN_TIME", sg_helperSmartTurningSurviveTraceTurnTime);
     REAL sg_helperSmartTurningSurviveTraceActiveTime = 1;
-    static tConfItem<REAL> sg_helperSmartTurningSurviveTraceActiveTimeConf("HELPER_SMART_TURNING_SURVIVE_TRACE_ACTIVE_TIME", sg_helperSmartTurningSurviveTraceActiveTime);
+    static tConfItem<REAL> sg_helperSmartTurningSurviveTraceActiveTimeConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_SURVIVE_TRACE_ACTIVE_TIME", sg_helperSmartTurningSurviveTraceActiveTime);
     REAL sg_helperSmartTurningSurviveTraceCloseFactor = 1;
-    static tConfItem<REAL> sg_helperSmartTurningSurviveTraceCloseFactorConf("HELPER_SMART_TURNING_SURVIVE_TRACE_CLOSE_FACTOR", sg_helperSmartTurningSurviveTraceCloseFactor);
+    static tConfItem<REAL> sg_helperSmartTurningSurviveTraceCloseFactorConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_SURVIVE_TRACE_CLOSE_FACTOR", sg_helperSmartTurningSurviveTraceCloseFactor);
 
     bool sg_helperSmartTurningClosedIn = true;
-    static tConfItem<bool> sg_helperSmartTurningClosedInConf("HELPER_SMART_TURNING_CLOSEDIN", sg_helperSmartTurningClosedIn);
+    static tConfItem<bool> sg_helperSmartTurningClosedInConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_CLOSEDIN", sg_helperSmartTurningClosedIn);
     REAL sg_helperSmartTurningClosedInMult = 1;
-    static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
+    static tConfItem<REAL> sg_helperSmartTurningClosedInMultConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_CLOSEDIN_MULT", sg_helperSmartTurningClosedInMult);
     REAL sg_helperSmartTurningRubberTimeMult = 1;
-    static tConfItem<REAL> sg_helperSmartTurningRubberTimeMultConf("HELPER_SMART_TURNING_RUBBERTIME_MULT", sg_helperSmartTurningRubberTimeMult);
+    static tConfItem<REAL> sg_helperSmartTurningRubberTimeMultConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_RUBBERTIME_MULT", sg_helperSmartTurningRubberTimeMult);
     REAL sg_helperSmartTurningRubberFactorMult = 1;
-    static tConfItem<REAL> sg_helperSmartTurningRubberFactorMultConf("HELPER_SMART_TURNING_RUBBERFACTOR_MULT", sg_helperSmartTurningRubberFactorMult);
+    static tConfItem<REAL> sg_helperSmartTurningRubberFactorMultConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_RUBBERFACTOR_MULT", sg_helperSmartTurningRubberFactorMult);
 
     bool sg_helperSmartTurningOpposite = false;
-    static tConfItem<bool> sg_helperSmartTurningOppositeConf("HELPER_SMART_TURNING_OPPOSITE", sg_helperSmartTurningOpposite);
+    static tConfItem<bool> sg_helperSmartTurningOppositeConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_OPPOSITE", sg_helperSmartTurningOpposite);
     REAL sg_helperSmartTurningSpace = 0;
-    static tConfItem<REAL> sg_helperSmartTurningSpaceConf("HELPER_SMART_TURNING_SPACE", sg_helperSmartTurningSpace);
+    static tConfItem<REAL> sg_helperSmartTurningSpaceConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_SPACE", sg_helperSmartTurningSpace);
     bool sg_helperSmartTurningPlan = false;
-    static tConfItem<bool> sg_helperSmartTurningPlanConf("HELPER_SMART_TURNING_PLAN", sg_helperSmartTurningPlan);
+    static tConfItem<bool> sg_helperSmartTurningPlanConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_PLAN", sg_helperSmartTurningPlan);
 
     bool sg_helperSmartTurningFollowTail = false;
-    // static tConfItem<bool> sg_helperSmartTurningFollowTailConf("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
+    // static tConfItem<bool> sg_helperSmartTurningFollowTailConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
     REAL sg_helperSmartTurningFollowTailDelayMult = 1;
-    // static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
+    // static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
     REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
-    // static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
+    // static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf = HelperCommand::tConfItemH("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
 
 };
 

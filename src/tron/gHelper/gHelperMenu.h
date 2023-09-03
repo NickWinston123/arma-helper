@@ -2,8 +2,10 @@
 #include "gHelperHud.h"
 #include "nConfig.h"
 #include "uMenu.h"
+#include "tConfiguration.h"
 
 using namespace helperConfig;
+
 void enemyTracersMenu()
 {
     uMenu enemyTracersMenu("Enemy Tracers Settings");
@@ -298,6 +300,9 @@ void helperHudMenu()
 
 void helperMenu()
 {
+    if (!helperConfig::sghuk)
+        return;
+
     uMenu helperSettingsMenu("Helper Settings");
 
     uMenuItemFunction experimentalMenu(&helperSettingsMenu,
@@ -345,6 +350,7 @@ void helperMenu()
 
 void helperMenuPub(std::istream &s)
 {
+
     helperMenu();
 }
-static tConfItemFunc HelperMenuConf("HELPER_MENU", &helperMenuPub);
+static tConfItemFunc HelperMenuConf = HelperCommand::tConfItemFuncH("HELPER_MENU_LAUNCH", &helperMenuPub);

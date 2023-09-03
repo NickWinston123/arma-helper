@@ -341,13 +341,13 @@ extern REAL sg_cycleBrakeDeplete;
 #endif
 
 static bool sg_smarterBot = false;
-static tConfItem<bool> sg_smarterBotConf("SMARTER_BOT", sg_smarterBot);
+static tConfItem<bool> sg_smarterBotConf = HelperCommand::tConfItemH("SMARTER_BOT", sg_smarterBot);
 
 bool sg_smarterBotTeam = false; // absolute unit - does not include owner
-static tConfItem<bool> sg_smarterBotTeamConf("SMARTER_BOT_TEAM", sg_smarterBotTeam);
+static tConfItem<bool> sg_smarterBotTeamConf = HelperCommand::tConfItemH("SMARTER_BOT_TEAM", sg_smarterBotTeam);
 
 bool sg_smarterBotTeamOwner = false; // absolute unit
-static tConfItem<bool> sg_smarterBotTeamOwnerConf("SMARTER_BOT_TEAM_OWNER", sg_smarterBotTeamOwner);
+static tConfItem<bool> sg_smarterBotTeamOwnerConf = HelperCommand::tConfItemH("SMARTER_BOT_TEAM_OWNER", sg_smarterBotTeamOwner);
 
 static void gSmarterBotReset(std::istream &s)
 {
@@ -396,7 +396,7 @@ static void gSmarterBotReset(std::istream &s)
     }
 }
 
-static tConfItemFunc gSmarterBotResetConf("SMARTER_BOT_RESET", &gSmarterBotReset);
+static tConfItemFunc gSmarterBotResetConf = HelperCommand::tConfItemFuncH("SMARTER_BOT_RESET", &gSmarterBotReset);
 
 
 gSmarterBot::~gSmarterBot()
@@ -469,7 +469,7 @@ REAL gSmarterBot::annoyanceCheck()
     {
         // con << "ONLY ONE PLAYER ALIVE\n";
 
-        if (alivePlayer->ChattingTime() > sg_smarterBotAFKCheckTime)
+        if (!sg_smarterBotAFKCheckIfChatting || (alivePlayer->ChattingTime() > sg_smarterBotAFKCheckTime) )
         {
             con << "SmarterBot: The alive player is chatting for too long.\n";
             return sg_smarterBotAFKCheckTime;
@@ -642,7 +642,7 @@ REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
 
 void gSmarterBot::Activate(REAL currentTime)
 {
-    if (!local_player)
+    if (!local_player || !helperConfig::sghuk)
         return;
 
     if (local_player->sg_smarterBotThink)
@@ -658,58 +658,60 @@ void gSmarterBot::Activate(REAL currentTime)
 }
 
 tString sg_smarterBotEnableForPlayers("1,2,3,4");
-static tConfItem<tString> sg_smarterBotEnableForPlayersConf("SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnableForPlayers);
+static tConfItem<tString> sg_smarterBotEnableForPlayersConf = HelperCommand::tConfItemH("SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnableForPlayers);
 
 static bool sg_smarterBotAlwaysActive = false;
-static tConfItem<bool> sg_smarterBotAlwaysActiveConf("SMARTER_BOT_ALWAYS_ACTIVE", sg_smarterBotAlwaysActive);
+static tConfItem<bool> sg_smarterBotAlwaysActiveConf = HelperCommand::tConfItemH("SMARTER_BOT_ALWAYS_ACTIVE", sg_smarterBotAlwaysActive);
 
 bool sg_smarterBotAFKCheck = false;
-static tConfItem<bool> sg_smarterBotAFKCheckConf("SMARTER_BOT_AFK_CHECK", sg_smarterBotAFKCheck);
+static tConfItem<bool> sg_smarterBotAFKCheckConf = HelperCommand::tConfItemH("SMARTER_BOT_AFK_CHECK", sg_smarterBotAFKCheck);
 
 REAL sg_smarterBotAFKCheckTime = 8;
-static tConfItem<REAL> sg_smarterBotAFKCheckTimeConf("SMARTER_BOT_AFK_CHECK_TIME", sg_smarterBotAFKCheckTime);
+static tConfItem<REAL> sg_smarterBotAFKCheckTimeConf = HelperCommand::tConfItemH("SMARTER_BOT_AFK_CHECK_TIME", sg_smarterBotAFKCheckTime);
+bool sg_smarterBotAFKCheckIfChatting = true;
+static tConfItem<bool> sg_smarterBotAFKCheckIfChattingConf = HelperCommand::tConfItemH("SMARTER_BOT_AFK_CHECK_IF_CHATTING", sg_smarterBotAFKCheckIfChatting);
 
 static REAL sg_lastTimeHackMult = 0;
-static tConfItem<REAL> sg_lastTimeHackMultConf("CYCLE_LAST_TIME_HACK_ADD", sg_lastTimeHackMult);
+static tConfItem<REAL> sg_lastTimeHackMultConf = HelperCommand::tConfItemH("CYCLE_LAST_TIME_HACK_ADD", sg_lastTimeHackMult);
 
 static bool sg_localBot = false;
-static tConfItem<bool> sg_localBotConf("LOCAL_BOT", sg_localBot);
+static tConfItem<bool> sg_localBotConf = HelperCommand::tConfItemH("LOCAL_BOT", sg_localBot);
 
 static bool sg_botActivationDualMode = false;
-static tConfItem<bool> sg_botActivationDualModeConf("BOT_ACTIVATION_DUAL_MODE", sg_botActivationDualMode);
+static tConfItem<bool> sg_botActivationDualModeConf = HelperCommand::tConfItemH("BOT_ACTIVATION_DUAL_MODE", sg_botActivationDualMode);
 
 static bool sg_localBotEnabledWhileChatting = true;
-static tConfItem<bool> sg_localBotEnabledWhileChattingConf("LOCAL_BOT_ENABLED_WHILE_CHATTING", sg_localBotEnabledWhileChatting);
+static tConfItem<bool> sg_localBotEnabledWhileChattingConf = HelperCommand::tConfItemH("LOCAL_BOT_ENABLED_WHILE_CHATTING", sg_localBotEnabledWhileChatting);
 
 static bool sg_smarterBotEnabledWhileChatting = true;
-static tConfItem<bool> sg_smarterBotEnabledWhileChattingConf("SMARTER_BOT_ENABLED_WHILE_CHATTING", sg_smarterBotEnabledWhileChatting);
+static tConfItem<bool> sg_smarterBotEnabledWhileChattingConf = HelperCommand::tConfItemH("SMARTER_BOT_ENABLED_WHILE_CHATTING", sg_smarterBotEnabledWhileChatting);
 
 tString sg_localBotEnableForPlayers("1,2,3,4");
-static tConfItem<tString> sg_localBotEnableForPlayersConf("LOCAL_BOT_ENABLED_PLAYERS", sg_localBotEnableForPlayers);
+static tConfItem<tString> sg_localBotEnableForPlayersConf = HelperCommand::tConfItemH("LOCAL_BOT_ENABLED_PLAYERS", sg_localBotEnableForPlayers);
 
 static bool sg_localBotAlwaysActive = false;
-static tConfItem<bool> sg_localBotAlwaysActiveConf("LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive);
+static tConfItem<bool> sg_localBotAlwaysActiveConf = HelperCommand::tConfItemH("LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive);
 
 static bool sg_localBotBrake = true;
-static tConfItem<bool> sg_localBotBrakeConf("LOCAL_BOT_BRAKE", sg_localBotBrake);
+static tConfItem<bool> sg_localBotBrakeConf = HelperCommand::tConfItemH("LOCAL_BOT_BRAKE", sg_localBotBrake);
 
 static REAL sg_localBotNewWallBlindness = 0;
-static tConfItem<REAL> sg_localBotNewWallBlindnessConf("LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness);
+static tConfItem<REAL> sg_localBotNewWallBlindnessConf = HelperCommand::tConfItemH("LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness);
 
 static REAL sg_localBotMinTimestep = 0;
-static tConfItem<REAL> sg_localBotMinTimestepConf("LOCAL_BOT_MIN_TIMESTEP", sg_localBotMinTimestep);
+static tConfItem<REAL> sg_localBotMinTimestepConf = HelperCommand::tConfItemH("LOCAL_BOT_MIN_TIMESTEP", sg_localBotMinTimestep);
 
 static REAL sg_localBotDelay = 0;
-static tConfItem<REAL> sg_localBotDelayConf("LOCAL_BOT_DELAY", sg_localBotDelay);
+static tConfItem<REAL> sg_localBotDelayConf = HelperCommand::tConfItemH("LOCAL_BOT_DELAY", sg_localBotDelay);
 
 static REAL sg_localBotRange = 10;
-static tConfItem<REAL> sg_localBotRangeConf("LOCAL_BOT_RANGE", sg_localBotRange);
+static tConfItem<REAL> sg_localBotRangeConf = HelperCommand::tConfItemH("LOCAL_BOT_RANGE", sg_localBotRange);
 
 static REAL sg_localBotDecay = 0;
-static tConfItem<REAL> sg_localBotDecayConf("LOCAL_BOT_DECAY", sg_localBotDecay);
+static tConfItem<REAL> sg_localBotDecayConf = HelperCommand::tConfItemH("LOCAL_BOT_DECAY", sg_localBotDecay);
 
 static REAL sg_localBotEnemyPenalty = 0;
-static tConfItem<REAL> sg_localBotEnemyPenaltyConf("LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty);
+static tConfItem<REAL> sg_localBotEnemyPenaltyConf = HelperCommand::tConfItemH("LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty);
 
 #ifdef DEBUGCHATBOT
 typedef tSettingItem<REAL> gChatBotSetting;
@@ -3247,7 +3249,7 @@ bool gCycle::Timestep(REAL currentTime)
             // 1. The local bot is not activated for this player.
             // 2. The player's ID is in the list of players for whom the 'chat bot' is enabled AND the 'chat flag hack' is not enabled.
             // 3. The 'chat bot' is always active OR the player is currently chatting.
-            bool activateChatBotForThisPlayer = !activateLocalBotForThisPlayer && 
+            bool activateChatBotForThisPlayer = !activateLocalBotForThisPlayer &&
                 tIsInList(sg_chatBotEnabledForPlayers, player->pID + 1) &&
                 (sg_chatBotAlwaysActive || player->IsChatting());
             if (activateChatBotForThisPlayer || activateLocalBotForThisPlayer)
@@ -5462,17 +5464,20 @@ void gCycleWallsDisplayListManager::RenderAll(eCamera const *camera, gCycle *cyc
 bool sg_HideCycles = false;
 static tConfItem<bool> sg_HideCyclesConf("HIDE_CYCLES", sg_HideCycles);
 
-bool sg_chatFlagHide = false;
-static tConfItem<bool> sg_chatFlagHideConf("CHAT_FLAG_HIDE", sg_chatFlagHide);
+bool sg_chatFlagHideSelf = false;
+static tConfItem<bool> sg_chatFlagHideSelfConf("CHAT_FLAG_HIDE_SELF", sg_chatFlagHideSelf);
+
+bool sg_chatFlagHideOther = false;
+static tConfItem<bool> sg_chatFlagHideOtherConf("CHAT_FLAG_HIDE_OTHER", sg_chatFlagHideOther);
+
+bool sg_chatFlagSilencedPlayers = false;
+static tConfItem<bool> sg_chatFlagSilencedPlayersConf("CHAT_FLAG_ENABLED_FOR_SILENCED_PLAYERS", sg_chatFlagSilencedPlayers);
 
 REAL sg_renderCycleOffset = 0; // -0.76 for true position
 static tConfItem<REAL> sg_renderCycleOffsetConf("RENDER_CYCLE_OFFSET", sg_renderCycleOffset);
 
-REAL sg_renderCycleWheelsHeight = 0; // -0.76 for true position
+REAL sg_renderCycleWheelsHeight = 0;
 static tConfItem<REAL> sg_renderCycleWheelsHeightConf("RENDER_WHEELS_HEIGHT", sg_renderCycleWheelsHeight);
-
-REAL sg_cycleRenderPos2 = 0.73;
-static tConfItem<REAL> sg_cycleRenderPos2Conf("RENDER_POS2", sg_cycleRenderPos2);
 
 extern bool sg_predictObjectsCmd;
 
@@ -5696,7 +5701,7 @@ void gCycle::Render(const eCamera *cam)
 
             if (bool(player))
             {
-                if (player->IsChatting())
+                if (player->IsChatting() && (!player->IsSilenced() || sg_chatFlagSilencedPlayers))
                 {
                     renderPyramid = true;
                     colorPyramid.b = 0.0f;
@@ -5713,10 +5718,15 @@ void gCycle::Render(const eCamera *cam)
                     alpha = timeout - se_GameTime();
                 }
             }
-            if (sg_chatFlagHide && player->Owner() == sn_myNetID)
-            {
-                renderPyramid = false;
+            
+            if (player->Owner() == sn_myNetID){
+                if (sg_chatFlagHideSelf)
+                    renderPyramid = false;
+            } else {
+                if (sg_chatFlagHideOther)
+                    renderPyramid = false;
             }
+
             if (renderPyramid)
             {
                 GLfloat s = sin(lastTime);
@@ -6702,13 +6712,13 @@ extern REAL sg_cycleBrakeRefill;
 extern REAL sg_cycleBrakeDeplete;
 
 bool sg_playerMessageDeathSelf = false;
-static tConfItem<bool> sg_playerMessageDeathSelfConf("PLAYER_MESSAGE_TRIGGER_DEATH_SELF", sg_playerMessageDeathSelf);
+static tConfItem<bool> sg_playerMessageDeathSelfConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_DEATH_SELF", sg_playerMessageDeathSelf);
 
 bool sg_playerMessageDeathOther = false;
-static tConfItem<bool> sg_playerMessageDeathOtherConf("PLAYER_MESSAGE_TRIGGER_DEATH_OTHER", sg_playerMessageDeathOther);
+static tConfItem<bool> sg_playerMessageDeathOtherConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_DEATH_OTHER", sg_playerMessageDeathOther);
 
 bool se_playerTriggerMessagesZoneVerify = false;
-static tConfItem<bool> se_playerTriggerMessagesZoneVerifyConf("PLAYER_MESSAGE_TRIGGERS_ZONE_VERIFY", se_playerTriggerMessagesZoneVerify);
+static tConfItem<bool> se_playerTriggerMessagesZoneVerifyConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGERS_ZONE_VERIFY", se_playerTriggerMessagesZoneVerify);
 void gCycle::ReadSync(nMessage &m)
 {
     // data from sync message

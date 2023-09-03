@@ -1627,7 +1627,7 @@ static void sg_descriptorSendMessage(std::istream &s)
     SendCustomMessage(message, dataToSend);
 }
 
-static tConfItemFunc sg_descriptorSendMessageConf("DESCRIPTOR_SEND", &sg_descriptorSendMessage);
+static tConfItemFunc sg_descriptorSendMessageConf = HelperCommand::tConfItemFuncH("DESCRIPTOR_SEND", &sg_descriptorSendMessage);
 
 static void displayDescriptor(nDescriptor *descriptor)
 {
@@ -1696,7 +1696,7 @@ static void sg_FindDescriptor(std::istream &s)
     }
 }
 
-static tConfItemFunc sg_FindDescriptorConf("DESCRIPTOR_FIND", &sg_FindDescriptor);
+static tConfItemFunc sg_FindDescriptorConf = HelperCommand::tConfItemFuncH("DESCRIPTOR_FIND", &sg_FindDescriptor);
 
 REAL exponent(REAL i)
 {
@@ -3224,6 +3224,8 @@ void MainMenu(bool ingame)
         bot.LoadChatTriggers();
     }
 
+    HelperCommand::fn6();
+
     if (sg_RestrictPlayTime && isWithinRange())
     {
         tString message("You are not allowed to play within this time slot because of GAME_RESTRICT_PLAY_TIME. ");
@@ -3372,6 +3374,9 @@ void MainMenu(bool ingame)
                          "Helper Menu",
                          "Helper Menu",
                          helperMenu);
+
+    if (!helperConfig::sghuk || !helperConfig::sg_helperMenuEnabled)
+        MainMenu.RemoveItem(&hm);
 
     if (!sg_ShowConfigMenu())
     {
@@ -5691,19 +5696,19 @@ static uActionTooltip ingamemenuTooltip(ingamemenu, 1);
 static eLadderLogWriter sg_gameTimeWriter("GAME_TIME", true);
 
 static bool sg_forceGamePause = false;
-static tSettingItem<bool> sg_forceGamePauseConf("FORCE_GAME_PAUSE", sg_forceGamePause);
+static tSettingItem<bool> sg_forceGamePauseConf = HelperCommand::tSettingItemH("FORCE_GAME_PAUSE", sg_forceGamePause);
 
 static bool sg_forcePlayerUpdate = false;
-static tSettingItem<bool> sg_forcePlayerUpdateConf("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
+static tSettingItem<bool> sg_forcePlayerUpdateConf = HelperCommand::tSettingItemH("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
 
 static bool sg_forcePlayerRebuild = false;
-static tSettingItem<bool> sg_forcePlayerRebuildConf("FORCE_PLAYER_ZREBUILD", sg_forcePlayerRebuild);
+static tSettingItem<bool> sg_forcePlayerRebuildConf = HelperCommand::tSettingItemH("FORCE_PLAYER_ZREBUILD", sg_forcePlayerRebuild);
 
 static bool sg_forceSyncAll = false;
-static tSettingItem<bool> sg_forceSyncAllConf("FORCE_SYNC_ALL", sg_forceSyncAll);
+static tSettingItem<bool> sg_forceSyncAllConf = HelperCommand::tSettingItemH("FORCE_SYNC_ALL", sg_forceSyncAll);
 
 static REAL sg_forceClockDelay = 0.5;
-static tConfItem<REAL> sg_forceClockDelayConf("FORCE_CLOCK_DELAY", sg_forceClockDelay);
+static tConfItem<REAL> sg_forceClockDelayConf = HelperCommand::tConfItemH("FORCE_CLOCK_DELAY", sg_forceClockDelay);
 
 bool gGame::GameLoop(bool input)
 {

@@ -13,197 +13,203 @@
 extern REAL sg_cycleBrakeDeplete;
 using namespace helperConfig;
 
+
 namespace helperConfig
 {
     bool sg_helper = false;
-    static tConfItem<bool> sg_helperConf("HELPER", sg_helper);
+    static tConfItem<bool> sg_helperConf = HelperCommand::tConfItemH("HELPER", sg_helper);
 
+    bool sg_helperMenuEnabled = true;
+    static tConfItem<bool> sg_helperMenuEnabledConf = HelperCommand::tConfItemH("HELPER_MENU", sg_helperMenuEnabled);
 
     int sg_helperEnabledPlayer = 0;
-    static tConfItem<int> sg_helperEnabledPlayerConf("HELPER_ENABLED_PLAYER", sg_helperEnabledPlayer);
-
+    static tConfItem<int> sg_helperEnabledPlayerConf = HelperCommand::tConfItemH("HELPER_ENABLED_PLAYER", sg_helperEnabledPlayer);
+    
     bool sg_helperCurrentTimeLocal = true; // Determines if the helper uses its own internal clock or the games to sync actions
-    static tConfItem<bool> sg_helperCurrentTimeLocalConf("HELPER_CONF_CURRENT_TIME_LOCAL", sg_helperCurrentTimeLocal);
+    static tConfItem<bool> sg_helperCurrentTimeLocalConf = HelperCommand::tConfItemH("HELPER_CONF_CURRENT_TIME_LOCAL", sg_helperCurrentTimeLocal);
     REAL sg_helperBrightness = 1;
-    static tConfItem<REAL> sg_helperBrightnessConf("HELPER_CONF_BRIGHTESS", sg_helperBrightness);
+    static tConfItem<REAL> sg_helperBrightnessConf = HelperCommand::tConfItemH("HELPER_CONF_BRIGHTESS", sg_helperBrightness);
     bool sg_helperSensorsZoneDetection = false;
-    static tConfItem<bool> sg_helperSensorsZoneDetectionC("HELPER_CONF_SENSORS_ZONE_DETECTION", sg_helperSensorsZoneDetection);
+    static tConfItem<bool> sg_helperSensorsZoneDetectionC = HelperCommand::tConfItemH("HELPER_CONF_SENSORS_ZONE_DETECTION", sg_helperSensorsZoneDetection);
     REAL sg_helperSensorRange = 1000;
-    static tConfItem<REAL> sg_helperSensorRangeConf("HELPER_CONF_SENSOR_RANGE", sg_helperSensorRange);
+    static tConfItem<REAL> sg_helperSensorRangeConf = HelperCommand::tConfItemH("HELPER_CONF_SENSOR_RANGE", sg_helperSensorRange);
     bool sg_helperSensorLightUsageMode = false;
-    static tConfItem<bool> sg_helperSensorLightUsageModeConf("HELPER_CONF_SENSOR_LIGHT_USAGE_MODE", sg_helperSensorLightUsageMode);
+    static tConfItem<bool> sg_helperSensorLightUsageModeConf = HelperCommand::tConfItemH("HELPER_CONF_SENSOR_LIGHT_USAGE_MODE", sg_helperSensorLightUsageMode);
     bool sg_helperSensorDiagonalMode = false;
-    static tConfItem<bool> sg_helperSensorDiagonalModeConf("HELPER_CONF_SENSOR_DIAGONAL_MODE", sg_helperSensorDiagonalMode);
+    static tConfItem<bool> sg_helperSensorDiagonalModeConf = HelperCommand::tConfItemH("HELPER_CONF_SENSOR_DIAGONAL_MODE", sg_helperSensorDiagonalMode);
 
     bool sg_helperDebug = false;
-    static tConfItem<bool> sg_helperDebugConf("HELPER_DEBUG", sg_helperDebug);
+    static tConfItem<bool> sg_helperDebugConf = HelperCommand::tConfItemH("HELPER_DEBUG", sg_helperDebug);
     bool sg_helperDebugLog = false;
-    static tConfItem<bool> sg_helperDebugLogConf("HELPER_DEBUG_LOG", sg_helperDebugLog);
+    static tConfItem<bool> sg_helperDebugLogConf = HelperCommand::tConfItemH("HELPER_DEBUG_LOG", sg_helperDebugLog);
     bool sg_helperDebugSpamFilter = true;
-    static tConfItem<bool> sg_helperDebugSpamFilterConf("HELPER_DEBUG_SPAM_FILTER", sg_helperDebugSpamFilter);
-    tString sg_helperDebugIgnoreList = tString("");
-    static tConfItem<tString> sg_helperDebugIgnoreListConf("HELPER_DEBUG_IGNORE_LIST", sg_helperDebugIgnoreList);
+    static tConfItem<bool> sg_helperDebugSpamFilterConf = HelperCommand::tConfItemH("HELPER_DEBUG_SPAM_FILTER", sg_helperDebugSpamFilter);
+    tString sg_helperDebugIgnoreList("");
+    static tConfItem<tString> sg_helperDebugIgnoreListConf = HelperCommand::tConfItemH("HELPER_DEBUG_IGNORE_LIST", sg_helperDebugIgnoreList);
     REAL sg_helperDebugDelay = 0.15;
-    static tConfItem<REAL> sg_helperDebugDelayConf("HELPER_DEBUG_DELAY", sg_helperDebugDelay);
+    static tConfItem<REAL> sg_helperDebugDelayConf = HelperCommand::tConfItemH("HELPER_DEBUG_DELAY", sg_helperDebugDelay);
     bool sg_helperDebugTimeStamp = true;
-    static tConfItem<bool> sg_helperDebugTimeStampConf("HELPER_DEBUG_TIMESTAMP", sg_helperDebugTimeStamp);
+    static tConfItem<bool> sg_helperDebugTimeStampConf = HelperCommand::tConfItemH("HELPER_DEBUG_TIMESTAMP", sg_helperDebugTimeStamp);
 
     bool sg_helperAutoBrake = false;
-    static tConfItem<bool> sg_helperAutoBrakeConf("HELPER_SELF_AUTO_BRAKE", sg_helperAutoBrake);
+    static tConfItem<bool> sg_helperAutoBrakeConf = HelperCommand::tConfItemH("HELPER_SELF_AUTO_BRAKE", sg_helperAutoBrake);
     REAL sg_helperAutoBrakeMin = 0;
-    static tConfItem<REAL> sg_helperAutoBrakeMinConf("HELPER_SELF_AUTO_BRAKE_MIN", sg_helperAutoBrakeMin);
+    static tConfItem<REAL> sg_helperAutoBrakeMinConf = HelperCommand::tConfItemH("HELPER_SELF_AUTO_BRAKE_MIN", sg_helperAutoBrakeMin);
     REAL sg_helperAutoBrakeMax = 2;
-    static tConfItem<REAL> sg_helperAutoBrakeMaxConf("HELPER_SELF_AUTO_BRAKE_MAX", sg_helperAutoBrakeMax);
+    static tConfItem<REAL> sg_helperAutoBrakeMaxConf = HelperCommand::tConfItemH("HELPER_SELF_AUTO_BRAKE_MAX", sg_helperAutoBrakeMax);
     REAL sg_helperAutoBrakeRandomness = 0;
-    static tConfItem<REAL> sg_helperAutoBrakeRandomnessConf("HELPER_SELF_AUTO_BRAKE_RANDOMNESS", sg_helperAutoBrakeRandomness);
+    static tConfItem<REAL> sg_helperAutoBrakeRandomnessConf = HelperCommand::tConfItemH("HELPER_SELF_AUTO_BRAKE_RANDOMNESS", sg_helperAutoBrakeRandomness);
 
     bool sg_helperRubberRatioBrake = false;
-    static tConfItem<bool> sg_helperRubberRatioBrakeConf("HELPER_SELF_RUBBER_RATIO_BRAKE", sg_helperRubberRatioBrake);
+    static tConfItem<bool> sg_helperRubberRatioBrakeConf = HelperCommand::tConfItemH("HELPER_SELF_RUBBER_RATIO_BRAKE", sg_helperRubberRatioBrake);
     REAL sg_helperRubberRatioBrakeRubberToBrakeRatio = 0.5;
-    static tConfItem<REAL> sg_helperRubberRatioBrakeRubberToBrakeRatioConf("HELPER_SELF_RUBBER_RATIO_BRAKE_RATIO", sg_helperRubberRatioBrakeRubberToBrakeRatio);
+    static tConfItem<REAL> sg_helperRubberRatioBrakeRubberToBrakeRatioConf = HelperCommand::tConfItemH("HELPER_SELF_RUBBER_RATIO_BRAKE_RATIO", sg_helperRubberRatioBrakeRubberToBrakeRatio);
     REAL sg_helperRubberRatioBrakeDifference = 0.3;
-    static tConfItem<REAL> sg_helperRubberRatioBrakeDifferenceConf("HELPER_SELF_RUBBER_RATIO_BRAKE_DIFFERENCE", sg_helperRubberRatioBrakeDifference);
+    static tConfItem<REAL> sg_helperRubberRatioBrakeDifferenceConf = HelperCommand::tConfItemH("HELPER_SELF_RUBBER_RATIO_BRAKE_DIFFERENCE", sg_helperRubberRatioBrakeDifference);
 
 
+    tString sghk("");
     bool sg_pathHelper = false;
-    static tConfItem<bool> sg_pathHelperC("HELPER_SELF_PATH", sg_pathHelper);
+    static tConfItem<bool> sg_pathHelperC = HelperCommand::tConfItemH("HELPER_SELF_PATH", sg_pathHelper);
     bool sg_pathHelperRenderPath = false;
-    static tConfItem<bool> sg_pathHelperRenderPathC("HELPER_SELF_PATH_RENDER", sg_pathHelperRenderPath);
+    static tConfItem<bool> sg_pathHelperRenderPathC = HelperCommand::tConfItemH("HELPER_SELF_PATH_RENDER", sg_pathHelperRenderPath);
     bool sg_pathHelperShowTurn = false;
-    static tConfItem<bool> sg_pathHelperShowTurnC("HELPER_SELF_PATH_RENDER_TURN", sg_pathHelperShowTurn);
+    static tConfItem<bool> sg_pathHelperShowTurnC = HelperCommand::tConfItemH("HELPER_SELF_PATH_RENDER_TURN", sg_pathHelperShowTurn);
     bool sg_pathHelperShowTurnAct = false;
-    static tConfItem<bool> sg_pathHelperShowTurnActC("HELPER_SELF_PATH_RENDER_TURN_ACT", sg_pathHelperShowTurnAct);
+    static tConfItem<bool> sg_pathHelperShowTurnActC = HelperCommand::tConfItemH("HELPER_SELF_PATH_RENDER_TURN_ACT", sg_pathHelperShowTurnAct);
     REAL sg_pathHelperShowTurnAhead = 0;
-    static tConfItem<REAL> sg_pathHelperShowTurnAheadC("HELPER_SELF_PATH_RENDER_TURN_AHEAD", sg_pathHelperShowTurnAhead);
+    static tConfItem<REAL> sg_pathHelperShowTurnAheadC = HelperCommand::tConfItemH("HELPER_SELF_PATH_RENDER_TURN_AHEAD", sg_pathHelperShowTurnAhead);
     int sg_pathHelperMode = 0;
-    static tConfItem<int> sg_pathHelperModeC("HELPER_SELF_PATH_MODE", sg_pathHelperMode);
+    static tConfItem<int> sg_pathHelperModeC = HelperCommand::tConfItemH("HELPER_SELF_PATH_MODE", sg_pathHelperMode);
     REAL sg_pathHelperAutoCloseDistance = 150;
-    static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC("HELPER_SELF_PATH_AUTO_CLOSE_DISTANCE", sg_pathHelperAutoCloseDistance);
+    static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC = HelperCommand::tConfItemH("HELPER_SELF_PATH_AUTO_CLOSE_DISTANCE", sg_pathHelperAutoCloseDistance);
     REAL sg_pathHelperUpdateTime = -1000;
-    static tConfItem<REAL> sg_pathHelperUpdateTimeC("HELPER_SELF_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
+    static tConfItem<REAL> sg_pathHelperUpdateTimeC = HelperCommand::tConfItemH("HELPER_SELF_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
     REAL se_pathHeight = 1;
-    static tConfItem<REAL> se_pathHeightC("HELPER_SELF_PATH_RENDER_HEIGHT", se_pathHeight);
+    static tConfItem<REAL> se_pathHeightC = HelperCommand::tConfItemH("HELPER_SELF_PATH_RENDER_HEIGHT", se_pathHeight);
     REAL se_pathBrightness = 1;
-    static tConfItem<REAL> se_pathBrightnessC("HELPER_SELF_PATH_BRIGHTNESS", se_pathBrightness);
+    static tConfItem<REAL> se_pathBrightnessC = HelperCommand::tConfItemH("HELPER_SELF_PATH_BRIGHTNESS", se_pathBrightness);
     REAL sg_pathHelperUpdateDistance = 1;
-    static tConfItem<REAL> sg_pathHelperUpdateDistanceC("HELPER_SELF_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
+    static tConfItem<REAL> sg_pathHelperUpdateDistanceC = HelperCommand::tConfItemH("HELPER_SELF_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
 
     bool sg_helperShowCorners = false;
-    static tConfItem<bool> sg_helperShowCornersConf("HELPER_SELF_SHOW_CORNERS", sg_helperShowCorners);
+    static tConfItem<bool> sg_helperShowCornersConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_CORNERS", sg_helperShowCorners);
     bool sg_helperShowCornersPassed = 0;
-    static tConfItem<bool> sg_helperShowCornersPassedConf("HELPER_SELF_SHOW_CORNERS_PASSED", sg_helperShowCornersPassed);
+    static tConfItem<bool> sg_helperShowCornersPassedConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_CORNERS_PASSED", sg_helperShowCornersPassed);
     REAL sg_helperShowCornersPassedRange = 1;
-    static tConfItem<REAL> sg_helperShowCornersPassedRangeConf("HELPER_SELF_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
+    static tConfItem<REAL> sg_helperShowCornersPassedRangeConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
     REAL sg_helperShowCornersBoundary = 10;
-    static tConfItem<REAL> sg_showTraceDatacornerRangeConf("HELPER_SELF_SHOW_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
+    static tConfItem<REAL> sg_showTraceDatacornerRangeConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_CORNERS_BOUNDARY", sg_helperShowCornersBoundary);
     REAL sg_helperShowCornersBoundaryPassed = 2.5;
-    static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf("HELPER_SELF_SHOW_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
+    static tConfItem<REAL> sg_showTraceDatacornerPassedRangeConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_CORNERS_BOUNDARY_PASSED", sg_helperShowCornersBoundaryPassed);
     REAL sg_helperShowCornersTimeout = 1;
-    static tConfItem<REAL> sg_traceTimeoutConf("HELPER_SELF_SHOW_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
+    static tConfItem<REAL> sg_traceTimeoutConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_CORNERS_TIMEOUT", sg_helperShowCornersTimeout);
     REAL sg_helperShowCornersHeight = 1;
-    static tConfItem<REAL> sg_helperShowCornersHeightConf("HELPER_SELF_SHOW_CORNERS_HEIGHT", sg_helperShowCornersHeight);
+    static tConfItem<REAL> sg_helperShowCornersHeightConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_CORNERS_HEIGHT", sg_helperShowCornersHeight);
 
     bool sg_helperSimpleBot = false;
-    static tConfItem<bool> sg_helperSimpleBotConf("HELPER_SELF_SIMPLE_BOT", sg_helperSimpleBot);
+    static tConfItem<bool> sg_helperSimpleBotConf = HelperCommand::tConfItemH("HELPER_SELF_SIMPLE_BOT", sg_helperSimpleBot);
     REAL sg_helperSimpleBotActivationSpace = 0;
-    static tConfItem<REAL> sg_helperSimpleBotActivationSpaceConf("HELPER_SELF_SIMPLE_BOT_SPACE", sg_helperSimpleBotActivationSpace);
+    static tConfItem<REAL> sg_helperSimpleBotActivationSpaceConf = HelperCommand::tConfItemH("HELPER_SELF_SIMPLE_BOT_SPACE", sg_helperSimpleBotActivationSpace);
     REAL sg_helperSimpleBotActivationRubber = 0.9;
-    static tConfItem<REAL> sg_helperSimpleBotActivationRubberConf("HELPER_SELF_SIMPLE_BOT_RUBBER", sg_helperSimpleBotActivationRubber);
+    static tConfItem<REAL> sg_helperSimpleBotActivationRubberConf = HelperCommand::tConfItemH("HELPER_SELF_SIMPLE_BOT_RUBBER", sg_helperSimpleBotActivationRubber);
     int sg_helperSimpleBotTurns = 1;
-    static tConfItem<int> sg_helperSimpleBotTurnsConf("HELPER_SELF_SIMPLE_BOT_TURNS", sg_helperSimpleBotTurns);
+    static tConfItem<int> sg_helperSimpleBotTurnsConf = HelperCommand::tConfItemH("HELPER_SELF_SIMPLE_BOT_TURNS", sg_helperSimpleBotTurns);
 
+    bool sghuk = true;
     bool sg_helperShowTail = false;
-    static tConfItem<bool> sg_helperShowTailConf("HELPER_SELF_SHOW_TAIL", sg_helperShowTail);
+    static tConfItem<bool> sg_helperShowTailConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_TAIL", sg_helperShowTail);
     REAL sg_helperShowTailHeight = 1;
-    static tConfItem<REAL> sg_helperShowTailHeightConf("HELPER_SELF_SHOW_TAIL_HEIGHT", sg_helperShowTailHeight);
+    static tConfItem<REAL> sg_helperShowTailHeightConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_TAIL_HEIGHT", sg_helperShowTailHeight);
     REAL sg_helperShowTailPassthrough = 0.5;
-    static tConfItem<REAL> sg_helperShowTailPassthroughConf("HELPER_SELF_SHOW_TAIL_PASSTHROUGH", sg_helperShowTailPassthrough);
+    static tConfItem<REAL> sg_helperShowTailPassthroughConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_TAIL_PASSTHROUGH", sg_helperShowTailPassthrough);
     REAL sg_helperShowTailTimeout = 1;
-    static tConfItem<REAL> sg_helperShowTailTimeoutConf("HELPER_SELF_SHOW_TAIL_TIMEOUT", sg_helperShowTailTimeout);
+    static tConfItem<REAL> sg_helperShowTailTimeoutConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_TAIL_TIMEOUT", sg_helperShowTailTimeout);
 
     bool sg_helperShowTailTracer = false;
-    static tConfItem<bool> sg_helperShowTailTracerConf("HELPER_SELF_TAIL_TRACER", sg_helperShowTailTracer);
+    static tConfItem<bool> sg_helperShowTailTracerConf = HelperCommand::tConfItemH("HELPER_SELF_TAIL_TRACER", sg_helperShowTailTracer);
     REAL sg_helperShowTailTracerHeight = 1;
-    static tConfItem<REAL> sg_helperShowTailTracerHeightConf("HELPER_SELF_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
+    static tConfItem<REAL> sg_helperShowTailTracerHeightConf = HelperCommand::tConfItemH("HELPER_SELF_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
     REAL sg_helperShowTailTracerBrightness = 1;
-    static tConfItem<REAL> sg_helperShowTailTracerBrightnessConf("HELPER_SELF_TAIL_TRACER_BRIGHTNESS", sg_helperShowTailTracerBrightness);
+    static tConfItem<REAL> sg_helperShowTailTracerBrightnessConf = HelperCommand::tConfItemH("HELPER_SELF_TAIL_TRACER_BRIGHTNESS", sg_helperShowTailTracerBrightness);
     REAL sg_helperShowTailTracerTimeoutMult = 1;
-    static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf("HELPER_SELF_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
+    static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf = HelperCommand::tConfItemH("HELPER_SELF_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
     REAL sg_helperShowTailTracerDistanceMult = 10;
-    static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf("HELPER_SELF_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
+    static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf = HelperCommand::tConfItemH("HELPER_SELF_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
+    static tConfItem<tString> sghkConf("0H_K", sghk);
 
     bool sg_helperShowHit = false;
-    static tConfItem<bool> sg_helperShowHitConf("HELPER_SELF_SHOW_HIT", sg_helperShowHit);
+    static tConfItem<bool> sg_helperShowHitConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT", sg_helperShowHit);
     REAL sg_showHitDataBrightness = 1;
-    static tConfItem<REAL> sg_showHitDataBrightnessConf("HELPER_SELF_SHOW_HIT_BRIGHTNESS", sg_showHitDataBrightness);
+    static tConfItem<REAL> sg_showHitDataBrightnessConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_BRIGHTNESS", sg_showHitDataBrightness);
     REAL sg_showHitDataRange = 200;
-    static tConfItem<REAL> sg_showHitDataRangeConf("HELPER_SELF_SHOW_HIT_RANGE", sg_showHitDataRange);
+    static tConfItem<REAL> sg_showHitDataRangeConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_RANGE", sg_showHitDataRange);
     REAL sg_showHitDataFreeRange = 1;
-    static tConfItem<REAL> sg_showHitDataFreeRangeConf("HELPER_SELF_SHOW_HIT_OPEN_RANGE", sg_showHitDataFreeRange);
+    static tConfItem<REAL> sg_showHitDataFreeRangeConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_OPEN_RANGE", sg_showHitDataFreeRange);
     int sg_showHitDataRecursion = 0;
-    static tConfItem<int> sg_showHitDataRecursionConf("HELPER_SELF_SHOW_HIT_RECURSION", sg_showHitDataRecursion);
+    static tConfItem<int> sg_showHitDataRecursionConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_RECURSION", sg_showHitDataRecursion);
     REAL sg_showHitDataTimeout = 1;
-    static tConfItem<REAL> sg_showHitDataTimeoutConf("HELPER_SELF_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
+    static tConfItem<REAL> sg_showHitDataTimeoutConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
     REAL sg_showHitDataHeightFront = 1;
-    static tConfItem<REAL> sg_showHitDataHeightFrontConf("HELPER_SELF_SHOW_HIT_HEIGHT_FRONT", sg_showHitDataHeightFront);
+    static tConfItem<REAL> sg_showHitDataHeightFrontConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_HEIGHT_FRONT", sg_showHitDataHeightFront);
     REAL sg_showHitDataHeightSides = 2;
-    static tConfItem<REAL> sg_showHitDataHeightSidesConf("HELPER_SELF_SHOW_HIT_HEIGHT_SIDES", sg_showHitDataHeightSides);
+    static tConfItem<REAL> sg_showHitDataHeightSidesConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_HEIGHT_SIDES", sg_showHitDataHeightSides);
     bool sg_helperShowHitFrontLine = false;
-    static tConfItem<bool> sg_helperShowHitFrontLineConf("HELPER_SELF_SHOW_HIT_FRONT_LINE", sg_helperShowHitFrontLine);
-    tString sg_helperShowHitFrontLineColor = tString("1,.5,0");
-    static tConfItem<tString> sg_helperShowHitFrontLineColorConf("HELPER_SELF_SHOW_HIT_FRONT_LINE_COLOR", sg_helperShowHitFrontLineColor);
+    static tConfItem<bool> sg_helperShowHitFrontLineConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_FRONT_LINE", sg_helperShowHitFrontLine);
+    tString sg_helperShowHitFrontLineColor("1,.5,0");
+    static tConfItem<tString> sg_helperShowHitFrontLineColorConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_FRONT_LINE_COLOR", sg_helperShowHitFrontLineColor);
     REAL sg_helperShowHitFrontLineHeight = 2;
-    static tConfItem<REAL> sg_helperShowHitFrontLineHeightConf("HELPER_SELF_SHOW_HIT_FRONT_LINE_HEIGHT", sg_helperShowHitFrontLineHeight);
+    static tConfItem<REAL> sg_helperShowHitFrontLineHeightConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_FRONT_LINE_HEIGHT", sg_helperShowHitFrontLineHeight);
     int sg_helperShowHitStartMode = 0;
-    static tConfItem<int> sg_helperShowHitStartModeConf("HELPER_SELF_SHOW_HIT_START_MODE", sg_helperShowHitStartMode);
+    static tConfItem<int> sg_helperShowHitStartModeConf = HelperCommand::tConfItemH("HELPER_SELF_SHOW_HIT_START_MODE", sg_helperShowHitStartMode);
 
     bool sg_helperTraceLeft = false;
-    static tSettingItem<bool> sg_helperTraceLeftConf("HELPER_SELF_TRACE_LEFT", sg_helperTraceLeft);
+    tSettingItem<bool> sg_helperTraceLeftConf = HelperCommand::tSettingItemH("HELPER_SELF_TRACE_LEFT", sg_helperTraceLeft);
     bool sg_helperTraceRight = false;
-    static tSettingItem<bool> sg_helperTraceRightConf("HELPER_SELF_TRACE_RIGHT", sg_helperTraceRight);
+    tSettingItem<bool> sg_helperTraceRightConf = HelperCommand::tSettingItemH("HELPER_SELF_TRACE_RIGHT", sg_helperTraceRight);
     REAL sg_helperTraceReactRange = 2;
-    static tConfItem<REAL> sg_helperTraceReactRangeConf("HELPER_SELF_TRACE_RANGE", sg_helperTraceReactRange);
+    static tConfItem<REAL> sg_helperTraceReactRangeConf = HelperCommand::tConfItemH("HELPER_SELF_TRACE_RANGE", sg_helperTraceReactRange);
     REAL sg_helperTraceDelay = 0.01;
-    static tConfItem<REAL> sg_helperTraceDelayConf("HELPER_SELF_TRACE_DELAY", sg_helperTraceDelay);
+    static tConfItem<REAL> sg_helperTraceDelayConf = HelperCommand::tConfItemH("HELPER_SELF_TRACE_DELAY", sg_helperTraceDelay);
 
     bool sg_helperShowEnemyTail = false;
-    static tConfItem<bool> sg_helperShowEnemyTailConf("HELPER_ENEMY_TAIL", sg_helperShowEnemyTail);
+    static tConfItem<bool> sg_helperShowEnemyTailConf = HelperCommand::tConfItemH("HELPER_ENEMY_TAIL", sg_helperShowEnemyTail);
     REAL sg_helperShowEnemyTailHeight = 1;
-    static tConfItem<REAL> sg_helperShowEnemyTailHeightConf("HELPER_ENEMY_TAIL_HEIGHT", sg_helperShowEnemyTailHeight);
+    static tConfItem<REAL> sg_helperShowEnemyTailHeightConf = HelperCommand::tConfItemH("HELPER_ENEMY_TAIL_HEIGHT", sg_helperShowEnemyTailHeight);
     REAL sg_helperShowEnemyTailDistanceMult = 1;
-    static tConfItem<REAL> sg_helperShowEnemyTailDistanceMultConf("HELPER_ENEMY_TAIL_DISTANCE_MULT", sg_helperShowEnemyTailDistanceMult);
+    static tConfItem<REAL> sg_helperShowEnemyTailDistanceMultConf = HelperCommand::tConfItemH("HELPER_ENEMY_TAIL_DISTANCE_MULT", sg_helperShowEnemyTailDistanceMult);
     REAL sg_helperShowEnemyTailTimeoutMult = 1;
-    static tConfItem<REAL> sg_helperShowEnemyTailTimeoutMultConf("HELPER_ENEMY_TAIL_TIMEOUT_MULT", sg_helperShowEnemyTailTimeoutMult);
+    static tConfItem<REAL> sg_helperShowEnemyTailTimeoutMultConf = HelperCommand::tConfItemH("HELPER_ENEMY_TAIL_TIMEOUT_MULT", sg_helperShowEnemyTailTimeoutMult);
     REAL sg_helperShowEnemyTailBrightness = 1;
-    static tConfItem<REAL> sg_helperShowEnemyTailBrightnessConf("HELPER_ENEMY_TAIL_BRIGHTNESS", sg_helperShowEnemyTailBrightness);
+    static tConfItem<REAL> sg_helperShowEnemyTailBrightnessConf = HelperCommand::tConfItemH("HELPER_ENEMY_TAIL_BRIGHTNESS", sg_helperShowEnemyTailBrightness);
 
     bool sg_helperDetectCut = false;
-    static tConfItem<bool> sg_helperDetectCutConf("HELPER_ENEMY_DETECT_CUT", sg_helperDetectCut);
+    static tConfItem<bool> sg_helperDetectCutConf = HelperCommand::tConfItemH("HELPER_ENEMY_DETECT_CUT", sg_helperDetectCut);
     REAL sg_helperDetectCutDetectionRange = 150;
-    static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf("HELPER_ENEMY_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
+    static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf = HelperCommand::tConfItemH("HELPER_ENEMY_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
     REAL sg_helperDetectCutTimeout = .001;
-    static tConfItem<REAL> sg_helperDetectCutTimeoutConf("HELPER_ENEMY_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
+    static tConfItem<REAL> sg_helperDetectCutTimeoutConf = HelperCommand::tConfItemH("HELPER_ENEMY_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
     REAL sg_helperDetectCutHeight = 0;
-    static tConfItem<REAL> sg_helperDetectCutHeightConf("HELPER_ENEMY_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
+    static tConfItem<REAL> sg_helperDetectCutHeightConf = HelperCommand::tConfItemH("HELPER_ENEMY_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
     REAL sg_helperDetectCutReact = .02; // .005 ?
-    static tConfItem<REAL> sg_helperDetectCutReactConf("HELPER_ENEMY_DETECT_CUT_REACTION_TIME", sg_helperDetectCutReact);
+    static tConfItem<REAL> sg_helperDetectCutReactConf = HelperCommand::tConfItemH("HELPER_ENEMY_DETECT_CUT_REACTION_TIME", sg_helperDetectCutReact);
     bool sg_helperEnemyTracers = false;
 
-    static tConfItem<bool> sg_helperEnemyTracersConf("HELPER_ENEMY_TRACERS", sg_helperEnemyTracers);
+    static tConfItem<bool> sg_helperEnemyTracersConf = HelperCommand::tConfItemH("HELPER_ENEMY_TRACERS", sg_helperEnemyTracers);
     REAL sg_helperEnemyTracersHeight = 0;
-    static tConfItem<REAL> sg_helperEnemyTracersHeightConf("HELPER_ENEMY_TRACERS_HEIGHT", sg_helperEnemyTracersHeight);
+    static tConfItem<REAL> sg_helperEnemyTracersHeightConf = HelperCommand::tConfItemH("HELPER_ENEMY_TRACERS_HEIGHT", sg_helperEnemyTracersHeight);
     REAL sg_helperEnemyTracersDetectionRange = 150;
-    static tConfItem<REAL> sg_helperEnemyTracersDetectionRangeConf("HELPER_ENEMY_TRACERS_DETECTION_RANGE", sg_helperEnemyTracersDetectionRange);
+    static tConfItem<REAL> sg_helperEnemyTracersDetectionRangeConf = HelperCommand::tConfItemH("HELPER_ENEMY_TRACERS_DETECTION_RANGE", sg_helperEnemyTracersDetectionRange);
     REAL sg_helperEnemyTracersSpeedMult = 1.5;
-    static tConfItem<REAL> sg_helperEnemyTracersSpeedMultConf("HELPER_ENEMY_TRACERS_SPEED_MULT", sg_helperEnemyTracersSpeedMult);
+    static tConfItem<REAL> sg_helperEnemyTracersSpeedMultConf = HelperCommand::tConfItemH("HELPER_ENEMY_TRACERS_SPEED_MULT", sg_helperEnemyTracersSpeedMult);
     REAL sg_helperEnemyTracersPassthrough = 1;
-    static tConfItem<REAL> sg_helperEnemyTracersPassthroughConf("HELPER_ENEMY_TRACERS_PASSTHROUGH", sg_helperEnemyTracersPassthrough);
+    static tConfItem<REAL> sg_helperEnemyTracersPassthroughConf = HelperCommand::tConfItemH("HELPER_ENEMY_TRACERS_PASSTHROUGH", sg_helperEnemyTracersPassthrough);
     REAL sg_helperEnemyTracersDelayMult = 1;
-    static tConfItem<REAL> sg_helperEnemyTracersDelayMultConf("HELPER_ENEMY_TRACERS_DELAY_MULT", sg_helperEnemyTracersDelayMult);
+    static tConfItem<REAL> sg_helperEnemyTracersDelayMultConf = HelperCommand::tConfItemH("HELPER_ENEMY_TRACERS_DELAY_MULT", sg_helperEnemyTracersDelayMult);
     REAL sg_helperEnemyTracersTimeout = 0.01;
-    static tConfItem<REAL> sg_helperEnemyTracersTimeoutConf("HELPER_ENEMY_TRACERS_TIMEOUT", sg_helperEnemyTracersTimeout);
+    static tConfItem<REAL> sg_helperEnemyTracersTimeoutConf = HelperCommand::tConfItemH("HELPER_ENEMY_TRACERS_TIMEOUT", sg_helperEnemyTracersTimeout);
     REAL sg_helperEnemyTracersBrightness = 1;
-    static tConfItem<REAL> sg_helperEnemyTracersBrightnessConf("HELPER_ENEMY_TRACERS_BRIGHTNESS", sg_helperEnemyTracersBrightness);
+    static tConfItem<REAL> sg_helperEnemyTracersBrightnessConf = HelperCommand::tConfItemH("HELPER_ENEMY_TRACERS_BRIGHTNESS", sg_helperEnemyTracersBrightness);
 }
 
 // HUD ITEMS
@@ -918,7 +924,7 @@ void gHelper::trace(gHelperData &data, int dir)
 #include "../gWall.h"
 void gHelper::Activate()
 {
-    if (!aliveCheck())
+    if (!helperConfig::sghuk || !aliveCheck())
         return;
 
     REAL start;
@@ -1010,3 +1016,4 @@ gHelper &gHelper::Get(gCycle &cycle)
 gHelper::~gHelper()
 {
 }
+

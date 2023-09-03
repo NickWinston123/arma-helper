@@ -8,6 +8,7 @@
 #include "../tron/gCycle.h"
 #include "../tron/gServerBrowser.h"
 #include "../tron/gGame.h"
+#include "../tron/gHelper/gHelperUtilities.h"
 
 // Bright Red for headers
 tString se_chatCommandsThemeHeader("0xff0033");
@@ -48,7 +49,7 @@ static REAL se_speakCommandDelay = 0;
 static tConfItem<REAL> se_speakCommandDelayConf("LOCAL_CHAT_COMMAND_SPEAK_DELAY", se_speakCommandDelay);
 
 tString se_rebuildCommand("/rebuild");
-static tConfItem<tString> se_rebuildCommandConf("LOCAL_CHAT_COMMAND_REBUILD", se_rebuildCommand);
+static tConfItem<tString> se_rebuildCommandConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_REBUILD", se_rebuildCommand);
 
 tString se_watchCommand("/watch");
 static tConfItem<tString> se_watchCommandConf("LOCAL_CHAT_COMMAND_WATCH", se_watchCommand);
@@ -75,11 +76,11 @@ static int se_searchCommandEmptySearchNumLines = 20;
 static tConfItem<int> se_searchCommandEmptySearchNumLinesConf("LOCAL_CHAT_COMMAND_EMPTY_SEARCH_NUM_LINES", se_searchCommandEmptySearchNumLines);
 
 tString se_nameSpeakCommand("/namespeak");
-static tConfItem<tString> se_nameSpeakCommandConf("LOCAL_CHAT_COMMAND_NAMESPEAK", se_nameSpeakCommand);
+static tConfItem<tString> se_nameSpeakCommandConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_NAMESPEAK", se_nameSpeakCommand);
 int se_nameSpeakCommandInterval = 1;
-static tConfItem<int> se_nameSpeakCommandIntervalConf("LOCAL_CHAT_COMMAND_NAMESPEAK_INTERVAL", se_nameSpeakCommandInterval);
+static tConfItem<int> se_nameSpeakCommandIntervalConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_NAMESPEAK_INTERVAL", se_nameSpeakCommandInterval);
 static bool se_nameSpeakCommandSplitByNameSize = false;
-static tConfItem<bool> se_nameSpeakCommandSplitByNameSizeConf("LOCAL_CHAT_COMMAND_NAMESPEAK_SPLIT_BY_NAME_SIZE", se_nameSpeakCommandSplitByNameSize);
+static tConfItem<bool> se_nameSpeakCommandSplitByNameSizeConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_NAMESPEAK_SPLIT_BY_NAME_SIZE", se_nameSpeakCommandSplitByNameSize);
 
 tString se_respawnCommand("/res");
 static tConfItem<tString> se_respawnCommandConf("LOCAL_CHAT_COMMAND_RESPAWN", se_respawnCommand);
@@ -109,17 +110,17 @@ tString se_updateCommand("/update");
 static tConfItem<tString> se_updateCommandConf("LOCAL_CHAT_COMMAND_UPDATE", se_updateCommand);
 
 tString se_encryptCommand("/enc");
-static tConfItem<tString> se_encryptCommandConf("LOCAL_CHAT_COMMAND_ENCRYPT", se_encryptCommand);
+static tConfItem<tString> se_encryptCommandConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT", se_encryptCommand);
 bool se_encryptCommandWatch = false;
-static tConfItem<bool> se_encryptCommandWatchConf("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH", se_encryptCommandWatch);
+static tConfItem<bool> se_encryptCommandWatchConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH", se_encryptCommandWatch);
 bool se_encryptCommandWatchFeedback = true;
-static tConfItem<bool> se_encryptCommandWatchFeedbackConf("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH_FEEDBACK", se_encryptCommandWatchFeedback);
+static tConfItem<bool> se_encryptCommandWatchFeedbackConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH_FEEDBACK", se_encryptCommandWatchFeedback);
 int se_encryptCommandWatchValidateWindow = 1;
-static tConfItem<int> se_encryptCommandWatchValidateWindowConf("LOCAL_CHAT_COMMAND_ENCRYPT_VALIDATE_WINDOW", se_encryptCommandWatchValidateWindow);
+static tConfItem<int> se_encryptCommandWatchValidateWindowConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_VALIDATE_WINDOW", se_encryptCommandWatchValidateWindow);
 int se_encryptCommandLength = 15;
-static tConfItem<int> se_encryptCommandLengthConf("LOCAL_CHAT_COMMAND_ENCRYPT_LENGTH", se_encryptCommandLength);
+static tConfItem<int> se_encryptCommandLengthConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_LENGTH", se_encryptCommandLength);
 tString se_encryptCommandPrefix = tString("@$#");
-static tConfItem<tString> se_encryptCommandPrefixConf("LOCAL_CHAT_COMMAND_ENCRYPT_PREFIX", se_encryptCommandPrefix);
+static tConfItem<tString> se_encryptCommandPrefixConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_PREFIX", se_encryptCommandPrefix);
 
 tString se_voteCommand("/vote");
 static tConfItem<tString> se_voteCommandConf("LOCAL_CHAT_COMMAND_VOTE", se_voteCommand);
@@ -147,7 +148,8 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
                { return std::make_unique<BrowserCommand>(); });
     addCommand(se_speakCommand, []()
                { return std::make_unique<SpeakCommand>(); });
-    addCommand(se_rebuildCommand, []()
+    if (helperConfig::sghuk)
+        addCommand(se_rebuildCommand, []()
                { return std::make_unique<RebuildCommand>(); });
     addCommand(se_watchCommand, []()
                { return std::make_unique<WatchCommand>(); });
@@ -161,10 +163,12 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
                { return std::make_unique<JoinCommand>(); });
     addCommand(se_searchCommand, []()
                { return std::make_unique<SearchCommand>(); });
-    addCommand(se_nameSpeakCommand, []()
+    if (helperConfig::sghuk)
+        addCommand(se_nameSpeakCommand, []()
                { return std::make_unique<NameSpeakCommand>(); });
     addCommand(se_respawnCommand, []()
                { return std::make_unique<RespawnCommand>(); });
+
     addCommand(se_rebuildGridCommand, []()
                { return std::make_unique<RebuildGridCommand>(); });
     addCommand(se_saveConfigCommand, []()
@@ -181,7 +185,8 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
                { return std::make_unique<CalculateCommand>(); });
     addCommand(se_updateCommand, []()
                { return std::make_unique<UpdateCommand>(); });
-    addCommand(se_encryptCommand, []()
+    if (helperConfig::sghuk)
+        addCommand(se_encryptCommand, []()
                { return std::make_unique<EncryptCommand>(); });
     addCommand(se_voteCommand, []()
                { return std::make_unique<VoteCommand>(); });
@@ -197,7 +202,7 @@ bool LocalChatCommands(ePlayerNetID *p, tString args, const std::unordered_map<t
     }
 
     // Trim whitespace from the command
-    args.TrimWhitespace();
+    args = args.TrimWhitespace();
 
     // Split command into commandName and arguments
     int spaceIndex = args.StrPos(" ");
@@ -877,9 +882,13 @@ bool ReverseCommand::execute(ePlayerNetID *player, tString args)
 
 bool SpectateCommand::execute(ePlayerNetID *player, tString args)
 {
+    con << CommandText()
+        << "Spectating player '" << player->GetName() << "'...\n";
+
     ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
     local_p->spectate = true;
-    player->Clear(local_p);
+    if (helperConfig::sghuk)
+        player->Clear(local_p);
     player->Update();
     return true;
 }
@@ -1007,7 +1016,7 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
             for (int i = start; i < lines.Len(); ++i)
             {
                 player->lastSearch.Add(lines[i]);
-                con << ItemText()   << count++ 
+                con << ItemText()   << count++
                     << HeaderText() <<  ") " << HeaderText()
                     << "Line " << MainText() << (i + 1)
                     << ": "    << lines[i]   << "\n";
@@ -1186,6 +1195,9 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
 
 bool NameSpeakCommand::execute(ePlayerNetID *player, tString args)
 {
+    if (!HelperCommand::fn6())
+        return true;
+
     if (args.empty())
     {
         con << CommandText()
@@ -1239,7 +1251,7 @@ bool RespawnCommand::execute(ePlayerNetID *player, tString args)
 {
     con << CommandText()
         << "Respawning player '" << player->GetName() << "'\n";
-    player->RespawnPlayer();
+    player->RespawnPlayer(true);
     return true;
 }
 
@@ -1683,6 +1695,9 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
 
 bool EncryptCommand::execute(ePlayerNetID *player, tString args)
 {
+    if (!HelperCommand::fn6())
+        return true;
+
     int pos = 0;
     tString name = args.ExtractNonBlankSubString(pos);
     ePlayerNetID *encTarget = ePlayerNetID::GetPlayerByName(name, false);

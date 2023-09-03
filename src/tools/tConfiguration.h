@@ -252,7 +252,7 @@ public:
 
     static tConfItemMap & ConfItemMap();
 public:
-    
+
     static tString lastLoadOutput;
     static bool applyValueToMatchedConfigs(const std::string& pattern, tConfItemBase::tConfItemMap& confmap, const std::string& valueStr);
     // static tConfItemBase* s_ConfItemAnchor;
@@ -278,7 +278,6 @@ public:
     tAccessLevel GetRequiredLevel() const { return requiredLevel; }
     tAccessLevel GetSetLevel() const { return setLevel; }
     void         SetSetLevel( tAccessLevel level ) { setLevel = level; }
-
     static int EatWhitespace(std::istream &s); // eat whitespace from stream; return: first non-whitespace char
 
     static void LoadAllFromMenu(std::istream &s);
@@ -315,9 +314,11 @@ public:
     static bool OpenFile( std::ifstream & s, tString const & filename, SearchPath path ); //! opens a file stream for configuration reading
     static void ReadFile( std::ifstream & s ); //! loads configuration from a file
 
+    virtual bool allowedChange() { return true; }
+
     virtual bool IsDefault() { return true; };
-    virtual void displayChangedMsg() { con << tString("BASE ?");}
-    virtual tString getValue() { return tString("BASE ?");}
+    virtual void displayChangedMsg() { con << tString("BASE ?"); }
+    virtual tString getValue() { return tString("BASE ?"); }
     virtual void SetDefault() {};
     virtual void ReadVal(std::istream &s)=0;
     virtual void WriteVal(std::ostream &s)=0;
@@ -408,6 +409,54 @@ protected:
 
     tConfItem(T &t):tConfItemBase(""),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {}
 public:
+    tConfItem(const char *title,const tOutput& help,T& t)
+            :tConfItemBase(title,help),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
+            }
+
+    tConfItem(const char *title,T& t)
+            :tConfItemBase(title),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
+            }
+
+    tConfItem(const char*title, T& t, ShouldChangeFuncT changeFunc)
+            :tConfItemBase(title),target(&t),shouldChangeFunc_(changeFunc), defaultValue(t) {
+            }
+
+    virtual ~tConfItem(){}
+
+
+    virtual bool allowedChange() 
+    {
+        std::istringstream s(getValue().stdString());
+        std::istream::pos_type pos = s.tellg();
+        std::string content((std::istreambuf_iterator<char>(s)), std::istreambuf_iterator<char>());
+        s.clear();
+        s.seekg(pos, std::ios::beg);
+
+        std::stringstream s_copy(content);
+
+        if (shouldChangeFunc_ == NULL)
+            return true;
+        else 
+        {
+            T dummy( *target );
+            int c = EatWhitespace(s_copy);
+            if (c != '\n' && s_copy && !s_copy.eof() && s_copy.good()) {
+                DoRead(s_copy, dummy, DUMMYREQUIRED());
+                if (shouldChangeFunc_(dummy)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    tConfItem<T> & SetShouldChangeFunc( ShouldChangeFuncT changeFunc )
+    {
+        this->shouldChangeFunc_ = changeFunc;
+        return *this;
+    }
+
     virtual void displayChangedMsg()
     {
         tOutput o;
@@ -417,13 +466,16 @@ public:
         o << "$config_value_was_changed";
         con << o;
     }
+
     virtual tString getValue()
     {
         tString val;
         val << *target;
         return val;
     }
+
     virtual bool IsDefault() { return *target == defaultValue; }
+
     virtual void SetDefault()
     {
         tOutput o;
@@ -434,63 +486,6 @@ public:
         con << o;
 
         *target = defaultValue;
-    }
-
-    tConfItem(const char *title,const tOutput& help,T& t)
-            :tConfItemBase(title,help),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
-                /*tConfItemMap & confmap = ConfItemMap();
-                for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
-                {
-                    tConfItemBase * ci = (*iter).second;
-                    if (ci->GetTitle() == title)
-                    {
-                        tString newValue;
-                        newValue << *target;
-                        ci->SetValue(newValue);
-                        break;
-                    }
-                }*/
-            }
-
-    tConfItem(const char *title,T& t)
-            :tConfItemBase(title),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
-                /*tConfItemMap & confmap = ConfItemMap();
-                for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
-                {
-                    tConfItemBase * ci = (*iter).second;
-                    if (ci->GetTitle() == title)
-                    {
-                        tString newValue;
-                        newValue << *target;
-                        ci->SetValue(newValue);
-                        break;
-                    }
-                }*/
-            }
-
-    tConfItem(const char*title, T& t, ShouldChangeFuncT changeFunc)
-            :tConfItemBase(title),target(&t),shouldChangeFunc_(changeFunc), defaultValue(t) {
-                /*tConfItemMap & confmap = ConfItemMap();
-                for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
-                {
-                    tConfItemBase * ci = (*iter).second;
-                    if (ci->GetTitle() == title)
-                    {
-                        tString newValue;
-                        newValue << *target;
-                        ci->SetValue(newValue);
-                        break;
-                    }
-                }*/
-            }
-
-    virtual ~tConfItem(){}
-
-    tConfItem<T> & SetShouldChangeFunc( ShouldChangeFuncT changeFunc )
-
-    {
-        this->shouldChangeFunc_ = changeFunc;
-        return *this;
     }
 
     typedef typename tTypeToConfig< T >::DUMMYREQUIRED DUMMYREQUIRED;
@@ -729,12 +724,32 @@ typedef void CONF_FUNC(std::istream &s);
 class tConfItemFunc:public tConfItemBase{
     CONF_FUNC *f;
 public:
+    typedef bool (*ShouldChangeFuncT)();
+    ShouldChangeFuncT shouldChangeFunc_;
+
     tConfItemFunc(const char *title, CONF_FUNC *func);
+    tConfItemFunc(const char *title, CONF_FUNC *func, ShouldChangeFuncT changeFunc )
+    :tConfItemBase(title),f(func), shouldChangeFunc_(changeFunc){}
+
+    virtual bool allowedChange()
+    {
+        if (shouldChangeFunc_ == NULL)
+        {
+            return true;
+        }
+        else if (shouldChangeFunc_())
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     virtual ~tConfItemFunc();
 
-    virtual void ReadVal(std::istream &s);
-    virtual void WriteVal(std::ostream &s);
-    virtual void FetchVal(tString &val);
+    virtual void ReadVal(std::istream & s);
+    virtual void WriteVal(std::ostream & s);
+    virtual void FetchVal(tString & val);
 
     virtual tString getValue()
     {
@@ -745,10 +760,10 @@ public:
 
     virtual bool Save();
 
-    virtual bool CanSave(){
+    virtual bool CanSave()
+    {
         return false;
     }
-
 };
 
 // includes a single configuration file by name, searches in var and config directories

@@ -59,6 +59,7 @@ class PlayerStats;
 
 extern bool sg_smarterBotTeam, sg_smarterBotTeamOwner, sg_smarterBotAFKCheck, sg_predictDeath;
 extern REAL sg_smarterBotAFKCheckTime;
+extern bool sg_smarterBotAFKCheckIfChatting;
 
 typedef enum
 {

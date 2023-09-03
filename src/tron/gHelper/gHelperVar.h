@@ -17,6 +17,11 @@ static std::string lastHelperDebugMessage = "", lastHelperDebugSender = "";
 
 namespace helperConfig
 {
+    extern tString sghk;
+    extern bool sghuk;
+
+    extern bool sg_helperMenuEnabled;
+    
     extern bool sg_helper;
     extern int  sg_helperEnabledPlayer;
     extern REAL sg_helperBrightness;

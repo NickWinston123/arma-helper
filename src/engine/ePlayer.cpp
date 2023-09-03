@@ -78,13 +78,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 int se_lastSaidMaxEntries = 8;
 
 static bool se_forceJoinTeam = false;
-static tConfItem<bool> se_forceJoinTeamConf("FORCE_JOIN_TEAM", se_forceJoinTeam);
+static tConfItem<bool> se_forceJoinTeamConf = HelperCommand::tConfItemH("FORCE_JOIN_TEAM", se_forceJoinTeam);
 
 static bool se_forceSync = false;
-static tConfItem<bool> se_forceSyncConf("FORCE_SYNC", se_forceSync);
+static tConfItem<bool> se_forceSyncConf = HelperCommand::tConfItemH("FORCE_SYNC", se_forceSync);
 
 static bool se_forceSyncOverride = false;
-static tConfItem<bool> se_forceSyncOverrideConf("FORCE_SYNC_OVERRIDE", se_forceSyncOverride);
+static tConfItem<bool> se_forceSyncOverrideConf = HelperCommand::tConfItemH("FORCE_SYNC_OVERRIDE", se_forceSyncOverride);
 
 static int se_playerRandomColorNameStartMode = 1;
 
@@ -1405,164 +1405,164 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     // sg_smarterBotThink
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_THINK";
-    sg_smarterBotThink = false;
-    StoreConfitem(tNEW(tConfItem<bool>)(confname, "Smarter Bot Think", sg_smarterBotThink));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotThink));
 
     // sg_smarterBotRange
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_RANGE";
     sg_smarterBotRange = 10;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Range", sg_smarterBotRange));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotRange));
 
     // sg_smarterBotRandomScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_RANDOMNESS";
     sg_smarterBotRandomScale = 0;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Randomness", sg_smarterBotRandomScale));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotRandomScale));
 
     // sg_smarterBotRubberEval
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_RUBBER";
     sg_smarterBotRubberEval = 4;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Rubber", sg_smarterBotRubberEval));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotRubberEval));
 
     // sg_smarterBotSurviveEval
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_SURVIVE";
     sg_smarterBotSurviveEval = 100;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Survive", sg_smarterBotSurviveEval));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotSurviveEval));
 
     // sg_smarterBotTrapScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_TRAP";
     sg_smarterBotTrapScale = 0;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Trap", sg_smarterBotTrapScale));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotTrapScale));
 
     // sg_smarterBotFollowScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW";
     sg_smarterBotFollowScale = 0.5;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Follow", sg_smarterBotFollowScale));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowScale));
 
     // sg_smarterBotFollowFindTarget
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_TARGET";
     sg_smarterBotFollowFindTarget = true;
-    StoreConfitem(tNEW(tConfItem<bool>)(confname, "Smarter Bot Follow Target", sg_smarterBotFollowFindTarget));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowFindTarget));
 
     // sg_smarterBotFollowFindZone
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_ZONE";
     sg_smarterBotFollowFindZone = false;
-    StoreConfitem(tNEW(tConfItem<bool>)(confname, "Smarter Bot Follow Znoe", sg_smarterBotFollowFindZone));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowFindZone));
 
     // sg_smarterBotFollowTail
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_TAIL";
     sg_smarterBotFollowTail = false;
-    StoreConfitem(tNEW(tConfItem<bool>)(confname, "Smarter Bot Follow Tail", sg_smarterBotFollowTail));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowTail));
 
     // sg_smarterBotFollowBlockLogic
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_BLOCKED_LOGIC";
     sg_smarterBotFollowBlockLogic = true;
-    StoreConfitem(tNEW(tConfItem<bool>)(confname, "Smarter Bot blocked by self logic", sg_smarterBotFollowBlockLogic));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowBlockLogic));
 
     // sg_smarterBotFollowTryLogic
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_TRY_LOGIC";
     sg_smarterBotFollowTryLogic = false;
-    StoreConfitem(tNEW(tConfItem<bool>)(confname, "Smarter Bot try logic - think before turn", sg_smarterBotFollowTryLogic));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowTryLogic));
 
     // sg_smarterBotFollowTryLogicOppositeTurn
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_TRY_LOGIC_OPPOSITE_TURN";
     sg_smarterBotFollowTryLogicOppositeTurn = false;
-    StoreConfitem(tNEW(tConfItem<bool>)(confname, "Smarter Bot try logic - try other direction", sg_smarterBotFollowTryLogicOppositeTurn));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowTryLogicOppositeTurn));
 
     // sg_smarterBotFollowCheckLogic
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_CHECK_LOGIC";
     sg_smarterBotFollowCheckLogic = true;
-    StoreConfitem(tNEW(tConfItem<bool>)(confname, "Smarter Bot check logic - check if their is enough space to make the follow turn", sg_smarterBotFollowCheckLogic));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowCheckLogic));
 
     // sg_smarterBotFollowPredictionTime
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_PREDICT_TIME";
     sg_smarterBotFollowPredictionTime = 0.1;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Predict time - determines how far to push ahead pos", sg_smarterBotFollowPredictionTime));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowPredictionTime));
 
     // sg_smarterBotFollowAlignedThresh
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_ALIGNED_THRESHOLD";
     sg_smarterBotFollowAlignedThresh = 10;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot aligned threshhold - Intened to prevent wiggling if we are within this threshhold", sg_smarterBotFollowAlignedThresh));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowAlignedThresh));
 
     // sg_smarterBotFollowTarget
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_SET_TARGET";
     sg_smarterBotFollowTarget = tString("");
-    StoreConfitem(tNEW(tConfItemLine)(confname, "Smarter Bot Follow Set Target", sg_smarterBotFollowTarget));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowTarget));
 
     // sg_smarterBotFollowTargetTeamList
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_TEAM_LIST";
     sg_smarterBotFollowTargetTeamList = tString("");
-    StoreConfitem(tNEW(tConfItemLine)(confname, "Smarter Bot Follow Set Target", sg_smarterBotFollowTargetTeamList));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotFollowTargetTeamList));
 
     // sg_smarterBotPlanScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_PLAN";
     sg_smarterBotPlanScale = 0;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Plan", sg_smarterBotPlanScale));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotPlanScale));
 
     // sg_smarterBotTailScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_TAIL";
     sg_smarterBotTailScale = 0;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Tail", sg_smarterBotTailScale));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotTailScale));
 
     // sg_smarterBotSpaceScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_SPACE";
     sg_smarterBotSpaceScale = 32;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Space", sg_smarterBotSpaceScale));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotSpaceScale));
 
     // sg_smarterBotCowardScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_COWARD";
     sg_smarterBotCowardScale = 0;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Coward", sg_smarterBotCowardScale));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotCowardScale));
 
     // sg_smarterBotTunnelScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_TUNNEL";
     sg_smarterBotTunnelScale = 0;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Tunnel", sg_smarterBotTunnelScale));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotTunnelScale));
 
     // sg_smarterBotSpeedScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_SPEED";
     sg_smarterBotSpeedScale = 0;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Speed", sg_smarterBotSpeedScale));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotSpeedScale));
 
     // sg_smarterBotNextThinkMult
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_NEXT_TIME_MULT";
     sg_smarterBotNextThinkMult = 1;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot Next Time Mult", sg_smarterBotNextThinkMult));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotNextThinkMult));
 
     // sg_smarterBotTurnRandMult
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_TURN_TIME_RAND_MULT";
     sg_smarterBotTurnRandMult = 0;
-    StoreConfitem(tNEW(tConfItem<REAL>)(confname, "Smarter Bot turn time random Mult", sg_smarterBotTurnRandMult));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotTurnRandMult));
 
     // sg_smarterBotState
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_STATE";
     sg_smarterBotState = 1;
-    StoreConfitem(tNEW(tConfItem<int>)(confname, "Smarter Bot State", sg_smarterBotState));
+    StoreConfitem(HelperCommand::tConfItemPtrH(confname.c_str(), sg_smarterBotState));
+
 
 #endif
 
@@ -1756,19 +1756,19 @@ static bool se_chatTimeStamp = false;
 static tConfItem<bool> se_chatTimeStampConf("CHAT_TIMESTAMP", se_chatTimeStamp);
 
 bool se_playerTriggerMessages = false;
-static tConfItem<bool> se_playerTriggerMessagesConf("PLAYER_MESSAGE_TRIGGERS", se_playerTriggerMessages);
+static tConfItem<bool> se_playerTriggerMessagesConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGERS", se_playerTriggerMessages);
 
-tString se_playerTriggerMessagesIgnoreList = tString("");
-static tConfItem<tString> se_playerTriggerMessagesIgnoreListConf("PLAYER_MESSAGE_TRIGGERS_IGNORE_LIST", se_playerTriggerMessagesIgnoreList);
+tString se_playerTriggerMessagesIgnoreList("");
+static tConfItem<tString> se_playerTriggerMessagesIgnoreListConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGERS_IGNORE_LIST", se_playerTriggerMessagesIgnoreList);
 
 bool se_playerTriggerMessagesReactToSelf = false;
-static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerTriggerMessagesReactToSelf);
+static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerTriggerMessagesReactToSelf);
 
 static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("wd,nice,wp,gj,$diedother,annoying,n1");
-static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf("PLAYER_MESSAGE_TRIGGER_KILLED_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
+static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_KILLED_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
 
-static tString se_playerTriggerMessagesDiedByVerifiedTriggers = tString("$died");
-static tConfItem<tString> se_playerTriggerMessagesDiedByVerifiedTriggersConf("PLAYER_MESSAGE_TRIGGER_DIED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesDiedByVerifiedTriggers);
+static tString se_playerTriggerMessagesDiedByVerifiedTriggers("$died");
+static tConfItem<tString> se_playerTriggerMessagesDiedByVerifiedTriggersConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_DIED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesDiedByVerifiedTriggers);
 
 static void se_DisplayChatLocally(ePlayerNetID *p, const tString &say)
 {
@@ -5606,22 +5606,22 @@ public:
 };
 
 bool se_randomNamePing = false;
-static tConfItem<bool> se_randomNamePingConf("PLAYER_NAME_PING", se_randomNamePing);
+static tConfItem<bool> se_randomNamePingConf = HelperCommand::tConfItemH("PLAYER_NAME_PING", se_randomNamePing);
 
 bool se_randomName = false;
-static tConfItem<bool> se_randomNameConf("PLAYER_RANDOM_NAME", se_randomName);
+static tConfItem<bool> se_randomNameConf = HelperCommand::tConfItemH("PLAYER_RANDOM_NAME", se_randomName);
 
 tString se_randomNameEnabledPlayers("1,2,3,4");
-static tConfItem<tString> se_randomNameEnabledPlayersConf("PLAYER_RANDOM_NAME_ENABLED_PLAYERS", se_randomNameEnabledPlayers);
+static tConfItem<tString> se_randomNameEnabledPlayersConf = HelperCommand::tConfItemH("PLAYER_RANDOM_NAME_ENABLED_PLAYERS", se_randomNameEnabledPlayers);
 
 int se_randomNameLength = 15;
-static tConfItem<int> se_randomNameLengthConf("PLAYER_RANDOM_NAME_LENGTH", se_randomNameLength);
+static tConfItem<int> se_randomNameLengthConf = HelperCommand::tConfItemH("PLAYER_RANDOM_NAME_LENGTH", se_randomNameLength);
 
 int se_randomNameMode = 0;
-static tConfItem<int> se_randomNameModeConf("PLAYER_RANDOM_NAME_MODE", se_randomNameMode);
+static tConfItem<int> se_randomNameModeConf = HelperCommand::tConfItemH("PLAYER_RANDOM_NAME_MODE", se_randomNameMode);
 
 tString se_randomNameCharset("");
-static tConfItem<tString> se_randomNameCharsetConf("PLAYER_RANDOM_NAME_CHARSET", se_randomNameCharset);
+static tConfItem<tString> se_randomNameCharsetConf = HelperCommand::tConfItemH("PLAYER_RANDOM_NAME_CHARSET", se_randomNameCharset);
 
 tString randomName()
 {
@@ -5673,22 +5673,23 @@ tString randomName()
 }
 
 bool se_toggleChatFlag = false;
-static tConfItem<bool> se_toggleChatFlagConf("CHAT_FLAG_TOGGLE", se_toggleChatFlag);
+static tConfItem<bool>  se_toggleChatFlagConf = HelperCommand::tConfItemH("CHAT_FLAG_TOGGLE", se_toggleChatFlag);
+
 
 tString se_toggleChatFlagEnabledPlayers("1,2,3,4");
-static tConfItem<tString> se_toggleChatFlagEnabledPlayersConf("CHAT_FLAG_TOGGLE_ENABLED_PLAYERS", se_toggleChatFlagEnabledPlayers);
+static tConfItem<tString> se_toggleChatFlagEnabledPlayersConf = HelperCommand::tConfItemH("CHAT_FLAG_TOGGLE_ENABLED_PLAYERS", se_toggleChatFlagEnabledPlayers);
 
 bool se_toggleChatFlagAlways = false;
-static tConfItem<bool> se_toggleChatFlagAlwaysConf("CHAT_FLAG_ALWAYS", se_toggleChatFlagAlways);
+static tConfItem<bool> se_toggleChatFlagAlwaysConf = HelperCommand::tConfItemH("CHAT_FLAG_ALWAYS", se_toggleChatFlagAlways);
 
 tString se_toggleChatFlagAlwaysEnabledPlayers("1,2,3,4");
-static tConfItem<tString> se_toggleChatFlagAlwaysEnabledPlayersConf("CHAT_FLAG_ALWAYS_ENABLED_PLAYERS", se_toggleChatFlagAlwaysEnabledPlayers);
+static tConfItem<tString> se_toggleChatFlagAlwaysEnabledPlayersConf = HelperCommand::tConfItemH("CHAT_FLAG_ALWAYS_ENABLED_PLAYERS", se_toggleChatFlagAlwaysEnabledPlayers);
 
 bool se_BlockChatFlags = false;
-static tConfItem<bool> se_BlockChatFlagsConf("CHAT_FLAG_BLOCK", se_BlockChatFlags);
+static tConfItem<bool> se_BlockChatFlagsConf = HelperCommand::tConfItemH("CHAT_FLAG_BLOCK", se_BlockChatFlags);
 
 tString se_BlockChatFlagsEnabledPlayers("1,2,3,4");
-static tConfItem<tString> se_BlockChatFlagsEnabledPlayersConf("CHAT_FLAG_BLOCK_ENABLED_PLAYERS", se_BlockChatFlagsEnabledPlayers);
+static tConfItem<tString> se_BlockChatFlagsEnabledPlayersConf = HelperCommand::tConfItemH("CHAT_FLAG_BLOCK_ENABLED_PLAYERS", se_BlockChatFlagsEnabledPlayers);
 
 bool se_watchActiveStatus = false;
 static tConfItem<bool> se_watchActiveStatusConf("WATCH_ACTIVE_STATUS", se_watchActiveStatus);
@@ -6133,19 +6134,19 @@ void se_ListPastChatters(ePlayerNetID *receiver)
 }
 
 bool se_disableCreate = false;
-static tConfItem<bool> se_disableCreateConf("DISABLE_CREATE", se_disableCreate);
+static tConfItem<bool> se_disableCreateConf = HelperCommand::tConfItemH("DISABLE_CREATE", se_disableCreate);
 
 tString se_disableCreateSpecific = tString("");
-static tConfItem<tString> se_disableCreateSpecificConf("DISABLE_CREATE_SPECIFIC", se_disableCreateSpecific);
+static tConfItem<tString> se_disableCreateSpecificConf = HelperCommand::tConfItemH("DISABLE_CREATE_SPECIFIC", se_disableCreateSpecific);
 
 static bool se_playerMessageJoin = false;
-static tConfItem<bool> se_playerMessageJoinConf("PLAYER_MESSAGE_TRIGGER_JOIN", se_playerMessageJoin);
+static tConfItem<bool> se_playerMessageJoinConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_JOIN", se_playerMessageJoin);
 
 static bool se_playerMessageEnter = false;
-static tConfItem<bool> se_playerMessageEnterConf("PLAYER_MESSAGE_TRIGGER_ENTER", se_playerMessageEnter);
+static tConfItem<bool> se_playerMessageEnterConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_ENTER", se_playerMessageEnter);
 
 static bool se_playerMessageRename = false;
-static tConfItem<bool> se_playerMessageRenameConf("PLAYER_MESSAGE_TRIGGER_RENAME", se_playerMessageRename);
+static tConfItem<bool> se_playerMessageRenameConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_RENAME", se_playerMessageRename);
 
 ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                teamListID(-1),
@@ -6300,30 +6301,30 @@ void ePlayerNetID::watchPlayerStatus()
 }
 
 static tString se_playerMessageTargetPlayer = tString("");
-static tConfItem<tString> se_playerMessageTargetPlayerConf("PLAYER_MESSAGE_ENABLED_PLAYERS", se_playerMessageTargetPlayer);
+static tConfItem<tString> se_playerMessageTargetPlayerConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_ENABLED_PLAYERS", se_playerMessageTargetPlayer);
 
 static REAL se_playerMessageDelayRandMult = 0;
-static tConfItem<REAL> se_playerMessageDelayRandMultConf("PLAYER_MESSAGE_DELAY_RANDOM_MULT", se_playerMessageDelayRandMult);
+static tConfItem<REAL> se_playerMessageDelayRandMultConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_DELAY_RANDOM_MULT", se_playerMessageDelayRandMult);
 static REAL se_playerMessageDelay = 0;
-static tConfItem<REAL> se_playerMessageDelayConf("PLAYER_MESSAGE_DELAY", se_playerMessageDelay);
+static tConfItem<REAL> se_playerMessageDelayConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_DELAY", se_playerMessageDelay);
 static bool se_playerMessageSmartDelay = false;
-static tConfItem<bool> se_playerMessageSmartDelayConf("PLAYER_MESSAGE_DELAY_SMART", se_playerMessageSmartDelay);
+static tConfItem<bool> se_playerMessageSmartDelayConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_DELAY_SMART", se_playerMessageSmartDelay);
 static REAL se_playerMessageSmartDelayTypingWPM = 80;
-static tConfItem<REAL> se_playerMessageSmartDelayTypingWPMConf("PLAYER_MESSAGE_DELAY_SMART_TYPING_WPM", se_playerMessageSmartDelayTypingWPM);
+static tConfItem<REAL> se_playerMessageSmartDelayTypingWPMConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_DELAY_SMART_TYPING_WPM", se_playerMessageSmartDelayTypingWPM);
 static REAL se_playerMessageSmartDelayReadingWPM = 100;
-static tConfItem<REAL> se_playerMessageSmartDelayReadingWPMConf("PLAYER_MESSAGE_DELAY_SMART_READING_WPM", se_playerMessageSmartDelayReadingWPM);
+static tConfItem<REAL> se_playerMessageSmartDelayReadingWPMConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_DELAY_SMART_READING_WPM", se_playerMessageSmartDelayReadingWPM);
 
 static REAL se_playerMessageSmartDelayReactionTime = 0.25;
-static tConfItem<REAL> se_playerMessageSmartDelayReactionTimeConf("PLAYER_MESSAGE_DELAY_SMART_REACTION_TIME", se_playerMessageSmartDelayReactionTime);
+static tConfItem<REAL> se_playerMessageSmartDelayReactionTimeConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_DELAY_SMART_REACTION_TIME", se_playerMessageSmartDelayReactionTime);
 
 static bool se_playerMessageChatFlag = false;
-static tConfItem<bool> se_playerMessageChatFlagConf("PLAYER_MESSAGE_CHATFLAG", se_playerMessageChatFlag);
+static tConfItem<bool> se_playerMessageChatFlagConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_CHATFLAG", se_playerMessageChatFlag);
 
 static REAL se_playerMessageChatFlagStartMult = 0.5;
-static tConfItem<REAL> se_playerMessageChatFlagStartMultConf("PLAYER_MESSAGE_CHATFLAG_START_MULT", se_playerMessageChatFlagStartMult);
+static tConfItem<REAL> se_playerMessageChatFlagStartMultConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_CHATFLAG_START_MULT", se_playerMessageChatFlagStartMult);
 
 static bool se_playerMessageDisplayScheduledMessages = false;
-static tConfItem<bool> se_playerMessageDisplayScheduledMessagesConf("PLAYER_MESSAGE_DISPLAY_SCHEDULED_MESSAGES", se_playerMessageDisplayScheduledMessages);
+static tConfItem<bool> se_playerMessageDisplayScheduledMessagesConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_DISPLAY_SCHEDULED_MESSAGES", se_playerMessageDisplayScheduledMessages);
 
 
 ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
@@ -6734,7 +6735,7 @@ ePlayerNetID::~ePlayerNetID()
 }
 
 static bool se_playerMessageLeave = false;
-static tConfItem<bool> se_playerMessageLeaveConf("PLAYER_MESSAGE_TRIGGER_LEAVE", se_playerMessageLeave);
+static tConfItem<bool> se_playerMessageLeaveConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_LEAVE", se_playerMessageLeave);
 static void player_removed_from_game_handler(nMessage &m)
 {
     // and the ID of the player that was removed
@@ -8761,6 +8762,12 @@ void ePlayerNetID::DisplayScores()
 bool se_playerTabMenuWallTime = false;
 static tConfItem<bool> se_playerTabMenuWallTimeConf("PLAYER_TAB_MENU_WALL_TIME", se_playerTabMenuWallTime);
 
+tString se_playerTabMenuChattingIndiciator("*");
+static tConfItem<tString> se_playerTabMenuChattingIndiciatorConf("PLAYER_TAB_MENU_CHATTING_INDICIATOR", se_playerTabMenuChattingIndiciator);
+
+bool se_playerTabMenuChattingIndiciatorWhileSilenced = false;
+static tConfItem<bool> se_playerTabMenuChattingIndiciatorWhileSilencedConf("PLAYER_TAB_MENU_CHATTING_INDICIATOR_WHILE_SILENCED", se_playerTabMenuChattingIndiciatorWhileSilenced);
+
 tString ePlayerNetID::Ranking(int MAX, bool cut)
 {
     SortByScore();
@@ -8812,8 +8819,8 @@ tString ePlayerNetID::Ranking(int MAX, bool cut)
             // line << tColoredString::ColorString( p->r/15.0, p->g/15.0, p->b/15.0 ) << name << tColoredString::ColorString(1,1,1);
 
             // however, using the streaming operator is a lot cleaner. The example is left, as it really can be usefull in some situations.
-            if (p->IsChatting())
-                line << tColoredString::ColorString(-1, -1, -1) << "*";
+            if (p->IsChatting() && (!p->IsSilenced() || se_playerTabMenuChattingIndiciatorWhileSilenced) && !se_playerTabMenuChattingIndiciator.empty())
+                line << tColoredString::ColorString(-1, -1, -1) << se_playerTabMenuChattingIndiciator;
             line.SetPos(2, cut);
             line << *p << tColoredString::ColorString(-1, -1, -1);
             line.SetPos(19, false);
@@ -9581,19 +9588,19 @@ typedef std::pair<int, tJUST_CONTROLLED_PTR<ePlayerNetID>>
 static ePrejoinShuffleMap se_prejoinShuffles;
 
 static int se_createPlayers = 0;
-static tConfItem<int> se_createPlayersConf("CREATE_PLAYERS", se_createPlayers);
+static tConfItem<int> se_createPlayersConf = HelperCommand::tConfItemH("CREATE_PLAYERS", se_createPlayers);
 
 static tString se_createPlayersSpecific = tString("");
-static tConfItem<tString> se_createPlayersSpecificConf("CREATE_PLAYERS_SPECIFIC", se_createPlayersSpecific);
+static tConfItem<tString> se_createPlayersSpecificConf = HelperCommand::tConfItemH("CREATE_PLAYERS_SPECIFIC", se_createPlayersSpecific);
 
 static bool se_forceTeamname = false;
-static tConfItem<bool> se_forceTeamnameConf("FORCE_TEAMNAME", se_forceTeamname);
+static tConfItem<bool> se_forceTeamnameConf = HelperCommand::tConfItemH("FORCE_TEAMNAME", se_forceTeamname);
 
 static bool se_forceMessage = false;
-static tConfItem<bool> se_forceMessageConf("FORCE_MESS", se_forceMessage);
+static tConfItem<bool> se_forceMessageConf = HelperCommand::tConfItemH("FORCE_MESS", se_forceMessage);
 
 static tString se_forceSendMessageString = tString("");
-static tConfItem<tString> se_forceSendMessageStringConf("FORCE_SEND_MESSAGE", se_forceSendMessageString);
+static tConfItem<tString> se_forceSendMessageStringConf = HelperCommand::tConfItemH("FORCE_SEND_MESSAGE", se_forceSendMessageString);
 
 tString sg_ExtractColorCodes(const tString &str)
 {
@@ -14313,6 +14320,9 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
 void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player)
 {
+    if (!helperConfig::sghuk)
+        return;
+
     REAL totalDelay;
 
     if (se_playerMessageSmartDelay)
@@ -14320,10 +14330,9 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
         se_playerMessageDelay = 0;
         extraDelay += calculateResponseSmartDelay(messageToSend, se_playerMessageSmartDelayTypingWPM) + se_playerMessageSmartDelayReactionTime;
     }
-    else
-    {
+
+    if (se_playerMessageDelay > 0 )
         extraDelay += se_playerMessageDelay;
-    }
 
     if (se_playerMessageDelayRandMult > 0)
         extraDelay += (REAL)rand() / RAND_MAX * se_playerMessageDelayRandMult;
@@ -14365,9 +14374,9 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
 
     if (se_playerMessageDisplayScheduledMessages && scheduled)
         con << "Scheduled message \"" << messageToSend
-            << "\" with extra delay " << extraDelay
-            << ", total delay "       << totalDelay
-            << " and flag delay "     << flagDelay
+            << flagDelay << " (flagDelay / wait time) -> "
+            << totalDelay << " (totalDelay / send time)."
+            << " ExtraTime: " << extraDelay
             << " seconds.\n";
 }
 
@@ -14443,7 +14452,6 @@ static void RemoveChatTrigger(std::istream &s)
     bot.LoadChatTriggers();
 }
 
-
 static void ListChatTriggers(std::istream &s)
 {
     eChatBot& chatBot = eChatBot::getInstance();
@@ -14498,7 +14506,6 @@ static void ListChatTriggers(std::istream &s)
     }
 }
 
-
 static void ClearChatTriggers(std::istream &s)
 {
     FileManager fileManager(tString("chattriggers.txt"));
@@ -14514,8 +14521,8 @@ static void ReloadChatTriggers(std::istream &s)
     bot.LoadChatTriggers();
 }
 
-static tConfItemFunc ClearChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_CLEAR", &ClearChatTriggers);
-static tConfItemFunc ListChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_LIST", &ListChatTriggers);
-static tConfItemFunc AddChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
-static tConfItemFunc RemoveChatTrigger_conf("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
-static tConfItemFunc ReloadChatTriggers_conf("PLAYER_MESSAGE_TRIGGERS_RELOAD", &ReloadChatTriggers);
+static tConfItemFunc ClearChatTriggers_conf = HelperCommand::tConfItemFuncH("PLAYER_MESSAGE_TRIGGERS_CLEAR", &ClearChatTriggers);
+static tConfItemFunc ListChatTriggers_conf = HelperCommand::tConfItemFuncH("PLAYER_MESSAGE_TRIGGERS_LIST", &ListChatTriggers);
+static tConfItemFunc AddChatTrigger_conf = HelperCommand::tConfItemFuncH("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
+static tConfItemFunc RemoveChatTrigger_conf = HelperCommand::tConfItemFuncH("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
+static tConfItemFunc ReloadChatTriggers_conf = HelperCommand::tConfItemFuncH("PLAYER_MESSAGE_TRIGGERS_RELOAD", &ReloadChatTriggers);

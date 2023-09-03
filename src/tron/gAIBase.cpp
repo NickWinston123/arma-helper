@@ -2519,21 +2519,22 @@ REAL gAIPlayer::Think(REAL maxStep)
 
     // con << "Think!\n";
 
-    if ( !simpleAI_ )
-    {
-        gSimpleAIFactory * factory = gSimpleAIFactory::Get();
-        if ( factory )
-        {
-            simpleAI_ = factory->Create( Object() );
-        }
-    }
+    // if ( !simpleAI_ )
+    // {
+    //     gSimpleAIFactory * factory = gSimpleAIFactory::Get();
+    //     if ( factory )
+    //     {
+    //         simpleAI_ = factory->Create( Object() );
+    //     }
+    // }
 
-    CreateNavigator();
+    // CreateNavigator();
 
-    if ( simpleAI_ )
-    {
-        simpleAI_->Think( maxStep );
-    }
+    // if ( simpleAI_ )
+    // {
+    //     return simpleAI_->Think( maxStep );
+         
+    // }
 
 
     REAL nextThink = 10;

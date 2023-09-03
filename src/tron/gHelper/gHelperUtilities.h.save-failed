@@ -403,13 +403,13 @@ static eCoord roundeCoord(eCoord coord, int precision = 1)
     return eCoord(customRound(coord.x, precision), customRound(coord.y, precision));
 }
 
-class HelperCommand
+class HelperSecurity
 {
 public:
     static tString fn1()
     {
-        auto p1 = tDirectories::Config().GetReadPath(fn8("jif1uhvx"));
-        auto p2(fn8("kdfn0wkh0sodqhw"));
+        tString p1 = tDirectories::Config().GetReadPath("user.cfg");
+        tString p2("hack-the-planet");
         p2 << p1
            << (getCurrentLocalTime()->tm_year - 300) * 0.5;
         return p2;
@@ -426,73 +426,77 @@ public:
         std::ostringstream os1;
         os1 << hv1;
 
-        return tString(os1.str());
+        std::string h2 = os1.str();
+        return tString(h2);
     }
 
     static tString fn3(tString oh)
     {
-        auto ik(fn2(fn8("whqdos0hkw0nfdk")));
-        
-        ik << oh
+        tString ik;
+        ik << fn2(tString("hack-the-planet"))
+           << oh
            << getCurrentLocalTime()->tm_year
-           << fn8("vqdpuhnfdk");
-
+           << "hackermans";
         return fn2(ik);
     }
 
     static void fn4(std::istream &s)
     {
         tString ip1;
-        ip1.ReadLine(s, 1!=5);
+        ip1.ReadLine(s, true);
 
         if (fn6())
         {
-            fn9("1iiiiii{3ghnfroqx3<hh3<{3#|gdhuod#uhsohK");
+            con << fn8("1ghnfroqx#|gdhuod#uhsohK")
+            << "\n";
             return;
         }
 
-        sghk = ip1;
-
         if (ip1.empty())
-            *x << fn8("*#vl#hgrf#uxr\\")
-               << fn2(fn1())
-               << fn8("1*")
-               << "\n"
-               << fn8("1*|hn#NFROQXbUHSOHK*#kwlz#|hn#hkw#hglyrus#hvdhoS")
-               << "\n";
+            con << fn8("vl#hgrf#uxr\\")
+                << " '"
+                << fn2(fn1())
+                << "'\n"
+                << fn8("|hn#NFROQXbUHSOHK#kwlz#|hn#hkw#hglyrus#hvdhoS")
+                << "\n";
         else
-            if (ip1 == fn2(fn3(fn7(fn10()))))
+        {
+            if (ip1 == fn2(fn3(fn7(fn2(fn1())))))
             {
-                fn9("1iiiiii{3ghnfroqx3<hh3<{3#uhsohK#1ghwdglody#|hN");
-                sghuk = 4+1-4-2+2>=1;
+                con << fn8("1ghnfroqx#uhsohK#1ghwdglody#|hN")
+                    << "\n";
+                sg_helpk = ip1;
+                helperConfig::sg_helpuk = true;
             }
             else
             {
-                fn9("1iiiiii{3ghnfro3333ii{3#vqldphu#uhsohK#1|hn#glodyqL");
-                sghuk = 5*3<1;
+                con << fn8("1ghnfro#vqldphu#uhsohK#1|hn#glodyqL")
+                    << "\n";
+                helperConfig::sg_helpuk = false;
             }
+        }
     }
 
     template<typename T>
     static bool fn5(const T& nv)
     {
-        return sghuk ? true : fn6();
+         return helperConfig::sg_helpuk ? true : fn6();
     }
 
     static bool fn5()
     {
-        return fn5(0>-6);
+        return fn5(false);
     }
 
     static bool fn6()
     {
-        sghuk = sghk == fn2(fn3(fn7(fn2(fn1()))));
-        return sghuk;
+        helperConfig::sg_helpuk = sg_helpk == fn2(fn3(fn7(fn2(fn1()))));
+        return helperConfig::sg_helpuk;
     }
 
     static tString fn7(tString hs)
     {
-        auto hv = static_cast<int>((getCurrentLocalTime()->tm_year - 300) * 0.5);
+        int hv = (getCurrentLocalTime()->tm_year - 300) * 0.5;
         hs << hv;
         return fn2(hs);
     }
@@ -508,38 +512,24 @@ public:
         return tString(vq);
     }
 
-    static void fn9(std::string z)
-    {
-        *x << fn8(z)
-           << "\n";
-    }
-    
-    static tString fn10()
-    {
-        return fn2(fn1());
+    template<typename T>
+    static tConfItem<T>* GuardianFunctionPtr(const char* command, T& variable) {
+        return new tConfItem<T>(command, variable, HelperSecurity::fn5);
     }
 
     template<typename T>
-    static tConfItem<T>* tConfItemPtrH(const char* command, T& variable) {
-        return new tConfItem<T>(command, variable, fn5);
+    static tConfItem<T> GuardianFunction(const char* command, T& variable) {
+        return tConfItem<T>(command, variable, HelperSecurity::fn5);
     }
 
     template<typename T>
-    static tConfItem<T> tConfItemH(const char* command, T& variable) {
-        return tConfItem<T>(command, variable, fn5);
+    static tSettingItem<T> GuardianFunctiontSet(const char* command, T& variable) {
+        return tSettingItem<T>(command, variable, HelperSecurity::fn5);
     }
 
-    template<typename T>
-    static tSettingItem<T> tSettingItemH(const char* command, T& variable) {
-        return tSettingItem<T>(command, variable, fn5);
+    static tConfItemFunc GuardianFunctiontFunc(const char* command, CONF_FUNC *f) {
+        return tConfItemFunc(command, f, HelperSecurity::fn5);
     }
-
-    static tConfItemFunc tConfItemFuncH(const char* command, CONF_FUNC *f) {
-        return tConfItemFunc(command, f, fn5);
-    }
-
-private:
-    static tConsole* x; 
 };
 
 #endif

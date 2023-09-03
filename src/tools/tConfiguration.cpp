@@ -45,6 +45,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tError.h"
 #include "nConfig.h"
 
+#include "tron/gHelper/gHelperUtilities.h"
 #include <vector>
 #include <string.h>
 
@@ -602,19 +603,22 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
             con << "Current level: " << tCurrentAccessLevel::GetAccessLevel() << "\n";
             con << "Required level: " << ci->requiredLevel << "\n";
 #endif
-
+            bool allowedChangeF = ci->allowedChange();
             if (ci->requiredLevel >= tCurrentAccessLevel::GetAccessLevel())
             {
                 ci->setLevel = tCurrentAccessLevel::GetAccessLevel();
 
-                ci->ReadVal(s);
-                if (ci->changed)
+                if (allowedChangeF)
                 {
-                    ci->WasChanged();
-                }
-                else
-                {
-                    ci->changed = cb;
+                    ci->ReadVal(s);
+                    if (ci->changed)
+                    {
+                        ci->WasChanged();
+                    }
+                    else
+                    {
+                        ci->changed = cb;
+                    }
                 }
             }
             else
@@ -627,10 +631,14 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
                                tCurrentAccessLevel::GetName(ci->requiredLevel),
                                tCurrentAccessLevel::GetName(tCurrentAccessLevel::GetAccessLevel()));
                 con << tConfItemBase::lastLoadOutput;
-                return;
+                if (allowedChangeF)
+                    return;
             }
 
+
             found = true;
+            if (found && !allowedChangeF)
+                 found = false;
         }
 
         if (!found)
@@ -652,12 +660,12 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
                 std::string replaced_pattern;
                 std::regex_replace(std::back_inserter(replaced_pattern), pattern.begin(), pattern.end(), std::regex("\\*"), "[^_]*"); // Replace * with [^_]*
 
-                tString replaced_pattern_tstr(replaced_pattern);  
-                tToUpper(replaced_pattern_tstr);                      
+                tString replaced_pattern_tstr(replaced_pattern);
+                tToUpper(replaced_pattern_tstr);
                 replaced_pattern = std::string(replaced_pattern_tstr);
 
                 replaced_pattern = "^" + replaced_pattern + "$";
-                std::string valueStr(rest); 
+                std::string valueStr(rest);
                 wildcardMatched = tConfItemBase::applyValueToMatchedConfigs(replaced_pattern, confmap, valueStr);
             }
 
@@ -690,6 +698,11 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
                         for (tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end(); ++iter)
                         {
                             tConfItemBase *ci = (*iter).second;
+                            bool allowedChange = ci->allowedChange();
+
+                            if (!allowedChange)
+                                continue;
+
                             if (strstr(ci->title, name))
                             {
                                 tString help(ci->help);
@@ -1308,7 +1321,7 @@ static bool s_VetoRecording( tString const & line )
 
 void tConfItemBase::LoadAllFromMenu(std::istream &s){
     tCurrentAccessLevel levelResetter;
-    
+
     try{
 
     while(!s.eof() && s.good())
@@ -1623,8 +1636,6 @@ void st_LoadConfig( bool printChange )
     tConfItemBase::printErrors=true;
     Load( config, "settings.cfg" );
 
-    Load( var, "user.cfg" );
-    Load( var, "user_extended.cfg" );
 
 
 
@@ -1645,6 +1656,8 @@ void st_LoadConfig( bool printChange )
     Load( config, "autoexec.cfg" );
     Load( var, "autoexec.cfg" );
 
+    Load( config, "user.cfg" );
+    Load( var, "user_extended.cfg" );
     st_LoadCustomConfigs();
 
     // load configuration from playback
@@ -1654,8 +1667,18 @@ void st_LoadConfig( bool printChange )
     tConfItemBase::printChange=true;
 }
 
+
+void sg_saveConfigCmd(std::istream &s)
+{
+    con << "Saving config..\n";
+    st_SaveConfig();
+}
+
+static tConfItemFunc sg_saveConfigConf("SAVE_CONFIG", &sg_saveConfigCmd);
+
 static void st_ReLoadConfig(std::istream &s)
 {
+    con << "Reloading config..\n";
     st_LoadConfig(false);
 }
 static tConfItemFunc st_ReLoadConfigConf("RELOAD_CONFIG", &st_ReLoadConfig);
@@ -1730,7 +1753,7 @@ void st_SaveConfig()
     }
 
     std::ofstream s;
-    if ( tDirectories::Var().Open( s, "user.cfg", std::ios::out, true ) )
+    if ( tDirectories::Config().Open( s, "user.cfg", std::ios::out, true ) )
     {
         if (st_UserCfgSave)
             tConfItemBase::SaveAll(s);
@@ -1951,7 +1974,7 @@ void tConfItemLine::WriteVal(std::ostream &s){
 
 tConfItemFunc::tConfItemFunc
 (const char *title, CONF_FUNC *func)
-    :tConfItemBase(title),f(func){}
+    :tConfItemBase(title),f(func), shouldChangeFunc_(NULL){}
 
 tConfItemFunc::~tConfItemFunc(){}
 
@@ -2243,4 +2266,4 @@ void sg_listChangedCommands(std::istream &s)
 static tConfItemFunc sg_listChangedCommandsConf("LIST_CHANGED_COMMANDS", &sg_listChangedCommands);
 
 bool sn_unlocknSettings=false;
-static tConfItem<bool> sn_unlocknSettingsConf("NETWORK_SETTINGS_ALLOW_CHANGE",sn_unlocknSettings);
+static tConfItem<bool> sn_unlocknSettingsConf = HelperCommand::tConfItemH("NETWORK_SETTINGS_ALLOW_CHANGE",sn_unlocknSettings);

@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tMath.h"
 #include "ePlayer.h"
 #include <string.h>
+#include "../tron/gHelper/gHelperUtilities.h"
 
 #ifndef WIN32
 #include  <netinet/in.h>
@@ -579,13 +580,13 @@ nDescriptor::nDescriptor(unsigned short identification,
 int nCurrentSenderID::currentSenderID_ = 0;
 
 bool sg_descriptorsShow = false;
-static tConfItem<bool> sg_descriptorsShowConf("DESCRIPTOR_HANDLED_SHOW",sg_descriptorsShow);
+static tConfItem<bool> sg_descriptorsShowConf = HelperCommand::tConfItemH("DESCRIPTOR_HANDLED_SHOW",sg_descriptorsShow);
 
 bool sg_descriptorsTrackLastDataAlways = false;
-static tConfItem<bool> sg_descriptorsTrackLastDataAlwaysConf("DESCRIPTOR_HANDLED_TRACK_LAST_DATA_ALWAYS",sg_descriptorsTrackLastDataAlways);
+static tConfItem<bool> sg_descriptorsTrackLastDataAlwaysConf = HelperCommand::tConfItemH("DESCRIPTOR_HANDLED_TRACK_LAST_DATA_ALWAYS",sg_descriptorsTrackLastDataAlways);
 
 tString sg_descriptorsShowIgnoreList = tString("");
-static tConfItem<tString> sg_descriptorsShowIgnoreListConf("DESCRIPTOR_HANDLED_SHOW_IGNORE_LIST",sg_descriptorsShowIgnoreList);
+static tConfItem<tString> sg_descriptorsShowIgnoreListConf = HelperCommand::tConfItemH("DESCRIPTOR_HANDLED_SHOW_IGNORE_LIST",sg_descriptorsShowIgnoreList);
 
 void nDescriptor::HandleMessage(nMessage &message){
     // store sender ID for console
@@ -1142,10 +1143,10 @@ nMessage::~nMessage(){
 
 
 bool sg_descriptorsShowBroadCasted = false;
-static tConfItem<bool> sg_descriptorsShowBroadCastedConf("DESCRIPTOR_BROADCASTED_SHOW",sg_descriptorsShowBroadCasted);
+static tConfItem<bool> sg_descriptorsShowBroadCastedConf = HelperCommand::tConfItemH("DESCRIPTOR_BROADCASTED_SHOW",sg_descriptorsShowBroadCasted);
 
 tString sg_descriptorsShowBroadCastedIgnoreList = tString("");
-static tConfItem<tString> sg_descriptorsShowBroadCastedIgnoreListConf("DESCRIPTOR_BROADCASTED_SHOW_IGNORE_LIST",sg_descriptorsShowBroadCastedIgnoreList);
+static tConfItem<tString> sg_descriptorsShowBroadCastedIgnoreListConf = HelperCommand::tConfItemH("DESCRIPTOR_BROADCASTED_SHOW_IGNORE_LIST",sg_descriptorsShowBroadCastedIgnoreList);
 
 void nMessage::BroadCast(bool ack){
 

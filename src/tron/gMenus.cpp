@@ -962,7 +962,7 @@ static void FindConfigItems(const tString &word, std::deque<tString> &results) {
     tConfItemBase::tConfItemMap const &itemsMap = tConfItemBase::GetConfItemMap();
     for (const auto &entry : itemsMap) {
         tConfItemBase *item = entry.second;
-        if (item->GetTitle().ToLower().StartsWith(word.ToLower())) {
+        if (item->GetTitle().ToLower().StartsWith(word.ToLower()) && item->allowedChange()) {
             results.push_back(item->GetTitle());
         }
     }
@@ -974,11 +974,10 @@ static tString FindClosestMatch(const tString &word, const std::deque<tString> &
     for (const auto &itemName : items) {
         int commonPrefix = 0;
         for (int i = 0; i < itemName.Len() && i < word.Len(); ++i) {
-            if (tolower(itemName(i)) == tolower(word(i))) {
+            if (tolower(itemName(i)) == tolower(word(i))) 
                 commonPrefix++;
-            } else {
+            else 
                 break;
-            }
         }
         if (commonPrefix > maxCommonPrefix) {
             maxCommonPrefix = commonPrefix;
@@ -992,7 +991,7 @@ void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast) {
     static tString oldString;
     static int cfgPos;
     static int lastPos;
-    static bool showResults; // Added a new variable to track whether to show the results
+    static bool showResults; 
     if (changeLast) {
         strString = oldString;
         cfgPos++;
@@ -1001,7 +1000,7 @@ void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast) {
         oldString = strString;
         lastPos = cursorPos;
         cfgPos = 0;
-        showResults = true; // Set showResults to true when a new string is typed
+        showResults = true; 
     }
 
     tArray<tString> msgsExt = strString.Split(" ");

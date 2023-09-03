@@ -71,7 +71,7 @@ void rConsole::DisplayAtNewline(){
 
 REAL centerMessageY=0;
 
-static tConfItem<REAL> cmlocy("CM_LOCY",centerMessageY);
+static tConfItem<REAL> cmlocy("CENTER_MESSAE_LOCY",centerMessageY);
 
 static int sr_columns = 0;
 static tConfItem<int> sr_columnsConf("CONSOLE_COLUMNS",sr_columns);

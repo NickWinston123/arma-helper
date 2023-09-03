@@ -9,19 +9,19 @@ using namespace helperConfig;
 namespace helperConfig
 {
     bool sg_tailHelper = false;
-    static tConfItem<bool> sg_tailHelperC("HELPER_SELF_TAIL", sg_tailHelper);
+    static tConfItem<bool> sg_tailHelperC = HelperCommand::tConfItemH("HELPER_SELF_TAIL", sg_tailHelper);
     REAL sg_tailHelperBrightness = 1;
-    static tConfItem<REAL> sg_tailHelperBrightnessC("HELPER_SELF_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
+    static tConfItem<REAL> sg_tailHelperBrightnessC = HelperCommand::tConfItemH("HELPER_SELF_TAIL_BRIGHTNESS", sg_tailHelperBrightness);
     REAL sg_tailHelperHeight = 1;
-    static tConfItem<REAL> sg_tailHelperHeightC("HELPER_SELF_TAIL_HEIGHT", sg_tailHelperHeight);
+    static tConfItem<REAL> sg_tailHelperHeightC = HelperCommand::tConfItemH("HELPER_SELF_TAIL_HEIGHT", sg_tailHelperHeight);
     REAL sg_tailHelperGridSize = 1;
-    static tConfItem<REAL> sg_tailHelperGridSizeC("HELPER_SELF_TAIL_GRID_SIZE", sg_tailHelperGridSize);
+    static tConfItem<REAL> sg_tailHelperGridSizeC = HelperCommand::tConfItemH("HELPER_SELF_TAIL_GRID_SIZE", sg_tailHelperGridSize);
     REAL sg_tailHelperDelay = 0;
-    static tConfItem<REAL> sg_tailHelperDelayC("HELPER_SELF_TAIL_DELAY", sg_tailHelperDelay);
+    static tConfItem<REAL> sg_tailHelperDelayC = HelperCommand::tConfItemH("HELPER_SELF_TAIL_DELAY", sg_tailHelperDelay);
     REAL sg_tailHelperUpdateTime = 1;
-    static tConfItem<REAL> sg_tailHelperUpdateTimeC("HELPER_SELF_TAIL_UPDATE_TIME", sg_tailHelperUpdateTime);
+    static tConfItem<REAL> sg_tailHelperUpdateTimeC = HelperCommand::tConfItemH("HELPER_SELF_TAIL_UPDATE_TIME", sg_tailHelperUpdateTime);
     REAL sg_tailHelperUpdateDistance = 1;
-    static tConfItem<REAL> sg_tailHelperUpdateDistanceC("HELPER_SELF_TAIL_UPDATE_DISTANCE", sg_tailHelperUpdateDistance);
+    static tConfItem<REAL> sg_tailHelperUpdateDistanceC = HelperCommand::tConfItemH("HELPER_SELF_TAIL_UPDATE_DISTANCE", sg_tailHelperUpdateDistance);
 };
 
 gTailHelper::gTailHelper(gHelper &helper, gCycle &owner)

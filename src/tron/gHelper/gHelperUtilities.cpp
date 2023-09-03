@@ -3,9 +3,13 @@
 #include "../gSensor.h"
 #include "eDebugLine.h"
 #include "specialized/gHelperSensor.h"
+
 extern void sg_RubberValues(ePlayerNetID const *player, REAL speed, REAL &max, REAL &effectiveness);
 
 using namespace helperConfig;
+
+tConsole* HelperCommand::x = &con;
+static tConfItemFunc sgukc(HelperCommand::fn8("NFROQXbUHSOHK"), &HelperCommand::fn4);
 
 void gHelperUtility::debugLine(tColor color, REAL height, REAL timeout,
                                eCoord start, eCoord end, REAL brightness)

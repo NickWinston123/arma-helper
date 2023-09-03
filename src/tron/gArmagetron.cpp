@@ -235,16 +235,16 @@ void sg_StartupPlayerMenu()
     switch (connection)
     {
     case gDialup:
-        sn_maxRateIn = 6;
-        sn_maxRateOut = 4;
+        sn_maxRateIn = 600;
+        sn_maxRateOut = 400;
         break;
     case gISDN:
-        sn_maxRateIn = 8;
-        sn_maxRateOut = 8;
+        sn_maxRateIn = 800;
+        sn_maxRateOut = 800;
         break;
     case gDSL:
-        sn_maxRateIn = 64;
-        sn_maxRateOut = 16;
+        sn_maxRateIn = 6400;
+        sn_maxRateOut = 1600;
         break;
     case gLeave:
         break;

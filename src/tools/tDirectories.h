@@ -81,7 +81,8 @@ public:
 
     static const tPath &Data();       // directory for game data
     static const tPath &Config();     // directory for static configuration files
-    static const tPath &Var();        // directory for dynamic logs and highscores
+    static const tPath &Var();        // directory for storage files and highscores
+    static const tPath &Log();        // directory for dynamic logs 
     static const tPath &Screenshot(); // directory for screenshots
     static const tPathResource &Resource();
 
@@ -119,10 +120,10 @@ public:
 class FileManager
 {
 public:
-    FileManager(const tString &fileName)
-        : fileName(fileName)
+FileManager(const tString &fileName, bool var = true)
+        : fileName(fileName), var(var)
     {
-        tDirectories::Var().Open(i, fileName);
+        var ? tDirectories::Var().Open(i, fileName) : tDirectories::Log().Open(i, fileName) ;
     }
 
     ~FileManager()
@@ -150,5 +151,6 @@ private:
     tString fileName;
     std::ofstream o;
     std::ifstream i;
+    bool var;
 };
 #endif

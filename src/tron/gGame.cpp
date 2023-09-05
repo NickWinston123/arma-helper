@@ -6832,11 +6832,11 @@ static tAccessLevelSetter sg_ladderlogClearLevel(sg_ladderlogClearConf, tAccessL
 static void sg_chatlogClear(std::istream &s)
 {
     std::ofstream o;
-    if (tDirectories::Var().Open(o, "chatlog.txt", std::ios::trunc))
+    if (tDirectories::Log().Open(o, "chatlog.txt", std::ios::trunc))
     {
     }
     o.close();
-    if (tDirectories::Var().Open(o, "chatlog_colors.txt", std::ios::trunc))
+    if (tDirectories::Log().Open(o, "chatlog_colors.txt", std::ios::trunc))
     {
     }
     o.close();

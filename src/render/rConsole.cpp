@@ -129,7 +129,7 @@ tConsole & rConsole::DoPrint(const tString &s){
 
     if(!tRecorder::IsPlayingBack() && sr_consoleLog) {
         std::ofstream o;
-        if ( tDirectories::Var().Open(o, "consolelog.txt", std::ios::app) ) {
+        if ( tDirectories::Log().Open(o, "consolelog.txt", std::ios::app) ) {
             o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
         }
     }
@@ -137,7 +137,7 @@ tConsole & rConsole::DoPrint(const tString &s){
 
     if(!tRecorder::IsPlayingBack() && sr_consoleLogLimited) {
         std::ofstream o;
-        if ( tDirectories::Var().Open(o, "consolelog-limited.txt", std::ios::app) ) {
+        if ( tDirectories::Log().Open(o, "consolelog-limited.txt", std::ios::app) ) {
             o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
         }
     }
@@ -145,7 +145,7 @@ tConsole & rConsole::DoPrint(const tString &s){
     
     if(!tRecorder::IsPlayingBack() && sr_consoleLogColor) {
         std::ofstream o;
-        if ( tDirectories::Var().Open(o, "consolelogcolor.txt", std::ios::app ) ) {
+        if ( tDirectories::Log().Open(o, "consolelog-color.txt", std::ios::app ) ) {
             if(sr_consoleLogColorTimestamp)
                 o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ");
             o << s;

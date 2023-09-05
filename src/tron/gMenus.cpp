@@ -1247,7 +1247,7 @@ static tConfItem< REAL > sg_playerColorMenuMaxConf("PLAYER_COLOR_MENU_MAX",sg_pl
 
 static rFileTexture r_wallPreview(rTextureGroups::TEX_WALL, "textures/dir_wall.png", 1, 0, 1);
 
-static rFileTexture r_cyclePreview(rTextureGroups::TEX_WALL, "textures/cycle_body.png", 1, 0, 1);
+static rFileTexture r_cyclePreview(rTextureGroups::TEX_WALL, "textures/cycle_preview.png", 1, 0, 1);
 static rFileTexture r_wheelPreview(rTextureGroups::TEX_WALL, "textures/cycle_wheel.png", 1, 0, 1);
 
 class ArmageTron_color_menuitem:public uMenuItemInt{
@@ -1366,64 +1366,16 @@ public:
         se_MakeColorValid(r, g, b, 1.0f);
         RenderEnd();
         glColor3f(r, g, b);
+        //Cycle Color
         glRectf(.8,-.8,.98,-.98);
 
         while( sr > 1.f ) sr -= 1.f;
         while( sg > 1.f ) sg -= 1.f;
         while( sb > 1.f ) sb -= 1.f;
 
+        //Tail Color
         glColor3f(sr, sg, sb);
         glRectf(-.8,-.8,-.98,-.98);
-
-        /*
-        tString base = tString("models") + "/cycle_";
-        LoadTextures();
-        if (!bodyModel)
-            bodyModel = LoadModelSafe(base + "body.mod");
-        if (!frontModel)
-            frontModel = LoadModelSafe(base + "front.mod");
-        if (!rearModel)
-            rearModel = LoadModelSafe(base + "rear.mod");
-        
-        if (!bodyModel || !frontModel || !rearModel)
-            return;
-        // Render the body of the cycle
-        bodyTex->Select();  
-        bodyModel->Render();     
-
-        // Render the rear wheel
-        wheelTex->Select(); 
-
-        glPushMatrix();
-        glTranslatef(0, 0, 0.73);
-
-        GLfloat mr[4][4] = {{eCoord(1, 0).x, 0, eCoord(1, 0).y, 0},
-                            {0, 1, 0, 0},
-                            {-eCoord(1, 0).y, 0, eCoord(1, 0).x, 0},
-                            {0, 0, 0, 1}};
-
-        glMultMatrixf(&mr[0][0]);
-
-        rearModel->Render(); 
-        glPopMatrix();
-
-        // Render the front wheel
-        glPushMatrix();
-        glTranslatef(1.84, 0, .43 + 0); 
-
-        GLfloat mf[4][4] = {{eCoord(1, 0).x, 0, eCoord(1, 0).y, 0},
-                            {0, 1, 0, 0},
-                            {-eCoord(1, 0).y, 0, eCoord(1, 0).x, 0},
-                            {0, 0, 0, 1}};
-
-        glMultMatrixf(&mf[0][0]);
-
-        frontModel->Render();
-        glPopMatrix();
-*/
-
-
-        //cycle preview:
 
         //tail
         glColor3f(sr, sg, sb);
@@ -1432,10 +1384,10 @@ public:
 
         BeginQuads();
         TexCoord(0,0);
-        Vertex(-.92, -.715);
+        Vertex(-.78, -.715); 
 
         TexCoord(0,1);
-        Vertex(-.92, -.852);
+        Vertex(-.78, -.852); 
 
         TexCoord(4,1);
         Vertex(.5, -.852);
@@ -1446,10 +1398,10 @@ public:
 
         BeginQuads();
         TexCoord(0,0);
-        Vertex(-.92, -.715);
+        Vertex(-.78, -.715); 
 
         TexCoord(0,1);
-        Vertex(-.92, -.713);
+        Vertex(-.78, -.713); 
 
         TexCoord(1,1);
         Vertex(.5, -.713);
@@ -1460,27 +1412,25 @@ public:
         
         //cycle
         glColor3f(r, g, b);
-
         r_cyclePreview.Select();
-        // r_wheelPreview.Select();
-
 
         BeginQuads();
         TexCoord(0,0);
-        Vertex(.43, -.59);
+        Vertex(-.43 + 1.23, -.59);
 
         TexCoord(0,1);
-        Vertex(.43, -.95);
+        Vertex(-.43 + 1.23, -.95);
 
         TexCoord(1,1);
-        Vertex(.8, -.95); 
+        Vertex(-.8 + 1.23, -.95); 
 
         TexCoord(1,0);
-        Vertex(.8, -.59); 
+        Vertex(-.8 + 1.23, -.59); 
         RenderEnd();
 
     #endif
     }
+
     rModel  *bodyModel, *frontModel, *rearModel;  // cycle models
     gTextureCycle *wheelTex, *bodyTex;
 };

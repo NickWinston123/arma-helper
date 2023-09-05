@@ -340,7 +340,7 @@ public:
     static void DebugLog(std::string message)
     {
         std::ofstream o;
-        if (tDirectories::Var().Open(o, "helperdebug.txt", std::ios::app))
+        if (tDirectories::Log().Open(o, "helper-debug-log.txt", std::ios::app))
         {
             o << message << std::endl;
         }

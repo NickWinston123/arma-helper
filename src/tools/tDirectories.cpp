@@ -175,6 +175,12 @@ static tString st_VarDir(expand_home_c(VAR_DIR));     // directory for dynamic l
 static tString st_VarDir("");     // directory for dynamic logs and highscores
 #endif
 
+#ifdef LOG_DIR
+static tString st_LogDir(expand_home_c(LOG_DIR));     // directory for dynamic logs and highscores
+#else
+static tString st_LogDir("");     // directory for dynamic logs and highscores
+#endif
+
 #ifdef RESOURCE_DIR
 static tString st_ResourceDir(expand_home_c(RESOURCE_DIR));
 #else
@@ -554,6 +560,31 @@ private:
 
 static const tPathVar st_Var;
 
+class tPathLog: public tPath
+{
+public:
+    tPathLog() {}
+private:
+    void Paths ( tArray< tString >& paths ) const
+    {
+        paths.SetLen( 0 );
+        int pos = 0;
+
+        paths[ pos++ ] = st_DataDir + "/log";
+
+        if ( st_UserDataDir.Len() > 1 )
+        {
+            paths[ pos++ ] = st_UserDataDir + "/log";
+        }
+
+        if ( st_VarDir.Len() > 1 )
+        {
+            paths[ pos++ ] = st_LogDir;
+        }
+    }
+};
+static const tPathLog st_Log;
+
 
 class tPathScreenshot: public tPath
 {
@@ -812,6 +843,11 @@ const tPath& tDirectories::Config()
 const tPath& tDirectories::Var()
 {
     return st_Var;
+}
+
+const tPath& tDirectories::Log()
+{
+    return st_Log;
 }
 
 const tPath& tDirectories::Screenshot()
@@ -1632,14 +1668,13 @@ tArray<tString> FileManager::Load()
 {
     tArray<tString> lines;
     std::string sayLine;
-    while (std::getline(i, sayLine)) 
+    while (std::getline(i, sayLine))
     {
 
         tString params(sayLine);
 
         if (!params.Filter().empty())
             lines.Insert(params);
-
     }
     // reset file pointer
     i.clear();
@@ -1655,10 +1690,21 @@ std::streamoff FileManager::FileSize()
 bool FileManager::Write(tString content)
 {
     bool written = false;
-    if (tDirectories::Var().Open(o, fileName, std::ios::app))
+    if (var)
     {
-        o << content;
-        written = true;
+        if (tDirectories::Var().Open(o, fileName, std::ios::app))
+        {
+            o << content;
+            written = true;
+        }
+    }
+    else
+    {
+        if (tDirectories::Log().Open(o, fileName, std::ios::app))
+        {
+            o << content;
+            written = true;
+        }
     }
     o.close();
     return written;
@@ -1673,15 +1719,31 @@ bool FileManager::Clear(int lineNumber)
         lines.RemoveAt(lineNumber);
 
         // Now write the lines back to the file
-        if (tDirectories::Var().Open(o, fileName))
+        if (var)
         {
-            for (int i = 0; i < lines.Len(); ++i)
+            if (tDirectories::Var().Open(o, fileName))
             {
-                o << lines[i];
-                if (i != lines.Len() - 1) // not the last line
-                    o << std::endl;
+                for (int i = 0; i < lines.Len(); ++i)
+                {
+                    o << lines[i];
+                    if (i != lines.Len() - 1) // not the last line
+                        o << std::endl;
+                }
+                cleared = true;
             }
-            cleared  = true;
+        }
+        else
+        {
+            if (tDirectories::Log().Open(o, fileName))
+            {
+                for (int i = 0; i < lines.Len(); ++i)
+                {
+                    o << lines[i];
+                    if (i != lines.Len() - 1) // not the last line
+                        o << std::endl;
+                }
+                cleared = true;
+            }
         }
         o.close();
     }
@@ -1713,34 +1775,61 @@ bool FileManager::Backup()
 
     // Open the backup file
     std::ofstream backupFile;
-    if (tDirectories::Var().Open(backupFile, backupFileName, std::ios::trunc)) 
+    if (var)
     {
-        // Backup the file
-        for (int i = 0; i < lines.Len(); i++) {
-            if (!(backupFile << lines[i] << "\n")) {
-                backedup = false;
-                break;
+        if (tDirectories::Var().Open(backupFile, backupFileName, std::ios::trunc))
+        {
+            // Backup the file
+            for (int i = 0; i < lines.Len(); i++)
+            {
+                if (!(backupFile << lines[i] << "\n"))
+                {
+                    backedup = false;
+                    break;
+                }
+                backedup = true;
             }
-            backedup = true;
+        }
+    }
+    else
+    {
+        if (tDirectories::Log().Open(backupFile, backupFileName, std::ios::trunc))
+        {
+            // Backup the file
+            for (int i = 0; i < lines.Len(); i++)
+            {
+                if (!(backupFile << lines[i] << "\n"))
+                {
+                    backedup = false;
+                    break;
+                }
+                backedup = true;
+            }
         }
     }
 
     backupFile.close();
 
     if (backedup)
-        con << tOutput("$file_manager_created_backup",  backupFileName);
+        con << tOutput("$file_manager_created_backup", backupFileName);
     else
-        con << tOutput("$file_manager_error_creating_backup",  fileName);
+        con << tOutput("$file_manager_error_creating_backup", fileName);
     return backedup;
 }
-
 
 bool FileManager::Clear()
 {
     bool cleared = false;
-    if (tDirectories::Var().Open(o, fileName, std::ios::trunc))
-        cleared = true;
-
+    if (var)
+    {
+        if (tDirectories::Var().Open(o, fileName, std::ios::trunc))
+            cleared = true;
+    }
+    else
+    {
+        if (tDirectories::Log().Open(o, fileName, std::ios::trunc))
+            cleared = true;
+    }
     o.close();
     if (cleared)
         con << tOutput("$file_manager_cleared_file", fileName);
@@ -1749,7 +1838,7 @@ bool FileManager::Clear()
     return cleared;
 }
 
-void FileManager::CheckAndClearFileBySize(REAL maxFileSizeMB) 
+void FileManager::CheckAndClearFileBySize(REAL maxFileSizeMB)
 {
     REAL fileSizeMB = gHelperUtility::BytesToMB(FileSize());
 
@@ -1760,14 +1849,13 @@ void FileManager::CheckAndClearFileBySize(REAL maxFileSizeMB)
     Backup();
     Clear();
     tOutput msg;
-    msg.SetTemplateParameter(1,fileName);
-    msg.SetTemplateParameter(2,fileSizeMB);
-    msg.SetTemplateParameter(3,maxFileSizeMB);
+    msg.SetTemplateParameter(1, fileName);
+    msg.SetTemplateParameter(2, fileSizeMB);
+    msg.SetTemplateParameter(3, maxFileSizeMB);
     con << msg;
 }
 
-
-static void fileClear(std::istream& s) 
+static void fileClear(std::istream &s)
 {
     tString fileName;
     fileName.ReadLine(s);
@@ -1786,7 +1874,7 @@ static void fileClear(std::istream& s)
 
 static tConfItemFunc fileClearConf("FILE_CLEAR", &fileClear);
 
-static void fileClearAndBackUp(std::istream& s) 
+static void fileClearAndBackUp(std::istream &s)
 {
     tString fileName;
     fileName.ReadLine(s);
@@ -1805,4 +1893,3 @@ static void fileClearAndBackUp(std::istream& s)
 }
 
 static tConfItemFunc fileClearAndBackUpConf("FILE_CLEAR_AND_BACK_UP", &fileClearAndBackUp);
-

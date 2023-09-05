@@ -157,6 +157,7 @@ void ManageChatCommandConfCommands()
 {
     if (chatCommandConfItems == nullptr)
         chatCommandConfItems = new TempConfItemManager();
+
     if (!chatCommandConfItems)
     {
         con << "chatCommandConfItems does not exist?\n";
@@ -245,7 +246,6 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
                { return std::make_unique<LeaveCommand>(); });
     addCommand(se_quitCommand, []()
                { return std::make_unique<QuitCommand>(); });
-
 
     return commandFactories;
 }
@@ -1031,7 +1031,7 @@ bool SearchCommand::execute(tString args)
             return true;
         }
 
-        FileManager fileManager(fileName);
+        FileManager fileManager(fileName,false);
         auto lines = fileManager.Load();
 
         fileSizeMB = gHelperUtility::BytesToMB(fileManager.FileSize());

@@ -3217,7 +3217,7 @@ static void se_AdminAdmin(ePlayerNetID *p, std::istream &s)
     if (sr_adminLog == true)
     {
         std::ofstream o;
-        if (tDirectories::Var().Open(o, "adminlog.txt", std::ios::app))
+        if (tDirectories::Log().Open(o, "adminlog.txt", std::ios::app))
         {
             o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << p->GetUserName() << " " << p->GetAccessLevel() << " " << str << "\n";
         }
@@ -8437,7 +8437,7 @@ void se_SaveToChatLog(tOutput const &out)
         if (se_chatLog)
         {
             std::ofstream o;
-            if (tDirectories::Var().Open(o, "chatlog.txt", std::ios::app))
+            if (tDirectories::Log().Open(o, "chatlog.txt", std::ios::app))
             {
                 o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << colStr << std::endl;
             }
@@ -8455,7 +8455,7 @@ void se_SaveToChatLogC(tOutput const &out)
         if (se_chatLogColors)
         {
             std::ofstream o;
-            if (tDirectories::Var().Open(o, "chatlog_colors.txt", std::ios::app))
+            if (tDirectories::Log().Open(o, "chatlog_colors.txt", std::ios::app))
             {
                 o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << colStr; // << std::endl;
             }

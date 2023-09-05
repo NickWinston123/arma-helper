@@ -153,7 +153,7 @@ void sg_EnterGame(nNetState enter_state);
 void sg_HostGame();
 void sg_HostGameMenu();
 
-void ConnectToLastServer();
+bool ConnectToLastServer();
 // runs a single player game
 void sg_SinglePlayerGame();
 

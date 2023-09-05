@@ -974,9 +974,9 @@ static tString FindClosestMatch(const tString &word, const std::deque<tString> &
     for (const auto &itemName : items) {
         int commonPrefix = 0;
         for (int i = 0; i < itemName.Len() && i < word.Len(); ++i) {
-            if (tolower(itemName(i)) == tolower(word(i))) 
+            if (tolower(itemName(i)) == tolower(word(i)))
                 commonPrefix++;
-            else 
+            else
                 break;
         }
         if (commonPrefix > maxCommonPrefix) {
@@ -991,7 +991,7 @@ void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast) {
     static tString oldString;
     static int cfgPos;
     static int lastPos;
-    static bool showResults; 
+    static bool showResults;
     if (changeLast) {
         strString = oldString;
         cfgPos++;
@@ -1000,7 +1000,7 @@ void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast) {
         oldString = strString;
         lastPos = cursorPos;
         cfgPos = 0;
-        showResults = true; 
+        showResults = true;
     }
 
     tArray<tString> msgsExt = strString.Split(" ");
@@ -1065,6 +1065,7 @@ public:
     //virtual void Render(REAL x,REAL y,REAL alpha=1,bool selected=0);
 
     virtual bool Event(SDL_Event &e){
+
         if (e.type==SDL_KEYDOWN &&
                 (e.key.keysym.sym==SDLK_KP_ENTER || e.key.keysym.sym==SDLK_RETURN)){
 
@@ -1105,7 +1106,8 @@ public:
     }
 };
 
-void do_con(){
+void do_con()
+{
     su_ClearKeys();
 
     se_ChatState( ePlayerNetID::ChatFlags_Console, true );
@@ -1127,25 +1129,19 @@ void do_con(){
 }
 #endif
 
-void sg_ConsoleInput(){
+#include "eChatCommands.h"
+
+ePlayer *sn_conUser = nullptr;
+
+ePlayer* sn_consoleUser() { return sn_conUser; }
+
+void sg_ConsoleInput(ePlayer *player){
 #ifndef DEDICATED
+    ManageChatCommandConfCommands();
+    sn_conUser = player;
     st_ToDoOnce(&do_con);
 #endif
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class ArmageTron_viewport_menuitem:public uMenuItemInt{
 public:
@@ -1249,6 +1245,11 @@ extern void Render(int);
 REAL sg_playerColorMenuMax = 15;
 static tConfItem< REAL > sg_playerColorMenuMaxConf("PLAYER_COLOR_MENU_MAX",sg_playerColorMenuMax);
 
+static rFileTexture r_wallPreview(rTextureGroups::TEX_WALL, "textures/dir_wall.png", 1, 0, 1);
+
+static rFileTexture r_cyclePreview(rTextureGroups::TEX_WALL, "textures/cycle_body.png", 1, 0, 1);
+static rFileTexture r_wheelPreview(rTextureGroups::TEX_WALL, "textures/cycle_wheel.png", 1, 0, 1);
+
 class ArmageTron_color_menuitem:public uMenuItemInt{
 protected:
     int *rgb;
@@ -1265,22 +1266,97 @@ public:
 
     virtual REAL SpaceRight(){return .2;}
 
+    int cycleColor(int color)
+    {
+        if (color <= 15)
+            return color;
 
-    virtual void RenderBackground(){
-        //    static int count=0;
-        /*
-        while(rgb[0]+rgb[1]+rgb[2]<13){
-          if (rgb[count]<15)
-        rgb[count]++;
-          count++;
-          if (count>2)
-        count=0;
+        color/=15;
+        color=(color-(100*(color/100)));
+        
+        return color;
+    }
+
+    int tailColor(int color)
+    {
+        if (color <= 15)
+            return color;
+
+        color/=15;
+        color/=100;
+        color-=1;
+
+        return color;
+    }
+
+    enum Slot
+    {
+        SLOT_CUSTOM = 0,
+        SLOT_BODY = 1,
+        SLOT_WHEEL = 2,
+        SLOT_MAX = 3
+    };
+
+    // loads a specific texture from a specific folder
+    static rSurface *LoadTextureSafe2(Slot slot, int mp)
+    {
+        static std::unique_ptr<rSurface> cache[SLOT_MAX][2];
+        std::unique_ptr<rSurface> &surface = cache[slot][mp];
+        if (surface.get() == NULL)
+        {
+            static char const *names[SLOT_MAX] = {"bike.png", "cycle_body.png", "cycle_wheel.png"};
+            char const *name = names[slot];
+
+            char const *folder = mp ? "moviepack" : "textures";
+            tString file = tString(folder) + "/" + name;
+
+            surface.reset(tNEW(rSurface(file)));
         }
-        */
-#ifndef DEDICATED
+
+        if (surface->GetSurface())
+            return surface.get();
+        else
+            return NULL;
+    }
+
+    // load one texture from the prefered folder (or the other one as fallback)
+    gTextureCycle *LoadTextureSafe(Slot slot, bool wheel)
+    {
+        rSurface *surface = LoadTextureSafe2(slot, 0);
+        if (!surface)
+            surface = LoadTextureSafe2(slot, 1);
+
+        if (surface)
+            return tNEW(gTextureCycle)(*surface, gRealColor(rgb[0],rgb[1],rgb[2]), 0, 0, wheel);
+
+        return NULL;
+    }
+
+    // load textures from the specified folder (or the other one) and the format the model has just been read for
+    bool LoadTextures()
+    {
+        if (!bodyTex)
+            bodyTex = LoadTextureSafe(SLOT_BODY, false);
+        if (!wheelTex)
+            wheelTex = LoadTextureSafe(SLOT_WHEEL, true);
+
+        return bodyTex && wheelTex;        
+    }
+
+    // loads a model, checking before if the file exists
+    static rModel *LoadModelSafe(char const *filename)
+    {
+        return rModel::GetModel(filename);
+    }
+
+    virtual void RenderBackground()
+    {
+    #ifndef DEDICATED
         uMenuItem::RenderBackground();
+
         if (!sr_glOut)
             return;
+
         REAL r = rgb[0]/15.0;
         REAL g = rgb[1]/15.0;
         REAL b = rgb[2]/15.0;
@@ -1290,7 +1366,6 @@ public:
         se_MakeColorValid(r, g, b, 1.0f);
         RenderEnd();
         glColor3f(r, g, b);
-        //glRectf(.8,-.8,.98,-.71);
         glRectf(.8,-.8,.98,-.98);
 
         while( sr > 1.f ) sr -= 1.f;
@@ -1299,9 +1374,115 @@ public:
 
         glColor3f(sr, sg, sb);
         glRectf(-.8,-.8,-.98,-.98);
-#endif
-    }
 
+        /*
+        tString base = tString("models") + "/cycle_";
+        LoadTextures();
+        if (!bodyModel)
+            bodyModel = LoadModelSafe(base + "body.mod");
+        if (!frontModel)
+            frontModel = LoadModelSafe(base + "front.mod");
+        if (!rearModel)
+            rearModel = LoadModelSafe(base + "rear.mod");
+        
+        if (!bodyModel || !frontModel || !rearModel)
+            return;
+        // Render the body of the cycle
+        bodyTex->Select();  
+        bodyModel->Render();     
+
+        // Render the rear wheel
+        wheelTex->Select(); 
+
+        glPushMatrix();
+        glTranslatef(0, 0, 0.73);
+
+        GLfloat mr[4][4] = {{eCoord(1, 0).x, 0, eCoord(1, 0).y, 0},
+                            {0, 1, 0, 0},
+                            {-eCoord(1, 0).y, 0, eCoord(1, 0).x, 0},
+                            {0, 0, 0, 1}};
+
+        glMultMatrixf(&mr[0][0]);
+
+        rearModel->Render(); 
+        glPopMatrix();
+
+        // Render the front wheel
+        glPushMatrix();
+        glTranslatef(1.84, 0, .43 + 0); 
+
+        GLfloat mf[4][4] = {{eCoord(1, 0).x, 0, eCoord(1, 0).y, 0},
+                            {0, 1, 0, 0},
+                            {-eCoord(1, 0).y, 0, eCoord(1, 0).x, 0},
+                            {0, 0, 0, 1}};
+
+        glMultMatrixf(&mf[0][0]);
+
+        frontModel->Render();
+        glPopMatrix();
+*/
+
+
+        //cycle preview:
+
+        //tail
+        glColor3f(sr, sg, sb);
+
+        r_wallPreview.Select();
+
+        BeginQuads();
+        TexCoord(0,0);
+        Vertex(-.92, -.715);
+
+        TexCoord(0,1);
+        Vertex(-.92, -.852);
+
+        TexCoord(4,1);
+        Vertex(.5, -.852);
+
+        TexCoord(4,0);
+        Vertex(.5, -.715);
+        RenderEnd();
+
+        BeginQuads();
+        TexCoord(0,0);
+        Vertex(-.92, -.715);
+
+        TexCoord(0,1);
+        Vertex(-.92, -.713);
+
+        TexCoord(1,1);
+        Vertex(.5, -.713);
+
+        TexCoord(1,0);
+        Vertex(.5, -.715);
+        RenderEnd();
+        
+        //cycle
+        glColor3f(r, g, b);
+
+        r_cyclePreview.Select();
+        // r_wheelPreview.Select();
+
+
+        BeginQuads();
+        TexCoord(0,0);
+        Vertex(.43, -.59);
+
+        TexCoord(0,1);
+        Vertex(.43, -.95);
+
+        TexCoord(1,1);
+        Vertex(.8, -.95); 
+
+        TexCoord(1,0);
+        Vertex(.8, -.59); 
+        RenderEnd();
+
+    #endif
+    }
+    rModel  *bodyModel, *frontModel, *rearModel;  // cycle models
+    gTextureCycle *wheelTex, *bodyTex;
 };
 
 
@@ -1623,8 +1804,6 @@ void viewport_menu_x(void){
 }
 
 
-static uActionGlobal con_input( "CONSOLE_INPUT" );
-
 
 static uActionGlobal screenshot( "SCREENSHOT" );
 
@@ -1640,13 +1819,6 @@ static bool screenshot_func(REAL x){
     return true;
 }
 
-static bool con_func(REAL x){
-    if (x>0){
-        sg_ConsoleInput();
-    }
-
-    return true;
-}
 
 static bool toggle_fullscreen_func( REAL x )
 {
@@ -1669,7 +1841,6 @@ static bool toggle_fullscreen_func( REAL x )
 }
 
 static uActionGlobalFunc gaf_ss(&screenshot,&screenshot_func, true );
-static uActionGlobalFunc gaf_md(&con_input,&con_func);
 static uActionGlobalFunc gaf_tf(&togglefullscreen,&toggle_fullscreen_func, true );
 
 

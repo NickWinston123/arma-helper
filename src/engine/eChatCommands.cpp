@@ -9,6 +9,7 @@
 #include "../tron/gServerBrowser.h"
 #include "../tron/gGame.h"
 #include "../tron/gHelper/gHelperUtilities.h"
+#include "../tron/gMenus.h"
 
 // Bright Red for headers
 tString se_chatCommandsThemeHeader("0xff0033");
@@ -49,7 +50,7 @@ static REAL se_speakCommandDelay = 0;
 static tConfItem<REAL> se_speakCommandDelayConf("LOCAL_CHAT_COMMAND_SPEAK_DELAY", se_speakCommandDelay);
 
 tString se_rebuildCommand("/rebuild");
-static tConfItem<tString> se_rebuildCommandConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_REBUILD", se_rebuildCommand);
+static tConfItem<tString> se_rebuildCommandConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_REBUILD", se_rebuildCommand);
 
 tString se_watchCommand("/watch");
 static tConfItem<tString> se_watchCommandConf("LOCAL_CHAT_COMMAND_WATCH", se_watchCommand);
@@ -76,17 +77,17 @@ static int se_searchCommandEmptySearchNumLines = 20;
 static tConfItem<int> se_searchCommandEmptySearchNumLinesConf("LOCAL_CHAT_COMMAND_EMPTY_SEARCH_NUM_LINES", se_searchCommandEmptySearchNumLines);
 
 tString se_nameSpeakCommand("/namespeak");
-static tConfItem<tString> se_nameSpeakCommandConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_NAMESPEAK", se_nameSpeakCommand);
+static tConfItem<tString> se_nameSpeakCommandConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_NAMESPEAK", se_nameSpeakCommand);
 int se_nameSpeakCommandInterval = 1;
-static tConfItem<int> se_nameSpeakCommandIntervalConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_NAMESPEAK_INTERVAL", se_nameSpeakCommandInterval);
+static tConfItem<int> se_nameSpeakCommandIntervalConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_NAMESPEAK_INTERVAL", se_nameSpeakCommandInterval);
 static bool se_nameSpeakCommandSplitByNameSize = false;
-static tConfItem<bool> se_nameSpeakCommandSplitByNameSizeConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_NAMESPEAK_SPLIT_BY_NAME_SIZE", se_nameSpeakCommandSplitByNameSize);
+static tConfItem<bool> se_nameSpeakCommandSplitByNameSizeConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_NAMESPEAK_SPLIT_BY_NAME_SIZE", se_nameSpeakCommandSplitByNameSize);
 
 tString se_respawnCommand("/res");
 static tConfItem<tString> se_respawnCommandConf("LOCAL_CHAT_COMMAND_RESPAWN", se_respawnCommand);
 
 tString se_rebuildGridCommand("/regrid");
-static tConfItem<tString> se_rebuildGridCommandConf("LOCAL_CHAT_COMMAND_REBUILD_GRID", se_rebuildGridCommand);
+static tConfItem<tString> se_rebuildGridCommandConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_REBUILD_GRID", se_rebuildGridCommand);
 
 tString se_saveConfigCommand("/savecfg");
 static tConfItem<tString> se_saveConfigCommandConf("LOCAL_CHAT_COMMAND_SAVE_CONFIG", se_saveConfigCommand);
@@ -110,20 +111,68 @@ tString se_updateCommand("/update");
 static tConfItem<tString> se_updateCommandConf("LOCAL_CHAT_COMMAND_UPDATE", se_updateCommand);
 
 tString se_encryptCommand("/enc");
-static tConfItem<tString> se_encryptCommandConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT", se_encryptCommand);
+static tConfItem<tString> se_encryptCommandConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_ENCRYPT", se_encryptCommand);
 bool se_encryptCommandWatch = false;
-static tConfItem<bool> se_encryptCommandWatchConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH", se_encryptCommandWatch);
+static tConfItem<bool> se_encryptCommandWatchConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH", se_encryptCommandWatch);
 bool se_encryptCommandWatchFeedback = true;
-static tConfItem<bool> se_encryptCommandWatchFeedbackConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH_FEEDBACK", se_encryptCommandWatchFeedback);
+static tConfItem<bool> se_encryptCommandWatchFeedbackConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_ENCRYPT_WATCH_FEEDBACK", se_encryptCommandWatchFeedback);
 int se_encryptCommandWatchValidateWindow = 1;
-static tConfItem<int> se_encryptCommandWatchValidateWindowConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_VALIDATE_WINDOW", se_encryptCommandWatchValidateWindow);
+static tConfItem<int> se_encryptCommandWatchValidateWindowConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_ENCRYPT_VALIDATE_WINDOW", se_encryptCommandWatchValidateWindow);
 int se_encryptCommandLength = 15;
-static tConfItem<int> se_encryptCommandLengthConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_LENGTH", se_encryptCommandLength);
+static tConfItem<int> se_encryptCommandLengthConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_ENCRYPT_LENGTH", se_encryptCommandLength);
 tString se_encryptCommandPrefix = tString("@$#");
-static tConfItem<tString> se_encryptCommandPrefixConf = HelperCommand::tConfItemH("LOCAL_CHAT_COMMAND_ENCRYPT_PREFIX", se_encryptCommandPrefix);
+static tConfItem<tString> se_encryptCommandPrefixConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_ENCRYPT_PREFIX", se_encryptCommandPrefix);
 
 tString se_voteCommand("/vote");
 static tConfItem<tString> se_voteCommandConf("LOCAL_CHAT_COMMAND_VOTE", se_voteCommand);
+
+tString se_renameCommand("/rename");
+static tConfItem<tString> se_renameCommandConf("LOCAL_CHAT_COMMAND_RENAME", se_renameCommand);
+
+tString se_leaveCommand("/leave");
+static tConfItem<tString> se_leaveCommandConf("LOCAL_CHAT_COMMAND_LEAVE", se_leaveCommand);
+
+tString se_quitCommand("/quit");
+static tConfItem<tString> se_quitCommandConf("LOCAL_CHAT_COMMAND_QUIT", se_quitCommand);
+int se_quitCommandTime = 3;
+static tConfItem<int> se_quitCommandTimeConf("LOCAL_CHAT_COMMAND_QUIT_TIME", se_quitCommandTime);
+
+
+static void TempConfItemCommandRunner(std::istream &input)
+{
+    tString args, inputStr;
+    inputStr.ReadLine(input);
+
+    ePlayer *player = sn_consoleUser();
+
+    args << tConfItemBase::lastLoadCommandName
+         << " "
+         << inputStr;
+
+    LocalChatCommands(player, args);
+}
+
+static TempConfItemManager *chatCommandConfItems = NULL;
+void ManageChatCommandConfCommands()
+{
+    if (chatCommandConfItems == nullptr)
+        chatCommandConfItems = new TempConfItemManager();
+    if (!chatCommandConfItems)
+    {
+        con << "chatCommandConfItems does not exist?\n";
+        return;
+    }
+
+    chatCommandConfItems->DeleteConfitems();
+
+    for (auto chatcmdFactory : CommandFactory())
+    {
+        tString command;
+        command << chatcmdFactory.first;
+        tToUpper(command);
+        chatCommandConfItems->StoreConfitem(new tConfItemFunc(command, &TempConfItemCommandRunner));
+    }
+}
 
 std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> CommandFactory()
 {
@@ -168,9 +217,9 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
                { return std::make_unique<NameSpeakCommand>(); });
     addCommand(se_respawnCommand, []()
                { return std::make_unique<RespawnCommand>(); });
-
-    addCommand(se_rebuildGridCommand, []()
-               { return std::make_unique<RebuildGridCommand>(); });
+    if (helperConfig::sghuk)
+        addCommand(se_rebuildGridCommand, []()
+                { return std::make_unique<RebuildGridCommand>(); });
     addCommand(se_saveConfigCommand, []()
                { return std::make_unique<SaveConfigCommand>(); });
     addCommand(se_replyCommand, []()
@@ -190,16 +239,22 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
                { return std::make_unique<EncryptCommand>(); });
     addCommand(se_voteCommand, []()
                { return std::make_unique<VoteCommand>(); });
+    addCommand(se_renameCommand, []()
+               { return std::make_unique<RenameCommand>(); });
+    addCommand(se_leaveCommand, []()
+               { return std::make_unique<LeaveCommand>(); });
+    addCommand(se_quitCommand, []()
+               { return std::make_unique<QuitCommand>(); });
+
 
     return commandFactories;
 }
 
-bool LocalChatCommands(ePlayerNetID *p, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> &commandFactories)
+bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> &commandFactories)
 {
-    if (p == nullptr)
-    {
+
+    if (player == nullptr)
         return false;
-    }
 
     // Trim whitespace from the command
     args = args.TrimWhitespace();
@@ -218,7 +273,7 @@ bool LocalChatCommands(ePlayerNetID *p, tString args, const std::unordered_map<t
 
         try
         {
-            chatcmd->execute(p, arguments);
+            chatcmd->execute(player, arguments);
         }
         catch (const std::exception &e)
         {
@@ -234,20 +289,20 @@ bool LocalChatCommands(ePlayerNetID *p, tString args, const std::unordered_map<t
     return false;
 }
 
-bool MsgCommand::execute(ePlayerNetID *player, tString args)
+bool MsgCommand::execute(tString args)
 {
     int pos = 0;
     ePlayerNetID *msgTarget = ePlayerNetID::GetPlayerByName(args.ExtractNonBlankSubString(pos), false);
     if (msgTarget)
-        player->lastMessagedPlayer = msgTarget;
+        netPlayer->lastMessagedPlayer = msgTarget;
 
     tString messageToSend;
     messageToSend << "/msg " << args;
-    se_NewChatMessage(player, messageToSend)->BroadCast();
+    se_NewChatMessage(netPlayer, messageToSend)->BroadCast();
     return true;
 }
 
-bool ConsoleCommand::execute(ePlayerNetID *player, tString args)
+bool ConsoleCommand::execute(tString args)
 {
     tCurrentAccessLevel level(tAccessLevel_Owner, true);
 
@@ -320,7 +375,7 @@ tColoredString ColorsCommand::gatherPlayerColor(ePlayerNetID *p, bool showReset)
     return listColors;
 }
 
-bool ColorsCommand::execute(ePlayerNetID *player, tString args)
+bool ColorsCommand::execute(tString args)
 {
     if (se_PlayerNetIDs.Len() > 0)
     {
@@ -357,7 +412,7 @@ bool ColorsCommand::execute(ePlayerNetID *player, tString args)
     return true;
 }
 
-bool listPlayerInfoCommand::execute(ePlayerNetID *player, tString args)
+bool listPlayerInfoCommand::execute(tString args)
 {
     if (se_PlayerNetIDs.Len() > 0)
     {
@@ -520,10 +575,10 @@ void RgbCommand::se_listSavedColors(int savedColorsCount)
     }
 }
 
-bool RgbCommand::execute(ePlayerNetID *player, tString args)
+bool RgbCommand::execute(tString args)
 {
-    ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
-    ePlayerNetID *targetPlayer = player;
+    ePlayer *local_p = player;
+    ePlayerNetID *targetPlayer = netPlayer;
     if (!local_p)
         return false;
 
@@ -620,11 +675,9 @@ bool RgbCommand::execute(ePlayerNetID *player, tString args)
                             << tOutput("$players_color_error");
                 }
                 else
-                {
                     con << CommandText()
                         << ErrorText()
                         << tOutput("$player_colors_not_found", passedString[1]);
-                }
             }
             return true;
         }
@@ -667,9 +720,7 @@ bool RgbCommand::execute(ePlayerNetID *player, tString args)
         {
             tString line = passedString[1];
             if (line.empty())
-            {
                 correctParameters = false;
-            }
             else
             {
                 fileManager.Clear(atoi(passedString[0]));
@@ -710,9 +761,8 @@ bool RgbCommand::execute(ePlayerNetID *player, tString args)
                 listColors << ColorsCommand::gatherPlayerColor(targetPlayer);
             }
             else
-            {
                 listColors << ColorsCommand::localPlayerPreview(local_p);
-            }
+
             con << listColors << "\n";
         }
         else // display the error message.
@@ -723,13 +773,13 @@ bool RgbCommand::execute(ePlayerNetID *player, tString args)
     return true;
 }
 
-bool BrowserCommand::execute(ePlayerNetID *player, tString args)
+bool BrowserCommand::execute(tString args)
 {
     gServerBrowser::BrowseMaster();
     return true;
 }
 
-bool SpeakCommand::execute(ePlayerNetID *player, tString args)
+bool SpeakCommand::execute(tString args)
 {
     int pos = 0;
     tString PlayerStr = args.ExtractNonBlankSubString(pos);
@@ -762,7 +812,7 @@ bool SpeakCommand::execute(ePlayerNetID *player, tString args)
     return true;
 }
 
-bool RebuildCommand::execute(ePlayerNetID *player, tString args)
+bool RebuildCommand::execute(tString args)
 {
     int pos = 0;
     tString PlayerNumb = args.ExtractNonBlankSubString(pos);
@@ -784,14 +834,14 @@ bool RebuildCommand::execute(ePlayerNetID *player, tString args)
                 << local_p->Name()
                 << MainText() << "'\n";
 
-            player->Clear(local_p);
-            player->Update();
+            netPlayer->Clear(local_p);
+            netPlayer->Update();
         }
     }
     return true;
 }
 
-bool WatchCommand::execute(ePlayerNetID *player, tString args)
+bool WatchCommand::execute(tString args)
 {
     if (!eGrid::CurrentGrid())
     {
@@ -801,7 +851,7 @@ bool WatchCommand::execute(ePlayerNetID *player, tString args)
         return false;
     }
 
-    ePlayer *localPlayer = ePlayer::NetToLocalPlayer(player);
+    ePlayer *localPlayer = player;
     if (!localPlayer || !localPlayer->cam)
         return false;
 
@@ -840,7 +890,7 @@ bool WatchCommand::execute(ePlayerNetID *player, tString args)
     return true;
 }
 
-bool ActiveStatusCommand::execute(ePlayerNetID *player, tString args)
+bool ActiveStatusCommand::execute(tString args)
 {
     int pos = 0;
 
@@ -849,8 +899,8 @@ bool ActiveStatusCommand::execute(ePlayerNetID *player, tString args)
     ePlayerNetID *p = nullptr;
     if (!PlayerStr.empty())
         p = ePlayerNetID::FindPlayerByName(PlayerStr);
-    else if (player)
-        p = player;
+    else if (netPlayer)
+        p = netPlayer;
 
     if (p == nullptr)
         return false;
@@ -874,40 +924,40 @@ bool ActiveStatusCommand::execute(ePlayerNetID *player, tString args)
     return true;
 }
 
-bool ReverseCommand::execute(ePlayerNetID *player, tString args)
+bool ReverseCommand::execute(tString args)
 {
-    player->Chat(args.Reverse());
+    netPlayer->Chat(args.Reverse());
     return true;
 }
 
-bool SpectateCommand::execute(ePlayerNetID *player, tString args)
+bool SpectateCommand::execute(tString args)
 {
     con << CommandText()
-        << "Spectating player '" << player->GetName() << "'...\n";
+        << "Spectating player '" << netPlayer->GetName() << "'...\n";
 
-    ePlayer *local_p = ePlayer::NetToLocalPlayer(player);
+    ePlayer *local_p = player;
     local_p->spectate = true;
     if (helperConfig::sghuk)
-        player->Clear(local_p);
-    player->Update();
+        netPlayer->Clear(local_p);
+    netPlayer->Update();
     return true;
 }
 
-bool JoinCommand::execute(ePlayerNetID *player, tString args)
+bool JoinCommand::execute(tString args)
 {
-    if (player && !bool(player->CurrentTeam()))
+    if (netPlayer && !bool(netPlayer->CurrentTeam()))
     {
         con << CommandText()
             << "Joining the game...\n";
 
-        ePlayer::NetToLocalPlayer(player)->spectate = false;
-        player->CreateNewTeamWish();
-        player->Update();
+        player->spectate = false;
+        netPlayer->CreateNewTeamWish();
+        netPlayer->Update();
     }
     return true;
 }
 
-bool SearchCommand::execute(ePlayerNetID *player, tString args)
+bool SearchCommand::execute(tString args)
 {
     int pos = 0;
 
@@ -956,7 +1006,7 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
 
         if (fileName.empty())
         {
-            execute(player, args);
+            execute(args);
             return true;
         }
 
@@ -999,7 +1049,7 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
 
         if (searchPhrase.empty())
         {
-            player->lastSearch.Clear();
+            netPlayer->lastSearch.Clear();
             int start = std::max(0, lines.Len() - se_searchCommandEmptySearchNumLines); // don't go below 0
             int count = 1;
             tString fileNameOut;
@@ -1015,7 +1065,7 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
 
             for (int i = start; i < lines.Len(); ++i)
             {
-                player->lastSearch.Add(lines[i]);
+                netPlayer->lastSearch.Add(lines[i]);
                 con << ItemText()   << count++
                     << HeaderText() <<  ") " << HeaderText()
                     << "Line " << MainText() << (i + 1)
@@ -1062,7 +1112,7 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
 
             if (copyNumMatch && startLineNumber == endLineNumber)
             {
-                if (!player->lastSearch.Len() > 0 || player->lastSearch.Len() < endLineNumber)
+                if (!netPlayer->lastSearch.Len() > 0 || netPlayer->lastSearch.Len() < endLineNumber)
                 {
                     con << CommandText()
                         << ErrorText()
@@ -1070,7 +1120,7 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
                 }
                 else
                 {
-                    tString message(player->lastSearch[endLineNumber - 1]);
+                    tString message(netPlayer->lastSearch[endLineNumber - 1]);
                     if (copyToClipboard(message))
                     {
                         con << CommandText()
@@ -1129,7 +1179,7 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
 
         if (!copy)
         {
-            player->lastSearch.Clear();
+            netPlayer->lastSearch.Clear();
             tString searchValue(searchPhrase);
 
             if (!se_searchCommandCaseSensitive)
@@ -1150,7 +1200,7 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
                            << ItemText() << lineNumber
                            << MainText()
                            << ": "       << line << "\n";
-                    player->lastSearch.Add(line);
+                    netPlayer->lastSearch.Add(line);
                 }
                 lineNumber++;
             }
@@ -1193,7 +1243,7 @@ bool SearchCommand::execute(ePlayerNetID *player, tString args)
     return true;
 }
 
-bool NameSpeakCommand::execute(ePlayerNetID *player, tString args)
+bool NameSpeakCommand::execute(tString args)
 {
     if (!HelperCommand::fn6())
         return true;
@@ -1247,15 +1297,15 @@ bool NameSpeakCommand::execute(ePlayerNetID *player, tString args)
     return true;
 }
 
-bool RespawnCommand::execute(ePlayerNetID *player, tString args)
+bool RespawnCommand::execute(tString args)
 {
     con << CommandText()
-        << "Respawning player '" << player->GetName() << "'\n";
-    player->RespawnPlayer(true);
+        << "Respawning player '" << netPlayer->GetName() << "'\n";
+    netPlayer->RespawnPlayer(true);
     return true;
 }
 
-bool RebuildGridCommand::execute(ePlayerNetID *player, tString args)
+bool RebuildGridCommand::execute(tString args)
 {
     tArray<tString> passedString = args.Split(" ");
     if (args.empty())
@@ -1271,15 +1321,15 @@ bool RebuildGridCommand::execute(ePlayerNetID *player, tString args)
     return true;
 }
 
-bool SaveConfigCommand::execute(ePlayerNetID *player, tString args)
+bool SaveConfigCommand::execute(tString args)
 {
     con << st_AddToUserExt(args.Split(" "));
     return true;
 }
 
-bool ReplyCommand::execute(ePlayerNetID *player, tString args)
+bool ReplyCommand::execute(tString args)
 {
-    if (player->lastMessagedPlayer == nullptr)
+    if (netPlayer->lastMessagedPlayer == nullptr)
     {
         con << CommandText()
             << ErrorText()
@@ -1288,12 +1338,12 @@ bool ReplyCommand::execute(ePlayerNetID *player, tString args)
     }
 
     tString messageToSend;
-    messageToSend << "/msg " << player->lastMessagedPlayer->GetName() << " " << args;
-    player->Chat(messageToSend);
+    messageToSend << "/msg " << netPlayer->lastMessagedPlayer->GetName() << " " << args;
+    netPlayer->Chat(messageToSend);
     return true;
 }
 
-bool NicknameCommand::execute(ePlayerNetID *player, tString args)
+bool NicknameCommand::execute(tString args)
 {
     if (args.empty())
     {
@@ -1357,7 +1407,7 @@ bool NicknameCommand::execute(ePlayerNetID *player, tString args)
     return false;
 }
 
-bool StatsCommand::execute(ePlayerNetID *player, tString args)
+bool StatsCommand::execute(tString args)
 {
 
     nServerInfoBase *connectedServer = CurrentServer();
@@ -1374,8 +1424,8 @@ bool StatsCommand::execute(ePlayerNetID *player, tString args)
     ePlayerNetID *p = nullptr;
     if (!PlayerStr.empty())
         p = ePlayerNetID::FindPlayerByName(PlayerStr);
-    else if (player)
-        p = player;
+    else if (netPlayer)
+        p = netPlayer;
 
     if (p == nullptr)
         return false;
@@ -1409,7 +1459,7 @@ bool StatsCommand::execute(ePlayerNetID *player, tString args)
     return true;
 }
 
-bool ReconnectCommand::execute(ePlayerNetID *player, tString args)
+bool ReconnectCommand::execute(tString args)
 {
     nServerInfoBase *connectedServer = CurrentServer();
     if (connectedServer)
@@ -1421,16 +1471,17 @@ bool ReconnectCommand::execute(ePlayerNetID *player, tString args)
     }
     else
     {
-        con << CommandText()
-            << ErrorText()
-            << "You are not connected to a server!\n";
+        if (!ConnectToLastServer())
+            con << CommandText()
+                << ErrorText()
+                << "You are not connected to a server!\n";
     }
     return true;
 }
 
 #include <stack>
 #include <queue>
-bool CalculateCommand::execute(ePlayerNetID *player, tString args)
+bool CalculateCommand::execute(tString args)
 {
     con << CommandText()
         << "Performing calculation: '" << ItemText()
@@ -1558,7 +1609,7 @@ std::queue<tString> CalculateCommand::infixToPostfix(const tString &infix)
     return queue;
 }
 
-bool UpdateCommand::execute(ePlayerNetID *player, tString args)
+bool UpdateCommand::execute(tString args)
 {
     int pos = 0;
     tString PlayerNumb = args.ExtractNonBlankSubString(pos);
@@ -1693,7 +1744,7 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
     }
 }
 
-bool EncryptCommand::execute(ePlayerNetID *player, tString args)
+bool EncryptCommand::execute(tString args)
 {
     if (!HelperCommand::fn6())
         return true;
@@ -1722,7 +1773,7 @@ bool EncryptCommand::execute(ePlayerNetID *player, tString args)
             messageToSend << args.SubStr(pos);
         }
 
-        se_NewChatMessage(player, messageToSend)->BroadCast();
+        se_NewChatMessage(netPlayer, messageToSend)->BroadCast();
     }
     else
     {
@@ -1737,7 +1788,7 @@ bool EncryptCommand::execute(ePlayerNetID *player, tString args)
 }
 
 #include "eVoter.h"
-bool VoteCommand::execute(ePlayerNetID *player, tString args)
+bool VoteCommand::execute(tString args)
 {
     if (args.empty())
     {
@@ -1753,7 +1804,7 @@ bool VoteCommand::execute(ePlayerNetID *player, tString args)
         if (params[0].isNumber())
             processVote(params);
         else
-            sendChatMessage(player, args);
+            sendChatMessage(netPlayer, args);
     }
     else
     {
@@ -1791,4 +1842,44 @@ void VoteCommand::processVote(const tArray<tString> &params)
         eVoter::ChatSubmitPoll(atoi(params[0]), false);
     else
         con << "Invalid option: '" << acceptPoll << "'. Valid options: yes/no\n";
+}
+
+bool RenameCommand::execute(tString args)
+{
+    con << CommandText()
+        << "Renaming player '" << netPlayer->GetName() << "' to '" << args << "'...\n";
+
+    player->name = args;
+    netPlayer->Update();
+    return true;
+}
+
+bool LeaveCommand::execute(tString args)
+{
+    tString server;
+
+    nServerInfoBase *connectedServer = CurrentServer();
+    if (connectedServer)
+        server << connectedServer->GetName();
+
+    con << CommandText()
+        << "Leaving server '" << server << "'";
+
+    ret_to_MainMenu();
+
+    return true;
+}
+
+bool QuitCommand::execute(tString args)
+{
+    con << CommandText()
+        << "Quiting game in '" << se_quitCommandTime << "' seconds...\n";
+
+    st_SaveConfig();
+
+    gTaskScheduler.schedule("QuitCommand", se_quitCommandTime, []
+    {
+        throw 1;
+    });
+    return true;
 }

@@ -11,43 +11,43 @@ using namespace helperConfig;
 namespace helperConfig
 {
     bool sg_zoneHelper = false;
-    static tConfItem<bool> sg_zoneHelperC = HelperCommand::tConfItemH("HELPER_ZONE", sg_zoneHelper);
+    static tConfItem<bool> sg_zoneHelperC = HelperCommand::tConfItem("HELPER_ZONE", sg_zoneHelper);
 
     // bool sg_zoneHelperSensor = false;
-    // static tConfItem<bool> sg_zoneHelperSensorC = HelperCommand::tConfItemH("HELPER_ZONE_SENSOR", sg_zoneHelperSensor);
+    // static tConfItem<bool> sg_zoneHelperSensorC = HelperCommand::tConfItem("HELPER_ZONE_SENSOR", sg_zoneHelperSensor);
 
     bool sg_helperZoneShowOwnerOnly = false;
-    static tConfItem<bool> sg_helperZoneShowOwnerOnlyC = HelperCommand::tConfItemH("HELPER_ZONE_SHOW_OWNER_ONLY", sg_helperZoneShowOwnerOnly);
+    static tConfItem<bool> sg_helperZoneShowOwnerOnlyC = HelperCommand::tConfItem("HELPER_ZONE_SHOW_OWNER_ONLY", sg_helperZoneShowOwnerOnly);
 
     bool sg_helperZoneShow = false;
-    static tConfItem<bool> sg_helperZoneShowConf = HelperCommand::tConfItemH("HELPER_ZONE_SHOW", sg_helperZoneShow);
+    static tConfItem<bool> sg_helperZoneShowConf = HelperCommand::tConfItem("HELPER_ZONE_SHOW", sg_helperZoneShow);
 
     REAL sg_helperZoneShowHeight = 1;
-    static tConfItem<REAL> sg_helperZoneShowHeightConf = HelperCommand::tConfItemH("HELPER_ZONE_SHOW_HEIGHT", sg_helperZoneShowHeight);
+    static tConfItem<REAL> sg_helperZoneShowHeightConf = HelperCommand::tConfItem("HELPER_ZONE_SHOW_HEIGHT", sg_helperZoneShowHeight);
 
     REAL sg_helperZoneShowBonusRadius = 0;
-    static tConfItem<REAL> sg_helperZoneShowBonusRadiusConf = HelperCommand::tConfItemH("HELPER_ZONE_SHOW_RADIUS_BONUS", sg_helperZoneShowBonusRadius);
+    static tConfItem<REAL> sg_helperZoneShowBonusRadiusConf = HelperCommand::tConfItem("HELPER_ZONE_SHOW_RADIUS_BONUS", sg_helperZoneShowBonusRadius);
 
     bool sg_helperZoneEnemyZonesColor = false;
-    static tConfItem<bool> sg_helperZoneEnemyZonesColorConf = HelperCommand::tConfItemH("HELPER_ZONE_SHOW_ENEMY_RED", sg_helperZoneEnemyZonesColor);
+    static tConfItem<bool> sg_helperZoneEnemyZonesColorConf = HelperCommand::tConfItem("HELPER_ZONE_SHOW_ENEMY_RED", sg_helperZoneEnemyZonesColor);
 
     bool sg_helperZoneTracer = false;
-    static tConfItem<bool> sg_helperZoneTracerConf = HelperCommand::tConfItemH("HELPER_ZONE_TRACER", sg_helperZoneTracer);
+    static tConfItem<bool> sg_helperZoneTracerConf = HelperCommand::tConfItem("HELPER_ZONE_TRACER", sg_helperZoneTracer);
 
     bool sg_helperZoneTracerClosestCorner = false;
-    static tConfItem<bool> sg_helperZoneTracerClosestCornerConf = HelperCommand::tConfItemH("HELPER_ZONE_TRACER_CLOSEST_CORNER", sg_helperZoneTracerClosestCorner);
+    static tConfItem<bool> sg_helperZoneTracerClosestCornerConf = HelperCommand::tConfItem("HELPER_ZONE_TRACER_CLOSEST_CORNER", sg_helperZoneTracerClosestCorner);
 
     REAL sg_helperZoneTracerTimeoutMult = 1;
-    static tConfItem<REAL> sg_helperZoneTracerTimeoutMultConf = HelperCommand::tConfItemH("HELPER_ZONE_TRACER_TIMEOUT_MULT", sg_helperZoneTracerTimeoutMult);
+    static tConfItem<REAL> sg_helperZoneTracerTimeoutMultConf = HelperCommand::tConfItem("HELPER_ZONE_TRACER_TIMEOUT_MULT", sg_helperZoneTracerTimeoutMult);
 
     REAL sg_helperZoneTracerBrightness = 1;
-    static tConfItem<REAL> sg_helperZoneTracerBrightnessConf = HelperCommand::tConfItemH("HELPER_ZONE_TRACER_BRIGHTNESS", sg_helperZoneTracerBrightness);
+    static tConfItem<REAL> sg_helperZoneTracerBrightnessConf = HelperCommand::tConfItem("HELPER_ZONE_TRACER_BRIGHTNESS", sg_helperZoneTracerBrightness);
 
     REAL sg_helperZoneTracerHeight = 0;
-    static tConfItem<REAL> sg_helperZoneTracerHeightConf = HelperCommand::tConfItemH("HELPER_ZONE_TRACER_HEIGHT", sg_helperZoneTracerHeight);
+    static tConfItem<REAL> sg_helperZoneTracerHeightConf = HelperCommand::tConfItem("HELPER_ZONE_TRACER_HEIGHT", sg_helperZoneTracerHeight);
 
     REAL sg_zoneSensorRadiusBonus = 0;
-    static tConfItem<REAL> sg_zoneSensorRadiusBonusConf = HelperCommand::tConfItemH("ZONE_SENSOR_RADIUS_BONUS", sg_zoneSensorRadiusBonus);
+    static tConfItem<REAL> sg_zoneSensorRadiusBonusConf = HelperCommand::tConfItem("ZONE_SENSOR_RADIUS_BONUS", sg_zoneSensorRadiusBonus);
 
 }
 

@@ -51,16 +51,43 @@ extern int se_encryptCommandWatchValidateWindow;
 extern int se_encryptCommandLength;
 extern tString se_encryptCommandPrefix;
 extern tString se_voteCommand;
+extern tString se_renameCommand;
+extern tString se_leaveCommand;
+extern tString se_quitCommand;
+extern int se_quitCommandTime;
 
 class ChatCommand
 {
 public:
-    virtual bool execute(ePlayerNetID *player, tString args) = 0;
+    virtual bool execute(tString args) = 0;
+
+    bool execute(ePlayer *p, tString args)
+    {
+        player = p;
+        
+        if (!player)
+            return false;
+
+        netPlayer = se_GetLocalPlayer(player->ID());
+
+        if (playerRequired() && netPlayer == nullptr)
+        {
+            con << CommandText() << "Player is required to run this command.\n";
+            return false;
+        }
+
+        return execute(args);
+    }
 
     static tString HeaderText() { return se_chatCommandsThemeHeader; }
     static tString MainText() { return se_chatCommandsThemeMain; }
     static tString ItemText() { return se_chatCommandsThemeItem; }
     static tString ErrorText() { return se_chatCommandsThemeError; }
+
+    bool playerRequired()
+    {
+        return requirePlayer;
+    }
 
     tString CommandText()
     {
@@ -82,17 +109,25 @@ protected:
     ChatCommand(const std::string &name) : commandName(name) {}
 
 private:
+    bool requirePlayer = true;
     std::string commandName;
+public:
+    ePlayer *player;
+    ePlayerNetID *netPlayer;
 };
 
+
+
 std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> CommandFactory();
-extern bool LocalChatCommands(ePlayerNetID *p, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> &commandFactories = CommandFactory());
+extern bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> &commandFactories = CommandFactory());
+
+extern void ManageChatCommandConfCommands();
 
 class MsgCommand : public ChatCommand
 {
 public:
     MsgCommand() : ChatCommand("MsgCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class ConsoleCommand : public ChatCommand
@@ -100,7 +135,7 @@ class ConsoleCommand : public ChatCommand
 public:
     ConsoleCommand() : ChatCommand("ConsoleCommand") {}
 
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 // Gather all the rgb colors and put them in a nice list.
@@ -117,7 +152,7 @@ public:
 
     static tColoredString gatherPlayerColor(ePlayerNetID *p, bool showReset = true);
 
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 /*
@@ -139,7 +174,7 @@ class listPlayerInfoCommand : public ChatCommand
 public:
     listPlayerInfoCommand() : ChatCommand("listPlayerInfoCommand") {}
     tColoredString gatherPlayerInfo(ePlayerNetID *p);
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 /* Allow us to change our current RGB easily.
@@ -163,56 +198,58 @@ public:
     static void se_outputColorInfo(int index, const tString &Name, REAL r, REAL g, REAL b);
     static void se_loadSavedColor(ePlayer *local_p, int lineNumber);
     static void se_listSavedColors(int savedColorsCount);
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
+private:
+    bool requirePlayer = false;
 };
 
 class BrowserCommand : public ChatCommand
 {
 public:
     BrowserCommand() : ChatCommand("BrowserCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class SpeakCommand : public ChatCommand
 {
 public:
     SpeakCommand() : ChatCommand("SpeakCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class RebuildCommand : public ChatCommand
 {
 public:
     RebuildCommand() : ChatCommand("RebuildCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class WatchCommand : public ChatCommand
 {
 public:
     WatchCommand() : ChatCommand("WatchCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class ActiveStatusCommand : public ChatCommand
 {
 public:
     ActiveStatusCommand() : ChatCommand("ActiveStatusCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class ReverseCommand : public ChatCommand
 {
 public:
     ReverseCommand() : ChatCommand("ReverseCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class SpectateCommand : public ChatCommand
 {
 public:
     SpectateCommand() : ChatCommand("SpectateCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class JoinCommand : public ChatCommand
@@ -220,7 +257,7 @@ class JoinCommand : public ChatCommand
 public:
     JoinCommand() : ChatCommand("JoinCommand") {}
 
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 static std::vector<std::pair<tString, tString>> searchableFiles =
@@ -233,63 +270,67 @@ class SearchCommand : public ChatCommand
 {
 public:
     SearchCommand() : ChatCommand("SearchCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class NameSpeakCommand : public ChatCommand
 {
 public:
     NameSpeakCommand() : ChatCommand("NameSpeakCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class RespawnCommand : public ChatCommand
 {
 public:
     RespawnCommand() : ChatCommand("RespawnCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class RebuildGridCommand : public ChatCommand
 {
 public:
     RebuildGridCommand() : ChatCommand("RebuildGridCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class SaveConfigCommand : public ChatCommand
 {
 public:
     SaveConfigCommand() : ChatCommand("SaveConfigCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
+private:
+    bool requirePlayer = false;
 };
 
 class ReplyCommand : public ChatCommand
 {
 public:
     ReplyCommand() : ChatCommand("ReplyCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class NicknameCommand : public ChatCommand
 {
 public:
     NicknameCommand() : ChatCommand("NicknameCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class StatsCommand : public ChatCommand
 {
 public:
     StatsCommand() : ChatCommand("StatsCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class ReconnectCommand : public ChatCommand
 {
 public:
     ReconnectCommand() : ChatCommand("ReconnectCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
+private:
+    bool requirePlayer = false;
 };
 
 #include <queue>
@@ -297,19 +338,21 @@ class CalculateCommand : public ChatCommand
 {
 public:
     CalculateCommand() : ChatCommand("CalculateCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 
 private:
     tString preprocess(const tString &input);
 
     std::queue<tString> infixToPostfix(const tString &infix);
+
+    bool requirePlayer = false;
 };
 
 class UpdateCommand : public ChatCommand
 {
 public:
     UpdateCommand() : ChatCommand("UpdateCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class EncryptCommand : public ChatCommand
@@ -320,19 +363,45 @@ public:
     static tString GenerateHash(double time);
     static bool ValidateHash(tString givenHash, double time);
     static bool handleEncryptCommandAction(ePlayerNetID *player, tString message);
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 };
 
 class VoteCommand : public ChatCommand
 {
 public:
     VoteCommand() : ChatCommand("VoteCommand") {}
-    bool execute(ePlayerNetID *player, tString args) override;
+    bool execute(tString args) override;
 
 private:
     void displayPollsMenu();
     void sendChatMessage(ePlayerNetID *player, tString &message);
     void processVote(const tArray<tString> &params);
 };
+
+class RenameCommand : public ChatCommand
+{
+public:
+    RenameCommand() : ChatCommand("RenameCommand") {}
+    bool execute(tString args) override;
+private:
+    bool requirePlayer = false;
+};
+
+class LeaveCommand : public ChatCommand
+{
+public:
+    LeaveCommand() : ChatCommand("LeaveCommand") {}
+    bool execute(tString args) override;
+};
+
+class QuitCommand : public ChatCommand
+{
+public:
+    QuitCommand() : ChatCommand("QuitCommand") {}
+    bool execute(tString args) override;
+private:
+    bool requirePlayer = false;
+};
+
 
 #endif

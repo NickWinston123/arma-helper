@@ -30,9 +30,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "uMenu.h"
 
+class ePlayer;
+
 extern void  sg_PlayerMenu(), sg_SpecialMenu(), sg_ConfigMenu();
 extern uMenu sg_screenMenu;
-void         sg_ConsoleInput(); // let the player enter one line of console input
-
+void         sg_ConsoleInput(ePlayer* player = nullptr); // let the player enter one line of console input
+extern ePlayer* sn_consoleUser();
 extern void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast);
 #endif

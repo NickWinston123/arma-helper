@@ -1627,7 +1627,7 @@ static void sg_descriptorSendMessage(std::istream &s)
     SendCustomMessage(message, dataToSend);
 }
 
-static tConfItemFunc sg_descriptorSendMessageConf = HelperCommand::tConfItemFuncH("DESCRIPTOR_SEND", &sg_descriptorSendMessage);
+static tConfItemFunc sg_descriptorSendMessageConf = HelperCommand::tConfItemFunc("DESCRIPTOR_SEND", &sg_descriptorSendMessage);
 
 static void displayDescriptor(nDescriptor *descriptor)
 {
@@ -1696,7 +1696,7 @@ static void sg_FindDescriptor(std::istream &s)
     }
 }
 
-static tConfItemFunc sg_FindDescriptorConf = HelperCommand::tConfItemFuncH("DESCRIPTOR_FIND", &sg_FindDescriptor);
+static tConfItemFunc sg_FindDescriptorConf = HelperCommand::tConfItemFunc("DESCRIPTOR_FIND", &sg_FindDescriptor);
 
 REAL exponent(REAL i)
 {
@@ -5696,19 +5696,19 @@ static uActionTooltip ingamemenuTooltip(ingamemenu, 1);
 static eLadderLogWriter sg_gameTimeWriter("GAME_TIME", true);
 
 static bool sg_forceGamePause = false;
-static tSettingItem<bool> sg_forceGamePauseConf = HelperCommand::tSettingItemH("FORCE_GAME_PAUSE", sg_forceGamePause);
+static tSettingItem<bool> sg_forceGamePauseConf = HelperCommand::tSettingItem("FORCE_GAME_PAUSE", sg_forceGamePause);
 
 static bool sg_forcePlayerUpdate = false;
-static tSettingItem<bool> sg_forcePlayerUpdateConf = HelperCommand::tSettingItemH("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
+static tSettingItem<bool> sg_forcePlayerUpdateConf = HelperCommand::tSettingItem("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
 
 static bool sg_forcePlayerRebuild = false;
-static tSettingItem<bool> sg_forcePlayerRebuildConf = HelperCommand::tSettingItemH("FORCE_PLAYER_ZREBUILD", sg_forcePlayerRebuild);
+static tSettingItem<bool> sg_forcePlayerRebuildConf = HelperCommand::tSettingItem("FORCE_PLAYER_ZREBUILD", sg_forcePlayerRebuild);
 
 static bool sg_forceSyncAll = false;
-static tSettingItem<bool> sg_forceSyncAllConf = HelperCommand::tSettingItemH("FORCE_SYNC_ALL", sg_forceSyncAll);
+static tSettingItem<bool> sg_forceSyncAllConf = HelperCommand::tSettingItem("FORCE_SYNC_ALL", sg_forceSyncAll);
 
 static REAL sg_forceClockDelay = 0.5;
-static tConfItem<REAL> sg_forceClockDelayConf = HelperCommand::tConfItemH("FORCE_CLOCK_DELAY", sg_forceClockDelay);
+static tConfItem<REAL> sg_forceClockDelayConf = HelperCommand::tConfItem("FORCE_CLOCK_DELAY", sg_forceClockDelay);
 
 bool gGame::GameLoop(bool input)
 {
@@ -6867,17 +6867,23 @@ static tConfItemFunc sg_reportsClearConf("CLEAR_REPORTS", &sg_reportsClear);
 static tAccessLevelSetter sg_reportsClearConfLevel(sg_reportsClearConf, tAccessLevel_Owner);
 
 
-void ConnectToLastServer()
+bool ConnectToLastServer()
 {
     nServerInfoBase *server = LastServer();
     if (server != nullptr)
+    {
         ConnectToServer(server);
-    else
+        return true;
+    }
+    else 
+    {
         con << "Last server not set!\n";
+        return false;
+    }
 }
 static void ConnectToLastServer(std::istream &s)
 {
     ConnectToLastServer();
 }
 
-static tConfItemFunc ReloadChatTriggers_conf("CONNECT_TO_LAST_SERVER", &ConnectToLastServer);
+static tConfItemFunc ReloadChatTriggers_conf("RECONNECT_TO_LAST_SERVER", &ConnectToLastServer);

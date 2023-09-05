@@ -67,7 +67,7 @@ public:
         uINPUT_DIGITAL,
         uINPUT_ANALOG
     } uInputType;
-
+    bool undelayable;
     uInputType type;
     int priority;
     tString internalName;
@@ -86,6 +86,11 @@ public:
     uAction(uAction *&anchor, const char *name,
             int priority = 0,
             uInputType t = uINPUT_DIGITAL);
+
+    uAction(uAction *&anchor, const char *name,
+            int priority,
+            bool stopDelay,
+            bool stopDelay2 = true);
 
     uAction(uAction *&anchor, const char *name,
             const tOutput &desc,
@@ -142,6 +147,11 @@ public:
     uActionPlayer(const char *name,
                   int priority = 0,
                   uInputType t = uINPUT_DIGITAL);
+
+    uActionPlayer(const char *name,
+                  int priority,
+                  bool stopDelay,
+                  bool stopDelay2 = true);
 
     uActionPlayer(const char *name,
                   const tOutput &desc,

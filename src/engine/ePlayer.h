@@ -69,6 +69,8 @@ enum ColorNameCustomization {
 
 #include <unordered_map>
 
+class TempConfItemManager;
+
 extern tString se_disableCreateSpecific ;
 extern std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
 
@@ -138,12 +140,10 @@ class ChatCommand;
 class ePlayer: public uPlayerPrototype{
     friend class eMenuItemChat;
     static uActionPlayer s_chat;
+    static uActionPlayer s_con;
     static uActionTooltip s_chatTooltip;
 
-    tConfItemBase *configuration[PLAYER_CONFITEMS];
-    int            CurrentConfitem;
-    void   StoreConfitem(tConfItemBase *c);
-    void   DeleteConfitems();
+    TempConfItemManager confItems;
 
     double lastTooltip_;
 public:
@@ -955,6 +955,7 @@ ePlayerNetID & ePlayerNetID::SetUserName( tString const & userName )
 }
 
 ePlayerNetID *se_GetLocalPlayer();
+ePlayerNetID *se_GetLocalPlayer(int ID);
 
 extern bool se_highlightNames, se_tabCompletion, se_tabCompletionWithColors,se_tabCompletionColon;
 

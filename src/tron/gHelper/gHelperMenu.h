@@ -353,4 +353,4 @@ void helperMenuPub(std::istream &s)
 
     helperMenu();
 }
-static tConfItemFunc HelperMenuConf = HelperCommand::tConfItemFuncH("HELPER_MENU_LAUNCH", &helperMenuPub);
+static tConfItemFunc HelperMenuConf = HelperCommand::tConfItemFunc("HELPER_MENU_LAUNCH", &helperMenuPub);

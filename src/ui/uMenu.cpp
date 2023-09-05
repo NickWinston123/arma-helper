@@ -937,28 +937,10 @@ bool uMenuItemString::Event(SDL_Event &e){
     else if (killForwards) {
         content->RemoveSubStr(cursorPos,content->Len()-1-cursorPos);
     }
-#ifdef WIN32
     else if (pasteText) {
-        if (OpenClipboard(0))
-        {
-            HANDLE hClipboardData = GetClipboardData(CF_TEXT);
-            char *pchData = (char*)GlobalLock(hClipboardData);
-            tString cData(pchData);
-
-            tString oContent(*content);
-            tString aContent = oContent.SubStr(0, cursorPos);
-            tString bContent = oContent.SubStr(cursorPos);
-
-            tString nContent = aContent + cData + bContent;
-
-            *content = nContent;
-            cursorPos += cData.Len()-1;
-
-            GlobalUnlock(hClipboardData);
-            CloseClipboard();
-        }
+        if (!pasteFromClipboard(content, cursorPos)) 
+            con << "Failed to paste.\n";
     }
-#endif
     else if (c.sym == SDLK_LEFT) {
         if (cursorPos > 0) {
             cursorPos--;

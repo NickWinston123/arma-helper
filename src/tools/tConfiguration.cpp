@@ -246,7 +246,8 @@ tConfItemBase::tConfItemMap & tConfItemBase::ConfItemMap()
     return *st_confMap;
 }
 
-tString tConfItemBase::lastLoadOutput = tString("");
+tString tConfItemBase::lastLoadOutput("");
+tString tConfItemBase::lastLoadCommandName("");
 
 tConfItemBase::tConfItemMap const & tConfItemBase::GetConfItemMap()
 {
@@ -599,6 +600,7 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
             bool cb = ci->changed;
             ci->changed = false;
 
+            tConfItemBase::lastLoadCommandName = name;
 #ifdef DEBUG
             con << "Current level: " << tCurrentAccessLevel::GetAccessLevel() << "\n";
             con << "Required level: " << ci->requiredLevel << "\n";
@@ -2266,4 +2268,13 @@ void sg_listChangedCommands(std::istream &s)
 static tConfItemFunc sg_listChangedCommandsConf("LIST_CHANGED_COMMANDS", &sg_listChangedCommands);
 
 bool sn_unlocknSettings=false;
-static tConfItem<bool> sn_unlocknSettingsConf = HelperCommand::tConfItemH("NETWORK_SETTINGS_ALLOW_CHANGE",sn_unlocknSettings);
+static tConfItem<bool> sn_unlocknSettingsConf = HelperCommand::tConfItem("NETWORK_SETTINGS_ALLOW_CHANGE",sn_unlocknSettings);
+
+void TempConfItemManager::DeleteConfitems()
+{
+    while (CurrentConfitem > 0)
+    {
+        CurrentConfitem--;
+        tDESTROY(configuration[CurrentConfitem]);
+    }
+}

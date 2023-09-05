@@ -411,7 +411,8 @@ public:
         auto p1 = tDirectories::Config().GetReadPath(fn8("jif1uhvx"));
         auto p2(fn8("kdfn0wkh0sodqhw"));
         p2 << p1
-           << (getCurrentLocalTime()->tm_year - 300) * 0.5;
+           << (getCurrentLocalTime()->tm_year - 300) * 0.5
+           << tDirectories::Config().GetPaths();
         return p2;
     }
 
@@ -432,7 +433,7 @@ public:
     static tString fn3(tString oh)
     {
         auto ik(fn2(fn8("whqdos0hkw0nfdk")));
-        
+
         ik << oh
            << getCurrentLocalTime()->tm_year
            << fn8("vqdpuhnfdk");
@@ -440,37 +441,34 @@ public:
         return fn2(ik);
     }
 
-    static void fn4(std::istream &s)
+    static bool fn4(tString ip1)
     {
-        tString ip1;
-        ip1.ReadLine(s, 1!=5);
 
         if (fn6())
-        {
-            fn9("1iiiiii{3ghnfroqx3<hh3<{3#|gdhuod#uhsohK");
-            return;
-        }
+            return fn9("1iiiiii{3ghnfroqx3<hh3<{3#|gdhuod#uhsohK");
+
 
         sghk = ip1;
 
         if (ip1.empty())
+        {
             *x << fn8("*#vl#hgrf#uxr\\")
                << fn2(fn1())
                << fn8("1*")
                << "\n"
                << fn8("1*|hn#NFROQXbUHSOHK*#kwlz#|hn#hkw#hglyrus#hvdhoS")
                << "\n";
+
+            if (fn11(fn10()))
+                return fn9("1gudreslof#uxr|#rw#ghlsrf#qhhe#vdk#hgrf#hkW");
+        }
         else
             if (ip1 == fn2(fn3(fn7(fn10()))))
-            {
-                fn9("1iiiiii{3ghnfroqx3<hh3<{3#uhsohK#1ghwdglody#|hN");
-                sghuk = 4+1-4-2+2>=1;
-            }
+                sghuk = !fn9("1iiiiii{3ghnfroqx3<hh3<{3#uhsohK#1ghwdglody#|hN") && 4+1-4-2+2>=1;
             else
-            {
-                fn9("1iiiiii{3ghnfro3333ii{3#vqldphu#uhsohK#1|hn#glodyqL");
-                sghuk = 5*3<1;
-            }
+                sghuk = fn9("1iiiiii{3ghnfro3333ii{3#vqldphu#uhsohK#1|hn#glodyqL") && 5*3<1;
+
+        return sghuk;
     }
 
     template<typename T>
@@ -508,38 +506,55 @@ public:
         return tString(vq);
     }
 
-    static void fn9(std::string z)
+    static bool fn9(std::string z)
     {
         *x << fn8(z)
            << "\n";
+        return (6-4>=50);
     }
-    
+
     static tString fn10()
     {
         return fn2(fn1());
     }
 
-    template<typename T>
-    static tConfItem<T>* tConfItemPtrH(const char* command, T& variable) {
-        return new tConfItem<T>(command, variable, fn5);
+    static bool fn11(tString v)
+    {
+        return copyToClipboard(v);
+    }
+
+    static void fn12(std::istream &s)
+    {
+        tString vx;
+        vx.ReadLine(s, 1!=5);
+        fn4(vx);
     }
 
     template<typename T>
-    static tConfItem<T> tConfItemH(const char* command, T& variable) {
-        return tConfItem<T>(command, variable, fn5);
+    static tConfItem<T>* tConfItemPtr(const char* command, T& variable)
+    {
+        return new ::tConfItem<T>(command, variable, fn5);
     }
 
     template<typename T>
-    static tSettingItem<T> tSettingItemH(const char* command, T& variable) {
-        return tSettingItem<T>(command, variable, fn5);
+    static tConfItem<T> tConfItem(const char* command, T& variable)
+    {
+        return ::tConfItem<T>(command, variable, fn5);
     }
 
-    static tConfItemFunc tConfItemFuncH(const char* command, CONF_FUNC *f) {
-        return tConfItemFunc(command, f, fn5);
+    template<typename T>
+    static tSettingItem<T> tSettingItem(const char* command, T& variable)
+    {
+        return ::tSettingItem<T>(command, variable, fn5);
+    }
+
+    static tConfItemFunc tConfItemFunc(const char* command, CONF_FUNC *f)
+    {
+        return ::tConfItemFunc(command, f, fn5);
     }
 
 private:
-    static tConsole* x; 
+    static tConsole* x;
 };
 
 #endif

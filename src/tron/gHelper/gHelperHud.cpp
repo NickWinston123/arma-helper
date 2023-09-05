@@ -11,17 +11,17 @@
 namespace helperConfig
 {
     bool sg_helperHud = false; // Helper Hud
-    static tConfItem<bool> sg_helperHudConf = HelperCommand::tConfItemH("HELPER_HUD", sg_helperHud);
+    static tConfItem<bool> sg_helperHudConf = HelperCommand::tConfItem("HELPER_HUD", sg_helperHud);
     bool sg_helperHudFreeze = false; // Helper Hud
-    static tConfItem<bool> sg_helperHudFreezeConf = HelperCommand::tConfItemH("HELPER_HUD_FREEZE", sg_helperHudFreeze);
+    static tConfItem<bool> sg_helperHudFreezeConf = HelperCommand::tConfItem("HELPER_HUD_FREEZE", sg_helperHudFreeze);
     REAL sg_helperHudX = 0.755; // Helper Hud Y Position
-    static tConfItem<REAL> sg_helperHudXC = HelperCommand::tConfItemH("HELPER_HUD_LOCX", sg_helperHudX);
+    static tConfItem<REAL> sg_helperHudXC = HelperCommand::tConfItem("HELPER_HUD_LOCX", sg_helperHudX);
     REAL sg_helperHudY = -0.01; // Helper Hud Y Position
-    static tConfItem<REAL> sg_helperHudYC = HelperCommand::tConfItemH("HELPER_HUD_LOCY", sg_helperHudY);
+    static tConfItem<REAL> sg_helperHudYC = HelperCommand::tConfItem("HELPER_HUD_LOCY", sg_helperHudY);
     REAL sg_helperHudSize = .055; // Size of Helper Hud
-    static tConfItem<REAL> sg_helperHudSizeC = HelperCommand::tConfItemH("HELPER_HUD_SIZE", sg_helperHudSize);
+    static tConfItem<REAL> sg_helperHudSizeC = HelperCommand::tConfItem("HELPER_HUD_SIZE", sg_helperHudSize);
     tString sg_helperHudIgnoreList = tString("");
-    static tConfItem<tString> sg_helperHudIgnoreListConf = HelperCommand::tConfItemH("HELPER_HUD_IGNORE_LIST", sg_helperHudIgnoreList);
+    static tConfItem<tString> sg_helperHudIgnoreListConf = HelperCommand::tConfItem("HELPER_HUD_IGNORE_LIST", sg_helperHudIgnoreList);
 }
 
 using namespace helperConfig;

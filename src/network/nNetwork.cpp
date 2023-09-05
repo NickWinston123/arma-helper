@@ -580,13 +580,13 @@ nDescriptor::nDescriptor(unsigned short identification,
 int nCurrentSenderID::currentSenderID_ = 0;
 
 bool sg_descriptorsShow = false;
-static tConfItem<bool> sg_descriptorsShowConf = HelperCommand::tConfItemH("DESCRIPTOR_HANDLED_SHOW",sg_descriptorsShow);
+static tConfItem<bool> sg_descriptorsShowConf = HelperCommand::tConfItem("DESCRIPTOR_HANDLED_SHOW",sg_descriptorsShow);
 
 bool sg_descriptorsTrackLastDataAlways = false;
-static tConfItem<bool> sg_descriptorsTrackLastDataAlwaysConf = HelperCommand::tConfItemH("DESCRIPTOR_HANDLED_TRACK_LAST_DATA_ALWAYS",sg_descriptorsTrackLastDataAlways);
+static tConfItem<bool> sg_descriptorsTrackLastDataAlwaysConf = HelperCommand::tConfItem("DESCRIPTOR_HANDLED_TRACK_LAST_DATA_ALWAYS",sg_descriptorsTrackLastDataAlways);
 
 tString sg_descriptorsShowIgnoreList = tString("");
-static tConfItem<tString> sg_descriptorsShowIgnoreListConf = HelperCommand::tConfItemH("DESCRIPTOR_HANDLED_SHOW_IGNORE_LIST",sg_descriptorsShowIgnoreList);
+static tConfItem<tString> sg_descriptorsShowIgnoreListConf = HelperCommand::tConfItem("DESCRIPTOR_HANDLED_SHOW_IGNORE_LIST",sg_descriptorsShowIgnoreList);
 
 void nDescriptor::HandleMessage(nMessage &message){
     // store sender ID for console
@@ -1143,10 +1143,10 @@ nMessage::~nMessage(){
 
 
 bool sg_descriptorsShowBroadCasted = false;
-static tConfItem<bool> sg_descriptorsShowBroadCastedConf = HelperCommand::tConfItemH("DESCRIPTOR_BROADCASTED_SHOW",sg_descriptorsShowBroadCasted);
+static tConfItem<bool> sg_descriptorsShowBroadCastedConf = HelperCommand::tConfItem("DESCRIPTOR_BROADCASTED_SHOW",sg_descriptorsShowBroadCasted);
 
 tString sg_descriptorsShowBroadCastedIgnoreList = tString("");
-static tConfItem<tString> sg_descriptorsShowBroadCastedIgnoreListConf = HelperCommand::tConfItemH("DESCRIPTOR_BROADCASTED_SHOW_IGNORE_LIST",sg_descriptorsShowBroadCastedIgnoreList);
+static tConfItem<tString> sg_descriptorsShowBroadCastedIgnoreListConf = HelperCommand::tConfItem("DESCRIPTOR_BROADCASTED_SHOW_IGNORE_LIST",sg_descriptorsShowBroadCastedIgnoreList);
 
 void nMessage::BroadCast(bool ack){
 

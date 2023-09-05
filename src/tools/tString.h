@@ -345,7 +345,7 @@ bool st_StringEndsWith( tString const & test, char const * end );
 extern tArray<tString> str_explode(tString delimiter, tString ret);
 
 bool copyToClipboard(tString contents);
-
+bool pasteFromClipboard(tString *content, int& cursorPos);
 
 namespace std {
     template <>

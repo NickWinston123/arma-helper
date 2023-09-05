@@ -210,7 +210,7 @@ REAL sg_delayCycleBonus = .95;
 REAL sg_delayCycleBonus = 1;
 #endif
 
-static tConfItem<REAL> c_db = HelperCommand::tConfItemH("CYCLE_DELAY_BONUS",
+static tConfItem<REAL> c_db = HelperCommand::tConfItem("CYCLE_DELAY_BONUS",
                                sg_delayCycleBonus);
 
 REAL sg_delayDbCycleBonus = .95;

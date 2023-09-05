@@ -254,6 +254,7 @@ public:
 public:
 
     static tString lastLoadOutput;
+    static tString lastLoadCommandName;
     static bool applyValueToMatchedConfigs(const std::string& pattern, tConfItemBase::tConfItemMap& confmap, const std::string& valueStr);
     // static tConfItemBase* s_ConfItemAnchor;
     //static tConfItemBase* Anchor(){return dynamic_cast<tConfItemBase *>(s_ConfItemAnchor);}
@@ -424,29 +425,18 @@ public:
     virtual ~tConfItem(){}
 
 
-    virtual bool allowedChange() 
+    virtual bool allowedChange()
     {
-        std::istringstream s(getValue().stdString());
-        std::istream::pos_type pos = s.tellg();
-        std::string content((std::istreambuf_iterator<char>(s)), std::istreambuf_iterator<char>());
-        s.clear();
-        s.seekg(pos, std::ios::beg);
-
-        std::stringstream s_copy(content);
-
-        if (shouldChangeFunc_ == NULL)
+        if (!shouldChangeFunc_)
             return true;
-        else 
-        {
-            T dummy( *target );
-            int c = EatWhitespace(s_copy);
-            if (c != '\n' && s_copy && !s_copy.eof() && s_copy.good()) {
-                DoRead(s_copy, dummy, DUMMYREQUIRED());
-                if (shouldChangeFunc_(dummy)) {
-                    return true;
-                }
-            }
+
+
+        T dummy( *target );
+
+        if (shouldChangeFunc_(dummy)) {
+            return true;
         }
+
 
         return false;
     }
@@ -791,6 +781,33 @@ struct tConfigMigration
 extern bool st_FirstUse;
 
 extern tString st_AddToUserExt(tArray<tString> commands);
+
+#define CONFITEMS_STORED_SIZE 150
+class TempConfItemManager
+{
+    private:
+    tConfItemBase *configuration[CONFITEMS_STORED_SIZE];
+    int            CurrentConfitem;
+
+    public:
+    TempConfItemManager() {
+        CurrentConfitem = 0;
+    }
+
+    ~TempConfItemManager() {
+        DeleteConfitems();
+    }
+
+    void StoreConfitem(tConfItemBase *c)
+    {
+        tASSERT(CurrentConfitem < CONFITEMS_STORED_SIZE);
+        configuration[CurrentConfitem++] = c;
+    }
+
+    void DeleteConfitems();
+
+};
+
 
 #endif
 

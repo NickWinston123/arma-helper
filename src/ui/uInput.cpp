@@ -40,8 +40,22 @@ static int su_allActionsLen = 0;
 
 uAction::uAction(uAction *&anchor, const char *name,
                  int priority_,
+                 bool stopDelay,
+                 bool stopDelay2)
+    : uAction(anchor, name, priority_, uINPUT_DIGITAL)
+{
+    undelayable = stopDelay;
+}
+
+uAction::uAction(uAction *&anchor, const char *name,
+                 int priority_,
                  uInputType t)
-    : tListItem<uAction>(anchor), tooltip_(NULL), type(t), priority(priority_), internalName(name)
+    : tListItem<uAction>(anchor), 
+      tooltip_(NULL),
+      type(t),
+      priority(priority_),
+      internalName(name),
+      undelayable(false)
 {
     globalID = localID = su_allActionsLen++;
 
@@ -67,7 +81,7 @@ uAction::uAction(uAction *&anchor, const char *name,
                  const tOutput &help,
                  int priority_,
                  uInputType t)
-    : tListItem<uAction>(anchor), tooltip_(NULL), type(t), priority(priority_), internalName(name), description(desc), helpText(help)
+    : tListItem<uAction>(anchor), tooltip_(NULL), type(t), priority(priority_), internalName(name), description(desc), helpText(help), undelayable(false)
 {
     globalID = localID = su_allActionsLen++;
 
@@ -159,6 +173,12 @@ static tConfItem_key x;
 static uAction *s_playerActions;
 static uAction *s_cameraActions;
 static uAction *s_globalActions;
+
+uActionPlayer::uActionPlayer(const char *name,
+                             int priority,
+                             bool val,
+                             bool stopChange)
+    : uAction(s_playerActions, name, priority, stopChange) {}
 
 uActionPlayer::uActionPlayer(const char *name,
                              int priority,
@@ -283,7 +303,7 @@ bool uBind::Activate(REAL x, bool delayed)
 {
     delayedValue_ = x;
 
-    if (!delayed || !Delayable())
+    if (!delayed || act->undelayable || !Delayable())
     {
         lastValue_ = x;
         return this->DoActivate(x);
@@ -572,7 +592,7 @@ static void s_InputConfigGeneric(int ePlayer, uAction *&actions, const tOutput &
 
     input = tNEW(uMenuItemInput *)[len];
     int a = 0;
-    for (uAction *A = actions; A; A = A->Next())
+        for (uAction *A = actions; A; A = A->Next())
     {
         input[a++] = new uMenuItemInput(&input_menu,
                                         A,

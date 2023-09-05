@@ -262,19 +262,6 @@ static eWavData cycle_run("moviesounds/engine.wav", "sound/cyclrun.wav");
 static eWavData turn_wav("moviesounds/cycturn.wav", "sound/expl.wav");
 static eWavData scrap("sound/expl.wav");
 
-// a class of textures where the transparent part of the
-// image is replaced by the player color
-class gTextureCycle : public rSurfaceTexture
-{
-    gRealColor color_; // player color
-    bool wheel;        // wheel or body
-public:
-    gTextureCycle(rSurface const &surface, const gRealColor &color, bool repx = 0, bool repy = 0, bool wheel = false);
-
-    virtual void ProcessImage(SDL_Surface *im);
-
-    virtual void OnSelect(bool enforce);
-};
 
 gTextureCycle::gTextureCycle(rSurface const &surface, const gRealColor &color, bool repx, bool repy, bool w)
     : rSurfaceTexture(rTextureGroups::TEX_OBJ, surface, repx, repy),
@@ -341,13 +328,13 @@ extern REAL sg_cycleBrakeDeplete;
 #endif
 
 static bool sg_smarterBot = false;
-static tConfItem<bool> sg_smarterBotConf = HelperCommand::tConfItemH("SMARTER_BOT", sg_smarterBot);
+static tConfItem<bool> sg_smarterBotConf = HelperCommand::tConfItem("SMARTER_BOT", sg_smarterBot);
 
 bool sg_smarterBotTeam = false; // absolute unit - does not include owner
-static tConfItem<bool> sg_smarterBotTeamConf = HelperCommand::tConfItemH("SMARTER_BOT_TEAM", sg_smarterBotTeam);
+static tConfItem<bool> sg_smarterBotTeamConf = HelperCommand::tConfItem("SMARTER_BOT_TEAM", sg_smarterBotTeam);
 
 bool sg_smarterBotTeamOwner = false; // absolute unit
-static tConfItem<bool> sg_smarterBotTeamOwnerConf = HelperCommand::tConfItemH("SMARTER_BOT_TEAM_OWNER", sg_smarterBotTeamOwner);
+static tConfItem<bool> sg_smarterBotTeamOwnerConf = HelperCommand::tConfItem("SMARTER_BOT_TEAM_OWNER", sg_smarterBotTeamOwner);
 
 static void gSmarterBotReset(std::istream &s)
 {
@@ -396,7 +383,7 @@ static void gSmarterBotReset(std::istream &s)
     }
 }
 
-static tConfItemFunc gSmarterBotResetConf = HelperCommand::tConfItemFuncH("SMARTER_BOT_RESET", &gSmarterBotReset);
+static tConfItemFunc gSmarterBotResetConf = HelperCommand::tConfItemFunc("SMARTER_BOT_RESET", &gSmarterBotReset);
 
 
 gSmarterBot::~gSmarterBot()
@@ -658,60 +645,60 @@ void gSmarterBot::Activate(REAL currentTime)
 }
 
 tString sg_smarterBotEnableForPlayers("1,2,3,4");
-static tConfItem<tString> sg_smarterBotEnableForPlayersConf = HelperCommand::tConfItemH("SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnableForPlayers);
+static tConfItem<tString> sg_smarterBotEnableForPlayersConf = HelperCommand::tConfItem("SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnableForPlayers);
 
 static bool sg_smarterBotAlwaysActive = false;
-static tConfItem<bool> sg_smarterBotAlwaysActiveConf = HelperCommand::tConfItemH("SMARTER_BOT_ALWAYS_ACTIVE", sg_smarterBotAlwaysActive);
+static tConfItem<bool> sg_smarterBotAlwaysActiveConf = HelperCommand::tConfItem("SMARTER_BOT_ALWAYS_ACTIVE", sg_smarterBotAlwaysActive);
 
 bool sg_smarterBotAFKCheck = false;
-static tConfItem<bool> sg_smarterBotAFKCheckConf = HelperCommand::tConfItemH("SMARTER_BOT_AFK_CHECK", sg_smarterBotAFKCheck);
+static tConfItem<bool> sg_smarterBotAFKCheckConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK", sg_smarterBotAFKCheck);
 
 REAL sg_smarterBotAFKCheckTime = 8;
-static tConfItem<REAL> sg_smarterBotAFKCheckTimeConf = HelperCommand::tConfItemH("SMARTER_BOT_AFK_CHECK_TIME", sg_smarterBotAFKCheckTime);
+static tConfItem<REAL> sg_smarterBotAFKCheckTimeConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_TIME", sg_smarterBotAFKCheckTime);
 bool sg_smarterBotAFKCheckIfChatting = true;
-static tConfItem<bool> sg_smarterBotAFKCheckIfChattingConf = HelperCommand::tConfItemH("SMARTER_BOT_AFK_CHECK_IF_CHATTING", sg_smarterBotAFKCheckIfChatting);
+static tConfItem<bool> sg_smarterBotAFKCheckIfChattingConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_IF_CHATTING", sg_smarterBotAFKCheckIfChatting);
 
 static REAL sg_lastTimeHackMult = 0;
-static tConfItem<REAL> sg_lastTimeHackMultConf = HelperCommand::tConfItemH("CYCLE_LAST_TIME_HACK_ADD", sg_lastTimeHackMult);
+static tConfItem<REAL> sg_lastTimeHackMultConf = HelperCommand::tConfItem("CYCLE_LAST_TIME_HACK_ADD", sg_lastTimeHackMult);
 
 static bool sg_localBot = false;
-static tConfItem<bool> sg_localBotConf = HelperCommand::tConfItemH("LOCAL_BOT", sg_localBot);
+static tConfItem<bool> sg_localBotConf = HelperCommand::tConfItem("LOCAL_BOT", sg_localBot);
 
 static bool sg_botActivationDualMode = false;
-static tConfItem<bool> sg_botActivationDualModeConf = HelperCommand::tConfItemH("BOT_ACTIVATION_DUAL_MODE", sg_botActivationDualMode);
+static tConfItem<bool> sg_botActivationDualModeConf = HelperCommand::tConfItem("BOT_ACTIVATION_DUAL_MODE", sg_botActivationDualMode);
 
 static bool sg_localBotEnabledWhileChatting = true;
-static tConfItem<bool> sg_localBotEnabledWhileChattingConf = HelperCommand::tConfItemH("LOCAL_BOT_ENABLED_WHILE_CHATTING", sg_localBotEnabledWhileChatting);
+static tConfItem<bool> sg_localBotEnabledWhileChattingConf = HelperCommand::tConfItem("LOCAL_BOT_ENABLED_WHILE_CHATTING", sg_localBotEnabledWhileChatting);
 
 static bool sg_smarterBotEnabledWhileChatting = true;
-static tConfItem<bool> sg_smarterBotEnabledWhileChattingConf = HelperCommand::tConfItemH("SMARTER_BOT_ENABLED_WHILE_CHATTING", sg_smarterBotEnabledWhileChatting);
+static tConfItem<bool> sg_smarterBotEnabledWhileChattingConf = HelperCommand::tConfItem("SMARTER_BOT_ENABLED_WHILE_CHATTING", sg_smarterBotEnabledWhileChatting);
 
 tString sg_localBotEnableForPlayers("1,2,3,4");
-static tConfItem<tString> sg_localBotEnableForPlayersConf = HelperCommand::tConfItemH("LOCAL_BOT_ENABLED_PLAYERS", sg_localBotEnableForPlayers);
+static tConfItem<tString> sg_localBotEnableForPlayersConf = HelperCommand::tConfItem("LOCAL_BOT_ENABLED_PLAYERS", sg_localBotEnableForPlayers);
 
 static bool sg_localBotAlwaysActive = false;
-static tConfItem<bool> sg_localBotAlwaysActiveConf = HelperCommand::tConfItemH("LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive);
+static tConfItem<bool> sg_localBotAlwaysActiveConf = HelperCommand::tConfItem("LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive);
 
 static bool sg_localBotBrake = true;
-static tConfItem<bool> sg_localBotBrakeConf = HelperCommand::tConfItemH("LOCAL_BOT_BRAKE", sg_localBotBrake);
+static tConfItem<bool> sg_localBotBrakeConf = HelperCommand::tConfItem("LOCAL_BOT_BRAKE", sg_localBotBrake);
 
 static REAL sg_localBotNewWallBlindness = 0;
-static tConfItem<REAL> sg_localBotNewWallBlindnessConf = HelperCommand::tConfItemH("LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness);
+static tConfItem<REAL> sg_localBotNewWallBlindnessConf = HelperCommand::tConfItem("LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness);
 
 static REAL sg_localBotMinTimestep = 0;
-static tConfItem<REAL> sg_localBotMinTimestepConf = HelperCommand::tConfItemH("LOCAL_BOT_MIN_TIMESTEP", sg_localBotMinTimestep);
+static tConfItem<REAL> sg_localBotMinTimestepConf = HelperCommand::tConfItem("LOCAL_BOT_MIN_TIMESTEP", sg_localBotMinTimestep);
 
 static REAL sg_localBotDelay = 0;
-static tConfItem<REAL> sg_localBotDelayConf = HelperCommand::tConfItemH("LOCAL_BOT_DELAY", sg_localBotDelay);
+static tConfItem<REAL> sg_localBotDelayConf = HelperCommand::tConfItem("LOCAL_BOT_DELAY", sg_localBotDelay);
 
 static REAL sg_localBotRange = 10;
-static tConfItem<REAL> sg_localBotRangeConf = HelperCommand::tConfItemH("LOCAL_BOT_RANGE", sg_localBotRange);
+static tConfItem<REAL> sg_localBotRangeConf = HelperCommand::tConfItem("LOCAL_BOT_RANGE", sg_localBotRange);
 
 static REAL sg_localBotDecay = 0;
-static tConfItem<REAL> sg_localBotDecayConf = HelperCommand::tConfItemH("LOCAL_BOT_DECAY", sg_localBotDecay);
+static tConfItem<REAL> sg_localBotDecayConf = HelperCommand::tConfItem("LOCAL_BOT_DECAY", sg_localBotDecay);
 
 static REAL sg_localBotEnemyPenalty = 0;
-static tConfItem<REAL> sg_localBotEnemyPenaltyConf = HelperCommand::tConfItemH("LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty);
+static tConfItem<REAL> sg_localBotEnemyPenaltyConf = HelperCommand::tConfItem("LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty);
 
 #ifdef DEBUGCHATBOT
 typedef tSettingItem<REAL> gChatBotSetting;
@@ -6712,13 +6699,13 @@ extern REAL sg_cycleBrakeRefill;
 extern REAL sg_cycleBrakeDeplete;
 
 bool sg_playerMessageDeathSelf = false;
-static tConfItem<bool> sg_playerMessageDeathSelfConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_DEATH_SELF", sg_playerMessageDeathSelf);
+static tConfItem<bool> sg_playerMessageDeathSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_SELF", sg_playerMessageDeathSelf);
 
 bool sg_playerMessageDeathOther = false;
-static tConfItem<bool> sg_playerMessageDeathOtherConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGER_DEATH_OTHER", sg_playerMessageDeathOther);
+static tConfItem<bool> sg_playerMessageDeathOtherConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_OTHER", sg_playerMessageDeathOther);
 
 bool se_playerTriggerMessagesZoneVerify = false;
-static tConfItem<bool> se_playerTriggerMessagesZoneVerifyConf = HelperCommand::tConfItemH("PLAYER_MESSAGE_TRIGGERS_ZONE_VERIFY", se_playerTriggerMessagesZoneVerify);
+static tConfItem<bool> se_playerTriggerMessagesZoneVerifyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_ZONE_VERIFY", se_playerTriggerMessagesZoneVerify);
 void gCycle::ReadSync(nMessage &m)
 {
     // data from sync message

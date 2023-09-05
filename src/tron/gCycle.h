@@ -526,4 +526,17 @@ extern REAL sg_cycleRespawnZoneRadius, sg_cycleRespawnZoneGrowth;
 extern bool sg_HideCycles, sg_HideCyclesWalls;
 #include "tDirectories.h"
 
+// a class of textures where the transparent part of the
+// image is replaced by the player color
+class gTextureCycle : public rSurfaceTexture
+{
+    gRealColor color_; // player color
+    bool wheel;        // wheel or body
+public:
+    gTextureCycle(rSurface const &surface, const gRealColor &color, bool repx = 0, bool repy = 0, bool wheel = false);
+
+    virtual void ProcessImage(SDL_Surface *im);
+
+    virtual void OnSelect(bool enforce);
+};
 #endif

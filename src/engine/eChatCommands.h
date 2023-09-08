@@ -390,6 +390,8 @@ class LeaveCommand : public ChatCommand
 public:
     LeaveCommand() : ChatCommand("LeaveCommand") {}
     bool execute(tString args) override;
+private:
+    bool requirePlayer = false;
 };
 
 class QuitCommand : public ChatCommand

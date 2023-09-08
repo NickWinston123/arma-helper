@@ -120,10 +120,10 @@ public:
 class FileManager
 {
 public:
-FileManager(const tString &fileName, bool var = true)
-        : fileName(fileName), var(var)
+    FileManager(const tString &fileName, const tPath &dirPath)
+        : fileName(fileName), path(dirPath)
     {
-        var ? tDirectories::Var().Open(i, fileName) : tDirectories::Log().Open(i, fileName) ;
+        path.Open(i, fileName);
     }
 
     ~FileManager()
@@ -148,6 +148,7 @@ FileManager(const tString &fileName, bool var = true)
     void CheckAndClearFileBySize(REAL maxFileSizeMB);
 
 private:
+    const tPath &path;
     tString fileName;
     std::ofstream o;
     std::ifstream i;

@@ -1125,6 +1125,9 @@ ePlayer *sn_conUser = nullptr;
 
 ePlayer* sn_consoleUser() { return sn_conUser; }
 
+ePlayer* sn_consoleUser(ePlayer *conUser) { sn_conUser = conUser;
+                                            return sn_conUser; }
+
 void sg_ConsoleInput(ePlayer *player){
 #ifndef DEDICATED
     LoadChatCommandConfCommands();

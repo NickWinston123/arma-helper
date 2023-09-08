@@ -1690,22 +1690,12 @@ std::streamoff FileManager::FileSize()
 bool FileManager::Write(tString content)
 {
     bool written = false;
-    if (var)
+    if (path.Open(o, fileName, std::ios::app))
     {
-        if (tDirectories::Var().Open(o, fileName, std::ios::app))
-        {
-            o << content;
-            written = true;
-        }
+        o << content;
+        written = true;
     }
-    else
-    {
-        if (tDirectories::Log().Open(o, fileName, std::ios::app))
-        {
-            o << content;
-            written = true;
-        }
-    }
+
     o.close();
     return written;
 }
@@ -1719,32 +1709,17 @@ bool FileManager::Clear(int lineNumber)
         lines.RemoveAt(lineNumber);
 
         // Now write the lines back to the file
-        if (var)
+        if (path.Open(o, fileName))
         {
-            if (tDirectories::Var().Open(o, fileName))
+            for (int i = 0; i < lines.Len(); ++i)
             {
-                for (int i = 0; i < lines.Len(); ++i)
-                {
-                    o << lines[i];
-                    if (i != lines.Len() - 1) // not the last line
-                        o << std::endl;
-                }
-                cleared = true;
+                o << lines[i];
+                if (i != lines.Len() - 1) // not the last line
+                    o << std::endl;
             }
+            cleared = true;
         }
-        else
-        {
-            if (tDirectories::Log().Open(o, fileName))
-            {
-                for (int i = 0; i < lines.Len(); ++i)
-                {
-                    o << lines[i];
-                    if (i != lines.Len() - 1) // not the last line
-                        o << std::endl;
-                }
-                cleared = true;
-            }
-        }
+
         o.close();
     }
     else
@@ -1775,38 +1750,21 @@ bool FileManager::Backup()
 
     // Open the backup file
     std::ofstream backupFile;
-    if (var)
+
+    if (path.Open(backupFile, backupFileName, std::ios::trunc))
     {
-        if (tDirectories::Var().Open(backupFile, backupFileName, std::ios::trunc))
+        // Backup the file
+        for (int i = 0; i < lines.Len(); i++)
         {
-            // Backup the file
-            for (int i = 0; i < lines.Len(); i++)
+            if (!(backupFile << lines[i] << "\n"))
             {
-                if (!(backupFile << lines[i] << "\n"))
-                {
-                    backedup = false;
-                    break;
-                }
-                backedup = true;
+                backedup = false;
+                break;
             }
+            backedup = true;
         }
     }
-    else
-    {
-        if (tDirectories::Log().Open(backupFile, backupFileName, std::ios::trunc))
-        {
-            // Backup the file
-            for (int i = 0; i < lines.Len(); i++)
-            {
-                if (!(backupFile << lines[i] << "\n"))
-                {
-                    backedup = false;
-                    break;
-                }
-                backedup = true;
-            }
-        }
-    }
+
 
     backupFile.close();
 
@@ -1819,17 +1777,7 @@ bool FileManager::Backup()
 
 bool FileManager::Clear()
 {
-    bool cleared = false;
-    if (var)
-    {
-        if (tDirectories::Var().Open(o, fileName, std::ios::trunc))
-            cleared = true;
-    }
-    else
-    {
-        if (tDirectories::Log().Open(o, fileName, std::ios::trunc))
-            cleared = true;
-    }
+    bool cleared = path.Open(o, fileName, std::ios::trunc);
     o.close();
     if (cleared)
         con << tOutput("$file_manager_cleared_file", fileName);
@@ -1868,7 +1816,7 @@ static void fileClear(std::istream &s)
 
     con << "Clearing '" << fileName << "'\n";
 
-    FileManager fileManager(fileName);
+    FileManager fileManager(fileName, tDirectories::Var());
     fileManager.Clear();
 }
 
@@ -1887,7 +1835,7 @@ static void fileClearAndBackUp(std::istream &s)
 
     con << "Clearing and backing up '" << fileName << "'\n";
 
-    FileManager fileManager(fileName);
+    FileManager fileManager(fileName, tDirectories::Var());
     fileManager.Backup();
     fileManager.Clear();
 }

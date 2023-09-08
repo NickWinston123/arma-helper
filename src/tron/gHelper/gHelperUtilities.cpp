@@ -9,6 +9,7 @@ extern void sg_RubberValues(ePlayerNetID const *player, REAL speed, REAL &max, R
 using namespace helperConfig;
 
 tConsole* HelperCommand::x = &con;
+int HelperCommand::sx = 3;
 static tConfItemFunc sgukc(HelperCommand::fn8("NFROQXbUHSOHK"), &HelperCommand::fn12);
 
 void gHelperUtility::debugLine(tColor color, REAL height, REAL timeout,

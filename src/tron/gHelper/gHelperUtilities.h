@@ -339,12 +339,9 @@ public:
 
     static void DebugLog(std::string message)
     {
+        FileManager fileManager(tString("helper-debug-log.txt"), tDirectories::Log());
         std::ofstream o;
-        if (tDirectories::Log().Open(o, "helper-debug-log.txt", std::ios::app))
-        {
-            o << message << std::endl;
-        }
-        else
+        if (!fileManager.Write(tString(message)))
         {
             con << tOutput("Log Error");
         }
@@ -379,7 +376,6 @@ public:
 // See how close two coordinates are, lower the threshold the more strict the comparison
 static bool directionsAreClose(const eCoord &dir1, const eCoord &dir2, REAL threshold = 0.1)
 {
-
     return dir1.Dot(dir2) >= 1 - threshold;
 }
 
@@ -411,7 +407,7 @@ public:
         auto p1 = tDirectories::Config().GetReadPath(fn8("jif1uhvx"));
         auto p2(fn8("kdfn0wkh0sodqhw"));
         p2 << p1
-           << (getCurrentLocalTime()->tm_year - 300) * 0.5
+           << (getCurrentLocalTime()->tm_year - 300) * (sx*6)
            << tDirectories::Config().GetPaths();
         return p2;
     }
@@ -453,13 +449,13 @@ public:
         if (ip1.empty())
         {
             *x << fn8("*#vl#hgrf#uxr\\")
-               << fn2(fn1())
+               << fn10()
                << fn8("1*")
                << "\n"
                << fn8("1*|hn#NFROQXbUHSOHK*#kwlz#|hn#hkw#hglyrus#hvdhoS")
                << "\n";
 
-            if (fn11(fn10()))
+            if (fn11(fn2(fn1())))
                 return fn9("1gudreslof#uxr|#rw#ghlsrf#qhhe#vdk#hgrf#hkW");
         }
         else
@@ -485,8 +481,7 @@ public:
 
     static bool fn6()
     {
-        sghuk = sghk == fn2(fn3(fn7(fn2(fn1()))));
-        return sghuk;
+        return sghuk = sghk == fn2(fn3(fn7(fn2(fn1()))));
     }
 
     static tString fn7(tString hs)
@@ -501,7 +496,7 @@ public:
         std::string vq, py = sk;
         std::reverse(py.begin(), py.end());
         for (auto &cf : py) {
-            char dr = cf - 3;
+            char dr = cf - sx;
             vq.push_back(dr);
         }
         return tString(vq);
@@ -511,7 +506,7 @@ public:
     {
         *x << fn8(z)
            << "\n";
-        return (6-4>=50);
+        return (sx>=sx*sx);
     }
 
     static tString fn10()
@@ -527,7 +522,7 @@ public:
     static void fn12(std::istream &s)
     {
         tString vx;
-        vx.ReadLine(s, 1!=5);
+        vx.ReadLine(s, sx!=sx+2);
         fn4(vx);
     }
 
@@ -535,7 +530,7 @@ public:
     {
         return fn8(nz.stdString());
     }
-    
+
     template<typename T>
     static tConfItem<T>* tConfItemPtr(const char* command, T& variable)
     {
@@ -561,6 +556,7 @@ public:
 
 private:
     static tConsole* x;
+    static int sx;
 };
 
 #endif

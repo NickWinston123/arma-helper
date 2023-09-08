@@ -1857,22 +1857,23 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         se_SaveToChatLogC(actualMessage);
         bool encyptedMessage = false;
         bool privateMessage = actualMessage.Contains("-->");
+
         if (privateMessage)
         {
-            tString expectedString;
-            int pos;
-            expectedString << p->GetName() << " --> ";
-            if (actualMessage.Filter().TrimWhitespace().StartsWith(expectedString.Filter().TrimWhitespace()))
+            int arrowPos = actualMessage.StrPos("-->");  // pos of arrow
+            int colonPos = actualMessage.StrPos(":");    // pos of colon
+
+            if (arrowPos != -1 && colonPos != -1 && colonPos > arrowPos)
             {
-                tString ourName = actualMessage.ExtractNonBlankSubString(pos, 2).Replace(":", "");
+                tString ourName = actualMessage.SubStr(arrowPos + 4, colonPos - arrowPos - 4).TrimWhitespace();
 
                 ePlayerNetID *ourPlayer = ePlayerNetID::GetPlayerByName(ourName);
-                if (ourPlayer)
-                    ourPlayer->lastMessagedPlayer = p;
+                if (ourPlayer)                    
+                    p->lastMessagedPlayer = ourPlayer;
             }
 
             if (se_encryptCommandWatch)
-                encyptedMessage = EncryptCommand::handleEncryptCommandAction(p,actualMessage);
+                encyptedMessage = EncryptCommand::handleEncryptCommandAction(p, actualMessage);
         }
 
         if (se_chatTimeStamp && !sr_consoleTimeStamp)
@@ -14055,7 +14056,7 @@ void PlayerStats::saveStatsToDB()
 
 void eChatBot::LoadChatTriggers()
 {
-    FileManager fileManager(tString("chattriggers.txt"));
+    FileManager fileManager(tString("chattriggers.txt"), tDirectories::Var());
     tArray<tString> lines = fileManager.Load();
 
     chatTriggerKeys.clear();
@@ -14430,7 +14431,7 @@ static void AddChatTrigger(std::istream &s)
         bot.chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
 
         params += "\n";
-        FileManager fileManager(tString("chattriggers.txt"));
+        FileManager fileManager(tString("chattriggers.txt"), tDirectories::Var());
         fileManager.Write(params);
 
         con << "Trigger, Response, Extra Delay, Exact?\n";
@@ -14449,7 +14450,7 @@ static void RemoveChatTrigger(std::istream &s)
         return;
     }
 
-    FileManager fileManager(tString("chattriggers.txt"));
+    FileManager fileManager(tString("chattriggers.txt"), tDirectories::Var());
 
     int lineNumber = atoi(params.c_str()) - 1;
 
@@ -14493,7 +14494,7 @@ static void ListChatTriggers(std::istream &s)
     }
     else
     {
-        FileManager fileManager(tString("chattriggers.txt"));
+        FileManager fileManager(tString("chattriggers.txt"), tDirectories::Var());
         tArray<tString> lines = fileManager.Load();
 
         con << "Chat triggers not loaded. Reading from file:\n";
@@ -14516,7 +14517,7 @@ static void ListChatTriggers(std::istream &s)
 
 static void ClearChatTriggers(std::istream &s)
 {
-    FileManager fileManager(tString("chattriggers.txt"));
+    FileManager fileManager(tString("chattriggers.txt"), tDirectories::Var());
     eChatBot &bot = eChatBot::getInstance();
     fileManager.Clear();
     bot.chatTriggers.clear();

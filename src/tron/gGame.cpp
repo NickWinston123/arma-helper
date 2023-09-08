@@ -3242,7 +3242,7 @@ void MainMenu(bool ingame)
     }
 
     if (sr_consoleLogLimited)
-        FileManager(tString("consolelog-limited.txt")).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
+        FileManager(tString("consolelog-limited.txt"), tDirectories::Log()).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
 
     if (ingame)
     {

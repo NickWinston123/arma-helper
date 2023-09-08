@@ -36,5 +36,6 @@ extern void  sg_PlayerMenu(), sg_SpecialMenu(), sg_ConfigMenu();
 extern uMenu sg_screenMenu;
 void         sg_ConsoleInput(ePlayer* player = nullptr); // let the player enter one line of console input
 extern ePlayer* sn_consoleUser();
+extern ePlayer* sn_consoleUser(ePlayer *conUser);
 extern void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast);
 #endif

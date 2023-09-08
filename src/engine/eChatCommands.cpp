@@ -541,7 +541,7 @@ void RgbCommand::se_outputColorInfo(int index, const tString &Name, REAL r, REAL
 
 void RgbCommand::se_loadSavedColor(ePlayer *local_p, int lineNumber)
 {
-    tArray<tString> colors = FileManager(se_colorVarFile).Load();
+    tArray<tString> colors = FileManager(se_colorVarFile, tDirectories::Var()).Load();
 
     if (lineNumber < colors.Len())
     {
@@ -558,7 +558,7 @@ void RgbCommand::se_loadSavedColor(ePlayer *local_p, int lineNumber)
 
 void RgbCommand::se_listSavedColors(int savedColorsCount)
 {
-    tArray<tString> colors = FileManager(se_colorVarFile).Load();
+    tArray<tString> colors = FileManager(se_colorVarFile, tDirectories::Var()).Load();
     con << tOutput("$players_color_list", savedColorsCount, se_colorVarFile);
 
     int index = 0;
@@ -594,7 +594,7 @@ bool RgbCommand::execute(tString args)
     else
     {
         tArray<tString> passedString = args.Split(" ");
-        FileManager fileManager(se_colorVarFile);
+        FileManager fileManager(se_colorVarFile, tDirectories::Var());
         tString command = passedString[0];
         bool correctParameters = false;
 
@@ -1028,7 +1028,7 @@ bool SearchCommand::execute(tString args)
             return true;
         }
 
-        FileManager fileManager(fileName,false);
+        FileManager fileManager(fileName, tDirectories::Log());
         auto lines = fileManager.Load();
 
         fileSizeMB = gHelperUtility::BytesToMB(fileManager.FileSize());
@@ -1684,9 +1684,7 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
 
     tString actualMessage = message.SubStr(colonPos + 2);
     if (!actualMessage.StartsWith(se_encryptCommandPrefix))
-    {
         return false;
-    }
 
     int startIndex = actualMessage.StrPos(se_encryptCommandPrefix) + se_encryptCommandPrefix.Len() - 1;
 
@@ -1702,43 +1700,64 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
     }
 
     int argsStartIndex = startIndex + se_encryptCommandLength + 1;
-    if (argsStartIndex < actualMessage.Len())
-    {
-        tString args = actualMessage.SubStr(argsStartIndex);
-        con << "EncryptCommand: Loading command '" << args << "'\n";
 
-        tCurrentAccessLevel level(tAccessLevel_Owner, true);
-        std::stringstream s(static_cast<char const *>(args));
-        tConfItemBase::LoadAll(s);
-
-        if (se_encryptCommandWatchFeedback)
-        {
-            tString feedback;
-            tString messageToSend;
-
-            if (tConfItemBase::lastLoadOutput.empty())
-                feedback << "Line loaded: '" << args << "'";
-            else
-                feedback << tConfItemBase::lastLoadOutput;
-
-            messageToSend << "/msg " << player->GetName() << " " << feedback << "\n";
-            for (int i = MAX_PLAYERS - 1; i >= 0; i--)
-            {
-                ePlayer *local_p = ePlayer::PlayerConfig(i);
-                if (local_p && local_p->netPlayer)
-                {
-                    se_NewChatMessage(local_p->netPlayer, messageToSend)->BroadCast();
-                    break;
-                }
-            }
-        }
-        return true;
-    }
-    else
+    if (argsStartIndex > actualMessage.Len())
     {
         con << "EncryptCommand: No arguments found after the hash.\n";
         return true;
     }
+
+    tConfItemBase::lastLoadOutput = tString("");
+
+    tString args = actualMessage.SubStr(argsStartIndex);
+    con << "EncryptCommand: Loading command '" << args << "'\n";
+
+    ePlayerNetID *consoleUser = player->lastMessagedPlayer;
+    if (!consoleUser) 
+    {
+        tConfItemBase::lastLoadOutput << "This player has not messaged you\n";
+        con << tConfItemBase::lastLoadOutput;
+    }
+    else 
+    {
+        ePlayer *local_p = ePlayer::NetToLocalPlayer((player->lastMessagedPlayer));
+        if (!local_p) 
+        {   
+            tConfItemBase::lastLoadOutput << "No local console user available to run this command.\n";
+            con << tConfItemBase::lastLoadOutput;
+        }
+        else 
+        {
+            sn_consoleUser(local_p);            
+            tCurrentAccessLevel level(tAccessLevel_Owner, true);
+            std::stringstream s(static_cast<char const *>(args));
+            tConfItemBase::LoadAll(s);
+        }
+    }
+
+    if (se_encryptCommandWatchFeedback)
+    {
+        tString feedback;
+        tString messageToSend;
+
+        if (tConfItemBase::lastLoadOutput.empty())
+            feedback << "Line loaded: '" << args << "'";
+        else
+            feedback << tConfItemBase::lastLoadOutput;
+
+        messageToSend << "/msg " << player->GetName() << " " << feedback << "\n";
+        for (int i = MAX_PLAYERS - 1; i >= 0; i--)
+        {
+            ePlayer *local_p = ePlayer::PlayerConfig(i);
+            if (local_p && local_p->netPlayer)
+            {
+                se_NewChatMessage(local_p->netPlayer, messageToSend)->BroadCast();
+                break;
+            }
+        }
+    }
+
+    return true;
 }
 
 bool EncryptCommand::execute(tString args)
@@ -1766,20 +1785,16 @@ bool EncryptCommand::execute(tString args)
         messageToSend << "/msg " << name << " " << se_encryptCommandPrefix << hash;
 
         if (pos < args.Len())
-        {
             messageToSend << args.SubStr(pos);
-        }
 
         se_NewChatMessage(netPlayer, messageToSend)->BroadCast();
     }
     else
-    {
         con << CommandText()
             << ErrorText()
             << "Player not found for '"
             << args
             << "'\n";
-    }
 
     return true;
 }
@@ -1804,9 +1819,7 @@ bool VoteCommand::execute(tString args)
             sendChatMessage(netPlayer, args);
     }
     else
-    {
         con << "Invalid command format.\n";
-    }
 
     return true;
 }

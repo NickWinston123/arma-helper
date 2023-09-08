@@ -555,6 +555,32 @@ void sg_ConfigMenu()
 {
     uMenu menu("$config_setup_menu_text");
 
+    if ((sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18 && se_GetLocalPlayer()))
+    {
+        uMenu dlsets("Save Server Settings");
+        uMenuItemFunction gfs(&dlsets, "Save", "", []()
+                              { se_NewChatMessage(se_GetLocalPlayer(), tString("/dlsettings"))->BroadCast(); });
+        uMenuItemString gfs_s(&dlsets,
+                              "Filename",
+                              "",
+                              settingsDownloadCfg);
+
+        uMenu dlcfg("Download Public Config File");
+        uMenuItemFunction sfc(&dlcfg, "Download", "download public config from server", []()
+                              {
+        tString cmd("/dlcfg ");
+        cmd << sg_c_svr_cfg_in;
+
+        se_NewChatMessage(se_GetLocalPlayer(), cmd)->BroadCast(); });
+        uMenuItemString sfc_s(&dlcfg,
+                              "Filename",
+                              "",
+                              sg_c_svr_cfg_in);
+
+        gMenuItemSubmenu dcsm(&menu, &dlcfg, "");
+        gMenuItemSubmenu dssm(&menu, &dlsets, "");
+    }
+
     uMenu add_to_cfg("Add Persistant Setting Value");
 
     uMenuItemFunction atc_b(&add_to_cfg,
@@ -590,42 +616,6 @@ void sg_ConfigMenu()
 
     uMenuItemFunction sac(&menu, "$config_save_all_text", "$config_save_all_help", &tConfItemBase::WriteAllToFile);
     uMenuItemFunction lac(&menu, "$config_load_all_text", "$config_load_all_help", &st_LoadConfig);
-
-
-
-
-    uMenu dlsets("Save Server Settings");
-    uMenuItemFunction gfs(&dlsets, "Save", "", [](){ se_NewChatMessage(se_GetLocalPlayer(), tString("/dlsettings"))->BroadCast(); });
-    uMenuItemString gfs_s(&dlsets,
-        "Filename",
-        "",
-        settingsDownloadCfg);
-
-
-    uMenu dlcfg("Download Public Config File");
-    uMenuItemFunction sfc(&dlcfg, "Download", "download public config from server", []()
-    {
-        tString cmd("/dlcfg ");
-        cmd << sg_c_svr_cfg_in;
-
-        se_NewChatMessage(se_GetLocalPlayer(), cmd)->BroadCast();
-    });
-    uMenuItemString sfc_s(&dlcfg,
-        "Filename",
-        "",
-        sg_c_svr_cfg_in);
-
-
-    gMenuItemSubmenu dcsm( &menu, &dlcfg,  "" );
-    gMenuItemSubmenu dssm( &menu, &dlsets, "" );
-
-    if(!(
-        sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18 && se_GetLocalPlayer()
-    ))
-    {
-        dcsm.disabled = true;
-        dssm.disabled = true;
-    }
 
     uMenu sccM("$config_save_changed_text");
     uMenuItemFunction sccf(&sccM, "Save", "", &tConfItemBase::WriteChangedToFile);
@@ -1137,7 +1127,7 @@ ePlayer* sn_consoleUser() { return sn_conUser; }
 
 void sg_ConsoleInput(ePlayer *player){
 #ifndef DEDICATED
-    ManageChatCommandConfCommands();
+    LoadChatCommandConfCommands();
     sn_conUser = player;
     st_ToDoOnce(&do_con);
 #endif
@@ -1150,7 +1140,7 @@ public:
                          "$viewport_menu_help",
                          rViewportConfiguration::next_conf_num,
                  0,rViewportConfiguration::s_viewportNumConfigurations-1){
-        m->RequestSpaceBelow(.9);
+        m->RequestSpaceBelow(.2);
     }
 
     virtual REAL SpaceRight(){return 1;}
@@ -1705,6 +1695,14 @@ void sg_PlayerMenu(){
     ArmageTron_viewport_menuitem vp(&Player_men);
     uMenuItemFunctionInt  *names[MAX_PLAYERS];
 
+    uMenuItemFunction cfm(&Player_men,
+                          "$config_setup_menu_text",
+                          "$config_setup_menu_help",
+                          &sg_ConfigMenu);
+
+    if (!sg_ShowConfigMenu())
+        Player_men.RemoveItem(&cfm);
+              
     int i;
 
     for(i=MAX_PLAYERS-1;i>=0;i--){
@@ -1730,9 +1728,6 @@ void sg_PlayerMenu(){
         delete names[i];
     }
 }
-
-
-
 
 void viewport_menu_x(void){
     uMenu sg_PlayerMenu("$viewport_assign_text");

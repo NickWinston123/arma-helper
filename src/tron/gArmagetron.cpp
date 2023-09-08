@@ -63,6 +63,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rRender.h"
 #include "rSDL.h"
 #endif
+#include "eChatCommands.h"
+
 
 // data structure for command line parsing
 class gMainCommandLineAnalyzer : public tCommandLineAnalyzer
@@ -701,6 +703,8 @@ int main(int argc, char **argv)
 
         st_LoadConfig();
 
+        LoadChatCommandConfCommands();
+
         // migrate user configuration from previous versions
         if (sn_configurationSavedInVersion != sn_programVersion)
         {
@@ -873,7 +877,6 @@ int main(int argc, char **argv)
                     gLogo::SetSpinning(true);
 
                     sn_bigBrotherString = renderer_identification + "VER=" + sn_programVersion + "\n\n";
-
                     MainMenu();
 
                     // remove all players

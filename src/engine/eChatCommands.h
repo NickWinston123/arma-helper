@@ -119,7 +119,7 @@ public:
 std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> CommandFactory();
 extern bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> &commandFactories = CommandFactory());
 
-extern void ManageChatCommandConfCommands();
+extern void LoadChatCommandConfCommands();
 
 class MsgCommand : public ChatCommand
 {

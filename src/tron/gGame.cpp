@@ -3360,15 +3360,6 @@ void MainMenu(bool ingame)
                           &sg_DisplayVersionInfo);
 
 #ifndef DEDICATED
-    uMenuItemFunction cfm(&MainMenu,
-                          "$config_setup_menu_text",
-                          "$config_setup_menu_help",
-                          &sg_ConfigMenu);
-
-    uMenuItemFunction spm(&MainMenu,
-                          "$special_setup_menu_text",
-                          "$special_setup_menu_help",
-                          &sg_SpecialMenu);
 
     uMenuItemFunction hm(&MainMenu,
                          "Helper Menu",
@@ -3378,14 +3369,6 @@ void MainMenu(bool ingame)
     if (!helperConfig::sghuk || !helperConfig::sg_helperMenuEnabled)
         MainMenu.RemoveItem(&hm);
 
-    if (!sg_ShowConfigMenu())
-    {
-        MainMenu.RemoveItem(&cfm);
-    }
-    if (!sg_ShowSpecialMenu())
-    {
-        MainMenu.RemoveItem(&spm);
-    }
 #endif
 
     uMenu Settings("$system_settings_menu_text");
@@ -3434,6 +3417,16 @@ void MainMenu(bool ingame)
     uMenuItemFunction global_key(&misc, "$misc_global_key_text",
                                  "$misc_global_key_help",
                                  &su_InputConfigGlobal);
+
+    uMenuItemFunction spm(&misc,
+                          "$special_setup_menu_text",
+                          "$special_setup_menu_help",
+                          &sg_SpecialMenu);
+
+    if (!sg_ShowSpecialMenu())
+    {
+        misc.RemoveItem(&spm);
+    }
 
     uMenuItemToggle wrap(&misc, "$misc_menuwrap_text",
                          "$misc_menuwrap_help",
@@ -6875,7 +6868,7 @@ bool ConnectToLastServer()
         ConnectToServer(server);
         return true;
     }
-    else 
+    else
     {
         con << "Last server not set!\n";
         return false;

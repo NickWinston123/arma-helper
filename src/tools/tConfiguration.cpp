@@ -1638,8 +1638,8 @@ void st_LoadConfig( bool printChange )
     tConfItemBase::printErrors=true;
     Load( config, "settings.cfg" );
 
-
-
+    Load( config, "user.cfg" );
+    Load( var, "user_extended.cfg" );
 
 #ifdef DEDICATED
     Load( config, "settings_dedicated.cfg" );
@@ -1657,9 +1657,6 @@ void st_LoadConfig( bool printChange )
 
     Load( config, "autoexec.cfg" );
     Load( var, "autoexec.cfg" );
-
-    Load( config, "user.cfg" );
-    Load( var, "user_extended.cfg" );
     st_LoadCustomConfigs();
 
     // load configuration from playback

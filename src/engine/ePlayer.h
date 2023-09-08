@@ -100,10 +100,6 @@ extern bool se_toggleChatFlag, se_toggleChatFlagAlways, se_BlockChatFlags;
 
 #define PLAYER_CONFITEMS (60+MAX_INSTANT_CHAT)
 
-static tArray<tString> nameSpeakWords;
-static int nameSpeakIndex;
-static int nameSpeakPlayerID;
-static int playerUpdateIteration;
 
 extern tString se_encryptCommand;
 static int forceCreatePlayer = -1;
@@ -321,6 +317,10 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
+    static tArray<tString> nameSpeakWords;
+    static int nameSpeakIndex;
+    static int nameSpeakPlayerID;
+    static int playerUpdateIteration;
     bool isLocal() { return pID != -1; }
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastDiedByPlayer = nullptr;

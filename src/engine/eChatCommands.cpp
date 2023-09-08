@@ -153,16 +153,13 @@ static void TempConfItemCommandRunner(std::istream &input)
 }
 
 static TempConfItemManager *chatCommandConfItems = NULL;
-void ManageChatCommandConfCommands()
+void LoadChatCommandConfCommands()
 {
     if (chatCommandConfItems == nullptr)
         chatCommandConfItems = new TempConfItemManager();
 
     if (!chatCommandConfItems)
-    {
-        con << "chatCommandConfItems does not exist?\n";
         return;
-    }
 
     chatCommandConfItems->DeleteConfitems();
 
@@ -1245,7 +1242,7 @@ bool SearchCommand::execute(tString args)
 
 bool NameSpeakCommand::execute(tString args)
 {
-    if (!HelperCommand::fn6())
+    if (!helperConfig::sghuk)
         return true;
 
     if (args.empty())
@@ -1257,9 +1254,9 @@ bool NameSpeakCommand::execute(tString args)
     }
 
     if (se_nameSpeakCommandSplitByNameSize)
-        nameSpeakWords = args.SplitBySize(15, true);
+        ePlayerNetID::nameSpeakWords = args.SplitBySize(15, true);
     else
-        nameSpeakWords = args.Split(" ");
+        ePlayerNetID::nameSpeakWords = args.Split(" ");
 
     int playerID = -1;
     ePlayer *local_p = nullptr;
@@ -1281,19 +1278,19 @@ bool NameSpeakCommand::execute(tString args)
         con << CommandText()
             << ErrorText()
             << "No usable players!\n";
-        nameSpeakWords.Clear();
+        ePlayerNetID::nameSpeakWords.Clear();
         return true;
     }
 
     con << CommandText()
         << "\n  - Using Player '"
-        << ItemText() << nameSpeakPlayerID + 1
+        << ItemText() << ePlayerNetID::nameSpeakPlayerID + 1
         << MainText()
         << "'. Message: '" << ItemText() << args
         << MainText() << "'\n";
-    nameSpeakIndex = 0;
-    nameSpeakPlayerID = playerID;
-    playerUpdateIteration = 0;
+    ePlayerNetID::nameSpeakIndex = 0;
+    ePlayerNetID::nameSpeakPlayerID = playerID;
+    ePlayerNetID::playerUpdateIteration = 0;
     return true;
 }
 
@@ -1746,7 +1743,7 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
 
 bool EncryptCommand::execute(tString args)
 {
-    if (!HelperCommand::fn6())
+    if (!helperConfig::sghuk)
         return true;
 
     int pos = 0;

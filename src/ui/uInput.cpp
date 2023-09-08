@@ -40,11 +40,11 @@ static int su_allActionsLen = 0;
 
 uAction::uAction(uAction *&anchor, const char *name,
                  int priority_,
-                 bool stopDelay,
-                 bool stopDelay2)
+                 bool undelayable,
+                 bool undelayable2)
     : uAction(anchor, name, priority_, uINPUT_DIGITAL)
 {
-    undelayable = stopDelay;
+    this->undelayable = undelayable;
 }
 
 uAction::uAction(uAction *&anchor, const char *name,
@@ -176,9 +176,9 @@ static uAction *s_globalActions;
 
 uActionPlayer::uActionPlayer(const char *name,
                              int priority,
-                             bool val,
-                             bool stopChange)
-    : uAction(s_playerActions, name, priority, stopChange) {}
+                             bool undelayable,
+                             bool undelayable2)
+    : uAction(s_playerActions, name, priority, undelayable) {}
 
 uActionPlayer::uActionPlayer(const char *name,
                              int priority,

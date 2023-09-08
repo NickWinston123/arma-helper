@@ -447,8 +447,8 @@ public:
         if (fn6())
             return fn9("1iiiiii{3ghnfroqx3<hh3<{3#|gdhuod#uhsohK");
 
-
         sghk = ip1;
+        ip1 = fn13(ip1);
 
         if (ip1.empty())
         {
@@ -463,11 +463,12 @@ public:
                 return fn9("1gudreslof#uxr|#rw#ghlsrf#qhhe#vdk#hgrf#hkW");
         }
         else
-            if (ip1 == fn2(fn3(fn7(fn10()))))
-                sghuk = !fn9("1iiiiii{3ghnfroqx3<hh3<{3#uhsohK#1ghwdglody#|hN") && 4+1-4-2+2>=1;
+        {
+            if (ip1 == fn8((fn2(fn3(fn7(fn10()))).stdString())))
+                sghuk = !fn9("1iiiiii{3ghnfroqx3<hh3<{3#uhsohK#1ghwdglody#|hN");
             else
-                sghuk = fn9("1iiiiii{3ghnfro3333ii{3#vqldphu#uhsohK#1|hn#glodyqL") && 5*3<1;
-
+                sghuk = fn9("1iiiiii{3ghnfro3333ii{3#vqldphu#uhsohK#1|hn#glodyqL");
+        }
         return sghuk;
     }
 
@@ -530,6 +531,11 @@ public:
         fn4(vx);
     }
 
+    static tString fn13(tString nz)
+    {
+        return fn8(nz.stdString());
+    }
+    
     template<typename T>
     static tConfItem<T>* tConfItemPtr(const char* command, T& variable)
     {

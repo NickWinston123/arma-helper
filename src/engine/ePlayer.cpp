@@ -5654,7 +5654,7 @@ tString randomName()
     {
         charset = se_randomNameCharset;
     }
-    int length = se_randomNameLength;
+        int length = se_randomNameLength;
     tString randomStr;
     randomStr.SetLen(length);
     for (int i = 0; i < length; i++)
@@ -10023,6 +10023,11 @@ tString RandomStr(int maxLength)
     randomStr[length] = '\0';
     return randomStr;
 }
+
+tArray<tString> ePlayerNetID::nameSpeakWords;
+int ePlayerNetID::nameSpeakIndex = 0;
+int ePlayerNetID::nameSpeakPlayerID = 0;
+int ePlayerNetID::playerUpdateIteration = 0;
 
 void ePlayerNetID::scheduleNameChange()
 {

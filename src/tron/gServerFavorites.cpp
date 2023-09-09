@@ -82,7 +82,13 @@ public:
 
     //! constructor
     gServerFavorite(int ID, char const *prefix)
-        : name_(""), port_(sn_defaultPort), index_(ID), confName_(sg_ConfName(ID, prefix, "_NAME"), name_), confAddress_(sg_ConfName(ID, prefix, "_ADDRESS"), address_), confPort(sg_ConfName(ID, prefix, "_PORT"), port_)
+        : name_(""),
+          port_(sn_defaultPort),
+          index_(ID),
+          confName_(sg_ConfName(ID, prefix, "_NAME"), name_),
+          confAddress_(sg_ConfName(ID, prefix, "_ADDRESS"), address_),
+          confPort(sg_ConfName(ID, prefix, "_PORT"), port_),
+          server_(nullptr)
     {
     }
 
@@ -102,11 +108,28 @@ public:
         return index_;
     }
 
+    tString lastRefreshTimeStr()
+    {
+        REAL lastTime = -999;
+        if (server_)
+            lastTime = server_->timeQuerySent;
+
+        lastTime = tSysTimeFloat() - lastTime;
+
+        tString output;
+
+        if (lastTime < 0)
+            output << "Never!";
+        else
+            output << lastTime << " seconds";
+        return output;
+    }
+
 public:
     tString name_;    //!< the human readable name
     tString address_; //!< connection address
     int port_;        //!< port to connect to
-
+    nServerInfo * server_;
 private:
     int index_; //!< index in favorite holder
 
@@ -379,6 +402,144 @@ static void sg_ClearConnectionItems()
             delete item;
     }
 }
+
+#include "uMenu.h"
+#include "SDL.h"
+
+static REAL shrink = .6f;
+static REAL displace = .15;
+static REAL sg_menuBottom = -.9;
+static REAL sg_requestBottom = -.9;
+
+static REAL text_width = 0.025;
+static REAL aspect = 1;
+static int resW = 1, resH = 1;
+static REAL text_height = .05;
+class gFavoriteMenuItem;
+
+#include "rScreen.h"
+class gFavoriteMenuItem : public uMenuItemFunctionInt
+{
+public:
+    gServerFavorite *favorite_;
+
+    gFavoriteMenuItem(uMenu *M, const tOutput &name,
+                      const tOutput &help, INTFUNCPTR f, int arg, gServerFavorite *fav)
+        : uMenuItemFunctionInt(M, name, help, f, arg), favorite_(fav)
+    {
+    }
+
+    virtual ~gFavoriteMenuItem()
+    {
+    }
+
+    void RenderBackground()
+    {
+#ifndef DEDICATED
+        REAL helpTopReal = sg_requestBottom * shrink + displace - .05;
+
+        if (!favorite_)
+            return;
+
+        uMenuItemFunctionInt::RenderBackground();
+
+        rTextField::SetDefaultColor(tColor(1, 1, 1));
+
+        aspect = (REAL(sr_screenHeight) / sr_screenWidth) * 1.15;
+        text_width = 0.025 * aspect;
+        resH = sr_screenHeight;
+        resW = sr_screenWidth;
+
+        rTextField players(-.9, helpTopReal, text_width, text_height);
+        nServerInfo *server = favorite_->server_;
+
+        if (server)
+        {
+            players << tOutput("$network_master_players") << tOutput(" ");
+            if (server->UserNamesOneLine().Len() > 2)
+                players << server->UserNamesOneLine();
+            else
+                players << tOutput("$network_master_players_empty");
+            players << "\n"
+                    << tColoredString::ColorString(1, 1, 1);
+            tColoredString uri;
+            uri << server->Url() << tColoredString::ColorString(1, 1, 1);
+            players << tOutput("$network_master_serverinfo", server->Release(), uri, server->Options());
+        }
+
+        REAL helpSpace = players.GetTop() - players.GetBottom();
+        REAL helpTop = -.85 + helpSpace;
+        REAL helpTopScaled = (helpTop - displace) / shrink;
+        REAL helpTopMax = .25;
+        REAL helpTopMin = -.9;
+        if (helpTopScaled > helpTopMax)
+        {
+            helpTopScaled = helpTopMax;
+        }
+        if (helpTopScaled < helpTopMin)
+        {
+            helpTopScaled = helpTopMin;
+        }
+        sg_requestBottom = helpTopScaled;
+#endif
+    }
+
+    virtual bool Event(SDL_Event &event)
+    {
+#ifndef DEDICATED
+        if (event.type != SDL_KEYDOWN)
+        {
+            return false;
+        }
+
+        switch (event.key.keysym.sym)
+        {
+        case (SDLK_DELETE):
+            if (favorite_)
+            {
+                favorite_->name_ = "";
+                favorite_->address_ = "";
+                sg_GenerateConnectionItems();
+            }
+            return true;
+            break;
+        case (SDLK_p):
+            if (favorite_ && favorite_->server_)
+            {
+                favorite_->server_->SetQueryType(nServerInfo::QUERY_ALL);
+                favorite_->server_->QueryServer();
+                favorite_->server_->ClearInfoFlags();
+                sn_Receive();
+                sn_SendPlanned();
+                sg_GenerateConnectionItems();
+            }
+            return true;
+            break;
+        case (SDLK_r):
+            for (int i = NUM_FAVORITES - 1; i >= 0; --i)
+            {
+                gServerFavorite &fav = sg_holder->GetFavorite(i);
+                nServerInfo *favServer = fav.server_;
+                if (favServer)
+                {
+                    favServer->SetQueryType(nServerInfo::QUERY_ALL);
+                    favServer->QueryServer();
+                    favServer->ClearInfoFlags();
+                }
+            }
+            sn_Receive();
+            sn_SendPlanned();
+            sg_GenerateConnectionItems();
+            return true;
+            break;
+        default:
+            break;
+        }
+#endif
+        return uMenuItemFunctionInt::Event(event);
+    }
+};
+
 static void sg_GenerateConnectionItems()
 {
     tASSERT(sg_connectionMenu);
@@ -393,11 +554,32 @@ static void sg_GenerateConnectionItems()
 
         if (fav.name_ != "" && fav.name_ != "Empty" && fav.address_ != "")
         {
-            tOutput fc;
-            fc.SetTemplateParameter(1, tColoredString::RemoveColors(fav.name_));
-            sg_AddBookmarkString("menu_connect", fc);
+            tString onlinePlayers("None");
+            tString serverName = fav.name_;
+            nServerInfo *server = fav.server_;
+            if (server)
+            {
+                serverName = server->GetName();
+                serverName << " 0xRESETT("
+                           << server->Users()
+                           << "/"
+                           << server->MaxUsers()
+                           << ")\n";
+            }
+            else
+            {
+                serverName = tColoredString::RemoveColors(serverName);
+            }
 
-            tNEW(uMenuItemFunctionInt)(sg_connectionMenu, fc, sg_GetBookmarkString("menu_edit_connect_help"), sg_Connect, i);
+            tOutput serveNameOutput;
+            serveNameOutput << serverName;
+
+            tOutput fh;
+            fh.SetTemplateParameter(1, serverName);
+            fh.SetTemplateParameter(2, fav.lastRefreshTimeStr());
+            sg_AddBookmarkString("menu_last_poll_help", fh);
+
+            tNEW(gFavoriteMenuItem)(sg_connectionMenu, serveNameOutput, fh, sg_Connect, i, &fav);
         }
     }
 }
@@ -422,6 +604,44 @@ static void sg_TransferCustomServer()
     }
 }
 
+#include <unordered_map>
+#include <string>
+#include <utility>
+
+struct PairHash {
+public:
+    template <typename T1, typename T2>
+    std::size_t operator () (const std::pair<T1,T2> &p) const {
+        auto h1 = std::hash<T1>{}(p.first); 
+        auto h2 = std::hash<T2>{}(p.second); 
+        return h1 ^ h2;
+    }
+};
+
+void sg_LinkFavoritesToServers()
+{
+    nServerInfo::GetFromMaster(0, "", false);
+    nServerInfo *server = nServerInfo::GetFirstServer();
+
+    std::unordered_map<std::pair<tString, int>, gServerFavorite *, PairHash> favoriteMap;
+
+    for (int i = NUM_FAVORITES - 1; i >= 0; --i)
+    {
+        gServerFavorite &fav = sg_holder->GetFavorite(i);
+        favoriteMap[std::make_pair(fav.address_, fav.port_)] = &fav;
+    }
+
+    while (server)
+    {
+        auto it = favoriteMap.find(std::make_pair(server->GetConnectionName(), static_cast<int>(server->GetPort())));
+        if (it != favoriteMap.end())
+            it->second->server_ = server;
+        server = server->Next();
+    }
+}
+
+
+
 static void sg_FavoritesMenu(INTFUNCPTR connect, gServerFavoritesHolder &holder)
 {
     sg_Connect = connect;
@@ -435,6 +655,7 @@ static void sg_FavoritesMenu(INTFUNCPTR connect, gServerFavoritesHolder &holder)
     uMenuItemFunction edit(&net_menu, sg_GetBookmarkString("menu_edit"), sg_GetBookmarkString("menu_edit_help"), &sg_EditServers);
     sg_connectionMenuItemKeep = &edit;
 
+    sg_LinkFavoritesToServers();
     sg_GenerateConnectionItems();
     net_menu.Enter();
     sg_ClearConnectionItems();

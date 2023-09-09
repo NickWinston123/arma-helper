@@ -129,7 +129,9 @@ protected:
     bool    advancedInfoSetEver;  // did we already get the info during this query run?
     int     queried;          // how often did we already query for it this turn?
 
+public:
     nTimeRolling timeQuerySent;    //  the time the info query message was sent
+protected:
     REAL    	 ping;             // the ping time
 
     nVersion version_;		// currently supported protocol versions
@@ -275,7 +277,7 @@ public:
     static nServerInfo* GetMasters();              //!< get the list of master servers
     static nServerInfo* GetRandomMaster();         //!< gets a random master server
 
-    static void GetFromMaster(nServerInfoBase *masterInfo=NULL, char const * fileSuffix = NULL );  // get all the basic infos from the master server, stored in the server info file of the given suffix
+    static void GetFromMaster(nServerInfoBase *masterInfo, char const * fileSuffix, bool pingMaster = true);  // get all the basic infos from the master server, stored in the server info file of the given suffix
 
     static void TellMasterAboutMe(nServerInfoBase *masterInfo=NULL);  // dedicated server: tell master server about my existence
 

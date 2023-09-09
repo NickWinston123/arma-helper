@@ -922,6 +922,9 @@ static tConfItem<bool> WRAP("WRAP_MENU",uMenu::wrap);
 REAL sg_consoleTabCompletionMaxPossibilities = 50;
 static tConfItem< REAL > sg_consoleTabCompletionMaxPossibilitiesConf("CONSOLE_TAB_COMPLETION_MAX_POSSIBILITIES",sg_consoleTabCompletionMaxPossibilities);
 
+bool sg_consoleTabCompletionPopulateVal = true;
+static tConfItem< bool > sg_consoleTabCompletionPopulateValConf("CONSOLE_TAB_COMPLETION_POPULATE_VALUE",sg_consoleTabCompletionPopulateVal);
+
 static void ShowPossibilities(const std::deque<tString> &results, const tString &word)
 {
     if (results.size() > sg_consoleTabCompletionMaxPossibilities)
@@ -985,8 +988,11 @@ void ConTabCompletition(tString &inputString, int &cursorPos, bool changeLast)
 
     for (int i = 0; i < words.Len(); i++)
     {
-        tString word = words[i];
+        tString word = words[i].StripWhitespace();
 
+        if (word.empty())
+            continue;
+            
         currentWordEndPos += word.Len() - 1;
 
         if (currentWordEndPos == cursorPos)
@@ -1017,11 +1023,29 @@ void ConTabCompletition(tString &inputString, int &cursorPos, bool changeLast)
             }
         }
 
-        currentWordEndPos++;
+        currentWordEndPos++;    
 
         updatedString << word << ((i + 1 == words.Len()) ? "" : " ");
     }
 
+    if (sg_consoleTabCompletionPopulateVal && changeLast && updatedString.EndsWith(" "))
+    {
+        tString cmdName(updatedString);
+        cmdName = cmdName.StripWhitespace();
+
+        tConfItemBase *item = tConfItemBase::GetConfigItem(cmdName);
+        if (item)
+        {
+            tString value(item->getValue());
+            if (value != "Function")
+            {
+                updatedString << item->getValue();
+                cursorPos = updatedString.Len();  
+            }
+        }
+    }
+
+    
     inputString = updatedString;
 }
 

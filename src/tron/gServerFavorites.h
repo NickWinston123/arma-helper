@@ -50,5 +50,6 @@ public:
     //! test whether a server is bookmarked
     static bool IsFavorite(nServerInfoBase const *server);
 };
+extern void sg_LinkFavoritesToServers();
 
 #endif

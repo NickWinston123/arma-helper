@@ -6778,7 +6778,7 @@ static void player_removed_from_game_handler(nMessage &m)
     if (p && sn_GetNetState() != nSERVER)
     {
         if (se_playerTriggerMessages && se_playerMessageLeave)
-            eChatBot::InitiateAction(nullptr,tString("$left"),true);
+            p->IsHuman() ? eChatBot::InitiateAction(nullptr, tString("$left"), true) : eChatBot::InitiateAction(nullptr, tString("$leftbot"), true);
 
         p->RemoveFromGame();
     }
@@ -12435,7 +12435,7 @@ void ePlayerNetID::UpdateName(void)
         if (nameFirstSync && !isLocal() && !GetName().empty())
         {
             if (se_playerTriggerMessages && se_playerMessageEnter)
-                eChatBot::InitiateAction(this, tString("$enter"), true);
+                IsHuman() ? eChatBot::InitiateAction(this, tString("$enter"), true) : eChatBot::InitiateAction(this, tString("$enterbot"), true);
 
             nameFirstSync = false;
         }

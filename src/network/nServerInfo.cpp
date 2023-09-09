@@ -1514,7 +1514,7 @@ tString MasterFile( char const * suffix )
     return tString( filename.str().c_str() );
 }
 
-void nServerInfo::GetFromMaster(nServerInfoBase *masterInfo, char const * fileSuffix )
+void nServerInfo::GetFromMaster(nServerInfoBase *masterInfo, char const * fileSuffix, bool pingMaster )
 {
     sn_AcceptingFromMaster = true;
 
@@ -1553,6 +1553,9 @@ void nServerInfo::GetFromMaster(nServerInfoBase *masterInfo, char const * fileSu
         }
     }
 
+    if (!pingMaster)
+        return;
+        
     // connect to the master server
     con << tOutput("$network_master_connecting", masterInfo->GetName() );
     switch(masterInfo->Connect( Login_Post0252 ))
@@ -1578,7 +1581,7 @@ void nServerInfo::GetFromMaster(nServerInfoBase *masterInfo, char const * fileSu
         if ( masterInfo )
         {
             con << tOutput( "$network_master_timeout_retry" );
-            GetFromMaster();
+            GetFromMaster(nullptr,nullptr);
         }
         else
         {

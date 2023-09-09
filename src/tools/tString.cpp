@@ -2528,13 +2528,13 @@ tArray<tString> tString::SplitBySize(int size, bool fullWords)
 
     if (size <= 0)
     {
-        return arrayString; 
+        return arrayString;
     }
 
-    if (!fullWords)  
+    if (!fullWords)
     {
         int strLength = ret.Len();
-        int numberOfChunks = (strLength + size - 1) / size; 
+        int numberOfChunks = (strLength + size - 1) / size;
 
         for (int i = 0; i < numberOfChunks; i++)
         {
@@ -2543,7 +2543,7 @@ tArray<tString> tString::SplitBySize(int size, bool fullWords)
             arrayString[i] = ret.SubStr(startIndex, endIndex - startIndex);
         }
     }
-    else  
+    else
     {
         int index = 0;
         int arrayKey = 0;
@@ -2878,6 +2878,21 @@ const char* tString::c_str() const {
 #include <X11/Xatom.h>
 #endif
 
+static void sg_copyToClipboard(std::istream &s)
+{
+    tString params;
+    params.ReadLine(s, true);
+    con << "Copying '" << params << "' to clipboard.\n";
+
+    if (copyToClipboard(params))
+        con << "Copied '" << params << "' to clipboard.\n";
+    else
+        con << "Failed to copy to clipboard.\n";
+
+}
+
+static tConfItemFunc sg_copyToClipboardConf("COPY_TO_CLIPBOARD", &sg_copyToClipboard);
+
 bool copyToClipboard(tString contents)
 {
     int contentsPos = contents.StrPos("\n");
@@ -2959,7 +2974,7 @@ bool pasteFromClipboard(tString *content, int& cursorPos)
     #ifdef MACOSX
         return false;
     #endif
-    
+
     #ifdef WIN32
     if (OpenClipboard(0))
     {

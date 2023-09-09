@@ -2070,6 +2070,8 @@ bookmarks_menu_name_help    The name of the server. This is used only for displa
 bookmarks_menu_connect      Connect to \1
 bookmarks_menu_edit_connect_text    Connect To Server
 bookmarks_menu_edit_connect_help    Enter the game grid!
+bookmarks_menu_last_poll_time     Get Poll time
+bookmarks_menu_last_poll_help Connect to: \1Last poll time: \2
 
 
 masters_menu                Subcultures

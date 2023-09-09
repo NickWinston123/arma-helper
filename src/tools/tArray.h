@@ -63,6 +63,11 @@ protected:
 public:
     void ComplainIfFull();
 
+    bool Empty() const 
+    {
+        return Len() == 0;
+    }
+    
     void SetLen(int i){len=i;}
     int Len()const {return len;}
     int  Size() const {return size;}

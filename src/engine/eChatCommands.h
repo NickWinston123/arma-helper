@@ -64,7 +64,7 @@ public:
     bool execute(ePlayer *p, tString args)
     {
         player = p;
-        
+
         if (!player)
             return false;
 
@@ -108,9 +108,12 @@ public:
 protected:
     ChatCommand(const std::string &name) : commandName(name) {}
 
-private:
+protected:
     bool requirePlayer = true;
+
+private:
     std::string commandName;
+
 public:
     ePlayer *player;
     ePlayerNetID *netPlayer;
@@ -150,6 +153,7 @@ public:
 
     static tColoredString gatherPlayerColor(ePlayerNetID *p, bool showReset = true);
 
+    static tString localPlayerMode(ePlayer *local_p);
     bool execute(tString args) override;
 };
 
@@ -191,14 +195,15 @@ Usage:
 class RgbCommand : public ChatCommand
 {
 public:
-    RgbCommand() : ChatCommand("RgbCommand") {}
+    RgbCommand() : ChatCommand("RgbCommand")
+    {
+        requirePlayer = false;
+    }
     static std::tuple<tString, int, int, int> se_extractColorInfoFromLine(const tString &line);
     static void se_outputColorInfo(int index, const tString &Name, REAL r, REAL g, REAL b);
     static void se_loadSavedColor(ePlayer *local_p, int lineNumber);
     static void se_listSavedColors(int savedColorsCount);
     bool execute(tString args) override;
-private:
-    bool requirePlayer = false;
 };
 
 class BrowserCommand : public ChatCommand
@@ -246,14 +251,20 @@ public:
 class SpectateCommand : public ChatCommand
 {
 public:
-    SpectateCommand() : ChatCommand("SpectateCommand") {}
+    SpectateCommand() : ChatCommand("SpectateCommand")
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
 };
 
 class JoinCommand : public ChatCommand
 {
 public:
-    JoinCommand() : ChatCommand("JoinCommand") {}
+    JoinCommand() : ChatCommand("JoinCommand")
+    {
+        requirePlayer = false;
+    }
 
     bool execute(tString args) override;
 };
@@ -295,10 +306,11 @@ public:
 class SaveConfigCommand : public ChatCommand
 {
 public:
-    SaveConfigCommand() : ChatCommand("SaveConfigCommand") {}
+    SaveConfigCommand() : ChatCommand("SaveConfigCommand")
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
-private:
-    bool requirePlayer = false;
 };
 
 class ReplyCommand : public ChatCommand
@@ -325,25 +337,27 @@ public:
 class ReconnectCommand : public ChatCommand
 {
 public:
-    ReconnectCommand() : ChatCommand("ReconnectCommand") {}
+    ReconnectCommand() : ChatCommand("ReconnectCommand")
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
-private:
-    bool requirePlayer = false;
 };
 
 #include <queue>
 class CalculateCommand : public ChatCommand
 {
 public:
-    CalculateCommand() : ChatCommand("CalculateCommand") {}
+    CalculateCommand() : ChatCommand("CalculateCommand")
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
 
 private:
     tString preprocess(const tString &input);
 
     std::queue<tString> infixToPostfix(const tString &infix);
-
-    bool requirePlayer = false;
 };
 
 class UpdateCommand : public ChatCommand
@@ -379,29 +393,31 @@ private:
 class RenameCommand : public ChatCommand
 {
 public:
-    RenameCommand() : ChatCommand("RenameCommand") {}
+    RenameCommand() : ChatCommand("RenameCommand")
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
-private:
-    bool requirePlayer = false;
 };
 
 class LeaveCommand : public ChatCommand
 {
 public:
-    LeaveCommand() : ChatCommand("LeaveCommand") {}
+    LeaveCommand() : ChatCommand("LeaveCommand")
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
-private:
-    bool requirePlayer = false;
 };
 
 class QuitCommand : public ChatCommand
 {
 public:
-    QuitCommand() : ChatCommand("QuitCommand") {}
+    QuitCommand() : ChatCommand("QuitCommand")
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
-private:
-    bool requirePlayer = false;
 };
-
 
 #endif

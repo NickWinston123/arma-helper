@@ -2306,23 +2306,23 @@ player_num_per_team_text    Players per Team:
 player_num_per_team_help    Set your favourite number of players per team here. When you join a game and the smallest team has less players than specified here, you'll join that team. Otherwise, you will create a new team. Only the default behaviour is governed by this setting; you can switch teams later.
 
 
-player_color_randomization_text 		Color Randomization:
-player_color_randomization_help 		Determines if color randomization is used to alter your color every round.
+player_color_mode_text 		Color Mode:
+player_color_mode_help 		Determines if color customizations are used to alter your color every round.
 
-player_color_randomization_none_text 	None
-player_color_randomization_none_help 	No color randomization.
+player_color_mode_none_text 	None
+player_color_mode_none_help 	No color customizations.
 
-player_color_randomization_random_text 	Random
-player_color_randomization_random_help 	Gives a player a random color every round. The max range is 32 allowing multi-colored tails / bikes.
+player_color_mode_random_text 	Random
+player_color_mode_random_help 	Gives a player a random color every round. The max range is 32 allowing multi-colored tails / bikes.
 
-player_color_randomization_unique_text  Unique 
-player_color_randomization_unique_help 	Gives a player a semi-random unique color every round. Attempts to generate colors that are different from other players.
+player_color_mode_unique_text  Unique 
+player_color_mode_unique_help 	Gives a player a semi-random unique color every round. Attempts to generate colors that are different from other players.
 
-player_color_randomization_rainbow_text  Rainbow
-player_color_randomization_rainbow_help 	Gives a player a color based on going through the rainbow each round. PLAYER_RANDOM_COLOR_RAINBOW_MAX
+player_color_mode_rainbow_text  Rainbow
+player_color_mode_rainbow_help 	Gives a player a color based on going through the rainbow each round. PLAYER_RANDOM_COLOR_RAINBOW_MAX
 
-player_color_randomization_crossfade_text  CrossFade
-player_color_randomization_crossfade_help  Gives a player a color based on fading between colors, using presets or a set list
+player_color_mode_crossfade_text  CrossFade
+player_color_mode_crossfade_help  Gives a player a color based on fading between colors, using presets or a set list
 
 
 #camera prefs menu

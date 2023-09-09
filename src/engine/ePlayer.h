@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_PLAYERS 4
 
 //For Menu Color Settings
-enum ColorCustomization {
+enum PlayerColorMode {
     OFF = 0,
     RANDOM = 1,
     UNIQUE = 2,
@@ -44,7 +44,7 @@ enum ColorCustomization {
 };
 
 //For Menu Color Settings
-enum ColorNameCustomization {
+enum PlayerColorNameMode {
     OFF_NAME = 0,
     GRADIENT_NAME = 1,
     RAINBOW_NAME = 2,
@@ -71,7 +71,7 @@ enum ColorNameCustomization {
 
 class TempConfItemManager;
 
-extern tString se_disableCreateSpecific ;
+extern tString se_disableCreateSpecific;
 extern std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
 
 extern tString se_chatCommandsThemeHeader;
@@ -86,7 +86,8 @@ extern int se_watchActiveStatusTime;
 
 extern void se_UniqueColor(ePlayer *local_p );
 extern void se_RandomizeColor(ePlayer *local_p);
-static void se_CrossFadeColor(ePlayer *local_p);
+extern void se_rainbowColor(ePlayer *local_p);
+extern void se_CrossFadeColor(ePlayer *local_p);
 
 nMessage *se_NewChatMessage(ePlayerNetID const *player, tString const &message);
 
@@ -100,6 +101,10 @@ extern bool se_toggleChatFlag, se_toggleChatFlagAlways, se_BlockChatFlags;
 
 #define PLAYER_CONFITEMS (60+MAX_INSTANT_CHAT)
 
+
+extern bool se_enableChatCommands;
+
+extern bool se_enableChatCommandsTabCompletion;
 
 extern tString se_encryptCommand;
 static int forceCreatePlayer = -1;
@@ -201,8 +206,8 @@ public:
 
     int rgb[3]; // our color
 
-    int colorCustomization; // The players color randomization
-    int colorNameCustomization; // The players name color randomization
+    int colorMode; // The players color randomization
+    int colorNameMode; // The players name color randomization
 
     tString instantChatString[MAX_INSTANT_CHAT];
     // instant chat macros
@@ -325,6 +330,8 @@ public:
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastDiedByPlayer = nullptr;
     ePlayerNetID * lastMessagedPlayer;
+    ePlayerNetID * lastMessagedByPlayer;
+    tString lastMessagedPlayerStr;
     typedef std::set< eTeam * > eTeamSet;
     bool respawnedLocally;
     playerWatchStatus lastWatchStatus;
@@ -1012,12 +1019,12 @@ class eChatBot {
 private:
     eChatBot() {}
 
-    eChatBot(const eChatBot&) = delete; 
+    eChatBot(const eChatBot&) = delete;
     eChatBot& operator=(const eChatBot&) = delete;
 
 public:
     std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
-    std::vector<tString> chatTriggerKeys;  
+    std::vector<tString> chatTriggerKeys;
 
     // instance
     static eChatBot& getInstance() {
@@ -1026,7 +1033,7 @@ public:
     }
 
     void LoadChatTriggers();
-    
+
     std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage);
     static void InitiateAction(ePlayerNetID *player, tString message, bool showError = false);
     void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player);

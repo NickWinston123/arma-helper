@@ -289,10 +289,15 @@ bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<t
 bool MsgCommand::execute(tString args)
 {
     int pos = 0;
-    ePlayerNetID *msgTarget = ePlayerNetID::GetPlayerByName(args.ExtractNonBlankSubString(pos), false);
-    if (msgTarget)
-        netPlayer->lastMessagedPlayer = msgTarget;
+    tString name = args.ExtractNonBlankSubString(pos);
+    ePlayerNetID *msgTarget = ePlayerNetID::GetPlayerByName(name, false);
 
+    if (msgTarget) 
+    {
+        netPlayer->lastMessagedPlayer = msgTarget;
+        netPlayer->lastMessagedPlayerStr = msgTarget->GetName().Filter();
+    }
+    
     tString messageToSend;
     messageToSend << "/msg " << args;
     se_NewChatMessage(netPlayer, messageToSend)->BroadCast();
@@ -336,6 +341,32 @@ tColoredString ColorsCommand::cycleColorPreview(int r, int g, int b)
     return cyclePreview;
 }
 
+tString ColorsCommand::localPlayerMode(ePlayer *local_p)
+{
+    tString mode;
+    switch (local_p->colorMode)
+    {
+    case PlayerColorMode::OFF:
+        mode = "off";
+        break;
+    case PlayerColorMode::RANDOM:
+        mode = "random";
+        break;
+    case PlayerColorMode::UNIQUE:
+        mode = "unique";
+        break;
+    case PlayerColorMode::RAINBOW:
+        mode = "rainbow";
+        break;
+    case PlayerColorMode::CROSSFADE:
+        mode = "crossfade";
+        break;
+    default:
+        mode = "?";
+        break;
+    }
+    return mode;
+}
 tColoredString ColorsCommand::localPlayerPreview(ePlayer *local_p)
 {
     int r = local_p->rgb[0];
@@ -350,7 +381,9 @@ tColoredString ColorsCommand::localPlayerPreview(ePlayer *local_p)
            << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
            << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
            << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
-           << cycleColorPreview(r, g, b);
+           << cycleColorPreview(r, g, b)
+           << " (mode: "
+           << ChatCommand::ItemText() << localPlayerMode(local_p) << ChatCommand::MainText() << ") ";
 
     return output;
 }
@@ -368,6 +401,13 @@ tColoredString ColorsCommand::gatherPlayerColor(ePlayerNetID *p, bool showReset)
                << ChatCommand::ItemText() << p->g << ChatCommand::MainText() << ", "
                << ChatCommand::ItemText() << p->b << ChatCommand::MainText() << ") "
                << cycleColorPreview(p->r, p->g, p->b);
+
+    if (p->isLocal())
+    {
+        ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
+        listColors << " (mode: "
+                   << ChatCommand::ItemText() << localPlayerMode(local_p) << ChatCommand::MainText() << ") ";
+    }
 
     return listColors;
 }
@@ -593,12 +633,12 @@ bool RgbCommand::execute(tString args)
     }
     else
     {
-        tArray<tString> passedString = args.Split(" ");
+        tArray<tString> commandArgs = args.Split(" ");
         FileManager fileManager(se_colorVarFile, tDirectories::Var());
-        tString command = passedString[0];
+        tString command = commandArgs[0];
         bool correctParameters = false;
 
-        if (command.isNumber() && !(passedString.Len() == 3 && passedString[2].isNumber()))
+        if (command.isNumber() && !(commandArgs.Len() == 3 && commandArgs[2].isNumber()))
         {
             local_p = ePlayer::PlayerConfig(atoi(command) - 1);
             if (!local_p)
@@ -609,15 +649,76 @@ bool RgbCommand::execute(tString args)
                 return true;
             }
             targetPlayer = nullptr;
-            passedString.RemoveAt(0);
-            command = passedString[0];
+            commandArgs.RemoveAt(0);
+            command = commandArgs[0];
         }
+        
+        commandArgs.RemoveAt(0);
 
         if (command == "help")
         {
             con << CommandText() << "\n"
                 << tOutput("$player_colors_command_help", se_colorVarFile);
             return true;
+        }
+        else if (command == "mode")
+        {
+            if (!(commandArgs.Len() >= 1))
+            {
+                correctParameters = false;
+            }
+            else
+            {
+                correctParameters = true;
+                tString mode = commandArgs[0].ToLower();
+
+                if (mode.empty())
+                {
+                    correctParameters = false;
+                }
+                else if (mode == "off")
+                {
+                    local_p->colorMode = PlayerColorMode::OFF;
+                }
+                else if (mode == "random")
+                {
+                    se_RandomizeColor(local_p);
+                    local_p->colorMode = PlayerColorMode::RANDOM;
+                }
+                else if (mode == "unique")
+                {
+                    se_UniqueColor(local_p);
+                    local_p->colorMode = PlayerColorMode::UNIQUE;
+                }
+                else if (mode == "rainbow")
+                {
+                    se_rainbowColor(local_p);
+                    local_p->colorMode = PlayerColorMode::RAINBOW;
+                }
+                else if (mode == "crossfade")
+                {
+                    se_CrossFadeColor(local_p);
+                    local_p->colorMode = PlayerColorMode::CROSSFADE;
+                }
+                else
+                {
+                    correctParameters = false;
+                }
+            }
+
+            if (!correctParameters) 
+            {
+                con << CommandText()
+                    << "Mode Usage: " 
+                    << se_rgbCommand << " mode modename \n"
+                    << "Available Modes: \n"
+                    << " off\n"
+                    << " random\n"
+                    << " unique\n"
+                    << " rainbow\n"
+                    << " crossfade\n";
+                return true;
+            }
         }
         else if (command == "unique")
         {
@@ -633,7 +734,7 @@ bool RgbCommand::execute(tString args)
         }
         else if (command == "save")
         {
-            if (passedString.Len() == 1)
+            if (commandArgs.Empty())
             {
                 con << CommandText()
                     << ErrorText()
@@ -654,9 +755,9 @@ bool RgbCommand::execute(tString args)
                         << ErrorText()
                         << tOutput("$players_color_error");
             }
-            else if (passedString.Len() == 2) // Save specific persons color
+            else if (commandArgs.Len() == 1) // Save specific persons color
             {
-                targetPlayer = ePlayerNetID::GetPlayerByName(passedString[1].Filter());
+                targetPlayer = ePlayerNetID::GetPlayerByName(commandArgs[1].Filter(),false);
                 if (targetPlayer)
                 {
                     tString playerColorStr;
@@ -674,7 +775,7 @@ bool RgbCommand::execute(tString args)
                 else
                     con << CommandText()
                         << ErrorText()
-                        << tOutput("$player_colors_not_found", passedString[1]);
+                        << tOutput("$player_colors_not_found", commandArgs[1]);
             }
             return true;
         }
@@ -682,16 +783,16 @@ bool RgbCommand::execute(tString args)
         {
             int savedColorsCount = fileManager.NumberOfLines();
 
-            if (passedString.Len() == 1) // No Line #
+            if (commandArgs.Empty()) // No Line #
             {
                 con << CommandText()
                     << ErrorText()
                     << tOutput("$player_colors_changed_usage_error");
             }
-            else if (passedString.Len() == 2) // Line # specified
+            else if (commandArgs.Len() == 1) // Line # specified
             {
                 correctParameters = true;
-                int lineNumber = (atoi(passedString[1]) - 1);
+                int lineNumber = (atoi(commandArgs[0]) - 1);
                 if ((lineNumber >= 0) && lineNumber <= savedColorsCount - 1)
                     se_loadSavedColor(local_p, lineNumber);
                 else
@@ -715,12 +816,12 @@ bool RgbCommand::execute(tString args)
         }
         else if (command == "clear")
         {
-            tString line = passedString[1];
+            tString line = commandArgs[0];
             if (line.empty())
                 correctParameters = false;
             else
             {
-                fileManager.Clear(atoi(passedString[0]));
+                fileManager.Clear(atoi(commandArgs[0]));
                 con << CommandText() << "\n"
                     << tOutput("$player_colors_cleared", se_colorVarFile);
                 return true;
@@ -735,12 +836,12 @@ bool RgbCommand::execute(tString args)
         }
         // Not really checking if the strings passed parameters are numbers,
         // but if someone did /rgb asd asd asd it would just make it 0 0 0.
-        else if (passedString.Len() == 3) // Apply color to player who sent command
+        else if (commandArgs.Len() == 3) // Apply color to player who sent command
         {
             correctParameters = true;
-            local_p->rgb[0] = atoi(passedString[0]); // r
-            local_p->rgb[1] = atoi(passedString[1]); // g
-            local_p->rgb[2] = atoi(passedString[2]); // b
+            local_p->rgb[0] = atoi(commandArgs[0]); // r
+            local_p->rgb[1] = atoi(commandArgs[1]); // g
+            local_p->rgb[2] = atoi(commandArgs[2]); // b
         }
 
         // If the correct parameters are passed, display the changes.
@@ -930,24 +1031,27 @@ bool ReverseCommand::execute(tString args)
 bool SpectateCommand::execute(tString args)
 {
     con << CommandText()
-        << "Spectating player '" << netPlayer->GetName() << "'...\n";
+        << "Spectating player '" << player->name << "'...\n";
 
     ePlayer *local_p = player;
     local_p->spectate = true;
-    if (helperConfig::sghuk)
-        netPlayer->Clear(local_p);
-    netPlayer->Update();
+    if (netPlayer)
+    {
+        if (helperConfig::sghuk)
+            netPlayer->Clear(local_p);
+        netPlayer->Update();
+    }
     return true;
 }
 
 bool JoinCommand::execute(tString args)
 {
+    player->spectate = false;
     if (netPlayer && !bool(netPlayer->CurrentTeam()))
     {
         con << CommandText()
             << "Joining the game...\n";
 
-        player->spectate = false;
         netPlayer->CreateNewTeamWish();
         netPlayer->Update();
     }
@@ -1334,8 +1438,10 @@ bool ReplyCommand::execute(tString args)
         return false;
     }
 
+    tString name = netPlayer->lastMessagedPlayerStr.empty() ? netPlayer->lastMessagedPlayer->GetName().Filter() : netPlayer->lastMessagedPlayerStr;
+
     tString messageToSend;
-    messageToSend << "/msg " << netPlayer->lastMessagedPlayer->GetName() << " " << args;
+    messageToSend << "/msg " << name << " " << args;
     netPlayer->Chat(messageToSend);
     return true;
 }
@@ -1713,22 +1819,22 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
     con << "EncryptCommand: Loading command '" << args << "'\n";
 
     ePlayerNetID *consoleUser = player->lastMessagedPlayer;
-    if (!consoleUser) 
+    if (!consoleUser)
     {
         tConfItemBase::lastLoadOutput << "This player has not messaged you\n";
         con << tConfItemBase::lastLoadOutput;
     }
-    else 
+    else
     {
         ePlayer *local_p = ePlayer::NetToLocalPlayer((player->lastMessagedPlayer));
-        if (!local_p) 
-        {   
+        if (!local_p)
+        {
             tConfItemBase::lastLoadOutput << "No local console user available to run this command.\n";
             con << tConfItemBase::lastLoadOutput;
         }
-        else 
+        else
         {
-            sn_consoleUser(local_p);            
+            sn_consoleUser(local_p);
             tCurrentAccessLevel level(tAccessLevel_Owner, true);
             std::stringstream s(static_cast<char const *>(args));
             tConfItemBase::LoadAll(s);
@@ -1857,10 +1963,11 @@ void VoteCommand::processVote(const tArray<tString> &params)
 bool RenameCommand::execute(tString args)
 {
     con << CommandText()
-        << "Renaming player '" << netPlayer->GetName() << "' to '" << args << "'...\n";
+        << "Renaming player '" << player->name << "' to '" << args << "'...\n";
 
     player->name = args;
-    netPlayer->Update();
+    if (netPlayer)
+        netPlayer->Update();
     return true;
 }
 
@@ -1882,12 +1989,19 @@ bool LeaveCommand::execute(tString args)
 
 bool QuitCommand::execute(tString args)
 {
+
+    int quitTime = se_quitCommandTime;
+    int pos = 0;
+    
+    if (!args.empty())
+        quitTime = atoi(args.ExtractNonBlankSubString(pos));
+
     con << CommandText()
-        << "Quiting game in '" << se_quitCommandTime << "' seconds...\n";
+        << "Quiting game in '" << quitTime << "' seconds...\n";
 
     st_SaveConfig();
 
-    gTaskScheduler.schedule("QuitCommand", se_quitCommandTime, []
+    gTaskScheduler.schedule("QuitCommand", quitTime, []
     {
         throw 1;
     });

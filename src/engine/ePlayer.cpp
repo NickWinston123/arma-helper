@@ -1138,7 +1138,7 @@ ePlayerNetID *ePlayerNetID::GetPlayerByName(tString name, bool exact)
         }
         else
         {
-            if (se_PlayerNetIDs[i]->GetName().Filter().Contains(name))
+            if (se_PlayerNetIDs[i]->GetName().Filter().Contains(name.Filter()))
                 return se_PlayerNetIDs[i];
         }
     }
@@ -1372,17 +1372,17 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
                                        rgb[0]));
 
     confname.Clear();
-    confname << "PLAYER_COLOR_CUSTOM_" << id + 1;
-    colorCustomization = 0;
+    confname << "PLAYER_COLOR_MODE_" << id + 1;
+    colorMode = 0;
     confItems.StoreConfitem(tNEW(tConfItem<int>)(confname,
-                                       "$player_random_color_help",
-                                       colorCustomization));
+                                       "$PLAYER_COLOR_MODE_HELP",
+                                       colorMode));
     confname.Clear();
-    confname << "PLAYER_NAME_COLOR_CUSTOM_" << id + 1;
-    colorNameCustomization = 0;
+    confname << "PLAYER_NAME_MODE_CUSTOM_" << id + 1;
+    colorNameMode = 0;
     confItems.StoreConfitem(tNEW(tConfItem<int>)(confname,
                                        "$player_random_color_help",
-                                       colorNameCustomization));
+                                       colorNameMode));
 
     // SMARTER BOT
     // sg_smarterBotThink
@@ -1868,8 +1868,16 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
                 tString ourName = actualMessage.SubStr(arrowPos + 4, colonPos - arrowPos - 4).TrimWhitespace();
 
                 ePlayerNetID *ourPlayer = ePlayerNetID::GetPlayerByName(ourName);
-                if (ourPlayer)                    
+                if (ourPlayer)
+                {                   
                     p->lastMessagedPlayer = ourPlayer;
+
+                    if (ourPlayer->lastMessagedByPlayer != p)
+                    {
+                        ourPlayer->lastMessagedPlayerStr = p->GetName().Filter();
+                        ourPlayer->lastMessagedByPlayer = p;
+                    }
+                }
             }
 
             if (se_encryptCommandWatch)
@@ -5070,7 +5078,10 @@ static void ConsoleSay_conf(std::istream &s)
     case nSERVER:
 #endif
     {
-        ePlayerNetID *me = se_GetLocalPlayer();
+        ePlayerNetID *me = sn_consoleUser()->netPlayer;
+        
+        if (!me)
+            me = se_GetLocalPlayer();
 
         if (me)
             me->Chat(message);
@@ -5097,7 +5108,10 @@ static void ConsoleSay_conf(std::istream &s)
 #endif
     default:
     {
-        ePlayerNetID *me = se_GetLocalPlayer();
+        ePlayerNetID *me = sn_consoleUser()->netPlayer;
+        
+        if (!me)
+            me = se_GetLocalPlayer();
 
         if (me)
             se_DisplayChatLocally(me, message);
@@ -5489,6 +5503,10 @@ static std::deque<tString> se_chatHistory; // global since the class doesn't liv
 static int se_chatHistoryMaxSize = 10;     // maximal size of chat history
 static tSettingItem<int> se_chatHistoryMaxSizeConf("HISTORY_SIZE_CHAT", se_chatHistoryMaxSize);
 
+
+bool se_enableChatCommandsTabCompletion = true;
+static tConfItem<bool> se_enableChatCommandsTabCompletionConf("LOCAL_CHAT_COMMANDS_TAB_COMPLETION", se_enableChatCommandsTabCompletion);
+
 #include "eChatCommands.h"
 class eMenuItemChat : uMenuItemStringWithHistory
 {
@@ -5521,8 +5539,8 @@ public:
             }
             if (!playerFound)
             {
-                con << "PLAYER NOT FOUND\n";
-                LocalChatCommands(NULL, *content);
+                con << "NET PLAYER NOT FOUND\n";
+                LocalChatCommands(me, *content);
             }
 
             se_BlockScores = false;
@@ -5530,28 +5548,37 @@ public:
             MyMenu()->Exit();
             return true;
         }
-        else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_TAB)
-        {
-            bool encryptCommand = (*content).StartsWith(se_encryptCommand);
+else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_TAB)
+{
+    bool isCommand = (*content).StartsWith("/");
+    static tString lastContent;           
+    static tString lastCommandContent;   
+    static tString lastEncContent;     
+    tString currentContent((*content));
+    bool changeLast;
+    bool encryptCommand = isCommand && currentContent.ToLower().StartsWith(se_encryptCommand.ToLower());
 
-            static tString lastContent;
-            static tString lastEncContent;
-            bool changeLast;
+    if (encryptCommand)
+    {
+        changeLast = (lastEncContent == *content);
+        ConTabCompletition(*content, cursorPos, changeLast);
+        lastEncContent = *content;
+    }
+    else if (se_enableChatCommandsTabCompletion && isCommand)
+    {
+        changeLast = (lastCommandContent == *content);
+        ConTabCompletition(*content, cursorPos, changeLast);
+        lastCommandContent = *content;
+    }
+    else
+    {
+        changeLast = (lastContent == *content);
+        ChatTabCompletition(*content, cursorPos, changeLast);
+        lastContent = *content;
+    }
+    return true;
+}
 
-            if (!encryptCommand)
-            {
-                changeLast = (lastContent == *content);
-                ChatTabCompletition(*content, cursorPos, changeLast);
-                lastContent = *content;
-            }
-            else
-            {
-                changeLast = (lastEncContent == *content);
-                ConTabCompletition(*content, cursorPos, changeLast);
-                lastEncContent = *content;
-            }
-            return true;
-        }
         else if (e.type == SDL_KEYDOWN &&
                  uActionGlobal::IsBreakingGlobalBind(e.key.keysym.sym))
         {
@@ -6164,6 +6191,7 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                                syncIteration(0),
                                                lastMessagedPlayer(nullptr),
+                                               lastMessagedByPlayer(nullptr),
                                                nickname(tString("")),
                                                lastKilledPlayer(nullptr)
 {
@@ -6343,6 +6371,7 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                           syncIteration(0),
                                           lastMessagedPlayer(nullptr),
+                                          lastMessagedByPlayer(nullptr),
                                           nickname(tString("")),
                                           lastKilledPlayer(nullptr)
 {
@@ -9268,7 +9297,7 @@ static tConfItem<int> se_RandomizeColorRainbowMaxRangeConf("PLAYER_COLOR_CUSTOM_
 int rainbowIteration = 0;
 bool countUp = true;
 
-static void se_rainbowColor(ePlayer *l)
+void se_rainbowColor(ePlayer *l)
 {
     if (countUp)
     {
@@ -10195,20 +10224,20 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     bakB = p->b;
                 }
 
-                switch (local_p->colorCustomization)
+                switch (local_p->colorMode)
                 {
-                case ColorCustomization::OFF:
+                case PlayerColorMode::OFF:
                     break;
-                case ColorCustomization::RANDOM:
+                case PlayerColorMode::RANDOM:
                     se_RandomizeColor(local_p);
                     break;
-                case ColorCustomization::UNIQUE:
+                case PlayerColorMode::UNIQUE:
                     se_UniqueColor(local_p);
                     break;
-                case ColorCustomization::RAINBOW:
+                case PlayerColorMode::RAINBOW:
                     se_rainbowColor(local_p);
                     break;
-                case ColorCustomization::CROSSFADE:
+                case PlayerColorMode::CROSSFADE:
                     se_CrossFadeColor(local_p);
                     break;
                 default:
@@ -10286,24 +10315,24 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     !newName.empty() && bool(p))
                 {
                     tString nameToUse = tColoredString::RemoveColors(newName);
-                    switch (local_p->colorNameCustomization)
+                    switch (local_p->colorNameMode)
                     {
-                    case ColorNameCustomization::OFF_NAME:
+                    case PlayerColorNameMode::OFF_NAME:
                         break;
-                    case ColorNameCustomization::GRADIENT_NAME:
+                    case PlayerColorNameMode::GRADIENT_NAME:
                     {
                         int rgb[3] = {p->r, p->g, p->b};
                         newName = sg_ColorGradientGeneration(rgb, nameToUse);
                         p->lastColoredName = newName;
                         break;
                     }
-                    case ColorNameCustomization::RAINBOW_NAME:
+                    case PlayerColorNameMode::RAINBOW_NAME:
                     {
                         newName = sg_RainbowNameGeneration(nameToUse);
                         p->lastColoredName = newName;
                         break;
                     }
-                    case ColorNameCustomization::SHIFT_NAME:
+                    case PlayerColorNameMode::SHIFT_NAME:
                     {
                         int rgb[3] = {p->r, p->g, p->b};
 

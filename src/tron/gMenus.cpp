@@ -922,20 +922,20 @@ static tConfItem<bool> WRAP("WRAP_MENU",uMenu::wrap);
 REAL sg_consoleTabCompletionMaxPossibilities = 50;
 static tConfItem< REAL > sg_consoleTabCompletionMaxPossibilitiesConf("CONSOLE_TAB_COMPLETION_MAX_POSSIBILITIES",sg_consoleTabCompletionMaxPossibilities);
 
-
-static tString Simplify(const tString &str) {
-    return str.ToLower();
-}
-
-static void ShowPossibilities(const std::deque<tString> &results, const tString &word) {
-    if (results.size() > sg_consoleTabCompletionMaxPossibilities) {
+static void ShowPossibilities(const std::deque<tString> &results, const tString &word)
+{
+    if (results.size() > sg_consoleTabCompletionMaxPossibilities)
+    {
         con << "Too many results found (" << results.size()
             << " > " << sg_consoleTabCompletionMaxPossibilities
             << "). Type more characters.\n";
-    } else {
+    }
+    else
+    {
         con << "Possibilities:\n";
         int len = word.Len();
-        for (const auto &result : results) {
+        for (const auto &result : results)
+        {
             int pos = result.ToLower().StrPos(word.ToLower());
             con << result.SubStr(0, pos)
                 << "0xff8888"
@@ -947,102 +947,82 @@ static void ShowPossibilities(const std::deque<tString> &results, const tString 
         con << "\n";
     }
 }
-
-static void FindConfigItems(const tString &word, std::deque<tString> &results) {
+static void FindConfigItems(const tString &word, std::deque<tString> &results)
+{
     tConfItemBase::tConfItemMap const &itemsMap = tConfItemBase::GetConfItemMap();
     for (const auto &entry : itemsMap) {
         tConfItemBase *item = entry.second;
-        if (item->GetTitle().ToLower().StartsWith(word.ToLower()) && item->allowedChange()) {
+        if (item->GetTitle().StartsWith(word) && item->allowedChange()) {
             results.push_back(item->GetTitle());
         }
     }
 }
 
-static tString FindClosestMatch(const tString &word, const std::deque<tString> &items) {
-    tString closestMatch;
-    int maxCommonPrefix = 0;
-    for (const auto &itemName : items) {
-        int commonPrefix = 0;
-        for (int i = 0; i < itemName.Len() && i < word.Len(); ++i) {
-            if (tolower(itemName(i)) == tolower(word(i)))
-                commonPrefix++;
+void ConTabCompletition(tString &inputString, int &cursorPos, bool changeLast)
+{
+    static tString previousInput;
+    static int configPos;
+    static int previousCursorPos;
+    static bool showSuggestions;
+    
+    if (changeLast)
+    {
+        inputString = previousInput;
+        configPos++;
+        cursorPos = previousCursorPos;
+    }
+    else
+    {
+        previousInput = inputString;
+        previousCursorPos = cursorPos;
+        configPos = 0;
+        showSuggestions = true;
+    }
+
+    tArray<tString> words = inputString.Split(" ");
+    tString updatedString;
+    int currentWordEndPos = 0;
+
+    for (int i = 0; i < words.Len(); i++)
+    {
+        tString word = words[i];
+
+        currentWordEndPos += word.Len() - 1;
+
+        if (currentWordEndPos == cursorPos)
+        {
+            std::deque<tString> completions;
+            FindConfigItems(word.ToUpper(), completions);
+
+            if (showSuggestions && !completions.empty())
+            {
+                ShowPossibilities(completions, word);
+                showSuggestions = false;
+            }
+
+            if (completions.size() > 1)
+            {
+                tString nextCompletion = completions.at(configPos % completions.size());
+                word = (nextCompletion == word) ? word : nextCompletion;
+                cursorPos = currentWordEndPos + nextCompletion.Len() + 1;
+            }
+            else if (!completions.empty())
+            {
+                word = completions.front() + " ";
+                cursorPos = currentWordEndPos + word.Len() + 1;
+            }
             else
-                break;
-        }
-        if (commonPrefix > maxCommonPrefix) {
-            maxCommonPrefix = commonPrefix;
-            closestMatch = itemName;
-        }
-    }
-    return closestMatch;
-}
-
-void ConTabCompletition(tString &strString, int &cursorPos, bool changeLast) {
-    static tString oldString;
-    static int cfgPos;
-    static int lastPos;
-    static bool showResults;
-    if (changeLast) {
-        strString = oldString;
-        cfgPos++;
-        cursorPos = lastPos;
-    } else {
-        oldString = strString;
-        lastPos = cursorPos;
-        cfgPos = 0;
-        showResults = true;
-    }
-
-    tArray<tString> msgsExt = strString.Split(" ");
-    tString newString;
-    int cusPos = 0;
-
-    for (int i = 0; i < msgsExt.Len(); i++) {
-        tString word = msgsExt[i];
-
-        cusPos += word.Len() - 1;
-
-        if (cusPos == cursorPos) {
-            // Find possible words
-            tString simplifiedWord = Simplify(word);
-            std::deque<tString> results;
-            FindConfigItems(simplifiedWord, results);
-
-            if (results.size() > 1) {
-                // Use cfgPos to select the next match in the list
-                tString match = results.at(cfgPos % results.size());
-
-                if (match == simplifiedWord) {
-                    if (showResults) {
-                        ShowPossibilities(results, word);
-                        showResults = false;
-                    }
-                    cursorPos = cusPos + 1;
-                } else {
-                    if (showResults) {
-                        ShowPossibilities(results, word);
-                        showResults = false;
-                    }
-                    word = match;
-                    cursorPos = cusPos + match.Len() + 1;
-                }
-            } else if (!results.empty()) {
-                word = results.front() + " ";
-                cursorPos = cusPos + word.Len() + 1;
-            } else {
-                cfgPos = -1;
+            {
+                configPos = -1;
             }
         }
 
-        cusPos++;
+        currentWordEndPos++;
 
-        if ((i + 1) == msgsExt.Len())
-            newString << word;
-        else
-            newString << word << " ";
+        updatedString << word << ((i + 1 == words.Len()) ? "" : " ");
     }
 
-    strString = newString;
+    inputString = updatedString;
 }
 
 class gMemuItemConsole: uMenuItemStringWithHistory{
@@ -1266,7 +1246,7 @@ public:
 
         color/=15;
         color=(color-(100*(color/100)));
-        
+
         return color;
     }
 
@@ -1333,7 +1313,7 @@ public:
         if (!wheelTex)
             wheelTex = LoadTextureSafe(SLOT_WHEEL, true);
 
-        return bodyTex && wheelTex;        
+        return bodyTex && wheelTex;
     }
 
     // loads a model, checking before if the file exists
@@ -1377,10 +1357,10 @@ public:
 
         BeginQuads();
         TexCoord(0,0);
-        Vertex(-.78, -.715); 
+        Vertex(-.78, -.715);
 
         TexCoord(0,1);
-        Vertex(-.78, -.852); 
+        Vertex(-.78, -.852);
 
         TexCoord(4,1);
         Vertex(.5, -.852);
@@ -1391,10 +1371,10 @@ public:
 
         BeginQuads();
         TexCoord(0,0);
-        Vertex(-.78, -.715); 
+        Vertex(-.78, -.715);
 
         TexCoord(0,1);
-        Vertex(-.78, -.713); 
+        Vertex(-.78, -.713);
 
         TexCoord(1,1);
         Vertex(.5, -.713);
@@ -1402,7 +1382,7 @@ public:
         TexCoord(1,0);
         Vertex(.5, -.715);
         RenderEnd();
-        
+
         //cycle
         glColor3f(r, g, b);
         r_cyclePreview.Select();
@@ -1415,10 +1395,10 @@ public:
         Vertex(-.43 + 1.23, -.95);
 
         TexCoord(1,1);
-        Vertex(-.8 + 1.23, -.95); 
+        Vertex(-.8 + 1.23, -.95);
 
         TexCoord(1,0);
-        Vertex(-.8 + 1.23, -.59); 
+        Vertex(-.8 + 1.23, -.59);
         RenderEnd();
 
     #endif
@@ -1510,19 +1490,19 @@ void sg_PlayerMenu(int Player){
 
 
     //Color Customization in the player menu
-    uMenuItemSelection<int> se_cnr(&playerMenu,"Name Color","Name Color",p->colorNameCustomization);
-    se_cnr.NewChoice("None",     "No color name customization", ColorNameCustomization::OFF_NAME);
-    se_cnr.NewChoice("Gradient", "Gradient name customization", ColorNameCustomization::GRADIENT_NAME);
-    se_cnr.NewChoice("Rainbow",  "Rainbow name customization",  ColorNameCustomization::RAINBOW_NAME);
-    se_cnr.NewChoice("Shift",    "Shift name customization",    ColorNameCustomization::SHIFT_NAME);
+    uMenuItemSelection<int> se_cnr(&playerMenu,"Name Color Mode","Name Color Mode",p->colorNameMode);
+    se_cnr.NewChoice("None",     "No color name customization", PlayerColorNameMode::OFF_NAME);
+    se_cnr.NewChoice("Gradient", "Gradient name customization", PlayerColorNameMode::GRADIENT_NAME);
+    se_cnr.NewChoice("Rainbow",  "Rainbow name customization",  PlayerColorNameMode::RAINBOW_NAME);
+    se_cnr.NewChoice("Shift",    "Shift name customization",    PlayerColorNameMode::SHIFT_NAME);
 
     //Color Customization in the player menu
-    uMenuItemSelection<int> se_cr(&playerMenu,"$player_color_randomization_text","$player_color_randomization_help",p->colorCustomization);
-    se_cr.NewChoice("$player_color_randomization_none_text",      "$player_color_randomization_none_help",      ColorCustomization::OFF);
-    se_cr.NewChoice("$player_color_randomization_random_text",    "$player_color_randomization_random_help",    ColorCustomization::RANDOM);
-    se_cr.NewChoice("$player_color_randomization_unique_text",    "$player_color_randomization_unique_help",    ColorCustomization::UNIQUE);
-    se_cr.NewChoice("$player_color_randomization_rainbow_text",   "$player_color_randomization_rainbow_help",   ColorCustomization::RAINBOW);
-    se_cr.NewChoice("$player_color_randomization_crossfade_text", "$player_color_randomization_crossfade_help", ColorCustomization::CROSSFADE);
+    uMenuItemSelection<int> se_cr(&playerMenu,"$player_color_mode_text","$player_color_mode_help",p->colorMode);
+    se_cr.NewChoice("$player_color_mode_none_text",      "$player_color_mode_none_help",      PlayerColorMode::OFF);
+    se_cr.NewChoice("$player_color_mode_random_text",    "$player_color_mode_random_help",    PlayerColorMode::RANDOM);
+    se_cr.NewChoice("$player_color_mode_unique_text",    "$player_color_mode_unique_help",    PlayerColorMode::UNIQUE);
+    se_cr.NewChoice("$player_color_mode_rainbow_text",   "$player_color_mode_rainbow_help",   PlayerColorMode::RAINBOW);
+    se_cr.NewChoice("$player_color_mode_crossfade_text", "$player_color_mode_crossfade_help", PlayerColorMode::CROSSFADE);
 
     // HACK: backup color before clamping by menuitems
     int r = p->rgb[0], g = p->rgb[1], b = p->rgb[2];
@@ -1705,7 +1685,7 @@ void sg_PlayerMenu(){
 
     if (!sg_ShowConfigMenu())
         Player_men.RemoveItem(&cfm);
-              
+
     int i;
 
     for(i=MAX_PLAYERS-1;i>=0;i--){

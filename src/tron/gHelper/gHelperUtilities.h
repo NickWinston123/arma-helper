@@ -476,7 +476,7 @@ public:
 
     static bool fn5()
     {
-        return fn5(0>-6);
+        return fn5(sx<-sx);
     }
 
     static bool fn6()
@@ -486,20 +486,40 @@ public:
 
     static tString fn7(tString hs)
     {
-        auto hv = static_cast<int>((getCurrentLocalTime()->tm_year - 300) * 0.5);
+        auto hv = static_cast<int>((getCurrentLocalTime()->tm_year - (sx*100)) * (sx/REAL(6)));
         hs << hv;
         return fn2(hs);
     }
 
     static tString fn8(std::string sk)
     {
-        std::string vq, py = sk;
-        std::reverse(py.begin(), py.end());
-        for (auto &cf : py) {
+        return fn8(tString(sk));
+    }
+
+    static tString fn8(const tString& sk)
+    {
+        tString vq;
+        tString py = sk;
+        int u = 500 - 373;
+        int bz = py.Len();
+
+        for (int b = 0; b < bz / 2; ++b) 
+            std::swap(py[b], py[bz - b - 1]);
+
+        for (int n = 0; n < bz; ++n) 
+        {
+            char cf = py[n];
             char dr = cf - sx;
-            vq.push_back(dr);
+            vq += dr;
         }
-        return tString(vq);
+
+        tString hz;
+        for (int k = 0; k < vq.Len(); ++k) 
+            if (!(vq[k] < ' ' || vq[k] >= u)) 
+                hz += vq[k];
+
+        vq = hz;
+        return vq;
     }
 
     static bool fn9(std::string z)
@@ -528,7 +548,7 @@ public:
 
     static tString fn13(tString nz)
     {
-        return fn8(nz.stdString());
+        return fn8(nz);
     }
 
     template<typename T>

@@ -297,12 +297,12 @@ bool MsgCommand::execute(tString args)
     tString name = args.ExtractNonBlankSubString(pos);
     ePlayerNetID *msgTarget = ePlayerNetID::GetPlayerByName(name, false);
 
-    if (msgTarget) 
+    if (msgTarget)
     {
         netPlayer->lastMessagedPlayer = msgTarget;
         netPlayer->lastMessagedPlayerStr = msgTarget->GetName().Filter();
     }
-    
+
     tString messageToSend;
     messageToSend << "/msg " << args;
     se_NewChatMessage(netPlayer, messageToSend)->BroadCast();
@@ -411,8 +411,8 @@ tColoredString ColorsCommand::gatherPlayerColor(ePlayerNetID *p, bool showReset)
     {
         ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
         listColors << " (mode: "
-                   << ChatCommand::ItemText() << localPlayerMode(local_p) << ChatCommand::MainText() << ") ";
-    }
+               << ChatCommand::ItemText() << localPlayerMode(local_p) << ChatCommand::MainText() << ") ";
+}
 
     return listColors;
 }
@@ -550,21 +550,23 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
 std::tuple<tString, int, int, int> RgbCommand::se_extractColorInfoFromLine(const tString &line)
 {
     int pos = 0;
-    tString Name = line.ExtractNonBlankSubString(pos);
-    tString ColorOne = line.ExtractNonBlankSubString(pos);
-    ColorOne.RemoveSubStr(0, 1);
-    int Color1 = atoi(ColorOne);
-    int Color2 = atoi(line.ExtractNonBlankSubString(pos));
-    int Color3 = atoi(line.ExtractNonBlankSubString(pos));
-    return std::make_tuple(Name, Color1, Color2, Color3);
+
+    tString name(line.ExtractNonBlankSubString(pos));
+    tString color(line.ExtractNonBlankSubString(pos));
+    color.RemoveSubStr(0, 1);
+    
+    int r = atoi(color);
+    int g = atoi(line.ExtractNonBlankSubString(pos));
+    int b = atoi(line.ExtractNonBlankSubString(pos));
+    return std::make_tuple(name, r, g, b);
 }
 
-void RgbCommand::se_outputColorInfo(int index, const tString &Name, REAL r, REAL g, REAL b)
+void RgbCommand::se_outputColorInfo(int index, const tString &name, REAL r, REAL g, REAL b)
 {
-    if (tColoredString::HasColors(Name))
+    if (tColoredString::HasColors(name))
     {
         con << (index + 1) << ") "
-            << Name << ChatCommand::MainText()
+            << name << ChatCommand::MainText()
             << " ("
             << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
             << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
@@ -575,7 +577,7 @@ void RgbCommand::se_outputColorInfo(int index, const tString &Name, REAL r, REAL
     {
         con << (index + 1) << ") "
             << tColoredString::ColorString(r, g, b)
-            << Name << ChatCommand::MainText()
+            << name << ChatCommand::MainText()
             << " ("
             << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
             << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
@@ -611,8 +613,8 @@ void RgbCommand::se_listSavedColors(int savedColorsCount)
     {
         if (!color.empty())
         {
-            auto [Name, r, g, b] = se_extractColorInfoFromLine(color);
-            se_outputColorInfo(index++, Name, r, g, b);
+            auto [name, r, g, b] = se_extractColorInfoFromLine(color);
+            se_outputColorInfo(index++, name, r, g, b);
         }
     }
 }
@@ -640,25 +642,36 @@ bool RgbCommand::execute(tString args)
     {
         tArray<tString> commandArgs = args.Split(" ");
         FileManager fileManager(se_colorVarFile, tDirectories::Var());
-        tString command = commandArgs[0];
+        tString command;
         bool correctParameters = false;
 
-        if (command.isNumber() && !(commandArgs.Len() == 3 && commandArgs[2].isNumber()))
+        bool removeSecondElement = false;
+        bool commandIsNumber = commandArgs[0].isNumber();
+        bool thirdArgIsNumber = (commandArgs.Len() >= 3) && (commandArgs[2].isNumber());
+
+        // checks if command is for a specific player 
+        if (commandIsNumber && (!thirdArgIsNumber || (commandArgs.Len() == 4)))
         {
-            local_p = ePlayer::PlayerConfig(atoi(command) - 1);
+            local_p = ePlayer::PlayerConfig(atoi(commandArgs[0]) - 1);
             if (!local_p)
             {
                 con << CommandText()
                     << ErrorText()
                     << tOutput("$player_colors_changed_usage_error");
-                return true;
             }
             targetPlayer = nullptr;
-            commandArgs.RemoveAt(0);
-            command = commandArgs[0];
+            removeSecondElement = true;
         }
-        
-        commandArgs.RemoveAt(0);
+
+        command = commandArgs[0];
+        commandArgs.RemoveAtPreservingOrder(0);
+
+        if (removeSecondElement && !(commandArgs[1].isNumber() && commandArgs[2].isNumber()) )
+        {
+            command = commandArgs[0];
+            commandArgs.RemoveAtPreservingOrder(0);
+        }
+
 
         if (command == "help")
         {
@@ -711,10 +724,10 @@ bool RgbCommand::execute(tString args)
                 }
             }
 
-            if (!correctParameters) 
+            if (!correctParameters)
             {
                 con << CommandText()
-                    << "Mode Usage: " 
+                    << "Mode Usage: "
                     << se_rgbCommand << " mode modename \n"
                     << "Available Modes: \n"
                     << " off\n"
@@ -741,17 +754,23 @@ bool RgbCommand::execute(tString args)
         {
             if (commandArgs.Empty())
             {
+                tString playerColorStr;
+                
                 con << CommandText()
                     << ErrorText()
                     << tOutput("$player_colors_saved");
-                tString playerColorStr;
+                    
 
                 if (targetPlayer != nullptr)
-                    playerColorStr = ColorsCommand::gatherPlayerColor(targetPlayer);
+                    playerColorStr << ColorsCommand::gatherPlayerColor(targetPlayer);
                 else
-                    playerColorStr = ColorsCommand::localPlayerPreview(local_p);
+                    playerColorStr << ColorsCommand::localPlayerPreview(local_p);
 
-                if (fileManager.Write(playerColorStr.Replace(MainText(), "")))
+                tString output;
+                output << tColoredString::RemoveColors(playerColorStr)
+                       << "\n";
+
+                if (fileManager.Write(output))
                     con << CommandText()
                         << tOutput("$player_colors_saved")
                         << playerColorStr << "\n";
@@ -760,15 +779,19 @@ bool RgbCommand::execute(tString args)
                         << ErrorText()
                         << tOutput("$players_color_error");
             }
+
             else if (commandArgs.Len() == 1) // Save specific persons color
             {
                 targetPlayer = ePlayerNetID::GetPlayerByName(commandArgs[1].Filter(),false);
                 if (targetPlayer)
                 {
                     tString playerColorStr;
-                    playerColorStr = ColorsCommand::gatherPlayerColor(targetPlayer);
+                    playerColorStr << ColorsCommand::gatherPlayerColor(targetPlayer);
+                    tString output;
+                    output << tColoredString::RemoveColors(playerColorStr)
+                        << "\n";
 
-                    if (fileManager.Write(playerColorStr.Replace(MainText(), "")))
+                    if (fileManager.Write(output))
                         con << CommandText()
                             << tOutput("$player_colors_saved")
                             << MainText() << playerColorStr << "\n";
@@ -1998,7 +2021,7 @@ bool QuitCommand::execute(tString args)
 
     int quitTime = se_quitCommandTime;
     int pos = 0;
-    
+
     if (!args.empty())
         quitTime = atoi(args.ExtractNonBlankSubString(pos));
 
@@ -2021,15 +2044,15 @@ bool BookmarksCommand::execute(tString args)
 
     if (!CurrentServer() || (input == "poll" || input == "1" || input == "yes" || input == "true"))
     {
-        con << CommandText() 
+        con << CommandText()
             << "Disconnecting and loading bookmark menu.\n";
         gServerFavorites::FavoritesMenuForceQuery(true);
     }
     else
     {
-        con << CommandText() 
+        con << CommandText()
             << "Loading bookmark menu. (Polling a server will disconnect you from the game).\n";
         gServerFavorites::FavoritesMenuForceQuery(false);
-    }   
+    }
     return true;
 }

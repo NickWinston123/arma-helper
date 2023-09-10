@@ -85,6 +85,11 @@ tColor::tColor(REAL r, REAL g, REAL b, REAL a)
 {
 }
 
+tColor::tColor(int rgb[3], REAL a)
+    : r_(rgb[0]), g_(rgb[1]), b_(rgb[2]), a_(a)
+{
+}
+
 // *******************************************************************************************
 // *
 // *	tColor

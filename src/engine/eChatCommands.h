@@ -153,7 +153,7 @@ public:
 
     static tColoredString gatherPlayerColor(ePlayerNetID *p, bool showReset = true);
 
-    static tString localPlayerMode(ePlayer *local_p);
+static tString localPlayerMode(ePlayer *local_p);
     bool execute(tString args) override;
 };
 

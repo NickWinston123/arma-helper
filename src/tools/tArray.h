@@ -214,6 +214,16 @@ public:
         this->SetLen( newLen );
     }
 
+    void RemoveAtPreservingOrder(int index)
+    {
+        int newLen = this->Len() - 1;
+        for (int i = index; i < newLen; ++i)
+        {
+            (*this)[i] = (*this)[i + 1];
+        }
+        this->SetLen(newLen);
+    }
+
     bool Remove( const T& t )
     {
         for ( int i = this->Len()-1; i >= 0; --i )

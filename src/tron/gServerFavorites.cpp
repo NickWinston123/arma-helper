@@ -138,10 +138,13 @@ public:
 
         lastTime = tSysTimeFloat() - lastTime;
 
+        lastTime = round(lastTime);
         tString output;
 
-        if (lastTime < 0)
+        if (lastTime < -1)
             output << "Never!";
+        else if (lastTime <= 0)
+            output << "0 seconds";
         else
             output << lastTime << " seconds";
         return output;
@@ -505,6 +508,9 @@ class gFavoriteMenuItem;
 static void sg_GenerateConnectionItem(gServerFavorite &fav, int index);
 #include "rScreen.h"
 
+static bool sg_bookmarksAutoPoll = true;
+static tConfItem<bool> sg_bookmarksAutoPollConf("BOOKMARKS_AUTO_POLL", sg_bookmarksAutoPoll);
+
 class gFavoriteMenuItem : public uMenuItemFunctionInt
 {
 public:
@@ -542,6 +548,7 @@ public:
 
         if (server)
         {
+            serverName = server->GetName();
             players << tOutput("$network_master_players") << tOutput(" ");
             if (server->UserNamesOneLine().Len() > 2)
                 players << server->UserNamesOneLine();
@@ -552,7 +559,9 @@ public:
             tColoredString uri;
             uri << server->Url() << tColoredString::ColorString(1, 1, 1);
             players << tOutput("$network_master_serverinfo", server->Release(), uri, server->Options());
-        }
+        } 
+        else
+            serverName = "";
 
         REAL helpSpace = players.GetTop() - players.GetBottom();
         REAL helpTop = -.85 + helpSpace;
@@ -620,6 +629,9 @@ public:
 #endif
         return uMenuItemFunctionInt::Event(event);
     }
+
+    tString userList;
+    tString serverName;
 };
 
 static void sg_GenerateConnectionItems()
@@ -676,8 +688,6 @@ static tConfItemLine sg_serverName_ci("CUSTOM_SERVER_NAME", sg_customServerName)
 static int sg_clientPort = 4534;
 static tConfItem<int> sg_cport("CLIENT_PORT", sg_clientPort);
 
-static bool sg_bookmarksAutoPoll = true;
-static tConfItem<bool> sg_bookmarksAutoPollConf("BOOKMARKS_AUTO_POLL", sg_bookmarksAutoPoll);
 //! transfer old custom server name to favorite
 static void sg_TransferCustomServer()
 {
@@ -706,7 +716,7 @@ public:
     }
 };
 
-void sg_LinkFavoritesToServers(bool pollMaster = false)
+void sg_LinkFavoritesToServers(bool pollMaster)
 {
     nServerInfo::GetFromMaster(0, "", false);
     nServerInfo *server = nServerInfo::GetFirstServer();
@@ -724,23 +734,92 @@ void sg_LinkFavoritesToServers(bool pollMaster = false)
         auto favItem = favoriteMap.find(std::make_pair(server->GetConnectionName(), static_cast<int>(server->GetPort())));
         if (favItem != favoriteMap.end())
         {
+            gServerFavorite *fav = favItem->second;
             if (pollMaster)
             {
                 server->SetQueryType(nServerInfo::QUERY_ALL);
                 server->QueryServer();
                 server->ClearInfoFlags();
             }
-            favItem->second->server_ = server;
+            fav->server_ = server;
         }
         server = server->Next();
     }
-    if (pollMaster) {
-    sn_Receive();
-    sn_SendPlanned();
+    if (pollMaster)
+    {
+        sn_Receive();
+        sn_SendPlanned();
     }
 }
+class gFavoriteMenu : public uMenu {
+public:
 
+    gFavoriteMenu(const tOutput &t, bool exit_item=true) : uMenu(t, exit_item) {}
 
+    virtual void OnRender() override {
+        uMenu::OnRender();
+
+        static double sg_serverMenuRefreshTimeout = -1E+32f;
+
+        if (!updatedNames || sg_serverMenuRefreshTimeout < tSysTimeFloat())
+        {
+            Update();
+            sg_serverMenuRefreshTimeout = tSysTimeFloat() + 2.0f;
+        }
+    }
+
+    void Update()
+    {
+        gFavoriteMenuItem *favoriteMenuItem = nullptr;
+
+        for (auto menuItem : items)
+        {
+            if (selected < items.Len())
+            {
+                favoriteMenuItem = dynamic_cast<gFavoriteMenuItem *>(menuItem);
+            }
+
+            if (!favoriteMenuItem)
+                continue;
+
+            UpdateItem(favoriteMenuItem);
+        }
+
+        if (sg_bookmarksAutoPoll) {
+            sn_Receive();
+            sn_SendPlanned();
+        }
+    }
+
+    void UpdateItem(gFavoriteMenuItem * favoriteMenuItem)
+    {
+        gServerFavorite *favorite_ = NULL;
+
+        if (!favoriteMenuItem)
+            return;
+
+        favorite_ = favoriteMenuItem->favorite_;
+
+        if (!favorite_)
+            return;
+
+        nServerInfo *server = favorite_->server_;
+
+        if (!server)
+            return;
+
+        if ( favoriteMenuItem->userList != server->UserNamesOneLine() ) 
+        {
+            favoriteMenuItem->userList = server->UserNamesOneLine();
+            favoriteMenuItem->UpdateMenuItem();
+        } 
+        else if (!server->GetName().empty())
+            updatedNames = true;
+    }
+    static bool updatedNames;
+};
+
+bool gFavoriteMenu::updatedNames = false;
 
 static void sg_FavoritesMenu(INTFUNCPTR connect, gServerFavoritesHolder &holder, bool pingMaster = false)
 {
@@ -749,7 +828,7 @@ static void sg_FavoritesMenu(INTFUNCPTR connect, gServerFavoritesHolder &holder,
 
     sg_TransferCustomServer();
 
-    uMenu net_menu(sg_GetBookmarkString("menu"));
+    gFavoriteMenu net_menu(sg_GetBookmarkString("menu"));
     sg_connectionMenu = &net_menu;
 
     uMenuItemFunction edit(&net_menu, sg_GetBookmarkString("menu_edit"), sg_GetBookmarkString("menu_edit_help"), &sg_EditServers);
@@ -764,6 +843,7 @@ static void sg_FavoritesMenu(INTFUNCPTR connect, gServerFavoritesHolder &holder,
     sg_ClearConnectionItems();
 
     sg_connectionMenuItemKeep = NULL;
+    sg_connectionMenuItemAddKeep = NULL;
     sg_connectionMenu = NULL;
 }
 

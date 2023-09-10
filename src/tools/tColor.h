@@ -36,8 +36,9 @@ class tColor
 {
 public:
     tColor();                                   //!< Constructor
-    tColor(REAL r, REAL g, REAL b, REAL a = 1); //!< Constructor
+    tColor(REAL r, REAL g, REAL b, REAL alpha = 1); //!< Constructor
     tColor(const char *c);                      //!< Creates a tColor from a color code string
+    tColor(int rgb[3], REAL alpha = 1);
                                                 //    tColor( const tString * c );		//!< Creates a tColor from a color code string
     ~tColor() {}                                //!< Destructor
 

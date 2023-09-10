@@ -3363,7 +3363,7 @@ void MainMenu(bool ingame)
 
     uMenuItemFunction hm(&MainMenu,
                          "Helper Menu",
-                         "Helper Menu",
+                         "Helper Menu Settings",
                          helperMenu);
 
     if (!helperConfig::sghuk || !helperConfig::sg_helperMenuEnabled)

@@ -559,6 +559,8 @@ public:
     virtual ~uMenuItemFunctionInt(){}
 
     virtual void Enter();
+
+    int getArg() { return arg; }
 };
 
 // *****************************************************

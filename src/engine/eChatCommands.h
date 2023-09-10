@@ -420,4 +420,14 @@ public:
     bool execute(tString args) override;
 };
 
+class BookmarksCommand : public ChatCommand
+{
+public:
+    BookmarksCommand() : ChatCommand("BookmarksCommand")
+    {
+        requirePlayer = false;
+    }
+    bool execute(tString args) override;
+};
+
 #endif

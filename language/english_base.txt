@@ -2062,6 +2062,8 @@ bookmarks_menu              Server Bookmarks
 bookmarks_menu_help         Add, edit, and connect to your server bookmarks.
 bookmarks_menu_edit         Edit Bookmarks
 bookmarks_menu_edit_help    Edit and add favorite servers.
+bookmarks_menu_add         Add Bookmarks
+bookmarks_menu_add_help  Add favorite servers.
 bookmarks_menu_edit_slot    Edit \1
 bookmarks_menu_address      Address
 bookmarks_menu_address_help The address of the server to connect to.

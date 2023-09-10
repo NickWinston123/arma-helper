@@ -40,6 +40,7 @@ public:
 
     //! open the favorites menu
     static void FavoritesMenu();
+    static void FavoritesMenuForceQuery(bool query);
 
     //! open the single custom connect menu
     static void CustomConnectMenu();

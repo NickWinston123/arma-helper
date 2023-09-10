@@ -7,6 +7,7 @@
 #include "nServerInfo.h"
 #include "../tron/gCycle.h"
 #include "../tron/gServerBrowser.h"
+#include "../tron/gServerFavorites.h"
 #include "../tron/gGame.h"
 #include "../tron/gHelper/gHelperUtilities.h"
 #include "../tron/gMenus.h"
@@ -137,6 +138,8 @@ static tConfItem<tString> se_quitCommandConf("LOCAL_CHAT_COMMAND_QUIT", se_quitC
 int se_quitCommandTime = 3;
 static tConfItem<int> se_quitCommandTimeConf("LOCAL_CHAT_COMMAND_QUIT_TIME", se_quitCommandTime);
 
+tString se_bookmarksCommand("/bookmarks");
+static tConfItem<tString> se_bookmarksCommandConf("LOCAL_CHAT_COMMAND_BOOKMARKS", se_bookmarksCommand);
 
 static void TempConfItemCommandRunner(std::istream &input)
 {
@@ -243,6 +246,8 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
                { return std::make_unique<LeaveCommand>(); });
     addCommand(se_quitCommand, []()
                { return std::make_unique<QuitCommand>(); });
+    addCommand(se_bookmarksCommand, []()
+               { return std::make_unique<BookmarksCommand>(); });
 
     return commandFactories;
 }
@@ -873,6 +878,7 @@ bool RgbCommand::execute(tString args)
 
 bool BrowserCommand::execute(tString args)
 {
+    ret_to_MainMenu();
     gServerBrowser::BrowseMaster();
     return true;
 }
@@ -2005,5 +2011,25 @@ bool QuitCommand::execute(tString args)
     {
         throw 1;
     });
+    return true;
+}
+
+bool BookmarksCommand::execute(tString args)
+{
+    tString input(args);
+    input = input.ToLower();
+
+    if (!CurrentServer() || (input == "poll" || input == "1" || input == "yes" || input == "true"))
+    {
+        con << CommandText() 
+            << "Disconnecting and loading bookmark menu.\n";
+        gServerFavorites::FavoritesMenuForceQuery(true);
+    }
+    else
+    {
+        con << CommandText() 
+            << "Loading bookmark menu. (Polling a server will disconnect you from the game).\n";
+        gServerFavorites::FavoritesMenuForceQuery(false);
+    }   
     return true;
 }

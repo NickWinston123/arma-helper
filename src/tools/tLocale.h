@@ -38,6 +38,12 @@ tColoredString st_Latin1ToUTF8( tString const & string );
 tColoredString st_UTF8ToLatin1( tString const & string );
 
 
+//! transform a string from latin1 to utf8 unicode
+tColoredString st_Latin1ToUTF8( tString const & s );
+
+//! transform a string from utf8 unicode to latin1
+tColoredString st_UTF8ToLatin1( tString const & s );
+
 extern const tString st_internalEncoding;
 
 class tLocaleItem;

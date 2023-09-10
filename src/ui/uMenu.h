@@ -475,7 +475,6 @@ class uMenuItemColorLine: public uMenuItemString
                         uMenuItemString(M,"$player_name_text","$player_name_help",c, maxLength) {}
         virtual ~uMenuItemColorLine(){}
 
-        virtual bool Event(SDL_Event &e);
 };
 
 class uMenuItemStringWithHistory : protected uMenuItemString {

@@ -172,6 +172,7 @@ void uMenu::OnEnter(){
     yOffset=menuTop;
     REAL lastt=0;
     REAL ts=0;
+    bool snapScroll = false;
 
 #ifndef DEDICATED
     lastkey=tSysTimeFloat();
@@ -188,6 +189,32 @@ void uMenu::OnEnter(){
         ts=tSysTimeFloat()-lastt;
         lastt=tSysTimeFloat();
         if (ts>.2) ts=.2;
+
+        if(snapScroll)
+        {
+            if(ts * 30 < 1)
+                snapScroll = false;
+        }
+        else
+        {
+            if(ts * 15 > 1)
+                snapScroll = true;
+        }
+        auto scrollBy = [this, snapScroll, ts](REAL delta)
+        {
+            if(snapScroll || fabsf(delta) < 1E-6)
+            {
+                yOffset += delta;
+            }
+            else
+            {
+                // almost standard exponential decay; the proximity factor makes it
+                // approach the target position like t -> t^2 for negative t
+                REAL proximity = std::min(1.0f, 10.0f * sqrtf(fabsf(delta)));
+                REAL speed = std::min(1.0f, ts * 6 / proximity);
+                yOffset += speed * delta;
+            }
+        };
 
         menuentries=items.Len();
 
@@ -269,11 +296,16 @@ void uMenu::OnEnter(){
 
         REAL ysel=YPos(selected);
 
-        if (ysel<menuBot+border)
-            yOffset+=(menuBot+border-ysel)*6*ts;
-
-        if (ysel>menuTop-border)
-            yOffset+=(menuTop-border-ysel)*6*ts;
+        {
+            REAL scrollUp = menuBot+border-ysel;
+            if(scrollUp > 0)
+                scrollBy(scrollUp);
+        }
+        {
+            REAL scrollDown = menuTop-border-ysel;
+            if(scrollDown < 0)
+                scrollBy(scrollDown);
+        }
 
         if (ysel<menuBot)
             yOffset+=(menuBot-ysel);
@@ -384,35 +416,21 @@ void uMenu::HandleEvent( SDL_Event event )
 
             case(SDLK_UP):
                 lastkey=tSysTimeFloat();
-                /*selected++;
-                if (selected>=items.Len())
-                {
-                    if (wrap)
-                        selected=0;
-                    else
-                        selected=items.Len()-1;
-                }*/
                 selected = GetNextSelectable(selected);
+                items[selected]->DisplayHelp(false, 0, 0.0f);
                 break;
 
             case(SDLK_DOWN):
-                            lastkey=tSysTimeFloat();
-                /*selected--;
-                if (selected<0)
-                {
-                    if (wrap)
-                        selected=items.Len()-1;
-                    else
-                        selected=0;
-                }*/
+                lastkey=tSysTimeFloat();
                 selected = GetPrevSelectable(selected);
+                items[selected]->DisplayHelp(false, 0, 0.0f);
                 break;
 
             case(SDLK_LEFT):
-                            items[selected]->LeftRight(-1);
+                items[selected]->LeftRight(-1);
                 break;
             case(SDLK_RIGHT):
-                            items[selected]->LeftRight(1);
+                items[selected]->LeftRight(1);
                 break;
 
             case(SDLK_SPACE):
@@ -908,11 +926,9 @@ bool uMenuItemString::Event(SDL_Event &e){
         else if (c.sym == SDLK_k) {
             killForwards = true;
         }
-#ifdef WIN32
         else if (c.sym == SDLK_v) {
             pasteText = true;
         }
-#endif
     }
     // moveWordLeft = moveWordRight = deleteWordLeft = deleteWordRight = moveBeginning = moveEnd = killForwards
 
@@ -971,188 +987,12 @@ bool uMenuItemString::Event(SDL_Event &e){
         {
             ret=true;
 
-            int len = content->Len();
-            // insert character if there is room
-            if (len < maxLength_)
-            {
-                for (int i = content->Len() - 1; i>= cursorPos; i--)
-                    (*content)[i+1]=(*content)[i];
-
-                // guarantee proper null termination
-                (*content)[content->Len()-1]='\0';
-                (*content)[cursorPos]=c.unicode;
-                cursorPos++;
-            }
-        }
-        else {
-            ret=false;
-        }
-    }
-
-    if (cursorPos<0)    cursorPos=0;
-    if (cursorPos > content->Len()-1) cursorPos=content->Len()-1;
-
-    return ret;
-#else
-    return false;
-#endif
-}
-
-// *****************************************************
-
-bool uMenuItemColorLine::Event(SDL_Event &e){
-#ifndef DEDICATED
-    if (e.type!=SDL_KEYDOWN)
-        return false;
-    bool ret=true;
-    SDL_keysym &c=e.key.keysym;
-    SDLMod mod = c.mod;
-    bool moveWordLeft, moveWordRight, deleteWordLeft, deleteWordRight, moveBeginning, moveEnd, killForwards, pasteText;
-    moveWordLeft = moveWordRight = deleteWordLeft = deleteWordRight = moveBeginning = moveEnd = killForwards = pasteText = false;
-
-#if defined (MACOSX)
-    // For moving over/deleting words
-    if (mod & KMOD_ALT) {
-        if (c.sym == SDLK_LEFT) {
-            moveWordLeft = true;
-        }
-        else if (c.sym == SDLK_RIGHT) {
-            moveWordRight = true;
-        }
-        else if (c.sym == SDLK_DELETE) {
-            deleteWordRight = true;
-        }
-        else if (c.sym == SDLK_BACKSPACE) {
-            deleteWordLeft = true;
-        }
-    }
-    // For moving to extremes of the line
-    else if (mod & KMOD_META) {
-        if (c.sym == SDLK_LEFT) {
-            moveBeginning = true;
-        }
-        else if (c.sym == SDLK_RIGHT) {
-            moveEnd = true;
-        }
-    }
-    // Linux and Windows
-#else
-    // Word operations
-    if (mod & KMOD_CTRL) {
-        if (c.sym == SDLK_LEFT) {
-            moveWordLeft = true;
-        }
-        else if (c.sym == SDLK_RIGHT) {
-            moveWordRight = true;
-        }
-        else if (c.sym == SDLK_DELETE) {
-            deleteWordRight = true;
-        }
-        else if (c.sym == SDLK_BACKSPACE) {
-            deleteWordLeft = true;
-        }
-    }
-    else if (c.sym == SDLK_HOME) {
-        moveBeginning = true;
-    }
-    else if (c.sym == SDLK_END) {
-        moveEnd = true;
-    }
-#endif
-    // "bash" keys
-    if (mod & KMOD_CTRL) {
-        if (c.sym == SDLK_a) {
-            moveBeginning = true;
-        }
-        else if (c.sym == SDLK_e) {
-            moveEnd = true;
-        }
-        else if (c.sym == SDLK_k) {
-            killForwards = true;
-        }
-#ifdef WIN32
-        else if (c.sym == SDLK_v) {
-            pasteText = true;
-        }
-#endif
-    }
-    // moveWordLeft = moveWordRight = deleteWordLeft = deleteWordRight = moveBeginning = moveEnd = killForwards
-
-    if (moveWordLeft) {
-        cursorPos += content->PosWordLeft(cursorPos);
-    }
-    else if (moveWordRight) {
-        cursorPos += content->PosWordRight(cursorPos);
-    }
-    else if (deleteWordLeft) {
-        cursorPos += content->RemoveWordLeft(cursorPos);
-    }
-    else if (deleteWordRight) {
-        content->RemoveWordRight(cursorPos);
-    }
-    else if (moveBeginning) {
-        cursorPos = 0;
-    }
-    else if (moveEnd) {
-        cursorPos = content->Len()-1;
-    }
-    else if (killForwards) {
-        content->RemoveSubStr(cursorPos,content->Len()-1-cursorPos);
-    }
-#ifdef WIN32
-    else if (pasteText) {
-        if (OpenClipboard(0))
-        {
-            HANDLE hClipboardData = GetClipboardData(CF_TEXT);
-            char *pchData = (char*)GlobalLock(hClipboardData);
-            tString cData(pchData);
-
-            tString oContent(*content);
-            tString aContent = oContent.SubStr(0, cursorPos);
-            tString bContent = oContent.SubStr(cursorPos);
-
-            tString nContent = aContent + cData + bContent;
-
-            *content = nContent;
-            cursorPos += cData.Len()-1;
-
-            GlobalUnlock(hClipboardData);
-            CloseClipboard();
-        }
-    }
-#endif
-    else if (c.sym == SDLK_LEFT) {
-        if (cursorPos > 0) {
-            cursorPos--;
-        }
-    }
-    else if (c.sym == SDLK_RIGHT) {
-        if (cursorPos < content->Len()-1) {
-            cursorPos++;
-        }
-    }
-    else if (c.sym == SDLK_DELETE) {
-        if (cursorPos < content->Len()-1) {
-            content->RemoveSubStr(cursorPos,1);
-        }
-    }
-    else if (c.sym == SDLK_BACKSPACE) {
-        if (cursorPos > 0) {
-            content->RemoveSubStr(cursorPos,-1);
-            cursorPos--;
-        }
-    }
-    else if (c.sym == SDLK_KP_ENTER || c.sym == SDLK_RETURN) {
-        ret = false;
-        //        c.sym = SDLK_DOWN;
-    }
-    else {
-        if (32 <= c.unicode  && c.unicode < 256)
-        {
-            ret=true;
-
             //  remove colors and get actual colors
-            int len = tColoredString::RemoveColors(*content).Len();
+            int len;
+            if( dynamic_cast<uMenuItemColorLine *>(this) )
+                len = tColoredString::RemoveColors(*content).Len();
+            else
+                len = content->Len();
 
             // insert character if there is room
             if (len < maxLength_)

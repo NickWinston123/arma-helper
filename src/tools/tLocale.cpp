@@ -35,7 +35,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string>
 #include <map>
 
-
 //! transform a string from latin1 to utf8 unicode
 tColoredString st_Latin1ToUTF8( tString const & string )
 {

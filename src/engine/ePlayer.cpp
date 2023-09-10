@@ -4409,7 +4409,9 @@ static void se_ShufflePlayer(std::istream &s)
     }
 }
 static tConfItemFunc se_ShufflePlayerConf("SHUFFLE_PLAYER", &se_ShufflePlayer);
+#ifdef DEDICATED
 static tAccessLevelSetter se_ShufflePlayerConfLevel( se_Login_Conf, tAccessLevel_Moderator );
+#endif
 
 // substitute: swap 2 players within a team
 static void se_ChatSubstitute(ePlayerNetID *p, std::istream &s);
@@ -8550,10 +8552,8 @@ eLadderLogWriter::~eLadderLogWriter()
     {
         delete conf;
     }
-    // generic algorithms aren't exactly easier to understand than regular
-    // code, but anyways, let's try one...
-    std::list<eLadderLogWriter *> list = writers();
-    list.erase(std::find_if(list.begin(), list.end(), std::bind2nd(std::equal_to<eLadderLogWriter *>(), this)));
+
+    writers().remove(this);
 }
 
 #ifdef DEDICATED

@@ -134,7 +134,9 @@ protected:
     bool displayHelp_;
     REAL helpAlpha_;
 
-    gBrowserMenuItem(uMenu *M, const tOutput &help) : uMenuItem(M, help)
+    gBrowserMenuItem(uMenu *M,const tOutput &help): uMenuItem( M, help )
+      , displayHelp_{false}
+      , helpAlpha_(0.0f)
     {
     }
 
@@ -824,10 +826,9 @@ void gServerMenuItem::RenderBackground()
         players << tOutput("$network_master_serverinfo", server->Release(), uri, server->Options());
     }
 
-    if (displayHelp_)
     {
         players << "\n";
-        players.SetColor(tColor(1, 1, 1, helpAlpha_));
+        players.SetColor(tColor(1,1,1,displayHelp_ ? helpAlpha_ : 0));
         players << Help();
     }
 

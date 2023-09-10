@@ -30,6 +30,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tMemManager.h"
 #include "tString.h"
 #include "tLinkedList.h"
+ 
+//! transform a string from latin1 to utf8 unicode
+tColoredString st_Latin1ToUTF8( tString const & string );
+ 
+//! transform a string from utf8 unicode to latin1
+tColoredString st_UTF8ToLatin1( tString const & string );
+
 
 extern const tString st_internalEncoding;
 

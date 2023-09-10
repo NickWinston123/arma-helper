@@ -2873,11 +2873,6 @@ const char* tString::c_str() const {
     return operator const char*();
 }
 
-#ifdef LINUX
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#endif
-
 static void sg_copyToClipboard(std::istream &s)
 {
     tString params;
@@ -2919,49 +2914,10 @@ bool copyToClipboard(tString contents)
         CloseClipboard();
         return true;
     }
-    #endif
-
-    #ifdef LINUX
-    Display *display = XOpenDisplay(nullptr);
-    if (display)
+    #else
+    std::string cmd = "echo -n " + contents + " | xclip -selection clipboard";
+    if (system(cmd.c_str()) == 0)
     {
-        Window owner = XDefaultRootWindow(display);
-        Atom selection = XInternAtom(display, "CLIPBOARD", False);
-        Atom type = XInternAtom(display, "STRING", False);
-
-        XSetSelectionOwner(display, selection, owner, CurrentTime);
-
-        XEvent event;
-        while (true)
-        {
-            XNextEvent(display, &event);
-            if (event.type == SelectionRequest)
-            {
-                XSelectionRequestEvent *req = &event.xselectionrequest;
-
-                XSelectionEvent ev = {0};
-                ev.type = SelectionNotify;
-                ev.display = req->display;
-                ev.requestor = req->requestor;
-                ev.selection = req->selection;
-                ev.target = req->target;
-                ev.property = req->property;
-                ev.time = req->time;
-
-                if (req->target == type)
-                {
-                    XChangeProperty(display, req->requestor, req->property, req->target, 8, PropModeReplace, (unsigned char *)contents, strlen(contents));
-                }
-                else
-                {
-                    ev.property = None;
-                }
-
-                XSendEvent(display, req->requestor, 0, 0, (XEvent *)&ev);
-            }
-        }
-
-        XCloseDisplay(display);
         return true;
     }
     #endif
@@ -2975,12 +2931,27 @@ bool pasteFromClipboard(tString *content, int& cursorPos)
         return false;
     #endif
 
+#ifndef WIN32
+        std::unique_ptr<FILE, decltype(&pclose)> clip(popen("xclip -selection clipboard -o", "r"), pclose);
+        if( clip )
+#else
+        if (OpenClipboard(0))
+#endif
+        {
     #ifdef WIN32
-    if (OpenClipboard(0))
-    {
-        HANDLE hClipboardData = GetClipboardData(CF_TEXT);
-        char *pchData = (char *)GlobalLock(hClipboardData);
-        tString cData(pchData);
+            HANDLE hClipboardData = GetClipboardData(CF_TEXT);
+            char *pchData = (char*)GlobalLock(hClipboardData);
+            tString cData(pchData);
+    #else
+            tString cData;
+            char buf[128];
+            while( std::fgets(buf, 128, clip.get()) )
+            {
+                cData << buf;
+            }
+            
+            cData = st_UTF8ToLatin1( cData );
+    #endif
 
         tString oContent(*content);
         tString aContent = oContent.SubStr(0, cursorPos);
@@ -2996,51 +2967,6 @@ bool pasteFromClipboard(tString *content, int& cursorPos)
 
         return true;
     }
-    #endif
-
-    #ifdef LINUX
-    Display *display = XOpenDisplay(nullptr);
-    if (display)
-    {
-        Atom type = XInternAtom(display, "STRING", False);
-        Atom selection = XInternAtom(display, "CLIPBOARD", False);
-        Atom property = XInternAtom(display, "XSEL_DATA", False);
-        Window owner = XDefaultRootWindow(display);
-
-        XConvertSelection(display, selection, type, property, owner, CurrentTime);
-
-        XEvent event;
-        while (true)
-        {
-            XNextEvent(display, &event);
-            if (event.type == SelectionNotify)
-            {
-                Atom da, type_ret;
-                int format_ret;
-                unsigned long nitems, bytes_after;
-                unsigned char *prop_ret = nullptr;
-
-                XGetWindowProperty(display, owner, property, 0, (~0L), True, AnyPropertyType, &type_ret, &format_ret, &nitems, &bytes_after, &prop_ret);
-
-                tString cData((char *)prop_ret);
-
-                tString oContent(*content);
-                tString aContent = oContent.SubStr(0, cursorPos);
-                tString bContent = oContent.SubStr(cursorPos);
-
-                tString nContent = aContent + cData + bContent;
-
-                *content = nContent;
-                cursorPos += cData.Len() - 1;
-
-                XFree(prop_ret);
-                XCloseDisplay(display);
-
-                return true;
-            }
-        }
-    }
-    #endif
 
     return false;
 }

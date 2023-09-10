@@ -9472,7 +9472,7 @@ static void loadCrossfadePreset(size_t selection)
     con << ChatCommand::HeaderText()
         << "Using preset " << ChatCommand::ItemText() << (selection + 1)
         << ChatCommand::MainText() << ": " << presets[selection].description
-        << " \n  - " << presets[selection].colors.size() << " colors\n";
+        << " - (" << presets[selection].colors.size() << " colors)\n";
 }
 
 static void crossfadePresetList()

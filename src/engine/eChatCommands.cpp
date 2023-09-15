@@ -299,12 +299,37 @@ bool MsgCommand::execute(tString args)
 
     if (msgTarget)
     {
+        netPlayer->lastMessagedByPlayer = nullptr;
         netPlayer->lastMessagedPlayer = msgTarget;
-        netPlayer->lastMessagedPlayerStr = msgTarget->GetName().Filter();
     }
 
     tString messageToSend;
     messageToSend << "/msg " << args;
+    
+    if (se_chatLog)
+    {
+        tString logOutput;
+
+        if (se_chatTimeStamp)
+            logOutput << st_GetCurrentTime("%H:%M:%S| ");
+
+        int spacePos = args.StrPos(" ");
+
+        if (spacePos != -1)
+        {
+            spacePos++;
+            args.RemoveSubStr(0, spacePos);
+        }
+
+        logOutput << netPlayer->GetName() 
+                  << " --> "
+                  << msgTarget->GetName()
+                  << ": "
+                  << args;
+
+        se_SaveToChatLog(logOutput);    
+    }
+
     se_NewChatMessage(netPlayer, messageToSend)->BroadCast();
     return true;
 }
@@ -1421,9 +1446,11 @@ bool NameSpeakCommand::execute(tString args)
         << MainText()
         << "'. Message: '" << ItemText() << args
         << MainText() << "'\n";
+
     ePlayerNetID::nameSpeakIndex = 0;
     ePlayerNetID::nameSpeakPlayerID = playerID;
     ePlayerNetID::playerUpdateIteration = 0;
+    
     return true;
 }
 
@@ -1459,15 +1486,43 @@ bool SaveConfigCommand::execute(tString args)
 
 bool ReplyCommand::execute(tString args)
 {
-    if (netPlayer->lastMessagedPlayer == nullptr)
+    if (netPlayer->lastMessagedByPlayer == nullptr && netPlayer->lastMessagedPlayer == nullptr)
     {
         con << CommandText()
             << ErrorText()
             << "You have not messaged anyone yet!\n";
         return false;
     }
+    ePlayerNetID *targetPlayer = netPlayer->lastMessagedByPlayer;
 
-    tString name = netPlayer->lastMessagedPlayerStr.empty() ? netPlayer->lastMessagedPlayer->GetName().Filter() : netPlayer->lastMessagedPlayerStr;
+    if (targetPlayer == nullptr)
+        targetPlayer = netPlayer->lastMessagedPlayer;
+
+    tString name = targetPlayer->GetName().Filter();
+
+    if (se_chatLog)
+    {
+        tString logOutput;
+
+        if (se_chatTimeStamp)
+            logOutput << st_GetCurrentTime("%H:%M:%S| ");
+
+        int spacePos = args.StrPos(" ");
+
+        if (spacePos != -1)
+        {
+            spacePos++;
+            args.RemoveSubStr(0, spacePos);
+        }
+
+        logOutput << netPlayer->GetName() 
+                  << " --> "
+                  << targetPlayer->GetName()
+                  << ": "
+                  << args;
+
+        se_SaveToChatLog(logOutput);    
+    }
 
     tString messageToSend;
     messageToSend << "/msg " << name << " " << args;

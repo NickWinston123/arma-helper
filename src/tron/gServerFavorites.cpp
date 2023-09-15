@@ -482,6 +482,9 @@ static void sg_ClearConnectionItems()
 {
     tASSERT(sg_connectionMenu);
 
+    if (!sg_connectionMenu)
+        return;
+        
     // delete old connection items
     for (int i = sg_connectionMenu->NumItems() - 1; i >= 0; --i)
     {
@@ -559,7 +562,7 @@ public:
             tColoredString uri;
             uri << server->Url() << tColoredString::ColorString(1, 1, 1);
             players << tOutput("$network_master_serverinfo", server->Release(), uri, server->Options());
-        } 
+        }
         else
             serverName = "";
 
@@ -751,6 +754,7 @@ void sg_LinkFavoritesToServers(bool pollMaster)
         sn_SendPlanned();
     }
 }
+
 class gFavoriteMenu : public uMenu {
 public:
 
@@ -764,8 +768,14 @@ public:
         if (!updatedNames || sg_serverMenuRefreshTimeout < tSysTimeFloat())
         {
             Update();
-            sg_serverMenuRefreshTimeout = tSysTimeFloat() + 2.0f;
+            sg_serverMenuRefreshTimeout = tSysTimeFloat() + 1.0f;
         }
+    }
+
+    //! enters the submenu
+    virtual void Enter()
+    {
+        uMenu::Enter();
     }
 
     void Update()
@@ -808,11 +818,11 @@ public:
         if (!server)
             return;
 
-        if ( favoriteMenuItem->userList != server->UserNamesOneLine() ) 
+        if ( favoriteMenuItem->userList != server->UserNamesOneLine() )
         {
             favoriteMenuItem->userList = server->UserNamesOneLine();
             favoriteMenuItem->UpdateMenuItem();
-        } 
+        }
         else if (!server->GetName().empty())
             updatedNames = true;
     }

@@ -127,29 +127,40 @@ tConsole & rConsole::DoPrint(const tString &s){
         std::cout.flush();
     }
 
-    if(!tRecorder::IsPlayingBack() && sr_consoleLog) {
-        std::ofstream o;
-        if ( tDirectories::Log().Open(o, "consolelog.txt", std::ios::app) ) {
-            o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
-        }
+    if(!tRecorder::IsPlayingBack() && sr_consoleLog) 
+    {
+        FileManager fileManager(tString("consolelog.txt"), tDirectories::Log());
+
+        tString finalLine;
+        finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s) << "\n";
+        fileManager.Write(finalLine);
     }
        
 
-    if(!tRecorder::IsPlayingBack() && sr_consoleLogLimited) {
-        std::ofstream o;
-        if ( tDirectories::Log().Open(o, "consolelog-limited.txt", std::ios::app) ) {
-            o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
-        }
+    if(!tRecorder::IsPlayingBack() && sr_consoleLogLimited) 
+    {
+        FileManager fileManager(tString("consolelog-limited.txt"), tDirectories::Log());
+
+        tString finalLine;
+        finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s) << "\n";
+        fileManager.Write(finalLine);
     }
     
     
-    if(!tRecorder::IsPlayingBack() && sr_consoleLogColor) {
-        std::ofstream o;
-        if ( tDirectories::Log().Open(o, "consolelog-color.txt", std::ios::app ) ) {
-            if(sr_consoleLogColorTimestamp)
-                o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ");
-            o << s;
-        }
+    if(!tRecorder::IsPlayingBack() && sr_consoleLogColor) 
+    {
+
+        FileManager fileManager(tString("consolelog-color.txt"), tDirectories::Log());
+
+        tString finalLine;
+
+        if(sr_consoleLogColorTimestamp)
+            finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ");
+            
+        finalLine << s << "\n";
+
+        fileManager.Write(finalLine);
+        
     }
 
     if (sr_screen){

@@ -1735,7 +1735,7 @@ void ePlayer::LogIn()
 
 bool se_highlightNames = false;
 
-static bool se_chatTimeStamp = false;
+bool se_chatTimeStamp = false;
 static tConfItem<bool> se_chatTimeStampConf("CHAT_TIMESTAMP", se_chatTimeStamp);
 
 bool se_playerTriggerMessages = false;
@@ -1854,7 +1854,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         }
 
         se_SaveToChatLog(actualMessage);
-        se_SaveToChatLogC(actualMessage);
+
         bool encyptedMessage = false;
         bool privateMessage = actualMessage.Contains("-->");
 
@@ -1869,14 +1869,10 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
                 ePlayerNetID *ourPlayer = ePlayerNetID::GetPlayerByName(ourName);
                 if (ourPlayer)
-                {                   
+                {
                     p->lastMessagedPlayer = ourPlayer;
-
-                    if (ourPlayer->lastMessagedByPlayer != p)
-                    {
-                        ourPlayer->lastMessagedPlayerStr = p->GetName().Filter();
-                        ourPlayer->lastMessagedByPlayer = p;
-                    }
+                    ourPlayer->lastMessagedByPlayer = p;
+                    ourPlayer->lastMessagedPlayer = nullptr;
                 }
             }
 
@@ -2302,21 +2298,25 @@ void se_BroadcastChatLine(ePlayerNetID *sender, const tString &line, const tStri
         return;
 
     // create chat messages
-    tJUST_CONTROLLED_PTR<nMessage> mServerControlled = se_ServerControlledChatMessageConsole(sender, retStr);
-    tJUST_CONTROLLED_PTR<nMessage> mNew = se_NewChatMessage(sender, forOldClients);
-    tJUST_CONTROLLED_PTR<nMessage> mOld = se_OldChatMessage(retStr);
 
     // send them to the users, depending on what they understand
     for (int user = MAXCLIENTS; user > 0; --user)
     {
         if (sn_Connections[user].socket)
         {
-            if (se_chatHandlerClient.Supported(user))
+            if (se_chatHandlerClient.Supported(user)){
+                tJUST_CONTROLLED_PTR<nMessage> mServerControlled = se_ServerControlledChatMessageConsole(sender, retStr);
                 mServerControlled->Send(user);
-            else if (se_chatRelay.Supported(user))
+                }
+            else if (se_chatRelay.Supported(user)){
+                tJUST_CONTROLLED_PTR<nMessage> mNew = se_NewChatMessage(sender, forOldClients);
                 mNew->Send(user);
+            }
             else
+            {
+                tJUST_CONTROLLED_PTR<nMessage> mOld = se_OldChatMessage(retStr);
                 mOld->Send(user);
+            }
         }
     }
 }
@@ -2440,7 +2440,8 @@ void se_SendTeamMessage(eTeam const *team, ePlayerNetID const *sender, ePlayerNe
 
         if (se_chatLogWriteTeam)
         {
-            se_SaveToChatLogC(say);
+           
+            se_SaveToChatLog(say);
         }
     }
 }
@@ -3524,8 +3525,6 @@ static void se_ChatMe(ePlayerNetID *p, std::istream &s, eChatSpamTester &spam)
     tString str;
     str << p->GetUserName() << " /me " << msg;
     se_SaveToChatLog(str);
-
-    se_SaveToChatLogC(console);
     return;
 }
 
@@ -3623,7 +3622,7 @@ static void se_ChatShout(ePlayerNetID *p, tString const &say, eChatSpamTester &s
         message << *p;
         message << tColoredString::ColorString(1, 1, .5);
         message << ": " << say << "\n";
-        se_SaveToChatLogC(message);
+        se_SaveToChatLog(message);
     }
 }
 
@@ -3763,7 +3762,7 @@ static void se_ChatEnemy(ePlayerNetID *p, std::istream &s, eChatSpamTester &spam
             se_BroadcastChatLine(p, send, send);
             send << "\n";
             sn_ConsoleOut(send, 0);
-
+            se_SaveToChatLog(message);
             // break;
         }
     }
@@ -4017,6 +4016,7 @@ static void se_ChatMsg(ePlayerNetID *p, std::istream &s, eChatSpamTester &spam)
 
         if (p->CurrentTeam() == receiver->CurrentTeam() || !IsSilencedWithWarning(p))
         {
+            se_SaveToChatLog(msg_core);
             // log locally
             sn_ConsoleOut(toServer, 0);
 
@@ -4379,24 +4379,24 @@ static void se_ShufflePlayer(std::istream &s)
 {
     tString params;
     s >> params;
-    
+
     ePlayerNetID * p = ePlayerNetID::FindPlayerByName(params);
     if (!p) return;
-    
+
     int IDWish;
     s >> IDWish;
-    
+
     IDWish -= 1;
-    
+
     if (IDWish < 0)
         IDWish = 0;
-    
+
     if( p->CurrentTeam() )
     {
         int len = p->CurrentTeam()->NumPlayers();
         if (IDWish >= len)
             IDWish = len-1;
-        
+
         p->CurrentTeam()->Shuffle( p->TeamListID(), IDWish );
     }
     else
@@ -4404,7 +4404,7 @@ static void se_ShufflePlayer(std::istream &s)
         int len = eTeam::maxPlayers;
         if (IDWish >= len)
             IDWish = len-1;
-        
+
         p->SetShuffleWish( IDWish );
     }
 }
@@ -4685,7 +4685,7 @@ void handle_chat(nMessage &m)
     m.Read(id);
     tColoredString say;
     m >> say;
-
+    
     tJUST_CONTROLLED_PTR<ePlayerNetID> p = dynamic_cast<ePlayerNetID *>(nNetObject::ObjectDangerous(id));
 
     // register player activity
@@ -5117,7 +5117,7 @@ static void ConsoleSay_conf(std::istream &s)
 #endif
     {
         ePlayerNetID *me = sn_consoleUser()->netPlayer;
-        
+
         if (!me)
             me = se_GetLocalPlayer();
 
@@ -5139,7 +5139,6 @@ static void ConsoleSay_conf(std::istream &s)
         sn_ConsoleOut(send);
 
         se_SaveToChatLog(sg_AdminName + " " + message);
-        se_SaveToChatLogC(send);
 
         break;
     }
@@ -5147,7 +5146,7 @@ static void ConsoleSay_conf(std::istream &s)
     default:
     {
         ePlayerNetID *me = sn_consoleUser()->netPlayer;
-        
+
         if (!me)
             me = se_GetLocalPlayer();
 
@@ -5589,9 +5588,9 @@ public:
 else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_TAB)
 {
     bool isCommand = (*content).StartsWith("/");
-    static tString lastContent;           
-    static tString lastCommandContent;   
-    static tString lastEncContent;     
+    static tString lastContent;
+    static tString lastCommandContent;
+    static tString lastEncContent;
     tString currentContent((*content));
     bool changeLast;
     bool encryptCommand = isCommand && currentContent.ToLower().StartsWith(se_encryptCommand.ToLower());
@@ -6394,7 +6393,7 @@ static REAL se_playerMessageChatFlagStartMult = 0.5;
 static tConfItem<REAL> se_playerMessageChatFlagStartMultConf = HelperCommand::tConfItem("PLAYER_MESSAGE_CHATFLAG_START_MULT", se_playerMessageChatFlagStartMult);
 
 static bool se_playerMessageDisplayScheduledMessages = false;
-static tConfItem<bool> se_playerMessageDisplayScheduledMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_DISPLAY_SCHEDULED_MESSAGES", se_playerMessageDisplayScheduledMessages);
+static tConfItem<bool> se_playerMessageDisplayScheduledMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_SHOW_SCHEDULED_MESSAGES", se_playerMessageDisplayScheduledMessages);
 
 
 ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
@@ -8483,7 +8482,7 @@ void se_SaveToLadderLog(tOutput const &out)
     }
 }
 
-static bool se_chatLog = false;
+bool se_chatLog = false;
 static bool se_chatLogColors = false;
 static tConfItem<bool> se_chatLogConf("CHAT_LOG", se_chatLog);
 static tConfItem<bool> se_chatLogColorsConf("CHAT_LOG_COLORS", se_chatLogColors);
@@ -8493,8 +8492,7 @@ static eLadderLogWriter se_chatWriter("CHAT", false);
 void se_SaveToChatLog(tOutput const &out)
 {
     tString colStr(out);
-    eBannedWords::BadWordTrigger(colStr);
-    colStr = tColoredString::RemoveColors(colStr);
+    // eBannedWords::BadWordTrigger(colStr);
     if (!tRecorder::IsPlayingBack())
     {
         if (sn_GetNetState() != nCLIENT && se_chatWriter.isEnabled())
@@ -8502,34 +8500,28 @@ void se_SaveToChatLog(tOutput const &out)
             se_chatWriter << out;
             se_chatWriter.write();
         }
+
+
         if (se_chatLog)
         {
-            std::ofstream o;
-            if (tDirectories::Log().Open(o, "chatlog.txt", std::ios::app))
-            {
-                o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << colStr << std::endl;
-            }
+            FileManager fileManager(tString("chatlog.txt"), tDirectories::Log());
+
+            tString finalLine;
+            finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColors(colStr) << "\n";
+            fileManager.Write(finalLine);
         }
-    }
-}
 
-void se_SaveToChatLogC(tOutput const &out)
-{
-    tString colStr(out);
-    eBannedWords::BadWordTrigger(colStr);
-
-    if (!tRecorder::IsPlayingBack())
-    {
         if (se_chatLogColors)
         {
-            std::ofstream o;
-            if (tDirectories::Log().Open(o, "chatlog_colors.txt", std::ios::app))
-            {
-                o << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << colStr; // << std::endl;
-            }
+            FileManager fileManager(tString("chatlog_colors.txt"), tDirectories::Log());
+
+            tString finalLine;
+            finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << colStr << "\n";
+            fileManager.Write(finalLine);
         }
     }
 }
+
 
 std::list<eLadderLogWriter *> &eLadderLogWriter::writers()
 {
@@ -14242,6 +14234,32 @@ void eChatBot::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, boo
         0, true); // allow multiple
 }
 
+tString numberAlternaterFunc(tString message) {
+    if (!message.isNumber())
+        return tString("");
+
+    for (int i = message.Len() - 2; i >= 0; --i) {
+        if (message[i] == '9') {
+            message[i] = '0';
+        } else {
+            message[i] = char(message[i] + 1);
+            break;
+        }
+    }
+
+    if (message[0] == '0') {
+        message = tString("1") + message;
+    }
+
+    return message;
+}
+
+
+void eChatBot::InitChatFunctions()
+{
+    RegisterFunction(tString("$numbaltfunc"), numberAlternaterFunc);
+}
+
 /*
 triggeredPlayer: who triggered the message
 chatMessage: the message potentially containing a trigger
@@ -14256,6 +14274,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
     tToLower(lowerMessage);
     tString triggeredPlayerName = tString("");
     ePlayerNetID *sendingPlayer = nullptr; // who should send this message?
+    bool isNumber = lowerMessage.isNumber();
 
     for (const auto& triggerKey : chatTriggerKeys) {
         auto triggerPair = chatTriggers.find(triggerKey);
@@ -14268,7 +14287,11 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
         ePlayerNetID *potentialSender = nullptr;
 
-        if (trigger.Contains("$p"))
+        if (isNumber && trigger == "$number")
+        {
+            match = true;
+        }
+        else if (trigger.Contains("$p"))
         {
             for (int i = MAX_PLAYERS - 1; i >= 0; i--)
             {
@@ -14382,6 +14405,26 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 }
 
                 chosenResponse = tString(responseStr);
+            }
+            else
+                {
+                int dollarPos = chosenResponse.StrPos("$");
+                if (dollarPos != -1) {
+                    
+                    int endPos = dollarPos + 1;
+                    while (endPos < chosenResponse.Len() && std::isalnum(chosenResponse[endPos])) {
+                        ++endPos;
+                    }
+
+
+                    tString functionName = chosenResponse.SubStr(dollarPos, endPos - dollarPos);
+
+
+                    eChatBot& chatBot = eChatBot::getInstance();
+                    tString result = chatBot.ExecuteFunction(functionName, chatMessage);  
+
+                    chosenResponse = result;
+                }
             }
 
             return std::make_tuple(chosenResponse, extraDelay, sendingPlayer);

@@ -1699,10 +1699,10 @@ std::streamoff FileManager::FileSize()
     return tPath::GetFileSize(i);
 }
 
-bool FileManager::Write(tString content)
+bool FileManager::Write(tString content, std::ios::openmode mode)
 {
     bool written = false;
-    if (path.Open(o, fileName, std::ios::app))
+    if (path.Open(o, fileName, mode))
     {
         o << content;
         written = true;

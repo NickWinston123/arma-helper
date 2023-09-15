@@ -265,7 +265,6 @@ public:
     {
         requirePlayer = false;
     }
-
     bool execute(tString args) override;
 };
 
@@ -278,14 +277,20 @@ static std::vector<std::pair<tString, tString>> searchableFiles =
 class SearchCommand : public ChatCommand
 {
 public:
-    SearchCommand() : ChatCommand("SearchCommand") {}
+    SearchCommand() : ChatCommand("SearchCommand") 
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
 };
 
 class NameSpeakCommand : public ChatCommand
 {
 public:
-    NameSpeakCommand() : ChatCommand("NameSpeakCommand") {}
+    NameSpeakCommand() : ChatCommand("NameSpeakCommand") 
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
 };
 

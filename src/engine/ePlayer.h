@@ -71,6 +71,8 @@ enum PlayerColorNameMode {
 
 class TempConfItemManager;
 
+extern bool se_chatLog, se_chatTimeStamp;
+
 extern tString se_disableCreateSpecific;
 extern std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
 
@@ -1017,12 +1019,17 @@ private:
 
 class eChatBot {
 private:
-    eChatBot() {}
+    eChatBot() 
+    {
+        InitChatFunctions();
+    }
 
     eChatBot(const eChatBot&) = delete;
     eChatBot& operator=(const eChatBot&) = delete;
 
 public:
+    typedef tString (*ChatFunction)(tString);
+
     std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
     std::vector<tString> chatTriggerKeys;
 
@@ -1032,7 +1039,21 @@ public:
         return instance;
     }
 
+    void InitChatFunctions();
+
     void LoadChatTriggers();
+
+    std::map<tString, ChatFunction> functionMap;
+    void RegisterFunction(const tString& name, ChatFunction func) {
+        functionMap[name] = func;
+    }
+
+    tString ExecuteFunction(const tString& name, const tString& message) {
+        if (functionMap.find(name) != functionMap.end()) {
+            return functionMap[name](message);
+        }
+        return tString("");
+    }
 
     std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage);
     static void InitiateAction(ePlayerNetID *player, tString message, bool showError = false);

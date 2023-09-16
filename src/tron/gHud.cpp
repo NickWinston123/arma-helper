@@ -448,9 +448,9 @@ static void display_hud_subby(ePlayer *player)
 
                         // myscore=p->TotalScore();
                         myping = me->ping;
-                        static gTextCache<REAL, REAL> cacheArray[MAX_PLAYERS];
-                        gTextCache<REAL, REAL> &cache = cacheArray[player->ID()];
-                        gTextCache<std::string, std::string> cacheStr;
+                        static gTextCache<REAL> cacheArray[MAX_PLAYERS];
+                        gTextCache<REAL> &cache = cacheArray[player->ID()];
+                        gTextCache<std::string> cacheStr;
 
                         if (subby_ShowSpeedMeter)
                         {
@@ -522,8 +522,8 @@ static void display_hud_subby(ePlayer *player)
 
                         if (subby_ShowSpeedFastest)
                         {
-                            static gTextCache<REAL, REAL> cacheArray[MAX_PLAYERS];
-                            gTextCache<REAL, REAL> &cache = cacheArray[player->ID()];
+                            static gTextCache<REAL> cacheArray[MAX_PLAYERS];
+                            gTextCache<REAL> &cache = cacheArray[player->ID()];
                             if (!cache.Call(max, 0))
                             {
                                 rDisplayListFiller filler(cache.list_);
@@ -546,8 +546,8 @@ static void display_hud_subby(ePlayer *player)
 
                         if (hud_showInteract)
                         {
-                            static gTextCache<tString, tString> cacheArray[MAX_PLAYERS];
-                            gTextCache<tString, tString> &cache = cacheArray[player->ID()];
+                            static gTextCache<tString> cacheArray[MAX_PLAYERS];
+                            gTextCache<tString> &cache = cacheArray[player->ID()];
 
                             static tString lastHunter;
                             tString hunterName;
@@ -581,8 +581,8 @@ static void display_hud_subby(ePlayer *player)
 
                         if (subby_ShowScore)
                         {
-                            static gTextCache<REAL, REAL> cacheArray[MAX_PLAYERS];
-                            gTextCache<REAL, REAL> &cache = cacheArray[player->ID()];
+                            static gTextCache<REAL> cacheArray[MAX_PLAYERS];
+                            gTextCache<REAL> &cache = cacheArray[player->ID()];
                             if (!cache.Call(topscore, myscore))
                             {
                                 rDisplayListFiller filler(cache.list_);
@@ -612,8 +612,8 @@ static void display_hud_subby(ePlayer *player)
 
                         if (subby_ShowAlivePeople)
                         {
-                            static gTextCache<REAL, REAL> cacheArray[MAX_PLAYERS];
-                            gTextCache<REAL, REAL> &cache = cacheArray[player->ID()];
+                            static gTextCache<REAL> cacheArray[MAX_PLAYERS];
+                            gTextCache<REAL> &cache = cacheArray[player->ID()];
                             if (!cache.Call(alivepeople, alivemates))
                             {
                                 rDisplayListFiller filler(cache.list_);
@@ -629,8 +629,8 @@ static void display_hud_subby(ePlayer *player)
 
                         if (subby_ShowPing)
                         {
-                            static gTextCache<REAL, REAL> cacheArray[MAX_PLAYERS];
-                            gTextCache<REAL, REAL> &cache = cacheArray[player->ID()];
+                            static gTextCache<REAL> cacheArray[MAX_PLAYERS];
+                            gTextCache<REAL> &cache = cacheArray[player->ID()];
                             if (!cache.Call(0, myping))
                             {
                                 rDisplayListFiller filler(cache.list_);
@@ -679,7 +679,7 @@ static void display_fps_subby()
     REAL newtime = tSysTimeFloat();
     REAL ts = newtime - lastTime;
 
-    static gTextCache<REAL, REAL> cache;
+    static gTextCache<REAL> cache;
     if (cache.Call(fps, (int)tSysTimeFloat()))
     {
         return;

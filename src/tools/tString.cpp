@@ -2031,19 +2031,42 @@ static bool st_IsUnderscore( char c )
 
 bool tString::isNumber() const
 {
-    std::string str = this->stdString();
-    if (empty())
+    if (empty()) 
         return false;
 
-    for(unsigned char c : str)
+    for (int i = 0; i < Len(); ++i) 
     {
-        if(!std::isdigit(c))
-        {
+        char c = (*this)(i);
+        
+        if (c == '\0') 
+            continue;
+
+        if (!std::isdigit(static_cast<unsigned char>(c))) {
             return false;
         }
     }
 
     return true;
+}
+
+bool tString::containsNumber() const
+{
+    if (empty()) 
+        return false;
+
+    for (int i = 0; i < Len(); ++i) 
+    {
+        char c = (*this)(i);
+        
+        if (c == '\0') 
+            continue;
+
+        if (std::isdigit(static_cast<unsigned char>(c))) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // function prototype for character testing functions

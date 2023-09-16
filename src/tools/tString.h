@@ -78,6 +78,7 @@ public:
     tString & operator+=(const tString &s);
 
     bool isNumber() const;
+    bool containsNumber() const;
 
     // Z-Man: stupid, stupid disambiguation for Visual C++.
     // not harmful to GCC, but not required.

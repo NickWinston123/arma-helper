@@ -41,12 +41,12 @@ private:
     rDisplayList list_; // caching display list
 };
 
-template <typename T1, typename T2>
+template <typename T1>
 class gTextCache
 {
 public:
     gTextCache() : propa_{}, propb_{} {}
-    bool Call(T1 propa, T2 propb)
+    bool Call(T1 propa, T1 propb)
     {
         if (!(propa == propa_) || !(propb == propb_))
         {
@@ -64,7 +64,7 @@ public:
 
 private:
     T1 propa_;
-    T2 propb_;
+    T1 propb_;
 };
 
 extern bool hud_WallTime, hud_WallTimeLabel, hud_WallTimeShowForInfinite;

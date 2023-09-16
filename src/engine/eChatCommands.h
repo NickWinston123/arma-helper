@@ -359,10 +359,9 @@ public:
     }
     bool execute(tString args) override;
 
-private:
-    tString preprocess(const tString &input);
+    static tString preprocess(const tString &input);
 
-    std::queue<tString> infixToPostfix(const tString &infix);
+    static std::queue<tString> infixToPostfix(const tString &infix);
 };
 
 class UpdateCommand : public ChatCommand

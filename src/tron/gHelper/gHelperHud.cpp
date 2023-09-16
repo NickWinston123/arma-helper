@@ -61,20 +61,11 @@ void gHelperHudBase::Render()
 
         std::string parent = item->getParent();
 
-        if (tIsInList(sg_helperHudIgnoreList, item->getLabelStr()))
-        {
+        if (!sg_helperHudIgnoreList.empty() && tIsInList(sg_helperHudIgnoreList, item->getLabelStr()))
             continue;
-        }
-
-        if (parent.empty())
-        {
-            parent = "";
-        }
 
         if (hudMap.find(parent) == hudMap.end())
-        {
             hudMap[parent] = std::vector<gHelperHudBase *>();
-        }
 
         hudMap[parent].push_back(item);
     }
@@ -85,12 +76,11 @@ void gHelperHudBase::Render()
     for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++)
     {
         if (iter->first != "")
-        {
             hudDebug << iter->first << ":\n";
-        }
+
         for (auto item : iter->second)
         {
-            gTextCache<tString, tString> cache;
+            gTextCache<tString> cache;
             if (!(cache.Call(item->getValue(), item->getLastValue())))
             {
                 rDisplayListFiller filler(cache.list_);

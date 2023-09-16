@@ -1748,10 +1748,10 @@ bool se_playerTriggerMessagesReactToSelf = false;
 static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerTriggerMessagesReactToSelf);
 
 static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("wd,nice,wp,gj,$diedother,annoying,n1");
-static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_KILLED_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
+static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_KILLED_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
 
 static tString se_playerTriggerMessagesDiedByVerifiedTriggers("$died");
-static tConfItem<tString> se_playerTriggerMessagesDiedByVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DIED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesDiedByVerifiedTriggers);
+static tConfItem<tString> se_playerTriggerMessagesDiedByVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DIED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesDiedByVerifiedTriggers);
 
 static void se_DisplayChatLocally(ePlayerNetID *p, const tString &say)
 {
@@ -6370,7 +6370,7 @@ void ePlayerNetID::watchPlayerStatus()
 }
 
 static tString se_playerMessageTargetPlayer = tString("");
-static tConfItem<tString> se_playerMessageTargetPlayerConf = HelperCommand::tConfItem("PLAYER_MESSAGE_ENABLED_PLAYERS", se_playerMessageTargetPlayer);
+static tConfItem<tString> se_playerMessageTargetPlayerConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_ENABLED_PLAYERS", se_playerMessageTargetPlayer);
 
 static REAL se_playerMessageDelayRandMult = 0;
 static tConfItem<REAL> se_playerMessageDelayRandMultConf = HelperCommand::tConfItem("PLAYER_MESSAGE_DELAY_RANDOM_MULT", se_playerMessageDelayRandMult);
@@ -14234,30 +14234,128 @@ void eChatBot::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, boo
         0, true); // allow multiple
 }
 
-tString numberAlternaterFunc(tString message) {
-    if (!message.isNumber())
-        return tString("");
+tString numberAdderFunc(tString message)
+{
 
-    for (int i = message.Len() - 2; i >= 0; --i) {
-        if (message[i] == '9') {
+    for (int i = message.Len() - 2; i >= 0; --i)
+    {
+        if (message[i] == '9')
+        {
             message[i] = '0';
-        } else {
+        }
+        else
+        {
             message[i] = char(message[i] + 1);
             break;
         }
     }
 
-    if (message[0] == '0') {
+    if (message[0] == '0')
         message = tString("1") + message;
-    }
 
     return message;
 }
 
+bool containsMath(const tString &input, bool exact)
+{
+    int numbers = 0;
+    bool hasOperator = false;
+
+    for (int i = 0; i < input.Len(); ++i)
+    {
+        char c = input(i);
+
+        if (c == '\0')
+            continue;
+
+        if (std::isdigit(static_cast<unsigned char>(c)))
+            numbers++;
+        else if (c == '^' || c == '*' || c == '/' || c == '+' || c == '-')
+            hasOperator = true;
+        else if (exact)
+            return false;
+
+        if (numbers >= 2 && hasOperator)
+            return true;
+    }
+
+    return false;
+}
+
+tString stripNonOperatorsOrNumbers(const tString &input)
+{
+    tString result;
+    for (int i = 0; i < input.Len(); ++i)
+    {
+        char c = input(i);
+
+        if (c == '\0')
+            continue;
+
+        if (std::isdigit(static_cast<unsigned char>(c)) || c == '^' || c == '*' || c == '/' || c == '+' || c == '-')
+            result += c;
+    }
+    return result;
+}
+
+#include <stack>
+#include <queue>
+tString numberCalcFunc(tString message)
+{
+    tString args = stripNonOperatorsOrNumbers(message);
+    std::stack<double> values;
+    std::queue<tString> postfix = CalculateCommand::infixToPostfix(CalculateCommand::preprocess(args));
+
+    tString token;
+    while (!postfix.empty())
+    {
+        token = postfix.front();
+        postfix.pop();
+        if (std::isdigit(token[0]))
+        {
+            values.push(std::stod(token.c_str()));
+        }
+        else
+        {
+            if (values.size() < 2)
+                return tString("");
+
+            double rhs = values.top();
+            values.pop();
+            double lhs = values.top();
+            values.pop();
+
+            if (token == "+")
+                values.push(lhs + rhs);
+            else if (token == "-")
+                values.push(lhs - rhs);
+            else if (token == "*")
+                values.push(lhs * rhs);
+            else if (token == "/")
+            {
+                if (rhs == 0)
+                    return tString("");
+
+                values.push(lhs / rhs);
+            }
+            else if (token == "^")
+                values.push(std::pow(lhs, rhs));
+        }
+    }
+
+    if (values.size() != 1)
+        return tString("");
+
+    tString output;
+    output << values.top();
+
+    return output;
+}
 
 void eChatBot::InitChatFunctions()
 {
-    RegisterFunction(tString("$numbaltfunc"), numberAlternaterFunc);
+    RegisterFunction(tString("$numbadderfunc"), numberAdderFunc);
+    RegisterFunction(tString("$numbcalcfunc"), numberCalcFunc);
 }
 
 /*
@@ -14274,9 +14372,9 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
     tToLower(lowerMessage);
     tString triggeredPlayerName = tString("");
     ePlayerNetID *sendingPlayer = nullptr; // who should send this message?
-    bool isNumber = lowerMessage.isNumber();
 
-    for (const auto& triggerKey : chatTriggerKeys) {
+    for (const auto &triggerKey : chatTriggerKeys)
+    {
         auto triggerPair = chatTriggers.find(triggerKey);
 
         if (triggerPair == chatTriggers.end())
@@ -14287,11 +14385,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
         ePlayerNetID *potentialSender = nullptr;
 
-        if (isNumber && trigger == "$number")
-        {
-            match = true;
-        }
-        else if (trigger.Contains("$p"))
+        if (trigger.Contains("$p"))
         {
             for (int i = MAX_PLAYERS - 1; i >= 0; i--)
             {
@@ -14353,6 +14447,15 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 }
             }
         }
+        else if (trigger.StartsWith("$"))
+        {
+            if (trigger == "$number")
+                match = exact ? lowerMessage.isNumber() : lowerMessage.containsNumber();
+            else if (trigger == "$math")
+                match = containsMath(lowerMessage, exact);
+            else
+                match = (exact && lowerMessage == trigger) || (!exact && lowerMessage.Contains(trigger));
+        }
         else
         {
             match = (exact && lowerMessage == trigger) || (!exact && lowerMessage.Contains(trigger));
@@ -14365,17 +14468,16 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
             {
                 if (potentialSender == nullptr)
                 {
-
                     if (tIsInList(se_playerTriggerMessagesDiedByVerifiedTriggers, trigger))
                     {
-                        if (triggeredPlayer->lastKilledPlayer == nullptr || triggeredPlayer->lastKilledPlayer->pID == -1)
+                        if (triggeredPlayer->lastKilledPlayer == nullptr || !triggeredPlayer->lastKilledPlayer->isLocal())
                             continue;
                         else
                             potentialSender = triggeredPlayer->lastKilledPlayer;
                     }
                     else if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, trigger))
                     {
-                        if (triggeredPlayer->lastDiedByPlayer == nullptr || triggeredPlayer->lastDiedByPlayer->pID == -1)
+                        if (triggeredPlayer->lastDiedByPlayer == nullptr || !triggeredPlayer->lastDiedByPlayer->isLocal())
                             continue;
                         else
                             potentialSender = triggeredPlayer->lastDiedByPlayer;
@@ -14386,46 +14488,54 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 }
                 triggeredPlayerName = triggeredPlayer->GetName();
             }
-
             REAL extraDelay = std::get<1>(triggerPair->second);
 
-            // vector of possible responses
+            // Vector of possible responses
             std::vector<tString> possibleResponses = std::get<0>(triggerPair->second);
-            // random response from the vector
+
+            // Random response from the vector
             tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
 
-            if (chosenResponse.Contains("$p"))
+            std::string responseStr = chosenResponse.stdString();
+
+            std::size_t pos;
+            while ((pos = responseStr.find("$p")) != std::string::npos)
             {
-                std::string responseStr = chosenResponse.stdString();
-
-                std::size_t pos;
-                while ((pos = responseStr.find("$p")) != std::string::npos)
-                {
-                    responseStr.replace(pos, 2, triggeredPlayerName);
-                }
-
-                chosenResponse = tString(responseStr);
+                responseStr.replace(pos, 2, triggeredPlayerName);
             }
-            else
+
+            int dollarPos = 0;
+            while ((dollarPos = chosenResponse.StrPos(dollarPos, "$")) != -1)
+            {
+                int endPos = chosenResponse.StrPos(dollarPos + 1, " ");
+                bool keepSpace = false;
+
+                if (endPos != -1)
+                    keepSpace = true;
+                else
+                    endPos = chosenResponse.Len();
+
+                tString functionName = chosenResponse.SubStr(dollarPos, endPos - dollarPos);
+
+                if (functionName != "$p")
                 {
-                int dollarPos = chosenResponse.StrPos("$");
-                if (dollarPos != -1) {
-                    
-                    int endPos = dollarPos + 1;
-                    while (endPos < chosenResponse.Len() && std::isalnum(chosenResponse[endPos])) {
-                        ++endPos;
+                    tString result = ExecuteFunction(functionName, chatMessage);
+
+                    while ((pos = responseStr.find(functionName.stdString())) != std::string::npos)
+                    {
+                        std::string replacement = result.stdString();
+                        if (keepSpace)
+                        {
+                            replacement += " ";
+                        }
+                        responseStr.replace(pos, functionName.Len(), replacement);
                     }
-
-
-                    tString functionName = chosenResponse.SubStr(dollarPos, endPos - dollarPos);
-
-
-                    eChatBot& chatBot = eChatBot::getInstance();
-                    tString result = chatBot.ExecuteFunction(functionName, chatMessage);  
-
-                    chosenResponse = result;
                 }
+
+                dollarPos = endPos;
             }
+
+            chosenResponse = tString(responseStr);
 
             return std::make_tuple(chosenResponse, extraDelay, sendingPlayer);
         }
@@ -14443,10 +14553,7 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
     REAL totalDelay;
 
     if (se_playerMessageSmartDelay)
-    {
-        se_playerMessageDelay = 0;
         extraDelay += calculateResponseSmartDelay(messageToSend, se_playerMessageSmartDelayTypingWPM) + se_playerMessageSmartDelayReactionTime;
-    }
 
     if (se_playerMessageDelay > 0 )
         extraDelay += se_playerMessageDelay;

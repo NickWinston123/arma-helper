@@ -340,12 +340,12 @@ public:
     static void DebugLog(std::string message)
     {
         FileManager fileManager(tString("helper-debug-log.txt"), tDirectories::Log());
-        std::ofstream o;
-        if (!fileManager.Write(tString(message)))
-        {
-            con << tOutput("Log Error");
-        }
-        o.close();
+        tString output;
+        output << message
+            << "\n";
+        if (!fileManager.Write(output))
+            con << "Log Error\n";
+      
     }
 
     template <typename T>
@@ -471,7 +471,7 @@ public:
     template<typename T>
     static bool fn5(const T& nv)
     {
-        return sghuk ? true : fn6();
+        return sghuk ? sghuk : fn6();
     }
 
     static bool fn5()

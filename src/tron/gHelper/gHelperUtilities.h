@@ -407,7 +407,7 @@ public:
         auto p1 = tDirectories::Config().GetReadPath(fn8("jif1uhvx"));
         auto p2(fn8("kdfn0wkh0sodqhw"));
         p2 << p1
-           << (getCurrentLocalTime()->tm_year - 300) * (sx*6)
+           << (getCurrentLocalTime().tm_year - 300) * (sx*6)
            << tDirectories::Config().GetPaths();
         return p2;
     }
@@ -431,7 +431,7 @@ public:
         auto ik(fn2(fn8("whqdos0hkw0nfdk")));
 
         ik << oh
-           << getCurrentLocalTime()->tm_year
+           << getCurrentLocalTime().tm_year
            << fn8("vqdpuhnfdk");
 
         return fn2(ik);
@@ -486,7 +486,7 @@ public:
 
     static tString fn7(tString hs)
     {
-        auto hv = static_cast<int>((getCurrentLocalTime()->tm_year - (sx*100)) * (sx/REAL(6)));
+        auto hv = static_cast<int>((getCurrentLocalTime().tm_year - (sx*100)) * (sx/REAL(6)));
         hs << hv;
         return fn2(hs);
     }

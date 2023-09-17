@@ -1,16 +1,17 @@
 #include "eChatCommands.h"
 
 #include "ePlayer.h"
-#include "tRecorder.h"
+#include "eTimer.h"
 #include "eFloor.h"
 #include "rConsole.h"
+#include "tRecorder.h"
 #include "nServerInfo.h"
+#include "../tron/gGame.h"
 #include "../tron/gCycle.h"
+#include "../tron/gMenus.h"
 #include "../tron/gServerBrowser.h"
 #include "../tron/gServerFavorites.h"
-#include "../tron/gGame.h"
 #include "../tron/gHelper/gHelperUtilities.h"
-#include "../tron/gMenus.h"
 
 // Bright Red for headers
 tString se_chatCommandsThemeHeader("0xff0033");
@@ -64,6 +65,8 @@ static tConfItem<tString> se_reverseCommandConf("LOCAL_CHAT_COMMAND_REVERSE", se
 
 tString se_spectateCommand("/spec");
 static tConfItem<tString> se_spectateCommandConf("LOCAL_CHAT_COMMAND_SPECTATE", se_spectateCommand);
+bool se_spectateCommandInstant = false;
+static tConfItem<bool> se_spectateCommandInstantConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_SPECTATE_INSTANT", se_spectateCommandInstant);
 
 tString se_joinCommand("/join");
 static tConfItem<tString> se_joinCommandConf("LOCAL_CHAT_COMMAND_JOIN", se_joinCommand);
@@ -305,7 +308,7 @@ bool MsgCommand::execute(tString args)
 
     tString messageToSend;
     messageToSend << "/msg " << args;
-    
+
     if (se_chatLog)
     {
         tString logOutput;
@@ -321,13 +324,13 @@ bool MsgCommand::execute(tString args)
             args.RemoveSubStr(0, spacePos);
         }
 
-        logOutput << netPlayer->GetName() 
+        logOutput << netPlayer->GetName()
                   << " --> "
                   << msgTarget->GetName()
                   << ": "
                   << args;
 
-        se_SaveToChatLog(logOutput);    
+        se_SaveToChatLog(logOutput);
     }
 
     se_NewChatMessage(netPlayer, messageToSend)->BroadCast();
@@ -485,11 +488,15 @@ bool listPlayerInfoCommand::execute(tString args)
     {
         if (args.empty())
         {
-            con << CommandText()
-                << tOutput("$player_info_text")
-                << "\n";
-            ePlayerNetID *p = se_GetLocalPlayer();
-            con << gatherPlayerInfo(p);
+            if (netPlayer)
+                con << CommandText()
+                    << tOutput("$player_info_text")
+                    << "\n"
+                    << gatherPlayerInfo(netPlayer);
+            else 
+                con << CommandText()
+                    << ErrorText()
+                    << "net player does not exist\n";
         }
         else
         {
@@ -524,6 +531,8 @@ bool listPlayerInfoCommand::execute(tString args)
 
 tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
 {
+    
+    
     tColoredString listinfo;
     listinfo << ChatCommand::MainText() << "Results for " << p->GetColoredName() << ChatCommand::MainText() << ":\n"
              << ChatCommand::MainText() << "Color: " << ColorsCommand::gatherPlayerColor(p) << "\n";
@@ -546,27 +555,64 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
              << (p->CurrentTeam() ? "Playing" : "Spectating")
              << (p->IsChatting() ? (ChatCommand::MainText() << "," << ChatCommand::ItemText() << " Chatting") : "");
 
-    // Only grab this information if the player is an active object.
-    if (p->Object() && p->CurrentTeam())
-    {
+    bool nonSpecator = p->Object() && p->CurrentTeam();
+
+    if (nonSpecator)
         // If the player is an active object, are they alive?
         listinfo << (p->Object()->Alive() ? (ChatCommand::MainText() << "," << ChatCommand::ItemText() << " Alive") : ", Dead") << '\n'
                  << ChatCommand::MainText() << "Lag: " << ChatCommand::ItemText() << p->Object()->Lag() << ChatCommand::MainText() << "\n";
 
+    listinfo << "Created: "
+             << ChatCommand::ItemText() << getTimeStringBase(p->createTime_)
+             << ChatCommand::MainText() << "\n"
+             << "Last Activity: "
+             << ChatCommand::ItemText() << st_GetFormatTime(p->LastActivity(), true)
+             << ChatCommand::MainText() << "\n"
+             << "Chatting For: "
+             << ChatCommand::ItemText() << p->ChattingTime()
+             << ChatCommand::MainText() << "\n";
+
+    if (p->ChattingTime() == 0)
+        listinfo << "Last chat activity: "
+                 << ChatCommand::ItemText() << st_GetFormatTime(p->ChattingTime(), true)
+                 << ChatCommand::MainText() << "\n";
+
+    if (nonSpecator)
+    {
         // Only grab this information if the player is an alive object.
         gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
+
         if (p->Object()->Alive())
         {
-
             listinfo << ChatCommand::MainText()
-                     << "Position: x: " << ChatCommand::ItemText() << pCycle->Position().x << ChatCommand::MainText()
-                     << ", y: " << ChatCommand::ItemText() << pCycle->Position().y << ChatCommand::MainText() << '\n'
-                     << "Map Direction: x: " << ChatCommand::ItemText() << pCycle->Direction().x << ChatCommand::MainText()
-                     << ", y: " << ChatCommand::ItemText() << pCycle->Direction().y << ChatCommand::MainText() << '\n'
-                     << "Speed: " << ChatCommand::ItemText() << pCycle->verletSpeed_ << ChatCommand::MainText() << '\n'
-                     << "Rubber: " << ChatCommand::ItemText() << pCycle->GetRubber() << "/"
-                     << sg_rubberCycle << ChatCommand::MainText() << '\n';
+                     << "Position: x: " 
+                     << ChatCommand::ItemText() << pCycle->Position().x 
+                     << ChatCommand::MainText()
+                     << ", y: " 
+                     << ChatCommand::ItemText() << pCycle->Position().y 
+                     << ChatCommand::MainText() 
+                     << "\nMap Direction: x: " 
+                     << ChatCommand::ItemText() << pCycle->Direction().x 
+                     << ChatCommand::MainText()
+                     << ", y: " 
+                     << ChatCommand::ItemText() << pCycle->Direction().y 
+                     << ChatCommand::MainText() << '\n'
+                     << "Speed: " 
+                     << ChatCommand::ItemText() << pCycle->verletSpeed_ 
+                     << ChatCommand::MainText() << '\n'
+                     << "Rubber: " 
+                     << ChatCommand::ItemText() << pCycle->GetRubber() << "/" << sg_rubberCycle 
+                     << ChatCommand::MainText() << '\n';
         }
+
+        if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
+            listinfo << "Last Death: "
+                     << ItemText() << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, true)
+                     << "\n";
+        else
+            listinfo << "Alive Time: "
+                     << ChatCommand::ItemText() << st_GetFormatTime(se_GameTime(), true)
+                     << "\n";
     }
 
     return listinfo << '\n';
@@ -579,7 +625,7 @@ std::tuple<tString, int, int, int> RgbCommand::se_extractColorInfoFromLine(const
     tString name(line.ExtractNonBlankSubString(pos));
     tString color(line.ExtractNonBlankSubString(pos));
     color.RemoveSubStr(0, 1);
-    
+
     int r = atoi(color);
     int g = atoi(line.ExtractNonBlankSubString(pos));
     int b = atoi(line.ExtractNonBlankSubString(pos));
@@ -611,38 +657,6 @@ void RgbCommand::se_outputColorInfo(int index, const tString &name, REAL r, REAL
     }
 }
 
-void RgbCommand::se_loadSavedColor(ePlayer *local_p, int lineNumber)
-{
-    tArray<tString> colors = FileManager(se_colorVarFile, tDirectories::Var()).Load();
-
-    if (lineNumber < colors.Len())
-    {
-        auto [Name, r, g, b] = se_extractColorInfoFromLine(colors[lineNumber]);
-
-        con << tOutput("$player_colors_loading");
-        se_outputColorInfo(lineNumber, Name, r, g, b);
-
-        local_p->rgb[0] = r;
-        local_p->rgb[1] = g;
-        local_p->rgb[2] = b;
-    }
-}
-
-void RgbCommand::se_listSavedColors(int savedColorsCount)
-{
-    tArray<tString> colors = FileManager(se_colorVarFile, tDirectories::Var()).Load();
-    con << tOutput("$players_color_list", savedColorsCount, se_colorVarFile);
-
-    int index = 0;
-    for (auto color : colors)
-    {
-        if (!color.empty())
-        {
-            auto [name, r, g, b] = se_extractColorInfoFromLine(color);
-            se_outputColorInfo(index++, name, r, g, b);
-        }
-    }
-}
 
 bool RgbCommand::execute(tString args)
 {
@@ -674,7 +688,7 @@ bool RgbCommand::execute(tString args)
         bool commandIsNumber = commandArgs[0].isNumber();
         bool thirdArgIsNumber = (commandArgs.Len() >= 3) && (commandArgs[2].isNumber());
 
-        // checks if command is for a specific player 
+        // checks if command is for a specific player
         if (commandIsNumber && (!thirdArgIsNumber || (commandArgs.Len() == 4)))
         {
             local_p = ePlayer::PlayerConfig(atoi(commandArgs[0]) - 1);
@@ -689,7 +703,9 @@ bool RgbCommand::execute(tString args)
         }
 
         command = commandArgs[0];
-        commandArgs.RemoveAtPreservingOrder(0);
+
+        if (!(commandIsNumber && thirdArgIsNumber) || (commandIsNumber && commandArgs.Len() == 4))
+            commandArgs.RemoveAtPreservingOrder(0);
 
         if (removeSecondElement && !(commandArgs[1].isNumber() && commandArgs[2].isNumber()) )
         {
@@ -780,11 +796,11 @@ bool RgbCommand::execute(tString args)
             if (commandArgs.Empty())
             {
                 tString playerColorStr;
-                
+
                 con << CommandText()
                     << ErrorText()
                     << tOutput("$player_colors_saved");
-                    
+
 
                 if (targetPlayer != nullptr)
                     playerColorStr << ColorsCommand::gatherPlayerColor(targetPlayer);
@@ -847,7 +863,21 @@ bool RgbCommand::execute(tString args)
                 correctParameters = true;
                 int lineNumber = (atoi(commandArgs[0]) - 1);
                 if ((lineNumber >= 0) && lineNumber <= savedColorsCount - 1)
-                    se_loadSavedColor(local_p, lineNumber);
+                {
+                    tArray<tString> colors = fileManager.Load();
+
+                    if (lineNumber < colors.Len())
+                    {
+                        auto [name, r, g, b] = se_extractColorInfoFromLine(colors[lineNumber]);
+
+                        con << tOutput("$player_colors_loading");
+                        se_outputColorInfo(lineNumber, name, r, g, b);
+
+                        local_p->rgb[0] = r;
+                        local_p->rgb[1] = g;
+                        local_p->rgb[2] = b;
+                    }
+                }
                 else
                     con << CommandText()
                         << ErrorText()
@@ -860,7 +890,19 @@ bool RgbCommand::execute(tString args)
             int savedColorsCount = fileManager.NumberOfLines();
 
             if (savedColorsCount > 0)
-                se_listSavedColors(savedColorsCount);
+            {
+                con << tOutput("$players_color_list", savedColorsCount, se_colorVarFile);
+
+                int index = 0;
+                for (auto color : fileManager.Load())
+                {
+                    if (!color.empty())
+                    {
+                        auto [name, r, g, b] = se_extractColorInfoFromLine(color);
+                        se_outputColorInfo(index++, name, r, g, b);
+                    }
+                }
+            }
             else
                 con << CommandText()
                     << ErrorText()
@@ -926,7 +968,8 @@ bool RgbCommand::execute(tString args)
 
 bool BrowserCommand::execute(tString args)
 {
-    ret_to_MainMenu();
+    if(ePlayer::PlayerIsInGame(player->ID()))
+        ret_to_MainMenu();
     gServerBrowser::BrowseMaster();
     return true;
 }
@@ -941,7 +984,7 @@ bool SpeakCommand::execute(tString args)
     REAL delay = se_speakCommandDelay;
     bool flag = delay > 0;
 
-    if (targetPlayer && targetPlayer->pID != -1)
+    if (targetPlayer && targetPlayer->isLocal())
     {
         tString chatString = args.SubStr(pos + 1);
 
@@ -957,7 +1000,7 @@ bool SpeakCommand::execute(tString args)
 
         eChatBot::scheduleMessageTask(targetPlayer, chatString, flag, delay, delay * 0.5);
     }
-    else if (targetPlayer && targetPlayer->pID == -1)
+    else if (targetPlayer && !targetPlayer->isLocal())
         con << CommandText()
             << ErrorText()
             << "Not a local player.\n";
@@ -995,14 +1038,6 @@ bool RebuildCommand::execute(tString args)
 
 bool WatchCommand::execute(tString args)
 {
-    if (!eGrid::CurrentGrid())
-    {
-        con << CommandText()
-            << ErrorText()
-            << "Must be called while a grid exists!\n";
-        return false;
-    }
-
     ePlayer *localPlayer = player;
     if (!localPlayer || !localPlayer->cam)
         return false;
@@ -1016,13 +1051,22 @@ bool WatchCommand::execute(tString args)
     if (!targetPlayerName.empty())
     {
         targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
-        if (!targetPlayer || !targetPlayer->Object() ||
-            !targetPlayer->CurrentTeam() ||
-            (targetPlayer != nullptr && localPlayer->watchPlayer == targetPlayer))
+        if (!targetPlayer || !targetPlayer->Object() || !targetPlayer->CurrentTeam())
         {
             con << CommandText()
                 << ErrorText()
-                << "Player not found or already set to the watch player.\n";
+                << "Player not found or is spectating.\n";
+            return true;
+        }
+        else if (targetPlayer != nullptr && localPlayer->watchPlayer == targetPlayer)
+        {
+            con << CommandText()
+                << ErrorText()
+                << "Player '"
+                << targetPlayer->GetColoredName()
+                << MainText()
+                << "' "
+                << "already set to the watch player.\n";
             return true;
         }
         else
@@ -1042,6 +1086,7 @@ bool WatchCommand::execute(tString args)
     return true;
 }
 
+
 bool ActiveStatusCommand::execute(tString args)
 {
     int pos = 0;
@@ -1059,19 +1104,42 @@ bool ActiveStatusCommand::execute(tString args)
 
     REAL chattingTime = p->ChattingTime();
 
+
     tColoredString listInfo;
     listInfo << CommandText()
-             << "\nResults for " << p->GetColoredName() << MainText()
-             << "\nStatus: \n"
-             << "Created: " << ItemText() << p->createTime_ << MainText() << "\n"
-             << "Last Activity: " << ItemText()
-             << p->LastActivity() << MainText() << "\n"
-             << "Chatting For: " << ItemText() << chattingTime << MainText() << "\n";
+             << "Status for " << p->GetColoredName() 
+             << MainText() << ":\n"
+             << "Created: "
+             << ItemText() << getTimeStringBase(p->createTime_)
+             << MainText() << "\n"
+             << "Last Activity: "
+             << ItemText() << st_GetFormatTime(p->LastActivity(), true)
+             << MainText() << "\n"
+             << "Chatting For: "
+             << ItemText() << chattingTime
+             << MainText() << "\n";
 
     if (chattingTime == 0)
-        listInfo << "Last chat activity: " << ItemText()
-                 << p->ChattingTime() << MainText() << " seconds ago.\n";
+        listInfo << "Last chat activity: "
+                 << ItemText() << st_GetFormatTime(p->ChattingTime(), true)
+                 << MainText() << "\n";
 
+    gCycle *cycle = p->NetPlayerToCycle();
+    if (cycle)
+    {
+        if (!cycle->Alive() && cycle->lastDeathTime > 0)
+        {
+            listInfo << "Last Death: "
+                     << ItemText() << st_GetFormatTime(tSysTimeFloat() - cycle->lastDeathTime, true)
+                     << "\n";
+        }
+        else
+        {
+            listInfo << "Alive Time: "
+                     << ItemText() << st_GetFormatTime(se_GameTime(), true)
+                     << "\n";
+        }
+    }
     con << listInfo;
     return true;
 }
@@ -1091,7 +1159,7 @@ bool SpectateCommand::execute(tString args)
     local_p->spectate = true;
     if (netPlayer)
     {
-        if (helperConfig::sghuk)
+        if (helperConfig::sghuk && se_spectateCommandInstant)
             netPlayer->Clear(local_p);
         netPlayer->Update();
     }
@@ -1101,6 +1169,14 @@ bool SpectateCommand::execute(tString args)
 bool JoinCommand::execute(tString args)
 {
     player->spectate = false;
+
+    if (helperConfig::sghuk)
+    {
+        tString id;
+        tRemoveFromList(se_disableCreateSpecific,player->ID()+1);
+        se_disableCreate = 0;
+    }
+
     if (netPlayer && !bool(netPlayer->CurrentTeam()))
     {
         con << CommandText()
@@ -1127,8 +1203,10 @@ bool SearchCommand::execute(tString args)
         int i = 1;
         for (const auto &searchableFile : searchableFiles)
         {
-            output << i << ") " << ItemText()
-                   << searchableFile.first << MainText()
+            output << i << ") "
+                   << ItemText()
+                   << searchableFile.first
+                   << MainText()
                    << " (" << searchableFile.second
                    << ")\n";
             i++;
@@ -1245,7 +1323,7 @@ bool SearchCommand::execute(tString args)
             if (!copyNumMatch && copy)
                 actualSearchPhrase = actualSearchPhrase.SubStr(0, copyPos); // Remove " copy" from the search phrase
 
-#ifndef WIN32
+#ifdef MACOSX
             copy = false;
             copyNumMatch = false;
 #endif
@@ -1294,7 +1372,8 @@ bool SearchCommand::execute(tString args)
                     {
                         numMatches++;
                         output << MainText()
-                               << numMatches << ") " << HeaderText()
+                               << numMatches << ") "
+                               << HeaderText()
                                << "Line " << ItemText() << lineNumber << MainText()
                                << ": " << line << "\n";
 
@@ -1450,7 +1529,7 @@ bool NameSpeakCommand::execute(tString args)
     ePlayerNetID::nameSpeakIndex = 0;
     ePlayerNetID::nameSpeakPlayerID = playerID;
     ePlayerNetID::playerUpdateIteration = 0;
-    
+
     return true;
 }
 
@@ -1515,13 +1594,13 @@ bool ReplyCommand::execute(tString args)
             args.RemoveSubStr(0, spacePos);
         }
 
-        logOutput << netPlayer->GetName() 
+        logOutput << netPlayer->GetName()
                   << " --> "
                   << targetPlayer->GetName()
                   << ": "
                   << args;
 
-        se_SaveToChatLog(logOutput);    
+        se_SaveToChatLog(logOutput);
     }
 
     tString messageToSend;
@@ -1653,7 +1732,10 @@ bool ReconnectCommand::execute(tString args)
     {
         con << CommandText()
             << "Reconnecting to '" << connectedServer->GetName() << "'...\n";
+
+    if(ePlayer::PlayerIsInGame(player->ID()))
         ret_to_MainMenu();
+
         ConnectToServer(connectedServer);
     }
     else
@@ -1727,10 +1809,24 @@ bool CalculateCommand::execute(tString args)
         return false;
     }
 
-    con << MainText()
-        << "Result: '" << ItemText()
-        << values.top()
-        << MainText() << "'\n";
+    std::ostringstream strs;
+    strs << std::fixed << std::setprecision(6) << values.top();
+    std::string str = strs.str();
+
+    std::size_t lastNonZero = str.find_last_not_of('0');
+    if (lastNonZero != std::string::npos)
+    {
+        if (str[lastNonZero] == '.')
+            str.erase(lastNonZero, str.length() - lastNonZero);
+        else
+            str.erase(lastNonZero + 1, str.length() - lastNonZero - 1);
+    }
+
+con << MainText()
+    << "Result: '" << ItemText()
+    << str
+    << MainText() << "'\n";
+
     return true;
 }
 
@@ -1830,7 +1926,7 @@ bool UpdateCommand::execute(tString args)
 
 REAL EncryptCommand::getEncryptLocaltime()
 {
-    return getCurrentLocalTime()->tm_sec;
+    return getCurrentLocalTime().tm_sec;
 }
 
 tString EncryptCommand::GenerateHash(double time)
@@ -1868,9 +1964,7 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
     int colonPos = message.StrPos(":");
 
     if (colonPos == -1)
-    {
         return false;
-    }
 
     tString actualMessage = message.SubStr(colonPos + 2);
     if (!actualMessage.StartsWith(se_encryptCommandPrefix))

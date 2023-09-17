@@ -256,9 +256,10 @@ std::istream & operator>> (std::istream &s,tString &x);
 
 //! check whether item is in a comma or whitespace separated list
 bool tIsInList( tString const & list, tString const & item );
-
 bool tIsInList( tString const & list, int number );
 
+bool tRemoveFromList(tString & list, const tString & item);
+bool tRemoveFromList(tString & list, int number);
 
 tString tintTotString( int number );
 
@@ -340,9 +341,10 @@ bool operator>=( const tString& first, const tString& second );
   void operator <<(tString &s,int c);
   void operator <<(tString &s,float c);
 */
+#include "tSysTime.h"
 
-tString st_GetCurrentTime(char const *szFormat);
-
+tString st_GetCurrentTime(char const *szFormat, struct tm pTime = getCurrentLocalTime());
+tString st_GetFormatTime(REAL seconds, bool color = false);
 // replacement for tString::EndsWith from the trunk
 bool st_StringEndsWith( tString const & test, tString const & end );
 bool st_StringEndsWith( tString const & test, char const * end );

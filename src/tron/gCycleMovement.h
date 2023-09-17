@@ -145,10 +145,10 @@ protected:
     {
         eCoord pos, dir, lastTurn;
         REAL distance, speed, time, rubber, rubberMalus, brakingReservoir;
-        unsigned short turns, braking, messageID;
+        unsigned short turns, braking, messageID, alive;
 
         SyncData()
-            : distance(0), speed(0), time(-10000), rubber(0), rubberMalus(0), brakingReservoir(0), turns(0), braking(0), messageID(0)
+            : distance(0), speed(0), time(-10000), rubber(0), rubberMalus(0), brakingReservoir(0), turns(0), braking(0), messageID(0), alive(0)
         {
         }
     };

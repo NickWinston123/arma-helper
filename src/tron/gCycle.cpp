@@ -2831,7 +2831,8 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos, const eCoord &d, ePlayerNetID *p)
       currentWall(NULL),
       lastWall(NULL),
       netPlayer_(p),
-      lastActTime(0)
+      lastActTime(-1),
+      lastDeathTime(-1)
 {
     eGameObject::number_of_gCycles++;
 
@@ -5521,7 +5522,7 @@ void gCycle::Render(const eCamera *cam)
     glProgramStringARB_ptr = (glProgramStringARB_Func) SDL_GL_GetProcAddress("glProgramStringARB");
     glProgramLocalParameter4fARB_ptr = (glProgramLocalParameter4fARB_Func) SDL_GL_GetProcAddress("glProgramLocalParameter4fARB");
 #endif
-#endif    
+#endif
     if (!std::isfinite(z) || !std::isfinite(pos.x) ||!std::isfinite(pos.y)||!std::isfinite(dir.x)||!std::isfinite(dir.y)
             || !std::isfinite(skew))
         st_Breakpoint();
@@ -5706,7 +5707,7 @@ void gCycle::Render(const eCamera *cam)
                     alpha = timeout - se_GameTime();
                 }
             }
-            
+
             if (player->Owner() == sn_myNetID){
                 if (sg_chatFlagHideSelf)
                     renderPyramid = false;
@@ -6268,7 +6269,7 @@ gCycle::gCycle(nMessage &m)
       currentWall(NULL),
       lastWall(NULL),
       netPlayer_(NULL),
-      lastActTime(0)
+      lastActTime(-1)
 {
     eGameObject::number_of_gCycles++;
     deathTime = 0;
@@ -6736,6 +6737,7 @@ void gCycle::ReadSync(nMessage &m)
 
     m >> sync.speed;
     m >> sync_alive;
+    sync.alive = sync_alive;
     m >> sync.distance;
     m.Read(sync_wall);
     if (!m.End())
@@ -6801,6 +6803,13 @@ void gCycle::ReadSync(nMessage &m)
         // eDebugLine::Draw( lastSyncMessage_.pos, 1.5, lastSyncMessage_.pos, 5.0 );
         return;
     }
+
+    if ( sync.turns != 0 && (lastSyncMessage_.turns != sync.turns || lastSyncMessage_.braking != sync.braking ))
+        lastActTime = tSysTimeFloat();
+
+    if ( sync.alive == 0 && sync.alive != lastSyncMessage_.alive)
+        lastDeathTime = tSysTimeFloat();
+
     lastSyncMessage_ = sync;
 
     // store last known good position: a bit before the last position confirmed by the server

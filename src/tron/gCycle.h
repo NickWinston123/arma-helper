@@ -281,6 +281,7 @@ public:
     // every frame, a bit of this variable is taken away and added to the step the cycle makes.
     REAL correctDistanceSmooth;
     REAL lastActTime;
+    REAL lastDeathTime;
     ePlayerNetID *netPlayer_;
 
     static void TacticalPositioning(REAL time); // tactical positioning

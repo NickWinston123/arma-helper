@@ -35,5 +35,6 @@ void tAdvanceFrame( int usecdelay = 0);       //! andvances one frame: updates t
 void tDelay( int usecdelay );                 //! delays for the specified number of microseconds
 void tDelayForce( int usecdelay );            //! delays for the specified number of microseconds, even when playing back
 std::string getTimeString(bool hudShowTime24hour = false);
-struct tm * getCurrentLocalTime();
+std::string getTimeStringBase(struct tm &thistime, bool hudShowTime24hour = false);
+struct tm getCurrentLocalTime();
 #endif

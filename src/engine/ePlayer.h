@@ -383,7 +383,7 @@ private:
     bool			stealth_; //!< does this player want to hide his/her identity?
     bool			chatting_;   //!< are we currently chatting?
 public:
-    std::string     createTime_;
+    struct tm       createTime_;
 private:
     REAL            timeSinceLastChat_;
     int				chatFlags_;  //!< different types of reasons for beeing chatting
@@ -1055,8 +1055,8 @@ public:
         return tString("");
     }
 
-    std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage);
-    static void InitiateAction(ePlayerNetID *player, tString message, bool showError = false);
+    std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage, bool eventTrigger);
+    static void InitiateAction(ePlayerNetID *player, tString message, bool eventTrigger = false);
     void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player);
     REAL determineReadingDelay(tString message);
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay );

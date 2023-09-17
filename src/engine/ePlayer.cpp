@@ -1894,7 +1894,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             const int nameLength = p->GetName().Len();
 
             actualMessage = actualMessage.SubStr(timestampLength + nameLength + 2);
-            eChatBot::InitiateAction(p,actualMessage);
+            eChatBot::InitiateAction(p, actualMessage);
         }
     }
 }
@@ -6222,8 +6222,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                allowTeamChange_(false),
                                                registeredMachine_(0),
                                                pID(p),
-                                               timeSinceLastChat_(0),
-                                               createTime_(getTimeString(false)),
+                                               timeSinceLastChat_(-1),
+                                               createTime_(getCurrentLocalTime()),
                                                lastWatchStatus(playerWatchStatus::ACTIVE),
                                                lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                                syncIteration(0),
@@ -6305,11 +6305,6 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
 
     if (sn_GetNetState() == nSERVER)
         RequestSync();
-
-    // if (se_playerTriggerMessages && se_playerMessageJoin) {
-    //     eChatBot::InitiateAction(this,tString("$join"),true);
-    //     con << "DOING THIS \n";`
-    // }
 }
 
 tColoredString playerWatchStatusToStr(playerWatchStatus status)
@@ -6402,8 +6397,8 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           timeCreated_(tSysTimeFloat()),
                                           allowTeamChange_(false),
                                           registeredMachine_(0),
-                                          timeSinceLastChat_(0),
-                                          createTime_(getTimeString(false)),
+                                          timeSinceLastChat_(-1),
+                                          createTime_(getCurrentLocalTime()),
                                           lastWatchStatus(playerWatchStatus::ACTIVE),
                                           lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                           syncIteration(0),
@@ -13113,15 +13108,11 @@ REAL ePlayerNetID::LastActivity(void)
 REAL ePlayerNetID::ChattingTime() const
 {
     if (timeSinceLastChat_ == -1)
-    {
         // not chatting
         return 0;
-    }
     else
-    {
         // chatting
         return tSysTimeFloat() - timeSinceLastChat_;
-    }
 }
 
 // *******************************************************************************
@@ -14157,18 +14148,18 @@ void eChatBot::LoadChatTriggers()
     }
 }
 
-void eChatBot::InitiateAction(ePlayerNetID *player, tString message, bool showError)
+void eChatBot::InitiateAction(ePlayerNetID *player, tString message, bool eventTrigger)
 {
     eChatBot &bot = eChatBot::getInstance();
 
     if (!bot.ShouldAnalyze())
         return;
 
-    auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(player, message);
+    auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(player, message, eventTrigger);
 
     if (!response.empty())
         bot.preparePlayerMessage(response, delay, sendingPlayer);
-    else if (showError)
+    else if (eventTrigger)
         con << "No trigger set for '" << message << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
 
 }
@@ -14213,25 +14204,26 @@ void eChatBot::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, boo
     gTaskScheduler.schedule(
         "playerMessageTask", flagDelay, [netPlayer, message, chatFlag, messageDelay] // When we start typing
         {
-        if (chatFlag)
-        {
-            netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
-            ePlayerNetID::Update();
+            if (chatFlag)
+            {
+                netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
+                ePlayerNetID::Update();
 
-            // Schedule another task to turn off the flag after a short delay
-            gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag] // When we send the message and stop typing
+                // Schedule another task to turn off the flag after a short delay
+                gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag] // When we send the message and stop typing
+                {
+                    netPlayer->Chat(message);
+                    if (chatFlag)
+                        netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
+                    ePlayerNetID::Update();
+                });
+            }
+            else
             {
                 netPlayer->Chat(message);
-                if (chatFlag)
-                    netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
-                ePlayerNetID::Update();
-            });
-        }
-        else
-        {
-            netPlayer->Chat(message);
-        } },
-        0, true); // allow multiple
+            } 
+        },
+    0, true); // allow multiple
 }
 
 tString numberAdderFunc(tString message)
@@ -14240,7 +14232,7 @@ tString numberAdderFunc(tString message)
     for (int i = message.Len() - 2; i >= 0; --i)
     {
         if (message[i] == '9')
-        {
+        { 
             message[i] = '0';
         }
         else
@@ -14270,7 +14262,7 @@ bool containsMath(const tString &input, bool exact)
 
         if (std::isdigit(static_cast<unsigned char>(c)))
             numbers++;
-        else if (c == '^' || c == '*' || c == '/' || c == '+' || c == '-')
+        else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^')
             hasOperator = true;
         else if (exact)
             return false;
@@ -14292,7 +14284,7 @@ tString stripNonOperatorsOrNumbers(const tString &input)
         if (c == '\0')
             continue;
 
-        if (std::isdigit(static_cast<unsigned char>(c)) || c == '^' || c == '*' || c == '/' || c == '+' || c == '-')
+        if (std::isdigit(static_cast<unsigned char>(c)) || (c == '+' || c == '-' || c == '*' || c == '/' || c == '^'))
             result += c;
     }
     return result;
@@ -14346,10 +14338,20 @@ tString numberCalcFunc(tString message)
     if (values.size() != 1)
         return tString("");
 
-    tString output;
-    output << values.top();
+    std::ostringstream strs;
+    strs << std::fixed << std::setprecision(6) << values.top();
+    std::string str = strs.str();
 
-    return output;
+    std::size_t lastNonZero = str.find_last_not_of('0');
+    if (lastNonZero != std::string::npos) {
+        if (str[lastNonZero] == '.') {
+            str.erase(lastNonZero, str.length() - lastNonZero);
+        } else {
+            str.erase(lastNonZero + 1, str.length() - lastNonZero - 1);
+        }
+    }
+
+    return tString(str);
 }
 
 void eChatBot::InitChatFunctions()
@@ -14362,7 +14364,7 @@ void eChatBot::InitChatFunctions()
 triggeredPlayer: who triggered the message
 chatMessage: the message potentially containing a trigger
 */
-std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage)
+std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage, bool eventTrigger)
 {
     tString lowerMessage(chatMessage.TrimWhitespace());
 
@@ -14381,6 +14383,10 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
             continue;
 
         bool exact = std::get<2>(triggerPair->second), match = false;
+
+        if (eventTrigger)
+            exact = true;
+
         tString trigger = triggerPair->first.ToLower();
 
         ePlayerNetID *potentialSender = nullptr;
@@ -14401,18 +14407,15 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                         tArray<tString> nameParts = ourName.Split(" ");
 
                         tString triggerWithoutName = trigger.Replace("$p", "").TrimWhitespace();
-                        if (!lowerMessage.Contains(triggerWithoutName))
-                        {
+                        if (!lowerMessage.Contains(triggerWithoutName))                        
                             continue;
-                        }
+                        
 
                         bool nameFound = false;
                         if (exact)
                         {
-                            if (lowerMessage == ourName)
-                            {
-                                nameFound = true;
-                            }
+                            if (lowerMessage == ourName)                            
+                                nameFound = true;                            
                             else
                             {
                                 for (const auto &namePart : nameParts)
@@ -14500,9 +14503,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
             std::size_t pos;
             while ((pos = responseStr.find("$p")) != std::string::npos)
-            {
                 responseStr.replace(pos, 2, triggeredPlayerName);
-            }
 
             int dollarPos = 0;
             while ((dollarPos = chosenResponse.StrPos(dollarPos, "$")) != -1)
@@ -14520,15 +14521,18 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 if (functionName != "$p")
                 {
                     tString result = ExecuteFunction(functionName, chatMessage);
-
-                    while ((pos = responseStr.find(functionName.stdString())) != std::string::npos)
-                    {
-                        std::string replacement = result.stdString();
-                        if (keepSpace)
+                    if (result.empty())
+                        chosenResponse = "";
+                    else
+                     {
+                        while ((pos = responseStr.find(functionName.stdString())) != std::string::npos)
                         {
-                            replacement += " ";
+                            std::string replacement = result.stdString();
+                            if (keepSpace)                        
+                                replacement += " ";
+                            
+                            responseStr.replace(pos, functionName.Len(), replacement);
                         }
-                        responseStr.replace(pos, functionName.Len(), replacement);
                     }
                 }
 
@@ -14626,6 +14630,7 @@ static void AddChatTrigger(std::istream &s)
     tArray<tString> triggersArray = parts[0].Split(";");
 
     eChatBot &bot = eChatBot::getInstance();
+    FileManager fileManager(tString("chattriggers.txt"), tDirectories::Var());
 
     for (auto &trigger : triggersArray)
     {
@@ -14646,7 +14651,6 @@ static void AddChatTrigger(std::istream &s)
         bot.chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
 
         params += "\n";
-        FileManager fileManager(tString("chattriggers.txt"), tDirectories::Var());
         fileManager.Write(params);
 
         con << "Trigger, Response, Extra Delay, Exact?\n";

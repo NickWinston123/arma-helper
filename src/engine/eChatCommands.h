@@ -174,7 +174,10 @@ Usage: /info - Returns own information
 class listPlayerInfoCommand : public ChatCommand
 {
 public:
-    listPlayerInfoCommand() : ChatCommand("listPlayerInfoCommand") {}
+    listPlayerInfoCommand() : ChatCommand("listPlayerInfoCommand") 
+    {
+        requirePlayer = false;
+    }
     tColoredString gatherPlayerInfo(ePlayerNetID *p);
     bool execute(tString args) override;
 };
@@ -201,8 +204,6 @@ public:
     }
     static std::tuple<tString, int, int, int> se_extractColorInfoFromLine(const tString &line);
     static void se_outputColorInfo(int index, const tString &Name, REAL r, REAL g, REAL b);
-    static void se_loadSavedColor(ePlayer *local_p, int lineNumber);
-    static void se_listSavedColors(int savedColorsCount);
     bool execute(tString args) override;
 };
 
@@ -237,7 +238,10 @@ public:
 class ActiveStatusCommand : public ChatCommand
 {
 public:
-    ActiveStatusCommand() : ChatCommand("ActiveStatusCommand") {}
+    ActiveStatusCommand() : ChatCommand("ActiveStatusCommand") 
+    {
+        requirePlayer = false;
+    }
     bool execute(tString args) override;
 };
 

@@ -2385,9 +2385,64 @@ bool tIsInList( tString const & list_, tString const & item )
     return false;
 }
 
-bool tIsInList( tString const & list_, int number )
+bool tIsInList(tString const &list_, int number)
 {
     return tIsInList(list_, intTotString(number));
+}
+
+bool tRemoveFromList(tString &list, const tString &item)
+{
+    bool itemRemoved = false;
+    int listLength = list.Len();
+
+    while (list != "")
+    {
+        // find the item
+        int pos = list.StrPos(item);
+
+        // no traditional match? shoot.
+        if (pos < 0)
+        {
+            break;
+        }
+
+        // check whether the match is a true list match
+        if (
+            (pos == 0 || list[pos - 1] == ',' || isblank(list[pos - 1])) &&
+            (pos + item.Len() >= list.Len() || list[pos + item.Len()] == ',' || isblank(list[pos + item.Len()])))
+        {
+            // if match found construct the list without the item
+            tString newList = list.SubStr(0, pos);
+
+            // append remaining portion after the removed item
+            if (pos + item.Len() < list.Len())
+            {
+                newList += list.SubStr(pos + item.Len() + 1); // +1 to skip the delimiter
+            }
+
+            list = newList;
+            itemRemoved = true;
+            break;
+        }
+        else
+        {
+            // no? Go on to the next portion
+            list = list.SubStr(pos + 1);
+        }
+    }
+
+    // restore list if no item was removed
+    if (!itemRemoved)
+    {
+        list = list.SubStr(0, listLength);
+    }
+
+    return itemRemoved;
+}
+
+bool tRemoveFromList(tString &list, int number)
+{
+    return tRemoveFromList(list, intTotString(number));
 }
 
 // **********************************************************************
@@ -2424,14 +2479,41 @@ void tToUpper( tString & toTransform )
     }
 }
 
-tString st_GetCurrentTime( char const * szFormat )
+#include "eChatCommands.h"
+tString st_GetFormatTime(REAL seconds, bool color)
+{
+    int totalSeconds = static_cast<int>(seconds);
+    int hours = totalSeconds / 3600;
+    totalSeconds %= 3600;
+    int minutes = totalSeconds / 60;
+    int remainingSeconds = totalSeconds % 60;
+    int milliseconds = static_cast<int>((seconds - static_cast<int>(seconds)) * 1000);
+
+    tString result;
+    result << (color ? ChatCommand::ItemText() : "")
+           << ((hours < 10) ? "0" : "") << hours
+           << (color ? ChatCommand::MainText() : "")
+           << "H:"
+           << (color ? ChatCommand::ItemText() : "")
+           << ((minutes < 10) ? "0" : "") << minutes
+           << (color ? ChatCommand::MainText() : "")
+           << "M:"
+           << (color ? ChatCommand::ItemText() : "")
+           << ((remainingSeconds < 10) ? "0" : "") << remainingSeconds
+           << (color ? ChatCommand::MainText() : "")
+           << "S:"
+           << (color ? ChatCommand::ItemText() : "")
+           << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") << milliseconds
+           << (color ? ChatCommand::MainText() : "")
+           << "MS";
+
+    return result;
+}
+
+tString st_GetCurrentTime( char const * szFormat , struct tm pTime)
 {
     char szTemp[128];
-    time_t     now;
-    struct tm *pTime;
-    now = time(NULL);
-    pTime = localtime(&now);
-    strftime(szTemp,sizeof(szTemp),szFormat,pTime);
+    strftime(szTemp, sizeof(szTemp), szFormat, &pTime);
     return tString(szTemp);
 }
 

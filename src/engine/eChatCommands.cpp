@@ -400,14 +400,16 @@ tString ColorsCommand::localPlayerMode(ePlayer *local_p)
     }
     return mode;
 }
+
 tColoredString ColorsCommand::localPlayerPreview(ePlayer *local_p)
 {
     int r = local_p->rgb[0];
     int g = local_p->rgb[1];
     int b = local_p->rgb[2];
 
+
     tColoredString output;
-    output << tColoredString::ColorString(r, g, b)
+    output << tColoredString::ColorString(r/15, g/15, b/15)
            << local_p->Name()
            << ChatCommand::MainText()
            << " ("
@@ -634,29 +636,19 @@ std::tuple<tString, int, int, int> RgbCommand::se_extractColorInfoFromLine(const
 
 void RgbCommand::se_outputColorInfo(int index, const tString &name, REAL r, REAL g, REAL b)
 {
-    if (tColoredString::HasColors(name))
-    {
-        con << (index + 1) << ") "
-            << name << ChatCommand::MainText()
-            << " ("
-            << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
-            << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
-            << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
-            << ColorsCommand::cycleColorPreview(r, g, b) << "\n";
-    }
-    else
-    {
-        con << (index + 1) << ") "
-            << tColoredString::ColorString(r, g, b)
-            << name << ChatCommand::MainText()
-            << " ("
-            << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
-            << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
-            << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
-            << ColorsCommand::cycleColorPreview(r, g, b) << "\n";
-    }
-}
+    tColoredString output;
 
+    output << (index + 1) << ") "
+           << tColoredString::ColorString(r/15, g/15, b/15)
+           << name << ChatCommand::MainText()
+           << " ("
+           << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
+           << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
+           << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
+           << ColorsCommand::cycleColorPreview(r, g, b) << "\n";   
+
+    con << output;
+}
 
 bool RgbCommand::execute(tString args)
 {
@@ -713,6 +705,11 @@ bool RgbCommand::execute(tString args)
             commandArgs.RemoveAtPreservingOrder(0);
         }
 
+        // con << "commandArgs elements:\n";
+        // for (int i = 0; i < commandArgs.Len(); ++i)
+        // {
+        //     con << "commandArgs[" << i << "] = " << commandArgs[i] << "\n";
+        // }
 
         if (command == "help")
         {
@@ -808,8 +805,7 @@ bool RgbCommand::execute(tString args)
                     playerColorStr << ColorsCommand::localPlayerPreview(local_p);
 
                 tString output;
-                output << tColoredString::RemoveColors(playerColorStr)
-                       << "\n";
+                output << tColoredString::RemoveColors(playerColorStr);
 
                 if (fileManager.Write(output))
                     con << CommandText()
@@ -820,17 +816,25 @@ bool RgbCommand::execute(tString args)
                         << ErrorText()
                         << tOutput("$players_color_error");
             }
-
-            else if (commandArgs.Len() == 1) // Save specific persons color
+            else // Save specific persons color
             {
-                targetPlayer = ePlayerNetID::GetPlayerByName(commandArgs[1].Filter(),false);
+                tString combinedName; 
+                for (int i = 0; i < commandArgs.Len(); ++i)
+                {
+                    if (i > 1) 
+                        combinedName << " ";
+                    
+                    combinedName << commandArgs[i];
+                }
+
+                tString filteredName = combinedName.Filter();
+                targetPlayer = ePlayerNetID::GetPlayerByName(combinedName,false);
                 if (targetPlayer)
                 {
                     tString playerColorStr;
                     playerColorStr << ColorsCommand::gatherPlayerColor(targetPlayer);
                     tString output;
-                    output << tColoredString::RemoveColors(playerColorStr)
-                        << "\n";
+                    output << tColoredString::RemoveColors(playerColorStr);
 
                     if (fileManager.Write(output))
                         con << CommandText()
@@ -844,7 +848,7 @@ bool RgbCommand::execute(tString args)
                 else
                     con << CommandText()
                         << ErrorText()
-                        << tOutput("$player_colors_not_found", commandArgs[1]);
+                        << tOutput("$player_colors_not_found", combinedName);
             }
             return true;
         }
@@ -1918,7 +1922,13 @@ bool UpdateCommand::execute(tString args)
         }
         else
         {
-            con << local_p->Name() << " is not in game.\n";
+            con << CommandText()
+                << ErrorText() 
+                << "No player for ID '" 
+                << ItemText() 
+                << PlayerNumb 
+                << ErrorText() 
+                << "'\n";
         }
     }
     return true;

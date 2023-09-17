@@ -30,10 +30,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ArmageTron_MENU_H
 
 #include "rFont.h"
+
 #include "tList.h"
 #include "tString.h"
 #include "tCallback.h"
 #include "tLocale.h"
+#include "tDirectories.h"
 
 #include "rSDL.h"
 #ifndef DEDICATED
@@ -483,7 +485,11 @@ protected:
     unsigned int m_HistoryPos;
     unsigned int m_HistoryLimit;
 public:
-    uMenuItemStringWithHistory(uMenu *M,const tOutput& desc, const tOutput& help,tString &c, int maxLength, std::deque<tString> &history, int limit );
+    uMenuItemStringWithHistory(uMenu *M, const tOutput& desc, const tOutput& help, tString &c, int maxLength, std::deque<tString> &history, int limit);
+
+    static void SaveHistoryToFile(const tString& filename, std::deque<tString>& history);
+    static void LoadHistoryFromFile(const tString& filename, std::deque<tString>& history);
+
 
     ~uMenuItemStringWithHistory();
 

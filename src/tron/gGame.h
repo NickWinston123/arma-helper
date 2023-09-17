@@ -65,7 +65,7 @@ typedef enum
 
 // extern gGameType sg_gameType;      // the current game type
 extern bool sg_TalkToMaster; // should this server be known on the internet?
-
+extern bool sg_RequestedDisconnection;
 typedef enum
 {
     gFINISH_EXPRESS,

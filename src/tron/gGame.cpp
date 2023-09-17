@@ -2487,7 +2487,7 @@ static tConfItemLine sn_roundCM_ci("ROUND_CENTER_MESSAGE", sg_roundCenterMessage
 static tString sg_roundConsoleMessage("");
 static tConfItemLine sn_roundCcM1_ci("ROUND_CONSOLE_MESSAGE", sg_roundConsoleMessage);
 
-static bool sg_RequestedDisconnection = false;
+bool sg_RequestedDisconnection = false;
 
 static bool sg_NetworkError(const tOutput &title, const tOutput &message, REAL timeout)
 {
@@ -2554,6 +2554,10 @@ static void sg_StopQuickExit()
         uMenu::quickexit = uMenu::QuickExit_Off;
     }
 }
+
+static bool sg_autoReconect = false;
+static tConfItem<bool> sg_autoReconectConf = HelperCommand::tConfItem("AUTO_RECONNECT_ON_DISCONNECT", sg_autoReconect);
+
 nServerInfoBase *connectedServer = nullptr;
 nServerInfoBase *lastServer = nullptr;
 // return code: false if there was an error or abort
@@ -2682,13 +2686,19 @@ bool ConnectToServerCore(nServerInfoBase *server)
                                   "$network_message_lostconn_inter", 20);
             break;
         }
+
+        if (sg_autoReconect)
+        {
+            ConnectToLastServer();
+            ret = true;
+        }
     }
 
     sr_con.autoDisplayAtNewline = false;
     sr_con.fullscreen = false;
 
     sr_textOut = to;
-
+    
     return ret;
 }
 
@@ -2756,6 +2766,7 @@ static tConfItem<int> mxp("PORT_MAX", gServerBrowser::highPort);
 static tConfItem<int> mip("PORT_MIN", gServerBrowser::lowPort);
 
 static tConfItem<int> pc("PING_CHARITY", pingCharity);
+
 
 uMenu *sg_IngameMenu = NULL;
 uMenu *sg_HostMenu = NULL;
@@ -6375,6 +6386,9 @@ static void sg_FullscreenIdle()
         sg_currentGame->StateUpdate();
 }
 
+static REAL sg_messagOfDayTimeoutLimit = 60;
+static tConfItem<REAL> sg_messagOfDayTimeoutLimitConf("FULL_SCREEN_MESSAGE_CLIENT_TIMEOUT_LIMIT", sg_messagOfDayTimeoutLimit);
+
 void sg_ClientFullscreenMessage(tOutput const &title, tOutput const &message, REAL timeout)
 {
     // keep syncing the network
@@ -6393,6 +6407,9 @@ void sg_ClientFullscreenMessage(tOutput const &title, tOutput const &message, RE
 
     // remove scores
     se_UserShowScores(false);
+
+    if (timeout > sg_messagOfDayTimeoutLimit)
+        timeout = sg_messagOfDayTimeoutLimit;
 
     // show message
     uMenu::Message(title, message, timeout);

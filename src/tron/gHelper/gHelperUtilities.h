@@ -340,10 +340,8 @@ public:
     static void DebugLog(std::string message)
     {
         FileManager fileManager(tString("helper-debug-log.txt"), tDirectories::Log());
-        tString output;
-        output << message
-            << "\n";
-        if (!fileManager.Write(output))
+
+        if (!fileManager.Write(tString(message)))
             con << "Log Error\n";
       
     }

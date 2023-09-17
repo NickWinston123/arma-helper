@@ -132,7 +132,7 @@ tConsole & rConsole::DoPrint(const tString &s){
         FileManager fileManager(tString("consolelog.txt"), tDirectories::Log());
 
         tString finalLine;
-        finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s) << "\n";
+        finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
         fileManager.Write(finalLine);
     }
        
@@ -142,7 +142,7 @@ tConsole & rConsole::DoPrint(const tString &s){
         FileManager fileManager(tString("consolelog-limited.txt"), tDirectories::Log());
 
         tString finalLine;
-        finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s) << "\n";
+        finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColorsLoose(s);
         fileManager.Write(finalLine);
     }
     
@@ -157,7 +157,7 @@ tConsole & rConsole::DoPrint(const tString &s){
         if(sr_consoleLogColorTimestamp)
             finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ");
             
-        finalLine << s << "\n";
+        finalLine << s;
 
         fileManager.Write(finalLine);
         

@@ -71,6 +71,9 @@ enum PlayerColorNameMode {
 
 class TempConfItemManager;
 
+extern tString se_chatHistoryFileName;
+extern std::deque<tString> se_chatHistory; 
+
 extern bool se_chatLog, se_chatTimeStamp;
 
 extern tString se_disableCreateSpecific;

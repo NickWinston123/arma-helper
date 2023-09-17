@@ -51,6 +51,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gLanguageMenu.h"
 #include "gAICharacter.h"
 #include "gCycle.h"
+#include "gMenus.h"
 // #include <unistd>
 #include <stdio.h>
 #include <stdlib.h>
@@ -705,6 +706,9 @@ int main(int argc, char **argv)
 
         LoadChatCommandConfCommands();
 
+        uMenuItemStringWithHistory::LoadHistoryFromFile(se_consoleHistoryFileName,se_consoleHistory);
+        uMenuItemStringWithHistory::LoadHistoryFromFile(se_chatHistoryFileName,se_chatHistory);
+
         // migrate user configuration from previous versions
         if (sn_configurationSavedInVersion != sn_programVersion)
         {
@@ -904,6 +908,8 @@ int main(int argc, char **argv)
 
                 st_SaveConfig();
 
+                uMenuItemStringWithHistory::SaveHistoryToFile(se_consoleHistoryFileName,se_consoleHistory);
+                uMenuItemStringWithHistory::SaveHistoryToFile(se_chatHistoryFileName,se_chatHistory);
                 // std::cout << "saved\n";
 
                 //    cleanup(grid);

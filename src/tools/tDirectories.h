@@ -140,7 +140,7 @@ public:
 
     std::streamoff FileSize();
     tArray<tString> Load();
-    bool Write(tString content, std::ios::openmode mode = std::ios::app);
+    bool Write(tString content, std::ios::openmode mode = std::ios::app, bool newLine = true);
     bool Clear();
     bool Clear(int lineNumber);
     int NumberOfLines();

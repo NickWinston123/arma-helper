@@ -1123,6 +1123,9 @@ static char const *default_instant_chat[] =
 
 ePlayer *ePlayer::PlayerConfig(int p)
 {
+    if (p > MAX_PLAYERS-1)
+        return nullptr;
+        
     uPlayerPrototype *P = uPlayerPrototype::PlayerConfig(p);
     return dynamic_cast<ePlayer *>(P);
 }
@@ -5536,9 +5539,11 @@ namespace
         } });
 }
 
-static std::deque<tString> se_chatHistory; // global since the class doesn't live beyond the execution of the command
+tString se_chatHistoryFileName("chat_history.txt");
+static tConfItem<tString> se_chatHistoryFileNameConf("CHAT_HISTORY_FILE", se_chatHistoryFileName);
+std::deque<tString> se_chatHistory; // global since the class doesn't live beyond the execution of the command
 static int se_chatHistoryMaxSize = 10;     // maximal size of chat history
-static tSettingItem<int> se_chatHistoryMaxSizeConf("HISTORY_SIZE_CHAT", se_chatHistoryMaxSize);
+static tConfItem<int> se_chatHistoryMaxSizeConf("CHAT_HISTORY_SIZE", se_chatHistoryMaxSize);
 
 
 bool se_enableChatCommandsTabCompletion = true;
@@ -5585,36 +5590,36 @@ public:
             MyMenu()->Exit();
             return true;
         }
-else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_TAB)
-{
-    bool isCommand = (*content).StartsWith("/");
-    static tString lastContent;
-    static tString lastCommandContent;
-    static tString lastEncContent;
-    tString currentContent((*content));
-    bool changeLast;
-    bool encryptCommand = isCommand && currentContent.ToLower().StartsWith(se_encryptCommand.ToLower());
+        else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_TAB)
+        {
+            bool isCommand = (*content).StartsWith("/");
+            static tString lastContent;
+            static tString lastCommandContent;
+            static tString lastEncContent;
+            tString currentContent((*content));
+            bool changeLast;
+            bool encryptCommand = isCommand && currentContent.ToLower().StartsWith(se_encryptCommand.ToLower());
 
-    if (encryptCommand)
-    {
-        changeLast = (lastEncContent == *content);
-        ConTabCompletition(*content, cursorPos, changeLast);
-        lastEncContent = *content;
-    }
-    else if (se_enableChatCommandsTabCompletion && isCommand)
-    {
-        changeLast = (lastCommandContent == *content);
-        ConTabCompletition(*content, cursorPos, changeLast);
-        lastCommandContent = *content;
-    }
-    else
-    {
-        changeLast = (lastContent == *content);
-        ChatTabCompletition(*content, cursorPos, changeLast);
-        lastContent = *content;
-    }
-    return true;
-}
+            if (encryptCommand)
+            {
+                changeLast = (lastEncContent == *content);
+                ConTabCompletition(*content, cursorPos, changeLast);
+                lastEncContent = *content;
+            }
+            else if (se_enableChatCommandsTabCompletion && isCommand)
+            {
+                changeLast = (lastCommandContent == *content);
+                ConTabCompletition(*content, cursorPos, changeLast);
+                lastCommandContent = *content;
+            }
+            else
+            {
+                changeLast = (lastContent == *content);
+                ChatTabCompletition(*content, cursorPos, changeLast);
+                lastContent = *content;
+            }
+            return true;
+        }
 
         else if (e.type == SDL_KEYDOWN &&
                  uActionGlobal::IsBreakingGlobalBind(e.key.keysym.sym))
@@ -8502,7 +8507,7 @@ void se_SaveToChatLog(tOutput const &out)
             FileManager fileManager(tString("chatlog.txt"), tDirectories::Log());
 
             tString finalLine;
-            finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColors(colStr) << "\n";
+            finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColors(colStr);
             fileManager.Write(finalLine);
         }
 
@@ -8511,7 +8516,7 @@ void se_SaveToChatLog(tOutput const &out)
             FileManager fileManager(tString("chatlog_colors.txt"), tDirectories::Log());
 
             tString finalLine;
-            finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << colStr << "\n";
+            finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << colStr;
             fileManager.Write(finalLine);
         }
     }
@@ -14649,8 +14654,6 @@ static void AddChatTrigger(std::istream &s)
         }
 
         bot.chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
-
-        params += "\n";
         fileManager.Write(params);
 
         con << "Trigger, Response, Extra Delay, Exact?\n";

@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 class ePlayer;
 
+extern std::deque<tString> se_consoleHistory; 
+extern tString se_consoleHistoryFileName;
 extern void  sg_PlayerMenu(), sg_SpecialMenu(), sg_ConfigMenu();
 extern uMenu sg_screenMenu;
 void         sg_ConsoleInput(ePlayer* player = nullptr); // let the player enter one line of console input

@@ -1020,7 +1020,29 @@ bool uMenuItemString::Event(SDL_Event &e){
 #endif
 }
 
-uMenuItemStringWithHistory::uMenuItemStringWithHistory(uMenu *M,const tOutput& desc, const tOutput& help,tString &c, int maxLength, std::deque<tString> &history, int limit ):
+void uMenuItemStringWithHistory::SaveHistoryToFile(const tString& filename, std::deque<tString>& history)
+{
+    FileManager historyFile(filename, tDirectories::Var());
+
+    historyFile.Clear();
+    for (const auto& item : history)
+    {
+        historyFile.Write(item);
+    }
+}
+
+void uMenuItemStringWithHistory::LoadHistoryFromFile(const tString& filename, std::deque<tString>& history)
+{
+    FileManager historyFile(filename, tDirectories::Var());
+
+    history.clear();
+    tArray<tString> loadedHistory = historyFile.Load();
+    for (const auto& item : loadedHistory)
+    {
+        history.push_back(item);
+    }
+}
+uMenuItemStringWithHistory::uMenuItemStringWithHistory(uMenu *M, const tOutput& desc, const tOutput& help, tString &c, int maxLength, std::deque<tString> &history, int limit):
         uMenuItemString(M, desc,help,c, maxLength ),
         m_History(history),
         m_HistoryPos(0),
@@ -1033,7 +1055,7 @@ uMenuItemStringWithHistory::~uMenuItemStringWithHistory()
 {
     if (content->Len() > 1)
     {
-        for (std::deque<tString>::iterator i=m_History.begin(); i!=m_History.end(); ++i)
+        for (std::deque<tString>::iterator i = m_History.begin(); i != m_History.end(); ++i)
         {
             if (*i == *content)
             {
@@ -1048,7 +1070,9 @@ uMenuItemStringWithHistory::~uMenuItemStringWithHistory()
         m_History.pop_front();
     }
     if (m_History.size() > m_HistoryLimit)
+    {
         m_History.pop_back();
+    }
 }
 
 //! @param e the event to process

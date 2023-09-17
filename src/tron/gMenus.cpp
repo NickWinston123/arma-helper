@@ -96,10 +96,6 @@ static tConfItemLine c_rEnd("GL_RENDERER",gl_renderer);
 static tConfItemLine c_vEnd("GL_VENDOR",gl_vendor);
 // static tConfItemLine a_ver("ARMAGETRON_VERSION",sn_programVersion);
 
-static std::deque<tString> sg_consoleHistory; // global since the class doesn't live beyond the execution of the command
-static int sg_consoleHistoryMaxSize=10; // size of the console history
-static tSettingItem< int > sg_consoleHistoryMaxSizeConf("HISTORY_SIZE_CONSOLE",sg_consoleHistoryMaxSize);
-
 class ArmageTron_feature_menuitem: public uMenuItemSelection<int>{
     void NewChoice(uSelectItem<bool> *){}
     void NewChoice(char *,bool ){}
@@ -1049,10 +1045,17 @@ void ConTabCompletition(tString &inputString, int &cursorPos, bool changeLast)
     inputString = updatedString;
 }
 
+std::deque<tString> se_consoleHistory; // global since the class doesn't live beyond the execution of the command
+static int sg_consoleHistoryMaxSize=10; // size of the console history
+static tSettingItem< int > sg_consoleHistoryMaxSizeConf("CONSOLE_HISTORY_SIZE",sg_consoleHistoryMaxSize);
+
+tString se_consoleHistoryFileName("console_history.txt");
+static tConfItem<tString> se_consoleHistoryFileNameConf("CONSOLE_HISTORY_FILE", se_consoleHistoryFileName);
+
 class gMemuItemConsole: uMenuItemStringWithHistory{
 public:
     gMemuItemConsole(uMenu *M,tString &c):
-    uMenuItemStringWithHistory(M,"Con:","", c, 1024, sg_consoleHistory, sg_consoleHistoryMaxSize) {}
+    uMenuItemStringWithHistory(M,"Con:","", c, 1024, se_consoleHistory, sg_consoleHistoryMaxSize) {}
 
     virtual ~gMemuItemConsole(){}
 

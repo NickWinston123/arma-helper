@@ -6387,7 +6387,7 @@ static void sg_FullscreenIdle()
 }
 
 static REAL sg_messagOfDayTimeoutLimit = 60;
-static tConfItem<REAL> sg_messagOfDayTimeoutLimitConf("FULL_SCREEN_MESSAGE_CLIENT_TIMEOUT_LIMIT", sg_messagOfDayTimeoutLimit);
+static tConfItem<REAL> sg_messagOfDayTimeoutLimitConf("NETWORK_FULLSCREEN_MESSAGE_TIMEOUT_LIMIT", sg_messagOfDayTimeoutLimit);
 
 void sg_ClientFullscreenMessage(tOutput const &title, tOutput const &message, REAL timeout)
 {

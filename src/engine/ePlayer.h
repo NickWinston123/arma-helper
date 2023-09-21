@@ -1020,15 +1020,16 @@ private:
 
 #endif
 
-class eChatBot {
+class eChatBot
+{
 private:
-    eChatBot() 
+    eChatBot()
     {
         InitChatFunctions();
     }
 
-    eChatBot(const eChatBot&) = delete;
-    eChatBot& operator=(const eChatBot&) = delete;
+    eChatBot(const eChatBot &) = delete;
+    eChatBot &operator=(const eChatBot &) = delete;
 
 public:
     typedef tString (*ChatFunction)(tString);
@@ -1037,8 +1038,12 @@ public:
     std::vector<tString> chatTriggerKeys;
 
     // instance
-    static eChatBot& getInstance() {
+    static eChatBot &getInstance()
+    {
         static eChatBot instance;
+        if (instance.functionMap.empty())
+            instance.InitChatFunctions();
+        
         return instance;
     }
 
@@ -1047,12 +1052,15 @@ public:
     void LoadChatTriggers();
 
     std::map<tString, ChatFunction> functionMap;
-    void RegisterFunction(const tString& name, ChatFunction func) {
+    void RegisterFunction(const tString &name, ChatFunction func)
+    {
         functionMap[name] = func;
     }
 
-    tString ExecuteFunction(const tString& name, const tString& message) {
-        if (functionMap.find(name) != functionMap.end()) {
+    tString ExecuteFunction(const tString &name, const tString &message)
+    {
+        if (functionMap.find(name) != functionMap.end())
+        {
             return functionMap[name](message);
         }
         return tString("");
@@ -1062,10 +1070,9 @@ public:
     static void InitiateAction(ePlayerNetID *player, tString message, bool eventTrigger = false);
     void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player);
     REAL determineReadingDelay(tString message);
-    static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay );
+    static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
     REAL calculateResponseSmartDelay(tString response, REAL wpm);
     bool ShouldAnalyze();
 };
 
 #endif
-

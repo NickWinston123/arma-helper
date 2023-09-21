@@ -2041,6 +2041,9 @@ bool tString::isNumber() const
         if (c == '\0') 
             continue;
 
+        if (i == 0 && c == '-')
+            continue;
+
         if (!std::isdigit(static_cast<unsigned char>(c))) {
             return false;
         }
@@ -2048,6 +2051,7 @@ bool tString::isNumber() const
 
     return true;
 }
+
 
 bool tString::containsNumber() const
 {

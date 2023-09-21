@@ -14525,11 +14525,11 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
                 if (functionName != "$p")
                 {
+
                     tString result = ExecuteFunction(functionName, chatMessage);
-                    if (result.empty())
-                        chosenResponse = "";
-                    else
-                     {
+
+                    if (!result.empty())
+                    {
                         while ((pos = responseStr.find(functionName.stdString())) != std::string::npos)
                         {
                             std::string replacement = result.stdString();
@@ -14539,6 +14539,8 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                             responseStr.replace(pos, functionName.Len(), replacement);
                         }
                     }
+                    else
+                        responseStr = "";
                 }
 
                 dollarPos = endPos;

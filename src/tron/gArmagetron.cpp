@@ -868,7 +868,6 @@ int main(int argc, char **argv)
                     // std::cout << "init sound\n";
 
                     welcome();
-
                     // std::cout << "atexit\n";
 
                     sr_con.autoDisplayAtSwap = false;
@@ -881,6 +880,17 @@ int main(int argc, char **argv)
                     gLogo::SetSpinning(true);
 
                     sn_bigBrotherString = renderer_identification + "VER=" + sn_programVersion + "\n\n";
+
+                    InitHelperItems();
+
+                    if (sg_connectToLastServerOnStart && !sg_lastServerStr.empty())
+                    {
+                        std::unique_ptr<nServerInfoBase> server = getSeverFromStr(sg_lastServerStr);
+
+                        if (server.get() != nullptr)
+                            ConnectToServer(server.get());
+                    }
+
                     MainMenu();
 
                     // remove all players

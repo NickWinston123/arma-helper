@@ -56,6 +56,9 @@ class nServerInfoBase;
 class eTeam;
 class gParser;
 
+extern std::unique_ptr<nServerInfoBase> getSeverFromStr(tString input);
+extern void InitHelperItems(bool ingame = false);
+
 typedef enum
 {
     gFREESTYLE,
@@ -66,6 +69,9 @@ typedef enum
 // extern gGameType sg_gameType;      // the current game type
 extern bool sg_TalkToMaster; // should this server be known on the internet?
 extern bool sg_RequestedDisconnection;
+extern bool sg_connectToLastServerOnStart;
+extern tString sg_lastServerStr;
+
 typedef enum
 {
     gFINISH_EXPRESS,
@@ -146,7 +152,8 @@ void ret_to_MainMenu();
 extern nServerInfoBase *connectedServer;
 static nServerInfoBase *CurrentServer() { return connectedServer; }
 extern nServerInfoBase *lastServer;
-static nServerInfoBase *LastServer() { return connectedServer; }
+static nServerInfoBase *LastServer() { return lastServer; }
+static nServerInfoBase *setLastServer(nServerInfoBase *lastSrv) { lastServer = lastSrv; }
 void ConnectToServer(nServerInfoBase *server);
 
 void sg_EnterGame(nNetState enter_state);

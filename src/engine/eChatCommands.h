@@ -147,7 +147,7 @@ class ColorsCommand : public ChatCommand
 public:
     ColorsCommand() : ChatCommand("ColorsCommand") {}
 
-    static tColoredString cycleColorPreview(int r, int g, int b);
+    static tColoredString cycleColorPreview(REAL r, REAL g, REAL b);
 
     static tColoredString localPlayerPreview(ePlayer *local_p);
 

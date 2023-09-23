@@ -26,6 +26,7 @@ struct gSurviveData
     gSurviveData() : exist(true){};
     gSurviveData(bool) : exist(false){};
 };
+
 // gTurnHelper is a class that manages emergency turning for a cycle in the game
 // using the chatbot logic to get a turn
 class gTurnHelper

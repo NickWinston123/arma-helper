@@ -356,21 +356,31 @@ bool ConsoleCommand::execute(tString args)
     return true;
 }
 
-tColoredString ColorsCommand::cycleColorPreview(int r, int g, int b)
+tColoredString ColorsCommand::cycleColorPreview(REAL r, REAL g, REAL b)
 {
-    r /= 15;
-    g /= 15;
-    b /= 15;
+    r /= 15.0;
+    g /= 15.0;
+    b /= 15.0;
 
+    REAL cycleR = r, cycleG = g, cycleB = b;
+    
+    se_MakeColorValid(r, g, b, 1.0f);
+
+    while( cycleR > 1.f ) cycleR -= 1.f;
+    while( cycleG > 1.f ) cycleG -= 1.f;
+    while( cycleB > 1.f ) cycleB -= 1.f;
+
+    // REAL tailR2 = cycleR, tailG2 = cycleG, tailB2 = cycleB;
+    // while( tailR2 > 1.f ) tailR2 -= 1.f;
+    // while( tailG2 > 1.f ) tailG2 -= 1.f;
+    // while( tailB2 > 1.f ) tailB2 -= 1.f;
+    
     tColoredString cyclePreview;
-    REAL sr = r, sg = g, sb = b;
-    while (sr > 1.f)
-        sr -= 1.f;
-    while (sg > 1.f)
-        sg -= 1.f;
-    while (sb > 1.f)
-        sb -= 1.f;
-    cyclePreview << tColoredString::ColorString(r, g, b) << "<" << tColoredString::ColorString(sr, sg, sb) << "==" << ChatCommand::MainText();
+    cyclePreview << tColoredString::ColorString(cycleR, cycleG, cycleB) << "<" 
+                 << tColoredString::ColorString(r, g, b) << "==" 
+                //  << tColoredString::ColorString(tailR2, tailG2, tailB2) << "=" 
+                 << ChatCommand::MainText();
+
     return cyclePreview;
 }
 
@@ -441,7 +451,10 @@ tColoredString ColorsCommand::gatherPlayerColor(ePlayerNetID *p, bool showReset)
     {
         ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
         listColors << " (mode: "
-               << ChatCommand::ItemText() << localPlayerMode(local_p) << ChatCommand::MainText() << ") ";
+                   << ChatCommand::ItemText() 
+                   << localPlayerMode(local_p) 
+                   << ChatCommand::MainText() 
+                   << ") ";
 }
 
     return listColors;

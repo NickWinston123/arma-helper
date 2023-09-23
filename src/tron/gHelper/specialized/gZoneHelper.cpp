@@ -13,9 +13,6 @@ namespace helperConfig
     bool sg_zoneHelper = false;
     static tConfItem<bool> sg_zoneHelperC = HelperCommand::tConfItem("HELPER_ZONE", sg_zoneHelper);
 
-    // bool sg_zoneHelperSensor = false;
-    // static tConfItem<bool> sg_zoneHelperSensorC = HelperCommand::tConfItem("HELPER_ZONE_SENSOR", sg_zoneHelperSensor);
-
     bool sg_helperZoneShowOwnerOnly = false;
     static tConfItem<bool> sg_helperZoneShowOwnerOnlyC = HelperCommand::tConfItem("HELPER_ZONE_SHOW_OWNER_ONLY", sg_helperZoneShowOwnerOnly);
 

@@ -13,9 +13,7 @@ gPathHelper::gPathHelper(gHelper &helper, gCycle &owner)
       owner_(owner),
       pathUpdatedTime(helper_.CurrentTime() - 100),
       pathUpdateTime(0)
-{
-    // Initialize any other member variables here
-}
+{}
 
 bool gPathHelper::targetExist()
 {

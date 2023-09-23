@@ -2006,7 +2006,7 @@ void init_game_objects(eGrid *grid)
 
                 eCoord pos, dir;
                 gCycle *cycle = NULL;
-                
+
                 if( sg_spawnEnabled && sn_GetNetState() != nCLIENT )
                 {
 #ifdef DEBUG
@@ -2558,6 +2558,12 @@ static void sg_StopQuickExit()
 static bool sg_autoReconect = false;
 static tConfItem<bool> sg_autoReconectConf = HelperCommand::tConfItem("AUTO_RECONNECT_ON_DISCONNECT", sg_autoReconect);
 
+tString sg_lastServerStr("");
+static tConfItem<tString> sg_lastServerStrConf = HelperCommand::tConfItem("LAST_SERVER", sg_lastServerStr);
+
+bool sg_connectToLastServerOnStart = false;
+static tConfItem<bool> sg_connectToLastServerOnStartConf = HelperCommand::tConfItem("RECONNECT_TO_LAST_SERVER_ON_START", sg_connectToLastServerOnStart);
+
 nServerInfoBase *connectedServer = nullptr;
 nServerInfoBase *lastServer = nullptr;
 // return code: false if there was an error or abort
@@ -2602,6 +2608,12 @@ bool ConnectToServerCore(nServerInfoBase *server)
         nNetObject::ClearAll();
         connectedServer = server;
         lastServer = connectedServer;
+
+        sg_lastServerStr.Clear();
+        sg_lastServerStr << lastServer->GetConnectionName()
+                         << ":"
+                         << lastServer->GetPort();
+
         o.SetTemplateParameter(1, server->GetName());
         o << "$network_connecting_to_server";
         con << o;
@@ -2698,7 +2710,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
     sr_con.fullscreen = false;
 
     sr_textOut = to;
-    
+
     return ret;
 }
 
@@ -3231,16 +3243,24 @@ bool isWithinRange()
 int sg_RestrictPlayTimeStartTimWarnings = 1;
 int sg_RestrictPlayTimeStartTimWarningsCap = 5;
 
-void MainMenu(bool ingame)
-{
+void restrictionTimeCheck(bool ingame);
 
-    if (se_playerTriggerMessages) {
+void InitHelperItems(bool ingame)
+{
+    if (HelperCommand::fn6() && se_playerTriggerMessages) 
+    {
         eChatBot& bot = eChatBot::getInstance();
         bot.LoadChatTriggers();
     }
 
-    HelperCommand::fn6();
+    restrictionTimeCheck(ingame);
 
+    if (sr_consoleLogLimited)
+        FileManager(tString("consolelog-limited.txt"), tDirectories::Log()).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
+}
+
+void restrictionTimeCheck(bool ingame)
+{
     if (sg_RestrictPlayTime && isWithinRange())
     {
         tString message("You are not allowed to play within this time slot because of GAME_RESTRICT_PLAY_TIME. ");
@@ -3255,9 +3275,10 @@ void MainMenu(bool ingame)
         sg_RestrictPlayTimeStartTimWarnings++;
         return;
     }
-
-    if (sr_consoleLogLimited)
-        FileManager(tString("consolelog-limited.txt"), tDirectories::Log()).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
+}
+void MainMenu(bool ingame)
+{    
+    InitHelperItems(ingame);
 
     if (ingame)
     {
@@ -6880,7 +6901,6 @@ static void sg_reportsClear(std::istream &s)
 static tConfItemFunc sg_reportsClearConf("CLEAR_REPORTS", &sg_reportsClear);
 static tAccessLevelSetter sg_reportsClearConfLevel(sg_reportsClearConf, tAccessLevel_Owner);
 
-
 bool ConnectToLastServer()
 {
     nServerInfoBase *server = LastServer();
@@ -6901,3 +6921,50 @@ static void ConnectToLastServer(std::istream &s)
 }
 
 static tConfItemFunc ReloadChatTriggers_conf("RECONNECT_TO_LAST_SERVER", &ConnectToLastServer);
+
+std::unique_ptr<nServerInfoBase> getSeverFromStr(tString input)
+{
+    if (!input.empty())
+    {
+        int pos = input.StrPos(":");
+        if (pos != -1)
+        {
+            tString server = input.SubStr(0, pos);
+            if (server.StrPos(".") != -1)
+            {
+                tString portStr = input.SubStr(pos + 1);
+                int port = atoi(portStr);
+                if (port != 0)
+                {
+                    return std::make_unique<nServerInfoRedirect>(server, port);
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+
+static void se_connectToServer(std::istream &s)
+{
+    tString serverInfo;
+    if (!s.eof())
+        serverInfo.ReadLine(s);
+    else
+    {
+        con << "Usage: CONNECT_TO_SERVER <IP:PORT>\n";
+        return;
+    }
+
+    if (serverInfo.StrPos(":") == -1)
+    {
+        con << "Usage: Incorrect format. Expected format is IP:PORT\n";
+        return;
+    }
+     std::unique_ptr<nServerInfoBase> server = getSeverFromStr(serverInfo);
+    if (server.get() != nullptr)
+        ConnectToServer(server.get());
+}
+
+static tConfItemFunc se_connectToServer_conf("CONNECT_TO_SERVER", &se_connectToServer);

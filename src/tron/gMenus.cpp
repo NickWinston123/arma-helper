@@ -1242,7 +1242,7 @@ extern void Render(int);
 
 
 
-REAL sg_playerColorMenuMax = 15;
+REAL sg_playerColorMenuMax = 32;
 static tConfItem< REAL > sg_playerColorMenuMaxConf("PLAYER_COLOR_MENU_MAX",sg_playerColorMenuMax);
 
 static rFileTexture r_wallPreview(rTextureGroups::TEX_WALL, "textures/dir_wall.png", 1, 0, 1);
@@ -1265,29 +1265,6 @@ public:
     ~ArmageTron_color_menuitem(){}
 
     virtual REAL SpaceRight(){return .2;}
-
-    int cycleColor(int color)
-    {
-        if (color <= 15)
-            return color;
-
-        color/=15;
-        color=(color-(100*(color/100)));
-
-        return color;
-    }
-
-    int tailColor(int color)
-    {
-        if (color <= 15)
-            return color;
-
-        color/=15;
-        color/=100;
-        color-=1;
-
-        return color;
-    }
 
     enum Slot
     {
@@ -1361,24 +1338,31 @@ public:
         REAL g = rgb[1]/15.0;
         REAL b = rgb[2]/15.0;
 
-        REAL sr = r, sg = g, sb = b;
+        REAL cycleR = r, cycleG = g, cycleB = b;
 
         se_MakeColorValid(r, g, b, 1.0f);
+        while( cycleR > 1.f ) cycleR -= 1.f;
+        while( cycleG > 1.f ) cycleG -= 1.f;
+        while( cycleB > 1.f ) cycleB -= 1.f;
+
         RenderEnd();
-        glColor3f(r, g, b);
+
+        // PREVIEW BOXES
         //Cycle Color
+        glColor3f(cycleR, cycleG, cycleB);
         glRectf(.8,-.8,.98,-.98);
 
-        while( sr > 1.f ) sr -= 1.f;
-        while( sg > 1.f ) sg -= 1.f;
-        while( sb > 1.f ) sb -= 1.f;
 
         //Tail Color
-        glColor3f(sr, sg, sb);
+        glColor3f(r, g, b);
         glRectf(-.8,-.8,-.98,-.98);
 
-        //tail
-        glColor3f(sr, sg, sb);
+        // END PREVIEW BOX
+
+        // CYCLE & TAIL IMAGE W/ COLOR
+
+        // tail
+        glColor3f(r, g, b);
 
         r_wallPreview.Select();
 
@@ -1411,7 +1395,7 @@ public:
         RenderEnd();
 
         //cycle
-        glColor3f(r, g, b);
+        glColor3f(cycleR, cycleG, cycleB);
         r_cyclePreview.Select();
 
         BeginQuads();

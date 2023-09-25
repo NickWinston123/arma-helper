@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rFont.h"
 #include "gSensor.h"
 #include "ePlayer.h"
+#include "eChatCommands.h"
 #include "eSound.h"
 #include "eGrid.h"
 #include "eFloor.h"
@@ -644,8 +645,8 @@ void gSmarterBot::Activate(REAL currentTime)
     }
 }
 
-tString sg_smarterBotEnableForPlayers("1,2,3,4");
-static tConfItem<tString> sg_smarterBotEnableForPlayersConf = HelperCommand::tConfItem("SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnableForPlayers);
+tString sg_smarterBotEnabledPlayers("1,2,3,4");
+static tConfItem<tString> sg_smarterBotEnabledPlayersConf = HelperCommand::tConfItem("SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnabledPlayers);
 
 static bool sg_smarterBotAlwaysActive = false;
 static tConfItem<bool> sg_smarterBotAlwaysActiveConf = HelperCommand::tConfItem("SMARTER_BOT_ALWAYS_ACTIVE", sg_smarterBotAlwaysActive);
@@ -3220,7 +3221,7 @@ bool gCycle::Timestep(REAL currentTime)
             bool activateSmarterBotForThisPlayer = sg_smarterBot &&
                 ((sg_smarterBotAlwaysActive && (!player->IsChatting() || sg_smarterBotEnabledWhileChatting)) ||
                 (!sg_smarterBotAlwaysActive && player->IsChatting() && sg_smarterBotEnabledWhileChatting)) &&
-                tIsInList(sg_smarterBotEnableForPlayers, player->pID + 1);
+                tIsInList(sg_smarterBotEnabledPlayers, player->pID + 1);
 
             // A local bot is activated for the player under these conditions:
             // 1. Either the 'smarter bot' is not activated for this player OR both types of bots can be activated simultaneously.
@@ -6867,10 +6868,12 @@ void gCycle::ReadSync(nMessage &m)
                 zoneSpawnedRecently = lastCreatedZone && lastCreatedZone->actualCreateTime_ >= tSysTimeFloat() - 5;
             }
 
-            if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently)
-                eChatBot::InitiateAction(killer,tString("$died"),true);
-            else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
-                eChatBot::InitiateAction(killer,tString("$diedother"),true);
+            if (Player()) {
+                if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently)
+                    eChatBot::InitiateAction(killer,tString("$died"),true);
+                else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
+                    eChatBot::InitiateAction(killer,tString("$diedother"),true);
+            }
         }
 
         Die(lastSyncMessage_.time);

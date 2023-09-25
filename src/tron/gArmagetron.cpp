@@ -67,6 +67,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eChatCommands.h"
 
 
+bool tryConnectLastServer = false;
 // data structure for command line parsing
 class gMainCommandLineAnalyzer : public tCommandLineAnalyzer
 {
@@ -327,6 +328,9 @@ static void welcome()
                 showSplash = tRecorder::IsPlayingBack();
         }
         tRecorder::Record(splashSection, showSplash);
+
+        if (tryConnectLastServer)
+            showSplash = false;
 
         if (showSplash)
         {
@@ -703,11 +707,12 @@ int main(int argc, char **argv)
         tLocale::Load("languages.txt");
 
         st_LoadConfig();
-
         LoadChatCommandConfCommands();
 
-        uMenuItemStringWithHistory::LoadHistoryFromFile(se_consoleHistoryFileName,se_consoleHistory);
-        uMenuItemStringWithHistory::LoadHistoryFromFile(se_chatHistoryFileName,se_chatHistory);
+        uMenuItemStringWithHistory::LoadHistoryFromFile(se_consoleHistoryFileName, se_consoleHistory);
+        uMenuItemStringWithHistory::LoadHistoryFromFile(se_chatHistoryFileName, se_chatHistory);
+
+        tryConnectLastServer = sg_connectToLastServerOnStart && !sg_lastServerStr.empty();
 
         // migrate user configuration from previous versions
         if (sn_configurationSavedInVersion != sn_programVersion)
@@ -883,14 +888,9 @@ int main(int argc, char **argv)
 
                     InitHelperItems();
 
-                    if (sg_connectToLastServerOnStart && !sg_lastServerStr.empty())
-                    {
-                        std::unique_ptr<nServerInfoBase> server = getSeverFromStr(sg_lastServerStr);
-
-                        if (server.get() != nullptr)
-                            ConnectToServer(server.get());
-                    }
-
+                    if (tryConnectLastServer)
+                        ConnectToLastServer();
+                
                     MainMenu();
 
                     // remove all players

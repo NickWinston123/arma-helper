@@ -89,15 +89,20 @@ public:
         return requirePlayer;
     }
 
-    tString CommandText()
+    static tString CommandText(std::string cmd)
     {
         tString output;
 
         output << HeaderText()
-               << commandName
+               << cmd
                << " - "
                << MainText();
         return output;
+    }
+
+    tString CommandText()
+    {
+        return CommandText(commandName);
     }
 
     const std::string &getCommandName() const

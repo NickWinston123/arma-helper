@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gCycle.h"
 
 #include <map>
-
+#include "nServerInfo.h"
 #define GS_CREATED 0 // newborn baby
 #define GS_TRANSFER_SETTINGS 7
 #define GS_CREATE_GRID 10
@@ -66,6 +66,8 @@ typedef enum
     gHUMAN_VS_AI
 } gGameType;
 
+extern bool tryConnectLastServer;
+extern bool sg_forcePlayerUpdate;
 // extern gGameType sg_gameType;      // the current game type
 extern bool sg_TalkToMaster; // should this server be known on the internet?
 extern bool sg_RequestedDisconnection;
@@ -149,11 +151,29 @@ public:
 
 void update_settings(bool const *goon = 0);
 void ret_to_MainMenu();
-extern nServerInfoBase *connectedServer;
-static nServerInfoBase *CurrentServer() { return connectedServer; }
-extern nServerInfoBase *lastServer;
-static nServerInfoBase *LastServer() { return lastServer; }
-static nServerInfoBase *setLastServer(nServerInfoBase *lastSrv) { lastServer = lastSrv; }
+
+extern std::unique_ptr<nServerInfoBase> connectedServer;
+extern nServerInfoBase* CurrentServer();
+
+extern std::unique_ptr<nServerInfoBase> lastServer;
+extern nServerInfoBase* LastServer();
+
+static void setLastServer(std::unique_ptr<nServerInfoBase> lastSrv = nullptr)
+{
+    if (lastSrv != nullptr)
+    {
+        lastServer = std::move(lastSrv);
+    }
+    else
+    {
+        lastServer = std::move(connectedServer);
+    }
+}
+
+static void setCurrentServer(std::unique_ptr<nServerInfoBase> currentSrv) { 
+    connectedServer = std::move(currentSrv); 
+}
+
 void ConnectToServer(nServerInfoBase *server);
 
 void sg_EnterGame(nNetState enter_state);
@@ -161,6 +181,7 @@ void sg_HostGame();
 void sg_HostGameMenu();
 
 bool ConnectToLastServer();
+bool ConnectToLastServerFromStr();
 // runs a single player game
 void sg_SinglePlayerGame();
 

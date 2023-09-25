@@ -2556,7 +2556,7 @@ static void sg_StopQuickExit()
 }
 
 static bool sg_autoReconect = false;
-static tConfItem<bool> sg_autoReconectConf = HelperCommand::tConfItem("AUTO_RECONNECT_ON_DISCONNECT", sg_autoReconect);
+static tConfItem<bool> sg_autoReconectConf = HelperCommand::tConfItem("RECONNECT_ON_DISCONNECT", sg_autoReconect);
 
 tString sg_lastServerStr("");
 static tConfItem<tString> sg_lastServerStrConf = HelperCommand::tConfItem("LAST_SERVER", sg_lastServerStr);
@@ -2564,8 +2564,16 @@ static tConfItem<tString> sg_lastServerStrConf = HelperCommand::tConfItem("LAST_
 bool sg_connectToLastServerOnStart = false;
 static tConfItem<bool> sg_connectToLastServerOnStartConf = HelperCommand::tConfItem("RECONNECT_TO_LAST_SERVER_ON_START", sg_connectToLastServerOnStart);
 
-nServerInfoBase *connectedServer = nullptr;
-nServerInfoBase *lastServer = nullptr;
+
+nServerInfoBase* LastServer() {
+    return lastServer.get();
+}
+
+nServerInfoBase* CurrentServer() { return connectedServer.get(); }
+
+std::unique_ptr<nServerInfoBase> connectedServer;
+std::unique_ptr<nServerInfoBase> lastServer;
+
 // return code: false if there was an error or abort
 bool ConnectToServerCore(nServerInfoBase *server)
 {
@@ -2606,8 +2614,10 @@ bool ConnectToServerCore(nServerInfoBase *server)
         nConnectError error = nOK;
 
         nNetObject::ClearAll();
-        connectedServer = server;
-        lastServer = connectedServer;
+
+        std::unique_ptr<nServerInfoBase> uniqueServer(server);
+        setCurrentServer(std::move(uniqueServer));  
+        setLastServer();
 
         sg_lastServerStr.Clear();
         sg_lastServerStr << lastServer->GetConnectionName()
@@ -5727,7 +5737,7 @@ static eLadderLogWriter sg_gameTimeWriter("GAME_TIME", true);
 static bool sg_forceGamePause = false;
 static tSettingItem<bool> sg_forceGamePauseConf = HelperCommand::tSettingItem("FORCE_GAME_PAUSE", sg_forceGamePause);
 
-static bool sg_forcePlayerUpdate = false;
+bool sg_forcePlayerUpdate = false;
 static tSettingItem<bool> sg_forcePlayerUpdateConf = HelperCommand::tSettingItem("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
 
 static bool sg_forcePlayerRebuild = false;
@@ -5753,11 +5763,11 @@ bool gGame::GameLoop(bool input)
         });
     }
 
-    if (sg_forcePlayerUpdate || sg_forceSyncAll || sg_forcePlayerRebuild)
+    if (sg_forcePlayerUpdate || sg_forceSyncAll || sg_forcePlayerRebuild || ePlayerNetID::nameSpeakForceUpdate)
     {
         gTaskScheduler.schedule("forcedUpdate", sg_forceClockDelay, []
         {
-            if (sg_forcePlayerUpdate)
+            if (sg_forcePlayerUpdate || ePlayerNetID::nameSpeakForceUpdate)
                 ePlayerNetID::Update();
 
             if (sg_forcePlayerRebuild)
@@ -6901,20 +6911,34 @@ static void sg_reportsClear(std::istream &s)
 static tConfItemFunc sg_reportsClearConf("CLEAR_REPORTS", &sg_reportsClear);
 static tAccessLevelSetter sg_reportsClearConfLevel(sg_reportsClearConf, tAccessLevel_Owner);
 
+bool ConnectToLastServerFromStr()
+{
+    std::unique_ptr<nServerInfoBase> server = getSeverFromStr(sg_lastServerStr);
+
+    if (server.get() != nullptr)
+    {
+        ConnectToServer(server.get());
+        return true;
+    }
+
+    return false;
+}
 bool ConnectToLastServer()
 {
     nServerInfoBase *server = LastServer();
+    
     if (server != nullptr)
     {
         ConnectToServer(server);
         return true;
     }
-    else
+    else if (!ConnectToLastServerFromStr())
     {
         con << "Last server not set!\n";
         return false;
     }
 }
+
 static void ConnectToLastServer(std::istream &s)
 {
     ConnectToLastServer();
@@ -6924,14 +6948,18 @@ static tConfItemFunc ReloadChatTriggers_conf("RECONNECT_TO_LAST_SERVER", &Connec
 
 std::unique_ptr<nServerInfoBase> getSeverFromStr(tString input)
 {
+
     if (!input.empty())
     {
+
         int pos = input.StrPos(":");
         if (pos != -1)
         {
+
             tString server = input.SubStr(0, pos);
             if (server.StrPos(".") != -1)
             {
+
                 tString portStr = input.SubStr(pos + 1);
                 int port = atoi(portStr);
                 if (port != 0)
@@ -6941,7 +6969,6 @@ std::unique_ptr<nServerInfoBase> getSeverFromStr(tString input)
             }
         }
     }
-
     return nullptr;
 }
 
@@ -6962,7 +6989,9 @@ static void se_connectToServer(std::istream &s)
         con << "Usage: Incorrect format. Expected format is IP:PORT\n";
         return;
     }
-     std::unique_ptr<nServerInfoBase> server = getSeverFromStr(serverInfo);
+    
+    std::unique_ptr<nServerInfoBase> server = getSeverFromStr(serverInfo);
+    
     if (server.get() != nullptr)
         ConnectToServer(server.get());
 }

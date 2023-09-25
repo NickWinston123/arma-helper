@@ -57,6 +57,7 @@ class gFlagZoneHack;
 class gAIBot;
 class PlayerStats;
 
+extern tString sg_smarterBotEnabledPlayers;
 extern bool sg_smarterBotTeam, sg_smarterBotTeamOwner, sg_smarterBotAFKCheck, sg_predictDeath;
 extern REAL sg_smarterBotAFKCheckTime;
 extern bool sg_smarterBotAFKCheckIfChatting;

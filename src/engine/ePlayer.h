@@ -79,6 +79,7 @@ extern bool se_chatLog, se_chatTimeStamp;
 extern tString se_disableCreateSpecific;
 extern std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
 
+extern bool se_forceJoinTeam;
 extern tString se_chatCommandsThemeHeader;
 extern tString se_chatCommandsThemeMain;
 extern tString se_chatCommandsThemeItem;
@@ -329,6 +330,8 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
 public:
     static tArray<tString> nameSpeakWords;
     static int nameSpeakIndex;
+    static bool nameSpeakForceUpdate;
+    static bool nameSpeakCheck;
     static int nameSpeakPlayerID;
     static int playerUpdateIteration;
     bool isLocal() { return pID != -1; }

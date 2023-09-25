@@ -77,7 +77,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 int se_lastSaidMaxEntries = 8;
 
-static bool se_forceJoinTeam = false;
+bool se_forceJoinTeam = false;
 static tConfItem<bool> se_forceJoinTeamConf = HelperCommand::tConfItem("FORCE_JOIN_TEAM", se_forceJoinTeam);
 
 static bool se_forceSync = false;
@@ -10083,37 +10083,26 @@ tString RandomStr(int maxLength)
 }
 
 tArray<tString> ePlayerNetID::nameSpeakWords;
+bool ePlayerNetID::nameSpeakForceUpdate = false;
+bool ePlayerNetID::nameSpeakCheck = false;
 int ePlayerNetID::nameSpeakIndex = 0;
 int ePlayerNetID::nameSpeakPlayerID = 0;
 int ePlayerNetID::playerUpdateIteration = 0;
 
 void ePlayerNetID::scheduleNameChange()
 {
-    if (nameSpeakIndex < nameSpeakWords.Len())
+    if (nameSpeakIndex >= nameSpeakWords.Len() 
+        || playerUpdateIteration % se_nameSpeakCommandInterval != 0
+        || nameSpeakWords[nameSpeakIndex].empty())
     {
-        ePlayer *player = ePlayer::PlayerConfig(nameSpeakPlayerID);
+        return;
+    }
 
-        if (playerUpdateIteration % se_nameSpeakCommandInterval == 0)
-        {
-            if (!nameSpeakWords[nameSpeakIndex].empty())
-            {
-                player->name = nameSpeakWords[nameSpeakIndex];
-            }
-            forceCreatePlayer = nameSpeakPlayerID;
-            nameSpeakIndex++;
-            Clear(player);
-        }
-        else
-        {
-            forceCreatePlayer = -1;
-            Clear(player);
-        }
-    }
-    else
-    {
-        forceCreatePlayer = -1;
-        nameSpeakWords.Clear();
-    }
+    ePlayer *player = ePlayer::PlayerConfig(nameSpeakPlayerID);
+    player->name = nameSpeakWords[nameSpeakIndex];
+    forceCreatePlayer = nameSpeakPlayerID;
+    nameSpeakIndex++;
+    Clear(player);
 }
 
 // Update the netPlayer_id list
@@ -10135,7 +10124,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
     }
 #endif
 #ifndef DEDICATED
-    if (playerUpdateIteration % se_nameSpeakCommandInterval == 0)
+    if (nameSpeakCheck && playerUpdateIteration % se_nameSpeakCommandInterval == 0)
     {
         if (nameSpeakIndex < nameSpeakWords.Len())
         {
@@ -10143,8 +10132,13 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
         }
         else
         {
+            nameSpeakForceUpdate = false;
             forceCreatePlayer = -1;
         }
+        
+        if (nameSpeakWords.Empty())
+            nameSpeakCheck = false;
+
     }
 
     playerUpdateIteration++;
@@ -10204,7 +10198,13 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
                 if (se_forceJoinTeam && !bool(p->currentTeam))
                 {
-                    local_p->spectate = false;
+                    if (!local_p->spectate) 
+                    {
+                        con << ChatCommand::CommandText("FORCE_JOIN_TEAM")
+                            << "Setting spectate to false\n";
+                        local_p->spectate = false;
+                    }
+
                     p->CreateNewTeamWish();
                 }
 
@@ -14231,32 +14231,62 @@ void eChatBot::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, boo
     0, true); // allow multiple
 }
 
+
+static int se_playerMessageTriggersFuncAdderVal = 1;
+static tConfItem<int> se_playerMessageTriggersFuncAdderValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_ADDER_ADD_VAL", se_playerMessageTriggersFuncAdderVal);
+
 tString numberAdderFunc(tString message)
 {
+    std::string input(message.stdString());
 
-    for (int i = message.Len() - 2; i >= 0; --i)
+    bool isNegative = input[0] == '-';
+    size_t idx = isNegative ? 1 : 0;
+
+    std::string intPart, fracPart;
+    while (idx < input.size() && input[idx] != '.')
+        intPart += input[idx++];
+    if (idx < input.size() && input[idx] == '.')
     {
-        if (message[i] == '9')
-        { 
-            message[i] = '0';
-        }
-        else
-        {
-            message[i] = char(message[i] + 1);
-            break;
-        }
+        idx++;
+        while (idx < input.size())
+            fracPart += input[idx++];
     }
 
-    if (message[0] == '0')
-        message = tString("1") + message;
+    int carry = isNegative ? -se_playerMessageTriggersFuncAdderVal : se_playerMessageTriggersFuncAdderVal;
 
-    return message;
+    for (int i = fracPart.size() - 1; i >= 0 && carry != 0; i--)
+    {
+        int sum = (fracPart[i] - '0') + carry;
+        carry = sum < 0 ? -1 : sum / 10;
+        fracPart[i] = '0' + (sum < 0 ? 10 + sum : sum % 10);
+    }
+
+    for (int i = intPart.size() - 1; i >= 0 && carry != 0; i--)
+    {
+        int sum = (intPart[i] - '0') + carry;
+        carry = sum < 0 ? -1 : sum / 10;
+        intPart[i] = '0' + (sum < 0 ? 10 + sum : sum % 10);
+    }
+
+    if (carry != 0)
+        intPart = (carry == -1 ? "-" : "") + std::to_string(std::abs(carry)) + intPart;
+
+    if (intPart == "0")
+        isNegative = false;
+
+    std::string result = isNegative ? "-" : "";
+    result += intPart;
+    if (!fracPart.empty())
+        result += '.' + fracPart;
+
+    return tString(result);
 }
 
 bool containsMath(const tString &input, bool exact)
 {
-    int numbers = 0;
-    bool hasOperator = false;
+    int digitsCount = 0;
+    int operatorsCount = 0;
+    bool negativeSign = false;
 
     for (int i = 0; i < input.Len(); ++i)
     {
@@ -14266,13 +14296,31 @@ bool containsMath(const tString &input, bool exact)
             continue;
 
         if (std::isdigit(static_cast<unsigned char>(c)))
-            numbers++;
-        else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^')
-            hasOperator = true;
+        {
+            digitsCount++;
+            if (i > 0 && input(i - 1) == '-' && !negativeSign)
+            {
+                operatorsCount++;
+            }
+        }
+        else if (c == '+' || c == '*' || c == '/' || c == '^')
+        {
+            operatorsCount++;
+        }
+        else if (c == '-')
+        {
+            negativeSign = true;
+            if (i > 0 && std::isdigit(static_cast<unsigned char>(input(i - 1))))
+            {
+                operatorsCount++;
+            }
+        }
         else if (exact)
+        {
             return false;
+        }
 
-        if (numbers >= 2 && hasOperator)
+        if (digitsCount >= 2 && operatorsCount >= 1)
             return true;
     }
 
@@ -14289,7 +14337,7 @@ tString stripNonOperatorsOrNumbers(const tString &input)
         if (c == '\0')
             continue;
 
-        if (std::isdigit(static_cast<unsigned char>(c)) || (c == '+' || c == '-' || c == '*' || c == '/' || c == '^'))
+        if (std::isdigit(static_cast<unsigned char>(c)) || (c == '+' || c == '-'  || c == '.' || c == '*' || c == '/' || c == '^'))
             result += c;
     }
     return result;

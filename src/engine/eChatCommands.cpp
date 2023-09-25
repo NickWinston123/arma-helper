@@ -1172,12 +1172,16 @@ bool SpectateCommand::execute(tString args)
     con << CommandText()
         << "Spectating player '" << player->name << "'...\n";
 
+    se_forceJoinTeam = false;
+
     ePlayer *local_p = player;
     local_p->spectate = true;
+    
     if (netPlayer)
     {
         if (helperConfig::sghuk && se_spectateCommandInstant)
             netPlayer->Clear(local_p);
+
         netPlayer->Update();
     }
     return true;
@@ -1543,6 +1547,8 @@ bool NameSpeakCommand::execute(tString args)
         << "'. Message: '" << ItemText() << args
         << MainText() << "'\n";
 
+    ePlayerNetID::nameSpeakForceUpdate = true;
+    ePlayerNetID::nameSpeakCheck = true;
     ePlayerNetID::nameSpeakIndex = 0;
     ePlayerNetID::nameSpeakPlayerID = playerID;
     ePlayerNetID::playerUpdateIteration = 0;
@@ -2204,7 +2210,7 @@ bool QuitCommand::execute(tString args)
 
     gTaskScheduler.schedule("QuitCommand", quitTime, []
     {
-        throw 1;
+        uMenu::quickexit = uMenu::QuickExit_Total;
     });
     return true;
 }

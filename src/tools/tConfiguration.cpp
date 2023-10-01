@@ -1802,38 +1802,38 @@ void st_SaveConfig()
                     }
                 }
 
-                for(id=0;id<4;++id)
-                {
-                    for(i=25; i<99; ++i)
-                    {
-                        tString confname; confname << "INSTANT_CHAT_STRING_" << id+1 << '_' <<  i+1;
-                        if( saved[ confname ] ) continue;
-                        auto ci = tConfItemBase::GetConfigItem(confname);
-                        if(ci)
-                        {
-                            s << ci->GetTitle() << " ";
-                            ci->WriteVal(s);
-                            s << "\n";
-                        }
-                    }
-                }
+                // for(id=0;id<4;++id)
+                // {
+                //     for(i=25; i<99; ++i)
+                //     {
+                //         tString confname; confname << "INSTANT_CHAT_STRING_" << id+1 << '_' <<  i+1;
+                //         if( saved[ confname ] ) continue;
+                //         auto ci = tConfItemBase::GetConfigItem(confname);
+                //         if(ci)
+                //         {
+                //             s << ci->GetTitle() << " ";
+                //             ci->WriteVal(s);
+                //             s << "\n";
+                //         }
+                //     }
+                // }
 
-                s << "ZONE_ALPHA_BLEND" << " " << sg_zoneAlphaBlend << "\n";
-                s << "ZONE_ALPHA_TOGGLE" << " " << sg_zoneAlphaToggle << "\n";
+                // s << "ZONE_ALPHA_BLEND" << " " << sg_zoneAlphaBlend << "\n";
+                // s << "ZONE_ALPHA_TOGGLE" << " " << sg_zoneAlphaToggle << "\n";
 
-                s << "ZONE_BOTTOM" << " " << sg_zoneBottom << "\n";
+                // s << "ZONE_BOTTOM" << " " << sg_zoneBottom << "\n";
 
-                s << "ZONE_HEIGHT" << " " << sg_zoneHeight << "\n";
-                for(auto i=sg_zoneHeights.begin();i!=sg_zoneHeights.end();i++)
-                {
-                    tString c("ZONE_HEIGHT");
-                    c << " " << i->first;
-                    c << " " << i->second;
-                    s << c << "\n";
-                }
+                // s << "ZONE_HEIGHT" << " " << sg_zoneHeight << "\n";
+                // for(auto i=sg_zoneHeights.begin();i!=sg_zoneHeights.end();i++)
+                // {
+                //     tString c("ZONE_HEIGHT");
+                //     c << " " << i->first;
+                //     c << " " << i->second;
+                //     s << c << "\n";
+                // }
 
-                s << "ZONE_SEGMENTS" << " " << sg_zoneSegments << "\n";
-                s << "ZONE_SEG_LENGTH" << " " << sg_zoneSegLength << "\n";
+                // s << "ZONE_SEGMENTS" << " " << sg_zoneSegments << "\n";
+                // s << "ZONE_SEG_LENGTH" << " " << sg_zoneSegLength << "\n";
             }
         }
         else

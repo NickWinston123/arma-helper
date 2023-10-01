@@ -3425,8 +3425,14 @@ private:
 static nConsoleFilter sn_consoleFilter;
 #endif
 
-bool sg_playerMessageMatchWinner = false;
+static bool sg_playerMessageMatchWinner = false;
 static tConfItem<bool> sg_playerMessageMatchWinnerConf("PLAYER_MESSAGE_MATCH_WINNER", sg_playerMessageMatchWinner);
+
+bool sg_playerSpamProtectionWatch = false;
+static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WATCH", sg_playerSpamProtectionWatch);
+
+static tString sg_playerSpamProtectionWatchSearchString("");
+static tConfItem<tString> sg_playerSpamProtectionWatchSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_SEARCH_STRING", sg_playerSpamProtectionWatchSearchString);
 
 static void sn_ConsoleOut_handler(nMessage &m)
 {
@@ -3436,8 +3442,24 @@ static void sn_ConsoleOut_handler(nMessage &m)
         m >> s;
         con << s;
 
+    if (sg_playerSpamProtectionWatch)
+    {
+        tString input = (sg_playerSpamProtectionWatchSearchString.empty() ? tString("silenced for the next ") : sg_playerSpamProtectionWatchSearchString );
+
+        int startIdx = s.StrPos(input);
+
+        if (startIdx != -1)
+        {
+            std::istringstream stream(s.SubStr(startIdx + input.Len()-1).stdString());
+            REAL seconds;
+            if (stream >> seconds)
+                ePlayerNetID::setNextSpeakTime(seconds);
+        }
+    }
+
+
         if (se_playerTriggerMessages && sg_playerMessageMatchWinner && s.Contains("Overall Winner"))
-            eChatBot::InitiateAction(nullptr,tString("$matchwinner"),true);
+            eChatBot::InitiateAction(nullptr, tString("$matchwinner"), true);
     }
 }
 

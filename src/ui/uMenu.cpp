@@ -956,7 +956,14 @@ bool uMenuItemString::Event(SDL_Event &e){
     else if (pasteText) {
         if (!pasteFromClipboard(content, cursorPos)) 
             con << "Failed to paste.\n";
+        
+        if (content->Len() > maxLength_)
+        {
+            *content = content->SubStr(0, maxLength_ - 1);
+            cursorPos = std::min(cursorPos, maxLength_ - 1); 
+        }
     }
+
     else if (c.sym == SDLK_LEFT) {
         if (cursorPos > 0) {
             cursorPos--;

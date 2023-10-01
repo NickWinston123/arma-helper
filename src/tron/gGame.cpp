@@ -2564,6 +2564,9 @@ static tConfItem<tString> sg_lastServerStrConf = HelperCommand::tConfItem("LAST_
 bool sg_connectToLastServerOnStart = false;
 static tConfItem<bool> sg_connectToLastServerOnStartConf = HelperCommand::tConfItem("RECONNECT_TO_LAST_SERVER_ON_START", sg_connectToLastServerOnStart);
 
+bool sg_connectToLastServerFromMenu = false;
+static tConfItem<bool> sg_connectToLastServerFromMenuConf = HelperCommand::tConfItem("RECONNECT_TO_LAST_SERVER_FROM_MENU", sg_connectToLastServerFromMenu);
+
 
 nServerInfoBase* LastServer() {
     return lastServer.get();
@@ -3253,22 +3256,6 @@ bool isWithinRange()
 int sg_RestrictPlayTimeStartTimWarnings = 1;
 int sg_RestrictPlayTimeStartTimWarningsCap = 5;
 
-void restrictionTimeCheck(bool ingame);
-
-void InitHelperItems(bool ingame)
-{
-    if (HelperCommand::fn6() && se_playerTriggerMessages) 
-    {
-        eChatBot& bot = eChatBot::getInstance();
-        bot.LoadChatTriggers();
-    }
-
-    restrictionTimeCheck(ingame);
-
-    if (sr_consoleLogLimited)
-        FileManager(tString("consolelog-limited.txt"), tDirectories::Log()).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
-}
-
 void restrictionTimeCheck(bool ingame)
 {
     if (sg_RestrictPlayTime && isWithinRange())
@@ -3286,6 +3273,18 @@ void restrictionTimeCheck(bool ingame)
         return;
     }
 }
+
+void InitHelperItems(bool ingame)
+{
+    if (HelperCommand::fn6() && se_playerTriggerMessages) 
+        eChatBot::getInstance().LoadChatTriggers();
+
+    restrictionTimeCheck(ingame);
+
+    if (sr_consoleLogLimited)
+        FileManager(tString("consolelog-limited.txt"), tDirectories::Log()).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
+}
+
 void MainMenu(bool ingame)
 {    
     InitHelperItems(ingame);
@@ -3295,6 +3294,9 @@ void MainMenu(bool ingame)
         sr_con.SetHeight(2);
         se_UserShowScores(false);
     }
+
+    if (!ingame && sg_connectToLastServerFromMenu)
+        ConnectToLastServer();
 
     gLogo::SetDisplayed(true);
 

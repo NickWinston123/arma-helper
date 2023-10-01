@@ -1125,7 +1125,7 @@ ePlayer *ePlayer::PlayerConfig(int p)
 {
     if (p > MAX_PLAYERS-1)
         return nullptr;
-        
+
     uPlayerPrototype *P = uPlayerPrototype::PlayerConfig(p);
     return dynamic_cast<ePlayer *>(P);
 }
@@ -1798,6 +1798,8 @@ static void se_DisplayChatLocally(ePlayerNetID *p, const tString &say)
     }
 }
 
+static bool se_playerMessageChat = false;
+static tConfItem<bool> se_playerMessageChatConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT", se_playerMessageChat);
 static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 {
     // con << "message " << message << "\n";
@@ -1890,7 +1892,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         con << actualMessage << "\n";
 
-        if (!privateMessage && se_playerTriggerMessages && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
+        if (!privateMessage && se_playerTriggerMessages && se_playerMessageChat && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
         {
             actualMessage = tColoredString::RemoveColors(actualMessage);
             const int timestampLength = 9;
@@ -2443,7 +2445,7 @@ void se_SendTeamMessage(eTeam const *team, ePlayerNetID const *sender, ePlayerNe
 
         if (se_chatLogWriteTeam)
         {
-           
+
             se_SaveToChatLog(say);
         }
     }
@@ -4688,7 +4690,7 @@ void handle_chat(nMessage &m)
     m.Read(id);
     tColoredString say;
     m >> say;
-    
+
     tJUST_CONTROLLED_PTR<ePlayerNetID> p = dynamic_cast<ePlayerNetID *>(nNetObject::ObjectDangerous(id));
 
     // register player activity
@@ -5034,6 +5036,38 @@ bool se_enableChatCommands = true;
 static tConfItem<bool> se_enableChatCommandsConf("LOCAL_CHAT_COMMANDS", se_enableChatCommands);
 #endif // if not dedicated
 
+REAL sg_playerSpamProtectionWatchExtraAdd = 0.5;
+static tConfItem<REAL> sg_playerSpamProtectionWatchExtraAddConf("CHAT_SPAM_PROTECTION_WATCH_EXTRA_ADD", sg_playerSpamProtectionWatchExtraAdd);
+
+REAL ePlayerNetID::nextSpeakTime = 0;
+
+bool ePlayerNetID::canChat()
+{
+    // con << "COMPARING " << nextSpeakTime << " vs " << tSysTimeFloat() << "\n";
+    return nextSpeakTime <= tSysTimeFloat();
+}
+
+bool ePlayerNetID::canChatWithMsg()
+{
+    bool ableToChat = canChat();
+    // con << " CAN CHAT ? " << ableToChat << "\n";
+
+    if (!ableToChat)
+    {
+        con << "You are silenced for "
+            << nextSpeakTime - tSysTimeFloat()
+            << " seconds. Do not try to chat!\n";
+    }
+    return ableToChat;
+}
+
+void ePlayerNetID::setNextSpeakTime(REAL seconds)
+{
+    // con << "SECONDS " << seconds << "\n";
+    nextSpeakTime = tSysTimeFloat() + seconds + sg_playerSpamProtectionWatchExtraAdd;
+    // con << "nextupdatetime " << nextSpeakTime << "\n";
+}
+
 void ePlayerNetID::Chat(const tString &s_orig)
 {
     tColoredString s(s_orig);
@@ -5042,12 +5076,17 @@ void ePlayerNetID::Chat(const tString &s_orig)
 #ifndef DEDICATED
     if (se_enableChatCommands && s_orig.StartsWith("/") && LocalChatCommands(ePlayer::NetToLocalPlayer(this), s_orig))
         return;
+
+    if (sg_playerSpamProtectionWatch && !ePlayerNetID::canChatWithMsg())
+        return;
 #endif // if not dedicated
 
+#ifdef DEDICATED
     tString retStr(s);
     if (eBannedWords::BadWordTrigger(this, retStr))
         return;
     s = tColoredString(retStr);
+#endif
 
     switch (sn_GetNetState())
     {
@@ -10091,7 +10130,7 @@ int ePlayerNetID::playerUpdateIteration = 0;
 
 void ePlayerNetID::scheduleNameChange()
 {
-    if (nameSpeakIndex >= nameSpeakWords.Len() 
+    if (nameSpeakIndex >= nameSpeakWords.Len()
         || playerUpdateIteration % se_nameSpeakCommandInterval != 0
         || nameSpeakWords[nameSpeakIndex].empty())
     {
@@ -10135,7 +10174,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
             nameSpeakForceUpdate = false;
             forceCreatePlayer = -1;
         }
-        
+
         if (nameSpeakWords.Empty())
             nameSpeakCheck = false;
 
@@ -10198,7 +10237,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
                 if (se_forceJoinTeam && !bool(p->currentTeam))
                 {
-                    if (!local_p->spectate) 
+                    if (!local_p->spectate)
                     {
                         con << ChatCommand::CommandText("FORCE_JOIN_TEAM")
                             << "Setting spectate to false\n";
@@ -12451,8 +12490,13 @@ void ePlayerNetID::UpdateName(void)
             RequestSync();
         }
 
-        if (!nameFirstSync && !isLocal() && sn_GetNetState() == nCLIENT && nameChange && se_playerTriggerMessages && se_playerMessageRename)
-            eChatBot::InitiateAction(this,tString("$rename"),true);
+        nameHistory.Add(GetColoredName());
+
+        if (!nameFirstSync)
+        {
+            if (!isLocal() && sn_GetNetState() == nCLIENT && nameChange && se_playerTriggerMessages && se_playerMessageRename)
+                eChatBot::InitiateAction(this,tString("$rename"),true);
+        }
     }
 
     // store access level for next update
@@ -14204,31 +14248,31 @@ REAL eChatBot::calculateResponseSmartDelay(tString response, REAL wpm)
 
 void eChatBot::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay)
 {
-    float messageDelay = totalDelay - flagDelay;
+    gTaskScheduler.enqueueChain([=](){ // group Tasks
+        float messageDelay = totalDelay - flagDelay;
 
-    gTaskScheduler.schedule(
-        "playerMessageTask", flagDelay, [netPlayer, message, chatFlag, messageDelay] // When we start typing
-        {
-            if (chatFlag)
+        gTaskScheduler.schedule(
+            "playerMessageTask", flagDelay, [netPlayer, message, chatFlag, messageDelay] // When we start typing
             {
-                netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
-                ePlayerNetID::Update();
+                if (chatFlag)
+                {
+                    netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
+                    ePlayerNetID::Update();
 
-                // Schedule another task to turn off the flag after a short delay
-                gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag] // When we send the message and stop typing
+                    gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag] // When we send the message and stop typing
+                    {
+                        netPlayer->Chat(message);
+                        if (chatFlag)
+                            netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
+                        ePlayerNetID::Update();
+                    });
+                }
+                else
                 {
                     netPlayer->Chat(message);
-                    if (chatFlag)
-                        netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
-                    ePlayerNetID::Update();
-                });
-            }
-            else
-            {
-                netPlayer->Chat(message);
-            } 
-        },
-    0, true); // allow multiple
+                }
+            }); // multiple messages will be added to pendingTasks
+    });
 }
 
 
@@ -14407,10 +14451,59 @@ tString numberCalcFunc(tString message)
     return tString(str);
 }
 
+tString sayFunc(tString message)
+{
+    std::string input = message.stdString();
+    std::string lastTrigger = eChatBot::getInstance().lastMatchedTrigger.stdString();
+
+    std::string toReplace = lastTrigger + " ";
+
+    std::size_t pos;
+    while ((pos = input.find(toReplace)) != std::string::npos)
+        input.replace(pos, toReplace.length(), "");
+
+    toReplace = lastTrigger;
+    while ((pos = input.find(toReplace)) != std::string::npos)
+        input.replace(pos, toReplace.length(), "");
+
+    if (!input.empty() && input[0] == '/')
+        input.insert(0, " ");
+
+    return tString(input);
+}
+
+
+tString reverseText(tString message)
+{
+    std::string input = message.stdString(); 
+    std::string lastTrigger = eChatBot::getInstance().lastMatchedTrigger.stdString();
+
+    std::string toReplace = lastTrigger + " ";
+
+    std::size_t pos;
+    while ((pos = input.find(toReplace)) != std::string::npos)
+        input.replace(pos, toReplace.length(), "");
+
+    toReplace = lastTrigger;
+    while ((pos = input.find(toReplace)) != std::string::npos)
+        input.replace(pos, toReplace.length(), "");
+
+    std::reverse(input.begin(), input.end());
+
+    if (!input.empty() && input[0] == '/')
+        input.insert(0, " ");
+
+    return tString(input);
+}
+
+
+
 void eChatBot::InitChatFunctions()
 {
     RegisterFunction(tString("$numbadderfunc"), numberAdderFunc);
     RegisterFunction(tString("$numbcalcfunc"), numberCalcFunc);
+    RegisterFunction(tString("$sayfunc"), sayFunc);
+    RegisterFunction(tString("$revfunc"), reverseText);
 }
 
 /*
@@ -14460,15 +14553,15 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                         tArray<tString> nameParts = ourName.Split(" ");
 
                         tString triggerWithoutName = trigger.Replace("$p", "").TrimWhitespace();
-                        if (!lowerMessage.Contains(triggerWithoutName))                        
+                        if (!lowerMessage.Contains(triggerWithoutName))
                             continue;
-                        
+
 
                         bool nameFound = false;
                         if (exact)
                         {
-                            if (lowerMessage == ourName)                            
-                                nameFound = true;                            
+                            if (lowerMessage == ourName)
+                                nameFound = true;
                             else
                             {
                                 for (const auto &namePart : nameParts)
@@ -14519,6 +14612,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
         if (match)
         {
+            lastMatchedTrigger = trigger;
             // Determine the sending player based on the type of trigger
             if (triggeredPlayer != nullptr)
             {
@@ -14581,9 +14675,9 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                         while ((pos = responseStr.find(functionName.stdString())) != std::string::npos)
                         {
                             std::string replacement = result.stdString();
-                            if (keepSpace)                        
+                            if (keepSpace)
                                 replacement += " ";
-                            
+
                             responseStr.replace(pos, functionName.Len(), replacement);
                         }
                     }
@@ -14753,7 +14847,8 @@ static void ListChatTriggers(std::istream &s)
 
             // Combine multiple responses into a single string separated by semicolons
             std::string combinedResponses;
-            for (const auto& response : responses) {
+            for (const auto& response : responses)
+            {
                 if (!combinedResponses.empty()) {
                     combinedResponses += ";";
                 }

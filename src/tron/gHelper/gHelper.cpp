@@ -140,6 +140,8 @@ namespace helperConfig
 
     bool sg_helperShowHit = false;
     static tConfItem<bool> sg_helperShowHitConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT", sg_helperShowHit);
+    bool sg_helperShowHitEnableWhileNotStraight = false;
+    static tConfItem<bool> sg_helperShowHitEnableWhileNotStraightConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_ENABLE_WHILE_NOT_STRAIGHT", sg_helperShowHitEnableWhileNotStraight);
     REAL sg_showHitDataBrightness = 1;
     static tConfItem<REAL> sg_showHitDataBrightnessConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_BRIGHTNESS", sg_showHitDataBrightness);
     REAL sg_showHitDataRange = 200;
@@ -754,7 +756,7 @@ void gHelper::showCorners(gHelperData &data)
 void gHelper::showHit(gHelperData &data)
 {
     // check if the owner is alive and driving straight
-    if (!aliveCheck() || !drivingStraight())
+    if (!aliveCheck() || (!sg_helperShowHitEnableWhileNotStraight && !drivingStraight()))
         return;
 
     // get the front hit distance and check if it's close to the wall

@@ -90,6 +90,8 @@ extern bool se_playerTriggerMessages;
 extern bool se_watchActiveStatus;
 extern int se_watchActiveStatusTime;
 
+extern bool sg_playerSpamProtectionWatch;
+
 extern void se_UniqueColor(ePlayer *local_p );
 extern void se_RandomizeColor(ePlayer *local_p);
 extern void se_rainbowColor(ePlayer *local_p);
@@ -334,12 +336,18 @@ public:
     static bool nameSpeakCheck;
     static int nameSpeakPlayerID;
     static int playerUpdateIteration;
+
+    static REAL nextSpeakTime;
+    static bool canChat();
+    static bool canChatWithMsg();
+    static void setNextSpeakTime(REAL seconds);
+
     bool isLocal() { return pID != -1; }
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastDiedByPlayer = nullptr;
     ePlayerNetID * lastMessagedPlayer;
     ePlayerNetID * lastMessagedByPlayer;
-    tString lastMessagedPlayerStr;
+    REAL lastCycleDeathTime = 0;
     typedef std::set< eTeam * > eTeamSet;
     bool respawnedLocally;
     playerWatchStatus lastWatchStatus;
@@ -354,6 +362,7 @@ public:
     int shiftIter = 0;
     int lastplayerRandomColorNameStartMode;
     tArray<tString> lastSearch;
+    tArray<tString> nameHistory;
     bool nameFirstSync  = true;
 private:
 
@@ -1040,6 +1049,8 @@ public:
     std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
     std::vector<tString> chatTriggerKeys;
 
+    tString lastMatchedTrigger;
+    
     // instance
     static eChatBot &getInstance()
     {

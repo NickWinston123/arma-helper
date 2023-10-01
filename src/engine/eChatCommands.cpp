@@ -548,89 +548,137 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
 {
     
     
-    tColoredString listinfo;
-    listinfo << ChatCommand::MainText() << "Results for " << p->GetColoredName() << ChatCommand::MainText() << ":\n"
-             << ChatCommand::MainText() << "Color: " << ColorsCommand::gatherPlayerColor(p) << "\n";
+    tColoredString listInfo;
+    listInfo << ChatCommand::MainText() << "Results for " << p->GetColoredName() << ChatCommand::MainText() << ":\n";
+
+    // Player Info
+    listInfo << ChatCommand::MainText() << "Player Info: \n";
+
+    tString nameHistory;
+
+    for (int i = 0; i < p->nameHistory.Len(); i++)
+    {
+        if (nameHistory.empty())
+            nameHistory = p->nameHistory[i];
+        else {
+            nameHistory = nameHistory + ChatCommand::MainText() + ", " + p->nameHistory[i];
+        }
+    }
+    
+    listInfo << ChatCommand::MainText() << " Color: " << ColorsCommand::gatherPlayerColor(p) << "\n";
 
     gRealColor color(p->r, p->g, p->b);
-    // p->Color(color);
     se_MakeColorValid(color.r, color.g, color.b, 1.0f);
     se_removeDarkColors(color);
-    listinfo << ChatCommand::MainText()
-             << "Filtered Color: " << ChatCommand::MainText() << "("
+    listInfo << ChatCommand::MainText()
+             << " Filtered Color: " << ChatCommand::MainText() << "("
              << ChatCommand::ItemText() << color.r << ChatCommand::MainText() << ", "
              << ChatCommand::ItemText() << color.g << ChatCommand::MainText() << ", "
              << ChatCommand::ItemText() << color.b << ChatCommand::MainText() << ")\n";
 
-    // Status. Includes player type, spectating or playing, and if the player is chatting.
-    listinfo << ChatCommand::MainText()
-             << "Status: " << ChatCommand::ItemText() << (p->IsHuman() ? "Human" : "Bot")
+    listInfo << " Name History: "
+             << nameHistory
+             << "\n";
+
+    listInfo << " Status: "
+             << ChatCommand::ItemText() << (p->IsHuman() ? "Human" : "Bot")
+             << ChatCommand::MainText() << ", "
+             << ChatCommand::ItemText() << (p->CurrentTeam() ? "Playing" : "Spectating")
+             << (p->IsChatting() ? (ChatCommand::MainText() << "," << ChatCommand::ItemText() << " Chatting\n") : "\n");
+
+    listInfo << " Ping: "
+             << ChatCommand::ItemText()
+             << int(p->ping * 1000)
              << ChatCommand::MainText()
-             << ", " << ChatCommand::ItemText()
-             << (p->CurrentTeam() ? "Playing" : "Spectating")
-             << (p->IsChatting() ? (ChatCommand::MainText() << "," << ChatCommand::ItemText() << " Chatting") : "");
+             << " ("
+             << ChatCommand::ItemText()
+             << p->ping
+             << ChatCommand::MainText()
+             << ")\n";
 
-    bool nonSpecator = p->Object() && p->CurrentTeam();
-
-    if (nonSpecator)
-        // If the player is an active object, are they alive?
-        listinfo << (p->Object()->Alive() ? (ChatCommand::MainText() << "," << ChatCommand::ItemText() << " Alive") : ", Dead") << '\n'
-                 << ChatCommand::MainText() << "Lag: " << ChatCommand::ItemText() << p->Object()->Lag() << ChatCommand::MainText() << "\n";
-
-    listinfo << "Created: "
+    listInfo << " Created: "
              << ChatCommand::ItemText() << getTimeStringBase(p->createTime_)
              << ChatCommand::MainText() << "\n"
-             << "Last Activity: "
+             << " Last Activity: "
              << ChatCommand::ItemText() << st_GetFormatTime(p->LastActivity(), true)
-             << ChatCommand::MainText() << "\n"
-             << "Chatting For: "
-             << ChatCommand::ItemText() << p->ChattingTime()
              << ChatCommand::MainText() << "\n";
 
-    if (p->ChattingTime() == 0)
-        listinfo << "Last chat activity: "
-                 << ChatCommand::ItemText() << st_GetFormatTime(p->ChattingTime(), true)
+    if (p->ChattingTime() > 0)
+        listInfo << " Chatting For: "
+                 << ChatCommand::ItemText() 
+                 << st_GetFormatTime(p->ChattingTime(), true)
                  << ChatCommand::MainText() << "\n";
 
-    if (nonSpecator)
+
+    // Cycle Info
+
+    if (p->CurrentTeam())
+        listInfo << ChatCommand::MainText() 
+                << "Cycle Info: \n";
+    if (p->Object())
     {
         // Only grab this information if the player is an alive object.
         gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
 
-        if (p->Object()->Alive())
+                
+        listInfo << " Status: "
+                 << ChatCommand::ItemText()
+                 << (pCycle->Alive() ? "Alive" : "Dead") 
+                 << '\n'
+                 << ChatCommand::MainText() 
+                 << " Lag: "
+                 << ChatCommand::ItemText()
+                 << int(pCycle->Lag()  * 1000)
+                 << ChatCommand::MainText()
+                 << " ("
+                 << ChatCommand::ItemText()
+                 << pCycle->Lag() 
+                 << ChatCommand::MainText()
+                 << ")\n";
+
+        if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
+            listInfo << " Last Death: "
+                     << ItemText() << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, true)
+                     << "\n";
+        else
+            listInfo << " Alive Time: "
+                     << ChatCommand::ItemText() << st_GetFormatTime(se_GameTime(), true)
+                     << "\n";
+
+        if (pCycle->Alive())
         {
-            listinfo << ChatCommand::MainText()
-                     << "Position: x: " 
+            listInfo << ChatCommand::MainText()
+                     << " Position: x: " 
                      << ChatCommand::ItemText() << pCycle->Position().x 
                      << ChatCommand::MainText()
                      << ", y: " 
                      << ChatCommand::ItemText() << pCycle->Position().y 
-                     << ChatCommand::MainText() 
-                     << "\nMap Direction: x: " 
+                     << ChatCommand::MainText() << "\n"
+                     << " Map Direction: x: " 
                      << ChatCommand::ItemText() << pCycle->Direction().x 
                      << ChatCommand::MainText()
                      << ", y: " 
                      << ChatCommand::ItemText() << pCycle->Direction().y 
                      << ChatCommand::MainText() << '\n'
-                     << "Speed: " 
+                     << " Speed: " 
                      << ChatCommand::ItemText() << pCycle->verletSpeed_ 
                      << ChatCommand::MainText() << '\n'
-                     << "Rubber: " 
+                     << " Rubber: " 
                      << ChatCommand::ItemText() << pCycle->GetRubber() << "/" << sg_rubberCycle 
                      << ChatCommand::MainText() << '\n';
         }
+    } 
+    else if (p->CurrentTeam())
+    {
+        listInfo << " Status: "
+                 << ChatCommand::ItemText() << "Dead\n";
 
-        if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
-            listinfo << "Last Death: "
-                     << ItemText() << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, true)
-                     << "\n";
-        else
-            listinfo << "Alive Time: "
-                     << ChatCommand::ItemText() << st_GetFormatTime(se_GameTime(), true)
-                     << "\n";
+        listInfo << " Last Death: "
+                    << ItemText() << st_GetFormatTime(tSysTimeFloat() - p->lastCycleDeathTime, true)
+                    << "\n";
     }
 
-    return listinfo << '\n';
+    return listInfo;
 }
 
 std::tuple<tString, int, int, int> RgbCommand::se_extractColorInfoFromLine(const tString &line)
@@ -718,11 +766,6 @@ bool RgbCommand::execute(tString args)
             commandArgs.RemoveAtPreservingOrder(0);
         }
 
-        // con << "commandArgs elements:\n";
-        // for (int i = 0; i < commandArgs.Len(); ++i)
-        // {
-        //     con << "commandArgs[" << i << "] = " << commandArgs[i] << "\n";
-        // }
 
         if (command == "help")
         {
@@ -1133,13 +1176,9 @@ bool ActiveStatusCommand::execute(tString args)
              << ItemText() << st_GetFormatTime(p->LastActivity(), true)
              << MainText() << "\n"
              << "Chatting For: "
-             << ItemText() << chattingTime
+             << ItemText() << st_GetFormatTime(chattingTime, true)
              << MainText() << "\n";
 
-    if (chattingTime == 0)
-        listInfo << "Last chat activity: "
-                 << ItemText() << st_GetFormatTime(p->ChattingTime(), true)
-                 << MainText() << "\n";
 
     gCycle *cycle = p->NetPlayerToCycle();
     if (cycle)
@@ -1156,7 +1195,14 @@ bool ActiveStatusCommand::execute(tString args)
                      << ItemText() << st_GetFormatTime(se_GameTime(), true)
                      << "\n";
         }
+    }     
+    else if (p->CurrentTeam())
+    {
+        listInfo << "Last Death: "
+                    << ItemText() << st_GetFormatTime(tSysTimeFloat() - p->lastCycleDeathTime, true)
+                    << "\n";
     }
+
     con << listInfo;
     return true;
 }

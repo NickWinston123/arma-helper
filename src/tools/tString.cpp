@@ -2031,26 +2031,37 @@ static bool st_IsUnderscore( char c )
 
 bool tString::isNumber() const
 {
-    if (empty()) 
+    if (empty())
         return false;
 
-    for (int i = 0; i < Len(); ++i) 
+    int dotCount = 0;
+    for (int i = 0; i < Len(); ++i)
     {
         char c = (*this)(i);
-        
-        if (c == '\0') 
+
+        if (c == '\0')
             continue;
 
-        if (i == 0 && c == '-' || c == '.')
+        if (i == 0 && c == '-')
             continue;
 
-        if (!std::isdigit(static_cast<unsigned char>(c))) {
+        if (c == '.')
+        {
+            dotCount++;
+            if (dotCount > 1) 
+                return false;
+            continue;
+        }
+
+        if (!std::isdigit(static_cast<unsigned char>(c)))
+        {
             return false;
         }
     }
 
     return true;
 }
+
 
 
 bool tString::containsNumber() const
@@ -3128,6 +3139,13 @@ bool pasteFromClipboard(tString *content, int& cursorPos)
             cData = st_UTF8ToLatin1( cData );
     #endif
 
+        // replace newlines with spaces
+        for (int i = 0; i < cData.Len(); ++i)
+        {
+            if (cData(i) == '\n' || cData(i) == '\r')
+                cData(i) = ' ';
+        }
+        
         tString oContent(*content);
         tString aContent = oContent.SubStr(0, cursorPos);
         tString bContent = oContent.SubStr(cursorPos);

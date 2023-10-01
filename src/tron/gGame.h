@@ -70,7 +70,7 @@ extern bool tryConnectLastServer;
 extern bool sg_forcePlayerUpdate;
 // extern gGameType sg_gameType;      // the current game type
 extern bool sg_TalkToMaster; // should this server be known on the internet?
-extern bool sg_RequestedDisconnection;
+extern bool sg_RequestedDisconnection, sg_connectToLastServerFromMenu;
 extern bool sg_connectToLastServerOnStart;
 extern tString sg_lastServerStr;
 
@@ -332,11 +332,12 @@ struct DelayedTask
     std::string id;
     REAL dueTime;
     REAL interval;
+    REAL originalDelay;
     std::function<void()> task;
     DelayedTask() {}
 
-    DelayedTask(const std::string &id, REAL dueTime, REAL interval, std::function<void()> task)
-        : id(id), dueTime(dueTime), interval(interval), task(std::move(task)) {}
+    DelayedTask(const std::string &id, REAL dueTime, REAL interval, REAL originalDelay, std::function<void()> task)
+        : id(id), dueTime(dueTime), interval(interval), originalDelay(originalDelay), task(std::move(task)) {}
 
     bool operator<(const DelayedTask& other) const
     {
@@ -344,39 +345,74 @@ struct DelayedTask
     }
 };
 
+
 class TaskScheduler
 {
 public:
     // Schedule a new task
     bool schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0, bool allowMultiple = false)
     {
-        if (allowMultiple && taskCounts.find(id) != taskCounts.end()) {
+        REAL dueTime = tSysTimeFloat() + delayInSeconds;
+        if(isTaskScheduled(id) && !allowMultiple)
+        {
+            DelayedTask newTask(id, dueTime, interval, delayInSeconds, std::move(task));
+            pendingTasks[id].push(newTask);
+            return true;
+        }
+        
+        if(allowMultiple && taskCounts.find(id) != taskCounts.end())
+        {
             id = id + "_" + std::to_string(++taskCounts[id]);
         }
 
-        if (!allowMultiple && tasksMap.count(id) > 0) {
-            return false;
-        }
-
-        REAL dueTime = tSysTimeFloat() + delayInSeconds;
-        auto delayedTask = DelayedTask(id, dueTime, interval, std::move(task));
+        auto delayedTask = DelayedTask(id, dueTime, interval, delayInSeconds, std::move(task));
         tasksQueue.push(delayedTask);
         tasksMap[id] = delayedTask;
         return true;
     }
 
+    void enqueueChain(const std::function<void()>& chain)
+    {
+        taskChains.push(chain);
+    }
+
+    bool isTaskScheduled(const std::string& id) const {
+        return tasksMap.count(id) > 0;
+    }
+
     // Check and execute due tasks
     void update()
     {
+
+        if (tasksQueue.empty() && !taskChains.empty())
+        {
+            auto taskChain = taskChains.front();
+            taskChains.pop();
+            taskChain();
+        }
+
         while (!tasksQueue.empty() && tSysTimeFloat() >= tasksQueue.top().dueTime)
         {
             DelayedTask task = tasksQueue.top();
             tasksQueue.pop();
             tasksMap.erase(task.id);
 
-            task.task();
+            task.task(); 
 
-            if (task.interval > 0)
+            if(pendingTasks.count(task.id) > 0 && !pendingTasks[task.id].empty())
+            {
+                DelayedTask nextTask = pendingTasks[task.id].front();
+                pendingTasks[task.id].pop();
+
+                nextTask.dueTime = tSysTimeFloat() + nextTask.originalDelay; 
+
+                tasksQueue.push(nextTask);
+                tasksMap[nextTask.id] = nextTask;
+                
+                if(pendingTasks[task.id].empty())
+                    pendingTasks.erase(task.id); 
+            }
+            else if(task.interval > 0)
             {
                 task.dueTime += task.interval;
                 tasksQueue.push(task);
@@ -413,7 +449,8 @@ private:
     std::priority_queue<DelayedTask> tasksQueue;
     std::unordered_map<std::string, DelayedTask> tasksMap;
     std::unordered_map<std::string, int> taskCounts;
-
+    std::unordered_map<std::string, std::queue<DelayedTask>> pendingTasks;
+    std::queue<std::function<void()>> taskChains;
     void rebuildQueue()
     {
         while (!tasksQueue.empty()) {

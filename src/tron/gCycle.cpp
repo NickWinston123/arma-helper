@@ -6809,7 +6809,11 @@ void gCycle::ReadSync(nMessage &m)
         lastActTime = tSysTimeFloat();
 
     if ( sync.alive == 0 && sync.alive != lastSyncMessage_.alive)
+    {
         lastDeathTime = tSysTimeFloat();
+        if (Player())
+            Player()->lastCycleDeathTime = lastDeathTime;
+    }
 
     lastSyncMessage_ = sync;
 

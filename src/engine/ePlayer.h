@@ -72,7 +72,7 @@ enum PlayerColorNameMode {
 class TempConfItemManager;
 
 extern tString se_chatHistoryFileName;
-extern std::deque<tString> se_chatHistory; 
+extern std::deque<tString> se_chatHistory;
 
 extern bool se_chatLog, se_chatTimeStamp;
 
@@ -80,13 +80,7 @@ extern tString se_disableCreateSpecific;
 extern std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
 
 extern bool se_forceJoinTeam;
-extern tString se_chatCommandsThemeHeader;
-extern tString se_chatCommandsThemeMain;
-extern tString se_chatCommandsThemeItem;
-extern tString se_chatCommandsThemeError;
-extern tString se_playerTriggerMessagesIgnoreList;
 
-extern bool se_playerTriggerMessages;
 extern bool se_watchActiveStatus;
 extern int se_watchActiveStatusTime;
 
@@ -169,8 +163,8 @@ public:
     bool       stealth;               // does this player wish to hide his/her identity?
     bool       autoLogin;             // should the player always request authentication on servers?
 
-    bool 		nameTeamAfterMe; // player prefers to call his team after his name
-    int			favoriteNumberOfPlayersPerTeam;
+    bool 	   nameTeamAfterMe;       // player prefers to call his team after his name
+    int		   favoriteNumberOfPlayersPerTeam;
 
     ePlayerNetID * watchPlayer; // the player we want to watch
 
@@ -364,6 +358,9 @@ public:
     tArray<tString> lastSearch;
     tArray<tString> nameHistory;
     bool nameFirstSync  = true;
+    nTimeAbsolute joinedTeamTime() { return timeJoinedTeam; }
+    nTimeAbsolute createdTime() { return timeCreated_; }
+
 private:
 
     int listID;                          // ID in the list of all players
@@ -591,6 +588,7 @@ public:
     static void OnlineStatsLadderLog(); //  writes the online players, teams and the numbers
     static void  ResetScore();  // resets the ranking list
 
+    static ePlayerNetID* HighestScoringPlayer();
 
     static void scheduleNameChange();
 
@@ -1030,63 +1028,6 @@ private:
     std::unordered_map<tString, PlayerData> playerStatsMap;
 };
 
-#endif
-
-class eChatBot
-{
-private:
-    eChatBot()
-    {
-        InitChatFunctions();
-    }
-
-    eChatBot(const eChatBot &) = delete;
-    eChatBot &operator=(const eChatBot &) = delete;
-
-public:
-    typedef tString (*ChatFunction)(tString);
-
-    std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
-    std::vector<tString> chatTriggerKeys;
-
-    tString lastMatchedTrigger;
-    
-    // instance
-    static eChatBot &getInstance()
-    {
-        static eChatBot instance;
-        if (instance.functionMap.empty())
-            instance.InitChatFunctions();
-        
-        return instance;
-    }
-
-    void InitChatFunctions();
-
-    void LoadChatTriggers();
-
-    std::map<tString, ChatFunction> functionMap;
-    void RegisterFunction(const tString &name, ChatFunction func)
-    {
-        functionMap[name] = func;
-    }
-
-    tString ExecuteFunction(const tString &name, const tString &message)
-    {
-        if (functionMap.find(name) != functionMap.end())
-        {
-            return functionMap[name](message);
-        }
-        return tString("");
-    }
-
-    std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredPlayer, tString chatMessage, bool eventTrigger);
-    static void InitiateAction(ePlayerNetID *player, tString message, bool eventTrigger = false);
-    void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player);
-    REAL determineReadingDelay(tString message);
-    static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
-    REAL calculateResponseSmartDelay(tString response, REAL wpm);
-    bool ShouldAnalyze();
-};
+#endif // not dedicated
 
 #endif

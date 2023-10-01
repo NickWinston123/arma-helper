@@ -17,7 +17,6 @@ extern tString se_chatCommandsThemeHeader;
 extern tString se_chatCommandsThemeMain;
 extern tString se_chatCommandsThemeItem;
 extern tString se_chatCommandsThemeError;
-extern tString se_playerTriggerMessagesIgnoreList;
 
 extern tString se_consoleCommand;
 extern tString se_colorsCommand;

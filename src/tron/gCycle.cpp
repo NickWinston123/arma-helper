@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rFont.h"
 #include "gSensor.h"
 #include "ePlayer.h"
+#include "eChatBot.h"
 #include "eChatCommands.h"
 #include "eSound.h"
 #include "eGrid.h"
@@ -54,6 +55,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gArena.h"
 #include "gSpawn.h"
 #include "gZone.h"
+
 
 #include "gRace.h"
 #include "gGame.h"
@@ -367,7 +369,7 @@ static void gSmarterBotReset(std::istream &s)
 
     // List of command name suffixes
     std::vector<std::string> commandSuffixes = {
-        "THINK", "RANGE", "RANDOMNESS", "RUBBER", "SUICIDE", "TRAP",
+        "THINK", "RANGE", "RANDOMNESS", "RUBBER", "SURVIVE", "TRAP",
         "FOLLOW", "FOLLOW_TARGET", "FOLLOW_ZONE", "FOLLOW_TAIL",
         "FOLLOW_BLOCKED_LOGIC", "FOLLOW_TRY_LOGIC",
         "FOLLOW_TRY_LOGIC_OPPOSITE_TURN", "FOLLOW_CHECK_LOGIC",

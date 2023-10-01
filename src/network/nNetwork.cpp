@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <fstream>
 #include "tMath.h"
 #include "ePlayer.h"
+#include "eChatBot.h"
 #include <string.h>
 #include "../tron/gHelper/gHelperUtilities.h"
 
@@ -3459,7 +3460,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
 
         if (se_playerTriggerMessages && sg_playerMessageMatchWinner && s.Contains("Overall Winner"))
-            eChatBot::InitiateAction(nullptr, tString("$matchwinner"), true);
+            eChatBot::InitiateAction(ePlayerNetID::HighestScoringPlayer(), tString("$matchwinner"), true);
     }
 }
 

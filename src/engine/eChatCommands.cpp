@@ -1,6 +1,7 @@
 #include "eChatCommands.h"
 
 #include "ePlayer.h"
+#include "eChatBot.h"
 #include "eTimer.h"
 #include "eFloor.h"
 #include "rConsole.h"

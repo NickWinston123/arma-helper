@@ -1,0 +1,78 @@
+#ifndef ArmageTron_eChatBot_H
+#define ArmageTron_eChatBot_H
+
+#include "tString.h"
+#include "tSysTime.h"
+
+#include <unordered_map>
+#include <functional>
+#include "defs.h"
+
+#include "ePlayer.h"
+
+
+extern bool se_playerTriggerMessagesReactToSelf;
+extern tString se_playerTriggerMessagesFile;
+extern tString se_playerTriggerMessagesIgnoreList;
+
+extern bool se_playerTriggerMessages;
+
+class eChatBot
+{
+private:
+    eChatBot()
+    {
+        InitChatFunctions();
+    }
+
+    eChatBot(const eChatBot &) = delete;
+    eChatBot &operator=(const eChatBot &) = delete;
+
+public:
+    typedef tString (*ChatFunction)(tString);
+
+    std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
+    std::vector<tString> chatTriggerKeys;
+
+    tString lastMatchedTrigger;
+    
+    // instance
+    static eChatBot &getInstance()
+    {
+        static eChatBot instance;
+        if (instance.functionMap.empty())
+            instance.InitChatFunctions();
+        
+        return instance;
+    }
+
+    void InitChatFunctions();
+
+    void LoadChatTriggers();
+
+    std::map<tString, ChatFunction> functionMap;
+    void RegisterFunction(const tString &name, ChatFunction func)
+    {
+        functionMap[name] = func;
+    }
+
+    tString ExecuteFunction(const tString &name, const tString &message)
+    {
+        if (functionMap.find(name) != functionMap.end())
+        {
+            return functionMap[name](message);
+        }
+        return tString("");
+    }
+
+    std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString chatMessage, bool eventTrigger);
+    static void InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger = false);
+    void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player);
+    REAL determineReadingDelay(tString message);
+    static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
+    REAL calculateResponseSmartDelay(tString response, REAL wpm);
+    bool ShouldAnalyze();
+};
+
+
+#endif

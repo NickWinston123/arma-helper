@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eTeam.h"
 #include "tMemManager.h"
 #include "ePlayer.h"
+#include "ePlayerStats.h"
 // #include "tInitExit.h"
 #include "tConfiguration.h"
 #include "eNetGameObject.h"
@@ -1793,6 +1794,9 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
     {
         tColoredString actualMessage(message);
 
+        if (se_playerStats)
+            ePlayerStats::addTotalMessages(p);
+
         bool sentFromTeamMember = false;
         if (se_silenceEnemies)
         {
@@ -1848,6 +1852,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         bool encyptedMessage = false;
         bool privateMessage = actualMessage.Contains("-->");
+        ePlayerNetID *ourPlayer;
 
         if (privateMessage)
         {
@@ -1858,7 +1863,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             {
                 tString ourName = actualMessage.SubStr(arrowPos + 4, colonPos - arrowPos - 4).TrimWhitespace();
 
-                ePlayerNetID *ourPlayer = ePlayerNetID::GetPlayerByName(ourName);
+                ourPlayer = ePlayerNetID::GetPlayerByName(ourName);
                 if (ourPlayer)
                 {
                     p->lastMessagedPlayer = ourPlayer;
@@ -1878,14 +1883,25 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         con << actualMessage << "\n";
 
-        if (!privateMessage && se_playerTriggerMessages && se_playerMessageChat && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
+        if (se_playerTriggerMessages && se_playerMessageChat && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
         {
             actualMessage = tColoredString::RemoveColors(actualMessage);
             const int timestampLength = 9;
             const int nameLength = p->GetName().Len();
+            int cutLength = timestampLength + nameLength + 2;
 
-            actualMessage = actualMessage.SubStr(timestampLength + nameLength + 2);
-            eChatBot::InitiateAction(p, actualMessage);
+            tString preAppend;
+            if (privateMessage && ourPlayer)
+            {
+                preAppend << "/msg "
+                          << p->GetName().Filter()
+                          << " ";
+                cutLength += 4 + ourPlayer->GetName().Len();
+            }
+
+            actualMessage = actualMessage.SubStr(cutLength);
+
+            eChatBot::InitiateAction(p, actualMessage, false, preAppend);
         }
     }
 }
@@ -8746,7 +8762,6 @@ ePlayerNetID* ePlayerNetID::HighestScoringPlayer()
 }
 
 
-
 void ePlayerNetID::SortByScore()
 {
     // bubble sort (AAARRGGH! but good for lists that change not much)
@@ -10228,7 +10243,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
                 if (se_forceJoinTeam && !bool(p->currentTeam))
                 {
-                    if (!local_p->spectate)
+                    if (local_p->spectate)
                     {
                         con << ChatCommand::CommandText("FORCE_JOIN_TEAM")
                             << "Setting spectate to false\n";
@@ -12466,6 +12481,12 @@ void ePlayerNetID::UpdateName(void)
     Color(r, g, b);
     coloredName_ << tColoredString::ColorString(r, g, b) << nameFromServer_;
 
+    coloredNickname.Clear();
+    if (!nickname.empty())
+    {
+        coloredNickname << tColoredString::ColorString(r, g, b) << nickname;
+    }
+
     bool nameChange = name_ != newName;
     if (nameChange || lastAccessLevel != GetAccessLevel())
     {
@@ -13990,147 +14011,3 @@ void ePlayerNetID::RespawnPlayer(bool local)
     }
 }
 
-bool se_playerStats = false;
-static tConfItem<bool> se_playerStatsConf("PLAYER_STATS", se_playerStats);
-
-#ifndef DEDICATED
-#include "sqlite3.h"
-#include "sqlite3.h"
-#include <sstream>
-#include <iostream>
-
-PlayerStats *PlayerStats::instance = nullptr;
-
-PlayerStats::PlayerStats()
-{
-    loadStatsFromDB();
-}
-
-PlayerStats::~PlayerStats()
-{
-    saveStatsToDB();
-}
-
-PlayerStats *PlayerStats::getInstance()
-{
-    if (!se_playerStats)
-        return nullptr;
-
-    if (!instance)
-    {
-        instance = new PlayerStats();
-        instance->reloadStatsFromDB();
-    }
-    return instance;
-}
-
-PlayerData &PlayerStats::getStats(tString playerName)
-{
-    return playerStatsMap[playerName];
-}
-
-void PlayerStats::addKill(tString playerName)
-{
-    playerStatsMap[playerName].kills++;
-}
-
-void PlayerStats::addDeath(tString playerName)
-{
-    playerStatsMap[playerName].deaths++;
-}
-
-void PlayerStats::addWin(tString playerName)
-{
-    playerStatsMap[playerName].wins++;
-}
-
-void PlayerStats::addLoss(tString playerName)
-{
-    playerStatsMap[playerName].losses++;
-}
-
-void PlayerStats::reloadStatsFromDB()
-{
-    playerStatsMap.clear(); // clear the current stats
-    loadStatsFromDB();      // reload stats from DB
-}
-
-void PlayerStats::loadStatsFromDB()
-{
-    sqlite3 *db;
-    sqlite3_stmt *stmt;
-    int rc;
-
-    rc = sqlite3_open("stats.db", &db);
-    if (rc != SQLITE_OK)
-    {
-        con << "Cannot open database: " << tString(sqlite3_errmsg(db)) << "\n";
-        return;
-    }
-
-    std::string sql = "SELECT name, kills, deaths, wins, losses FROM PlayerStats;";
-    rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, 0);
-
-    if (rc != SQLITE_OK)
-    {
-        con << "Failed to fetch data: " << tString(sqlite3_errmsg(db)) << "\n";
-        sqlite3_close(db);
-        return;
-    }
-
-    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
-    {
-        tString name = tString((char *)sqlite3_column_text(stmt, 0));
-        PlayerData pd;
-        pd.kills = sqlite3_column_int(stmt, 1);
-        pd.deaths = sqlite3_column_int(stmt, 2);
-        pd.wins = sqlite3_column_int(stmt, 3);
-        pd.losses = sqlite3_column_int(stmt, 4);
-        playerStatsMap[name] = pd;
-    }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-}
-
-void PlayerStats::saveStatsToDB()
-{
-    sqlite3 *db;
-    char *errMsg = 0;
-    int rc;
-
-    rc = sqlite3_open("stats.db", &db);
-    if (rc != SQLITE_OK)
-    {
-        con << "Cannot open database: " << tString(sqlite3_errmsg(db)) << "\n";
-        return;
-    }
-
-    std::string sql = "CREATE TABLE IF NOT EXISTS PlayerStats(name TEXT PRIMARY KEY, kills INTEGER, deaths INTEGER, wins INTEGER, losses INTEGER);";
-    rc = sqlite3_exec(db, sql.c_str(), 0, 0, &errMsg);
-
-    if (rc != SQLITE_OK)
-    {
-        con << "SQL error: " << tString(errMsg) << "\n";
-        sqlite3_free(errMsg);
-    }
-    else
-    {
-        for (const auto &kv : playerStatsMap)
-        {
-            std::stringstream ss;
-            ss << "INSERT OR REPLACE INTO PlayerStats VALUES('" << kv.first << "'," << kv.second.kills << "," << kv.second.deaths << "," << kv.second.wins << "," << kv.second.losses << ");";
-            rc = sqlite3_exec(db, ss.str().c_str(), 0, 0, &errMsg);
-
-            if (rc != SQLITE_OK)
-            {
-                con << "SQL error: " << tString(errMsg) << "\n";
-                sqlite3_free(errMsg);
-            }
-        }
-    }
-
-    sqlite3_close(db);
-}
-
-#endif

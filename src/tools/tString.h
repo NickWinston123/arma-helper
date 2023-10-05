@@ -151,6 +151,18 @@ public:
 
     bool empty() const;
 
+    void RecomputeLength()
+    {
+        int actualLength = 0;
+        while((*this)[actualLength] != '\0' && actualLength < Size())
+        {
+            actualLength++;
+        }
+
+        SetLen(actualLength + 1); 
+    }
+
+
     //! remove the specified character and return string
     tString RemoveCharacter(char character);
 

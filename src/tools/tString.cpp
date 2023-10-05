@@ -2198,7 +2198,6 @@ tString tString::Reverse() const {
     for ( int index = Len() - 2; index >= 0; index-- ) {
         reversed << ( *this ) ( index );
     }
-
     return reversed;
 }
 
@@ -2863,37 +2862,21 @@ tArray<tString> st_explode(tString delimiter, tString ret)
 
 tString tString::Replace(tString old_word, tString new_word)
 {
-    tString ret(*this);
-    tString strString;
+    std::string source = this->stdString();
+    std::string oldStr = old_word.stdString();
+    std::string newStr = new_word.stdString();
 
-    if (old_word.Len() > ret.Len())
-        return tString("");
-    else if (old_word == "")
-        return ret;
-
-    int count_word = old_word.Len() - 1;
-    int count_new = new_word.Len() - 1;
-    int this_word = ret.Len();
-
-    for(int i = 0; i < this_word; i++)
+    size_t pos = 0;
+    while((pos = source.find(oldStr, pos)) != std::string::npos)
     {
-        tString putWordTogether;
-        for(int j = 0; j < count_word; j++)
-        {
-            putWordTogether << ret[i + j];
-        }
-
-        if (putWordTogether.Filter() == old_word.Filter())
-        {
-            strString << new_word;
-            i += count_word;// - 1;
-        }
-        else
-            strString << ret[i];
+        source.replace(pos, oldStr.length(), newStr);
+        pos += newStr.length();
     }
 
-    return strString;
+    return tString(source.c_str());
 }
+
+
 
 tString tString::Replace(const char *old_word, const char *new_word)
 {
@@ -3063,7 +3046,6 @@ static void sg_copyToClipboard(std::istream &s)
 {
     tString params;
     params.ReadLine(s, true);
-    con << "Copying '" << params << "' to clipboard.\n";
 
     if (copyToClipboard(params))
         con << "Copied '" << params << "' to clipboard.\n";

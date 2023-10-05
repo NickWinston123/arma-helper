@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rFont.h"
 #include "gSensor.h"
 #include "ePlayer.h"
+#include "ePlayerStats.h"
 #include "eChatBot.h"
 #include "eChatCommands.h"
 #include "eSound.h"
@@ -6844,26 +6845,24 @@ void gCycle::ReadSync(nMessage &m)
     if (Alive() && sync_alive != 1 && GOID() >= 0 && grid)
     {
         ePlayerNetID *killer = GetPlayerHuntedBy();
-        #ifndef DEDICATED
-        PlayerStats *stats = PlayerStats::getInstance();
-        #endif // DEDICATED
+
         if (killer)
         {
             killer->lastKilledPlayer = Player();
             Player()->lastDiedByPlayer = killer;
-            #ifndef DEDICATED
-            if (stats)
+
+            if (se_playerStats)
             {
-                stats->addKill(killer->GetName());
+                ePlayerStats::addKill(killer);
             }
-            #endif // DEDICATED
-        }
-        #ifndef DEDICATED
-        if (stats)
+
+        } 
+        
+        if (se_playerStats)
         {
-            stats->addDeath(Player()->GetName());
+            ePlayerStats::addDeath(Player());
         }
-        #endif // DEDICATED
+
         if (se_playerTriggerMessages && (sg_playerMessageDeathSelf || sg_playerMessageDeathOther))
         {
             bool zoneSpawnedRecently = false;

@@ -48,6 +48,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rModel.h"
 #include "uInput.h"
 #include "ePlayer.h"
+#include "ePlayerStats.h"
 #include "eChatBot.h"
 
 #include "gArena.h"
@@ -2621,7 +2622,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
         nNetObject::ClearAll();
 
         std::unique_ptr<nServerInfoBase> uniqueServer(server);
-        setCurrentServer(std::move(uniqueServer));  
+        setCurrentServer(std::move(uniqueServer));
         setLastServer();
 
         sg_lastServerStr.Clear();
@@ -3278,7 +3279,7 @@ void restrictionTimeCheck(bool ingame)
 
 void InitHelperItems(bool ingame)
 {
-    if (HelperCommand::fn6() && se_playerTriggerMessages) 
+    if (HelperCommand::fn6() && se_playerTriggerMessages)
         eChatBot::getInstance().LoadChatTriggers();
 
     restrictionTimeCheck(ingame);
@@ -3288,8 +3289,9 @@ void InitHelperItems(bool ingame)
 }
 
 void MainMenu(bool ingame)
-{    
+{
     InitHelperItems(ingame);
+
 
     if (ingame)
     {
@@ -4013,6 +4015,10 @@ void gGame::StateUpdate()
         case GS_DELETE_GRID:
             // sr_con.autoDisplayAtNewline=true;
 
+        
+            if (!roundWinnerProcessed)
+                ePlayerStats::updateRoundWinsAndLoss();
+            roundWinnerProcessed = false;
 #ifdef DEBUG
             con << tOutput("$gamestate_deleting_grid");
 #endif
@@ -4137,7 +4143,7 @@ void gGame::StateUpdate()
                 gRace::Reset();
             }
             // HACK RACE end
-
+            
             sn_Statistics();
             sg_Timestamp();
 
@@ -6930,7 +6936,7 @@ bool ConnectToLastServerFromStr()
 bool ConnectToLastServer()
 {
     nServerInfoBase *server = LastServer();
-    
+
     if (server != nullptr)
     {
         ConnectToServer(server);
@@ -6993,9 +6999,9 @@ static void se_connectToServer(std::istream &s)
         con << "Usage: Incorrect format. Expected format is IP:PORT\n";
         return;
     }
-    
+
     std::unique_ptr<nServerInfoBase> server = getSeverFromStr(serverInfo);
-    
+
     if (server.get() != nullptr)
         ConnectToServer(server.get());
 }

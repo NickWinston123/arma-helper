@@ -986,48 +986,4 @@ static ePlayer * se_chatterPlanned=NULL;
 static ePlayer * se_chatter =NULL;
 static tString se_say;
 
-
-#ifndef DEDICATED
-#include "tDirectories.h"
-#include "sqlite3.h"
-#include <unordered_map>
-
-struct PlayerData {
-    int kills = 0;
-    int deaths = 0;
-    int wins = 0;
-    int losses = 0;
-    double getKDRatio() {
-        return deaths > 0 ? static_cast<double>(kills) / deaths : kills;
-    }
-};
-
-extern bool se_playerStats;
-class PlayerStats {
-public:
-    PlayerStats();
-    ~PlayerStats();
-
-    static PlayerStats* getInstance();
-
-    PlayerData& getStats(tString playerName);
-
-    void addKill(tString playerName);
-    void addDeath(tString playerName);
-    void addWin(tString playerName);
-    void addLoss(tString playerName);
-    double getKDRatio(tString playerName);
-
-private:
-    void loadStatsFromDB();
-    void saveStatsToDB();
-    void reloadStatsFromDB();
-
-    static PlayerStats* instance;
-
-    std::unordered_map<tString, PlayerData> playerStatsMap;
-};
-
-#endif // not dedicated
-
 #endif

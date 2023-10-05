@@ -45,6 +45,8 @@ class nServerInfoBase;
 
 extern nBasicNetworkSystem sn_BasicNetworkSystem;
 
+extern bool roundWinnerProcessed;
+
 class nMessage;
 class tCrypt;
 class tOutput;

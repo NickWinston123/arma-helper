@@ -1,6 +1,7 @@
 #include "eChatCommands.h"
 
 #include "ePlayer.h"
+#include "ePlayerStats.h"
 #include "eChatBot.h"
 #include "eTimer.h"
 #include "eFloor.h"
@@ -364,7 +365,7 @@ tColoredString ColorsCommand::cycleColorPreview(REAL r, REAL g, REAL b)
     b /= 15.0;
 
     REAL cycleR = r, cycleG = g, cycleB = b;
-    
+
     se_MakeColorValid(r, g, b, 1.0f);
 
     while( cycleR > 1.f ) cycleR -= 1.f;
@@ -375,11 +376,11 @@ tColoredString ColorsCommand::cycleColorPreview(REAL r, REAL g, REAL b)
     // while( tailR2 > 1.f ) tailR2 -= 1.f;
     // while( tailG2 > 1.f ) tailG2 -= 1.f;
     // while( tailB2 > 1.f ) tailB2 -= 1.f;
-    
+
     tColoredString cyclePreview;
-    cyclePreview << tColoredString::ColorString(cycleR, cycleG, cycleB) << "<" 
-                 << tColoredString::ColorString(r, g, b) << "==" 
-                //  << tColoredString::ColorString(tailR2, tailG2, tailB2) << "=" 
+    cyclePreview << tColoredString::ColorString(cycleR, cycleG, cycleB) << "<"
+                 << tColoredString::ColorString(r, g, b) << "=="
+                //  << tColoredString::ColorString(tailR2, tailG2, tailB2) << "="
                  << ChatCommand::MainText();
 
     return cyclePreview;
@@ -452,9 +453,9 @@ tColoredString ColorsCommand::gatherPlayerColor(ePlayerNetID *p, bool showReset)
     {
         ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
         listColors << " (mode: "
-                   << ChatCommand::ItemText() 
-                   << localPlayerMode(local_p) 
-                   << ChatCommand::MainText() 
+                   << ChatCommand::ItemText()
+                   << localPlayerMode(local_p)
+                   << ChatCommand::MainText()
                    << ") ";
 }
 
@@ -509,7 +510,7 @@ bool listPlayerInfoCommand::execute(tString args)
                     << tOutput("$player_info_text")
                     << "\n"
                     << gatherPlayerInfo(netPlayer);
-            else 
+            else
                 con << CommandText()
                     << ErrorText()
                     << "net player does not exist\n";
@@ -547,8 +548,8 @@ bool listPlayerInfoCommand::execute(tString args)
 
 tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
 {
-    
-    
+
+
     tColoredString listInfo;
     listInfo << ChatCommand::MainText() << "Results for " << p->GetColoredName() << ChatCommand::MainText() << ":\n";
 
@@ -565,7 +566,7 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
             nameHistory = nameHistory + ChatCommand::MainText() + ", " + p->nameHistory[i];
         }
     }
-    
+
     listInfo << ChatCommand::MainText() << " Color: " << ColorsCommand::gatherPlayerColor(p) << "\n";
 
     gRealColor color(p->r, p->g, p->b);
@@ -606,7 +607,7 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
 
     if (p->ChattingTime() > 0)
         listInfo << " Chatting For: "
-                 << ChatCommand::ItemText() 
+                 << ChatCommand::ItemText()
                  << st_GetFormatTime(p->ChattingTime(), true)
                  << ChatCommand::MainText() << "\n";
 
@@ -614,26 +615,26 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
     // Cycle Info
 
     if (p->CurrentTeam())
-        listInfo << ChatCommand::MainText() 
+        listInfo << ChatCommand::MainText()
                 << "Cycle Info: \n";
     if (p->Object())
     {
         // Only grab this information if the player is an alive object.
         gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
 
-                
+
         listInfo << " Status: "
                  << ChatCommand::ItemText()
-                 << (pCycle->Alive() ? "Alive" : "Dead") 
+                 << (pCycle->Alive() ? "Alive" : "Dead")
                  << '\n'
-                 << ChatCommand::MainText() 
+                 << ChatCommand::MainText()
                  << " Lag: "
                  << ChatCommand::ItemText()
                  << int(pCycle->Lag()  * 1000)
                  << ChatCommand::MainText()
                  << " ("
                  << ChatCommand::ItemText()
-                 << pCycle->Lag() 
+                 << pCycle->Lag()
                  << ChatCommand::MainText()
                  << ")\n";
 
@@ -649,26 +650,26 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
         if (pCycle->Alive())
         {
             listInfo << ChatCommand::MainText()
-                     << " Position: x: " 
-                     << ChatCommand::ItemText() << pCycle->Position().x 
+                     << " Position: x: "
+                     << ChatCommand::ItemText() << pCycle->Position().x
                      << ChatCommand::MainText()
-                     << ", y: " 
-                     << ChatCommand::ItemText() << pCycle->Position().y 
+                     << ", y: "
+                     << ChatCommand::ItemText() << pCycle->Position().y
                      << ChatCommand::MainText() << "\n"
-                     << " Map Direction: x: " 
-                     << ChatCommand::ItemText() << pCycle->Direction().x 
+                     << " Map Direction: x: "
+                     << ChatCommand::ItemText() << pCycle->Direction().x
                      << ChatCommand::MainText()
-                     << ", y: " 
-                     << ChatCommand::ItemText() << pCycle->Direction().y 
+                     << ", y: "
+                     << ChatCommand::ItemText() << pCycle->Direction().y
                      << ChatCommand::MainText() << '\n'
-                     << " Speed: " 
-                     << ChatCommand::ItemText() << pCycle->verletSpeed_ 
+                     << " Speed: "
+                     << ChatCommand::ItemText() << pCycle->verletSpeed_
                      << ChatCommand::MainText() << '\n'
-                     << " Rubber: " 
-                     << ChatCommand::ItemText() << pCycle->GetRubber() << "/" << sg_rubberCycle 
+                     << " Rubber: "
+                     << ChatCommand::ItemText() << pCycle->GetRubber() << "/" << sg_rubberCycle
                      << ChatCommand::MainText() << '\n';
         }
-    } 
+    }
     else if (p->CurrentTeam())
     {
         listInfo << " Status: "
@@ -707,7 +708,7 @@ void RgbCommand::se_outputColorInfo(int index, const tString &name, REAL r, REAL
            << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
            << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
            << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
-           << ColorsCommand::cycleColorPreview(r, g, b) << "\n";   
+           << ColorsCommand::cycleColorPreview(r, g, b) << "\n";
 
     con << output;
 }
@@ -875,12 +876,12 @@ bool RgbCommand::execute(tString args)
             }
             else // Save specific persons color
             {
-                tString combinedName; 
+                tString combinedName;
                 for (int i = 0; i < commandArgs.Len(); ++i)
                 {
-                    if (i > 1) 
+                    if (i > 1)
                         combinedName << " ";
-                    
+
                     combinedName << commandArgs[i];
                 }
 
@@ -1168,7 +1169,7 @@ bool ActiveStatusCommand::execute(tString args)
 
     tColoredString listInfo;
     listInfo << CommandText()
-             << "Status for " << p->GetColoredName() 
+             << "Status for " << p->GetColoredName()
              << MainText() << ":\n"
              << "Created: "
              << ItemText() << getTimeStringBase(p->createTime_)
@@ -1196,7 +1197,7 @@ bool ActiveStatusCommand::execute(tString args)
                      << ItemText() << st_GetFormatTime(se_GameTime(), true)
                      << "\n";
         }
-    }     
+    }
     else if (p->CurrentTeam())
     {
         listInfo << "Last Death: "
@@ -1223,7 +1224,7 @@ bool SpectateCommand::execute(tString args)
 
     ePlayer *local_p = player;
     local_p->spectate = true;
-    
+
     if (netPlayer)
     {
         if (helperConfig::sghuk && se_spectateCommandInstant)
@@ -1721,17 +1722,14 @@ bool NicknameCommand::execute(tString args)
         if (target)
         {
             target->nickname = nickname;
+            target->UpdateName();
 
-            REAL r, g, b;
-            target->Color(r, g, b);
-            tColoredString coloredNickname;
-            coloredNickname << tColoredString::ColorString(r, g, b) << nickname;
-            target->coloredNickname = coloredNickname;
             con << CommandText()
                 << target->coloredName_
                 << MainText()
                 << " is now nicknamed '" << target->GetColoredName()
                 << MainText() << "'\n";
+
             return true;
         }
     }
@@ -1766,16 +1764,16 @@ bool StatsCommand::execute(tString args)
     if (p == nullptr)
         return false;
 
-    PlayerStats *playerStats = PlayerStats::getInstance();
-    if (!playerStats)
+
+    if (!se_playerStats)
     {
         con << CommandText()
             << ErrorText()
-            << "PlayerStats not initialized. PlayerStats are disabled!\n";
+            << "PlayerStats are disabled!\n";
         return true;
     }
 
-    PlayerData playerData = playerStats->getStats(p->GetName());
+    PlayerData playerData = ePlayerStats::getStats(p->GetName());
 
     tColoredString statsInfo;
     statsInfo << CommandText()
@@ -1785,9 +1783,9 @@ bool StatsCommand::execute(tString args)
               << MainText()
               << "Deaths: " << ItemText() << playerData.deaths << "\n"
               << MainText()
-              << "Wins: " << ItemText() << playerData.wins << "\n"
+              << "Match Wins: " << ItemText() << playerData.match_wins << "\n"
               << MainText()
-              << "Losses: " << ItemText() << playerData.losses << "\n"
+              << "Match Losses: " << ItemText() << playerData.match_losses << "\n"
               << MainText()
               << "K/D Ratio: " << ItemText() << playerData.getKDRatio() << "\n";
 
@@ -1989,11 +1987,11 @@ bool UpdateCommand::execute(tString args)
         else
         {
             con << CommandText()
-                << ErrorText() 
-                << "No player for ID '" 
-                << ItemText() 
-                << PlayerNumb 
-                << ErrorText() 
+                << ErrorText()
+                << "No player for ID '"
+                << ItemText()
+                << PlayerNumb
+                << ErrorText()
                 << "'\n";
         }
     }
@@ -2105,7 +2103,7 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
         else
             feedback << tConfItemBase::lastLoadOutput;
 
-        messageToSend << "/msg " << player->GetName() << " " << feedback << "\n";
+        messageToSend << "/msg " << player->GetName().Filter() << " " << feedback << "\n";
         for (int i = MAX_PLAYERS - 1; i >= 0; i--)
         {
             ePlayer *local_p = ePlayer::PlayerConfig(i);
@@ -2252,6 +2250,8 @@ bool QuitCommand::execute(tString args)
 
     con << CommandText()
         << "Quiting game in '" << quitTime << "' seconds...\n";
+
+    ePlayerStats::saveStatsToDB();
 
     st_SaveConfig();
 

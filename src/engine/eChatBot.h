@@ -17,6 +17,21 @@ extern tString se_playerTriggerMessagesIgnoreList;
 
 extern bool se_playerTriggerMessages;
 
+struct eChatBotStats
+{
+    REAL messagesRead = 0;
+    REAL messagesSent = 0;
+
+    tString lastMatchedTrigger;
+    ePlayerNetID *lastTriggeredBy;
+    
+
+    REAL UpTime()
+    {
+        return tSysTimeFloat();
+    }
+};
+
 class eChatBot
 {
 private:
@@ -34,8 +49,8 @@ public:
     std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
     std::vector<tString> chatTriggerKeys;
 
-    tString lastMatchedTrigger;
-    
+    eChatBotStats stats;
+
     // instance
     static eChatBot &getInstance()
     {
@@ -65,8 +80,13 @@ public:
         return tString("");
     }
 
+    eChatBotStats& Stats() 
+    { 
+        return stats; 
+    }
+
     std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString chatMessage, bool eventTrigger);
-    static void InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger = false);
+    static void InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger = false, tString preAppend = tString(""));
     void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player);
     REAL determineReadingDelay(tString message);
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);

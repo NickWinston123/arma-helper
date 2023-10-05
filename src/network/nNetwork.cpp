@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <fstream>
 #include "tMath.h"
 #include "ePlayer.h"
+#include "ePlayerStats.h"
 #include "eChatBot.h"
 #include <string.h>
 #include "../tron/gHelper/gHelperUtilities.h"
@@ -3427,7 +3428,7 @@ static nConsoleFilter sn_consoleFilter;
 #endif
 
 static bool sg_playerMessageMatchWinner = false;
-static tConfItem<bool> sg_playerMessageMatchWinnerConf("PLAYER_MESSAGE_MATCH_WINNER", sg_playerMessageMatchWinner);
+static tConfItem<bool> sg_playerMessageMatchWinnerConf("PLAYER_MESSAGE_MATCH_TRIGGER_WINNER", sg_playerMessageMatchWinner);
 
 bool sg_playerSpamProtectionWatch = false;
 static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WATCH", sg_playerSpamProtectionWatch);
@@ -3458,9 +3459,20 @@ static void sn_ConsoleOut_handler(nMessage &m)
         }
     }
 
+    if (se_playerTriggerMessages && sg_playerMessageMatchWinner || se_playerStats)
+    {
+        if (s.Contains("Overall Winner"))
+        {
+            ePlayerNetID *potentialWinner = ePlayerNetID::HighestScoringPlayer();
+            if (se_playerStats)
+            {
+                ePlayerStats::updateMatchWinsAndLoss(potentialWinner);
+            }
 
-        if (se_playerTriggerMessages && sg_playerMessageMatchWinner && s.Contains("Overall Winner"))
-            eChatBot::InitiateAction(ePlayerNetID::HighestScoringPlayer(), tString("$matchwinner"), true);
+            if (se_playerTriggerMessages && sg_playerMessageMatchWinner)
+                eChatBot::InitiateAction(potentialWinner, tString("$matchwinner"), true);
+        }
+    }
     }
 }
 
@@ -3552,11 +3564,27 @@ void sn_ConsoleOut(const tOutput& o,int client){
     sn_ConsoleOutString( message, client );
 }
 
-static void client_cen_handler(nMessage &m){
-    if (sn_GetNetState()!=nSERVER){
+bool roundWinnerProcessed = false;
+
+static void client_cen_handler(nMessage &m)
+{
+    if (sn_GetNetState() != nSERVER)
+    {
         tString s;
         m >> s;
         con.CenterDisplay(s);
+
+        if (se_playerTriggerMessages && sg_playerMessageMatchWinner || se_playerStats)
+        {
+            if (s.Contains("Winner:"))
+            {
+                con << s << "\n";
+                
+                roundWinnerProcessed = true;
+                if (se_playerStats)
+                    ePlayerStats::updateRoundWinsAndLoss();
+            }
+        }
     }
 }
 
@@ -3675,7 +3703,7 @@ static REAL sn_SendPlanned1(){
         tERR_ERROR("Timer hiccup!");
     }
 #else
-    { 
+    {
         tERR_WARN("Timer hiccup!");
         lastTime=time;
     }

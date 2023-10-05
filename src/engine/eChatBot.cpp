@@ -1,6 +1,7 @@
 #include "eChatBot.h"
 #include "ePlayer.h"
-
+#include "ePlayerStats.h"
+#include "eTimer.h"
 #include "../tron/gGame.h"
 
 #include "eChatCommands.h"
@@ -174,47 +175,196 @@ tString numberCalcFunc(tString message)
 
 tString sayFunc(tString message)
 {
-    std::string input = message.stdString();
-    std::string lastTrigger = eChatBot::getInstance().lastMatchedTrigger.stdString();
-
-    std::string toReplace = lastTrigger + " ";
-
-    std::size_t pos;
-    while ((pos = input.find(toReplace)) != std::string::npos)
-        input.replace(pos, toReplace.length(), "");
-
-    toReplace = lastTrigger;
-    while ((pos = input.find(toReplace)) != std::string::npos)
-        input.replace(pos, toReplace.length(), "");
+    tString input = message;
 
     if (!input.empty() && input[0] == '/')
-        input.insert(0, " ");
+    {
+        tString paddedString(" ");
+        paddedString << input;
+        input = paddedString;
+    }
 
-    return tString(input);
+    return input;
 }
 
 tString reverseFunc(tString message)
 {
-    std::string input = message.stdString();
-    std::string lastTrigger = eChatBot::getInstance().lastMatchedTrigger.stdString();
+    tString input = message;
 
-    std::string toReplace = lastTrigger + " ";
-
-    std::size_t pos;
-    while ((pos = input.find(toReplace)) != std::string::npos)
-        input.replace(pos, toReplace.length(), "");
-
-    toReplace = lastTrigger;
-    while ((pos = input.find(toReplace)) != std::string::npos)
-        input.replace(pos, toReplace.length(), "");
-
-    std::reverse(input.begin(), input.end());
+    input = input.Reverse();
 
     if (!input.empty() && input[0] == '/')
-        input.insert(0, " ");
+    {
+        tString paddedString(" ");
+        paddedString << input;
+        input = paddedString;
+    }
 
-    return tString(input);
+    return input;
 }
+
+tString statsFunc(tString message)
+{
+    tString output;
+
+    if (!message.empty())
+    {
+        ePlayerNetID *statsTargetPlayer = ePlayerNetID::GetPlayerByName(message, false);
+
+        if (statsTargetPlayer)
+        {
+            tString playerName = statsTargetPlayer->GetName();
+            output << playerName
+                   << ": "
+                   << "Created: "
+                   << getTimeStringBase(statsTargetPlayer->createTime_)
+                   << " EST, "
+                   << "Last Active: "
+                   << st_GetFormatTime(statsTargetPlayer->LastActivity(), false)
+                   << ", "
+                   << "RGB: ("
+                   << statsTargetPlayer->r << ", "
+                   << statsTargetPlayer->g << ", "
+                   << statsTargetPlayer->b << ")";
+
+            if (se_playerStats)
+            {
+            
+                PlayerData &stats = ePlayerStats::getStats(statsTargetPlayer);
+                output << ", Chats: " 
+                       << stats.total_messages
+                       << ", Play Time "
+                       << st_GetFormatTime(stats.getTotalPlayTime(),false);
+            } 
+
+            if (statsTargetPlayer->Object())
+            {
+                gCycle *pCycle = dynamic_cast<gCycle *>(statsTargetPlayer->Object());
+
+                if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
+                    output << ", Last Death: "
+                           << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, false);
+                else
+                    output << ", Alive Time: "
+                           << st_GetFormatTime(se_GameTime(), false);
+            }
+            else if (statsTargetPlayer->CurrentTeam())
+            {
+
+                output << ", Last Death: "
+                       << st_GetFormatTime(tSysTimeFloat() - statsTargetPlayer->lastCycleDeathTime, false)
+                       << "\n";
+            }
+
+            return tString(output);
+        }
+    }
+
+    eChatBotStats &stats = eChatBot::getInstance().Stats();
+
+    output << "Uptime: " << st_GetFormatTime(stats.UpTime())
+           << ", "
+           << "Messages Sent: "       << stats.messagesSent
+           << ", "
+           << "Messages Read: "       << stats.messagesRead
+           << ", "
+           << "Last triggerered by "  << (stats.lastTriggeredBy != nullptr ? stats.lastTriggeredBy->GetName() : "?" );
+
+
+    return tString(output);
+}
+
+tString nicknameFunc(tString message)
+{
+    tString output;
+    tString newNickname = message;
+
+    ePlayerNetID *lastTriggeredBy = eChatBot::getInstance().Stats().lastTriggeredBy;
+
+    if (lastTriggeredBy == nullptr)
+        return output;
+
+    if (newNickname.empty() && !lastTriggeredBy->nickname.empty())
+    {
+
+            lastTriggeredBy->nickname.Clear();
+            lastTriggeredBy->UpdateName();
+
+            output << lastTriggeredBy->GetName()
+                   << "'s nickname has been cleared.\n";
+            return output;
+    }
+    else
+    {
+        lastTriggeredBy->nickname = newNickname;
+        lastTriggeredBy->UpdateName();
+        output << lastTriggeredBy->name_
+                << " is now nicknamed '" << lastTriggeredBy->GetName()
+                << "'\n";
+
+        return output;
+    }
+
+    return tString(output);
+}
+
+tString playerKDFunc(tString message)
+{
+    tString output;
+
+    ePlayerNetID *statsTargetPlayer = nullptr;
+    tString playerName;
+
+    if (!se_playerStats)
+    {
+        output << "PlayerStats not initialized. PlayerStats are disabled!\n";
+        return output;
+    }
+
+    if (!message.empty())
+    {
+        playerName = message;
+        statsTargetPlayer = ePlayerNetID::GetPlayerByName(message, false);
+        if (statsTargetPlayer)
+            playerName = statsTargetPlayer->GetName();
+    }
+    else
+    {
+        eChatBot &bot = eChatBot::getInstance();
+        statsTargetPlayer = bot.stats.lastTriggeredBy;
+        if (statsTargetPlayer)
+            playerName = statsTargetPlayer->GetName();
+    }
+
+    if (!playerName.empty())
+    {
+        PlayerData playerData = ePlayerStats::getStats(playerName);
+
+        output << playerName << ": "
+               << "Kills: "        << playerData.kills
+               << ", "
+               << "Deaths: "        << playerData.deaths
+               << ", "
+               << "K/D: "    << playerData.getKDRatio()
+               << " | Rounds: played: " << playerData.rounds_played
+               << ", "
+               << "Wins: "   << playerData.round_wins
+               << ", "
+               << "Losses: " << playerData.round_losses
+               << " | Matches: played: " << playerData.matches_played
+               << ", "
+               << "Wins: "   << playerData.match_wins
+               << ", "
+               << "Losses: " << playerData.match_losses;
+    }
+    else
+    {
+        output << "Player not found!";
+    }
+
+    return tString(output);
+}
+
 
 void eChatBot::InitChatFunctions()
 {
@@ -222,6 +372,9 @@ void eChatBot::InitChatFunctions()
     RegisterFunction(tString("$numbcalcfunc"), numberCalcFunc);
     RegisterFunction(tString("$sayfunc"), sayFunc);
     RegisterFunction(tString("$revfunc"), reverseFunc);
+    RegisterFunction(tString("$statsfunc"), statsFunc);
+    RegisterFunction(tString("$nicknamefunc"), nicknameFunc);
+    RegisterFunction(tString("$KDfunc"), playerKDFunc);
 }
 
 void eChatBot::LoadChatTriggers()
@@ -270,17 +423,23 @@ void eChatBot::LoadChatTriggers()
     }
 }
 
-void eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger)
+void eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger, tString preAppend)
 {
     eChatBot &bot = eChatBot::getInstance();
 
     if (!bot.ShouldAnalyze())
         return;
 
+    bot.Stats().messagesRead++;
+
     auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(triggeredByPlayer, message, eventTrigger);
 
-    if (!response.empty())
-        bot.preparePlayerMessage(response, delay, sendingPlayer);
+    if (!response.empty()){
+        tString output;
+        output << preAppend
+               << response;
+        bot.preparePlayerMessage(output, delay, sendingPlayer);
+    }
     else if (eventTrigger)
         con << "No trigger set for '" << message << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
 }
@@ -360,6 +519,8 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
     tToLower(lowerMessage);
     tString triggeredByPlayerName = tString("");
     ePlayerNetID *sendingPlayer = nullptr; // who should send this message?
+
+    Stats().lastTriggeredBy = triggeredByPlayer;
 
     for (const auto &triggerKey : chatTriggerKeys)
     {
@@ -451,7 +612,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
         if (match)
         {
-            lastMatchedTrigger = trigger;
+            Stats().lastMatchedTrigger = trigger;
             // Determine the sending player based on the type of trigger
             if (triggeredByPlayer != nullptr)
             {
@@ -477,6 +638,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 }
                 triggeredByPlayerName = triggeredByPlayer->GetName();
             }
+
             REAL extraDelay = std::get<1>(triggerPair->second);
 
             // Vector of possible responses
@@ -485,11 +647,9 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
             // Random response from the vector
             tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
 
-            std::string responseStr = chosenResponse.stdString();
+            tString responseStr(chosenResponse);
 
-            std::size_t pos;
-            while ((pos = responseStr.find("$p")) != std::string::npos)
-                responseStr.replace(pos, 2, triggeredByPlayerName);
+            responseStr = responseStr.Replace("$p",triggeredByPlayerName);
 
             int dollarPos = 0;
             while ((dollarPos = chosenResponse.StrPos(dollarPos, "$")) != -1)
@@ -506,18 +666,20 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
                 if (!functionName.StartsWith("$p"))
                 {
-                    tString result = ExecuteFunction(functionName, chatMessage);
+                    tString functionInput(chatMessage);
+                    tString toReplace = Stats().lastMatchedTrigger + " ";
+
+                    functionInput = chatMessage.Replace(toReplace,"");
+
+                    toReplace = Stats().lastMatchedTrigger;
+
+                    functionInput = functionInput.Replace(toReplace,"");
+
+                    tString result = ExecuteFunction(functionName, functionInput);
 
                     if (!result.empty())
                     {
-                        while ((pos = responseStr.find(functionName.stdString())) != std::string::npos)
-                        {
-                            std::string replacement = result.stdString();
-                            if (keepSpace)
-                                replacement += " ";
-
-                            responseStr.replace(pos, functionName.Len(), replacement);
-                        }
+                        responseStr = responseStr.Replace(functionName, result);
                     }
                     else
                         responseStr = "";
@@ -526,7 +688,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 dollarPos = endPos;
             }
 
-            chosenResponse = tString(responseStr);
+            chosenResponse = responseStr;
 
             return std::make_tuple(chosenResponse, extraDelay, sendingPlayer);
         }
@@ -586,6 +748,9 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
             scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
         }
     }
+
+    if (scheduled)
+        Stats().messagesSent++;
 
     if (se_playerMessageDisplayScheduledMessages && scheduled)
         con << "Scheduled message '" << messageToSend << "' "
@@ -686,12 +851,12 @@ static void AddChatTrigger(std::istream &s)
         trigger = trigger.ToLower();
 
         tArray<tString> responsesArray = parts[1].Split(";");
-        std::vector<tString> responses(responsesArray.begin(), responsesArray.end()); 
+        std::vector<tString> responses(responsesArray.begin(), responsesArray.end());
 
         REAL extraDelay = atof(parts[2].c_str());
         bool exact = atoi(parts[3].c_str()) == 1;
 
-        if (trigger.empty() || responses.empty()) 
+        if (trigger.empty() || responses.empty())
         {
             con << "Error: Trigger and responses cannot be empty.\n";
             return;
@@ -778,8 +943,8 @@ static void ListChatTriggers(std::istream &s)
                 continue;
             }
 
-            con << i + 1 << ") " 
-                << parts[0] << ", " << parts[1] << ", " << parts[2] << ", " 
+            con << i + 1 << ") "
+                << parts[0] << ", " << parts[1] << ", " << parts[2] << ", "
                 << (parts[3] == "1" ? "Yes" : "No") << "\n";
         }
     }

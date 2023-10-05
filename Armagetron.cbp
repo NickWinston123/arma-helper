@@ -137,6 +137,8 @@
 		<Unit filename="src/engine/ePlayer.h" />
 		<Unit filename="src/engine/eChatBot.cpp" />
 		<Unit filename="src/engine/eChatBot.h" />
+		<Unit filename="src/engine/ePlayerStats.cpp" />
+		<Unit filename="src/engine/ePlayerStats.h" />
 		<Unit filename="src/engine/eRectangle.cpp" />
 		<Unit filename="src/engine/eRectangle.h" />
 		<Unit filename="src/engine/eSensor.cpp" />

@@ -48,6 +48,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eGameObject.h"
 #include "uMenu.h"
 #include "ePlayer.h"
+#include "ePlayerStats.h"
 #include "gLanguageMenu.h"
 #include "gAICharacter.h"
 #include "gCycle.h"
@@ -714,6 +715,9 @@ int main(int argc, char **argv)
 
         tryConnectLastServer = sg_connectToLastServerOnStart && !sg_lastServerStr.empty();
 
+        if (se_playerStats)
+            ePlayerStats::reloadStatsFromDB();
+
         // migrate user configuration from previous versions
         if (sn_configurationSavedInVersion != sn_programVersion)
         {
@@ -917,6 +921,9 @@ int main(int argc, char **argv)
                 // std::cout << "exit\n";
 
                 st_SaveConfig();
+
+                if (se_playerStats)
+                    ePlayerStats::saveStatsToDB();
 
                 uMenuItemStringWithHistory::SaveHistoryToFile(se_consoleHistoryFileName,se_consoleHistory);
                 uMenuItemStringWithHistory::SaveHistoryToFile(se_chatHistoryFileName,se_chatHistory);

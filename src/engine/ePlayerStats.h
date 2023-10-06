@@ -13,16 +13,20 @@ extern bool se_playerStats;
 struct PlayerData {
 
     // Player
-    tColor rgb; //int r_, int g_, int b_
+    int r;
+    int g;
+    int b;
+
     int total_messages = 0;
 
-    tString rgbString() 
+    tString rgbString()
     {
         tString output;
                 output  << "("
-                        << rgb.r_ << ", " 
-                        << rgb.g_ << ", " 
-                        << rgb.b_ << ")";
+                        << r << ", "
+                        << g << ", "
+                        << b << ")";
+        return output;
     }
 
     // Cycle
@@ -34,18 +38,18 @@ struct PlayerData {
     int round_losses = 0;
     int rounds_played = 0;
     int matches_played = 0;
-    REAL total_play_time = 0;   
-    
-    REAL getTotalPlayTime()
+    REAL total_play_time = 0;
+
+    REAL getTotalPlayTime(bool add)
     {
-        return total_play_time + se_GameTime();
+        return total_play_time + (add ? se_GameTime() : 0);
     }
 
-    double getKDRatio() 
+    double getKDRatio() const
     {
         if (deaths == 0)
         {
-            return kills; 
+            return kills;
         }
         else if (kills >= deaths)
         {
@@ -57,9 +61,10 @@ struct PlayerData {
         }
     }
 
+
 };
 
-class ePlayerStats 
+class ePlayerStats
 {
 public:
 
@@ -118,9 +123,14 @@ public:
         playerStatsMap[player->GetName()].total_play_time += se_GameTime();
     }
 
-    static void setColor(ePlayerNetID * player, tColor rgb)
+    static void setColor(ePlayerNetID * player, int r, int g, int b)
     {
-        playerStatsMap[player->GetName()].rgb = rgb;
+        tString name = player->GetName();
+
+        PlayerData &data = playerStatsMap[name];
+        data.r = r;
+        data.g = g;
+        data.b = b;
     }
 
     static void addTotalMessages(ePlayerNetID * player)

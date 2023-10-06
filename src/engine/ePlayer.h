@@ -360,7 +360,6 @@ public:
     bool nameFirstSync  = true;
     nTimeAbsolute joinedTeamTime() { return timeJoinedTeam; }
     nTimeAbsolute createdTime() { return timeCreated_; }
-
 private:
 
     int listID;                          // ID in the list of all players

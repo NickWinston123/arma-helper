@@ -1136,17 +1136,19 @@ ePlayerNetID *ePlayerNetID::GetPlayerByName(tString name, bool exact)
 {
     for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
     {
-        if (exact)
-        {
-            if (se_PlayerNetIDs[i] && se_PlayerNetIDs[i]->GetName().Filter() == name.Filter())
-                return se_PlayerNetIDs[i];
-        }
-        else
-        {
-            if (se_PlayerNetIDs[i]->GetName().Filter().Contains(name.Filter()))
-                return se_PlayerNetIDs[i];
-        }
+        if (se_PlayerNetIDs[i] && se_PlayerNetIDs[i]->GetName().Filter() == name.Filter())
+            return se_PlayerNetIDs[i];
     }
+
+    if (exact)
+        return NULL;
+    
+    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
+    {
+        if (se_PlayerNetIDs[i]->GetName().Filter().Contains(name.Filter()))
+            return se_PlayerNetIDs[i];
+    }
+    
     return NULL;
 }
 
@@ -5078,9 +5080,12 @@ void ePlayerNetID::Chat(const tString &s_orig)
 #ifndef DEDICATED
     if (se_enableChatCommands && s_orig.StartsWith("/") && LocalChatCommands(ePlayer::NetToLocalPlayer(this), s_orig))
         return;
-
+        
     if (sg_playerSpamProtectionWatch && !ePlayerNetID::canChatWithMsg())
         return;
+
+    s = s.SubStr(0, se_SpamMaxLen - 1);
+    
 #endif // if not dedicated
 
 #ifdef DEDICATED
@@ -6279,7 +6284,9 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                lastMessagedByPlayer(nullptr),
                                                nickname(tString("")),
                                                lastKilledPlayer(nullptr)
+                                               
 {
+
     flagOverrideChat = false;
     flagChatState = false;
 
@@ -8148,7 +8155,7 @@ void ePlayerNetID::ReadSync(nMessage &m)
     m.Read(r);
     m.Read(g);
     m.Read(b);
-
+    
     if (!se_bugColorOverflow)
     {
         // clamp color values
@@ -12419,6 +12426,7 @@ void ePlayerNetID::UpdateName(void)
     // monitor name changes
     eNameMessenger messenger(*this);
 
+
     // apply client change, stripping excess spaces
     if (sn_GetNetState() == nSTANDALONE || (Owner() == 0 && sn_GetNetState() != nCLIENT) || (IsHuman() && (sn_GetNetState() == nCLIENT || !messenger.adminRename_) && (sn_GetNetState() != nCLIENT || Owner() == sn_myNetID)))
     {
@@ -12516,13 +12524,26 @@ void ePlayerNetID::UpdateName(void)
 
     if (sn_GetNetState() == nCLIENT)
     {
-        if (nameFirstSync && !isLocal() && !GetName().empty())
+        bool nameEmpty = GetName().empty();
+        if (nameFirstSync && !isLocal() && !nameEmpty)
         {
             if (se_playerTriggerMessages && se_playerMessageEnter)
                 IsHuman() ? eChatBot::InitiateAction(this, tString("$enter"), true) : eChatBot::InitiateAction(this, tString("$enterbot"), true);
 
             nameFirstSync = false;
         }
+
+        // if (!nameEmpty && !CurrentTeam() && se_playerStats)
+        // {
+        //     PlayerData & stats = ePlayerStats::getStats(this);
+            
+        //     if (r != stats.r || g != stats.g || b != stats.b)
+        //     {
+        //         stats.r = r;
+        //         stats.g = g;
+        //         stats.b = b;
+        //     }
+        // }
     }
 #ifdef KRAWALL_SERVER
     // take the user name to be the authenticated name

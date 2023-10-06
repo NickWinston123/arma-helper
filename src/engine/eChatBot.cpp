@@ -57,7 +57,7 @@ static int se_playerMessageTriggersFuncAdderVal = 1;
 static tConfItem<int> se_playerMessageTriggersFuncAdderValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_ADDER_ADD_VAL", se_playerMessageTriggersFuncAdderVal);
 
 tString stripNonOperatorsOrNumbers(const tString &input);
-bool containsMath(const tString &input, bool exact);
+bool containsMath(tString input, bool exact);
 
 /* Chat Trigger Functions */
 tString numberAdderFunc(tString message)
@@ -177,7 +177,7 @@ tString sayFunc(tString message)
 {
     tString input = message;
 
-    if (!input.empty() && input[0] == '/')
+    if (!input.empty() && input[0] == '/' && !input.StartsWith("/me"))
     {
         tString paddedString(" ");
         paddedString << input;
@@ -209,55 +209,62 @@ tString statsFunc(tString message)
 
     if (!message.empty())
     {
-        ePlayerNetID *statsTargetPlayer = ePlayerNetID::GetPlayerByName(message, false);
+        ePlayerNetID *statsTargetPlayer = ePlayerNetID::GetPlayerByName(message.TrimWhitespace(), false);
+         tString playerName(message);
+        if (statsTargetPlayer)
+        {
+            playerName = statsTargetPlayer->GetName();
+        }
+
+            PlayerData &stats = ePlayerStats::getStats(playerName);
+
+            output << playerName
+                   << ": ";
+
+        bool addGameTime = statsTargetPlayer && statsTargetPlayer->CurrentTeam();
+        if (se_playerStats)
+            output << "RGB: "
+                   << stats.rgbString()
+                   << ", Play Time "
+                   << st_GetFormatTime(stats.getTotalPlayTime(addGameTime),false)
+                   << ", Chats: "
+                   << stats.total_messages;
 
         if (statsTargetPlayer)
         {
-            tString playerName = statsTargetPlayer->GetName();
-            output << playerName
-                   << ": "
-                   << "Created: "
-                   << getTimeStringBase(statsTargetPlayer->createTime_)
-                   << " EST, "
-                   << "Last Active: "
-                   << st_GetFormatTime(statsTargetPlayer->LastActivity(), false)
-                   << ", "
-                   << "RGB: ("
-                   << statsTargetPlayer->r << ", "
-                   << statsTargetPlayer->g << ", "
-                   << statsTargetPlayer->b << ")";
-
             if (se_playerStats)
-            {
-            
-                PlayerData &stats = ePlayerStats::getStats(statsTargetPlayer);
-                output << ", Chats: " 
-                       << stats.total_messages
-                       << ", Play Time "
-                       << st_GetFormatTime(stats.getTotalPlayTime(),false);
-            } 
+                output << ", ";
 
-            if (statsTargetPlayer->Object())
-            {
-                gCycle *pCycle = dynamic_cast<gCycle *>(statsTargetPlayer->Object());
+            if (se_GetLocalPlayer()->createdTime() <= statsTargetPlayer->createdTime())
+            output << "Joined: "
+                   << getTimeStringBase(statsTargetPlayer->createTime_)
+                   << " EST, ";
 
-                if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
-                    output << ", Last Death: "
-                           << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, false);
-                else
-                    output << ", Alive Time: "
-                           << st_GetFormatTime(se_GameTime(), false);
-            }
-            else if (statsTargetPlayer->CurrentTeam())
-            {
+            output << "Last Active: "
+                   << st_GetFormatTime(statsTargetPlayer->LastActivity(), false);
+        }
 
-                output << ", Last Death: "
-                       << st_GetFormatTime(tSysTimeFloat() - statsTargetPlayer->lastCycleDeathTime, false)
-                       << "\n";
-            }
+            // if (statsTargetPlayer->Object())
+            // {
+            //     gCycle *pCycle = dynamic_cast<gCycle *>(statsTargetPlayer->Object());
+
+            //     if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
+            //         output << ", Last Death: "
+            //                << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, false);
+            //     else
+            //         output << ", Alive Time: "
+            //                << st_GetFormatTime(se_GameTime(), false);
+            // }
+            // else if (statsTargetPlayer->CurrentTeam())
+            // {
+
+            //     output << ", Last Death: "
+            //            << st_GetFormatTime(tSysTimeFloat() - statsTargetPlayer->lastCycleDeathTime, false)
+            //            << "\n";
+            // }
 
             return tString(output);
-        }
+
     }
 
     eChatBotStats &stats = eChatBot::getInstance().Stats();
@@ -365,6 +372,135 @@ tString playerKDFunc(tString message)
     return tString(output);
 }
 
+tString leaderboardFunc(tString message)
+{
+    tString result;
+    if (!se_playerStats)
+    {
+        result << "PlayerStats not initialized. PlayerStats are disabled!\n";
+        return result;
+    }
+
+    std::vector<std::pair<tString, PlayerData>> sortedPlayers(ePlayerStats::playerStatsMap.begin(), ePlayerStats::playerStatsMap.end());
+    tString statName("kills");
+
+    if (message == "kills")
+    {
+        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+                  [](const auto &a, const auto &b)
+                  {
+                      return a.second.kills > b.second.kills;
+                  });
+    }
+    else if (message == "deaths")
+    {
+        statName = "deaths";
+        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+                  [](const auto &a, const auto &b)
+                  {
+                      return a.second.deaths > b.second.deaths;
+                  });
+    }
+    else if (message == "play_time")
+    {
+        statName = "play_time";
+        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+                  [](const auto &a, const auto &b)
+                  {
+                      return a.second.total_play_time > b.second.total_play_time;
+                  });
+    }
+    else if (message == "round_wins")
+    {
+        statName = "round_wins";
+        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+                  [](const auto &a, const auto &b)
+                  {
+                      return a.second.round_wins > b.second.round_wins;
+                  });
+    }
+    else if (message == "match_wins")
+    {
+        statName = "match_wins";
+        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+                  [](const auto &a, const auto &b)
+                  {
+                      return a.second.match_wins > b.second.match_wins;
+                  });
+    }
+    else if (message == "rounds_played")
+    {
+        statName = "rounds_played";
+        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+                  [](const auto &a, const auto &b)
+                  {
+                      return a.second.rounds_played > b.second.rounds_played;
+                  });
+    }
+    else if (message == "kd")
+    {
+        statName = "kd_ratio";
+        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+                  [](const auto &a, const auto &b)
+                  {
+                      return a.second.getKDRatio() > b.second.getKDRatio();
+                  });
+    }
+    else if (!message.empty())
+    {
+        result << "Available items: kills, deaths, play_time, round_wins, match_wins, rounds_played, kd_ratio";
+        return result;
+    }
+    else
+    {
+        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+                  [](const auto &a, const auto &b)
+                  {
+                      return a.second.kills > b.second.kills;
+                  });
+    }
+
+    for (int i = 0; i < 5 && i < sortedPlayers.size(); ++i)
+    {
+        if (i > 0)
+        {
+            result << ", ";
+        }
+
+        result << (i + 1) << ") " << sortedPlayers[i].first;
+
+        if (statName == "kills")
+        {
+            result << " (" << sortedPlayers[i].second.kills << " kills)";
+        }
+        else if (statName == "deaths")
+        {
+            result << " (" << sortedPlayers[i].second.deaths << " deaths)";
+        }
+        else if (statName == "play_time")
+        {
+            result << " (" << st_GetFormatTime(sortedPlayers[i].second.total_play_time, false) << ")";
+        }
+        else if (statName == "round_wins")
+        {
+            result << " (" << sortedPlayers[i].second.round_wins << " round wins)";
+        }
+        else if (statName == "match_wins")
+        {
+            result << " (" << sortedPlayers[i].second.matches_played << " match wins)";
+        }
+        else if (statName == "rounds_played")
+        {
+            result << " (" << sortedPlayers[i].second.rounds_played << " rounds played)";
+        }
+        else if (statName == "kd_ratio")
+        {
+            result << " (" << sortedPlayers[i].second.getKDRatio() << " KD)";
+        }
+    }
+
+    return result;
+}
 
 void eChatBot::InitChatFunctions()
 {
@@ -375,6 +511,7 @@ void eChatBot::InitChatFunctions()
     RegisterFunction(tString("$statsfunc"), statsFunc);
     RegisterFunction(tString("$nicknamefunc"), nicknameFunc);
     RegisterFunction(tString("$KDfunc"), playerKDFunc);
+    RegisterFunction(tString("$leaderboard"), leaderboardFunc);
 }
 
 void eChatBot::LoadChatTriggers()
@@ -761,11 +898,13 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
             << " seconds.)\n";
 }
 
-bool containsMath(const tString &input, bool exact)
+bool containsMath( tString input, bool exact)
 {
     int digitsCount = 0;
     int operatorsCount = 0;
     bool negativeSign = false;
+
+    input = input.StripWhitespace();
 
     for (int i = 0; i < input.Len(); ++i)
     {

@@ -515,8 +515,8 @@ tString tString::SubStr( const int start, int len) const
         return tString("");
 
     //if len < 0 or too long, take the whole string
-    if ( (len + start) >= Len() ||  len < 0)
-        len = Len() - start - 1;
+    if ( len < 0 || (len + start) >= Len())
+        len = Len() - start;
 
     tString toReturn("");
 
@@ -525,6 +525,7 @@ tString tString::SubStr( const int start, int len) const
     }
     return  toReturn;
 }
+
 
 tString tString::SubStr( const int start ) const
 {

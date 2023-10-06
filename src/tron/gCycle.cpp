@@ -2642,6 +2642,11 @@ void gCycle::MyInitAfterCreation()
         se_removeDarkColors(trailColor_);
     }
 
+    if (Player())
+    {
+        if (se_playerStats)
+            ePlayerStats::setColor(Player(),Player()->r,Player()->g,Player()->b);
+        }
     {
         if (player && player->CurrentTeam() && player->CurrentTeam()->overrideColor)
         {
@@ -2794,6 +2799,9 @@ static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycle
 
 void gCycle::updateColor()
 {
+    if (se_playerStats)
+        ePlayerStats::setColor(player,player->r,player->g,player->b);
+        
     player->Color(color_.r, color_.g, color_.b);
     player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
 
@@ -6335,6 +6343,8 @@ gCycle::gCycle(nMessage &m)
         Player()->lastKilledPlayer = nullptr;
         Player()->lastDiedByPlayer = nullptr;
 
+    if (se_playerStats)
+        ePlayerStats::setColor(Player(),Player()->r,Player()->g,Player()->b);
     }
 }
 void gCycle::WriteCreate(nMessage &m)

@@ -67,9 +67,9 @@ void ePlayerStats::loadStatsFromDB()
         pd.match_losses = sqlite3_column_int(stmt, column++);
         pd.round_wins = sqlite3_column_int(stmt, column++);
         pd.round_losses = sqlite3_column_int(stmt, column++);
-        pd.rgb.r_ = sqlite3_column_int(stmt, column++);
-        pd.rgb.g_ = sqlite3_column_int(stmt, column++);
-        pd.rgb.b_ = sqlite3_column_int(stmt, column++);
+        pd.r = sqlite3_column_int(stmt, column++);
+        pd.g = sqlite3_column_int(stmt, column++);
+        pd.b = sqlite3_column_int(stmt, column++);
         pd.total_messages = sqlite3_column_int(stmt, column++);
         pd.rounds_played = sqlite3_column_int(stmt, column++);
         pd.matches_played = sqlite3_column_int(stmt, column++);
@@ -123,9 +123,9 @@ void ePlayerStats::saveStatsToDB()
                << kv.second.match_losses << ","
                << kv.second.round_wins << ","
                << kv.second.round_losses << ","
-               << kv.second.rgb.r_ << ","
-               << kv.second.rgb.g_ << ","
-               << kv.second.rgb.b_ << ","
+               << kv.second.r << ","
+               << kv.second.g << ","
+               << kv.second.b << ","
                << kv.second.total_messages << ","
                << kv.second.rounds_played  << ","
                << kv.second.matches_played << ","

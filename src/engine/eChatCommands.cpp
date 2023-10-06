@@ -1657,19 +1657,20 @@ bool ReplyCommand::execute(tString args)
         if (se_chatTimeStamp)
             logOutput << st_GetCurrentTime("%H:%M:%S| ");
 
-        int spacePos = args.StrPos(" ");
+        tString logArgs;
+        int spacePos = logArgs.StrPos(" ");
 
         if (spacePos != -1)
         {
             spacePos++;
-            args.RemoveSubStr(0, spacePos);
+            logArgs.RemoveSubStr(0, spacePos);
         }
 
         logOutput << netPlayer->GetName()
                   << " --> "
                   << targetPlayer->GetName()
                   << ": "
-                  << args;
+                  << logArgs;
 
         se_SaveToChatLog(logOutput);
     }

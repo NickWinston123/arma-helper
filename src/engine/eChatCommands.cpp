@@ -2058,6 +2058,8 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
         return false;
     }
 
+    player->encryptVerified = true;
+
     int argsStartIndex = startIndex + se_encryptCommandLength + 1;
 
     if (argsStartIndex > actualMessage.Len())
@@ -2251,10 +2253,6 @@ bool QuitCommand::execute(tString args)
 
     con << CommandText()
         << "Quiting game in '" << quitTime << "' seconds...\n";
-
-    ePlayerStats::saveStatsToDB();
-
-    st_SaveConfig();
 
     gTaskScheduler.schedule("QuitCommand", quitTime, []
     {

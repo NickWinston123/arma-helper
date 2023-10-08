@@ -10,8 +10,9 @@
 
 extern bool se_playerStats;
 
-struct PlayerData {
-
+class PlayerDataBase 
+{
+public:
     // Player
     int r;
     int g;
@@ -22,10 +23,10 @@ struct PlayerData {
     tString rgbString()
     {
         tString output;
-                output  << "("
-                        << r << ", "
-                        << g << ", "
-                        << b << ")";
+        output  << "("
+                << r << ", "
+                << g << ", "
+                << b << ")";
         return output;
     }
 
@@ -39,8 +40,15 @@ struct PlayerData {
     int rounds_played = 0;
     int matches_played = 0;
     REAL total_play_time = 0;
+    REAL total_spec_time = 0;
+    int times_joined     = 0;
 
-    REAL getTotalPlayTime(bool add)
+    REAL getTotalPlayTime(bool add = true)
+    {
+        return total_play_time + (add ? se_GameTime() : 0);
+    }
+
+    REAL getTotalSpecTime(bool add = true)
     {
         return total_play_time + (add ? se_GameTime() : 0);
     }
@@ -60,8 +68,28 @@ struct PlayerData {
             return -static_cast<double>(deaths) / kills;
         }
     }
+};
 
+class PlayerData : public PlayerDataBase
+{
+    using StatFunction = std::function<tString(PlayerDataBase *)>;
 
+public:
+    static std::map<std::string, StatFunction> valueMap;
+
+    tString getAnyValue(tString variable)
+    {
+        auto stat = valueMap.find(variable.stdString());
+        if (stat != valueMap.end())
+            return stat->second(this);
+        else 
+        {
+            tString emptyVal;
+            return emptyVal;
+        }
+    }
+
+    PlayerDataBase data_from_db;
 };
 
 class ePlayerStats
@@ -121,6 +149,16 @@ public:
     static void addPlayTime(ePlayerNetID * player)
     {
         playerStatsMap[player->GetName()].total_play_time += se_GameTime();
+    }
+
+    static void addSpecTime(ePlayerNetID * player)
+    {
+        playerStatsMap[player->GetName()].total_spec_time += se_GameTime();
+    }
+
+    static void addJoined(ePlayerNetID * player)
+    {
+        playerStatsMap[player->GetName()].times_joined++;
     }
 
     static void setColor(ePlayerNetID * player, int r, int g, int b)

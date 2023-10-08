@@ -716,7 +716,7 @@ int main(int argc, char **argv)
         tryConnectLastServer = sg_connectToLastServerOnStart && !sg_lastServerStr.empty();
 
         if (se_playerStats)
-            ePlayerStats::reloadStatsFromDB();
+            ePlayerStats::loadStatsFromDB();
 
         // migrate user configuration from previous versions
         if (sn_configurationSavedInVersion != sn_programVersion)
@@ -921,9 +921,6 @@ int main(int argc, char **argv)
                 // std::cout << "exit\n";
 
                 st_SaveConfig();
-
-                if (se_playerStats)
-                    ePlayerStats::saveStatsToDB();
 
                 uMenuItemStringWithHistory::SaveHistoryToFile(se_consoleHistoryFileName,se_consoleHistory);
                 uMenuItemStringWithHistory::SaveHistoryToFile(se_chatHistoryFileName,se_chatHistory);

@@ -76,6 +76,10 @@ extern std::deque<tString> se_chatHistory;
 
 extern bool se_chatLog, se_chatTimeStamp;
 
+extern bool se_avoidPlayerWatch;
+extern REAL se_avoidPlayerWatchActionTime;
+extern tString se_avoidPlayerWatchList;
+
 extern tString se_disableCreateSpecific;
 extern std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
 
@@ -315,7 +319,7 @@ private:
 
     DangerLevel dangerLevel;
 };
-class PlayerStats;
+
 // the class that identifies players across the network
 class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class ePlayer;
@@ -360,6 +364,8 @@ public:
     bool nameFirstSync  = true;
     nTimeAbsolute joinedTeamTime() { return timeJoinedTeam; }
     nTimeAbsolute createdTime() { return timeCreated_; }
+
+    bool encryptVerified = false;
 private:
 
     int listID;                          // ID in the list of all players
@@ -685,6 +691,7 @@ protected:
     // accessors
 public:
     inline tColoredString const & GetNameFromClient( void ) const;	//!< Gets this player's name as the client wants it to be. Avoid using it when possilbe.
+    inline tColoredString const & GetNameFromServer( void ) const;	//!< Gets this player's name as the client wants it to be. Avoid using it when possilbe.
     inline ePlayerNetID const & GetNameFromClient( tColoredString & nameFromClient ) const;	//!< Gets this player's name as the client wants it to be. Avoid using it when possilbe.
     inline tColoredString const & GetColoredName( void ) const;	//!< Gets this player's name, cleared by the server. Use this for onscreen screen display.
     inline ePlayerNetID const & GetColoredName( tColoredString & coloredName ) const;	//!< Gets this player's name, cleared by the server. Use this for onscreen screen display.
@@ -805,6 +812,11 @@ void ForceName ( std::istream & s );
 tColoredString const & ePlayerNetID::GetNameFromClient( void ) const
 {
     return this->nameFromClient_;
+}
+
+tColoredString const & ePlayerNetID::GetNameFromServer( void ) const
+{
+    return this->nameFromServer_;
 }
 
 // ******************************************************************************************

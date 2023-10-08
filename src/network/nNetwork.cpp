@@ -1592,6 +1592,10 @@ void login_deny_handler(nMessage &m){
     if(m.SenderID() != 0)
         return;
 
+
+    if (se_playerStats)
+        ePlayerStats::saveStatsToDB();
+        
     if ( !m.End() )
     {
         //		tOutput output;

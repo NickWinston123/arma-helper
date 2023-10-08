@@ -45,6 +45,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tError.h"
 #include "nConfig.h"
 
+#include "ePlayerStats.h"
 #include "tron/gHelper/gHelperUtilities.h"
 #include <vector>
 #include <string.h>
@@ -1745,6 +1746,10 @@ void st_GrabConfigInfo( std::map < tString, bool > * _saved, std::map < tString,
 
 void st_SaveConfig()
 {
+
+    if (se_playerStats)
+        ePlayerStats::saveStatsToDB();   
+         
     // don't save while playing back
     if ( st_settingsFromRecording )
     {

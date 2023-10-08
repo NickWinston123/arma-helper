@@ -1142,13 +1142,13 @@ ePlayerNetID *ePlayerNetID::GetPlayerByName(tString name, bool exact)
 
     if (exact)
         return NULL;
-    
+
     for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
     {
         if (se_PlayerNetIDs[i]->GetName().Filter().Contains(name.Filter()))
             return se_PlayerNetIDs[i];
     }
-    
+
     return NULL;
 }
 
@@ -1895,10 +1895,11 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             tString preAppend;
             if (privateMessage && ourPlayer)
             {
+                static int arrowLength = 4;
                 preAppend << "/msg "
                           << p->GetName().Filter()
                           << " ";
-                cutLength += 4 + ourPlayer->GetName().Len();
+                cutLength += arrowLength + ourPlayer->GetName().Len();
             }
 
             actualMessage = actualMessage.SubStr(cutLength);
@@ -5080,12 +5081,12 @@ void ePlayerNetID::Chat(const tString &s_orig)
 #ifndef DEDICATED
     if (se_enableChatCommands && s_orig.StartsWith("/") && LocalChatCommands(ePlayer::NetToLocalPlayer(this), s_orig))
         return;
-        
+
     if (sg_playerSpamProtectionWatch && !ePlayerNetID::canChatWithMsg())
         return;
 
     s = s.SubStr(0, se_SpamMaxLen - 1);
-    
+
 #endif // if not dedicated
 
 #ifdef DEDICATED
@@ -6284,7 +6285,7 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                lastMessagedByPlayer(nullptr),
                                                nickname(tString("")),
                                                lastKilledPlayer(nullptr)
-                                               
+
 {
 
     flagOverrideChat = false;
@@ -6839,8 +6840,17 @@ static void player_removed_from_game_handler(nMessage &m)
     if (p && sn_GetNetState() != nSERVER)
     {
         if (se_playerTriggerMessages && se_playerMessageLeave)
-            p->IsHuman() ? eChatBot::InitiateAction(nullptr, tString("$left"), true) : eChatBot::InitiateAction(nullptr, tString("$leftbot"), true);
+            eChatBot::InitiateAction(nullptr, tString( p->IsHuman() ? "$left" : "$leftbot" ), true);
 
+        if (se_avoidPlayerWatch)
+        {
+            if (tIsInList(se_avoidPlayerWatchList,p->GetName()))
+            {
+                se_disableCreate = false;
+                ePlayerNetID::CompleteRebuild();
+            }
+        }
+        
         p->RemoveFromGame();
     }
 }
@@ -7873,7 +7883,7 @@ void ePlayerNetID::WriteSync(nMessage &m)
     {
         if (se_playerTriggerMessages && se_playerMessageJoin)
             eChatBot::InitiateAction(this, tString("$join"), true);
-    
+
         nameFirstSync = false;
     }
 
@@ -8155,7 +8165,7 @@ void ePlayerNetID::ReadSync(nMessage &m)
     m.Read(r);
     m.Read(g);
     m.Read(b);
-    
+
     if (!se_bugColorOverflow)
     {
         // clamp color values
@@ -8749,22 +8759,22 @@ void ePlayerNetID::SwapPlayersNo(int a, int b)
     B->listID = a;
 }
 
-ePlayerNetID* ePlayerNetID::HighestScoringPlayer() 
+ePlayerNetID* ePlayerNetID::HighestScoringPlayer()
 {
     if(se_PlayerNetIDs.Len() == 0)
         return nullptr;
-    
+
     ePlayerNetID* highestScorer = se_PlayerNetIDs(0);
-    
+
     for(int i = 1; i < se_PlayerNetIDs.Len(); i++) {
         ePlayerNetID* current = se_PlayerNetIDs(i);
-        if (current->TotalScore() > highestScorer->TotalScore() || 
-           (current->TotalScore() == highestScorer->TotalScore() && !current->CurrentTeam() && highestScorer->CurrentTeam())) 
+        if (current->TotalScore() > highestScorer->TotalScore() ||
+           (current->TotalScore() == highestScorer->TotalScore() && !current->CurrentTeam() && highestScorer->CurrentTeam()))
         {
             highestScorer = current;
         }
     }
-    
+
     return highestScorer;
 }
 
@@ -12417,6 +12427,15 @@ public:
 //!
 // ******************************************************************************************
 
+bool se_avoidPlayerWatch = false;
+static tConfItem<bool> se_avoidPlayerWatchConf = HelperCommand::tConfItem("AVOID_PLAYER_WATCH", se_avoidPlayerWatch);
+
+REAL se_avoidPlayerWatchActionTime = 3;
+static tConfItem<REAL> se_avoidPlayerWatchActionTimeConf = HelperCommand::tConfItem("AVOID_PLAYER_WATCH_ACTION_TIME", se_avoidPlayerWatchActionTime);
+
+tString se_avoidPlayerWatchList("");
+static tConfItem<tString> se_avoidPlayerWatchListConf = HelperCommand::tConfItem("AVOID_PLAYER_WATCH_LIST", se_avoidPlayerWatchList);
+
 void ePlayerNetID::UpdateName(void)
 {
     // don't do a thing if we're not fully synced
@@ -12528,15 +12547,29 @@ void ePlayerNetID::UpdateName(void)
         if (nameFirstSync && !isLocal() && !nameEmpty)
         {
             if (se_playerTriggerMessages && se_playerMessageEnter)
-                IsHuman() ? eChatBot::InitiateAction(this, tString("$enter"), true) : eChatBot::InitiateAction(this, tString("$enterbot"), true);
+                eChatBot::InitiateAction(this, tString( IsHuman() ? "$enter" : "$enterbot" ), true);;
 
+            if (se_playerStats)
+                ePlayerStats::addJoined(this);
+
+            if (se_avoidPlayerWatch)
+            {
+                if (tIsInList(se_avoidPlayerWatchList,GetName()))
+                {
+                    se_disableCreate = true;
+                    gTaskScheduler.schedule("AvoidPlayerWatch", se_avoidPlayerWatchActionTime, []
+                    {
+                        ePlayerNetID::CompleteRebuild();
+                    });
+                }
+            }
             nameFirstSync = false;
         }
 
         // if (!nameEmpty && !CurrentTeam() && se_playerStats)
         // {
         //     PlayerData & stats = ePlayerStats::getStats(this);
-            
+
         //     if (r != stats.r || g != stats.g || b != stats.b)
         //     {
         //         stats.r = r;

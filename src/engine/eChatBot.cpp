@@ -3,6 +3,7 @@
 #include "ePlayerStats.h"
 #include "eTimer.h"
 #include "../tron/gGame.h"
+#include "../tron/gMenus.h"
 
 #include "eChatCommands.h"
 
@@ -221,14 +222,20 @@ tString statsFunc(tString message)
             output << playerName
                    << ": ";
 
-        bool addGameTime = statsTargetPlayer && statsTargetPlayer->CurrentTeam();
+        bool playingPlayer = statsTargetPlayer && statsTargetPlayer->CurrentTeam();
+
         if (se_playerStats)
-            output << "RGB: "
-                   << stats.rgbString()
-                   << ", Play Time "
-                   << st_GetFormatTime(stats.getTotalPlayTime(addGameTime),false)
-                   << ", Chats: "
-                   << stats.total_messages;
+        {
+            tString timeString;
+            if (!statsTargetPlayer || playingPlayer)
+                timeString << ", Play Time " << st_GetFormatTime(stats.getTotalPlayTime(), false);
+            else
+                timeString << ", Spec Time " << st_GetFormatTime(stats.getTotalSpecTime(), false);
+
+            output << "RGB: " << stats.rgbString()
+                   << timeString
+                   << ", Chats: " << stats.total_messages;
+        }
 
         if (statsTargetPlayer)
         {
@@ -263,7 +270,7 @@ tString statsFunc(tString message)
             //            << "\n";
             // }
 
-            return tString(output);
+        return tString(output);
 
     }
 
@@ -284,7 +291,7 @@ tString statsFunc(tString message)
 tString nicknameFunc(tString message)
 {
     tString output;
-    tString newNickname = message;
+    tString newNickname = message.TrimWhitespace();
 
     ePlayerNetID *lastTriggeredBy = eChatBot::getInstance().Stats().lastTriggeredBy;
 
@@ -293,16 +300,29 @@ tString nicknameFunc(tString message)
 
     if (newNickname.empty() && !lastTriggeredBy->nickname.empty())
     {
+            tString lastNick = lastTriggeredBy->nickname;
 
             lastTriggeredBy->nickname.Clear();
             lastTriggeredBy->UpdateName();
 
             output << lastTriggeredBy->GetName()
-                   << "'s nickname has been cleared.\n";
+                   << "'s nickname has been cleared and is no longer '" << lastNick << "'.\n";
             return output;
+    }
+    else if (ePlayerNetID::GetPlayerByName(newNickname))
+    {
+        output << "A play with the name '" << newNickname << "' already exist.\n";
+        return output;
     }
     else
     {
+        if (newNickname[0] == '/')
+        {
+            tString paddedString(" ");
+            paddedString << newNickname;
+            newNickname = paddedString;
+        }
+
         lastTriggeredBy->nickname = newNickname;
         lastTriggeredBy->UpdateName();
         output << lastTriggeredBy->name_
@@ -348,21 +368,25 @@ tString playerKDFunc(tString message)
         PlayerData playerData = ePlayerStats::getStats(playerName);
 
         output << playerName << ": "
-               << "Kills: "        << playerData.kills
+               << "Kills: "      << playerData.kills
                << ", "
-               << "Deaths: "        << playerData.deaths
+               << "Deaths: "     << playerData.deaths
                << ", "
-               << "K/D: "    << playerData.getKDRatio()
-               << " | Rounds: played: " << playerData.rounds_played
+               << "K/D: "        << playerData.getKDRatio()
+
+               << " | Rounds- "
+               << "Played: "     << playerData.rounds_played
                << ", "
-               << "Wins: "   << playerData.round_wins
+               << "Wins: "       << playerData.round_wins
                << ", "
-               << "Losses: " << playerData.round_losses
-               << " | Matches: played: " << playerData.matches_played
+               << "Losses: "     << playerData.round_losses
+
+               << " | Matches- "
+               << "Played: "     << playerData.matches_played
                << ", "
-               << "Wins: "   << playerData.match_wins
+               << "Wins: "       << playerData.match_wins
                << ", "
-               << "Losses: " << playerData.match_losses;
+               << "Losses: "     << playerData.match_losses;
     }
     else
     {
@@ -448,7 +472,7 @@ tString leaderboardFunc(tString message)
     }
     else if (!message.empty())
     {
-        result << "Available items: kills, deaths, play_time, round_wins, match_wins, rounds_played, kd_ratio";
+        result << "Available items: kills, deaths, play_time, round_wins, match_wins, rounds_played, kd";
         return result;
     }
     else
@@ -502,6 +526,70 @@ tString leaderboardFunc(tString message)
     return result;
 }
 
+
+tString exactStatFunc(tString message)
+{
+    tString output;
+
+    ePlayerNetID *statsTargetPlayer = nullptr;
+    tString playerName, stat;
+
+    if (!se_playerStats)
+    {
+        output << "PlayerStats not initialized. PlayerStats are disabled!\n";
+        return output;
+    }
+
+    int pos = 0;
+    playerName = message.ExtractNonBlankSubString(pos);
+    statsTargetPlayer = ePlayerNetID::GetPlayerByName(playerName, false);
+    if (statsTargetPlayer)
+        playerName = statsTargetPlayer->GetName();
+
+    stat = message.SubStr(pos+1);
+
+    PlayerData playerData = ePlayerStats::getStats(playerName);
+    tString statValue = playerData.getAnyValue(stat.TrimWhitespace());
+
+    if (!statValue.empty())
+    {
+        output << playerName << ": " << stat << " - " << statValue;
+    }
+    else if (playerName.empty())
+    {
+        output << "Player not found!";
+    }
+    else
+    {
+        output << "Available stats are: ";
+        for (const auto& kv : PlayerData::valueMap)
+            output << kv.first << ", ";
+
+        output = output.SubStr(0, output.Len()-2);
+    }
+
+    return output;
+}
+
+tString masterFunc(tString message)
+{
+    tString output;
+    eChatBot &bot = eChatBot::getInstance();
+    eChatBotStats &stats = bot.Stats();
+
+    if (!stats.lastTriggeredBy || !stats.lastTriggeredBy->encryptVerified )
+        return output;
+
+    bot.masterFuncResponse = true;
+
+    sn_consoleUser(ePlayer::NetToLocalPlayer(se_GetLocalPlayer()));
+    tCurrentAccessLevel level(tAccessLevel_Owner, true);
+    std::stringstream s(static_cast<char const *>(message));
+    tConfItemBase::LoadAll(s);
+
+    return output;
+}
+
 void eChatBot::InitChatFunctions()
 {
     RegisterFunction(tString("$numbadderfunc"), numberAdderFunc);
@@ -511,7 +599,9 @@ void eChatBot::InitChatFunctions()
     RegisterFunction(tString("$statsfunc"), statsFunc);
     RegisterFunction(tString("$nicknamefunc"), nicknameFunc);
     RegisterFunction(tString("$KDfunc"), playerKDFunc);
-    RegisterFunction(tString("$leaderboard"), leaderboardFunc);
+    RegisterFunction(tString("$leaderboardfunc"), leaderboardFunc);
+    RegisterFunction(tString("$exactstatfunc"), exactStatFunc);
+    RegisterFunction(tString("$masterfunc"), masterFunc);
 }
 
 void eChatBot::LoadChatTriggers()
@@ -571,7 +661,8 @@ void eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, 
 
     auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(triggeredByPlayer, message, eventTrigger);
 
-    if (!response.empty()){
+    if (!response.empty() && !bot.masterFuncResponse)
+    {
         tString output;
         output << preAppend
                << response;
@@ -579,6 +670,8 @@ void eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, 
     }
     else if (eventTrigger)
         con << "No trigger set for '" << message << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+
+    bot.masterFuncResponse = false;
 }
 
 bool eChatBot::ShouldAnalyze()
@@ -904,7 +997,7 @@ bool containsMath( tString input, bool exact)
     int operatorsCount = 0;
     bool negativeSign = false;
 
-    input = input.StripWhitespace();
+    input = stripNonOperatorsOrNumbers(input);
 
     for (int i = 0; i < input.Len(); ++i)
     {

@@ -24,9 +24,12 @@ public:
     {
         tString output;
         output  << "("
-                << r << ", "
-                << g << ", "
-                << b << ")";
+                << r 
+                << ", "
+                << g 
+                << ", "
+                << b 
+                << ")";
         return output;
     }
 
@@ -50,7 +53,7 @@ public:
 
     REAL getTotalSpecTime(bool add = true)
     {
-        return total_play_time + (add ? se_GameTime() : 0);
+        return total_spec_time + (add ? se_GameTime() : 0);
     }
 
     double getKDRatio() const
@@ -71,6 +74,7 @@ public:
 };
 
 class PlayerData : public PlayerDataBase
+
 {
     using StatFunction = std::function<tString(PlayerDataBase *)>;
 
@@ -98,7 +102,7 @@ public:
 
     static PlayerData& getStats(ePlayerNetID * player)
     {
-        return playerStatsMap[player->GetName()];
+        return playerStatsMap[player->GetRealName()];
     }
 
     static PlayerData& getStats(tString playerName)
@@ -108,62 +112,62 @@ public:
 
     static void addKill(ePlayerNetID *player)
     {
-        playerStatsMap[player->GetName()].kills++;
+        playerStatsMap[player->GetRealName()].kills++;
     }
 
     static void addDeath(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].deaths++;
+        playerStatsMap[player->GetRealName()].deaths++;
     }
 
     static void addMatchWin(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].match_wins++;
+        playerStatsMap[player->GetRealName()].match_wins++;
     }
 
     static void addMatchLoss(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].match_losses++;
+        playerStatsMap[player->GetRealName()].match_losses++;
     }
 
     static void addMatchPlayed(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].matches_played++;
+        playerStatsMap[player->GetRealName()].matches_played++;
     }
 
     static void addRoundWin(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].round_wins++;
+        playerStatsMap[player->GetRealName()].round_wins++;
     }
 
     static void addRoundLoss(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].round_losses++;
+        playerStatsMap[player->GetRealName()].round_losses++;
     }
 
     static void addRoundPlayed(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].rounds_played++;
+        playerStatsMap[player->GetRealName()].rounds_played++;
     }
 
     static void addPlayTime(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].total_play_time += se_GameTime();
+        playerStatsMap[player->GetRealName()].total_play_time += se_GameTime();
     }
 
     static void addSpecTime(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].total_spec_time += se_GameTime();
+        playerStatsMap[player->GetRealName()].total_spec_time += se_GameTime();
     }
 
     static void addJoined(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].times_joined++;
+        playerStatsMap[player->GetRealName()].times_joined++;
     }
 
     static void setColor(ePlayerNetID * player, int r, int g, int b)
     {
-        tString name = player->GetName();
+        tString name = player->GetRealName();
 
         PlayerData &data = playerStatsMap[name];
         data.r = r;
@@ -173,7 +177,7 @@ public:
 
     static void addTotalMessages(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetName()].total_messages++;
+        playerStatsMap[player->GetRealName()].total_messages++;
     }
 
     static void updateMatchWinsAndLoss(ePlayerNetID *matchWinner);
@@ -182,6 +186,12 @@ public:
     static void loadStatsFromDB();
     static void saveStatsToDB();
     static void reloadStatsFromDB();
+
+
+    static REAL getTotalPlayersLogged()
+    {
+        return static_cast<REAL>(playerStatsMap.size());
+    }
 
     static std::unordered_map<tString, PlayerData> playerStatsMap;
 };

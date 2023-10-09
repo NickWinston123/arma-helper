@@ -210,11 +210,11 @@ tString statsFunc(tString message)
 
     if (!message.empty())
     {
-        ePlayerNetID *statsTargetPlayer = ePlayerNetID::GetPlayerByName(message.TrimWhitespace(), false);
+        ePlayerNetID *statsTargetPlayer = ePlayerNetID::GetPlayerByRealName(message.TrimWhitespace(), false);
          tString playerName(message);
         if (statsTargetPlayer)
         {
-            playerName = statsTargetPlayer->GetName();
+            playerName = statsTargetPlayer->GetRealName();
         }
 
             PlayerData &stats = ePlayerStats::getStats(playerName);
@@ -282,7 +282,7 @@ tString statsFunc(tString message)
            << ", "
            << "Messages Read: "       << stats.messagesRead
            << ", "
-           << "Last triggerered by "  << (stats.lastTriggeredBy != nullptr ? stats.lastTriggeredBy->GetName() : "?" );
+           << "Players recorded: "       << ePlayerStats::getTotalPlayersLogged();
 
 
     return tString(output);
@@ -294,6 +294,9 @@ tString nicknameFunc(tString message)
     tString newNickname = message.TrimWhitespace();
 
     ePlayerNetID *lastTriggeredBy = eChatBot::getInstance().Stats().lastTriggeredBy;
+
+    newNickname = newNickname.SubStr(0, 16);
+    newNickname.RecomputeLength();
 
     if (lastTriggeredBy == nullptr)
         return output;
@@ -351,16 +354,16 @@ tString playerKDFunc(tString message)
     if (!message.empty())
     {
         playerName = message;
-        statsTargetPlayer = ePlayerNetID::GetPlayerByName(message, false);
+        statsTargetPlayer = ePlayerNetID::GetPlayerByRealName(message, false);
         if (statsTargetPlayer)
-            playerName = statsTargetPlayer->GetName();
+            playerName = statsTargetPlayer->GetRealName();
     }
     else
     {
         eChatBot &bot = eChatBot::getInstance();
         statsTargetPlayer = bot.stats.lastTriggeredBy;
         if (statsTargetPlayer)
-            playerName = statsTargetPlayer->GetName();
+            playerName = statsTargetPlayer->GetRealName();
     }
 
     if (!playerName.empty())
@@ -399,89 +402,40 @@ tString playerKDFunc(tString message)
 tString leaderboardFunc(tString message)
 {
     tString result;
+    tString statName("kills");
+
     if (!se_playerStats)
     {
         result << "PlayerStats not initialized. PlayerStats are disabled!\n";
         return result;
     }
+    message = message.TrimWhitespace();
+
+    if (!message.empty())
+        statName = message;
 
     std::vector<std::pair<tString, PlayerData>> sortedPlayers(ePlayerStats::playerStatsMap.begin(), ePlayerStats::playerStatsMap.end());
-    tString statName("kills");
+    
+    auto sortUsingGetAnyValue = [&statName](auto &a, auto &b) 
+    {
+        REAL aValue = atof(a.second.getAnyValue(statName).c_str());
+        REAL bValue = atof(b.second.getAnyValue(statName).c_str());
+        return aValue > bValue;
+    };
 
-    if (message == "kills")
+    auto stat = PlayerData::valueMap.find(statName.stdString());
+    if (stat != PlayerData::valueMap.end())
     {
-        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
-                  [](const auto &a, const auto &b)
-                  {
-                      return a.second.kills > b.second.kills;
-                  });
-    }
-    else if (message == "deaths")
-    {
-        statName = "deaths";
-        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
-                  [](const auto &a, const auto &b)
-                  {
-                      return a.second.deaths > b.second.deaths;
-                  });
-    }
-    else if (message == "play_time")
-    {
-        statName = "play_time";
-        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
-                  [](const auto &a, const auto &b)
-                  {
-                      return a.second.total_play_time > b.second.total_play_time;
-                  });
-    }
-    else if (message == "round_wins")
-    {
-        statName = "round_wins";
-        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
-                  [](const auto &a, const auto &b)
-                  {
-                      return a.second.round_wins > b.second.round_wins;
-                  });
-    }
-    else if (message == "match_wins")
-    {
-        statName = "match_wins";
-        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
-                  [](const auto &a, const auto &b)
-                  {
-                      return a.second.match_wins > b.second.match_wins;
-                  });
-    }
-    else if (message == "rounds_played")
-    {
-        statName = "rounds_played";
-        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
-                  [](const auto &a, const auto &b)
-                  {
-                      return a.second.rounds_played > b.second.rounds_played;
-                  });
-    }
-    else if (message == "kd")
-    {
-        statName = "kd_ratio";
-        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
-                  [](const auto &a, const auto &b)
-                  {
-                      return a.second.getKDRatio() > b.second.getKDRatio();
-                  });
-    }
-    else if (!message.empty())
-    {
-        result << "Available items: kills, deaths, play_time, round_wins, match_wins, rounds_played, kd";
-        return result;
+        std::sort(sortedPlayers.begin(), sortedPlayers.end(), sortUsingGetAnyValue);
     }
     else
     {
-        std::sort(sortedPlayers.begin(), sortedPlayers.end(),
-                  [](const auto &a, const auto &b)
-                  {
-                      return a.second.kills > b.second.kills;
-                  });
+        result << "Available stats are: ";
+        for (const auto& kv : PlayerData::valueMap)
+            result << kv.first << ", ";
+
+        result = result.SubStr(0, result.Len()-2);
+        return result;
     }
 
     for (int i = 0; i < 5 && i < sortedPlayers.size(); ++i)
@@ -493,38 +447,13 @@ tString leaderboardFunc(tString message)
 
         result << (i + 1) << ") " << sortedPlayers[i].first;
 
-        if (statName == "kills")
-        {
-            result << " (" << sortedPlayers[i].second.kills << " kills)";
-        }
-        else if (statName == "deaths")
-        {
-            result << " (" << sortedPlayers[i].second.deaths << " deaths)";
-        }
-        else if (statName == "play_time")
-        {
-            result << " (" << st_GetFormatTime(sortedPlayers[i].second.total_play_time, false) << ")";
-        }
-        else if (statName == "round_wins")
-        {
-            result << " (" << sortedPlayers[i].second.round_wins << " round wins)";
-        }
-        else if (statName == "match_wins")
-        {
-            result << " (" << sortedPlayers[i].second.matches_played << " match wins)";
-        }
-        else if (statName == "rounds_played")
-        {
-            result << " (" << sortedPlayers[i].second.rounds_played << " rounds played)";
-        }
-        else if (statName == "kd_ratio")
-        {
-            result << " (" << sortedPlayers[i].second.getKDRatio() << " KD)";
-        }
+        tString value = sortedPlayers[i].second.getAnyValue(statName);
+        result << " (" << value << " " << statName << ")";
     }
 
     return result;
 }
+
 
 
 tString exactStatFunc(tString message)
@@ -542,9 +471,9 @@ tString exactStatFunc(tString message)
 
     int pos = 0;
     playerName = message.ExtractNonBlankSubString(pos);
-    statsTargetPlayer = ePlayerNetID::GetPlayerByName(playerName, false);
+    statsTargetPlayer = ePlayerNetID::GetPlayerByRealName(playerName, false);
     if (statsTargetPlayer)
-        playerName = statsTargetPlayer->GetName();
+        playerName = statsTargetPlayer->GetRealName();
 
     stat = message.SubStr(pos+1);
 

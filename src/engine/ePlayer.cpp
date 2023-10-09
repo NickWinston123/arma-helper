@@ -1152,6 +1152,26 @@ ePlayerNetID *ePlayerNetID::GetPlayerByName(tString name, bool exact)
     return NULL;
 }
 
+ePlayerNetID *ePlayerNetID::GetPlayerByRealName(tString name, bool exact)
+{
+    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
+    {
+        if (se_PlayerNetIDs[i] && se_PlayerNetIDs[i]->GetRealName().Filter() == name.Filter())
+            return se_PlayerNetIDs[i];
+    }
+
+    if (exact)
+        return NULL;
+
+    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
+    {
+        if (se_PlayerNetIDs[i]->GetRealName().Filter().Contains(name.Filter()))
+            return se_PlayerNetIDs[i];
+    }
+
+    return NULL;
+}
+
 ePlayer *ePlayer::NetToLocalPlayer(ePlayerNetID *player)
 {
     return PlayerConfig(player->pID);
@@ -6846,7 +6866,7 @@ static void player_removed_from_game_handler(nMessage &m)
         {
             if (tIsInList(se_avoidPlayerWatchList,p->GetName()))
             {
-                se_disableCreate = false;
+                se_avoidPlayerWatchDisable = false;
                 ePlayerNetID::CompleteRebuild();
             }
         }
@@ -12427,6 +12447,8 @@ public:
 //!
 // ******************************************************************************************
 
+bool se_avoidPlayerWatchDisable = false;
+
 bool se_avoidPlayerWatch = false;
 static tConfItem<bool> se_avoidPlayerWatchConf = HelperCommand::tConfItem("AVOID_PLAYER_WATCH", se_avoidPlayerWatch);
 
@@ -12556,7 +12578,7 @@ void ePlayerNetID::UpdateName(void)
             {
                 if (tIsInList(se_avoidPlayerWatchList,GetName()))
                 {
-                    se_disableCreate = true;
+                    se_avoidPlayerWatchDisable = true;
                     gTaskScheduler.schedule("AvoidPlayerWatch", se_avoidPlayerWatchActionTime, []
                     {
                         ePlayerNetID::CompleteRebuild();
@@ -14030,7 +14052,7 @@ void ePlayerNetID::RequestSyncForce(bool ack)
 
 void ePlayerNetID::RequestSync(bool ack)
 {
-    if (se_disableCreate || tIsInList(se_disableCreateSpecific, pID + 1))
+    if (se_disableCreate || tIsInList(se_disableCreateSpecific, pID + 1) || se_avoidPlayerWatchDisable)
         return;
 
     nNetObject::RequestSync(ack);

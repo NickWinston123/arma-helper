@@ -1595,7 +1595,7 @@ void login_deny_handler(nMessage &m){
 
     if (se_playerStats)
         ePlayerStats::saveStatsToDB();
-        
+
     if ( !m.End() )
     {
         //		tOutput output;
@@ -1625,7 +1625,16 @@ void login_deny_handler(nMessage &m){
 
     if (!login_failed)
         con << tOutput("$network_login_denial");
-    if (sn_GetNetState()!=nSERVER){
+        
+    if (sn_GetNetState()!=nSERVER)
+    {
+
+        if (sn_bannedWatch)
+           FileManager(tString("banned.txt"),tDirectories::Var()).Write(tString("banned"));
+
+        if (sn_bannedWatchQuit)
+            uMenu::quickexit = uMenu::QuickExit_Total;
+
         login_failed=true;
         login_succeeded=false;
         sn_SetNetState(nSTANDALONE);
@@ -1673,9 +1682,20 @@ void first_fill_ids();
 // from nServerInfo.cpp
 extern bool sn_AcceptingFromMaster;
 
+static tString sn_disallowJoinWithIP = tString("");
+static tConfItem<tString> sn_disallowJoinWithIPConf("DISALLOW_JOIN_WITH_IP",sn_disallowJoinWithIP);
+
+
 #ifndef DEDICATED
 static bool sn_showOwnIP = false;
 static tConfItem<bool> sn_showOwnIPConf("SHOW_OWN_IP",sn_showOwnIP);
+
+
+bool sn_bannedWatch = false;
+static tConfItem<bool> sn_bannedWatchConf("BANNED_WATCH",sn_bannedWatch);
+
+bool sn_bannedWatchQuit = false;
+static tConfItem<bool> sn_bannedWatchQuitConf("BANNED_WATCH_QUIT",sn_bannedWatchQuit);
 #else
 static constexpr bool sn_showOwnIP = true;
 #endif
@@ -1739,6 +1759,21 @@ void login_accept_handler(nMessage &m){
             {
                 if ( sn_myAddress != address )
                 {
+                    if (sn_GetNetState()!=nSERVER && !sn_disallowJoinWithIP.empty() && address.Contains(sn_disallowJoinWithIP))
+                    {
+
+                        login_failed=true;
+                        login_succeeded=false;
+                        sn_SetNetState(nSTANDALONE);
+                        tString disallowReason;
+
+                        disallowReason << "Not allowed to play with IP '" << sn_disallowJoinWithIP << "'.";
+
+                        sn_DenyReason = disallowReason;
+
+                        return;
+                    }
+
                     if(sn_showOwnIP)
                         con << "Got address " << address << ".\n";
                     else
@@ -3583,7 +3618,7 @@ static void client_cen_handler(nMessage &m)
             if (s.Contains("Winner:"))
             {
                 con << s << "\n";
-                
+
                 roundWinnerProcessed = true;
                 if (se_playerStats)
                     ePlayerStats::updateRoundWinsAndLoss();

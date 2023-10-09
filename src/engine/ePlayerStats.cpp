@@ -115,22 +115,22 @@ void ePlayerStats::saveStatsToDB()
     char *tableCheckQuery = "SELECT name FROM sqlite_master WHERE type='table' AND name='ePlayerStats';";
     rc = sqlite3_exec(db, tableCheckQuery, 0, 0, &errMsg);
 
-    if (rc == SQLITE_OK)  
+    if (rc == SQLITE_OK)
     {
         debug += "TABLE EXISTS.\n";
 
-        for (const auto &field : fields) 
+        for (const auto &field : fields)
         {
             debug += "Checking field: " + field.first + "\n";
-            
+
             std::stringstream columnCheckSql;
-            columnCheckSql << "PRAGMA table_info(ePlayerStats);";  
+            columnCheckSql << "PRAGMA table_info(ePlayerStats);";
 
             sqlite3_stmt *stmt;
             rc = sqlite3_prepare_v2(db, columnCheckSql.str().c_str(), -1, &stmt, 0);
 
             bool columnExists = false;
-            while (sqlite3_step(stmt) == SQLITE_ROW) 
+            while (sqlite3_step(stmt) == SQLITE_ROW)
             {
                 std::string columnName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
                 if (columnName == field.first)
@@ -138,14 +138,14 @@ void ePlayerStats::saveStatsToDB()
                     debug += "Column " + columnName + " exists.\n";
                     columnExists = true;
                     break;
-                }                
+                }
             }
             sqlite3_finalize(stmt);
 
-            if (!columnExists) 
+            if (!columnExists)
             {
                 debug += "Column " + field.first + " does not exist. Adding it.\n";
-                
+
                 std::stringstream addColumnSql;
                 addColumnSql << "ALTER TABLE ePlayerStats ADD COLUMN " << field.first << " " << field.second << ";";
                 rc = sqlite3_exec(db, addColumnSql.str().c_str(), 0, 0, &errMsg);
@@ -157,13 +157,13 @@ void ePlayerStats::saveStatsToDB()
             }
         }
     }
-    else  
+    else
     {
         debug += "TABLE DOES NOT EXIST. Creating it.\n";
-        
+
         std::stringstream createSql;
         createSql << "CREATE TABLE ePlayerStats(name TEXT PRIMARY KEY";
-        for (const auto &field : fields) 
+        for (const auto &field : fields)
         {
             createSql << ", " << field.first << " " << field.second;
         }
@@ -207,7 +207,7 @@ void ePlayerStats::saveStatsToDB()
                << kv.second.matches_played << ","
                << kv.second.total_play_time << ","
                << kv.second.total_spec_time << ","
-               << kv.second.times_joined 
+               << kv.second.times_joined
                << ");";
             rc = sqlite3_exec(db, ss.str().c_str(), 0, 0, &errMsg);
 
@@ -218,7 +218,7 @@ void ePlayerStats::saveStatsToDB()
             }
         }
     }
-    
+
     if (se_playerStatsLog)
         gHelperUtility::DebugLog(debug);
     sqlite3_close(db);
@@ -280,84 +280,98 @@ void ePlayerStats::reloadStatsFromDB()
 
 std::unordered_map<tString, PlayerData> ePlayerStats::playerStatsMap;
 
-
 std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
-    {"rgb", [](PlayerDataBase* self) { 
-        return self->rgbString(); 
-    }},
-    {"r", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->r;
-        return result;
-    }},
-    {"g", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->g;
-        return result;
-    }},
-    {"b", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->b;
-        return result;
-    }},
-    {"chats", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->total_messages;
-        return result;
-    }},
-    {"kills", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->kills;
-        return result;
-    }},
-    {"deaths", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->deaths;
-        return result;
-    }},
-    {"match_wins", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->match_wins;
-        return result;
-    }},
-    {"match_losses", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->match_losses;
-        return result;
-    }},
-    {"round_wins", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->round_wins;
-        return result;
-    }},
-    {"round_losses", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->round_losses;
-        return result;
-    }},
-    {"rounds_played", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->rounds_played;
-        return result;
-    }},
-    {"matches_played", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->matches_played;
-        return result;
-    }},
-    {"play_time", [](PlayerDataBase* self) { 
-        tString result("");
-        result << st_GetFormatTime(self->getTotalPlayTime(), false);
-        return result;
-    }},
-    {"spec_time", [](PlayerDataBase* self) { 
-        tString result("");
-        result << st_GetFormatTime(self->getTotalSpecTime(), false);
-        return result;
-    }},
-    {"times_joined", [](PlayerDataBase* self) { 
-        tString result("");
-        result << self->times_joined;
-        return result;
-    }}
-};
+    {"rgb", [](PlayerDataBase *self)
+     {
+         return self->rgbString();
+     }},
+    {"r", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->r;
+         return result;
+     }},
+    {"g", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->g;
+         return result;
+     }},
+    {"b", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->b;
+         return result;
+     }},
+    {"chats", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->total_messages;
+         return result;
+     }},
+    {"kills", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->kills;
+         return result;
+     }},
+    {"deaths", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->deaths;
+         return result;
+     }},
+    {"match_wins", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->match_wins;
+         return result;
+     }},
+    {"match_losses", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->match_losses;
+         return result;
+     }},
+    {"round_wins", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->round_wins;
+         return result;
+     }},
+    {"round_losses", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->round_losses;
+         return result;
+     }},
+    {"rounds_played", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->rounds_played;
+         return result;
+     }},
+    {"matches_played", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->matches_played;
+         return result;
+     }},
+    {"play_time", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << st_GetFormatTime(self->getTotalPlayTime(), false);
+         return result;
+     }},
+    {"spec_time", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << st_GetFormatTime(self->getTotalSpecTime(), false);
+         return result;
+     }},
+    {"times_joined", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->times_joined;
+         return result;
+     }}};

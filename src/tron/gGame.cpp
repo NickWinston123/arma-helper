@@ -2490,7 +2490,11 @@ static tConfItemLine sn_roundCM_ci("ROUND_CENTER_MESSAGE", sg_roundCenterMessage
 static tString sg_roundConsoleMessage("");
 static tConfItemLine sn_roundCcM1_ci("ROUND_CONSOLE_MESSAGE", sg_roundConsoleMessage);
 
+
 bool sg_RequestedDisconnection = false;
+
+bool sn_networkErrorQuit = false;
+static tConfItem<bool> sn_networkErrorQuitConf("NETWORK_ERROR_QUIT",sn_networkErrorQuit);
 
 static bool sg_NetworkError(const tOutput &title, const tOutput &message, REAL timeout)
 {
@@ -2514,6 +2518,9 @@ static bool sg_NetworkError(const tOutput &title, const tOutput &message, REAL t
     con << message2 << "\n\n";
 #endif
 
+    if (sn_networkErrorQuit)
+        uMenu::quickexit = uMenu::QuickExit_Total;
+        
     return tConsole::Message(title, message2, timeout);
 }
 

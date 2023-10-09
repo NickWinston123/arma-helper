@@ -1793,7 +1793,8 @@ bool FileManager::Backup()
 
 bool FileManager::Clear()
 {
-    bool cleared = path.Open(o, fileName, std::ios::trunc);
+    bool cleared = Write(tString(""), std::ios::trunc,false);
+    
     o.close();
     if (cleared)
         con << tOutput("$file_manager_cleared_file", fileName);

@@ -710,6 +710,10 @@ int main(int argc, char **argv)
         st_LoadConfig();
         LoadChatCommandConfCommands();
 
+
+        if (sn_bannedWatch)
+            FileManager(tString("banned.txt"),tDirectories::Var()).Clear();
+
         uMenuItemStringWithHistory::LoadHistoryFromFile(se_consoleHistoryFileName, se_consoleHistory);
         uMenuItemStringWithHistory::LoadHistoryFromFile(se_chatHistoryFileName, se_chatHistory);
 

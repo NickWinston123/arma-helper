@@ -76,7 +76,7 @@ extern std::deque<tString> se_chatHistory;
 
 extern bool se_chatLog, se_chatTimeStamp;
 
-extern bool se_avoidPlayerWatch;
+extern bool se_avoidPlayerWatch, se_avoidPlayerWatchDisable;
 extern REAL se_avoidPlayerWatchActionTime;
 extern tString se_avoidPlayerWatchList;
 
@@ -354,6 +354,7 @@ public:
     static gCycle *NetPlayerToCycle(ePlayerNetID *player);
     gCycle *NetPlayerToCycle();
     static ePlayerNetID *GetPlayerByName(tString name, bool exact = true);
+    static ePlayerNetID *GetPlayerByRealName(tString name, bool exact = true);
     int lastsyncedColor[3] = {0, 0, 0};
     tColoredString lastColoredName;
     int currentShift = 0;
@@ -696,6 +697,7 @@ public:
     inline tColoredString const & GetColoredName( void ) const;	//!< Gets this player's name, cleared by the server. Use this for onscreen screen display.
     inline ePlayerNetID const & GetColoredName( tColoredString & coloredName ) const;	//!< Gets this player's name, cleared by the server. Use this for onscreen screen display.
     inline tString const & GetName( void ) const;	//!< Gets this player's name without colors.
+    inline tString const & GetRealName( void ) const;	//!< Gets this player's name without colors.
     inline ePlayerNetID const & GetName( tString & name ) const;	//!< Gets this player's name without colors.
 
     inline tString const & GetUserName( void ) const;	//!< Gets this player's full name. Use for writing to files or comparing with admin input.
@@ -919,6 +921,11 @@ ePlayerNetID & ePlayerNetID::SetColoredName( tColoredString const & coloredName 
 tString const & ePlayerNetID::GetName( void ) const
 {
     return this->nickname.empty() ? this->name_ : this->nickname;
+}
+
+tString const & ePlayerNetID::GetRealName( void ) const
+{
+    return this->name_; 
 }
 
 // ******************************************************************************************

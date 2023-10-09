@@ -51,6 +51,8 @@ class nMessage;
 class tCrypt;
 class tOutput;
 
+extern bool sn_bannedWatch;
+extern bool sn_bannedWatchQuit;
 typedef double nTimeAbsolute;				// typedef for absolute time variables in network code
 typedef double nTimeRolling;				// typedef for time variables in network code that don't have to measure large time differences
 

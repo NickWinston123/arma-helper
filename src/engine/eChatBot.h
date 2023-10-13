@@ -17,22 +17,48 @@ extern tString se_playerTriggerMessagesIgnoreList;
 
 extern bool se_playerTriggerMessages;
 
-struct eChatBotStats
+struct eChatBotStats;
+
+struct ChatBotColumnMapping {
+    std::string columnName;
+    std::string columnType;
+    std::function<void(sqlite3_stmt*, int&, const eChatBotStats&)> bindFunc;
+    std::function<void(sqlite3_stmt*, int&, eChatBotStats&)> extractFunc;
+};
+
+struct eChatBotStatsBase
 {
     int total_messages_read = 0;
     int total_messages_sent = 0;
     REAL total_up_time      = 0;
     tString lastMatchedTrigger;
     ePlayerNetID *lastTriggeredBy;
+};
+
+class eChatBotStats : public eChatBotStatsBase
+{
+public:
+    static const std::vector<ChatBotColumnMapping> eChatBotStatsMappings;
 
     static void loadChatBotStatsFromDB(sqlite3* db);
     static void saveChatBotStatsToDB(sqlite3* db);
-    static void ensureChatBotStatsTableAndColumnsExist(sqlite3* db);
 
-    REAL UpTime()
+    REAL upTime(bool current = true)
     {
-        return total_up_time + tSysTimeFloat();
+        return current ? tSysTimeFloat() : total_up_time + tSysTimeFloat();
     }
+
+    REAL messagesSent(bool current = true)
+    {
+        return current ? total_messages_sent - data_from_db.total_messages_sent : total_messages_sent;
+    }
+
+    REAL messagesRead(bool current = true)
+    {
+        return current ? total_messages_read - data_from_db.total_messages_read : total_messages_read;
+    }
+
+    eChatBotStatsBase data_from_db;
 };
 
 class eChatBot

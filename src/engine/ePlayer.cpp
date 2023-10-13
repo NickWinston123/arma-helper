@@ -5110,6 +5110,7 @@ static tConfItem<bool> se_enableChatCommandsConf("LOCAL_CHAT_COMMANDS", se_enabl
 REAL sg_playerSpamProtectionWatchExtraAdd = 0.5;
 static tConfItem<REAL> sg_playerSpamProtectionWatchExtraAddConf("CHAT_SPAM_PROTECTION_WATCH_EXTRA_ADD", sg_playerSpamProtectionWatchExtraAdd);
 
+
 REAL ePlayerNetID::nextSpeakTime = 0;
 
 bool ePlayerNetID::canChat()

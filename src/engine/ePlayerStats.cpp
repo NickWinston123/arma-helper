@@ -19,128 +19,122 @@ static tConfItem<bool> se_playerStatsConf("PLAYER_STATS", se_playerStats);
 bool se_playerStatsLog = false;
 static tConfItem<bool> se_playerStatsLogConf("PLAYER_STATS_LOG", se_playerStatsLog);
 
-const std::vector<std::pair<std::string, std::string>> fields = {
-    {"matches_played", "INTEGER"},
-    {"rounds_played", "INTEGER"},
-    {"total_messages", "INTEGER"},
-    {"b", "INTEGER"},
-    {"g", "INTEGER"},
-    {"r", "INTEGER"},
-    {"round_losses", "INTEGER"},
-    {"round_wins", "INTEGER"},
-    {"total_play_time", "REAL"},
-    {"match_losses", "INTEGER"},
-    {"deaths", "INTEGER"},
-    {"match_wins", "INTEGER"},
-    {"kills", "INTEGER"},
-    {"times_joined", "INTEGER"},
-    {"total_spec_time", "REAL"},
-    {"chat_messages", "TEXT"},
-    {"fastest_speed", "REAL"},
-    {"last_seen", "BIGINT"},
+std::vector<std::string> deserializeVector(const std::string &str);
+std::string serializeVector(const std::vector<std::string> &vec);
+std::string join(const std::vector<std::string> &vec, const std::string &delimiter);
+
+const std::vector<ColumnMapping> ePlayerStatsMappings = {
+    {"name", "TEXT PRIMARY KEY",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_text(stmt, col++, stats.name.c_str(), -1, SQLITE_STATIC); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { col++; }
+    },
+
+    {"matches_played", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.matches_played); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.matches_played = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"rounds_played", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.rounds_played); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.rounds_played = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"total_messages", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.total_messages); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_messages = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"b", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.b); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.b = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"g", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.g); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.g = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"r", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.r); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.r = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"round_losses", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.round_losses); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.round_losses = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"round_wins", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.round_wins); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.round_wins = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"total_play_time", "REAL",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_double(stmt, col++, stats.total_play_time); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_play_time = sqlite3_column_double(stmt, col++); }
+    },
+
+    {"match_losses", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.match_losses); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.match_losses = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"deaths", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.deaths); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.deaths = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"match_wins", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.match_wins); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.match_wins = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"kills", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.kills); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.kills = sqlite3_column_int(stmt, col++);  }
+    },
+
+    {"times_joined", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.times_joined); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.times_joined = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"total_spec_time", "REAL",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_double(stmt, col++, stats.total_spec_time); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_spec_time = sqlite3_column_double(stmt, col++); }
+    },
+
+    {"chat_messages", "TEXT",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_text(stmt, col++, serializeVector(stats.chat_messages).c_str(), -1, SQLITE_STATIC); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) {
+            const char *chatSerialized = reinterpret_cast<const char *>(sqlite3_column_text(stmt, col++));
+            if (chatSerialized)
+                stats.chat_messages = deserializeVector(chatSerialized);
+        }
+    },
+
+    {"fastest_speed", "REAL",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_double(stmt, col++, stats.fastest_speed); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.fastest_speed = sqlite3_column_double(stmt, col++); }
+    },
+
+    {"last_seen", "BIGINT",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int64(stmt, col++, static_cast<sqlite3_int64>(stats.last_seen)); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.last_seen = static_cast<time_t>(sqlite3_column_int64(stmt, col++)); }
+    },
+
+    {"human", "BOOLEAN",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.human ? 1 : 0); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.human = sqlite3_column_int(stmt, col++) != 0; }
+    },
+
 };
-
-const std::string DELIMITER = "-+HACKERMANS+-";
-
-std::vector<std::string> deserializeVector(const std::string &str)
-{
-    std::vector<std::string> vec;
-
-    if (str.find(DELIMITER) == std::string::npos)
-    {
-        vec.push_back(str);
-        return vec;
-    }
-
-    std::string::size_type pos = 0;
-    std::string::size_type prev = 0;
-    while ((pos = str.find(DELIMITER, prev)) != std::string::npos)
-    {
-        vec.push_back(str.substr(prev, pos - prev));
-        prev = pos + DELIMITER.length();
-    }
-    vec.push_back(str.substr(prev));
-    return vec;
-}
-
-std::string serializeVector(const std::vector<std::string> &vec)
-{
-    return std::accumulate(vec.begin(), vec.end(), std::string(),
-                           [](const std::string &a, const std::string &b)
-                           {
-                               return a + (a.length() > 0 ? DELIMITER : "") + b;
-                           });
-}
-
-void ePlayerStats::ensureTableAndColumnsExist(sqlite3 *db)
-{
-    char *errMsg = 0;
-    int rc;
-
-    char *tableCheckQuery = "SELECT name FROM sqlite_master WHERE type='table' AND name='ePlayerStats';";
-    rc = sqlite3_exec(db, tableCheckQuery, 0, 0, &errMsg);
-
-    if (rc == SQLITE_OK)
-    {
-        for (const auto &field : fields)
-        {
-            std::stringstream columnCheckSql;
-            columnCheckSql << "PRAGMA table_info(ePlayerStats);";
-
-            sqlite3_stmt *stmt;
-            rc = sqlite3_prepare_v2(db, columnCheckSql.str().c_str(), -1, &stmt, 0);
-
-            bool columnExists = false;
-            while (sqlite3_step(stmt) == SQLITE_ROW)
-            {
-                std::string columnName = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-                if (columnName == field.first)
-                {
-                    columnExists = true;
-                    break;
-                }
-            }
-            sqlite3_finalize(stmt);
-
-            if (!columnExists)
-            {
-                std::stringstream addColumnSql;
-                addColumnSql << "ALTER TABLE ePlayerStats ADD COLUMN " << field.first << " " << field.second << ";";
-                rc = sqlite3_exec(db, addColumnSql.str().c_str(), 0, 0, &errMsg);
-                if (rc != SQLITE_OK)
-                {
-                    std::string debug = std::string("SQL error: ") + (errMsg) + "\n";
-                    gHelperUtility::DebugLog(debug);
-                    sqlite3_free(errMsg);
-                }
-            }
-        }
-    }
-    else
-    {
-        std::stringstream createSql;
-        createSql << "CREATE TABLE ePlayerStats(name TEXT PRIMARY KEY";
-        for (const auto &field : fields)
-        {
-            createSql << ", " << field.first << " " << field.second;
-        }
-        createSql << ");";
-        rc = sqlite3_exec(db, createSql.str().c_str(), 0, 0, &errMsg);
-
-        if (rc != SQLITE_OK)
-        {
-            std::string debug = std::string("SQL error: ") + (errMsg) + "\n";
-            if (se_playerStatsLog)
-                gHelperUtility::DebugLog(debug);
-            sqlite3_free(errMsg);
-        }
-    }
-}
 
 void ePlayerStats::loadStatsFromDB()
 {
     if (se_playerStatsLog)
         gHelperUtility::DebugLog("loadStatsFromDB");
+
     std::string debug = st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ").stdString() + "Starting loadStatsFromDB()\n";
 
     sqlite3 *db;
@@ -155,20 +149,28 @@ void ePlayerStats::loadStatsFromDB()
             gHelperUtility::DebugLog(debug);
         return;
     }
-
-    ensureTableAndColumnsExist(db);
-    ;
+    ensureTableAndColumnsExist(db, "ePlayerStats", ePlayerStatsMappings);
 
     std::stringstream selectSql;
-    selectSql << "SELECT name";
-    for (const auto &field : fields)
-        selectSql << ", " << field.first;
+    selectSql << "SELECT ";
+    bool isFirst = true;
+    for (const auto &mapping : ePlayerStatsMappings)
+    {
+        if (!isFirst)
+            selectSql << ", ";
+        else
+            isFirst = false;
 
+        selectSql << mapping.columnName;
+    }
     selectSql << " FROM ePlayerStats;";
+
     debug += "USING QUERY: " + selectSql.str() + "\n";
     if (se_playerStatsLog)
         gHelperUtility::DebugLog(debug);
+
     rc = sqlite3_prepare_v2(db, selectSql.str().c_str(), -1, &stmt, 0);
+
     if (rc != SQLITE_OK)
     {
         debug += std::string("Failed to fetch data: ") + sqlite3_errmsg(db) + "\n";
@@ -182,39 +184,20 @@ void ePlayerStats::loadStatsFromDB()
     {
         tString name = tString((char *)sqlite3_column_text(stmt, 0));
         PlayerData &stats = getStats(name);
-        int column = 1;
+        int column = 0;
+        for (const auto &mapping : ePlayerStatsMappings)
+            mapping.extractFunc(stmt, column, stats);
 
         stats.name = name;
-
-        stats.matches_played = sqlite3_column_int(stmt, column++);
-        stats.rounds_played = sqlite3_column_int(stmt, column++);
-        stats.total_messages = sqlite3_column_int(stmt, column++);
-        stats.b = sqlite3_column_int(stmt, column++);
-        stats.g = sqlite3_column_int(stmt, column++);
-        stats.r = sqlite3_column_int(stmt, column++);
-        stats.round_losses = sqlite3_column_int(stmt, column++);
-        stats.round_wins = sqlite3_column_int(stmt, column++);
-        stats.total_play_time = sqlite3_column_double(stmt, column++);
-        stats.match_losses = sqlite3_column_int(stmt, column++);
-        stats.deaths = sqlite3_column_int(stmt, column++);
-        stats.match_wins = sqlite3_column_int(stmt, column++);
-        stats.kills = sqlite3_column_int(stmt, column++);
-
-        stats.times_joined = sqlite3_column_int(stmt, column++);
-        stats.total_spec_time = sqlite3_column_double(stmt, column++);
-
-        const char *chatSerialized = reinterpret_cast<const char *>(sqlite3_column_text(stmt, column++));
-        if (chatSerialized)
-            stats.chatMessages = deserializeVector(chatSerialized);
-
-        stats.fastest_speed = sqlite3_column_double(stmt, column++);
-        stats.last_seen = static_cast<time_t>(sqlite3_column_int64(stmt, column++));
-
-        
         stats.data_from_db = stats;
     }
 
-    eChatBotStats::ensureChatBotStatsTableAndColumnsExist(db);
+    if (rc != SQLITE_DONE)
+    {
+        std::string errorMsg = "sqlite3_step failed: " + std::string(sqlite3_errmsg(db));
+        gHelperUtility::DebugLog(errorMsg.c_str());
+    }
+
     eChatBotStats::loadChatBotStatsFromDB(db);
 
     if (se_playerStatsLog)
@@ -224,19 +207,11 @@ void ePlayerStats::loadStatsFromDB()
     sqlite3_close(db);
 }
 
-std::string join(const std::vector<std::string> &vec, const std::string &delimiter)
-{
-    return std::accumulate(std::begin(vec), std::end(vec), std::string(),
-                           [&](const std::string &ss, const std::string &s)
-                           {
-                               return ss.empty() ? s : ss + delimiter + s;
-                           });
-}
-
 void ePlayerStats::saveStatsToDB()
 {
     if (se_playerStatsLog)
         gHelperUtility::DebugLog("saveStatsToDB");
+
     sqlite3 *db;
     char *errMsg = 0;
     int rc;
@@ -246,27 +221,40 @@ void ePlayerStats::saveStatsToDB()
     rc = sqlite3_open(tDirectories::Var().GetReadPath("stats.db"), &db);
     if (rc != SQLITE_OK)
     {
-        std::string debug = std::string("Cannot open database: ") + (sqlite3_errmsg(db)) + "\n";
+        debug += "Cannot open database: " + std::string(sqlite3_errmsg(db)) + "\n";
         if (se_playerStatsLog)
             gHelperUtility::DebugLog(debug);
         return;
     }
 
-    ensureTableAndColumnsExist(db);
+    ensureTableAndColumnsExist(db, "ePlayerStats", ePlayerStatsMappings);
+
+    if (playerStatsMap.empty()) 
+        debug += "playerStatsMap is empty. No data to write to the database.\n";
+    else
+        debug += "Saving player stats. Total players: " + std::to_string(playerStatsMap.size()) + "\n";
 
     debug += "Saving player stats.\n";
     for (const auto &kv : playerStatsMap)
     {
         std::stringstream ss;
         std::vector<std::string> placeholders;
-        for (size_t i = 0; i < fields.size() + 1; i++)
+
+        for (size_t i = 0; i < ePlayerStatsMappings.size(); i++)
         {
             placeholders.push_back("?");
         }
-        ss << "INSERT OR REPLACE INTO ePlayerStats(name";
-        for (const auto &field : fields)
+
+        ss << "INSERT OR REPLACE INTO ePlayerStats(";
+        bool isFirst = true;
+        for (const auto &mapping : ePlayerStatsMappings)
         {
-            ss << ", " << field.first;
+            if (!isFirst)
+                ss << ", ";
+            else
+                isFirst = false;
+
+            ss << mapping.columnName;
         }
         ss << ") VALUES(" << join(placeholders, ",") << ");";
 
@@ -274,40 +262,21 @@ void ePlayerStats::saveStatsToDB()
         rc = sqlite3_prepare_v2(db, ss.str().c_str(), -1, &stmt, 0);
         if (rc != SQLITE_OK)
         {
-            std::string debug = std::string("Failed to prepare statement: ") + (sqlite3_errmsg(db)) + "\n";
+            debug = std::string("Failed to prepare statement: ") + sqlite3_errmsg(db) + "\n";
             if (se_playerStatsLog)
                 gHelperUtility::DebugLog(debug);
-            continue;
+            return;
         }
 
-        sqlite3_bind_text(stmt, 1, kv.first.c_str(), -1, SQLITE_STATIC);
-        int col = 2;
+        int column = 1;
+        for (const auto& mapping : ePlayerStatsMappings)
+            mapping.bindFunc(stmt, column, kv.second);
 
-
-        // MAKE THIS A MAP!!!!!!
-        sqlite3_bind_int(stmt, col++, kv.second.matches_played);
-        sqlite3_bind_int(stmt, col++, kv.second.rounds_played);
-        sqlite3_bind_int(stmt, col++, kv.second.total_messages);
-        sqlite3_bind_int(stmt, col++, kv.second.b);
-        sqlite3_bind_int(stmt, col++, kv.second.g);
-        sqlite3_bind_int(stmt, col++, kv.second.r);
-        sqlite3_bind_int(stmt, col++, kv.second.round_losses);
-        sqlite3_bind_int(stmt, col++, kv.second.round_wins);   // match losse
-        sqlite3_bind_double(stmt, col++, kv.second.total_play_time); // matchj wins
-        sqlite3_bind_int(stmt, col++, kv.second.match_losses); // kills
-        sqlite3_bind_int(stmt, col++, kv.second.deaths); // times joined
-        sqlite3_bind_int(stmt, col++, kv.second.match_wins); // total spec time
-        sqlite3_bind_int(stmt, col++, kv.second.kills); // chat messages
-        sqlite3_bind_int(stmt, col++, kv.second.times_joined); // play time
-        sqlite3_bind_double(stmt, col++, kv.second.total_spec_time); // deaths
-        sqlite3_bind_text(stmt, col++, serializeVector(kv.second.chatMessages).c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_double(stmt, col++, kv.second.fastest_speed);
-        sqlite3_bind_int64(stmt, col++, static_cast<sqlite3_int64>(kv.second.last_seen));
 
         rc = sqlite3_step(stmt);
         if (rc != SQLITE_DONE)
         {
-            std::string debug = std::string("SQL error while inserting: ") + (sqlite3_errmsg(db)) + "\n";
+            debug = std::string("ePlayerStats SQL error while inserting: ") + sqlite3_errmsg(db) + "\n";
             if (se_playerStatsLog)
                 gHelperUtility::DebugLog(debug);
         }
@@ -315,7 +284,6 @@ void ePlayerStats::saveStatsToDB()
         sqlite3_finalize(stmt);
     }
 
-    eChatBotStats::ensureChatBotStatsTableAndColumnsExist(db);
     eChatBotStats::saveChatBotStatsToDB(db);
 
     if (se_playerStatsLog)
@@ -380,11 +348,13 @@ void ePlayerStats::reloadStatsFromDB()
 
 std::unordered_map<tString, PlayerData> ePlayerStats::playerStatsMap;
 
-std::set<std::string> PlayerData::valueMapdisplayFields = {
+std::set<std::string> PlayerData::valueMapdisplayFields = 
+{
     "rgb", "chats", "kills", "deaths", "match_wins",
     "match_losses", "round_wins", "round_losses", "rounds_played",
     "matches_played", "play_time", "spec_time", "times_joined",
-    "kd", "chat_messages", "fastest"};
+    "kd", "chat_messages", "fastest"
+};
 
 std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
     {"rgb", [](PlayerDataBase *self)
@@ -504,6 +474,53 @@ std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
          tString result("");
          result << self->fastest_speed;
          return result;
+     }},
+    {"speed", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->fastest_speed;
+         return result;
      }}
 
 };
+
+const std::string DELIMITER = "-+HACKERMANS+-";
+
+std::vector<std::string> deserializeVector(const std::string &str)
+{
+    std::vector<std::string> vec;
+
+    if (str.find(DELIMITER) == std::string::npos)
+    {
+        vec.push_back(str);
+        return vec;
+    }
+
+    std::string::size_type pos = 0;
+    std::string::size_type prev = 0;
+    while ((pos = str.find(DELIMITER, prev)) != std::string::npos)
+    {
+        vec.push_back(str.substr(prev, pos - prev));
+        prev = pos + DELIMITER.length();
+    }
+    vec.push_back(str.substr(prev));
+    return vec;
+}
+
+std::string serializeVector(const std::vector<std::string> &vec)
+{
+    return std::accumulate(vec.begin(), vec.end(), std::string(),
+                           [](const std::string &a, const std::string &b)
+                           {
+                               return a + (a.length() > 0 ? DELIMITER : "") + b;
+                           });
+}
+
+std::string join(const std::vector<std::string> &vec, const std::string &delimiter)
+{
+    return std::accumulate(std::begin(vec), std::end(vec), std::string(),
+                           [&](const std::string &ss, const std::string &s)
+                           {
+                               return ss.empty() ? s : ss + delimiter + s;
+                           });
+}

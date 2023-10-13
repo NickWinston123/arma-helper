@@ -6,6 +6,8 @@
 #include "ePlayer.h"
 #include <unordered_map>
 
+#include "../tron/gHelper/gHelperUtilities.h"
+
 #include "eTimer.h"
 
 extern bool se_playerStats, se_playerStatsLog;
@@ -18,11 +20,13 @@ public:
     tString name;
     int total_messages   = 0;
     REAL fastest_speed   = 0;
-    std::vector<std::string> chatMessages;
+    std::vector<std::string> chat_messages;
     REAL total_play_time = 0;
     REAL total_spec_time = 0;
     int times_joined     = 0;
     time_t last_seen     = 0;
+
+    bool human = true;
 
     tString rgbString()
     {
@@ -47,9 +51,9 @@ public:
     int rounds_played = 0;
     int matches_played = 0;
 
-    std::string getLastSeenAgo(bool in_game) 
+    std::string getLastSeenAgo(bool in_game)
     {
-        if (last_seen == 0) 
+        if (last_seen == 0)
             return "Never seen";
 
         time_t now = time(NULL);
@@ -58,13 +62,13 @@ public:
         double hours = minutes / 60;
         double days = hours / 24;
 
-        if (seconds < 60) 
+        if (seconds < 60)
             return std::to_string((int)seconds) + " seconds ago";
-        else if (minutes < 60) 
+        else if (minutes < 60)
             return std::to_string((int)minutes) + " minutes ago";
-        else if (hours < 24) 
+        else if (hours < 24)
             return std::to_string((int)hours) + " hours ago";
-        else 
+        else
             return std::to_string((int)days) + " days ago";
     }
 
@@ -83,7 +87,7 @@ public:
             std::string messages;
             bool first = true;
 
-            for (auto messageIt = chatMessages.rbegin(); messageIt != chatMessages.rend(); ++messageIt)
+            for (auto messageIt = chat_messages.rbegin(); messageIt != chat_messages.rend(); ++messageIt)
             {
                 if (!first)
                     messages += ", ";
@@ -126,12 +130,12 @@ public:
         std::set<std::string> displayFields = PlayerData::valueMapdisplayFields;
 
         if (source == "leaderboardFunc")
-        {   
+        {
             // remove: rgb, chat_messages
             displayFields.erase("rgb");
             displayFields.erase("chat_messages");
         }
-        
+
         tString result;
         result << "Available stats are: ";
         int count = 0;
@@ -177,34 +181,34 @@ public:
 
     static PlayerData& getStatsForAnalysis(tString playerName)
     {
-    
+
         std::string playerNameLower = playerName.stdString();
         std::transform(playerNameLower.begin(), playerNameLower.end(), playerNameLower.begin(), ::tolower);
 
         // exact case-insensitive match
-        for (const auto &kv : playerStatsMap) 
+        for (const auto &kv : playerStatsMap)
         {
             std::string currentNameLower = kv.first.stdString();
             std::transform(currentNameLower.begin(), currentNameLower.end(), currentNameLower.begin(), ::tolower);
-            
-            if (currentNameLower == playerNameLower) 
+
+            if (currentNameLower == playerNameLower)
             {
                 return playerStatsMap[kv.first];
             }
         }
 
         // no exact match, look for the closest match (substring search)
-        for (const auto &kv : playerStatsMap) 
+        for (const auto &kv : playerStatsMap)
         {
             std::string currentNameLower = kv.first.stdString();
             std::transform(currentNameLower.begin(), currentNameLower.end(), currentNameLower.begin(), ::tolower);
-            
-            if (currentNameLower.find(playerNameLower) != std::string::npos) 
+
+            if (currentNameLower.find(playerNameLower) != std::string::npos)
             {
                 return playerStatsMap[kv.first];
             }
         }
-        
+
         // default, null vals
         return playerStatsMap[playerName.ToLower()];
     }
@@ -279,7 +283,7 @@ public:
         PlayerData &stats = getStats(player);
         stats.times_joined++;
         stats.last_seen = time(NULL);
-
+        stats.human = player->IsHuman();
     }
 
     static void playerLeft(ePlayerNetID * player)
@@ -292,14 +296,13 @@ public:
     {
         PlayerData &stats = getStats(player);
 
-        stats.chatMessages.push_back(message.stdString());
+        stats.chat_messages.push_back(message.stdString());
         stats.total_messages++;
     }
 
     static void updateMatchWinsAndLoss(ePlayerNetID *matchWinner);
     static void updateRoundWinsAndLoss();
 
-    static void ensureTableAndColumnsExist(sqlite3* db);
     static void loadStatsFromDB();
     static void saveStatsToDB();
     static void reloadStatsFromDB();
@@ -312,6 +315,47 @@ public:
 
     static std::unordered_map<tString, PlayerData> playerStatsMap;
 };
+
+
+struct ColumnMapping {
+    std::string columnName;
+    std::string columnType;
+    std::function<void(sqlite3_stmt*, int&, const PlayerData&)> bindFunc;
+    std::function<void(sqlite3_stmt*, int&, PlayerData&)> extractFunc;
+};
+
+template <typename T>
+void ensureTableAndColumnsExist(sqlite3 *db, const std::string& tableName, const std::vector<T>& columnMappings) 
+{
+    char *errMsg = 0;
+    int rc;
+
+    std::stringstream createSql;
+    createSql << "CREATE TABLE IF NOT EXISTS " << tableName << "(";
+    bool first = true;
+    for (const auto &mapping : columnMappings)
+    {
+        if (!first)
+        {
+            createSql << ", ";
+        }
+        createSql << mapping.columnName << " " << mapping.columnType;
+        first = false;
+    }
+    createSql << ");";
+
+    rc = sqlite3_exec(db, createSql.str().c_str(), 0, 0, &errMsg);
+    if (rc != SQLITE_OK)
+    {
+        std::string debug = "SQL error during table/column existence check: " + std::string(errMsg) + "\n";
+        gHelperUtility::DebugLog(debug);
+        sqlite3_free(errMsg);
+    }
+    else
+    {
+        gHelperUtility::DebugLog("Table and columns ensured to exist successfully.\n");
+    }
+}
 
 
 #endif

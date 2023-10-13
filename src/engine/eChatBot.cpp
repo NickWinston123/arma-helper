@@ -274,13 +274,23 @@ tString statsFunc(tString message)
 
     eChatBotStats &stats = eChatBot::getInstance().Stats();
 
-    output << "Uptime: " << st_GetFormatTime(stats.UpTime())
-           << ", "
-           << "Messages Sent: "       << stats.total_messages_sent
-           << ", "
-           << "Messages Read: "       << stats.total_messages_read
-           << ", "
-           << "Players recorded: "       << ePlayerStats::getTotalPlayersLogged();
+    output << "Uptime: "   
+           << st_GetFormatTime(stats.upTime())
+           << " ("                 
+           << st_GetFormatTime(stats.upTime(false))
+           << "), "
+           << "Messages Sent: "    
+           << stats.messagesSent()
+           << " ("   
+           << stats.messagesSent(false)
+           << "), "
+           << "Messages Read: "    
+           << stats.messagesRead()
+           << " ("   
+           << stats.messagesRead(false)
+           << "), "
+           << "Players recorded: " 
+           << ePlayerStats::getTotalPlayersLogged();
 
     return tString(output);
 }
@@ -420,6 +430,14 @@ tString leaderboardFunc(tString message)
 
     std::vector<std::pair<tString, PlayerData>> sortedPlayers(ePlayerStats::playerStatsMap.begin(), ePlayerStats::playerStatsMap.end());
 
+    // remove AIs
+    auto it = std::remove_if(sortedPlayers.begin(), sortedPlayers.end(),
+                             [](const std::pair<tString, PlayerData>& player)
+                             {
+                                 return !player.second.human;
+                             });
+    sortedPlayers.erase(it, sortedPlayers.end());
+
     auto sortUsingGetAnyValue = [&statName](auto &a, auto &b)
     {
         REAL aValue = atof(a.second.getAnyValue(statName).c_str());
@@ -449,6 +467,7 @@ tString leaderboardFunc(tString message)
     return result;
 }
 
+
 tString exactStatFunc(tString message)
 {
     tString output;
@@ -467,7 +486,7 @@ tString exactStatFunc(tString message)
     int pos = 0;
     playerName = message.ExtractNonBlankSubString(pos);
 
-    if (playerName.empty()) 
+    if (playerName.empty())
     {
         output << "Player not found! Usage: "
                << eChatBot::getInstance().Stats().lastMatchedTrigger
@@ -1177,115 +1196,125 @@ static tConfItemFunc AddChatTrigger_conf = HelperCommand::tConfItemFunc("PLAYER_
 static tConfItemFunc RemoveChatTrigger_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
 static tConfItemFunc ReloadChatTriggers_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_RELOAD", &ReloadChatTriggers);
 
+const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings = {
+    {"hackermans", "TEXT PRIMARY KEY",
+     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats){ sqlite3_bind_text(stmt, col++, "HACKERMANS", -1, SQLITE_STATIC); },
+     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { col++; }},
 
-const std::vector<std::pair<std::string, std::string>> eChatBotStatsFields = {
-    {"hackermans", "TEXT PRIMARY KEY"},
-    {"total_uptime", "REAL"},
-    {"total_messages_read", "INTEGER"},
-    {"total_messages_sent", "INTEGER"},
-};
+    {"total_uptime", "REAL",
+     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_double(stmt, col++, stats.total_up_time); },
+     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_up_time = sqlite3_column_double(stmt, col++); }},
 
-void eChatBotStats::ensureChatBotStatsTableAndColumnsExist(sqlite3* db)
+    {"total_messages_read", "INTEGER",
+     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.total_messages_read); },
+     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_messages_read = sqlite3_column_int(stmt, col++); }},
+
+    {"total_messages_sent", "INTEGER",
+     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.total_messages_sent); },
+     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_messages_sent = sqlite3_column_int(stmt, col++); }}};
+
+void eChatBotStats::loadChatBotStatsFromDB(sqlite3 *db)
 {
-    char *errMsg = 0;
-    int rc;
+    if (se_playerStatsLog)
+        gHelperUtility::DebugLog("Entering loadChatBotStatsFromDB()");
 
-    std::stringstream createSql;
-    createSql << "CREATE TABLE IF NOT EXISTS eChatBotStats(";
-    bool first = true;
-    for (const auto &field : eChatBotStatsFields)
-    {
-        if (!first)
-        {
-            createSql << ", ";
-        }
-        createSql << field.first << " " << field.second;
-        first = false;
-    }
-    createSql << ");";
+    ensureTableAndColumnsExist(db, "eChatBotStats", eChatBotStatsMappings);
 
-    rc = sqlite3_exec(db, createSql.str().c_str(), 0, 0, &errMsg);
-    if (rc != SQLITE_OK)
-    {
-        std::string debug = "SQL error during table/column existence check: " + std::string(errMsg) + "\n";
-        gHelperUtility::DebugLog(debug);
-        sqlite3_free(errMsg);
-    }
-    else
-    {
-        gHelperUtility::DebugLog("Table and columns ensured to exist successfully.\n");
-    }
-}
-
-void eChatBotStats::loadChatBotStatsFromDB(sqlite3* db)
-{
     eChatBotStats &stats = eChatBot::getInstance().Stats();
     sqlite3_stmt *stmt;
     std::stringstream selectSql;
     selectSql << "SELECT ";
-    for (const auto &field : eChatBotStatsFields)
-        selectSql << field.first << ",";
+    for (const auto &mapping : eChatBotStatsMappings)
+        selectSql << mapping.columnName << ",";
+
     std::string query = selectSql.str();
     query.pop_back();
     query += " FROM eChatBotStats;";
 
+    if (se_playerStatsLog)
+        gHelperUtility::DebugLog("Generated SQL query: " + query);
+
     int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, 0);
-    if (rc == SQLITE_OK && sqlite3_step(stmt) == SQLITE_ROW)
+    if (rc == SQLITE_OK)
     {
-        int column = 0;
-        column++;
-        stats.total_up_time = sqlite3_column_double(stmt, column++);
-        stats.total_messages_read = sqlite3_column_int(stmt, column++);
-        stats.total_messages_sent = sqlite3_column_int(stmt, column++);
         if (se_playerStatsLog)
-            gHelperUtility::DebugLog("ChatBot stats loaded successfully.\n");
+            gHelperUtility::DebugLog("SQL query prepared successfully.");
+
+        if (sqlite3_step(stmt) == SQLITE_ROW)
+        {
+            int column = 0;
+            for (const auto &mapping : eChatBotStatsMappings)
+            {
+                mapping.extractFunc(stmt, column, stats);
+            }
+            stats.data_from_db = stats;
+
+            if (se_playerStatsLog)
+                gHelperUtility::DebugLog("ChatBot stats loaded successfully.");
+        }
+        else if (se_playerStatsLog)
+        {
+            std::string debug = "No rows found or an error occurred during sqlite3_step: " + std::string(sqlite3_errmsg(db));
+            gHelperUtility::DebugLog(debug);
+        }
     }
     else if (se_playerStatsLog)
     {
-        std::string debug = "SQL error during ChatBot stats loading: " + std::string(sqlite3_errmsg(db)) + "\n";
+        std::string debug = "SQL error during sqlite3_prepare_v2: " + std::string(sqlite3_errmsg(db));
         gHelperUtility::DebugLog(debug);
     }
+
     sqlite3_finalize(stmt);
+    if (se_playerStatsLog)
+        gHelperUtility::DebugLog("Exiting loadChatBotStatsFromDB()");
 }
 
-void eChatBotStats::saveChatBotStatsToDB(sqlite3* db)
+void eChatBotStats::saveChatBotStatsToDB(sqlite3 *db)
 {
+    if (se_playerStatsLog)
+        gHelperUtility::DebugLog("Entering saveChatBotStatsToDB()");
+        
+    ensureTableAndColumnsExist(db, "eChatBotStats", eChatBotStatsMappings);
+
     eChatBotStats &stats = eChatBot::getInstance().Stats();
 
-    std::stringstream columnNames;
-    std::stringstream values;
-
+    std::stringstream columnNames, placeholders, values;
     columnNames << "INSERT OR REPLACE INTO eChatBotStats(";
+    placeholders << ") VALUES(";
 
-    for (const auto &field : eChatBotStatsFields) {
-        columnNames << field.first << ",";
+    for (const auto &mapping : eChatBotStatsMappings)
+    {
+        columnNames << mapping.columnName << ",";
+        placeholders << "?,";
     }
 
-    std::string columnsStr = columnNames.str();
-    columnsStr.pop_back();
+    std::string colNamesStr = columnNames.str();
+    colNamesStr.pop_back();
 
-    values << ") VALUES('HACKERMANS', "
-           << stats.UpTime() << ", "
-           << stats.total_messages_read << ","
-           << stats.total_messages_sent << ");";
+    std::string placeholdersStr = placeholders.str();
+    placeholdersStr.pop_back();
 
-    std::string query = columnsStr + values.str();
+    values << colNamesStr << placeholdersStr << ");";
 
-    char *errMsg = 0;
-    int rc = sqlite3_exec(db, query.c_str(), 0, 0, &errMsg);
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(db, values.str().c_str(), -1, &stmt, 0);
 
-    if (!se_playerStatsLog)
-        return;
+    int col = 1;
+    for (const auto &mapping : eChatBotStatsMappings)
+    {
+        mapping.bindFunc(stmt, col, stats);
+    }
 
-    if (rc == SQLITE_OK)
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        std::string debug = "eChatBotStats SQL error while inserting: " + std::string(sqlite3_errmsg(db)) + "\n";
+        if (se_playerStatsLog)
+            gHelperUtility::DebugLog(debug);
+    } 
+    else if (se_playerStatsLog && rc == SQLITE_OK)
     {
         gHelperUtility::DebugLog("ChatBot stats saved successfully.\n");
     }
-    else
-    {
-        std::string debug = "SQL error: " + std::string(errMsg) + "\n";
-        gHelperUtility::DebugLog(debug);
-        sqlite3_free(errMsg);
-    }
+    sqlite3_finalize(stmt);
 }
-

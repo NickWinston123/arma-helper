@@ -3478,6 +3478,9 @@ static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WA
 static tString sg_playerSpamProtectionWatchSearchString("");
 static tConfItem<tString> sg_playerSpamProtectionWatchSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_SEARCH_STRING", sg_playerSpamProtectionWatchSearchString);
 
+bool sg_playerSilencedQuit = false;
+static tConfItem<bool> sg_playerSilencedQuitConf("CHAT_SILENCED_QUIT", sg_playerSilencedQuit);
+
 static void sn_ConsoleOut_handler(nMessage &m)
 {
     if (sn_GetNetState() != nSERVER)
@@ -3486,6 +3489,18 @@ static void sn_ConsoleOut_handler(nMessage &m)
         m >> s;
         con << s;
 
+    if (sg_playerSilencedQuit)
+    {
+        if (s.Contains(tString("SPAM PROTECTION: you have been silenced by the server administrator.")))
+        {
+            if (sn_bannedWatch)
+                FileManager(tString("banned.txt"),tDirectories::Var()).Write(tString("banned"));
+            
+            st_SaveConfig();
+            uMenu::quickexit = uMenu::QuickExit_Total;
+        
+        }
+    }
     if (sg_playerSpamProtectionWatch)
     {
         tString input = (sg_playerSpamProtectionWatchSearchString.empty() ? tString("silenced for the next ") : sg_playerSpamProtectionWatchSearchString );

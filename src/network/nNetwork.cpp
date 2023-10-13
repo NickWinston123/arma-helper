@@ -1625,18 +1625,11 @@ void login_deny_handler(nMessage &m){
 
     if (!login_failed)
         con << tOutput("$network_login_denial");
-        
+
     if (sn_GetNetState()!=nSERVER)
     {
 
-        if (sn_bannedWatch)
-           FileManager(tString("banned.txt"),tDirectories::Var()).Write(tString("banned"));
-
-        if (sn_bannedWatchQuit) 
-        {
-            st_SaveConfig();
-            uMenu::quickexit = uMenu::QuickExit_Total;
-        }
+        sn_bannedWatchAction();
 
         login_failed=true;
         login_succeeded=false;
@@ -1696,9 +1689,10 @@ static tConfItem<bool> sn_showOwnIPConf("SHOW_OWN_IP",sn_showOwnIP);
 
 bool sn_bannedWatch = false;
 static tConfItem<bool> sn_bannedWatchConf("BANNED_WATCH",sn_bannedWatch);
-
 bool sn_bannedWatchQuit = false;
 static tConfItem<bool> sn_bannedWatchQuitConf("BANNED_WATCH_QUIT",sn_bannedWatchQuit);
+REAL sn_bannedWatchQuitTime = 5;
+static tConfItem<REAL> sn_bannedWatchQuitTimeConf("BANNED_WATCH_QUIT_TIME",sn_bannedWatchQuitTime);
 #else
 static constexpr bool sn_showOwnIP = true;
 #endif
@@ -3492,14 +3486,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
     if (sg_playerSilencedQuit)
     {
         if (s.Contains(tString("SPAM PROTECTION: you have been silenced by the server administrator.")))
-        {
-            if (sn_bannedWatch)
-                FileManager(tString("banned.txt"),tDirectories::Var()).Write(tString("banned"));
-            
-            st_SaveConfig();
-            uMenu::quickexit = uMenu::QuickExit_Total;
-        
-        }
+            sn_bannedWatchAction(true);
     }
     if (sg_playerSpamProtectionWatch)
     {
@@ -5751,18 +5738,25 @@ std::vector<unsigned short> nMessage::nMessageToDataVector(nMessage& msg) {
     return data;
 }
 
-
-// ban IPs
 static void sn_bannedCMD(std::istream &s)
 {
-    if (sn_bannedWatch)
-        FileManager(tString("banned.txt"),tDirectories::Var()).Write(tString("banned"));
+    sn_bannedWatchAction();
+}
+static tConfItemFunc sn_bannedCMDConf("BANNED",&sn_bannedCMD);
 
-    if (sn_bannedWatchQuit) 
+#include "../tron/gGame.h"
+void sn_bannedWatchAction(bool forceQuit)
+{
+    if (sn_bannedWatch)
+        FileManager(tString("banned.txt"), tDirectories::Var()).Write(tString("banned"));
+
+    st_SaveConfig();
+
+    if (sn_bannedWatchQuit || forceQuit)
     {
-        st_SaveConfig();
-        uMenu::quickexit = uMenu::QuickExit_Total;
+        gTaskScheduler.schedule("bannedWatchQuit", sn_bannedWatchQuitTime, []
+        {
+            uMenu::quickexit = uMenu::QuickExit_Total;
+        });
     }
 }
-
-static tConfItemFunc sn_bannedCMDConf("BANNED",&sn_bannedCMD);

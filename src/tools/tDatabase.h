@@ -25,32 +25,79 @@ public:
         char *errMsg = 0;
         int rc;
 
-        std::stringstream createSql;
-        createSql << "CREATE TABLE IF NOT EXISTS " << tableName << "(";
-        bool first = true;
-        for (const auto &mapping : mappings)
+        // table exists ?
+        std::stringstream checkTableSql;
+        checkTableSql << "SELECT name FROM sqlite_master WHERE type='table' AND name='" << tableName << "';";
+
+        sqlite3_stmt *stmt;
+        rc = sqlite3_prepare_v2(db, checkTableSql.str().c_str(), -1, &stmt, NULL);
+
+        bool tableExists = false;
+
+        if (rc == SQLITE_OK)
         {
-            if (!first)
-            {
-                createSql << ", ";
-            }
-            createSql << mapping.columnName << " " << mapping.columnType;
-            first = false;
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+                tableExists = true;
+            sqlite3_finalize(stmt);
         }
-        createSql << ");";
 
-        gHelperUtility::DebugLog("Executing SQL: " + createSql.str());
-
-        rc = sqlite3_exec(db, createSql.str().c_str(), 0, 0, &errMsg);
-        if (rc != SQLITE_OK)
+        if (!tableExists)
         {
-            std::string debug = "SQL error during table/column existence check: " + std::string(errMsg) + "\n";
-            gHelperUtility::DebugLog(debug);
-            sqlite3_free(errMsg);
+            std::stringstream createTableSql;
+            createTableSql << "CREATE TABLE " << tableName << "(";
+            bool first = true;
+            for (const auto &mapping : mappings)
+            {
+                if (!first)
+                    createTableSql << ", ";
+                createTableSql << mapping.columnName << " " << mapping.columnType;
+                first = false;
+            }
+            createTableSql << ");";
+
+            rc = sqlite3_exec(db, createTableSql.str().c_str(), 0, 0, &errMsg);
+            if (rc != SQLITE_OK)
+            {
+                gHelperUtility::DebugLog("SQL error during table creation: " + std::string(errMsg));
+                sqlite3_free(errMsg);
+            }
         }
         else
         {
-            gHelperUtility::DebugLog("Table and columns ensured to exist successfully.\n");
+            for (const auto &mapping : mappings)
+            {
+                std::stringstream checkColumnSql;
+                checkColumnSql << "PRAGMA table_info(" << tableName << ");";
+                rc = sqlite3_prepare_v2(db, checkColumnSql.str().c_str(), -1, &stmt, NULL);
+
+                bool columnExists = false;
+
+                if (rc == SQLITE_OK)
+                {
+                    while (sqlite3_step(stmt) == SQLITE_ROW)
+                    {
+                        std::string columnName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+                        if (columnName == mapping.columnName)
+                        {
+                            columnExists = true;
+                            break;
+                        }
+                    }
+                    sqlite3_finalize(stmt);
+                }
+
+                if (!columnExists)
+                {
+                    std::stringstream addColumnSql;
+                    addColumnSql << "ALTER TABLE " << tableName << " ADD COLUMN " << mapping.columnName << " " << mapping.columnType << ";";
+                    rc = sqlite3_exec(db, addColumnSql.str().c_str(), 0, 0, &errMsg);
+                    if (rc != SQLITE_OK)
+                    {
+                        gHelperUtility::DebugLog("SQL error during column addition: " + std::string(errMsg));
+                        sqlite3_free(errMsg);
+                    }
+                }
+            }
         }
     }
 
@@ -125,8 +172,6 @@ void saveStatsToDB()
     {
         for (const auto &obj : getAllObjects())
         {
-
-            gHelperUtility::DebugLog("GOT NAME FROM OBJECT: " + obj.name.stdString());
             int column = 1;
             for (const auto &mapping : mappings)
             {
@@ -150,15 +195,16 @@ void saveStatsToDB()
     virtual void postLoadActions(T &obj) {}
 };
 
-namespace tDBUtility
+namespace tDatabaseUtility
 {
-    static sqlite3 *getDatabase(tString databaseFile)
+    static sqlite3 *OpenDatabase(tString databaseFile)
     {
+        tString databasePath = tDirectories::Var().GetReadPath(databaseFile);
 
-        gHelperUtility::DebugLog(st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ").stdString() + "Getting database");
+        gHelperUtility::DebugLog(st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ").stdString() + "Opening database at '" + databasePath.stdString() + "'");
 
         sqlite3 *db;
-        int rc = sqlite3_open(tDirectories::Var().GetReadPath(databaseFile), &db);
+        int rc = sqlite3_open(databasePath, &db);
         if (rc != SQLITE_OK)
         {
 

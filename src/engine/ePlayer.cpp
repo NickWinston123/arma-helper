@@ -8239,6 +8239,8 @@ void ePlayerNetID::ReadSync(nMessage &m)
     // check whether this is the first sync
     bool firstSync = (this->ID() == 0);
 
+    SyncData data;
+
     nNetObject::ReadSync(m);
 
     // con << "ePlayerNetID ReadSync COLOR R " << r << "\n";
@@ -8330,11 +8332,15 @@ void ePlayerNetID::ReadSync(nMessage &m)
     //  if (!m.End())
     {
         if (sn_GetNetState() != nSERVER)
+        {
             m >> score;
+            data.score = score;
+        }
         else
         {
             int s;
             m >> s;
+            data.score = s;
         }
     }
 
@@ -8406,6 +8412,20 @@ void ePlayerNetID::ReadSync(nMessage &m)
             }
         }
     }
+    
+    if (!firstSync) 
+    {
+        if (se_playerStats)
+        {
+            REAL addedScore = score - lastSyncMessage_.score;
+
+            if (addedScore != 0)
+                ePlayerStats::addScore(this, addedScore);
+        } 
+    }
+    lastSyncMessage_ = data;
+
+    
     // con << "Player info updated.\n";
 
     // make sure we did not accidentally overwrite values

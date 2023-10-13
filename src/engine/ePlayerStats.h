@@ -58,6 +58,7 @@ public:
     int round_losses = 0;
     int rounds_played = 0;
     int matches_played = 0;
+    int total_score = 0;
 
     std::string getLastSeenAgo(bool in_game)
     {
@@ -108,20 +109,23 @@ public:
             return messages;
         }
 
-    double getKDRatio() const
+    REAL getKDRatio() const
     {
+        REAL result = 0.0;
+        
         if (deaths == 0)
         {
-            return kills;
+            result = kills;
         }
         else if (kills >= deaths)
         {
-            return static_cast<double>(kills) / deaths;
+            result = static_cast<REAL>(kills) / deaths;
         }
         else
         {
-            return -static_cast<double>(deaths) / kills;
+            result = -static_cast<REAL>(deaths) / kills;
         }
+        return customRound(result,2);
     }
 };
 
@@ -300,6 +304,13 @@ public:
         stats.last_seen = time(NULL);
     }
 
+    static void addScore(ePlayerNetID * player, int score)
+    {
+        PlayerData &stats = getStats(player);
+        stats.total_score += score;
+    }
+
+
     static void addMessage(ePlayerNetID * player, tString message)
     {
         PlayerData &stats = getStats(player);
@@ -439,6 +450,11 @@ const std::vector<ColumnMapping> ePlayerStatsMappings = {
     {"human", "BOOLEAN",
         [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.human ? 1 : 0); },
         [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.human = sqlite3_column_int(stmt, col++) != 0; }
+    },
+
+    {"total_score", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.total_score); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_score = sqlite3_column_int(stmt, col++);  }
     },
 
 };

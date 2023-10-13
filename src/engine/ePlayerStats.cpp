@@ -23,12 +23,11 @@ static tConfItem<bool> se_playerStatsLogConf("PLAYER_STATS_LOG", se_playerStatsL
 tString se_playerStatsDataBaseFile("stats.db");
 static tConfItem<tString> se_playerStatsDataBaseFileConf("PLAYER_STATS_DB_FILE", se_playerStatsDataBaseFile);
 
-std::string join(const std::vector<std::string> &vec, const std::string &delimiter);
-
 void ePlayerStats::loadStatsFromDB() 
 {
-    sqlite3 *db = tDBUtility::getDatabase(se_playerStatsDataBaseFile);
-    if (!db) return;
+    sqlite3 *db = tDatabaseUtility::OpenDatabase(se_playerStatsDataBaseFile);
+    if (!db) 
+        return;
 
     ePlayerStatsDBAction  playerDataAction(db);
     playerDataAction.loadStatsFromDB();
@@ -41,11 +40,12 @@ void ePlayerStats::loadStatsFromDB()
 
 void ePlayerStats::saveStatsToDB() 
 {
-    sqlite3 *db = tDBUtility::getDatabase(se_playerStatsDataBaseFile);
-    if (!db) return;
+    sqlite3 *db = tDatabaseUtility::OpenDatabase(se_playerStatsDataBaseFile);
+    if (!db) 
+        return;
 
-    ePlayerStatsDBAction  dbAction(db);
-    dbAction.saveStatsToDB();
+    ePlayerStatsDBAction  playerDataAction(db);
+    playerDataAction.saveStatsToDB();
 
     eChatBotStatsDBAction chatbotStatsAction(db);
     chatbotStatsAction.saveStatsToDB();
@@ -114,7 +114,7 @@ std::set<std::string> PlayerData::valueMapdisplayFields =
     "rgb", "chats", "kills", "deaths", "match_wins",
     "match_losses", "round_wins", "round_losses", "rounds_played",
     "matches_played", "play_time", "spec_time", "times_joined",
-    "kd", "chat_messages", "fastest"
+    "kd", "chat_messages", "fastest", "score"
 };
 
 std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
@@ -241,10 +241,21 @@ std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
          tString result("");
          result << self->fastest_speed;
          return result;
-     }}
+     }},
+    {"total_score", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->total_score;
+         return result;
+     }},
+    {"score", [](PlayerDataBase *self)
+     {
+         tString result("");
+         result << self->total_score;
+         return result;
+     }},
 
 };
-
 
 
 const std::string DELIMITER = "-+HACKERMANS+-";

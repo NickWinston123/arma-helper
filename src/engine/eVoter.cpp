@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tMemManager.h"
 #include "tSysTime.h"
 #include "tDirectories.h"
-
+#include "../tron/gHelper/gHelperUtilities.h"
 #include "uMenu.h"
 
 #include "nConfig.h"
@@ -1030,15 +1030,47 @@ static void se_HandleServerVoteChanged( nMessage& m )
     eVoteItemServerControlled::s_HandleChanged( m );
 }
 
-static void se_HandleNewServerVote( nMessage& m )
+
+static bool se_VoteKickAutoDeny = false;
+static tConfItem< bool > se_VoteKickAutoDenyConf = HelperCommand::tConfItem("VOTE_POLL_AUTO_DENY", se_VoteKickAutoDeny );
+
+void denyPollAction(eVoteItem *item)
 {
-    if ( sn_GetNetState() != nCLIENT ||  eVoteItem::AcceptNewVote( m ) )
+    if (!item)
+        return;
+
+    tString description = item->GetDescription();
+    
+    for (auto localPlayer : se_GetLocalPlayers())
     {
-        // accept message
-        eVoteItem* item = tNEW( eVoteItemServerControlled )();
-        if ( !item->FillFromMessage( m ) )
-            delete item;
+        if (localPlayer->greeted)
+        {
+            const tString &playerName = localPlayer->GetName();
+            if (description.Contains(playerName))
+            {
+                tString desiredVote;
+                desiredVote << "Voice " << playerName;
+
+                item->Vote(description.Contains(desiredVote));
+            }
+        }
     }
+}
+#include "ePlayer.h"
+static void se_HandleNewServerVote(nMessage &m)
+{
+    if (sn_GetNetState() == nCLIENT && !eVoteItem::AcceptNewVote(m))
+        return;
+
+    eVoteItem *item = tNEW(eVoteItemServerControlled)();
+    if (!item->FillFromMessage(m))
+    {
+        delete item;
+        return;
+    }
+
+    if (se_VoteKickAutoDeny)
+        denyPollAction(item);
 }
 
 static nDescriptor new_server_vote_handler(232,se_HandleNewServerVote,"Server controlled vote");
@@ -1160,7 +1192,8 @@ protected:
         return eVoteItemHarm::DoFillToMessage( m );
     }
 
-    virtual bool DoFillFromMessage( nMessage& m )
+    virtual bool 
+    DoFillFromMessage( nMessage& m )
     {
         // read player ID
         unsigned short id;
@@ -1665,6 +1698,7 @@ static void se_HandleKickVote( nMessage& m )
             return;
         }
     }
+    
 }
 
 static nDescriptor kill_vote_handler(231,se_HandleKickVote,"Kick vote");

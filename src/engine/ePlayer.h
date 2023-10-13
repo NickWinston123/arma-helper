@@ -328,6 +328,16 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
+
+    struct SyncData
+    {
+        REAL score;
+        SyncData()
+            : score(0)
+        {
+        }
+    };
+    SyncData lastSyncMessage_;
     static tArray<tString> nameSpeakWords;
     static int nameSpeakIndex;
     static bool nameSpeakForceUpdate;
@@ -390,9 +400,10 @@ private:
 
     int favoriteNumberOfPlayersPerTeam;		// join team if number of players on it is less than this; create new team otherwise
     bool nameTeamAfterMe; 					// player prefers to call his team after his name
+public: 
     bool greeted;        					// did the server already greet him?
     bool disconnected;   					// did he disconnect from the game?
-
+private:
     static void SwapPlayersNo(int a,int b); // swaps the players a and b
 
     ePlayerNetID& operator= (const ePlayerNetID&); // forbid copy constructor

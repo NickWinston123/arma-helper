@@ -64,6 +64,9 @@ static tConfItem<bool> se_playerMessageTriggersMasterFuncFeedbackConf = HelperCo
 REAL se_playerTriggerMessagesSpamMaxlen = 200;
 static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SPAM_MAXLEN", se_playerTriggerMessagesSpamMaxlen);
 
+// REAL se_playerTriggerMessagesSpamMaxlenPartAdd = 0.3;
+// static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenPartAddConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DELAY_SPAM_MAXLEN_NEGATIVE_PART_ADD", se_playerTriggerMessagesSpamMaxlenPartAdd);
+
 
 tString stripNonOperatorsOrNumbers(const tString &input);
 bool containsMath(tString input, bool exact);
@@ -240,9 +243,9 @@ tString statsFunc(tString message)
         {
             tString timeString;
             if (!statsTargetPlayer || playingPlayer)
-                timeString << ", Play Time " << st_GetFormatTime(stats->getTotalPlayTime(), false);
+                timeString << ", Play Time " << st_GetFormatTime(stats->getTotalPlayTime(statsTargetPlayer), false);
             else
-                timeString << ", Spec Time " << st_GetFormatTime(stats->getTotalSpecTime(), false);
+                timeString << ", Spec Time " << st_GetFormatTime(stats->getTotalSpecTime(statsTargetPlayer), false);
 
             output << "RGB: " << stats->rgbString()
                    << timeString
@@ -275,22 +278,22 @@ tString statsFunc(tString message)
 
     eChatBotStats &stats = eChatBot::getInstance().Stats();
 
-    output << "Uptime: "   
+    output << "Uptime: "
            << st_GetFormatTime(stats.upTime())
-           << " ("                 
+           << " ("
            << st_GetFormatTime(stats.upTime(false))
            << "), "
-           << "Messages Sent: "    
+           << "Messages Sent: "
            << stats.messagesSent()
-           << " ("   
+           << " ("
            << stats.messagesSent(false)
            << "), "
-           << "Messages Read: "    
+           << "Messages Read: "
            << stats.messagesRead()
-           << " ("   
+           << " ("
            << stats.messagesRead(false)
            << "), "
-           << "Players recorded: " 
+           << "Players recorded: "
            << ePlayerStats::getTotalPlayersLogged();
 
     return tString(output);
@@ -404,7 +407,9 @@ tString playerKDFunc(tString message)
                << ", "
                << "Wins: "       << stats->match_wins
                << ", "
-               << "Losses: "     << stats->match_losses;
+               << "Losses: "     << stats->match_losses
+
+               << " | Score- "      << stats->total_score;
     }
     else
     {
@@ -634,10 +639,7 @@ void eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, 
 
     if (!response.empty() && !bot.masterFuncResponse)
     {
-        tString output;
-        output << preAppend
-               << response;
-        bot.preparePlayerMessage(output, delay, sendingPlayer);
+        bot.preparePlayerMessage(response, delay, sendingPlayer, preAppend);
     }
     else if (eventTrigger)
         con << "No trigger set for '" << message << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
@@ -899,7 +901,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
     return std::make_tuple(tString(""), 0.0, nullptr);
 }
 
-void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player)
+void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player, tString preAppend)
 {
     if (!helperConfig::sghuk)
         return;
@@ -940,6 +942,9 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
         if (messageToSend.Len() >= previousLength)
             break;
 
+        if (!preAppend.empty())
+            partToSend = preAppend + partToSend;
+
         if (player != nullptr)
         {
             if (tIsInList(se_playerMessageTargetPlayer, player->pID + 1))
@@ -977,12 +982,12 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
         Stats().total_messages_sent++;
 
     if (se_playerMessageDisplayScheduledMessages && scheduled)
-        con << "Scheduled message '" << messageToSend << "' "
-            << flagDelay             << " (wait time) + "
+        con << "Scheduled message '"   << messageToSend << "' "
+            << flagDelay               << " (wait time) + "
             << totalDelay - flagDelay  << " (typing time) -> "
-            << totalDelay            << " (total delay). "
-            << " (ExtraTime: "       << extraDelay << " seconds.) "
-            << "Sent in "            << numParts << " parts.\n";
+            << totalDelay              << " (total delay). "
+            << " (ExtraTime: "         << extraDelay << " seconds.) "
+            << "Sent in "              << numParts << " parts.\n";
 }
 
 bool containsMath( tString input, bool exact)

@@ -218,6 +218,7 @@
 		<Unit filename="src/tools/tCrypt.h" />
 		<Unit filename="src/tools/tDirectories.cpp" />
 		<Unit filename="src/tools/tDirectories.h" />
+		<Unit filename="src/tools/tDatabase.h" />
 		<Unit filename="src/tools/tError.cpp" />
 		<Unit filename="src/tools/tError.h" />
 		<Unit filename="src/tools/tEventQueue.cpp" />

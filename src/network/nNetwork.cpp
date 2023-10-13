@@ -3470,7 +3470,7 @@ static nConsoleFilter sn_consoleFilter;
 #endif
 
 static bool sg_playerMessageMatchWinner = false;
-static tConfItem<bool> sg_playerMessageMatchWinnerConf("PLAYER_MESSAGE_MATCH_TRIGGER_WINNER", sg_playerMessageMatchWinner);
+static tConfItem<bool> sg_playerMessageMatchWinnerConf("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER", sg_playerMessageMatchWinner);
 
 bool sg_playerSpamProtectionWatch = false;
 static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WATCH", sg_playerSpamProtectionWatch);
@@ -5750,3 +5750,19 @@ std::vector<unsigned short> nMessage::nMessageToDataVector(nMessage& msg) {
     }
     return data;
 }
+
+
+// ban IPs
+static void sn_bannedCMD(std::istream &s)
+{
+    if (sn_bannedWatch)
+        FileManager(tString("banned.txt"),tDirectories::Var()).Write(tString("banned"));
+
+    if (sn_bannedWatchQuit) 
+    {
+        st_SaveConfig();
+        uMenu::quickexit = uMenu::QuickExit_Total;
+    }
+}
+
+static tConfItemFunc sn_bannedCMDConf("BANNED",&sn_bannedCMD);

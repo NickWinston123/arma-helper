@@ -7,7 +7,6 @@
 #include <unordered_map>
 #include <functional>
 #include "defs.h"
-
 #include "ePlayer.h"
 #include "sqlite3.h"
 
@@ -28,6 +27,7 @@ struct ChatBotColumnMapping {
 
 struct eChatBotStatsBase
 {
+    tString name = tString("hackermans");
     int total_messages_read = 0;
     int total_messages_sent = 0;
     REAL total_up_time      = 0;
@@ -122,6 +122,25 @@ public:
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
     REAL calculateResponseSmartDelay(tString response, REAL wpm);
     bool ShouldAnalyze();
+};
+
+#include "tDatabase.h"
+class eChatBotStatsDBAction : public tDatabase<eChatBotStats, ChatBotColumnMapping> {
+public:
+    eChatBotStatsDBAction(sqlite3* db)
+        : tDatabase<eChatBotStats, ChatBotColumnMapping>(db, "eChatBotStats", eChatBotStats::eChatBotStatsMappings) {}
+
+    eChatBotStats& getTargetObject(const tString &name) override {
+        return eChatBot::getInstance().Stats();
+    }
+
+    std::vector<eChatBotStats> getAllObjects() override {
+        return {eChatBot::getInstance().Stats()};
+    }
+
+    void postLoadActions(eChatBotStats& chatBotStats) override {
+        chatBotStats.data_from_db = chatBotStats;
+    }
 };
 
 

@@ -4,6 +4,7 @@
 #include "eTimer.h"
 #include "../tron/gGame.h"
 #include "../tron/gMenus.h"
+#include "tDatabase.h"
 
 #include "eChatCommands.h"
 
@@ -1211,110 +1212,5 @@ const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings = {
 
     {"total_messages_sent", "INTEGER",
      [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.total_messages_sent); },
-     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_messages_sent = sqlite3_column_int(stmt, col++); }}};
-
-void eChatBotStats::loadChatBotStatsFromDB(sqlite3 *db)
-{
-    if (se_playerStatsLog)
-        gHelperUtility::DebugLog("Entering loadChatBotStatsFromDB()");
-
-    ensureTableAndColumnsExist(db, "eChatBotStats", eChatBotStatsMappings);
-
-    eChatBotStats &stats = eChatBot::getInstance().Stats();
-    sqlite3_stmt *stmt;
-    std::stringstream selectSql;
-    selectSql << "SELECT ";
-    for (const auto &mapping : eChatBotStatsMappings)
-        selectSql << mapping.columnName << ",";
-
-    std::string query = selectSql.str();
-    query.pop_back();
-    query += " FROM eChatBotStats;";
-
-    if (se_playerStatsLog)
-        gHelperUtility::DebugLog("Generated SQL query: " + query);
-
-    int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, 0);
-    if (rc == SQLITE_OK)
-    {
-        if (se_playerStatsLog)
-            gHelperUtility::DebugLog("SQL query prepared successfully.");
-
-        if (sqlite3_step(stmt) == SQLITE_ROW)
-        {
-            int column = 0;
-            for (const auto &mapping : eChatBotStatsMappings)
-            {
-                mapping.extractFunc(stmt, column, stats);
-            }
-            stats.data_from_db = stats;
-
-            if (se_playerStatsLog)
-                gHelperUtility::DebugLog("ChatBot stats loaded successfully.");
-        }
-        else if (se_playerStatsLog)
-        {
-            std::string debug = "No rows found or an error occurred during sqlite3_step: " + std::string(sqlite3_errmsg(db));
-            gHelperUtility::DebugLog(debug);
-        }
-    }
-    else if (se_playerStatsLog)
-    {
-        std::string debug = "SQL error during sqlite3_prepare_v2: " + std::string(sqlite3_errmsg(db));
-        gHelperUtility::DebugLog(debug);
-    }
-
-    sqlite3_finalize(stmt);
-    if (se_playerStatsLog)
-        gHelperUtility::DebugLog("Exiting loadChatBotStatsFromDB()");
-}
-
-void eChatBotStats::saveChatBotStatsToDB(sqlite3 *db)
-{
-    if (se_playerStatsLog)
-        gHelperUtility::DebugLog("Entering saveChatBotStatsToDB()");
-        
-    ensureTableAndColumnsExist(db, "eChatBotStats", eChatBotStatsMappings);
-
-    eChatBotStats &stats = eChatBot::getInstance().Stats();
-
-    std::stringstream columnNames, placeholders, values;
-    columnNames << "INSERT OR REPLACE INTO eChatBotStats(";
-    placeholders << ") VALUES(";
-
-    for (const auto &mapping : eChatBotStatsMappings)
-    {
-        columnNames << mapping.columnName << ",";
-        placeholders << "?,";
-    }
-
-    std::string colNamesStr = columnNames.str();
-    colNamesStr.pop_back();
-
-    std::string placeholdersStr = placeholders.str();
-    placeholdersStr.pop_back();
-
-    values << colNamesStr << placeholdersStr << ");";
-
-    sqlite3_stmt *stmt;
-    int rc = sqlite3_prepare_v2(db, values.str().c_str(), -1, &stmt, 0);
-
-    int col = 1;
-    for (const auto &mapping : eChatBotStatsMappings)
-    {
-        mapping.bindFunc(stmt, col, stats);
-    }
-
-    rc = sqlite3_step(stmt);
-    if (rc != SQLITE_DONE)
-    {
-        std::string debug = "eChatBotStats SQL error while inserting: " + std::string(sqlite3_errmsg(db)) + "\n";
-        if (se_playerStatsLog)
-            gHelperUtility::DebugLog(debug);
-    } 
-    else if (se_playerStatsLog && rc == SQLITE_OK)
-    {
-        gHelperUtility::DebugLog("ChatBot stats saved successfully.\n");
-    }
-    sqlite3_finalize(stmt);
-}
+     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_messages_sent = sqlite3_column_int(stmt, col++); }}
+};

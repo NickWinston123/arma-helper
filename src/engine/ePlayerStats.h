@@ -5,12 +5,20 @@
 #include "sqlite3.h"
 #include "ePlayer.h"
 #include <unordered_map>
+#include <numeric>
+
+
+#include "tDatabase.h"
 
 #include "../tron/gHelper/gHelperUtilities.h"
 
 #include "eTimer.h"
 
 extern bool se_playerStats, se_playerStatsLog;
+
+std::vector<std::string> deserializeVector(const std::string &str);
+std::string serializeVector(const std::vector<std::string> &vec);
+std::string join(const std::vector<std::string> &vec, const std::string &delimiter);
 
 class PlayerDataBase
 {
@@ -324,38 +332,141 @@ struct ColumnMapping {
     std::function<void(sqlite3_stmt*, int&, PlayerData&)> extractFunc;
 };
 
-template <typename T>
-void ensureTableAndColumnsExist(sqlite3 *db, const std::string& tableName, const std::vector<T>& columnMappings) 
-{
-    char *errMsg = 0;
-    int rc;
-
-    std::stringstream createSql;
-    createSql << "CREATE TABLE IF NOT EXISTS " << tableName << "(";
-    bool first = true;
-    for (const auto &mapping : columnMappings)
-    {
-        if (!first)
-        {
-            createSql << ", ";
+const std::vector<ColumnMapping> ePlayerStatsMappings = {
+    {"name", "TEXT PRIMARY KEY",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) {
+            sqlite3_bind_text(stmt, col++, stats.name.c_str(), -1, SQLITE_STATIC);
+        },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) {
+            stats.name = tString((char *)sqlite3_column_text(stmt, col++));
         }
-        createSql << mapping.columnName << " " << mapping.columnType;
-        first = false;
-    }
-    createSql << ");";
+    },
 
-    rc = sqlite3_exec(db, createSql.str().c_str(), 0, 0, &errMsg);
-    if (rc != SQLITE_OK)
-    {
-        std::string debug = "SQL error during table/column existence check: " + std::string(errMsg) + "\n";
-        gHelperUtility::DebugLog(debug);
-        sqlite3_free(errMsg);
+    {"matches_played", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.matches_played); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.matches_played = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"rounds_played", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.rounds_played); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.rounds_played = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"total_messages", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.total_messages); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_messages = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"b", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.b); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.b = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"g", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.g); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.g = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"r", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.r); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.r = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"round_losses", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.round_losses); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.round_losses = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"round_wins", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.round_wins); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.round_wins = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"total_play_time", "REAL",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_double(stmt, col++, stats.total_play_time); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_play_time = sqlite3_column_double(stmt, col++); }
+    },
+
+    {"match_losses", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.match_losses); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.match_losses = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"deaths", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.deaths); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.deaths = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"match_wins", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.match_wins); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.match_wins = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"kills", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.kills); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.kills = sqlite3_column_int(stmt, col++);  }
+    },
+
+    {"times_joined", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.times_joined); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.times_joined = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"total_spec_time", "REAL",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_double(stmt, col++, stats.total_spec_time); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_spec_time = sqlite3_column_double(stmt, col++); }
+    },
+
+    {"chat_messages", "TEXT",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_text(stmt, col++, serializeVector(stats.chat_messages).c_str(), -1, SQLITE_STATIC); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) {
+            const char *chatSerialized = reinterpret_cast<const char *>(sqlite3_column_text(stmt, col++));
+            if (chatSerialized)
+                stats.chat_messages = deserializeVector(chatSerialized);
+        }
+    },
+
+    {"fastest_speed", "REAL",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_double(stmt, col++, stats.fastest_speed); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.fastest_speed = sqlite3_column_double(stmt, col++); }
+    },
+
+    {"last_seen", "BIGINT",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int64(stmt, col++, static_cast<sqlite3_int64>(stats.last_seen)); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.last_seen = static_cast<time_t>(sqlite3_column_int64(stmt, col++)); }
+    },
+
+    {"human", "BOOLEAN",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.human ? 1 : 0); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.human = sqlite3_column_int(stmt, col++) != 0; }
+    },
+
+};
+
+class ePlayerStatsDBAction  : public tDatabase<PlayerData, ColumnMapping> {
+public:
+    ePlayerStatsDBAction (sqlite3* db)
+        : tDatabase<PlayerData, ColumnMapping>(db, "ePlayerStats", ePlayerStatsMappings) {}
+
+    PlayerData& getTargetObject(const tString &name) override {
+        return ePlayerStats::getStats(name);
     }
-    else
+
+std::vector<PlayerData> getAllObjects() override {
+    std::vector<PlayerData> playerDataVec;
+    for (auto& pair : ePlayerStats::playerStatsMap) 
     {
-        gHelperUtility::DebugLog("Table and columns ensured to exist successfully.\n");
+        pair.second.name = pair.first;  
+        playerDataVec.push_back(pair.second); 
     }
+    return playerDataVec;
 }
+
+    void postLoadActions(PlayerData& playerData) override {
+        playerData.data_from_db = playerData;
+    }
+};
+
 
 
 #endif

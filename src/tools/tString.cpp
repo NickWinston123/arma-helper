@@ -446,6 +446,50 @@ bool tString::StartsWith( const tString & other ) const
 //!
 // *******************************************************************************
 
+int tString::StrRPos( const tString & tofind, int startPos) const
+ {
+    if (tofind.Len() > Len() || startPos >= Len() || startPos < 0) {
+        return -1;
+    }
+
+    for (int i = startPos - tofind.Len(); i >= 0; i--) {
+        if ((*this)(i) == tofind(0)) {
+            bool found = true;
+            for (int j = 0; j < tofind.Len(); j++) {
+                if ((*this)(i + j) != tofind(j)) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) return i;
+        }
+    }
+
+    return -1;
+}
+
+
+int tString::StrRPos(const tString & tofind) const {
+    if (tofind.Len() > Len()) {
+        return -1;
+    }
+
+    for (int i = Len() - tofind.Len(); i >= 0; i--) {
+        if ((*this)(i) == tofind(0)) {
+            bool found = true;
+            for (int j = 0; j < tofind.Len(); j++) {
+                if ((*this)(i + j) != tofind(j)) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) return i;
+        }
+    }
+
+    return -1;
+}
+
 int tString::StrPos( const tString & tofind ) const
 {
     if (tofind.Len() > Len()) {

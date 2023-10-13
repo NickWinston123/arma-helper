@@ -42,6 +42,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gGame.h"
 #include "tRecorder.h"
 
+#include "eChatBot.h"
+#include "ePlayerStats.h"
+
 #include "rRender.h"
 #include <math.h>
 #include "gCycle.h"
@@ -405,7 +408,7 @@ static void display_hud_subby(ePlayer *player)
                     {
                         belowzero = false;
                     }
-                }
+                }   
 
                 topscore = 0;
                 for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
@@ -422,16 +425,20 @@ static void display_hud_subby(ePlayer *player)
 
                         //   distance = h->distance;
                         //   c << p-> name << " " << int((h ->Speed())) << " ";
+                        if (se_playerStats) 
+                        {
+                            REAL currentPlayerSpeed = h->Speed();
+                            PlayerData &stats = ePlayerStats::getStats(p->GetName());
+                            
+                            if (stats.fastest_speed < currentPlayerSpeed)
+                                stats.fastest_speed = currentPlayerSpeed;
+                        }
+
                         if (h->Speed() > max)
                         {
                             max = (float)h->Speed(); // changed to float for more accuracy in reporting top speed
                             name = p->GetName();
                             // imax = i;
-                        }
-                        if (h->Speed() > ultimax)
-                        {
-                            ultimax = (float)h->Speed();
-                            ultiname = p->GetName();
                         }
                     }
                 }

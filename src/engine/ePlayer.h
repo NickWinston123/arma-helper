@@ -606,6 +606,7 @@ public:
     static ePlayerNetID * ReadPlayer( std::istream & s ); //!< reads a player from the stream
 
     static void Update(ePlayer *updatePlayer = nullptr);           // creates ePlayerNetIDs for new players
+    static void ForcedUpdate(ePlayer *updatePlayer = nullptr);           // creates ePlayerNetIDs for new players
     // and destroys those of players that have left
 
 #ifdef KRAWALL_SERVER
@@ -996,6 +997,7 @@ ePlayerNetID & ePlayerNetID::SetUserName( tString const & userName )
 
 ePlayerNetID *se_GetLocalPlayer();
 ePlayerNetID *se_GetLocalPlayer(int ID);
+std::vector<ePlayerNetID *> se_GetLocalPlayers();
 
 extern bool se_highlightNames, se_tabCompletion, se_tabCompletionWithColors,se_tabCompletionColon;
 

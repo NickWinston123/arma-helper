@@ -8,9 +8,9 @@
 
 #include "eTimer.h"
 
-extern bool se_playerStats;
+extern bool se_playerStats, se_playerStatsLog;
 
-class PlayerDataBase 
+class PlayerDataBase
 {
 public:
     // Player
@@ -24,11 +24,11 @@ public:
     {
         tString output;
         output  << "("
-                << r 
+                << r
                 << ", "
-                << g 
+                << g
                 << ", "
-                << b 
+                << b
                 << ")";
         return output;
     }
@@ -45,6 +45,9 @@ public:
     REAL total_play_time = 0;
     REAL total_spec_time = 0;
     int times_joined     = 0;
+    REAL fastest_speed   = 0;
+
+    std::vector<std::string> chatMessages;
 
     REAL getTotalPlayTime(bool add = true)
     {
@@ -55,6 +58,24 @@ public:
     {
         return total_spec_time + (add ? se_GameTime() : 0);
     }
+
+        std::string getChatMessages()
+        {
+            std::string messages;
+            bool first = true;
+
+            for (auto messageIt = chatMessages.rbegin(); messageIt != chatMessages.rend(); ++messageIt)
+            {
+                if (!first)
+                    messages += ", ";
+                else
+                    first = false;
+
+                messages += *messageIt;
+            }
+
+            return messages;
+        }
 
     double getKDRatio() const
     {
@@ -74,19 +95,28 @@ public:
 };
 
 class PlayerData : public PlayerDataBase
-
 {
     using StatFunction = std::function<tString(PlayerDataBase *)>;
-
 public:
     static std::map<std::string, StatFunction> valueMap;
+    static std::set<std::string> valueMapdisplayFields;
 
+    static tString getAvailableStatsStr()
+    {
+        tString result;
+        result << "Available stats are: ";
+        for (const auto &name : PlayerData::valueMapdisplayFields)
+            result << name << ", ";
+
+        result = result.SubStr(0, result.Len() - 2);
+        return result;
+    }
     tString getAnyValue(tString variable)
     {
         auto stat = valueMap.find(variable.stdString());
         if (stat != valueMap.end())
             return stat->second(this);
-        else 
+        else
         {
             tString emptyVal;
             return emptyVal;
@@ -102,72 +132,72 @@ public:
 
     static PlayerData& getStats(ePlayerNetID * player)
     {
-        return playerStatsMap[player->GetRealName()];
+        return playerStatsMap[player->GetRealName().ToLower()];
     }
 
     static PlayerData& getStats(tString playerName)
     {
-        return playerStatsMap[playerName];
+        return playerStatsMap[playerName.ToLower()];
     }
 
     static void addKill(ePlayerNetID *player)
     {
-        playerStatsMap[player->GetRealName()].kills++;
+        playerStatsMap[player->GetRealName().ToLower()].kills++;
     }
 
     static void addDeath(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].deaths++;
+        playerStatsMap[player->GetRealName().ToLower()].deaths++;
     }
 
     static void addMatchWin(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].match_wins++;
+        playerStatsMap[player->GetRealName().ToLower()].match_wins++;
     }
 
     static void addMatchLoss(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].match_losses++;
+        playerStatsMap[player->GetRealName().ToLower()].match_losses++;
     }
 
     static void addMatchPlayed(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].matches_played++;
+        playerStatsMap[player->GetRealName().ToLower()].matches_played++;
     }
 
     static void addRoundWin(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].round_wins++;
+        playerStatsMap[player->GetRealName().ToLower()].round_wins++;
     }
 
     static void addRoundLoss(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].round_losses++;
+        playerStatsMap[player->GetRealName().ToLower()].round_losses++;
     }
 
     static void addRoundPlayed(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].rounds_played++;
+        playerStatsMap[player->GetRealName().ToLower()].rounds_played++;
     }
 
     static void addPlayTime(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].total_play_time += se_GameTime();
+        playerStatsMap[player->GetRealName().ToLower()].total_play_time += se_GameTime();
     }
 
     static void addSpecTime(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].total_spec_time += se_GameTime();
+        playerStatsMap[player->GetRealName().ToLower()].total_spec_time += se_GameTime();
     }
 
     static void addJoined(ePlayerNetID * player)
     {
-        playerStatsMap[player->GetRealName()].times_joined++;
+        playerStatsMap[player->GetRealName().ToLower()].times_joined++;
     }
 
     static void setColor(ePlayerNetID * player, int r, int g, int b)
     {
-        tString name = player->GetRealName();
+        tString name = player->GetRealName().ToLower();
 
         PlayerData &data = playerStatsMap[name];
         data.r = r;
@@ -175,14 +205,18 @@ public:
         data.b = b;
     }
 
-    static void addTotalMessages(ePlayerNetID * player)
+    static void addMessage(ePlayerNetID * player, tString message)
     {
-        playerStatsMap[player->GetRealName()].total_messages++;
+        PlayerData &stats = getStats(player);
+
+        stats.chatMessages.push_back(message.stdString());
+        stats.total_messages++;
     }
 
     static void updateMatchWinsAndLoss(ePlayerNetID *matchWinner);
     static void updateRoundWinsAndLoss();
 
+    static void ensureTableAndColumnsExist(sqlite3* db);
     static void loadStatsFromDB();
     static void saveStatsToDB();
     static void reloadStatsFromDB();

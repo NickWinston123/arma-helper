@@ -5785,7 +5785,7 @@ bool gGame::GameLoop(bool input)
         gTaskScheduler.schedule("forcedUpdate", sg_forceClockDelay, []
         {
             if (sg_forcePlayerUpdate || ePlayerNetID::nameSpeakForceUpdate)
-                ePlayerNetID::Update();
+                ePlayerNetID::ForcedUpdate();
 
             if (sg_forcePlayerRebuild)
                 ePlayerNetID::CompleteRebuild();

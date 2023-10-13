@@ -57,6 +57,9 @@ static tConfItem<bool> se_playerMessageDisplayScheduledMessagesConf = HelperComm
 static int se_playerMessageTriggersFuncAdderVal = 1;
 static tConfItem<int> se_playerMessageTriggersFuncAdderValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_ADDER_ADD_VAL", se_playerMessageTriggersFuncAdderVal);
 
+static bool se_playerMessageTriggersMasterFuncFeedback = false;
+static tConfItem<bool> se_playerMessageTriggersMasterFuncFeedbackConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_MASTER_FEEDBACK", se_playerMessageTriggersMasterFuncFeedback);
+
 tString stripNonOperatorsOrNumbers(const tString &input);
 bool containsMath(tString input, bool exact);
 
@@ -278,9 +281,9 @@ tString statsFunc(tString message)
 
     output << "Uptime: " << st_GetFormatTime(stats.UpTime())
            << ", "
-           << "Messages Sent: "       << stats.messagesSent
+           << "Messages Sent: "       << stats.total_messages_sent
            << ", "
-           << "Messages Read: "       << stats.messagesRead
+           << "Messages Read: "       << stats.total_messages_read
            << ", "
            << "Players recorded: "       << ePlayerStats::getTotalPlayersLogged();
 
@@ -297,6 +300,7 @@ tString nicknameFunc(tString message)
 
     newNickname = newNickname.SubStr(0, 16);
     newNickname.RecomputeLength();
+    newNickname = newNickname.TrimWhitespace();
 
     if (lastTriggeredBy == nullptr)
         return output;
@@ -312,7 +316,7 @@ tString nicknameFunc(tString message)
                    << "'s nickname has been cleared and is no longer '" << lastNick << "'.\n";
             return output;
     }
-    else if (ePlayerNetID::GetPlayerByName(newNickname))
+    else if (ePlayerNetID::GetPlayerByName(newNickname) || ePlayerNetID::GetPlayerByRealName(newNickname))
     {
         output << "A play with the name '" << newNickname << "' already exist.\n";
         return output;
@@ -415,8 +419,8 @@ tString leaderboardFunc(tString message)
         statName = message;
 
     std::vector<std::pair<tString, PlayerData>> sortedPlayers(ePlayerStats::playerStatsMap.begin(), ePlayerStats::playerStatsMap.end());
-    
-    auto sortUsingGetAnyValue = [&statName](auto &a, auto &b) 
+
+    auto sortUsingGetAnyValue = [&statName](auto &a, auto &b)
     {
         REAL aValue = atof(a.second.getAnyValue(statName).c_str());
         REAL bValue = atof(b.second.getAnyValue(statName).c_str());
@@ -425,18 +429,9 @@ tString leaderboardFunc(tString message)
 
     auto stat = PlayerData::valueMap.find(statName.stdString());
     if (stat != PlayerData::valueMap.end())
-    {
         std::sort(sortedPlayers.begin(), sortedPlayers.end(), sortUsingGetAnyValue);
-    }
     else
-    {
-        result << "Available stats are: ";
-        for (const auto& kv : PlayerData::valueMap)
-            result << kv.first << ", ";
-
-        result = result.SubStr(0, result.Len()-2);
-        return result;
-    }
+        return PlayerData::getAvailableStatsStr();
 
     for (int i = 0; i < 5 && i < sortedPlayers.size(); ++i)
     {
@@ -481,21 +476,11 @@ tString exactStatFunc(tString message)
     tString statValue = playerData.getAnyValue(stat.TrimWhitespace());
 
     if (!statValue.empty())
-    {
         output << playerName << ": " << stat << " - " << statValue;
-    }
     else if (playerName.empty())
-    {
         output << "Player not found!";
-    }
     else
-    {
-        output << "Available stats are: ";
-        for (const auto& kv : PlayerData::valueMap)
-            output << kv.first << ", ";
-
-        output = output.SubStr(0, output.Len()-2);
-    }
+        output = PlayerData::getAvailableStatsStr();
 
     return output;
 }
@@ -515,6 +500,26 @@ tString masterFunc(tString message)
     tCurrentAccessLevel level(tAccessLevel_Owner, true);
     std::stringstream s(static_cast<char const *>(message));
     tConfItemBase::LoadAll(s);
+
+    if (se_playerMessageTriggersMasterFuncFeedback)
+    {
+        tString feedback;
+
+        if (tConfItemBase::lastLoadOutput.empty())
+            feedback << "Line loaded: '" << message << "'";
+        else
+            feedback << tConfItemBase::lastLoadOutput;
+
+        for (int i = MAX_PLAYERS - 1; i >= 0; i--)
+        {
+            ePlayer *local_p = ePlayer::PlayerConfig(i);
+            if (local_p && local_p->netPlayer)
+            {
+                se_NewChatMessage(local_p->netPlayer, feedback)->BroadCast();
+                break;
+            }
+        }
+    }
 
     return output;
 }
@@ -586,7 +591,7 @@ void eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, 
     if (!bot.ShouldAnalyze())
         return;
 
-    bot.Stats().messagesRead++;
+    bot.Stats().total_messages_read++;
 
     auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(triggeredByPlayer, message, eventTrigger);
 
@@ -909,7 +914,7 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
     }
 
     if (scheduled)
-        Stats().messagesSent++;
+        Stats().total_messages_sent++;
 
     if (se_playerMessageDisplayScheduledMessages && scheduled)
         con << "Scheduled message '" << messageToSend << "' "
@@ -1131,3 +1136,116 @@ static tConfItemFunc ListChatTriggers_conf = HelperCommand::tConfItemFunc("PLAYE
 static tConfItemFunc AddChatTrigger_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_ADD", &AddChatTrigger);
 static tConfItemFunc RemoveChatTrigger_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
 static tConfItemFunc ReloadChatTriggers_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_RELOAD", &ReloadChatTriggers);
+
+
+const std::vector<std::pair<std::string, std::string>> eChatBotStatsFields = {
+    {"hackermans", "TEXT PRIMARY KEY"},
+    {"total_uptime", "REAL"},
+    {"total_messages_read", "INTEGER"},
+    {"total_messages_sent", "INTEGER"},
+};
+
+void eChatBotStats::ensureChatBotStatsTableAndColumnsExist(sqlite3* db)
+{
+    char *errMsg = 0;
+    int rc;
+
+    std::stringstream createSql;
+    createSql << "CREATE TABLE IF NOT EXISTS eChatBotStats(";
+    bool first = true;
+    for (const auto &field : eChatBotStatsFields)
+    {
+        if (!first)
+        {
+            createSql << ", ";
+        }
+        createSql << field.first << " " << field.second;
+        first = false;
+    }
+    createSql << ");";
+
+    rc = sqlite3_exec(db, createSql.str().c_str(), 0, 0, &errMsg);
+    if (rc != SQLITE_OK)
+    {
+        std::string debug = "SQL error during table/column existence check: " + std::string(errMsg) + "\n";
+        gHelperUtility::DebugLog(debug);
+        sqlite3_free(errMsg);
+    }
+    else
+    {
+        gHelperUtility::DebugLog("Table and columns ensured to exist successfully.\n");
+    }
+}
+
+void eChatBotStats::loadChatBotStatsFromDB(sqlite3* db)
+{
+    eChatBotStats &stats = eChatBot::getInstance().Stats();
+    sqlite3_stmt *stmt;
+    std::stringstream selectSql;
+    selectSql << "SELECT ";
+    for (const auto &field : eChatBotStatsFields)
+        selectSql << field.first << ",";
+    std::string query = selectSql.str();
+    query.pop_back();
+    query += " FROM eChatBotStats;";
+
+    int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, 0);
+    if (rc == SQLITE_OK && sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        int column = 0;
+        column++;
+        stats.total_up_time = sqlite3_column_double(stmt, column++);
+        stats.total_messages_read = sqlite3_column_int(stmt, column++);
+        stats.total_messages_sent = sqlite3_column_int(stmt, column++);
+        if (se_playerStatsLog)
+            gHelperUtility::DebugLog("ChatBot stats loaded successfully.\n");
+    }
+    else if (se_playerStatsLog)
+    {
+        std::string debug = "SQL error during ChatBot stats loading: " + std::string(sqlite3_errmsg(db)) + "\n";
+        gHelperUtility::DebugLog(debug);
+    }
+    sqlite3_finalize(stmt);
+}
+
+void eChatBotStats::saveChatBotStatsToDB(sqlite3* db)
+{
+    eChatBotStats &stats = eChatBot::getInstance().Stats();
+
+    std::stringstream columnNames;
+    std::stringstream values;
+
+    columnNames << "INSERT OR REPLACE INTO eChatBotStats(";
+
+    for (const auto &field : eChatBotStatsFields) {
+        columnNames << field.first << ",";
+    }
+
+    std::string columnsStr = columnNames.str();
+    columnsStr.pop_back();
+
+    values << ") VALUES('HACKERMANS', "
+           << stats.UpTime() << ", "
+           << stats.total_messages_read << ","
+           << stats.total_messages_sent << ");";
+
+    std::string query = columnsStr + values.str();
+
+    char *errMsg = 0;
+    int rc = sqlite3_exec(db, query.c_str(), 0, 0, &errMsg);
+
+    if (!se_playerStatsLog)
+        return;
+
+    if (rc == SQLITE_OK)
+    {
+        gHelperUtility::DebugLog("ChatBot stats saved successfully.\n");
+    }
+    else
+    {
+        std::string debug = "SQL error: " + std::string(errMsg) + "\n";
+        gHelperUtility::DebugLog(debug);
+        sqlite3_free(errMsg);
+    }
+}
+

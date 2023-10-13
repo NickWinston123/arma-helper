@@ -115,6 +115,8 @@ public:
     tString Trim() const;                           //!< returns a copy with leading and trailing whitespace removed
 
     //Get the position of a substring within a string...
+    int StrRPos(const tString & tofind) const;
+    int StrRPos( const tString & tofind, int startPos) const;
     int StrPos( const tString &tofind ) const;      //!< Get the position of a substring within this string.
     int StrPos( int start, const tString &tofind ) const; //!< Get the position of a substring within this string.
     int StrPos( const char * tofind ) const;        //!< Get the position of a substring within this string.

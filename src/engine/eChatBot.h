@@ -9,7 +9,7 @@
 #include "defs.h"
 
 #include "ePlayer.h"
-
+#include "sqlite3.h"
 
 extern bool se_playerTriggerMessagesReactToSelf;
 extern tString se_playerTriggerMessagesFile;
@@ -19,15 +19,19 @@ extern bool se_playerTriggerMessages;
 
 struct eChatBotStats
 {
-    REAL messagesRead = 0;
-    REAL messagesSent = 0;
-
+    int total_messages_read = 0;
+    int total_messages_sent = 0;
+    REAL total_up_time      = 0;
     tString lastMatchedTrigger;
     ePlayerNetID *lastTriggeredBy;
 
+    static void loadChatBotStatsFromDB(sqlite3* db);
+    static void saveChatBotStatsToDB(sqlite3* db);
+    static void ensureChatBotStatsTableAndColumnsExist(sqlite3* db);
+
     REAL UpTime()
     {
-        return tSysTimeFloat();
+        return total_messages_sent + tSysTimeFloat();
     }
 };
 

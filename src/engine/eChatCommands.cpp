@@ -1012,7 +1012,7 @@ bool RgbCommand::execute(tString args)
 
             if (targetPlayer != nullptr)
             {
-                ePlayerNetID::Update();
+                ePlayerNetID::ForcedUpdate();
                 listColors << ColorsCommand::gatherPlayerColor(targetPlayer);
             }
             else
@@ -1092,7 +1092,7 @@ bool RebuildCommand::execute(tString args)
                 << MainText() << "'\n";
 
             netPlayer->Clear(local_p);
-            netPlayer->Update();
+            netPlayer->ForcedUpdate();
         }
     }
     return true;
@@ -1230,7 +1230,7 @@ bool SpectateCommand::execute(tString args)
         if (helperConfig::sghuk && se_spectateCommandInstant)
             netPlayer->Clear(local_p);
 
-        netPlayer->Update();
+        netPlayer->ForcedUpdate();
     }
     return true;
 }
@@ -1252,7 +1252,7 @@ bool JoinCommand::execute(tString args)
             << "Joining the game...\n";
 
         netPlayer->CreateNewTeamWish();
-        netPlayer->Update();
+        netPlayer->ForcedUpdate();
     }
     return true;
 }
@@ -1970,7 +1970,7 @@ bool UpdateCommand::execute(tString args)
     {
         con << CommandText()
             << "Updating all players...\n";
-        ePlayerNetID::Update();
+        ePlayerNetID::ForcedUpdate();
     }
     else
     {
@@ -2036,18 +2036,12 @@ bool EncryptCommand::ValidateHash(tString givenHash, double time)
 
 bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString message)
 {
-    int colonPos = message.StrPos(":");
-
-    if (colonPos == -1)
+    if (!message.StartsWith(se_encryptCommandPrefix))
         return false;
 
-    tString actualMessage = message.SubStr(colonPos + 2);
-    if (!actualMessage.StartsWith(se_encryptCommandPrefix))
-        return false;
+    int startIndex = message.StrPos(se_encryptCommandPrefix) + se_encryptCommandPrefix.Len() - 1;
 
-    int startIndex = actualMessage.StrPos(se_encryptCommandPrefix) + se_encryptCommandPrefix.Len() - 1;
-
-    tString hashStr = actualMessage.SubStr(startIndex, se_encryptCommandLength);
+    tString hashStr = message.SubStr(startIndex, se_encryptCommandLength);
 
     REAL currentTime = getEncryptLocaltime();
     bool valid = ValidateHash(hashStr, currentTime);
@@ -2062,7 +2056,7 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
 
     int argsStartIndex = startIndex + se_encryptCommandLength + 1;
 
-    if (argsStartIndex > actualMessage.Len())
+    if (argsStartIndex > message.Len())
     {
         con << "EncryptCommand: No arguments found after the hash.\n";
         return true;
@@ -2070,7 +2064,7 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
 
     tConfItemBase::lastLoadOutput = tString("");
 
-    tString args = actualMessage.SubStr(argsStartIndex);
+    tString args = message.SubStr(argsStartIndex);
     con << "EncryptCommand: Loading command '" << args << "'\n";
 
     ePlayerNetID *consoleUser = player->lastMessagedPlayer;
@@ -2222,7 +2216,7 @@ bool RenameCommand::execute(tString args)
 
     player->name = args;
     if (netPlayer)
-        netPlayer->Update();
+        netPlayer->ForcedUpdate();
     return true;
 }
 
@@ -2251,6 +2245,8 @@ bool QuitCommand::execute(tString args)
     if (!args.empty())
         quitTime = atoi(args.ExtractNonBlankSubString(pos));
 
+    st_SaveConfig();
+    
     con << CommandText()
         << "Quiting game in '" << quitTime << "' seconds...\n";
 

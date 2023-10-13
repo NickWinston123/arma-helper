@@ -1809,15 +1809,107 @@ static void se_DisplayChatLocally(ePlayerNetID *p, const tString &say)
 
 static bool se_playerMessageChat = false;
 static tConfItem<bool> se_playerMessageChatConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT", se_playerMessageChat);
+
+static void se_validate(std::istream &s)
+{
+    tString params;
+    s >> params;
+
+    ePlayerNetID *player = ePlayerNetID::FindPlayerByName(params);
+    if (!player)
+        return;
+
+    player->encryptVerified = true;
+    con << player->GetName() << " has been validated.\n";
+
+}
+static tConfItemFunc se_validateConf("VALIDATE", &se_validate);
+
+static void se_unValidate(std::istream &s)
+{
+    tString params;
+    s >> params;
+
+    ePlayerNetID *player = ePlayerNetID::FindPlayerByName(params);
+    if (!player)
+        return;
+
+    player->encryptVerified = false;
+    con << player->GetName() << " has been unvalidated.\n";
+
+}
+static tConfItemFunc se_unValidateConf("UNVALIDATE", &se_unValidate);
+
 static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 {
     // con << "message " << message << "\n";
     if (p && !p->IsSilenced() && se_enableChat)
     {
         tColoredString actualMessage(message);
+        tString colorlessMessage(tColoredString::RemoveColors(message));
 
-        if (se_playerStats)
-            ePlayerStats::addTotalMessages(p);
+        if (se_playerStats) 
+        {
+            tString nameToReplace;
+            nameToReplace << p->GetName() << ": ";
+            ePlayerStats::addMessage(p, colorlessMessage.Replace(nameToReplace,""));
+        }
+
+        bool encyptedMessage = false;
+
+        ePlayerNetID *ourPlayer;
+        bool privateMessage = false;
+        tString privateMessageParams;
+
+        tString possiblePrivateMessageStr;
+        int privateMessageMsgPos = -1;
+        for (auto localPlayer : se_GetLocalPlayers())
+        {
+            possiblePrivateMessageStr.Clear();
+            possiblePrivateMessageStr << p->GetName()
+                                      << " --> "
+                                      << localPlayer->GetName()
+                                      << ": ";
+
+            privateMessageMsgPos = colorlessMessage.StrPos(possiblePrivateMessageStr);
+            if (privateMessageMsgPos != -1)
+            {
+                p->lastMessagedPlayer = ourPlayer;
+                ourPlayer->lastMessagedByPlayer = p;
+                ourPlayer->lastMessagedPlayer = nullptr;
+                
+                ourPlayer = localPlayer;
+                privateMessage = true;
+                privateMessageParams = colorlessMessage.SubStr(privateMessageMsgPos + possiblePrivateMessageStr.Len()-1);
+                break;
+            }
+        }
+
+        if (privateMessage)
+        {
+            if (se_encryptCommandWatch)
+                encyptedMessage = EncryptCommand::handleEncryptCommandAction(p, privateMessageParams);
+        }
+
+        if (se_playerTriggerMessages && se_playerMessageChat && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
+        {
+            tString params(tColoredString::RemoveColors(actualMessage));
+            const int nameLength = p->GetRealName().Len() + 1;
+
+            tString preAppend;
+            if (privateMessage && ourPlayer)
+            {
+                preAppend << "/msg "
+                          << p->GetRealName().Filter()
+                          << " ";
+                params = privateMessageParams;
+            }
+            else
+            {
+                params = params.SubStr(nameLength);
+            }
+            eChatBot::InitiateAction(p, params, false, preAppend);
+        }
 
         bool sentFromTeamMember = false;
         if (se_silenceEnemies)
@@ -1872,31 +1964,6 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         se_SaveToChatLog(actualMessage);
 
-        bool encyptedMessage = false;
-        bool privateMessage = actualMessage.Contains("-->");
-        ePlayerNetID *ourPlayer;
-
-        if (privateMessage)
-        {
-            int arrowPos = actualMessage.StrPos("-->");  // pos of arrow
-            int colonPos = actualMessage.StrPos(":");    // pos of colon
-
-            if (arrowPos != -1 && colonPos != -1 && colonPos > arrowPos)
-            {
-                tString ourName = actualMessage.SubStr(arrowPos + 4, colonPos - arrowPos - 4).TrimWhitespace();
-
-                ourPlayer = ePlayerNetID::GetPlayerByName(ourName);
-                if (ourPlayer)
-                {
-                    p->lastMessagedPlayer = ourPlayer;
-                    ourPlayer->lastMessagedByPlayer = p;
-                    ourPlayer->lastMessagedPlayer = nullptr;
-                }
-            }
-
-            if (se_encryptCommandWatch)
-                encyptedMessage = EncryptCommand::handleEncryptCommandAction(p, actualMessage);
-        }
 
         if (se_chatTimeStamp && !sr_consoleTimeStamp)
         {
@@ -1905,27 +1972,6 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         con << actualMessage << "\n";
 
-        if (se_playerTriggerMessages && se_playerMessageChat && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
-        {
-            actualMessage = tColoredString::RemoveColors(actualMessage);
-            const int timestampLength = 9;
-            const int nameLength = p->GetName().Len();
-            int cutLength = timestampLength + nameLength + 2;
-
-            tString preAppend;
-            if (privateMessage && ourPlayer)
-            {
-                static int arrowLength = 4;
-                preAppend << "/msg "
-                          << p->GetName().Filter()
-                          << " ";
-                cutLength += arrowLength + ourPlayer->GetName().Len();
-            }
-
-            actualMessage = actualMessage.SubStr(cutLength);
-
-            eChatBot::InitiateAction(p, actualMessage, false, preAppend);
-        }
     }
 }
 
@@ -5139,6 +5185,23 @@ void ePlayerNetID::Chat(const tString &s_orig)
 }
 
 // identify a local human player
+std::vector<ePlayerNetID *> se_GetLocalPlayers()
+{
+    std::vector<ePlayerNetID *> localPlayers;
+
+    for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+    {
+        ePlayerNetID *p = se_PlayerNetIDs[i];
+
+        if (p->Owner() == sn_myNetID && p->IsHuman())
+            localPlayers.push_back(p);
+    }
+
+    return localPlayers;
+}
+
+
+// identify a local human player
 ePlayerNetID *se_GetLocalPlayer()
 {
     for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
@@ -5754,34 +5817,29 @@ static tConfItem<int> se_randomNameModeConf = HelperCommand::tConfItem("PLAYER_R
 tString se_randomNameCharset("");
 static tConfItem<tString> se_randomNameCharsetConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_CHARSET", se_randomNameCharset);
 
+#include <string>
+#include <cstdlib>
+
 tString randomName()
 {
-    tString charset;
+    std::string charset;
 
     if (se_randomNameCharset.empty())
     {
         switch (se_randomNameMode)
         {
         case 4:
-        {
             charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             break;
-        }
         case 3:
-        {
             charset = "abcdefghijklmnopqrstuvwxyz";
             break;
-        }
         case 2:
-        {
             charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
             break;
-        }
         case 0:
-        {
             charset = "0123456789";
             break;
-        }
         default:
             charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             break;
@@ -5789,19 +5847,20 @@ tString randomName()
     }
     else
     {
-        charset = se_randomNameCharset;
+        charset = se_randomNameCharset.stdString();
     }
-        int length = se_randomNameLength;
-    tString randomStr;
-    randomStr.SetLen(length);
+
+    int length = se_randomNameLength;
+    std::string randomStr;
+    randomStr.resize(length);
     for (int i = 0; i < length; i++)
     {
-        int index = rand() % charset.Len();
+        int index = rand() % charset.length();
         randomStr[i] = charset[index];
     }
-    randomStr[length] = '\0';
-    return randomStr;
+    return tString(randomStr);
 }
+
 
 bool se_toggleChatFlag = false;
 static tConfItem<bool>  se_toggleChatFlagConf = HelperCommand::tConfItem("CHAT_FLAG_TOGGLE", se_toggleChatFlag);
@@ -6870,7 +6929,7 @@ static void player_removed_from_game_handler(nMessage &m)
                 ePlayerNetID::CompleteRebuild();
             }
         }
-        
+
         p->RemoveFromGame();
     }
 }
@@ -10187,7 +10246,14 @@ void ePlayerNetID::scheduleNameChange()
     Clear(player);
 }
 
+static bool ignoreAlive = false;
 // Update the netPlayer_id list
+void ePlayerNetID::ForcedUpdate(ePlayer* updatePlayer)
+{
+    ignoreAlive = true;
+    Update(updatePlayer);
+}
+
 void ePlayerNetID::Update(ePlayer* updatePlayer)
 {
 #ifdef KRAWALL_SERVER
@@ -10277,6 +10343,8 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
             if (bool(p) && in_game) // update
             {
+
+                bool playerAlive = (p->Object() && p->Object()->Alive());
 
                 if (se_forceJoinTeam && !bool(p->currentTeam))
                 {
@@ -10484,11 +10552,14 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     p->RequestSync();
                 }
 
-                p->SetName(newName);
+                if (!playerAlive || ignoreAlive)
+                    p->SetName(newName);
 
                 local_p->updateIteration++;
                 if (se_forceSync)
                     p->RequestSync();
+
+                ignoreAlive = false;
             }
         }
 

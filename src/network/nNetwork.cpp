@@ -1632,8 +1632,11 @@ void login_deny_handler(nMessage &m){
         if (sn_bannedWatch)
            FileManager(tString("banned.txt"),tDirectories::Var()).Write(tString("banned"));
 
-        if (sn_bannedWatchQuit)
+        if (sn_bannedWatchQuit) 
+        {
+            st_SaveConfig();
             uMenu::quickexit = uMenu::QuickExit_Total;
+        }
 
         login_failed=true;
         login_succeeded=false;

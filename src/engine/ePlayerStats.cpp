@@ -27,16 +27,17 @@ const std::vector<std::pair<std::string, std::string>> fields = {
     {"g", "INTEGER"},
     {"r", "INTEGER"},
     {"round_losses", "INTEGER"},
-    {"times_joined", "INTEGER"},
     {"round_wins", "INTEGER"},
-    {"total_spec_time", "REAL"},
     {"total_play_time", "REAL"},
     {"match_losses", "INTEGER"},
     {"deaths", "INTEGER"},
     {"match_wins", "INTEGER"},
     {"kills", "INTEGER"},
+    {"times_joined", "INTEGER"},
+    {"total_spec_time", "REAL"},
     {"chat_messages", "TEXT"},
     {"fastest_speed", "REAL"},
+    {"last_seen", "BIGINT"},
 };
 
 const std::string DELIMITER = "-+HACKERMANS+-";
@@ -183,6 +184,8 @@ void ePlayerStats::loadStatsFromDB()
         PlayerData &stats = getStats(name);
         int column = 1;
 
+        stats.name = name;
+
         stats.matches_played = sqlite3_column_int(stmt, column++);
         stats.rounds_played = sqlite3_column_int(stmt, column++);
         stats.total_messages = sqlite3_column_int(stmt, column++);
@@ -190,20 +193,24 @@ void ePlayerStats::loadStatsFromDB()
         stats.g = sqlite3_column_int(stmt, column++);
         stats.r = sqlite3_column_int(stmt, column++);
         stats.round_losses = sqlite3_column_int(stmt, column++);
-        stats.times_joined = sqlite3_column_int(stmt, column++);
         stats.round_wins = sqlite3_column_int(stmt, column++);
-        stats.total_spec_time = sqlite3_column_double(stmt, column++);
         stats.total_play_time = sqlite3_column_double(stmt, column++);
         stats.match_losses = sqlite3_column_int(stmt, column++);
         stats.deaths = sqlite3_column_int(stmt, column++);
         stats.match_wins = sqlite3_column_int(stmt, column++);
         stats.kills = sqlite3_column_int(stmt, column++);
 
+        stats.times_joined = sqlite3_column_int(stmt, column++);
+        stats.total_spec_time = sqlite3_column_double(stmt, column++);
+
         const char *chatSerialized = reinterpret_cast<const char *>(sqlite3_column_text(stmt, column++));
         if (chatSerialized)
             stats.chatMessages = deserializeVector(chatSerialized);
 
         stats.fastest_speed = sqlite3_column_double(stmt, column++);
+        stats.last_seen = static_cast<time_t>(sqlite3_column_int64(stmt, column++));
+
+        
         stats.data_from_db = stats;
     }
 
@@ -276,6 +283,8 @@ void ePlayerStats::saveStatsToDB()
         sqlite3_bind_text(stmt, 1, kv.first.c_str(), -1, SQLITE_STATIC);
         int col = 2;
 
+
+        // MAKE THIS A MAP!!!!!!
         sqlite3_bind_int(stmt, col++, kv.second.matches_played);
         sqlite3_bind_int(stmt, col++, kv.second.rounds_played);
         sqlite3_bind_int(stmt, col++, kv.second.total_messages);
@@ -283,16 +292,17 @@ void ePlayerStats::saveStatsToDB()
         sqlite3_bind_int(stmt, col++, kv.second.g);
         sqlite3_bind_int(stmt, col++, kv.second.r);
         sqlite3_bind_int(stmt, col++, kv.second.round_losses);
-        sqlite3_bind_int(stmt, col++, kv.second.times_joined);
-        sqlite3_bind_int(stmt, col++, kv.second.round_wins);
-        sqlite3_bind_double(stmt, col++, kv.second.total_spec_time);
-        sqlite3_bind_double(stmt, col++, kv.second.total_play_time);
-        sqlite3_bind_int(stmt, col++, kv.second.match_losses);
-        sqlite3_bind_int(stmt, col++, kv.second.deaths);
-        sqlite3_bind_int(stmt, col++, kv.second.match_wins);
-        sqlite3_bind_int(stmt, col++, kv.second.kills);
+        sqlite3_bind_int(stmt, col++, kv.second.round_wins);   // match losse
+        sqlite3_bind_double(stmt, col++, kv.second.total_play_time); // matchj wins
+        sqlite3_bind_int(stmt, col++, kv.second.match_losses); // kills
+        sqlite3_bind_int(stmt, col++, kv.second.deaths); // times joined
+        sqlite3_bind_int(stmt, col++, kv.second.match_wins); // total spec time
+        sqlite3_bind_int(stmt, col++, kv.second.kills); // chat messages
+        sqlite3_bind_int(stmt, col++, kv.second.times_joined); // play time
+        sqlite3_bind_double(stmt, col++, kv.second.total_spec_time); // deaths
         sqlite3_bind_text(stmt, col++, serializeVector(kv.second.chatMessages).c_str(), -1, SQLITE_STATIC);
         sqlite3_bind_double(stmt, col++, kv.second.fastest_speed);
+        sqlite3_bind_int64(stmt, col++, static_cast<sqlite3_int64>(kv.second.last_seen));
 
         rc = sqlite3_step(stmt);
         if (rc != SQLITE_DONE)
@@ -374,7 +384,7 @@ std::set<std::string> PlayerData::valueMapdisplayFields = {
     "rgb", "chats", "kills", "deaths", "match_wins",
     "match_losses", "round_wins", "round_losses", "rounds_played",
     "matches_played", "play_time", "spec_time", "times_joined",
-    "kd", "chats", "fastest"};
+    "kd", "chat_messages", "fastest"};
 
 std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
     {"rgb", [](PlayerDataBase *self)
@@ -478,12 +488,6 @@ std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
          return result;
      }},
     {"chat_messages", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result = tString(self->getChatMessages());
-         return result;
-     }},
-    {"chats", [](PlayerDataBase *self)
      {
          tString result("");
          result = tString(self->getChatMessages());

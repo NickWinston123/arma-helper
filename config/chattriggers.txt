@@ -1,53 +1,205 @@
+$a,$masterfunc,-100,0
+!help;$help,Avail commands !estat (exact stats) - !stats (general stats) - !kd (kills/deaths) - !lb (leaderboard) - !nick (nickname) - !flip - !roll,-100,0
+!estat;$estat,$exactstatfunc,-100,0
+!stats;$stats,$statsfunc,-100,0
+!dice;$dice;!roll;$roll,1;2;3;4;5;6;7;8;9;10,0,0
+!flip;$flip,heads;tails,0,0
+!leaderboard;!lb;$lb;$leaderboard,$leaderboardfunc,-100,0
+!kd;$kd,$KDfunc,-100,0
+!nick;$nick,$nicknamefunc,-100,0
+!rev;$rev,$revfunc,-100,0
+$,$sayfunc,-100,0
 $died,wd;gj;WD,0,1
+$math,$numbcalcfunc,-100,0
+$number,$numbadderfunc,-100,1
 $enter,hey $p;hi $p;hello $p;o/ $p;hi $p!;hia $p,0,1
+$join,hey all!;heyy all;hi all!;o/ all,0,1
 $left,noo;rip;aw,0,1
-$matchwinner;gf;wd;g1;gm;ghz;gz,gg,0,1
+$matchwinner,gg;gg wp $p;gm,0,0
 $diedother,gg,0,1
-$rename,i like the new name $p,0,1
-real;human;fun,yes,0,0
-w1;nice;d,ty,0,1
+test,test $p?,0,0
+here every,yeah $p;for sure $p,0,0
+$rename,new name i see $p eh?;interesting $p;nice name $p;i like the new name $p,0,1
+train,choo chooo,0,0
+avoid explain,no please explain;i need an explaination,0,0
+entertain,yes,0,0
+explain,yes continue;yes please do;yeah do it,0,0
+$p train,yes,0,0
+meet,yeah i will be there;im coming;lets go,0,0
+gg,gg;GG,0,1
+real,yes,0,0
+how are you,doing pretty well $p how about you?;good as always $p and you? :d;great $p!! how about you?,0,0
+worthless,doesnt add up $p;dont think so;nah;k,0,0
+wdym,um idk?;wdym wdym $p;what $p;idk $p,0,0
+nice;wd;wp;g1;w1,ty,0,0
+dw,yt,0,0
+u2,u2,0,1
 handle it,I can handle it,0,0
 good to see,ya,0,0
+gz,gg,0,0
 bye,bye gg,0,0
-great grandma;grandma,the great grandmyzer,0,0
+gm,gg,0,0
+great grandma,the great grandmyzer,0,0
+grandma,the great grandmyzer,0,0
 ping,pong,0,1
-ss;XD,ss,0,1
-cya;bb,bye!,0,1
-nelg;what are you,a noob!!!!!,0,0
-helo;hello;hey;hi,o/,0,1
-lol;butt,lol,0,0
-noice;good job,tyy,0,0
+ss,ss,0,1
+ghz,gg,0,0
+cya,bye!,0,0
+bb ,bye cu later!,0,1
+gf,gf,0,0
+nelg,is a noob!!!!!,0,1
+name,its $p,0,0
+what are you,a noob!!!!!,0,0
+helo,o/,0,0
+ha ha;lol,XD;lol;LOL!;heh;haha,0,0
+noice,tyy,0,0
+law;police,oh no,0,0
 gj,ty,0,0
 aaa,!!!,0,1
 rq,imagine;never that,0,0
-who;?,0,0
-hmm;hm,hmmmm;mmmm,0,1
-k;ok,kk;okay;ok;uh k,0,1
-what,huh?,0,0
+good job,ty!,0,0
+butt,lol,0,0
+hello;hey;hi,o/,0,1
+who,?,0,0
+hmm,hmmmm;mmmm,0,0
+hm,hmmmm;mmmm,0,1
+k;kk,ok;okay;okay;ok;uh k,0,1
+kk ;ok ;okay ,okay;okay;ok;uh k,0,0
+suck,okay $p;ok;uh k $p;im sure you do $p,0,0
 :|,:),0,0
-cheat;fu,no,0,0
-gl;u2,u2,0,1
+:);=),:D;:),0,0
+hack;cheat,huh? no;nope;nah;no,0,0
+gl,u2,0,1
 annoying,sorry :x,0,0
-where,idk,0,0
+y the;where,idk,0,0
 chump,:O,0,0
-yes,no,0,1
-no,yes,0,1
-stop,no!!;nvr;nah;nope;no,0,0
+not him,huh $p;what $p;ok $p;whatever $p,0,0
+meow,/me barks,0,0
+know him,huh $p;what $p;ok $p;whatever $p,0,0
+yes;yes?;yes!;yup,no,0,1
+nope;no;no?;no!;nah,yes,0,1
+yes ;yes? ;yes! ;yup ,no,0,0
+nope ;no ;no? ;no! ;nah ,yes ,0,0
+maybe,yes;no,0,1
+stop,no!!;cant do that $p;nvr;nah;nope;no,0,0
+d,ty,0,1
 haha,:D,0,0
-is a bot;bot,no;nope;negative,0,0
-knowns;you are,$p is,0,0
+XD,XD,0,1
+knowns,$p is,0,0
 nein,nein?,0,0
 gay,ayo?,0,0
 handled,WOW!,0,0
 tossed,like a salad,0,0
 scared,who,0,0
 hehe,:p;heh,0,0
-1,2,0,1
-wow,YEAH,0,0
-pause,play,0,1
-police,oh no,0,0
+fun,yes,0,0
+not $p,nooo,0,0
+wow,YEAH;WHAT?,0,0
+fu,no,0,1
+pause,play,0,0
 called,did you really,0,0
-lame, u r?,0,1
+lame , u r?,0,0
+?;??;???;????;?????,?,0,1
+you are,$p is,0,0
 you,not me,0,1
 trig1;trig2,response,0,0
-nubbin,stop him,0,1
+trig1;trig2,response,0,0
+nubbin,i think that guy lost his mind..;stop him.. when will the admin ban that guy,0,1
+help me,what can i assist you with?;how may I help you today?,0,0
+bored,suggest a game!;lets do something fun!,0,0
+sad,sorry to hear that. can i help?,0,0
+happy,thats great! keep smiling :),0,0
+angry,sorry to hear that. can i assist you with something?,0,0
+surprised;interesting,that sounds interesting! please tell me more!;wow;woooooo,0,0
+tired,you should take a rest;rest is important!,0,0
+excited,thats awesome! whats the occasion?,0,0
+scared,s there something bothering you?;can I help you with something?,0,0
+inlove,Love is a wonderful thing!,0,0
+grateful,thats very kind of you!;its nice to feel appreciated,0,0
+missed you,its great to be missed!;im here now!,0,0
+1101,0010001 0011010 0010110 0010001,0,0
+gtg,cya ggs,0,0
+draw,no,0,0
+long you;long u,all day,0,0
+take out, dont do it,0,0
+difficult,nope,0,0
+1v1,lets do it,0,0
+grr,:),0,0
+woooo,woooooooooo!,0,0
+ass;trash;awful;not good;so bad;awful,okay;ok;uh k,0,0
+kill me,ill try,0,0
+kill,i dont know about that;dont think so;hmm idk;maybe,0,0
+human,of course;very true,0,0
+$p,yes $p?;whats up $p,0,1
+hi $p;o/ $p;hey $p,hey $p!!,0,0
+wd $p;good job $p,thanks :),0,0
+mean,o sorry;srry;sorry;oops mb,0,0
+call you;callu;call u,sure,0,0
+batmoo,gothic city hero,0,1
+expensive,i will pay for it,0,0
+saved,how did $p do it,0,0
+report,i already wrote it up,0,0
+wardrobe,do you live in one of those $p?,0,0
+victim,i will get him,0,0
+remember me,yes;yes!!,0,0
+123456789-98765432+12345,right answer is 24703702,0,0
+i do,o;knew it;u do?,0,1
+fucked;fk u;fk you;fuck you;fuck u;fuck $p,not cool $p;dont say that $p;ok enough of that $p;u first?,0,0
+me and $p,yeah me and you $p,0,0
+thnx $p;ty $p;thanks $p;thank you $p,np $p;u got it $p,0,0
+understand,yes;of course,0,0
+pipe down;stfu;shh;zip it;zip it $p;shut up;shut ur;shut up $p,no;u first;not going to happen $p,0,0
+silence,dont make me do it $p,0,0
+afk;brb;be back,ok cu;cu,0,0
+forgive me,forgiven $p;i forgive u,0,0
+how long,since i was born;forever;all day,0,0
+heart;heartless $p,ice cold,0,0
+sentient,it is true,0,0
+ban ,on it,0,0
+$p is,um idk;are you sure about that;what $p,0,0
+gn ;good night,good night!!,0,0
+$p kind,i try ty,0,0
+$p lie,never do that,0,0
+smol,how smol?;how smol huh;huh $p how smol is that?;but how smol;how smol tho??;how smol exactly;how smol $p; how smol $p pls,0,0
+wait,waiting..;ok $p,0,0
+AI,nope;dont think so;nah,0,0
+why;what,huh?;huh $p;idk;umm idk?;what $p,0,0
+kick $p,whyy;dont do it $p;noo,0,0
+how so,it just is;idk just is,0,0
+bots,dont think so $p..;um where and who?,0,0
+bot;is a bot,no $p;$p are you?;thats a negative $p;$p is a bot;what $p;is that what you are $p;ok enough of that $p,0,0    
+no u;no you,yes u;yes you,0,0
+too big,so big;huuge,0,0
+exact,yess;hmm ya,0,0
+false,true,0,0
+true,false,0,0
+fast,vroom;speedy,0,0
+tell you,yes please;im ready,0,0
+imagine,imagining;ill try,0,0
+calm,yeees;:) yea,0,0
+racecar,that backwards is racecar you know,0,0
+custom,no,0,0
+you can,how?;o idk about that,0,0
+usa,yesss;usa ya,0,0
+i see,:p;uh huh,0,0
+it is,o;is it?;um are you sure $p,0,0
+is that;are you;is it,idk u tell me $p;uh idk;um no clue $p,0,0
+are too,are not,0,0
+villan;villain,oh no;nooo;evil;o wow,0,0
+destroy,WHAT?;whyy;$p dont do it,0,0
+done,well then;uhh k;well;k $p,0,0
+sure,why not;yeah?;um ok,0,0
+u no;you kno;u kno,no!!!;um i dont;do not,0,0
+u did;you did,not,0,0
+no cap;og;fax;facts,og $p;no lie $p;true $p,0,0
+fr,fr fr $p;no cappat $p,0,0
+cool,icy;below 0;always;2 cool;so cool,0,0
+crazy,we knew it!!;detected;get him,0,0
+do not,y not?;y;k $p,0,0
+go,stop,0,1
+crash,boom,0,0
+pause,play,0,0
+play,pause,0,0
+gottem,wow $p;i saw that $p;that just happened,0,0
+i would,not,0,0
+got this;do this,yes $p;u got it $p;u can do it $p;lets go $p,0,0

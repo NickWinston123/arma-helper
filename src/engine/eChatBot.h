@@ -31,7 +31,7 @@ struct eChatBotStats
 
     REAL UpTime()
     {
-        return total_messages_sent + tSysTimeFloat();
+        return total_up_time + tSysTimeFloat();
     }
 };
 

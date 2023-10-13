@@ -60,6 +60,10 @@ static tConfItem<int> se_playerMessageTriggersFuncAdderValConf = HelperCommand::
 static bool se_playerMessageTriggersMasterFuncFeedback = false;
 static tConfItem<bool> se_playerMessageTriggersMasterFuncFeedbackConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_MASTER_FEEDBACK", se_playerMessageTriggersMasterFuncFeedback);
 
+REAL se_playerTriggerMessagesSpamMaxlen = 200;
+static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SPAM_MAXLEN", se_playerTriggerMessagesSpamMaxlen);
+
+
 tString stripNonOperatorsOrNumbers(const tString &input);
 bool containsMath(tString input, bool exact);
 
@@ -220,9 +224,13 @@ tString statsFunc(tString message)
             playerName = statsTargetPlayer->GetRealName();
         }
 
-            PlayerData &stats = ePlayerStats::getStats(playerName);
+        PlayerData *stats;
+        if (statsTargetPlayer)
+            stats = &ePlayerStats::getStats(playerName);
+        else
+            stats = &ePlayerStats::getStatsForAnalysis(playerName);
 
-            output << playerName
+            output << (!statsTargetPlayer ? stats->name : playerName)
                    << ": ";
 
         bool playingPlayer = statsTargetPlayer && statsTargetPlayer->CurrentTeam();
@@ -231,13 +239,13 @@ tString statsFunc(tString message)
         {
             tString timeString;
             if (!statsTargetPlayer || playingPlayer)
-                timeString << ", Play Time " << st_GetFormatTime(stats.getTotalPlayTime(), false);
+                timeString << ", Play Time " << st_GetFormatTime(stats->getTotalPlayTime(), false);
             else
-                timeString << ", Spec Time " << st_GetFormatTime(stats.getTotalSpecTime(), false);
+                timeString << ", Spec Time " << st_GetFormatTime(stats->getTotalSpecTime(), false);
 
-            output << "RGB: " << stats.rgbString()
+            output << "RGB: " << stats->rgbString()
                    << timeString
-                   << ", Chats: " << stats.total_messages;
+                   << ", Chats: " << stats->total_messages;
         }
 
         if (statsTargetPlayer)
@@ -253,26 +261,13 @@ tString statsFunc(tString message)
             output << "Last Active: "
                    << st_GetFormatTime(statsTargetPlayer->LastActivity(), false);
         }
-
-            // if (statsTargetPlayer->Object())
-            // {
-            //     gCycle *pCycle = dynamic_cast<gCycle *>(statsTargetPlayer->Object());
-
-            //     if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
-            //         output << ", Last Death: "
-            //                << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, false);
-            //     else
-            //         output << ", Alive Time: "
-            //                << st_GetFormatTime(se_GameTime(), false);
-            // }
-            // else if (statsTargetPlayer->CurrentTeam())
-            // {
-
-            //     output << ", Last Death: "
-            //            << st_GetFormatTime(tSysTimeFloat() - statsTargetPlayer->lastCycleDeathTime, false)
-            //            << "\n";
-            // }
-
+        else
+        {
+            if (se_playerStats)
+                output << ", "
+                       << "Last seen: "
+                       << stats->getLastSeenAgo(false);
+        }
         return tString(output);
 
     }
@@ -286,7 +281,6 @@ tString statsFunc(tString message)
            << "Messages Read: "       << stats.total_messages_read
            << ", "
            << "Players recorded: "       << ePlayerStats::getTotalPlayersLogged();
-
 
     return tString(output);
 }
@@ -345,6 +339,7 @@ tString nicknameFunc(tString message)
 tString playerKDFunc(tString message)
 {
     tString output;
+    message = message.TrimWhitespace();
 
     ePlayerNetID *statsTargetPlayer = nullptr;
     tString playerName;
@@ -358,7 +353,7 @@ tString playerKDFunc(tString message)
     if (!message.empty())
     {
         playerName = message;
-        statsTargetPlayer = ePlayerNetID::GetPlayerByRealName(message, false);
+        statsTargetPlayer = ePlayerNetID::GetPlayerByRealName(message.TrimWhitespace(), false);
         if (statsTargetPlayer)
             playerName = statsTargetPlayer->GetRealName();
     }
@@ -372,28 +367,33 @@ tString playerKDFunc(tString message)
 
     if (!playerName.empty())
     {
-        PlayerData playerData = ePlayerStats::getStats(playerName);
+        PlayerData *stats;
+        if (statsTargetPlayer)
+            stats = &ePlayerStats::getStats(playerName);
+        else
+            stats = &ePlayerStats::getStatsForAnalysis(playerName);
 
-        output << playerName << ": "
-               << "Kills: "      << playerData.kills
+        output << (!statsTargetPlayer ? stats->name : playerName)
+               << ": "
+               << "Kills: "      << stats->kills
                << ", "
-               << "Deaths: "     << playerData.deaths
+               << "Deaths: "     << stats->deaths
                << ", "
-               << "K/D: "        << playerData.getKDRatio()
+               << "K/D: "        << stats->getKDRatio()
 
                << " | Rounds- "
-               << "Played: "     << playerData.rounds_played
+               << "Played: "     << stats->rounds_played
                << ", "
-               << "Wins: "       << playerData.round_wins
+               << "Wins: "       << stats->round_wins
                << ", "
-               << "Losses: "     << playerData.round_losses
+               << "Losses: "     << stats->round_losses
 
                << " | Matches- "
-               << "Played: "     << playerData.matches_played
+               << "Played: "     << stats->matches_played
                << ", "
-               << "Wins: "       << playerData.match_wins
+               << "Wins: "       << stats->match_wins
                << ", "
-               << "Losses: "     << playerData.match_losses;
+               << "Losses: "     << stats->match_losses;
     }
     else
     {
@@ -431,7 +431,7 @@ tString leaderboardFunc(tString message)
     if (stat != PlayerData::valueMap.end())
         std::sort(sortedPlayers.begin(), sortedPlayers.end(), sortUsingGetAnyValue);
     else
-        return PlayerData::getAvailableStatsStr();
+        return PlayerData::getAvailableStatsStr("leaderboardFunc");
 
     for (int i = 0; i < 5 && i < sortedPlayers.size(); ++i)
     {
@@ -449,13 +449,12 @@ tString leaderboardFunc(tString message)
     return result;
 }
 
-
-
 tString exactStatFunc(tString message)
 {
     tString output;
 
     ePlayerNetID *statsTargetPlayer = nullptr;
+
     tString playerName, stat;
 
     if (!se_playerStats)
@@ -464,21 +463,39 @@ tString exactStatFunc(tString message)
         return output;
     }
 
+    message = message.TrimWhitespace();
     int pos = 0;
     playerName = message.ExtractNonBlankSubString(pos);
+
+    if (playerName.empty()) 
+    {
+        output << "Player not found! Usage: "
+               << eChatBot::getInstance().Stats().lastMatchedTrigger
+               << " player"
+               << " stat";
+        return output;
+    }
+
     statsTargetPlayer = ePlayerNetID::GetPlayerByRealName(playerName, false);
     if (statsTargetPlayer)
         playerName = statsTargetPlayer->GetRealName();
 
     stat = message.SubStr(pos+1);
 
-    PlayerData playerData = ePlayerStats::getStats(playerName);
-    tString statValue = playerData.getAnyValue(stat.TrimWhitespace());
+    PlayerData *stats;
+    if (statsTargetPlayer)
+        stats = &ePlayerStats::getStats(playerName);
+    else
+        stats = &ePlayerStats::getStatsForAnalysis(playerName);
+
+    tString statValue = stats->getAnyValue(stat.TrimWhitespace());
 
     if (!statValue.empty())
-        output << playerName << ": " << stat << " - " << statValue;
-    else if (playerName.empty())
-        output << "Player not found!";
+        output << (!stats->name.empty() ? stats->name : playerName)
+               << ": "
+               << stat
+               << " - "
+               << statValue;
     else
         output = PlayerData::getAvailableStatsStr();
 
@@ -867,7 +884,11 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
     if (!helperConfig::sghuk)
         return;
 
-    REAL totalDelay;
+    REAL totalDelay = 0.0;
+    bool scheduled = false;
+
+    if (messageToSend.Len() > se_playerTriggerMessagesSpamMaxlen)
+        messageToSend = messageToSend.SubStr(0, se_playerTriggerMessagesSpamMaxlen);
 
     if (se_playerMessageSmartDelay)
         extraDelay += calculateResponseSmartDelay(messageToSend, se_playerMessageSmartDelayTypingWPM) + se_playerMessageSmartDelayReactionTime;
@@ -878,39 +899,58 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
     if (se_playerMessageDelayRandMult > 0)
         extraDelay += (REAL)rand() / RAND_MAX * se_playerMessageDelayRandMult;
 
-    totalDelay += extraDelay;
+    totalDelay = extraDelay;
 
     REAL flagDelay = totalDelay * se_playerMessageChatFlagStartMult;
 
     if (flagDelay > totalDelay)
         flagDelay = totalDelay * 0.9;
 
-    bool scheduled = false;
+    const size_t maxMessageLength = se_SpamMaxLen - 1;
+    int numParts = (messageToSend.Len() + maxMessageLength - 1) / maxMessageLength;
+    int previousLength = messageToSend.Len();
 
-    if (player != nullptr)
+    while (messageToSend.Len() > 0)
     {
-        if (tIsInList(se_playerMessageTargetPlayer, player->pID + 1))
-        {
-            scheduled = true;
-            scheduleMessageTask(player, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
-        }
-    }
-    else
-    {
-        tArray<tString> players = se_playerMessageTargetPlayer.Split(",");
-        for (int i = 0; i < players.Len(); i++)
-        {
-            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
-            if (!local_p)
-                continue;
+        tString partToSend = messageToSend.SubStr(0, maxMessageLength);
+        messageToSend = messageToSend.SubStr(maxMessageLength);
+        partToSend.RecomputeLength();
+        messageToSend.RecomputeLength();
 
-            ePlayerNetID *netPlayer = local_p->netPlayer;
-            if (!netPlayer)
-                continue;
+        if (messageToSend.Len() >= previousLength)
+            break;
 
-            scheduled = true;
-            scheduleMessageTask(netPlayer, messageToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
+        if (player != nullptr)
+        {
+            if (tIsInList(se_playerMessageTargetPlayer, player->pID + 1))
+            {
+                scheduled = true;
+                scheduleMessageTask(player, partToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
+            }
         }
+        else
+        {
+            tArray<tString> players = se_playerMessageTargetPlayer.Split(",");
+            for (int i = 0; i < players.Len(); i++)
+            {
+                ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
+                if (!local_p)
+                    continue;
+
+                ePlayerNetID *netPlayer = local_p->netPlayer;
+                if (!netPlayer)
+                    continue;
+                scheduled = true;
+                scheduleMessageTask(netPlayer, partToSend, se_playerMessageChatFlag, totalDelay, flagDelay);
+            }
+        }
+
+        totalDelay += extraDelay + calculateResponseSmartDelay(partToSend, se_playerMessageSmartDelayTypingWPM) + se_playerMessageSmartDelayReactionTime;
+        flagDelay = totalDelay * se_playerMessageChatFlagStartMult;
+        if (flagDelay > totalDelay)
+            flagDelay = totalDelay * 0.9;
+
+        previousLength = messageToSend.Len();
     }
 
     if (scheduled)
@@ -919,10 +959,10 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
     if (se_playerMessageDisplayScheduledMessages && scheduled)
         con << "Scheduled message '" << messageToSend << "' "
             << flagDelay             << " (wait time) + "
-            << totalDelay-flagDelay  << " (typing time) -> "
-            << totalDelay            << " (total delay)."
-            << " (ExtraTime: "       << extraDelay
-            << " seconds.)\n";
+            << totalDelay - flagDelay  << " (typing time) -> "
+            << totalDelay            << " (total delay). "
+            << " (ExtraTime: "       << extraDelay << " seconds.) "
+            << "Sent in "            << numParts << " parts.\n";
 }
 
 bool containsMath( tString input, bool exact)

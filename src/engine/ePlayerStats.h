@@ -14,11 +14,15 @@ class PlayerDataBase
 {
 public:
     // Player
-    int r;
-    int g;
-    int b;
-
-    int total_messages = 0;
+    int r,g,b;
+    tString name;
+    int total_messages   = 0;
+    REAL fastest_speed   = 0;
+    std::vector<std::string> chatMessages;
+    REAL total_play_time = 0;
+    REAL total_spec_time = 0;
+    int times_joined     = 0;
+    time_t last_seen     = 0;
 
     tString rgbString()
     {
@@ -42,12 +46,27 @@ public:
     int round_losses = 0;
     int rounds_played = 0;
     int matches_played = 0;
-    REAL total_play_time = 0;
-    REAL total_spec_time = 0;
-    int times_joined     = 0;
-    REAL fastest_speed   = 0;
 
-    std::vector<std::string> chatMessages;
+    std::string getLastSeenAgo(bool in_game) 
+    {
+        if (last_seen == 0) 
+            return "Never seen";
+
+        time_t now = time(NULL);
+        double seconds = in_game ? now : difftime(now, last_seen);
+        double minutes = seconds / 60;
+        double hours = minutes / 60;
+        double days = hours / 24;
+
+        if (seconds < 60) 
+            return std::to_string((int)seconds) + " seconds ago";
+        else if (minutes < 60) 
+            return std::to_string((int)minutes) + " minutes ago";
+        else if (hours < 24) 
+            return std::to_string((int)hours) + " hours ago";
+        else 
+            return std::to_string((int)days) + " days ago";
+    }
 
     REAL getTotalPlayTime(bool add = true)
     {
@@ -94,6 +113,7 @@ public:
     }
 };
 
+
 class PlayerData : public PlayerDataBase
 {
     using StatFunction = std::function<tString(PlayerDataBase *)>;
@@ -101,16 +121,30 @@ public:
     static std::map<std::string, StatFunction> valueMap;
     static std::set<std::string> valueMapdisplayFields;
 
-    static tString getAvailableStatsStr()
+    static tString getAvailableStatsStr(std::string source = "")
     {
+        std::set<std::string> displayFields = PlayerData::valueMapdisplayFields;
+
+        if (source == "leaderboardFunc")
+        {   
+            // remove: rgb, chat_messages
+            displayFields.erase("rgb");
+            displayFields.erase("chat_messages");
+        }
+        
         tString result;
         result << "Available stats are: ";
-        for (const auto &name : PlayerData::valueMapdisplayFields)
-            result << name << ", ";
-
-        result = result.SubStr(0, result.Len() - 2);
+        int count = 0;
+        for (const auto &name : displayFields)
+        {
+            result << name;
+            if (++count < displayFields.size())
+                result << ", ";
+        }
         return result;
     }
+
+
     tString getAnyValue(tString variable)
     {
         auto stat = valueMap.find(variable.stdString());
@@ -125,6 +159,7 @@ public:
 
     PlayerDataBase data_from_db;
 };
+#include <algorithm>
 
 class ePlayerStats
 {
@@ -137,6 +172,40 @@ public:
 
     static PlayerData& getStats(tString playerName)
     {
+        return playerStatsMap[playerName.ToLower()];
+    }
+
+    static PlayerData& getStatsForAnalysis(tString playerName)
+    {
+    
+        std::string playerNameLower = playerName.stdString();
+        std::transform(playerNameLower.begin(), playerNameLower.end(), playerNameLower.begin(), ::tolower);
+
+        // exact case-insensitive match
+        for (const auto &kv : playerStatsMap) 
+        {
+            std::string currentNameLower = kv.first.stdString();
+            std::transform(currentNameLower.begin(), currentNameLower.end(), currentNameLower.begin(), ::tolower);
+            
+            if (currentNameLower == playerNameLower) 
+            {
+                return playerStatsMap[kv.first];
+            }
+        }
+
+        // no exact match, look for the closest match (substring search)
+        for (const auto &kv : playerStatsMap) 
+        {
+            std::string currentNameLower = kv.first.stdString();
+            std::transform(currentNameLower.begin(), currentNameLower.end(), currentNameLower.begin(), ::tolower);
+            
+            if (currentNameLower.find(playerNameLower) != std::string::npos) 
+            {
+                return playerStatsMap[kv.first];
+            }
+        }
+        
+        // default, null vals
         return playerStatsMap[playerName.ToLower()];
     }
 
@@ -203,6 +272,20 @@ public:
         data.r = r;
         data.g = g;
         data.b = b;
+    }
+
+    static void playerJoined(ePlayerNetID * player)
+    {
+        PlayerData &stats = getStats(player);
+        stats.times_joined++;
+        stats.last_seen = time(NULL);
+
+    }
+
+    static void playerLeft(ePlayerNetID * player)
+    {
+        PlayerData &stats = getStats(player);
+        stats.last_seen = time(NULL);
     }
 
     static void addMessage(ePlayerNetID * player, tString message)

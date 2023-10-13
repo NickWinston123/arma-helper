@@ -6921,6 +6921,9 @@ static void player_removed_from_game_handler(nMessage &m)
         if (se_playerTriggerMessages && se_playerMessageLeave)
             eChatBot::InitiateAction(nullptr, tString( p->IsHuman() ? "$left" : "$leftbot" ), true);
 
+        if (se_playerStats)
+            ePlayerStats::playerLeft(p);
+
         if (se_avoidPlayerWatch)
         {
             if (tIsInList(se_avoidPlayerWatchList,p->GetName()))
@@ -12643,7 +12646,7 @@ void ePlayerNetID::UpdateName(void)
                 eChatBot::InitiateAction(this, tString( IsHuman() ? "$enter" : "$enterbot" ), true);;
 
             if (se_playerStats)
-                ePlayerStats::addJoined(this);
+                ePlayerStats::playerJoined(this);
 
             if (se_avoidPlayerWatch)
             {

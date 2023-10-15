@@ -487,7 +487,8 @@ public:
     REAL Think(REAL currentTime, REAL minStep);
     void Activate(REAL currentTime);
     REAL annoyanceCheck();
-
+    bool chattingSmartDisable();
+    
     static gSmarterBot &Get(gCycle *cycle);
     ~gSmarterBot();
 };

@@ -95,6 +95,7 @@ extern void se_RandomizeColor(ePlayer *local_p);
 extern void se_rainbowColor(ePlayer *local_p);
 extern void se_CrossFadeColor(ePlayer *local_p);
 
+extern bool avoidPlayerInGame(tString name = tString(""));
 nMessage *se_NewChatMessage(ePlayerNetID const *player, tString const &message);
 
 enum playerWatchStatus {
@@ -356,6 +357,7 @@ public:
     ePlayerNetID * lastDiedByPlayer = nullptr;
     ePlayerNetID * lastMessagedPlayer;
     ePlayerNetID * lastMessagedByPlayer;
+    std::string lastMsgType = "normal";
     REAL lastCycleDeathTime = 0;
     typedef std::set< eTeam * > eTeamSet;
     bool respawnedLocally;
@@ -374,14 +376,15 @@ public:
     tArray<tString> lastSearch;
     tArray<tString> nameHistory;
     bool nameFirstSync  = true;
+    bool teamFirstSync  = true;
     nTimeAbsolute joinedTeamTime() { return timeJoinedTeam; }
     nTimeAbsolute createdTime() { return timeCreated_; }
 
     bool encryptVerified = false;
     bool departedByChatBot = false;
     bool greetedByChatBot = false;
-    bool departedSpecByChatBot = false;
-    bool greetedSpecByChatBot = false;
+    bool acknowledgeLeftSpectatorByChatbot = false;
+    bool acknowledgeEnterSpectatorByChatbot = false;
 private:
 
     int listID;                          // ID in the list of all players

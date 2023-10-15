@@ -568,6 +568,7 @@ tString exactStatFunc(tString message)
     {
         output << "Stat not found! Usage: '"
                << chatBotStats.lastMatchedTrigger
+               << " "
                << stat
                << " player' "
                << PlayerData::getAvailableStatsStr();
@@ -586,6 +587,7 @@ tString exactStatFunc(tString message)
         {
             output << "Player not found! Usage: "
                    << chatBotStats.lastMatchedTrigger
+                   << " "
                    << stat
                    << " stat";
             return output;
@@ -845,7 +847,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
         ePlayerNetID *potentialSender = nullptr;
 
-        if (trigger.Contains("$p"))
+        if (trigger.Contains("$p ") || trigger.EndsWith("$p") || trigger == "$p")
         {
             for (int i = MAX_PLAYERS - 1; i >= 0; i--)
             {
@@ -919,7 +921,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
         if (match)
         {
-            Stats().lastMatchedTrigger = trigger;
+            Stats().lastMatchedTrigger = trigger.TrimWhitespace();
             Stats().lastTriggerType = "normal";
 
             // Determine the sending player based on the type of trigger

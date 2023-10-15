@@ -422,12 +422,18 @@ void gSmarterBot::Survive(gCycle *owner)
 void playersCheck()
 {
 }
+
+bool sg_smarterBotChattingSmartDisable = false;
+static tConfItem<bool> sg_smarterBotChattingSmartDisableConf = HelperCommand::tConfItem("SMARTER_BOT_CHATTING_SMART_DISABLE", sg_smarterBotChattingSmartDisable);
+
+REAL sg_smarterBotChattingSmartDisableDist = 10;
+static tConfItem<REAL> sg_smarterBotChattingSmartDisableDistConf = HelperCommand::tConfItem("SMARTER_BOT_CHATTING_SMART_DISABLE_DISTANCE", sg_smarterBotChattingSmartDisableDist);
+
+
 REAL gSmarterBot::annoyanceCheck()
 {
     if (!owner_ || !owner_->Alive())
-    {
         return false;
-    }
 
     ePlayerNetID* alivePlayer = nullptr;
     int alivePlayerCount = 0;
@@ -484,6 +490,9 @@ REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
 {
     if (!local_player)
         return 5;
+
+    if (sg_smarterBotChattingSmartDisable && chattingSmartDisable())
+        return 0;
 
     if (sg_smarterBotAFKCheck && nextAFKCheck_ < tSysTimeFloat())
     {
@@ -1072,7 +1081,7 @@ public:
 #endif
 
         // is it already time for activation?
-        if (currentTime < nextChatAI_)
+        if (localBot && currentTime < nextChatAI_)
             return;
 
         REAL lookahead = chatBotRange;                                                                   // seconds to plan ahead
@@ -1080,7 +1089,7 @@ public:
         REAL maxstep = chatBotMinTimestep * 4 * (1 + .1 * tReproducibleRandomizer::GetInstance().Get()); // maximum timestep between thoughts in seconds
 
         // chat AI wasn't active yet, so don't start immediately
-        if (nextChatAI_ <= EPS)
+        if (localBot && nextChatAI_ <= EPS)
         {
             nextChatAI_ = chatBotDelay + currentTime;
             return;
@@ -2801,7 +2810,7 @@ void gCycle::updateColor()
 {
     if (se_playerStats)
         ePlayerStats::setColor(player,player->r,player->g,player->b);
-        
+
     player->Color(color_.r, color_.g, color_.b);
     player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
 
@@ -6866,8 +6875,8 @@ void gCycle::ReadSync(nMessage &m)
                 ePlayerStats::addKill(killer);
             }
 
-        } 
-        
+        }
+
         if (se_playerStats)
         {
             ePlayerStats::addDeath(Player());
@@ -8543,4 +8552,21 @@ void gCycle::FillWallInfo(WallInfo &info, REAL rubberRatio, REAL offset) const
 void gCycle::FillWallInfo(WallInfo &info) const
 {
     FillWallInfoFlexible(info, ThisWallsLength());
+}
+
+bool gSmarterBot::chattingSmartDisable()
+{
+    if (((!owner_ || !owner_->Alive() || !owner_->Player())) || !owner_->Player()->IsChatting())
+        return false;
+
+    std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction());
+    sensor->detect(sg_smarterBotChattingSmartDisableDist);
+
+    if (sensor->hit >= owner_->Speed() * (1/sg_smarterBotChattingSmartDisableDist))
+    {
+        gCycleChatBot &bot = gCycleChatBot::Get(owner_);
+        bot.Activate(0, false);
+        return true;
+    }
+    return false;
 }

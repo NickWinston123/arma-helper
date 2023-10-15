@@ -6440,6 +6440,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
 
     if (sn_GetNetState() == nSERVER)
         RequestSync();
+    acknowledgeEnterSpectatorByChatbot = true;
+    acknowledgeLeftSpectatorByChatbot = true;
 }
 
 tColoredString playerWatchStatusToStr(playerWatchStatus status)
@@ -8435,35 +8437,40 @@ void ePlayerNetID::ReadSync(nMessage &m)
                 if (addedScore != 0)
                     ePlayerStats::addScore(this, addedScore);
             }
+        }
 
-            if (greetedByChatBot && spectating_ != lastSyncMessage_.spectating)
+        if (se_playerMessageSpecEnter || se_playerMessageSpecLeft)
+        {
+            if (teamFirstSync)
+                acknowledgeLeftSpectatorByChatbot = true;
+
+            // check for spectator on game round-end or now if the player joined from spectating
+            if ((!spectating_ || se_GameTime() <= 0) && (!acknowledgeEnterSpectatorByChatbot || !acknowledgeLeftSpectatorByChatbot))
             {
-                if (spectating_)
+                if (spectating_) // player is now spectating
                 {
-                    se_playerSpecLeaveWriter << GetLogName() << GetName();
-                    se_playerSpecLeaveWriter.write();
-
-                    if (se_playerTriggerMessages && se_playerMessageSpecEnter && !greetedSpecByChatBot)
+                    if (se_playerTriggerMessages && se_playerMessageSpecEnter && !acknowledgeEnterSpectatorByChatbot)
                     {
                         eChatBot::InitiateAction(this, tString("$enterspec"), true);
-                        greetedSpecByChatBot = true;
-                        departedSpecByChatBot = false;
+                        acknowledgeEnterSpectatorByChatbot = true;
+                        acknowledgeLeftSpectatorByChatbot = false;
                     }
                 }
-                else
+                else // player is no longer spectating
                 {
-                    if (se_playerTriggerMessages && se_playerMessageSpecLeft && !departedSpecByChatBot)
+                    if (se_playerTriggerMessages && se_playerMessageSpecLeft && !acknowledgeLeftSpectatorByChatbot)
                     {
                         eChatBot::InitiateAction(this, tString("$leftspec"), true);
-                        departedSpecByChatBot = true;
-                        greetedSpecByChatBot = false;
+                        acknowledgeLeftSpectatorByChatbot = true;
+                        acknowledgeEnterSpectatorByChatbot = false;
                     }
                 }
             }
         }
+        teamFirstSync = false;
     }
-    lastSyncMessage_ = data;
 
+    lastSyncMessage_ = data;
 
     // con << "Player info updated.\n";
 
@@ -8901,17 +8908,30 @@ void ePlayerNetID::SwapPlayersNo(int a, int b)
     B->listID = a;
 }
 
-ePlayerNetID* ePlayerNetID::HighestScoringPlayer()
+ePlayerNetID *ePlayerNetID::HighestScoringPlayer()
 {
-    if(se_PlayerNetIDs.Len() == 0)
+    if (se_PlayerNetIDs.Len() == 0)
         return nullptr;
 
-    ePlayerNetID* highestScorer = se_PlayerNetIDs(0);
+    ePlayerNetID *highestScorer = se_PlayerNetIDs(0);
 
-    for(int i = 1; i < se_PlayerNetIDs.Len(); i++) {
-        ePlayerNetID* current = se_PlayerNetIDs(i);
+    for (int i = 1; i < se_PlayerNetIDs.Len(); i++)
+    {
+        ePlayerNetID *current = se_PlayerNetIDs(i);
+
+        bool currentIsSpectating = current->spectating_;
+        bool highestScorerIsSpectating = highestScorer->spectating_;
+
+        if (currentIsSpectating && !highestScorerIsSpectating)
+            continue;
+        else if (!currentIsSpectating && highestScorerIsSpectating)
+        {
+            highestScorer = current;
+            continue;
+        }
+
         if (current->TotalScore() > highestScorer->TotalScore() ||
-           (current->TotalScore() == highestScorer->TotalScore() && !current->CurrentTeam() && highestScorer->CurrentTeam()))
+            (current->TotalScore() == highestScorer->TotalScore() && !current->CurrentTeam() && highestScorer->CurrentTeam()))
         {
             highestScorer = current;
         }
@@ -8919,7 +8939,6 @@ ePlayerNetID* ePlayerNetID::HighestScoringPlayer()
 
     return highestScorer;
 }
-
 
 void ePlayerNetID::SortByScore()
 {
@@ -12584,13 +12603,24 @@ public:
 bool se_avoidPlayerWatchDisable = false;
 
 bool se_avoidPlayerWatch = false;
-static tConfItem<bool> se_avoidPlayerWatchConf = HelperCommand::tConfItem("AVOID_PLAYER_WATCH", se_avoidPlayerWatch);
+static tConfItem<bool> se_avoidPlayerWatchConf = HelperCommand::tConfItem("PLAYER_WATCH_AVOID", se_avoidPlayerWatch);
 
 REAL se_avoidPlayerWatchActionTime = 3;
-static tConfItem<REAL> se_avoidPlayerWatchActionTimeConf = HelperCommand::tConfItem("AVOID_PLAYER_WATCH_ACTION_TIME", se_avoidPlayerWatchActionTime);
+static tConfItem<REAL> se_avoidPlayerWatchActionTimeConf = HelperCommand::tConfItem("PLAYER_WATCH_AVOID_ACTION_TIME", se_avoidPlayerWatchActionTime);
 
 tString se_avoidPlayerWatchList("");
-static tConfItem<tString> se_avoidPlayerWatchListConf = HelperCommand::tConfItem("AVOID_PLAYER_WATCH_LIST", se_avoidPlayerWatchList);
+static tConfItem<tString> se_avoidPlayerWatchListConf = HelperCommand::tConfItem("PLAYER_WATCH_AVOID_LIST", se_avoidPlayerWatchList);
+
+bool avoidPlayerInGame(tString name)
+{
+    if (!name.empty())
+        return tIsInList(se_avoidPlayerWatchList, name);
+
+    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
+        if (tIsInList(se_avoidPlayerWatchList, se_PlayerNetIDs[i]->GetName()))
+            return true;
+    return false;
+}
 
 void ePlayerNetID::UpdateName(void)
 {
@@ -12717,7 +12747,7 @@ void ePlayerNetID::UpdateName(void)
 
             if (se_avoidPlayerWatch)
             {
-                if (tIsInList(se_avoidPlayerWatchList,GetName()))
+                if (avoidPlayerInGame(GetName()))
                 {
                     se_avoidPlayerWatchDisable = true;
                     gTaskScheduler.schedule("AvoidPlayerWatch", se_avoidPlayerWatchActionTime, []

@@ -2285,7 +2285,7 @@ void sg_loadLine(std::istream &s)
     tCurrentAccessLevel level(tAccessLevel_Owner, true);
     #endif
 
-    tArray<tString> inputLines = fullInput.Split("\n");
+    tArray<tString> inputLines = fullInput.Split("\\n");
 
     if (inputLines.Len() > 0)
     {

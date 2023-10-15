@@ -4077,7 +4077,6 @@ void gGame::StateUpdate()
         {
         case GS_DELETE_GRID:
             // sr_con.autoDisplayAtNewline=true;
-            
             if (!roundWinnerProcessed)
                 ePlayerStats::updateRoundWinsAndLoss();
             roundWinnerProcessed = false;

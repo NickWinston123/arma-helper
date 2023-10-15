@@ -1259,6 +1259,13 @@ bool JoinCommand::execute(tString args)
 
         netPlayer->CreateNewTeamWish();
         netPlayer->ForcedUpdate();
+    } 
+    else if (netPlayer)
+    {
+        con << CommandText()
+            << ErrorText()
+            << "Already joined the game\n";
+
     }
     return true;
 }

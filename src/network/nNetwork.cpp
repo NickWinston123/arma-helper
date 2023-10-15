@@ -1686,13 +1686,20 @@ static tConfItem<tString> sn_disallowJoinWithIPConf("DISALLOW_JOIN_WITH_IP",sn_d
 static bool sn_showOwnIP = false;
 static tConfItem<bool> sn_showOwnIPConf("SHOW_OWN_IP",sn_showOwnIP);
 
-
 bool sn_bannedWatch = false;
-static tConfItem<bool> sn_bannedWatchConf("BANNED_WATCH",sn_bannedWatch);
+static tConfItem<bool> sn_bannedWatchConf("PLAYER_WATCH_BANNED",sn_bannedWatch);
 bool sn_bannedWatchQuit = false;
-static tConfItem<bool> sn_bannedWatchQuitConf("BANNED_WATCH_QUIT",sn_bannedWatchQuit);
+static tConfItem<bool> sn_bannedWatchQuitConf("PLAYER_WATCH_BANNED_QUIT",sn_bannedWatchQuit);
 REAL sn_bannedWatchQuitTime = 5;
-static tConfItem<REAL> sn_bannedWatchQuitTimeConf("BANNED_WATCH_QUIT_TIME",sn_bannedWatchQuitTime);
+static tConfItem<REAL> sn_bannedWatchQuitTimeConf("PLAYER_WATCH_BANNED_QUIT_TIME",sn_bannedWatchQuitTime);
+
+bool sn_playerSuspendWatch = false;
+static tConfItem<bool> sn_playerSuspendWatchConf("PLAYER_WATCH_SUSPENDED",sn_playerSuspendWatch);
+bool sn_playerSuspendWatchQuit = false;
+static tConfItem<bool> sn_playerSuspendWatchQuitConf("PLAYER_WATCH_SUSPENDED_QUIT",sn_playerSuspendWatchQuit);
+bool sn_playerSuspendWatchQuitWaitForAvoidPlayers = false;
+static tConfItem<bool> sn_playerSuspendWatchQuitWaitForAvoidPlayersConf("PLAYER_WATCH_SUSPENDED_QUIT_WAIT_FOR_AVOID_PLAYERS",sn_playerSuspendWatchQuitWaitForAvoidPlayers);
+
 #else
 static constexpr bool sn_showOwnIP = true;
 #endif
@@ -3475,22 +3482,42 @@ static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WA
 static tString sg_playerSpamProtectionWatchSearchString("");
 static tConfItem<tString> sg_playerSpamProtectionWatchSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_SEARCH_STRING", sg_playerSpamProtectionWatchSearchString);
 
+bool sg_playerSilenced = false;
+static tConfItem<bool> sg_playerSilencedConf("PLAYER_WATCH_SILENCED", sg_playerSilenced);
 bool sg_playerSilencedQuit = false;
-static tConfItem<bool> sg_playerSilencedQuitConf("CHAT_SILENCED_QUIT", sg_playerSilencedQuit);
+static tConfItem<bool> sg_playerSilencedQuitConf("PLAYER_WATCH_SILENCED_QUIT", sg_playerSilencedQuit);
+bool sn_playerSilencedWatchQuitWaitForAvoidPlayers = false;
+static tConfItem<bool> sn_playerSilencedWatchQuitWaitForAvoidPlayersConf("PLAYER_WATCH_SILENCED_QUIT_WAIT_FOR_AVOID_PLAYERS", sn_playerSilencedWatchQuitWaitForAvoidPlayers);
+
+static bool currentlySuspended = false;
+static bool currentlySilenced = false;
 
 static void sn_ConsoleOut_handler(nMessage &m)
 {
     if (sn_GetNetState() != nSERVER)
     {
-        tString s;
-        m >> s;
-        con << s;
+    tString s;
+    m >> s;
+    con << s;
 
-    if (sg_playerSilencedQuit)
+    if (sg_playerSilenced)
     {
-        if (s.Contains(tString("SPAM PROTECTION: you have been silenced by the server administrator.")))
-            sn_bannedWatchAction(true);
+        if (!currentlySuspended && s.Contains(tString("silenced by the server administrator.")))
+            sn_quitAction(true, false);
+
+        if (currentlySuspended && (!sn_playerSilencedWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame()) )
+            sn_quitAction(true, sg_playerSilencedQuit);
     }
+    
+    if (sn_playerSuspendWatch)
+    {
+        if (!currentlySuspended && s.Contains(tString("suspended from playing for the next")))
+            sn_quitAction(true, false);
+
+        if (currentlySuspended && (!sn_playerSuspendWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame()) )
+            sn_quitAction(true, sn_playerSuspendWatchQuit);
+    }
+
     if (sg_playerSpamProtectionWatch)
     {
         tString input = (sg_playerSpamProtectionWatchSearchString.empty() ? tString("silenced for the next ") : sg_playerSpamProtectionWatchSearchString );
@@ -5748,18 +5775,23 @@ static void sn_bannedCMD(std::istream &s)
 static tConfItemFunc sn_bannedCMDConf("BANNED",&sn_bannedCMD);
 
 #include "../tron/gGame.h"
-void sn_bannedWatchAction(bool forceQuit)
+void sn_quitAction(bool save, bool quit)
 {
-    if (sn_bannedWatch)
-        FileManager(tString("banned.txt"), tDirectories::Var()).Write(tString("banned"));
 
-    st_SaveConfig();
+    if (save)
+        st_SaveConfig();
 
-    if (sn_bannedWatchQuit || forceQuit)
-    {
+    if (quit)
         gTaskScheduler.schedule("bannedWatchQuit", sn_bannedWatchQuitTime, []
         {
             uMenu::quickexit = uMenu::QuickExit_Total;
         });
-    }
+
+}
+void sn_bannedWatchAction()
+{
+    if (sn_bannedWatch)
+        FileManager(tString("banned.txt"), tDirectories::Var()).Write(tString("banned"));
+
+    sn_quitAction(true,sn_bannedWatchQuit);    
 }

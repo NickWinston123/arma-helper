@@ -142,7 +142,7 @@ class tOutput;
 class eTeam;
 class eVoter;
 class gCycle;
-class ChatCommand;
+class eChatCommand;
 
 class ePlayer: public uPlayerPrototype{
     friend class eMenuItemChat;

@@ -180,9 +180,9 @@ void LoadChatCommandConfCommands()
     }
 }
 
-std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> CommandFactory()
+std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> CommandFactory()
 {
-    std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> commandFactories;
+    std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> commandFactories;
 
     auto addCommand = [&commandFactories](const tString &commandName, auto commandFunc)
     {
@@ -257,7 +257,7 @@ std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> Comma
     return commandFactories;
 }
 
-bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> &commandFactories)
+bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> &commandFactories)
 {
 
     if (player == nullptr)
@@ -381,7 +381,7 @@ tColoredString ColorsCommand::cycleColorPreview(REAL r, REAL g, REAL b)
     cyclePreview << tColoredString::ColorString(cycleR, cycleG, cycleB) << "<"
                  << tColoredString::ColorString(r, g, b) << "=="
                 //  << tColoredString::ColorString(tailR2, tailG2, tailB2) << "="
-                 << ChatCommand::MainText();
+                 << eChatCommand::MainText();
 
     return cyclePreview;
 }
@@ -423,14 +423,14 @@ tColoredString ColorsCommand::localPlayerPreview(ePlayer *local_p)
     tColoredString output;
     output << tColoredString::ColorString(r/15, g/15, b/15)
            << local_p->Name()
-           << ChatCommand::MainText()
+           << eChatCommand::MainText()
            << " ("
-           << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
-           << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
-           << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
+           << eChatCommand::ItemText() << r << eChatCommand::MainText() << ", "
+           << eChatCommand::ItemText() << g << eChatCommand::MainText() << ", "
+           << eChatCommand::ItemText() << b << eChatCommand::MainText() << ") "
            << cycleColorPreview(r, g, b)
            << " (mode: "
-           << ChatCommand::ItemText() << localPlayerMode(local_p) << ChatCommand::MainText() << ") ";
+           << eChatCommand::ItemText() << localPlayerMode(local_p) << eChatCommand::MainText() << ") ";
 
     return output;
 }
@@ -440,22 +440,22 @@ tColoredString ColorsCommand::gatherPlayerColor(ePlayerNetID *p, bool showReset)
     tColoredString listColors, cyclePreview;
 
     if (showReset)
-        listColors << p->GetColoredName() << ChatCommand::MainText() << " (";
+        listColors << p->GetColoredName() << eChatCommand::MainText() << " (";
     else
-        listColors << p->GetColoredName().StripWhitespace() << ChatCommand::MainText() << " (";
+        listColors << p->GetColoredName().StripWhitespace() << eChatCommand::MainText() << " (";
 
-    listColors << ChatCommand::ItemText() << p->r << ChatCommand::MainText() << ", "
-               << ChatCommand::ItemText() << p->g << ChatCommand::MainText() << ", "
-               << ChatCommand::ItemText() << p->b << ChatCommand::MainText() << ") "
+    listColors << eChatCommand::ItemText() << p->r << eChatCommand::MainText() << ", "
+               << eChatCommand::ItemText() << p->g << eChatCommand::MainText() << ", "
+               << eChatCommand::ItemText() << p->b << eChatCommand::MainText() << ") "
                << cycleColorPreview(p->r, p->g, p->b);
 
     if (p->isLocal())
     {
         ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
         listColors << " (mode: "
-                   << ChatCommand::ItemText()
+                   << eChatCommand::ItemText()
                    << localPlayerMode(local_p)
-                   << ChatCommand::MainText()
+                   << eChatCommand::MainText()
                    << ") ";
 }
 
@@ -551,10 +551,10 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
 
 
     tColoredString listInfo;
-    listInfo << ChatCommand::MainText() << "Results for " << p->GetColoredName() << ChatCommand::MainText() << ":\n";
+    listInfo << eChatCommand::MainText() << "Results for " << p->GetColoredName() << eChatCommand::MainText() << ":\n";
 
     // Player Info
-    listInfo << ChatCommand::MainText() << "Player Info: \n";
+    listInfo << eChatCommand::MainText() << "Player Info: \n";
 
     tString nameHistory;
 
@@ -563,79 +563,78 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
         if (nameHistory.empty())
             nameHistory = p->nameHistory[i];
         else {
-            nameHistory = nameHistory + ChatCommand::MainText() + ", " + p->nameHistory[i];
+            nameHistory = nameHistory + eChatCommand::MainText() + ", " + p->nameHistory[i];
         }
     }
 
-    listInfo << ChatCommand::MainText() << " Color: " << ColorsCommand::gatherPlayerColor(p) << "\n";
+    listInfo << eChatCommand::MainText() << " Color: " << ColorsCommand::gatherPlayerColor(p) << "\n";
 
     gRealColor color(p->r, p->g, p->b);
     se_MakeColorValid(color.r, color.g, color.b, 1.0f);
     se_removeDarkColors(color);
-    listInfo << ChatCommand::MainText()
-             << " Filtered Color: " << ChatCommand::MainText() << "("
-             << ChatCommand::ItemText() << color.r << ChatCommand::MainText() << ", "
-             << ChatCommand::ItemText() << color.g << ChatCommand::MainText() << ", "
-             << ChatCommand::ItemText() << color.b << ChatCommand::MainText() << ")\n";
+    listInfo << eChatCommand::MainText()
+             << " Filtered Color: "      << eChatCommand::MainText()            << "("
+             << eChatCommand::ItemText() << color.r << eChatCommand::MainText() << ", "
+             << eChatCommand::ItemText() << color.g << eChatCommand::MainText() << ", "
+             << eChatCommand::ItemText() << color.b << eChatCommand::MainText() << ")\n";
 
     listInfo << " Name History: "
              << nameHistory
              << "\n";
 
     listInfo << " Status: "
-             << ChatCommand::ItemText() << (p->IsHuman() ? "Human" : "Bot")
-             << ChatCommand::MainText() << ", "
-             << ChatCommand::ItemText() << (p->CurrentTeam() ? "Playing" : "Spectating")
-             << (p->IsChatting() ? (ChatCommand::MainText() << "," << ChatCommand::ItemText() << " Chatting\n") : "\n");
+             << eChatCommand::ItemText() << (p->IsHuman() ? "Human" : "Bot")
+             << eChatCommand::MainText() << ", "
+             << eChatCommand::ItemText() << (p->CurrentTeam() ? "Playing" : "Spectating")
+             << (p->IsChatting() ? (eChatCommand::MainText() << "," << eChatCommand::ItemText() << " Chatting\n") : "\n");
 
     listInfo << " Ping: "
-             << ChatCommand::ItemText()
+             << eChatCommand::ItemText()
              << int(p->ping * 1000)
-             << ChatCommand::MainText()
+             << eChatCommand::MainText()
              << " ("
-             << ChatCommand::ItemText()
+             << eChatCommand::ItemText()
              << p->ping
-             << ChatCommand::MainText()
+             << eChatCommand::MainText()
              << ")\n";
 
     listInfo << " Created: "
-             << ChatCommand::ItemText() << getTimeStringBase(p->createTime_)
-             << ChatCommand::MainText() << "\n"
+             << eChatCommand::ItemText() << getTimeStringBase(p->createTime_)
+             << eChatCommand::MainText() << "\n"
              << " Last Activity: "
-             << ChatCommand::ItemText() << st_GetFormatTime(p->LastActivity(), true)
-             << ChatCommand::MainText() << "\n";
+             << eChatCommand::ItemText() << st_GetFormatTime(p->LastActivity(), true)
+             << eChatCommand::MainText() << "\n";
 
     if (p->ChattingTime() > 0)
         listInfo << " Chatting For: "
-                 << ChatCommand::ItemText()
+                 << eChatCommand::ItemText()
                  << st_GetFormatTime(p->ChattingTime(), true)
-                 << ChatCommand::MainText() << "\n";
+                 << eChatCommand::MainText() << "\n";
 
 
     // Cycle Info
 
     if (p->CurrentTeam())
-        listInfo << ChatCommand::MainText()
+        listInfo << eChatCommand::MainText()
                 << "Cycle Info: \n";
     if (p->Object())
     {
         // Only grab this information if the player is an alive object.
         gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
 
-
         listInfo << " Status: "
-                 << ChatCommand::ItemText()
+                 << eChatCommand::ItemText()
                  << (pCycle->Alive() ? "Alive" : "Dead")
                  << '\n'
-                 << ChatCommand::MainText()
+                 << eChatCommand::MainText()
                  << " Lag: "
-                 << ChatCommand::ItemText()
+                 << eChatCommand::ItemText()
                  << int(pCycle->Lag()  * 1000)
-                 << ChatCommand::MainText()
+                 << eChatCommand::MainText()
                  << " ("
-                 << ChatCommand::ItemText()
+                 << eChatCommand::ItemText()
                  << pCycle->Lag()
-                 << ChatCommand::MainText()
+                 << eChatCommand::MainText()
                  << ")\n";
 
         if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
@@ -644,36 +643,36 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
                      << "\n";
         else
             listInfo << " Alive Time: "
-                     << ChatCommand::ItemText() << st_GetFormatTime(se_GameTime(), true)
+                     << eChatCommand::ItemText() << st_GetFormatTime(se_GameTime(), true)
                      << "\n";
 
         if (pCycle->Alive())
         {
-            listInfo << ChatCommand::MainText()
+            listInfo << eChatCommand::MainText()
                      << " Position: x: "
-                     << ChatCommand::ItemText() << pCycle->Position().x
-                     << ChatCommand::MainText()
+                     << eChatCommand::ItemText() << pCycle->Position().x
+                     << eChatCommand::MainText()
                      << ", y: "
-                     << ChatCommand::ItemText() << pCycle->Position().y
-                     << ChatCommand::MainText() << "\n"
+                     << eChatCommand::ItemText() << pCycle->Position().y
+                     << eChatCommand::MainText() << "\n"
                      << " Map Direction: x: "
-                     << ChatCommand::ItemText() << pCycle->Direction().x
-                     << ChatCommand::MainText()
+                     << eChatCommand::ItemText() << pCycle->Direction().x
+                     << eChatCommand::MainText()
                      << ", y: "
-                     << ChatCommand::ItemText() << pCycle->Direction().y
-                     << ChatCommand::MainText() << '\n'
+                     << eChatCommand::ItemText() << pCycle->Direction().y
+                     << eChatCommand::MainText() << '\n'
                      << " Speed: "
-                     << ChatCommand::ItemText() << pCycle->verletSpeed_
-                     << ChatCommand::MainText() << '\n'
+                     << eChatCommand::ItemText() << pCycle->verletSpeed_
+                     << eChatCommand::MainText() << '\n'
                      << " Rubber: "
-                     << ChatCommand::ItemText() << pCycle->GetRubber() << "/" << sg_rubberCycle
-                     << ChatCommand::MainText() << '\n';
+                     << eChatCommand::ItemText() << pCycle->GetRubber() << "/" << sg_rubberCycle
+                     << eChatCommand::MainText() << '\n';
         }
     }
     else if (p->CurrentTeam())
     {
         listInfo << " Status: "
-                 << ChatCommand::ItemText() << "Dead\n";
+                 << eChatCommand::ItemText() << "Dead\n";
 
         listInfo << " Last Death: "
                     << ItemText() << st_GetFormatTime(tSysTimeFloat() - p->lastCycleDeathTime, true)
@@ -703,11 +702,11 @@ void RgbCommand::se_outputColorInfo(int index, const tString &name, REAL r, REAL
 
     output << (index + 1) << ") "
            << tColoredString::ColorString(r/15, g/15, b/15)
-           << name << ChatCommand::MainText()
+           << name << eChatCommand::MainText()
            << " ("
-           << ChatCommand::ItemText() << r << ChatCommand::MainText() << ", "
-           << ChatCommand::ItemText() << g << ChatCommand::MainText() << ", "
-           << ChatCommand::ItemText() << b << ChatCommand::MainText() << ") "
+           << eChatCommand::ItemText() << r << eChatCommand::MainText() << ", "
+           << eChatCommand::ItemText() << g << eChatCommand::MainText() << ", "
+           << eChatCommand::ItemText() << b << eChatCommand::MainText() << ") "
            << ColorsCommand::cycleColorPreview(r, g, b) << "\n";
 
     con << output;

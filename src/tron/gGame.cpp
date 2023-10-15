@@ -49,6 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "uInput.h"
 #include "ePlayer.h"
 #include "ePlayerStats.h"
+#include "eChatCommands.h"
 #include "eChatBot.h"
 
 #include "gArena.h"
@@ -2520,7 +2521,7 @@ static bool sg_NetworkError(const tOutput &title, const tOutput &message, REAL t
 
     if (sn_networkErrorQuit)
         uMenu::quickexit = uMenu::QuickExit_Total;
-        
+
     return tConsole::Message(title, message2, timeout);
 }
 
@@ -2577,15 +2578,16 @@ static tConfItem<bool> sg_connectToLastServerOnStartConf = HelperCommand::tConfI
 bool sg_connectToLastServerFromMenu = false;
 static tConfItem<bool> sg_connectToLastServerFromMenuConf = HelperCommand::tConfItem("RECONNECT_TO_LAST_SERVER_FROM_MENU", sg_connectToLastServerFromMenu);
 
-
-nServerInfoBase* LastServer() {
-    return lastServer.get();
+nServerInfoBase *connectedServer = nullptr;
+static void setCurrentServer(nServerInfoBase *currentSrv)
+{
+    connectedServer = currentSrv;
 }
 
-nServerInfoBase* CurrentServer() { return connectedServer.get(); }
-
-std::unique_ptr<nServerInfoBase> connectedServer;
-std::unique_ptr<nServerInfoBase> lastServer;
+nServerInfoBase *CurrentServer()
+{
+     return connectedServer;
+}
 
 // return code: false if there was an error or abort
 bool ConnectToServerCore(nServerInfoBase *server)
@@ -2628,14 +2630,12 @@ bool ConnectToServerCore(nServerInfoBase *server)
 
         nNetObject::ClearAll();
 
-        std::unique_ptr<nServerInfoBase> uniqueServer(server);
-        setCurrentServer(std::move(uniqueServer));
-        setLastServer();
+        setCurrentServer(server);
 
         sg_lastServerStr.Clear();
-        sg_lastServerStr << lastServer->GetConnectionName()
+        sg_lastServerStr << server->GetConnectionName()
                          << ":"
-                         << lastServer->GetPort();
+                         << server->GetPort();
 
         o.SetTemplateParameter(1, server->GetName());
         o << "$network_connecting_to_server";
@@ -2699,6 +2699,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
     }
 
     bool ret = true;
+    setCurrentServer(nullptr);
 
     sn_SetNetState(nSTANDALONE);
 
@@ -3295,6 +3296,49 @@ void InitHelperItems(bool ingame)
         FileManager(tString("consolelog-limited.txt"), tDirectories::Log()).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
 }
 
+class gMainMenu : public uMenu 
+{
+public:
+    gMainMenu(const tOutput &t, bool exit_item=true) : uMenu(t, exit_item) {}
+
+    virtual void OnRender() override {
+        uMenu::OnRender();
+
+        static double sg_MainMenuUpdateTimeout = -1E+32f;
+
+        if (!in_game) {
+            if (!sg_connectToLastServerFromMenu && sg_MainMenuUpdateTimeout < tSysTimeFloat())
+            {
+                Update();
+                sg_MainMenuUpdateTimeout = tSysTimeFloat() + 5.0f;
+            }
+        }
+    }
+
+    //! enters the submenu
+    virtual void Enter()
+    {
+        uMenu::Enter();
+    }
+
+    void Update()
+    {
+        if (!CurrentServer())
+        {
+            ConnectToLastServer();
+        }
+    }
+
+    void setInGame(bool in_game)
+    {
+        in_game = in_game;
+    }
+
+private:
+    bool in_game;
+
+};
+
 void MainMenu(bool ingame)
 {
     InitHelperItems(ingame);
@@ -3317,7 +3361,8 @@ void MainMenu(bool ingame)
     else
         gametitle << "$game_menu_ingame_text";
 
-    uMenu game_menu(gametitle);
+    gMainMenu game_menu(gametitle);
+    game_menu.setInGame(ingame);
 
     uMenuItemFunction *reset = NULL;
 
@@ -3365,7 +3410,8 @@ void MainMenu(bool ingame)
     else
         title << "$ingame_menu_text";
 
-    uMenu MainMenu(title, false);
+    gMainMenu MainMenu(title, false);
+    MainMenu.setInGame(ingame);
 
     if (ingame)
         sg_IngameMenu = &MainMenu;
@@ -3991,6 +4037,9 @@ void gGame::RebuildGrid(int requestedState)
     return;
 }
 
+static bool sg_saveConfigOnRoundEnd = false;
+static tConfItem<bool> sg_saveConfigOnRoundEndConf("SAVE_CONFIG_ON_ROUND_END", sg_saveConfigOnRoundEnd);
+
 void gGame::StateUpdate()
 {
 
@@ -4021,8 +4070,7 @@ void gGame::StateUpdate()
         {
         case GS_DELETE_GRID:
             // sr_con.autoDisplayAtNewline=true;
-
-        
+            
             if (!roundWinnerProcessed)
                 ePlayerStats::updateRoundWinsAndLoss();
             roundWinnerProcessed = false;
@@ -4042,6 +4090,14 @@ void gGame::StateUpdate()
                 SetState(GS_TRANSFER_SETTINGS, GS_CREATE_GRID);
             else
                 state = GS_CREATE_GRID;
+            
+            if (sg_saveConfigOnRoundEnd)
+            {
+                con << eChatCommand::CommandText("CONFIG")
+                    << "Saving Config..\n";
+
+                st_SaveConfig();
+            }
             break;
         case GS_CREATED:
         case GS_TRANSFER_SETTINGS:
@@ -4150,7 +4206,7 @@ void gGame::StateUpdate()
                 gRace::Reset();
             }
             // HACK RACE end
-            
+
             sn_Statistics();
             sg_Timestamp();
 
@@ -6930,11 +6986,14 @@ static tAccessLevelSetter sg_reportsClearConfLevel(sg_reportsClearConf, tAccessL
 
 bool ConnectToLastServerFromStr()
 {
-    std::unique_ptr<nServerInfoBase> server = getSeverFromStr(sg_lastServerStr);
+    if (sg_lastServerStr.empty())
+        return false;
 
-    if (server.get() != nullptr)
+    nServerInfoBase * server = getSeverFromStr(sg_lastServerStr);
+
+    if (server != nullptr)
     {
-        ConnectToServer(server.get());
+        ConnectToServer(server);
         return true;
     }
 
@@ -6942,14 +7001,7 @@ bool ConnectToLastServerFromStr()
 }
 bool ConnectToLastServer()
 {
-    nServerInfoBase *server = LastServer();
-
-    if (server != nullptr)
-    {
-        ConnectToServer(server);
-        return true;
-    }
-    else if (!ConnectToLastServerFromStr())
+    if (!ConnectToLastServerFromStr())
     {
         con << "Last server not set!\n";
         return false;
@@ -6963,7 +7015,7 @@ static void ConnectToLastServer(std::istream &s)
 
 static tConfItemFunc ReloadChatTriggers_conf("RECONNECT_TO_LAST_SERVER", &ConnectToLastServer);
 
-std::unique_ptr<nServerInfoBase> getSeverFromStr(tString input)
+nServerInfoBase * getSeverFromStr(tString input)
 {
 
     if (!input.empty())
@@ -6981,7 +7033,7 @@ std::unique_ptr<nServerInfoBase> getSeverFromStr(tString input)
                 int port = atoi(portStr);
                 if (port != 0)
                 {
-                    return std::make_unique<nServerInfoRedirect>(server, port);
+                    return new nServerInfoRedirect(server, port);
                 }
             }
         }
@@ -7007,10 +7059,10 @@ static void se_connectToServer(std::istream &s)
         return;
     }
 
-    std::unique_ptr<nServerInfoBase> server = getSeverFromStr(serverInfo);
+    nServerInfoBase *server = getSeverFromStr(serverInfo);
 
-    if (server.get() != nullptr)
-        ConnectToServer(server.get());
+    if (server != nullptr)
+        ConnectToServer(server);
 }
 
 static tConfItemFunc se_connectToServer_conf("CONNECT_TO_SERVER", &se_connectToServer);

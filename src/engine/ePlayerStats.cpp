@@ -2,6 +2,8 @@
 #include "ePlayerStats.h"
 #include "ePlayer.h"
 #include "eChatbot.h"
+#include "eChatCommands.h"
+#include "eChatbot.h"
 
 #include "sqlite3.h"
 
@@ -23,10 +25,13 @@ static tConfItem<bool> se_playerStatsLogConf("PLAYER_STATS_LOG", se_playerStatsL
 tString se_playerStatsDataBaseFile("stats.db");
 static tConfItem<tString> se_playerStatsDataBaseFileConf("PLAYER_STATS_DB_FILE", se_playerStatsDataBaseFile);
 
-void ePlayerStats::loadStatsFromDB() 
+bool se_playerMessageTriggersStatsSave = false;
+static tConfItem<bool> se_playerMessageTriggersStatsSaveConf("PLAYER_MESSAGE_TRIGGER_STATS_SAVED", se_playerMessageTriggersStatsSave);
+
+void ePlayerStats::loadStatsFromDB()
 {
     sqlite3 *db = tDatabaseUtility::OpenDatabase(se_playerStatsDataBaseFile);
-    if (!db) 
+    if (!db)
         return;
 
     ePlayerStatsDBAction  playerDataAction(db);
@@ -38,11 +43,14 @@ void ePlayerStats::loadStatsFromDB()
     sqlite3_close(db);
 }
 
-void ePlayerStats::saveStatsToDB() 
+void ePlayerStats::saveStatsToDB()
 {
     sqlite3 *db = tDatabaseUtility::OpenDatabase(se_playerStatsDataBaseFile);
-    if (!db) 
+    if (!db)
         return;
+
+    con << eChatCommand::CommandText("Player Stats")
+        << "Saving stats to database..\n";
 
     ePlayerStatsDBAction  playerDataAction(db);
     playerDataAction.saveStatsToDB();
@@ -51,6 +59,9 @@ void ePlayerStats::saveStatsToDB()
     chatbotStatsAction.saveStatsToDB();
 
     sqlite3_close(db);
+
+    if (se_playerTriggerMessages && se_playerMessageTriggersStatsSave)
+        eChatBot::InitiateAction(nullptr, tString("$statssaved"), true);
 }
 
 void ePlayerStats::updateMatchWinsAndLoss(ePlayerNetID *matchWinner)
@@ -109,12 +120,12 @@ void ePlayerStats::reloadStatsFromDB()
 
 std::unordered_map<tString, PlayerData> ePlayerStats::playerStatsMap;
 
-std::set<std::string> PlayerData::valueMapdisplayFields = 
+std::set<std::string> PlayerData::valueMapdisplayFields =
 {
     "rgb", "chats", "kills", "deaths", "match_wins",
     "match_losses", "round_wins", "round_losses", "rounds_played",
     "matches_played", "play_time", "spec_time", "times_joined",
-    "kd", "chat_messages", "fastest", "score"
+    "kd", "chat_count", "fastest", "score"
 };
 
 std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
@@ -140,7 +151,7 @@ std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
          result << self->b;
          return result;
      }},
-    {"chats", [](PlayerDataBase *self)
+    {"chat_count", [](PlayerDataBase *self)
      {
          tString result("");
          result << self->total_messages;
@@ -218,7 +229,7 @@ std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
          result << self->getKDRatio();
          return result;
      }},
-    {"chat_messages", [](PlayerDataBase *self)
+    {"chats", [](PlayerDataBase *self)
      {
          tString result("");
          result = tString(self->getChatMessages());
@@ -256,7 +267,6 @@ std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
      }},
 
 };
-
 
 const std::string DELIMITER = "-+HACKERMANS+-";
 

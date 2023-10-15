@@ -1680,19 +1680,25 @@ tArray<tString> FileManager::Load()
 {
     tArray<tString> lines;
     std::string sayLine;
+    
     while (std::getline(i, sayLine))
     {
-
         tString params(sayLine);
+
+        // comment
+        if (params.StartsWith("#") || params.StartsWith("//"))
+            continue;
 
         if (!params.Filter().empty())
             lines.Insert(params);
     }
+
     // reset file pointer
     i.clear();
     i.seekg(0, std::ios::beg);
     return lines;
 }
+
 
 std::streamoff FileManager::FileSize()
 {

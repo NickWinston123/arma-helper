@@ -2080,6 +2080,8 @@ bool tString::isNumber() const
         return false;
 
     int dotCount = 0;
+    bool hasDigit = false;
+
     for (int i = 0; i < Len(); ++i)
     {
         char c = (*this)(i);
@@ -2098,14 +2100,19 @@ bool tString::isNumber() const
             continue;
         }
 
-        if (!std::isdigit(static_cast<unsigned char>(c)))
+        if (std::isdigit(static_cast<unsigned char>(c)))
+        {
+            hasDigit = true;
+        }
+        else
         {
             return false;
         }
     }
 
-    return true;
+    return hasDigit;
 }
+
 
 
 
@@ -2549,21 +2556,21 @@ tString st_GetFormatTime(REAL seconds, bool color)
     int milliseconds = static_cast<int>((seconds - static_cast<int>(seconds)) * 1000);
 
     tString result;
-    result << (color ? ChatCommand::ItemText() : "")
+    result << (color ? eChatCommand::ItemText() : "")
            << ((hours < 10) ? "0" : "") << hours
-           << (color ? ChatCommand::MainText() : "")
+           << (color ? eChatCommand::MainText() : "")
            << "H:"
-           << (color ? ChatCommand::ItemText() : "")
+           << (color ? eChatCommand::ItemText() : "")
            << ((minutes < 10) ? "0" : "") << minutes
-           << (color ? ChatCommand::MainText() : "")
+           << (color ? eChatCommand::MainText() : "")
            << "M:"
-           << (color ? ChatCommand::ItemText() : "")
+           << (color ? eChatCommand::ItemText() : "")
            << ((remainingSeconds < 10) ? "0" : "") << remainingSeconds
-           << (color ? ChatCommand::MainText() : "")
+           << (color ? eChatCommand::MainText() : "")
            << "S:"
-           << (color ? ChatCommand::ItemText() : "")
+           << (color ? eChatCommand::ItemText() : "")
            << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") << milliseconds
-           << (color ? ChatCommand::MainText() : "")
+           << (color ? eChatCommand::MainText() : "")
            << "MS";
 
     return result;
@@ -3189,4 +3196,31 @@ bool pasteFromClipboard(tString *content, int& cursorPos)
     }
 
     return false;
+}
+
+tString getTimeAgoString(double seconds)
+{
+    tString result;
+
+    if (seconds < 60)
+    {
+        result << std::to_string((int)seconds) << " seconds ago";
+    }
+    else if (seconds < 3600)
+    {
+        double minutes = seconds / 60;
+        result << std::to_string((int)minutes) << " minutes ago";
+    }
+    else if (seconds < 86400)
+    {
+        double hours = seconds / 3600;
+        result << std::to_string((int)hours) << " hours ago";
+    }
+    else
+    {
+        double days = seconds / 86400;
+        result << std::to_string((int)days) << " days ago";
+    }
+
+    return result;
 }

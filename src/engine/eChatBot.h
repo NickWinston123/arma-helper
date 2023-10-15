@@ -116,7 +116,7 @@ public:
 
     bool masterFuncResponse = false;
     std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString chatMessage, bool eventTrigger);
-    static void InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger = false, tString preAppend = tString(""));
+    static bool InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger = false, tString preAppend = tString(""));
     void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player, tString preAppend = tString(""));
     REAL determineReadingDelay(tString message);
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);

@@ -55,7 +55,7 @@ extern tString se_leaveCommand;
 extern tString se_quitCommand;
 extern int se_quitCommandTime;
 
-class ChatCommand
+class eChatCommand
 {
 public:
     virtual bool execute(tString args) = 0;
@@ -110,7 +110,7 @@ public:
     }
 
 protected:
-    ChatCommand(const std::string &name) : commandName(name) {}
+    eChatCommand(const std::string &name) : commandName(name) {}
 
 protected:
     bool requirePlayer = true;
@@ -123,22 +123,22 @@ public:
     ePlayerNetID *netPlayer;
 };
 
-std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> CommandFactory();
-extern bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<ChatCommand>()>> &commandFactories = CommandFactory());
+std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> CommandFactory();
+extern bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> &commandFactories = CommandFactory());
 
 extern void LoadChatCommandConfCommands();
 
-class MsgCommand : public ChatCommand
+class MsgCommand : public eChatCommand
 {
 public:
-    MsgCommand() : ChatCommand("MsgCommand") {}
+    MsgCommand() : eChatCommand("MsgCommand") {}
     bool execute(tString args) override;
 };
 
-class ConsoleCommand : public ChatCommand
+class ConsoleCommand : public eChatCommand
 {
 public:
-    ConsoleCommand() : ChatCommand("ConsoleCommand") {}
+    ConsoleCommand() : eChatCommand("ConsoleCommand") {}
 
     bool execute(tString args) override;
 };
@@ -146,10 +146,10 @@ public:
 // Gather all the rgb colors and put them in a nice list.
 // Usage /colors with no parameters returns all players and their colors.
 //       /colors playername returns that specific players color or more depending if the search term is found in other player names
-class ColorsCommand : public ChatCommand
+class ColorsCommand : public eChatCommand
 {
 public:
-    ColorsCommand() : ChatCommand("ColorsCommand") {}
+    ColorsCommand() : eChatCommand("ColorsCommand") {}
 
     static tColoredString cycleColorPreview(REAL r, REAL g, REAL b);
 
@@ -175,10 +175,10 @@ Sometimes Alive / Dead
 Usage: /info - Returns own information
        /info playername - Returns that players name. (or more depending if the search word is found in more than one player)
 */
-class listPlayerInfoCommand : public ChatCommand
+class listPlayerInfoCommand : public eChatCommand
 {
 public:
-    listPlayerInfoCommand() : ChatCommand("listPlayerInfoCommand") 
+    listPlayerInfoCommand() : eChatCommand("listPlayerInfoCommand") 
     {
         requirePlayer = false;
     }
@@ -199,10 +199,10 @@ Usage:
     /rgb load 1 will load from line #1 in saved file. (As shown in /rgb list)
     /rgb clearall will clear the entire list of saved colors.
     /rgb clear 1 will clear your saved color #1 from the list of saved colors. */
-class RgbCommand : public ChatCommand
+class RgbCommand : public eChatCommand
 {
 public:
-    RgbCommand() : ChatCommand("RgbCommand")
+    RgbCommand() : eChatCommand("RgbCommand")
     {
         requirePlayer = false;
     }
@@ -211,65 +211,65 @@ public:
     bool execute(tString args) override;
 };
 
-class BrowserCommand : public ChatCommand
+class BrowserCommand : public eChatCommand
 {
 public:
-    BrowserCommand() : ChatCommand("BrowserCommand") {}
+    BrowserCommand() : eChatCommand("BrowserCommand") {}
     bool execute(tString args) override;
 };
 
-class SpeakCommand : public ChatCommand
+class SpeakCommand : public eChatCommand
 {
 public:
-    SpeakCommand() : ChatCommand("SpeakCommand") {}
+    SpeakCommand() : eChatCommand("SpeakCommand") {}
     bool execute(tString args) override;
 };
 
-class RebuildCommand : public ChatCommand
+class RebuildCommand : public eChatCommand
 {
 public:
-    RebuildCommand() : ChatCommand("RebuildCommand") {}
+    RebuildCommand() : eChatCommand("RebuildCommand") {}
     bool execute(tString args) override;
 };
 
-class WatchCommand : public ChatCommand
+class WatchCommand : public eChatCommand
 {
 public:
-    WatchCommand() : ChatCommand("WatchCommand") {}
+    WatchCommand() : eChatCommand("WatchCommand") {}
     bool execute(tString args) override;
 };
 
-class ActiveStatusCommand : public ChatCommand
+class ActiveStatusCommand : public eChatCommand
 {
 public:
-    ActiveStatusCommand() : ChatCommand("ActiveStatusCommand") 
+    ActiveStatusCommand() : eChatCommand("ActiveStatusCommand") 
     {
         requirePlayer = false;
     }
     bool execute(tString args) override;
 };
 
-class ReverseCommand : public ChatCommand
+class ReverseCommand : public eChatCommand
 {
 public:
-    ReverseCommand() : ChatCommand("ReverseCommand") {}
+    ReverseCommand() : eChatCommand("ReverseCommand") {}
     bool execute(tString args) override;
 };
 
-class SpectateCommand : public ChatCommand
+class SpectateCommand : public eChatCommand
 {
 public:
-    SpectateCommand() : ChatCommand("SpectateCommand")
+    SpectateCommand() : eChatCommand("SpectateCommand")
     {
         requirePlayer = false;
     }
     bool execute(tString args) override;
 };
 
-class JoinCommand : public ChatCommand
+class JoinCommand : public eChatCommand
 {
 public:
-    JoinCommand() : ChatCommand("JoinCommand")
+    JoinCommand() : eChatCommand("JoinCommand")
     {
         requirePlayer = false;
     }
@@ -282,75 +282,75 @@ static std::vector<std::pair<tString, tString>> searchableFiles =
         {tString("console"), tString("consolelog-limited.txt")},
         {tString("console-full"), tString("consolelog.txt")},
 };
-class SearchCommand : public ChatCommand
+class SearchCommand : public eChatCommand
 {
 public:
-    SearchCommand() : ChatCommand("SearchCommand") 
+    SearchCommand() : eChatCommand("SearchCommand") 
     {
         requirePlayer = false;
     }
     bool execute(tString args) override;
 };
 
-class NameSpeakCommand : public ChatCommand
+class NameSpeakCommand : public eChatCommand
 {
 public:
-    NameSpeakCommand() : ChatCommand("NameSpeakCommand") 
+    NameSpeakCommand() : eChatCommand("NameSpeakCommand") 
     {
         requirePlayer = false;
     }
     bool execute(tString args) override;
 };
 
-class RespawnCommand : public ChatCommand
+class RespawnCommand : public eChatCommand
 {
 public:
-    RespawnCommand() : ChatCommand("RespawnCommand") {}
+    RespawnCommand() : eChatCommand("RespawnCommand") {}
     bool execute(tString args) override;
 };
 
-class RebuildGridCommand : public ChatCommand
+class RebuildGridCommand : public eChatCommand
 {
 public:
-    RebuildGridCommand() : ChatCommand("RebuildGridCommand") {}
+    RebuildGridCommand() : eChatCommand("RebuildGridCommand") {}
     bool execute(tString args) override;
 };
 
-class SaveConfigCommand : public ChatCommand
+class SaveConfigCommand : public eChatCommand
 {
 public:
-    SaveConfigCommand() : ChatCommand("SaveConfigCommand")
+    SaveConfigCommand() : eChatCommand("SaveConfigCommand")
     {
         requirePlayer = false;
     }
     bool execute(tString args) override;
 };
 
-class ReplyCommand : public ChatCommand
+class ReplyCommand : public eChatCommand
 {
 public:
-    ReplyCommand() : ChatCommand("ReplyCommand") {}
+    ReplyCommand() : eChatCommand("ReplyCommand") {}
     bool execute(tString args) override;
 };
 
-class NicknameCommand : public ChatCommand
+class NicknameCommand : public eChatCommand
 {
 public:
-    NicknameCommand() : ChatCommand("NicknameCommand") {}
+    NicknameCommand() : eChatCommand("NicknameCommand") {}
     bool execute(tString args) override;
 };
 
-class StatsCommand : public ChatCommand
+class StatsCommand : public eChatCommand
 {
 public:
-    StatsCommand() : ChatCommand("StatsCommand") {}
+    StatsCommand() : eChatCommand("StatsCommand") {}
     bool execute(tString args) override;
 };
 
-class ReconnectCommand : public ChatCommand
+class ReconnectCommand : public eChatCommand
 {
 public:
-    ReconnectCommand() : ChatCommand("ReconnectCommand")
+    ReconnectCommand() : eChatCommand("ReconnectCommand")
     {
         requirePlayer = false;
     }
@@ -358,10 +358,10 @@ public:
 };
 
 #include <queue>
-class CalculateCommand : public ChatCommand
+class CalculateCommand : public eChatCommand
 {
 public:
-    CalculateCommand() : ChatCommand("CalculateCommand")
+    CalculateCommand() : eChatCommand("CalculateCommand")
     {
         requirePlayer = false;
     }
@@ -372,17 +372,17 @@ public:
     static std::queue<tString> infixToPostfix(const tString &infix);
 };
 
-class UpdateCommand : public ChatCommand
+class UpdateCommand : public eChatCommand
 {
 public:
-    UpdateCommand() : ChatCommand("UpdateCommand") {}
+    UpdateCommand() : eChatCommand("UpdateCommand") {}
     bool execute(tString args) override;
 };
 
-class EncryptCommand : public ChatCommand
+class EncryptCommand : public eChatCommand
 {
 public:
-    EncryptCommand() : ChatCommand("EncryptCommand") {}
+    EncryptCommand() : eChatCommand("EncryptCommand") {}
     static REAL getEncryptLocaltime();
     static tString GenerateHash(double time);
     static bool ValidateHash(tString givenHash, double time);
@@ -390,10 +390,10 @@ public:
     bool execute(tString args) override;
 };
 
-class VoteCommand : public ChatCommand
+class VoteCommand : public eChatCommand
 {
 public:
-    VoteCommand() : ChatCommand("VoteCommand") {}
+    VoteCommand() : eChatCommand("VoteCommand") {}
     bool execute(tString args) override;
 
 private:
@@ -402,40 +402,40 @@ private:
     void processVote(const tArray<tString> &params);
 };
 
-class RenameCommand : public ChatCommand
+class RenameCommand : public eChatCommand
 {
 public:
-    RenameCommand() : ChatCommand("RenameCommand")
+    RenameCommand() : eChatCommand("RenameCommand")
     {
         requirePlayer = false;
     }
     bool execute(tString args) override;
 };
 
-class LeaveCommand : public ChatCommand
+class LeaveCommand : public eChatCommand
 {
 public:
-    LeaveCommand() : ChatCommand("LeaveCommand")
+    LeaveCommand() : eChatCommand("LeaveCommand")
     {
         requirePlayer = false;
     }
     bool execute(tString args) override;
 };
 
-class QuitCommand : public ChatCommand
+class QuitCommand : public eChatCommand
 {
 public:
-    QuitCommand() : ChatCommand("QuitCommand")
+    QuitCommand() : eChatCommand("QuitCommand")
     {
         requirePlayer = false;
     }
     bool execute(tString args) override;
 };
 
-class BookmarksCommand : public ChatCommand
+class BookmarksCommand : public eChatCommand
 {
 public:
-    BookmarksCommand() : ChatCommand("BookmarksCommand")
+    BookmarksCommand() : eChatCommand("BookmarksCommand")
     {
         requirePlayer = false;
     }

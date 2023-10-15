@@ -60,25 +60,15 @@ public:
     int matches_played = 0;
     int total_score = 0;
 
-    std::string getLastSeenAgo(bool in_game)
+    tString getLastSeenAgo(bool in_game)
     {
         if (last_seen == 0)
-            return "Never seen";
+            return tString("Never seen");
 
         time_t now = time(NULL);
         double seconds = in_game ? now : difftime(now, last_seen);
-        double minutes = seconds / 60;
-        double hours = minutes / 60;
-        double days = hours / 24;
 
-        if (seconds < 60)
-            return std::to_string((int)seconds) + " seconds ago";
-        else if (minutes < 60)
-            return std::to_string((int)minutes) + " minutes ago";
-        else if (hours < 24)
-            return std::to_string((int)hours) + " hours ago";
-        else
-            return std::to_string((int)days) + " days ago";
+        return getTimeAgoString(seconds);
     }
 
     REAL getTotalPlayTime(bool add = true)
@@ -109,7 +99,7 @@ public:
             return messages;
         }
 
-    REAL getKDRatio() const
+    REAL getKDRatio(bool round = true) const
     {
         REAL result = 0.0;
         
@@ -125,7 +115,7 @@ public:
         {
             result = -static_cast<REAL>(deaths) / kills;
         }
-        return customRound(result,2);
+        return round ? customRound(result,2) : result;
     }
 };
 
@@ -315,7 +305,9 @@ public:
     {
         PlayerData &stats = getStats(player);
 
-        stats.chat_messages.push_back(message.stdString());
+        if (!message.empty())
+            stats.chat_messages.push_back(message.stdString());
+            
         stats.total_messages++;
     }
 

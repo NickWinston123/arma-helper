@@ -40,6 +40,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //typedef tArray<char> string;
 class tOutput;
 
+
+
 class tString:public tArray<char>{
 private:
 public:
@@ -161,7 +163,7 @@ public:
             actualLength++;
         }
 
-        SetLen(actualLength + 1); 
+        SetLen(actualLength + 1);
     }
 
 
@@ -381,7 +383,7 @@ namespace std {
         }
     };
 }
-
+tString getTimeAgoString(double seconds);
 
 #endif
 

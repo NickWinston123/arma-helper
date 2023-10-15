@@ -1847,13 +1847,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
     {
         tColoredString actualMessage(message);
         tString colorlessMessage(tColoredString::RemoveColors(message));
-
-        if (se_playerStats) 
-        {
-            tString nameToReplace;
-            nameToReplace << p->GetName() << ": ";
-            ePlayerStats::addMessage(p, colorlessMessage.Replace(nameToReplace,""));
-        }
+        const int nameLength = p->GetRealName().Len() + 1;
 
         bool encyptedMessage = false;
 
@@ -1889,13 +1883,15 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         {
             if (se_encryptCommandWatch)
                 encyptedMessage = EncryptCommand::handleEncryptCommandAction(p, privateMessageParams);
+        } 
+        else if (se_playerStats) 
+        {
+            ePlayerStats::addMessage(p, colorlessMessage.SubStr(nameLength).TrimWhitespace());
         }
 
         if (se_playerTriggerMessages && se_playerMessageChat && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
         {
-            tString params(tColoredString::RemoveColors(actualMessage));
-            const int nameLength = p->GetRealName().Len() + 1;
-
+            tString params(colorlessMessage);
             tString preAppend;
             if (privateMessage && ourPlayer)
             {
@@ -6478,23 +6474,25 @@ void ePlayerNetID::watchPlayerStatus()
         REAL lastActivity = p->LastActivity();
 
         message << getTimeString() << " | "
-                << ChatCommand::HeaderText()
+                << eChatCommand::HeaderText()
                 << "Watch Status: " << p->GetColoredName()
-                << ChatCommand::MainText()
+                << eChatCommand::MainText()
                 << " is now " << playerWatchStatusToStr(p->lastWatchStatus)
-                << ChatCommand::MainText()
-                << ". (" << ChatCommand::ItemText() << chattingTime
-                << ChatCommand::MainText() << " seconds)";
+                << eChatCommand::MainText()
+                << ". (" << eChatCommand::ItemText() << lastActivity
+                << eChatCommand::MainText() << " seconds)";
 
         if (chattingTime == 0 || lastActivity != 0)
         {
-            message << ChatCommand::MainText() << "\n - Last activity: "
-                    << ChatCommand::ItemText() << p->LastActivity()
-                    << ChatCommand::MainText() << " seconds ago.\n"
-                    << ChatCommand::MainText() << " - Last chat activity: "
-                    << ChatCommand::ItemText() << p->ChattingTime()
-                    << ChatCommand::MainText() << " seconds ago.";
+            tString lastActivityStr = getTimeAgoString(p->LastActivity());
+            tString chattingTimeStr = getTimeAgoString(p->ChattingTime());
+
+            message << eChatCommand::MainText() << "\n - Last activity: "
+                    << eChatCommand::ItemText() << lastActivityStr
+                    << eChatCommand::MainText() << "\n - Last chat activity: "
+                    << eChatCommand::ItemText() << chattingTimeStr;
         }
+
         message << "\n";
         con << message;
     }
@@ -8415,7 +8413,7 @@ void ePlayerNetID::ReadSync(nMessage &m)
     
     if (!firstSync) 
     {
-        if (se_playerStats)
+        if (se_playerStats && score != 0)
         {
             REAL addedScore = score - lastSyncMessage_.score;
 
@@ -9662,9 +9660,9 @@ static void loadCrossfadePreset(size_t selection)
     currentCrossfadePreset = selection;
     currentCrossadeColorIndex = 0; // Reset color index
     ticksSinceLastColor = 0;       // Reset ticks count
-    con << ChatCommand::HeaderText()
-        << "Using preset " << ChatCommand::ItemText() << (selection + 1)
-        << ChatCommand::MainText() << ": " << presets[selection].description
+    con << eChatCommand::HeaderText()
+        << "Using preset " << eChatCommand::ItemText() << (selection + 1)
+        << eChatCommand::MainText() << ": " << presets[selection].description
         << " - (" << presets[selection].colors.size() << " colors)\n";
 }
 
@@ -9677,18 +9675,18 @@ static void crossfadePresetList()
     {
         if (i == currentCrossfadePreset)
         {
-            currentPresetStr << ChatCommand::ItemText() << (i + 1)
-                             << ": " << ChatCommand::MainText() << presets[i].description
-                             << "\n  - (" << ChatCommand::ItemText() << presets[i].colors.size()
-                             << ChatCommand::MainText() << " colors)\n";
+            currentPresetStr << eChatCommand::ItemText() << (i + 1)
+                             << ": " << eChatCommand::MainText() << presets[i].description
+                             << "\n  - (" << eChatCommand::ItemText() << presets[i].colors.size()
+                             << eChatCommand::MainText() << " colors)\n";
             con << currentPresetStr;
         }
         else
         {
-            con << ChatCommand::ItemText() << (i + 1)
-                << ": " << ChatCommand::MainText() << presets[i].description
-                << ChatCommand::MainText() << " \n  - (" << ChatCommand::ItemText()
-                << presets[i].colors.size() << ChatCommand::MainText() << " colors)\n";
+            con << eChatCommand::ItemText() << (i + 1)
+                << ": " << eChatCommand::MainText() << presets[i].description
+                << eChatCommand::MainText() << " \n  - (" << eChatCommand::ItemText()
+                << presets[i].colors.size() << eChatCommand::MainText() << " colors)\n";
         }
     }
     con << "Current preset: " << currentPresetStr;
@@ -9709,9 +9707,9 @@ void crossfadeUsingPreset(const Preset &preset, ePlayer *local_p)
             loadCrossfadePreset(desiredCrossfadePresetSizeT - 1);
         else
         {
-            con << ChatCommand::ErrorText()
+            con << eChatCommand::ErrorText()
                 << "Error invalid preset, using preset 1. Available presets: \n"
-                << ChatCommand::MainText();
+                << eChatCommand::MainText();
             currentCrossfadePreset = 0;
             desiredCrossfadePreset = 1;
             crossfadePresetList();
@@ -10374,7 +10372,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                 {
                     if (local_p->spectate)
                     {
-                        con << ChatCommand::CommandText("FORCE_JOIN_TEAM")
+                        con << eChatCommand::CommandText("FORCE_JOIN_TEAM")
                             << "Setting spectate to false\n";
                         local_p->spectate = false;
                     }

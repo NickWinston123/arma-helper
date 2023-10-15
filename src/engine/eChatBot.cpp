@@ -89,6 +89,9 @@ tString numberAdderFunc(tString message)
             fracPart += input[idx++];
     }
 
+    if (intPart == "0") 
+        isNegative = false;
+
     int carry = isNegative ? -se_playerMessageTriggersFuncAdderVal : se_playerMessageTriggersFuncAdderVal;
 
     for (int i = fracPart.size() - 1; i >= 0 && carry != 0; i--)
@@ -107,9 +110,6 @@ tString numberAdderFunc(tString message)
 
     if (carry != 0)
         intPart = (carry == -1 ? "-" : "") + std::to_string(std::abs(carry)) + intPart;
-
-    if (intPart == "0")
-        isNegative = false;
 
     std::string result = isNegative ? "-" : "";
     result += intPart;
@@ -423,20 +423,33 @@ tString leaderboardFunc(tString message)
 {
     tString result;
     tString statName("kills");
-
+    int page = 1;
+    const int playersPerPage = 5;
+    
     if (!se_playerStats)
     {
         result << "PlayerStats not initialized. PlayerStats are disabled!\n";
         return result;
     }
+
+    int pos = 0;
     message = message.TrimWhitespace();
 
-    if (!message.empty())
-        statName = message;
+    tString desriredStat = message.ExtractNonBlankSubString(pos);
 
+    if (!desriredStat.empty())
+        statName = desriredStat;
+
+    tString pageStr = message.ExtractNonBlankSubString(pos);
+
+    if (!pageStr.empty())
+        page = atoi(pageStr);
+
+    if (page <= 0)
+        page = 1;
+        
     std::vector<std::pair<tString, PlayerData>> sortedPlayers(ePlayerStats::playerStatsMap.begin(), ePlayerStats::playerStatsMap.end());
 
-    // remove AIs
     auto it = std::remove_if(sortedPlayers.begin(), sortedPlayers.end(),
                              [](const std::pair<tString, PlayerData>& player)
                              {
@@ -457,9 +470,23 @@ tString leaderboardFunc(tString message)
     else
         return PlayerData::getAvailableStatsStr("leaderboardFunc");
 
-    for (int i = 0; i < 5 && i < sortedPlayers.size(); ++i)
+    int startIdx = (page - 1) * playersPerPage;
+    int endIdx = startIdx + playersPerPage;
+    if (endIdx > sortedPlayers.size())
+        endIdx = sortedPlayers.size();
+
+    if (startIdx >= sortedPlayers.size())
     {
-        if (i > 0)
+        result << "No players on page " << page << "\n";
+        return result;
+    }
+
+    int totalPages = (sortedPlayers.size() + playersPerPage - 1) / playersPerPage; 
+
+
+    for (int i = startIdx; i < endIdx; ++i)
+    {
+        if (i > startIdx)
         {
             result << ", ";
         }
@@ -469,10 +496,10 @@ tString leaderboardFunc(tString message)
         tString value = sortedPlayers[i].second.getAnyValue(statName);
         result << " (" << value << " " << statName << ")";
     }
+    result << " (" << page << "/" << totalPages << ")\n";
 
     return result;
 }
-
 
 tString exactStatFunc(tString message)
 {
@@ -513,8 +540,13 @@ tString exactStatFunc(tString message)
     else
         stats = &ePlayerStats::getStatsForAnalysis(playerName);
 
-    tString statValue = stats->getAnyValue(stat.TrimWhitespace());
-
+    tString statValue;
+    
+    if (stat == "kd")
+        statValue << (stats->getKDRatio(false));
+    else
+        statValue << stats->getAnyValue(stat.TrimWhitespace());
+    
     if (!statValue.empty())
         output << (!stats->name.empty() ? stats->name : playerName)
                << ": "
@@ -626,25 +658,28 @@ void eChatBot::LoadChatTriggers()
     }
 }
 
-void eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger, tString preAppend)
+bool eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger, tString preAppend)
 {
+    bool initiated;
     eChatBot &bot = eChatBot::getInstance();
 
     if (!bot.ShouldAnalyze())
-        return;
+        return initiated;
 
     bot.Stats().total_messages_read++;
 
     auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(triggeredByPlayer, message, eventTrigger);
 
     if (!response.empty() && !bot.masterFuncResponse)
-    {
+    {   
+        initiated = true;
         bot.preparePlayerMessage(response, delay, sendingPlayer, preAppend);
     }
     else if (eventTrigger)
         con << "No trigger set for '" << message << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
 
     bot.masterFuncResponse = false;
+    return initiated;
 }
 
 bool eChatBot::ShouldAnalyze()
@@ -693,18 +728,19 @@ void eChatBot::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, boo
                     netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
                     ePlayerNetID::Update();
 
-                    gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag] // When we send the message and stop typing
+                    gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag]
                     {
                         netPlayer->Chat(message);
                         if (chatFlag)
                             netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
                         ePlayerNetID::Update();
-                    });
+                    }, 0, true); 
                 }
                 else
                 {
                     netPlayer->Chat(message);
-                } });                                                                        // multiple messages will be added to pendingTasks
+                }
+            }, 0, true); 
     });
 }
 
@@ -881,9 +917,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                     tString result = ExecuteFunction(functionName, functionInput);
 
                     if (!result.empty())
-                    {
                         responseStr = responseStr.Replace(functionName, result);
-                    }
                     else
                         responseStr = "";
                 }
@@ -1208,7 +1242,7 @@ const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings = {
      [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { col++; }},
 
     {"total_uptime", "REAL",
-     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_double(stmt, col++, stats.total_up_time); },
+     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_double(stmt, col++, stats.total_up_time + tSysTimeFloat()); },
      [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_up_time = sqlite3_column_double(stmt, col++); }},
 
     {"total_messages_read", "INTEGER",

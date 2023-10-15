@@ -2199,12 +2199,12 @@ bool eVoter::ChatDisplayVotes()
     int size = voteItems.Len();
 
     if (size <= 0) {
-        con << ChatCommand::ErrorText() << "There are currently no polls.\n";
+        con << eChatCommand::ErrorText() << "There are currently no polls.\n";
         return false;
     }
 
     for (int i = 0; i < size ; i++) {
-        con << ChatCommand::ItemText() << i+1 << ChatCommand::MainText() << ") " << voteItems[i]->GetDescription() << "\n";
+        con << eChatCommand::ItemText() << i+1 << eChatCommand::MainText() << ") " << voteItems[i]->GetDescription() << "\n";
     }
 
     return true;
@@ -2217,14 +2217,14 @@ void eVoter::ChatSubmitPoll(int pollID, bool accept)
     int size = voteItems.Len();
 
     if (pollID > size || pollID <= 0) {
-        con << ChatCommand::ErrorText() << "No poll found with ID '" << ChatCommand::ItemText() << pollID << ChatCommand::ErrorText() << "'\n";
+        con << eChatCommand::ErrorText() << "No poll found with ID '" << eChatCommand::ItemText() << pollID << eChatCommand::ErrorText() << "'\n";
         return;
     }
 
     eVoteItem* voteItem = eVoteItem::GetItems()(pollID-1);
 
     if (!voteItem) {
-        con << ChatCommand::ErrorText() << "No poll found with ID '" << ChatCommand::ItemText() << pollID << ChatCommand::ErrorText() << "'\n";
+        con << eChatCommand::ErrorText() << "No poll found with ID '" << eChatCommand::ItemText() << pollID << eChatCommand::ErrorText() << "'\n";
         return;
     }
 

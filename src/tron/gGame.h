@@ -56,7 +56,7 @@ class nServerInfoBase;
 class eTeam;
 class gParser;
 
-extern std::unique_ptr<nServerInfoBase> getSeverFromStr(tString input);
+extern nServerInfoBase *getSeverFromStr(tString input);
 extern void InitHelperItems(bool ingame = false);
 
 typedef enum
@@ -152,28 +152,8 @@ public:
 void update_settings(bool const *goon = 0);
 void ret_to_MainMenu();
 
-extern std::unique_ptr<nServerInfoBase> connectedServer;
 extern nServerInfoBase* CurrentServer();
-
-extern std::unique_ptr<nServerInfoBase> lastServer;
-extern nServerInfoBase* LastServer();
-
-static void setLastServer(std::unique_ptr<nServerInfoBase> lastSrv = nullptr)
-{
-    if (lastSrv != nullptr)
-    {
-        lastServer = std::move(lastSrv);
-    }
-    else
-    {
-        lastServer = std::move(connectedServer);
-    }
-}
-
-static void setCurrentServer(std::unique_ptr<nServerInfoBase> currentSrv) { 
-    connectedServer = std::move(currentSrv); 
-}
-
+static void setCurrentServer(nServerInfoBase * currentSrv);
 void ConnectToServer(nServerInfoBase *server);
 
 void sg_EnterGame(nNetState enter_state);
@@ -350,17 +330,17 @@ class TaskScheduler
 {
 public:
     // Schedule a new task
-    bool schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0, bool allowMultiple = false)
+    bool schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0, bool useQueue = false)
     {
         REAL dueTime = tSysTimeFloat() + delayInSeconds;
-        if(isTaskScheduled(id) && !allowMultiple)
+        if (isTaskScheduled(id) && !useQueue)
         {
             DelayedTask newTask(id, dueTime, interval, delayInSeconds, std::move(task));
             pendingTasks[id].push(newTask);
             return true;
         }
-        
-        if(allowMultiple && taskCounts.find(id) != taskCounts.end())
+
+        if (useQueue && taskCounts.find(id) != taskCounts.end())
         {
             id = id + "_" + std::to_string(++taskCounts[id]);
         }

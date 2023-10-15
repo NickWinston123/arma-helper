@@ -60,15 +60,33 @@ public:
     int total_score     = 0;
     REAL fastest_speed  = 0;
 
-    tString getLastSeenAgo(bool in_game)
+    bool in_server      = false;
+    bool seen_this_session = false;
+
+    REAL getLastSeenAgo()
     {
-        if (last_seen == 0)
-            return tString("Never seen");
+        if (last_seen == 0 || in_server)
+            return 0;
 
         time_t now = time(NULL);
-        double seconds = in_game ? now : difftime(now, last_seen);
+        double lastSeen = difftime(now, last_seen);
 
-        return getTimeAgoString(seconds);
+        return lastSeen;
+    }
+
+    tString getLastSeenAgoStr(bool exact = false)
+    {
+        REAL lastSeen = getLastSeenAgo();
+
+        if (lastSeen == 0)
+        {
+            if (in_server)
+                return tString("Now");
+            else
+                return tString("Never seen");
+        }
+
+        return exact ? st_GetFormatTime(lastSeen) : getTimeAgoString(lastSeen);
     }
 
     REAL getTotalPlayTime(bool add = true)
@@ -81,28 +99,28 @@ public:
         return total_spec_time + (add ? se_GameTime() : 0);
     }
 
-        std::string getChatMessages()
+    tString getChatMessages()
+    {
+        tString messages;
+        bool first = true;
+
+        for (auto messageIt = chat_messages.rbegin(); messageIt != chat_messages.rend(); ++messageIt)
         {
-            std::string messages;
-            bool first = true;
+            if (!first)
+                messages << ", ";
+            else
+                first = false;
 
-            for (auto messageIt = chat_messages.rbegin(); messageIt != chat_messages.rend(); ++messageIt)
-            {
-                if (!first)
-                    messages += ", ";
-                else
-                    first = false;
-
-                messages += *messageIt;
-            }
-
-            return messages;
+            messages << *messageIt;
         }
+
+        return messages;
+    }
 
     REAL getKDRatio(bool round = true) const
     {
         REAL result = 0.0;
-        
+
         if (deaths == 0)
         {
             result = kills;
@@ -127,9 +145,11 @@ public:
 
 class PlayerData : public PlayerDataBase
 {
-    using StatFunction = std::function<tString(PlayerDataBase *)>;
 public:
-    static const std::map<std::string, StatFunction> valueMap;
+    using StatFunction = std::function<tString(PlayerDataBase *)>;
+    using StatInfo = std::pair<std::string, PlayerData::StatFunction>;
+    static std::map<std::string, StatInfo> valueMap;
+
     static const std::set<std::string> valueMapdisplayFields;
 
     static tString getAvailableStatsStr(std::string source = "")
@@ -155,12 +175,14 @@ public:
         return result;
     }
 
-
     tString getAnyValue(tString variable)
     {
         auto stat = valueMap.find(variable.stdString());
         if (stat != valueMap.end())
-            return stat->second(this);
+        {
+            auto func = stat->second.second; 
+            return func(this);
+        }
         else
         {
             tString emptyVal;
@@ -168,8 +190,23 @@ public:
         }
     }
 
+    static tString getAnyLabel(tString variable)
+    {
+        auto stat = valueMap.find(variable.stdString());
+        if (stat != valueMap.end())
+        {
+            return tString(stat->second.first.c_str());
+        }
+        else
+        {
+            return tString("");
+        }
+    }
+
+
     PlayerDataBase data_from_db;
 };
+
 #include <algorithm>
 
 class ePlayerStats
@@ -188,7 +225,6 @@ public:
 
     static PlayerData& getStatsForAnalysis(tString playerName)
     {
-
         std::string playerNameLower = playerName.stdString();
         std::transform(playerNameLower.begin(), playerNameLower.end(), playerNameLower.begin(), ::tolower);
 
@@ -204,7 +240,9 @@ public:
             }
         }
 
-        // no exact match, look for the closest match (substring search)
+        // sort players by last_seen if their names match the substring
+        std::vector<std::pair<tString, PlayerData>> matchedPlayers;
+
         for (const auto &kv : playerStatsMap)
         {
             std::string currentNameLower = kv.first.stdString();
@@ -212,12 +250,29 @@ public:
 
             if (currentNameLower.find(playerNameLower) != std::string::npos)
             {
-                return playerStatsMap[kv.first];
+                matchedPlayers.push_back(kv);
             }
         }
 
-        // default, null vals
-        return playerStatsMap[playerName.ToLower()];
+        if (!matchedPlayers.empty())
+        {
+            std::sort(matchedPlayers.begin(), matchedPlayers.end(), 
+                    [](const auto &a, const auto &b) {
+                        return a.second.last_seen > b.second.last_seen;
+                    });
+
+            return playerStatsMap[matchedPlayers.front().first];
+        }
+
+        // remove from map if not found
+        auto it = playerStatsMap.find(playerName.ToLower());
+        if(it != playerStatsMap.end())
+        {
+            playerStatsMap.erase(it);
+        }
+
+        static PlayerData defaultPlayerData; 
+        return defaultPlayerData;
     }
 
     static void addKill(ePlayerNetID *player)
@@ -278,25 +333,35 @@ public:
     static void setColor(ePlayerNetID * player, int r, int g, int b)
     {
         tString name = player->GetRealName().ToLower();
-
-        PlayerData &data = playerStatsMap[name];
-        data.r = r;
-        data.g = g;
-        data.b = b;
+    
+        PlayerData &stats = playerStatsMap[name];
+        stats.r = r;
+        stats.g = g;
+        stats.b = b;
+        stats.name = name;
     }
 
     static void playerJoined(ePlayerNetID * player)
     {
         PlayerData &stats = getStats(player);
+
         stats.times_joined++;
         stats.last_seen = time(NULL);
         stats.human = player->IsHuman();
+        stats.in_server = true;
+
+        if (!stats.seen_this_session)
+            players_record_this_session++;
+
+        stats.seen_this_session = true;
     }
 
     static void playerLeft(ePlayerNetID * player)
     {
         PlayerData &stats = getStats(player);
+
         stats.last_seen = time(NULL);
+        stats.in_server = false;
     }
 
     static void addScore(ePlayerNetID * player, int score)
@@ -324,12 +389,13 @@ public:
     static void reloadStatsFromDB();
 
 
-    static REAL getTotalPlayersLogged()
+    static REAL getTotalPlayersLogged(bool current = true)
     {
-        return static_cast<REAL>(playerStatsMap.size());
+        return current ? players_record_this_session : static_cast<REAL>(playerStatsMap.size());
     }
 
     static std::unordered_map<tString, PlayerData> playerStatsMap;
+    static int players_record_this_session;
 };
 
 using PlayerDataColumnMapping = ColumnMapping<PlayerData>;
@@ -346,10 +412,10 @@ public:
 
 std::vector<PlayerData> getAllObjects() override {
     std::vector<PlayerData> playerDataVec;
-    for (auto& pair : ePlayerStats::playerStatsMap) 
+    for (auto& pair : ePlayerStats::playerStatsMap)
     {
-        pair.second.name = pair.first;  
-        playerDataVec.push_back(pair.second); 
+        pair.second.name = pair.first;
+        playerDataVec.push_back(pair.second);
     }
     return playerDataVec;
 }

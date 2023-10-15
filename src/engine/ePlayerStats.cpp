@@ -19,14 +19,13 @@
 bool se_playerStats = false;
 static tConfItem<bool> se_playerStatsConf("PLAYER_STATS", se_playerStats);
 
-bool se_playerStatsLog = false;
-static tConfItem<bool> se_playerStatsLogConf("PLAYER_STATS_LOG", se_playerStatsLog);
-
 tString se_playerStatsDataBaseFile("stats.db");
 static tConfItem<tString> se_playerStatsDataBaseFileConf("PLAYER_STATS_DB_FILE", se_playerStatsDataBaseFile);
 
 bool se_playerMessageTriggersStatsSave = false;
 static tConfItem<bool> se_playerMessageTriggersStatsSaveConf("PLAYER_MESSAGE_TRIGGER_STATS_SAVED", se_playerMessageTriggersStatsSave);
+
+int ePlayerStats::players_record_this_session = 0;
 
 void ePlayerStats::loadStatsFromDB()
 {
@@ -35,10 +34,10 @@ void ePlayerStats::loadStatsFromDB()
         return;
 
     ePlayerStatsDBAction  playerDataAction(db);
-    playerDataAction.loadStatsFromDB();
+    playerDataAction.Load();
 
     eChatBotStatsDBAction chatbotStatsAction(db);
-    chatbotStatsAction.loadStatsFromDB();
+    chatbotStatsAction.Load();
 
     sqlite3_close(db);
 }
@@ -53,10 +52,10 @@ void ePlayerStats::saveStatsToDB()
         << "Saving stats to database..\n";
 
     ePlayerStatsDBAction  playerDataAction(db);
-    playerDataAction.saveStatsToDB();
+    playerDataAction.Save();
 
     eChatBotStatsDBAction chatbotStatsAction(db);
-    chatbotStatsAction.saveStatsToDB();
+    chatbotStatsAction.Save();
 
     sqlite3_close(db);
 
@@ -120,7 +119,7 @@ void ePlayerStats::reloadStatsFromDB()
 
 std::unordered_map<tString, PlayerData> ePlayerStats::playerStatsMap;
 
-const std::string DELIMITER = "-+HACKERMANS+-";
+const std::string DELIMITER = "-+H4CK3RM@N5-+";
 
 std::string join(const std::vector<std::string> &vec, const std::string &delimiter)
 {
@@ -168,149 +167,150 @@ const std::set<std::string> PlayerData::valueMapdisplayFields =
     "rgb", "chats", "kills", "deaths", "match_wins",
     "match_losses", "round_wins", "round_losses", "rounds_played",
     "matches_played", "play_time", "spec_time", "times_joined",
-    "kd", "chat_count", "fastest", "score"
-};
-const std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
-    {"rgb", [](PlayerDataBase *self)
-     {
-         return self->rgbString();
-     }},
-    {"r", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->r;
-         return result;
-     }},
-    {"g", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->g;
-         return result;
-     }},
-    {"b", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->b;
-         return result;
-     }},
-    {"chat_count", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->total_messages;
-         return result;
-     }},
-    {"kills", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->kills;
-         return result;
-     }},
-    {"deaths", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->deaths;
-         return result;
-     }},
-    {"match_wins", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->match_wins;
-         return result;
-     }},
-    {"match_losses", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->match_losses;
-         return result;
-     }},
-    {"round_wins", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->round_wins;
-         return result;
-     }},
-    {"round_losses", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->round_losses;
-         return result;
-     }},
-    {"rounds_played", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->rounds_played;
-         return result;
-     }},
-    {"matches_played", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->matches_played;
-         return result;
-     }},
-    {"play_time", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << st_GetFormatTime(self->getTotalPlayTime(), false);
-         return result;
-     }},
-    {"spec_time", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << st_GetFormatTime(self->getTotalSpecTime(), false);
-         return result;
-     }},
-    {"times_joined", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->times_joined;
-         return result;
-     }},
-    {"kd", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->getKDRatio();
-         return result;
-     }},
-    {"chats", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result = tString(self->getChatMessages());
-         return result;
-     }},
-    {"fastest", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->getSpeed();
-         return result;
-     }},
-    {"fastest_speed", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->getSpeed();
-         return result;
-     }},
-    {"speed", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->getSpeed();
-         return result;
-     }},
-    {"total_score", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->total_score;
-         return result;
-     }},
-    {"score", [](PlayerDataBase *self)
-     {
-         tString result("");
-         result << self->total_score;
-         return result;
-     }},
-
+    "kd", "chat_count", "fastest", "score", "seen"
 };
 
-const std::vector<PlayerDataColumnMapping > ePlayerStatsMappings = 
+void insertFunction(std::map<std::string, std::pair<std::string, PlayerData::StatFunction>>& map,
+                    const std::vector<std::string>& keys,
+                    const std::string& label,
+                    PlayerData::StatFunction func)
+{
+    for (const auto& key : keys)
+        map[key] = {label, func};
+}
+
+auto initValueMap = []() {
+    std::map<std::string, std::pair<std::string, PlayerData::StatFunction>> tempMap;
+
+    insertFunction(tempMap, {"rgb"}, "RGB", [](PlayerDataBase *self) {
+        return self->rgbString();
+    });
+
+    insertFunction(tempMap, {"r"}, "R", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->r;
+        return result;
+    });
+
+    insertFunction(tempMap, {"g"}, "G", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->g;
+        return result;
+    });
+
+    insertFunction(tempMap, {"b"}, "B", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->b;
+        return result;
+    });
+
+    insertFunction(tempMap, {"chat_count","cc"}, "Chat Count", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->total_messages;
+        return result;
+    });
+
+    insertFunction(tempMap, {"kills", "k"}, "Kills", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->kills;
+        return result;
+    });
+
+    insertFunction(tempMap, {"deaths", "d"}, "Deaths", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->deaths;
+        return result;
+    });
+
+    insertFunction(tempMap, {"match_wins", "mw"}, "Match Wins", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->match_wins;
+        return result;
+    });
+
+    insertFunction(tempMap, {"match_losses", "ml"}, "Match Losses", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->match_losses;
+        return result;
+    });
+
+    insertFunction(tempMap, {"round_wins", "rw"}, "Round Wins", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->round_wins;
+        return result;
+    });
+
+    insertFunction(tempMap, {"round_losses", "rl"}, "Round Losses", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->round_losses;
+        return result;
+    });
+
+    insertFunction(tempMap, {"rounds_played", "rp"}, "Rounds Played", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->rounds_played;
+        return result;
+    });
+
+    insertFunction(tempMap, {"matches_played", "mp"}, "Maches Played", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->matches_played;
+        return result;
+    });
+
+    insertFunction(tempMap, {"play_time", "pt"}, "Play Time", [](PlayerDataBase *self) {
+        tString result("");
+        result << st_GetFormatTime(self->getTotalPlayTime(), false);
+        return result;
+    });
+
+    insertFunction(tempMap, {"spec_time", "st"}, "Spec Time", [](PlayerDataBase *self) {
+        tString result("");
+        result << st_GetFormatTime(self->getTotalSpecTime(), false);
+        return result;
+    });
+
+    insertFunction(tempMap, {"times_joined", "tj"}, "Times Joined", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->times_joined;
+        return result;
+    });
+
+    insertFunction(tempMap, {"kd"}, "Kill Death Ratio", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->getKDRatio();
+        return result;
+    });
+
+    insertFunction(tempMap, {"chats", "c"}, "Chats", [](PlayerDataBase *self) {
+        tString result("");
+        result = tString(self->getChatMessages());
+        return result;
+    });
+
+    insertFunction(tempMap, {"fastest", "f", "fastest_speed", "speed"}, "Fastest Speed", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->getSpeed();
+        return result;
+    });
+
+    insertFunction(tempMap, {"total_score", "score"}, "Total Score", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->total_score;
+        return result;
+    });
+
+    insertFunction(tempMap, {"last_seen", "seen"}, "Last Seen", [](PlayerDataBase *self) {
+        tString result("");
+        result << self->getLastSeenAgoStr();
+        return result;
+    });
+
+    return tempMap;
+};
+std::map<std::string, std::pair<std::string, PlayerData::StatFunction>> PlayerData::valueMap = initValueMap();
+
+const std::vector<PlayerDataColumnMapping > ePlayerStatsMappings =
 {
     {"name", "TEXT PRIMARY KEY",
         [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) {

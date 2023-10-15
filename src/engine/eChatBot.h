@@ -27,6 +27,7 @@ struct eChatBotStatsBase
     int total_messages_sent = 0;
     REAL total_up_time      = 0;
     tString lastMatchedTrigger;
+    tString lastTriggerType;
     ePlayerNetID *lastTriggeredBy;
 };
 

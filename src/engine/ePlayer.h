@@ -332,8 +332,9 @@ public:
     struct SyncData
     {
         REAL score;
+        bool spectating, chatting;
         SyncData()
-            : score(0)
+            : score(0), spectating(false), chatting(false)
         {
         }
     };
@@ -377,6 +378,7 @@ public:
     nTimeAbsolute createdTime() { return timeCreated_; }
 
     bool encryptVerified = false;
+    bool departedByChatBot = false;
     bool greetedByChatBot = false;
     bool departedSpecByChatBot = false;
     bool greetedSpecByChatBot = false;

@@ -1871,7 +1871,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
                 p->lastMessagedPlayer = ourPlayer;
                 ourPlayer->lastMessagedByPlayer = p;
                 ourPlayer->lastMessagedPlayer = nullptr;
-                
+
                 ourPlayer = localPlayer;
                 privateMessage = true;
                 privateMessageParams = colorlessMessage.SubStr(privateMessageMsgPos + possiblePrivateMessageStr.Len()-1);
@@ -1883,8 +1883,8 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         {
             if (se_encryptCommandWatch)
                 encyptedMessage = EncryptCommand::handleEncryptCommandAction(p, privateMessageParams);
-        } 
-        else if (se_playerStats) 
+        }
+        else if (se_playerStats)
         {
             ePlayerStats::addMessage(p, colorlessMessage.SubStr(nameLength).TrimWhitespace());
         }
@@ -6343,6 +6343,9 @@ static tConfItem<REAL> se_playerMessageJoinWaitTimeConf = HelperCommand::tConfIt
 static bool se_playerMessageEnter = false;
 static tConfItem<bool> se_playerMessageEnterConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ENTER", se_playerMessageEnter);
 
+static bool se_playerMessageRejoin = false;
+static tConfItem<bool> se_playerMessageRejoinConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_REJOIN", se_playerMessageRejoin);
+
 static bool se_playerMessageRename = false;
 static tConfItem<bool> se_playerMessageRenameConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_RENAME", se_playerMessageRename);
 
@@ -6908,7 +6911,7 @@ ePlayerNetID::~ePlayerNetID()
 }
 
 static bool se_playerMessageLeave = false;
-static tConfItem<bool> se_playerMessageLeaveConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LEAVE", se_playerMessageLeave);
+static tConfItem<bool> se_playerMessageLeaveConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LEFT", se_playerMessageLeave);
 static void player_removed_from_game_handler(nMessage &m)
 {
     // and the ID of the player that was removed
@@ -6917,8 +6920,11 @@ static void player_removed_from_game_handler(nMessage &m)
     ePlayerNetID *p = dynamic_cast<ePlayerNetID *>(nNetObject::ObjectDangerous(id));
     if (p && sn_GetNetState() != nSERVER)
     {
-        if (se_playerTriggerMessages && se_playerMessageLeave)
+        if (se_playerTriggerMessages && se_playerMessageLeave && !p->departedByChatBot)
+        {
             eChatBot::InitiateAction(nullptr, tString( p->IsHuman() ? "$left" : "$leftbot" ), true);
+            p->departedByChatBot = true;
+        }
 
         if (se_playerStats)
             ePlayerStats::playerLeft(p);
@@ -8310,38 +8316,19 @@ void ePlayerNetID::ReadSync(nMessage &m)
 
         if (Owner() != ::sn_myNetID)
         {
-            bool newChat = ((flags & 1) != 0);
-            bool newSpectate = ((flags & 2) != 0);
-            bool newStealth = ((flags & 4) != 0);
+            bool newChat     = data.chatting = ((flags & 1) != 0);
+            bool newSpectate = data.spectating = ((flags & 2) != 0);
+            bool newStealth  = ((flags & 4) != 0);
 
-            if (!nameFirstSync) 
+            if (spectating_ && !newSpectate && strlen(GetLogName()) > 0)
             {
+                se_playerSpecLeaveWriter << GetLogName() << GetName();
+                se_playerSpecLeaveWriter.write();
 
-                if (spectating_ && !newSpectate && strlen(GetLogName()) > 0)
-                {
-                    se_playerSpecLeaveWriter << GetLogName() << GetName();
-                    se_playerSpecLeaveWriter.write();
-                    
-                    if (se_playerTriggerMessages && se_playerMessageSpecEnter && greetedByChatBot && !greetedSpecByChatBot) 
-                    {
-                        eChatBot::InitiateAction(this, tString("$enterspec"), true);
-                        greetedSpecByChatBot = true;
-                        departedSpecByChatBot = false;
-                    }
-                        
-                    LogActivity(ACTIVITY_JOINED_GAME_FROM_SPECTATOR);
-                } 
-                else if (spectating_ && newSpectate)
-                {
-                    if (se_playerTriggerMessages && se_playerMessageSpecLeft && greetedByChatBot && !departedSpecByChatBot) 
-                    {
-                        eChatBot::InitiateAction(this, tString("$leftspec"), true);
-                        departedSpecByChatBot = true;
-                        greetedSpecByChatBot = false;
-                    }
-                }
+                LogActivity(ACTIVITY_JOINED_GAME_FROM_SPECTATOR);
             }
-            
+
+
             chatting_ = newChat;
             spectating_ = newSpectate;
             stealth_ = newStealth;
@@ -8436,20 +8423,48 @@ void ePlayerNetID::ReadSync(nMessage &m)
             }
         }
     }
-    
-    if (!firstSync) 
-    {
-        if (se_playerStats && score != 0)
-        {
-            REAL addedScore = score - lastSyncMessage_.score;
 
-            if (addedScore != 0)
-                ePlayerStats::addScore(this, addedScore);
-        } 
+    if (!firstSync)
+    {
+        if (se_playerStats)
+        {
+            if (score != 0)
+            {
+                REAL addedScore = score - lastSyncMessage_.score;
+
+                if (addedScore != 0)
+                    ePlayerStats::addScore(this, addedScore);
+            }
+
+            if (greetedByChatBot && spectating_ != lastSyncMessage_.spectating)
+            {
+                if (spectating_)
+                {
+                    se_playerSpecLeaveWriter << GetLogName() << GetName();
+                    se_playerSpecLeaveWriter.write();
+
+                    if (se_playerTriggerMessages && se_playerMessageSpecEnter && !greetedSpecByChatBot)
+                    {
+                        eChatBot::InitiateAction(this, tString("$enterspec"), true);
+                        greetedSpecByChatBot = true;
+                        departedSpecByChatBot = false;
+                    }
+                }
+                else
+                {
+                    if (se_playerTriggerMessages && se_playerMessageSpecLeft && !departedSpecByChatBot)
+                    {
+                        eChatBot::InitiateAction(this, tString("$leftspec"), true);
+                        departedSpecByChatBot = true;
+                        greetedSpecByChatBot = false;
+                    }
+                }
+            }
+        }
     }
     lastSyncMessage_ = data;
 
-    
+
     // con << "Player info updated.\n";
 
     // make sure we did not accidentally overwrite values
@@ -12687,12 +12702,16 @@ void ePlayerNetID::UpdateName(void)
         bool nameEmpty = GetName().empty();
         if (nameFirstSync && !isLocal() && !nameEmpty)
         {
-            if (se_playerTriggerMessages && se_playerMessageEnter)
+            if (se_playerTriggerMessages)
             {
-                eChatBot::InitiateAction(this, tString( IsHuman() ? "$enter" : "$enterbot" ), true);;
+                if (se_playerStats && se_playerMessageRejoin && ePlayerStats::getStatsForAnalysis(GetName()).seen_this_session)
+                    eChatBot::InitiateAction(this, tString(IsHuman() ? "$rejoin" : "$rejoinbot"), true);
+                else if (se_playerMessageEnter)
+                    eChatBot::InitiateAction(this, tString(IsHuman() ? "$enter" : "$enterbot"), true);
+
                 greetedByChatBot = true;
             }
-            
+
             if (se_playerStats)
                 ePlayerStats::playerJoined(this);
 

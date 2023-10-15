@@ -700,7 +700,7 @@ tString tString::RTrim( void ) const
     {
         return SubStr( 0, lastNonSpace + 1 );
     }
-    
+
     return *this;
 }
 
@@ -2095,7 +2095,7 @@ bool tString::isNumber() const
         if (c == '.')
         {
             dotCount++;
-            if (dotCount > 1) 
+            if (dotCount > 1)
                 return false;
             continue;
         }
@@ -2118,14 +2118,14 @@ bool tString::isNumber() const
 
 bool tString::containsNumber() const
 {
-    if (empty()) 
+    if (empty())
         return false;
 
-    for (int i = 0; i < Len(); ++i) 
+    for (int i = 0; i < Len(); ++i)
     {
         char c = (*this)(i);
-        
-        if (c == '\0') 
+
+        if (c == '\0')
             continue;
 
         if (std::isdigit(static_cast<unsigned char>(c))) {
@@ -2546,9 +2546,11 @@ void tToUpper( tString & toTransform )
 }
 
 #include "eChatCommands.h"
-tString st_GetFormatTime(REAL seconds, bool color)
+tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 {
     int totalSeconds = static_cast<int>(seconds);
+    int days = totalSeconds / 86400; // 86400 seconds in a day
+    totalSeconds %= 86400;
     int hours = totalSeconds / 3600;
     totalSeconds %= 3600;
     int minutes = totalSeconds / 60;
@@ -2556,25 +2558,50 @@ tString st_GetFormatTime(REAL seconds, bool color)
     int milliseconds = static_cast<int>((seconds - static_cast<int>(seconds)) * 1000);
 
     tString result;
-    result << (color ? eChatCommand::ItemText() : "")
-           << ((hours < 10) ? "0" : "") << hours
-           << (color ? eChatCommand::MainText() : "")
-           << "H:"
-           << (color ? eChatCommand::ItemText() : "")
-           << ((minutes < 10) ? "0" : "") << minutes
-           << (color ? eChatCommand::MainText() : "")
-           << "M:"
-           << (color ? eChatCommand::ItemText() : "")
-           << ((remainingSeconds < 10) ? "0" : "") << remainingSeconds
-           << (color ? eChatCommand::MainText() : "")
-           << "S:"
-           << (color ? eChatCommand::ItemText() : "")
-           << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") << milliseconds
-           << (color ? eChatCommand::MainText() : "")
-           << "MS";
+
+    if (days > 0 || showIfZero)
+    {
+        result << (color ? eChatCommand::ItemText() : "")
+               << days
+               << (color ? eChatCommand::MainText() : "")
+               << "D:";
+    }
+
+    if (hours > 0 || showIfZero)
+    {
+        result << (color ? eChatCommand::ItemText() : "")
+               << ((hours < 10) ? "0" : "") << hours
+               << (color ? eChatCommand::MainText() : "")
+               << "H:";
+    }
+
+    if (minutes > 0 || showIfZero)
+    {
+        result << (color ? eChatCommand::ItemText() : "")
+               << ((minutes < 10) ? "0" : "") << minutes
+               << (color ? eChatCommand::MainText() : "")
+               << "M:";
+    }
+
+    if (remainingSeconds > 0 || showIfZero)
+    {
+        result << (color ? eChatCommand::ItemText() : "")
+               << ((remainingSeconds < 10) ? "0" : "") << remainingSeconds
+               << (color ? eChatCommand::MainText() : "")
+               << "S:";
+    }
+
+    if (milliseconds > 0 || showIfZero)
+    {
+        result << (color ? eChatCommand::ItemText() : "")
+               << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") << milliseconds
+               << (color ? eChatCommand::MainText() : "")
+               << "MS";
+    }
 
     return result;
 }
+
 
 tString st_GetCurrentTime( char const * szFormat , struct tm pTime)
 {
@@ -3169,7 +3196,7 @@ bool pasteFromClipboard(tString *content, int& cursorPos)
             {
                 cData << buf;
             }
-            
+
             cData = st_UTF8ToLatin1( cData );
     #endif
 
@@ -3179,7 +3206,7 @@ bool pasteFromClipboard(tString *content, int& cursorPos)
             if (cData(i) == '\n' || cData(i) == '\r')
                 cData(i) = ' ';
         }
-        
+
         tString oContent(*content);
         tString aContent = oContent.SubStr(0, cursorPos);
         tString bContent = oContent.SubStr(cursorPos);
@@ -3198,7 +3225,7 @@ bool pasteFromClipboard(tString *content, int& cursorPos)
     return false;
 }
 
-tString getTimeAgoString(double seconds)
+tString getTimeAgoString(REAL seconds)
 {
     tString result;
 
@@ -3208,17 +3235,17 @@ tString getTimeAgoString(double seconds)
     }
     else if (seconds < 3600)
     {
-        double minutes = seconds / 60;
+        REAL minutes = seconds / 60;
         result << std::to_string((int)minutes) << " minutes ago";
     }
     else if (seconds < 86400)
     {
-        double hours = seconds / 3600;
+        REAL hours = seconds / 3600;
         result << std::to_string((int)hours) << " hours ago";
     }
     else
     {
-        double days = seconds / 86400;
+        REAL days = seconds / 86400;
         result << std::to_string((int)days) << " days ago";
     }
 

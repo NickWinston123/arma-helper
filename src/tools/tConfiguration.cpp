@@ -2269,6 +2269,37 @@ void sg_listChangedCommands(std::istream &s)
 
 static tConfItemFunc sg_listChangedCommandsConf("LIST_CHANGED_COMMANDS", &sg_listChangedCommands);
 
+
+void sg_loadLine(std::istream &s)
+{
+    tString fullInput;
+    fullInput.ReadLine(s);
+
+    if (fullInput.Filter() == "")
+    {
+        con << tOutput("$config_command_unknown", "");
+        return;
+    }
+
+    #ifndef DEDICATED
+    tCurrentAccessLevel level(tAccessLevel_Owner, true);
+    #endif
+
+    tArray<tString> inputLines = fullInput.Split("\n");
+
+    if (inputLines.Len() > 0)
+    {
+        for (int i = 0; i < inputLines.Len(); i++)
+        {
+            std::stringstream currentLineStream(static_cast<char const *>(inputLines[i]));
+            tConfItemBase::LoadAll(currentLineStream);
+        }
+    }
+}
+
+static tConfItemFunc sg_loadLineConf("LOAD_LINE", &sg_loadLine);
+
+
 bool sn_unlocknSettings=false;
 static tConfItem<bool> sn_unlocknSettingsConf = HelperCommand::tConfItem("NETWORK_SETTINGS_ALLOW_CHANGE",sn_unlocknSettings);
 

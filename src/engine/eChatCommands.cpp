@@ -1219,7 +1219,14 @@ bool SpectateCommand::execute(tString args)
     con << CommandText()
         << "Spectating player '" << player->name << "'...\n";
 
-    se_forceJoinTeam = false;
+    if (helperConfig::sghuk)
+    {
+        tString id;
+        tRemoveFromList(se_disableCreateSpecific,player->ID()+1);
+        se_disableCreate = 0;
+        se_forceJoinTeam = false;
+    }
+    
 
     ePlayer *local_p = player;
     local_p->spectate = true;

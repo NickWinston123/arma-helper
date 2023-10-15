@@ -3302,11 +3302,11 @@ public:
     gMainMenu(const tOutput &t, bool exit_item=true) : uMenu(t, exit_item) {}
 
     virtual void OnRender() override {
-        uMenu::OnRender();
 
         static double sg_MainMenuUpdateTimeout = -1E+32f;
 
-        if (!in_game) {
+        if (!in_game || !CurrentServer()) 
+        {
             if (!sg_connectToLastServerFromMenu && sg_MainMenuUpdateTimeout < tSysTimeFloat())
             {
                 Update();
@@ -3318,9 +3318,16 @@ public:
     //! enters the submenu
     virtual void Enter()
     {
+        Update();
         uMenu::Enter();
     }
 
+    void GenericBackground(REAL top)
+    {
+        Update();
+        uMenu::GenericBackground();
+    }
+    
     void Update()
     {
         if (!CurrentServer())

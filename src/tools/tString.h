@@ -360,7 +360,7 @@ bool operator>=( const tString& first, const tString& second );
 #include "tSysTime.h"
 
 tString st_GetCurrentTime(char const *szFormat, struct tm pTime = getCurrentLocalTime());
-tString st_GetFormatTime(REAL seconds, bool color = false);
+tString st_GetFormatTime(REAL seconds, bool color = false, bool showIfZero = true);
 // replacement for tString::EndsWith from the trunk
 bool st_StringEndsWith( tString const & test, tString const & end );
 bool st_StringEndsWith( tString const & test, char const * end );
@@ -383,7 +383,7 @@ namespace std {
         }
     };
 }
-tString getTimeAgoString(double seconds);
+tString getTimeAgoString(REAL seconds);
 
 #endif
 

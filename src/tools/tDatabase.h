@@ -34,7 +34,6 @@ public:
         char *errMsg = 0;
         int rc;
 
-        // table exists ?
         std::stringstream checkTableSql;
         checkTableSql << "SELECT name FROM sqlite_master WHERE type='table' AND name='" << tableName << "';";
 
@@ -50,6 +49,7 @@ public:
             sqlite3_finalize(stmt);
         }
 
+        // table exists ?
         if (!tableExists)
         {
             std::stringstream createTableSql;
@@ -110,7 +110,7 @@ public:
         }
     }
 
-    void loadStatsFromDB()
+    void Load()
     {
         ensureTableAndColumnsExist();
 
@@ -123,7 +123,7 @@ public:
         query.pop_back();
         query += " FROM " + tableName + ";";
 
-        gHelperUtility::DebugLog("Loading stats using SQL: " + query);
+        gHelperUtility::DebugLog("Loading using SQL: " + query);
 
         sqlite3_stmt *stmt;
         int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, 0);
@@ -133,14 +133,12 @@ public:
             {
                 tString name = tString((char *)sqlite3_column_text(stmt, 0));
 
-                gHelperUtility::DebugLog(std::string("name: ") + name.stdString());
-
                 T &targetObject = getTargetObject(name);
+
                 int column = 0;
                 for (const auto &mapping : mappings)
-                {
                     mapping.extractFunc(stmt, column, targetObject);
-                }
+                
                 postLoadActions(targetObject);
             }
         }
@@ -151,7 +149,7 @@ public:
         sqlite3_finalize(stmt);
     }
 
-void saveStatsToDB()
+void Save()
 {
     ensureTableAndColumnsExist();
 
@@ -173,7 +171,7 @@ void saveStatsToDB()
     }
     insertSql << ");";
 
-    gHelperUtility::DebugLog("Saving stats using SQL: " + insertSql.str());
+    gHelperUtility::DebugLog("Saving using SQL: " + insertSql.str());
 
     sqlite3_stmt *stmt;
     int rc = sqlite3_prepare_v2(db, insertSql.str().c_str(), -1, &stmt, 0);
@@ -216,7 +214,6 @@ namespace tDatabaseUtility
         int rc = sqlite3_open(databasePath, &db);
         if (rc != SQLITE_OK)
         {
-
             gHelperUtility::DebugLog(std::string("Cannot open database: ") + sqlite3_errmsg(db) + "\n");
             sqlite3_close(db);
             return nullptr;

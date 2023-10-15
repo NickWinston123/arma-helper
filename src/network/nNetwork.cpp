@@ -3466,6 +3466,9 @@ static nConsoleFilter sn_consoleFilter;
 static bool sg_playerMessageMatchWinner = false;
 static tConfItem<bool> sg_playerMessageMatchWinnerConf("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER", sg_playerMessageMatchWinner);
 
+static bool sg_playerMessageMatchWinnerSelf = false;
+static tConfItem<bool> sg_playerMessageMatchWinnerSelfConf("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER_SELF", sg_playerMessageMatchWinnerSelf);
+
 bool sg_playerSpamProtectionWatch = false;
 static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WATCH", sg_playerSpamProtectionWatch);
 
@@ -3508,13 +3511,13 @@ static void sn_ConsoleOut_handler(nMessage &m)
         if (s.Contains("Overall Winner"))
         {
             ePlayerNetID *potentialWinner = ePlayerNetID::HighestScoringPlayer();
+            bool isLocal = sg_playerMessageMatchWinnerSelf && potentialWinner && potentialWinner->isLocal();
+
             if (se_playerStats)
-            {
                 ePlayerStats::updateMatchWinsAndLoss(potentialWinner);
-            }
 
             if (se_playerTriggerMessages && sg_playerMessageMatchWinner)
-                eChatBot::InitiateAction(potentialWinner, tString("$matchwinner"), true);
+                eChatBot::InitiateAction(potentialWinner, isLocal ? tString("$matchwinnerself") : tString("$matchwinner"), true);
         }
     }
     }

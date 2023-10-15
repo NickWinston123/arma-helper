@@ -9,6 +9,7 @@
 #include "defs.h"
 #include "ePlayer.h"
 #include "sqlite3.h"
+#include "tDatabase.h"
 
 extern bool se_playerTriggerMessagesReactToSelf;
 extern tString se_playerTriggerMessagesFile;
@@ -18,12 +19,6 @@ extern bool se_playerTriggerMessages;
 
 struct eChatBotStats;
 
-struct ChatBotColumnMapping {
-    std::string columnName;
-    std::string columnType;
-    std::function<void(sqlite3_stmt*, int&, const eChatBotStats&)> bindFunc;
-    std::function<void(sqlite3_stmt*, int&, eChatBotStats&)> extractFunc;
-};
 
 struct eChatBotStatsBase
 {
@@ -35,6 +30,7 @@ struct eChatBotStatsBase
     ePlayerNetID *lastTriggeredBy;
 };
 
+using ChatBotColumnMapping = ColumnMapping<eChatBotStats>;
 class eChatBotStats : public eChatBotStatsBase
 {
 public:

@@ -329,27 +329,32 @@ struct DelayedTask
 class TaskScheduler
 {
 public:
-    // Schedule a new task
+    // Schedule a task
     bool schedule(std::string id, REAL delayInSeconds, std::function<void()> task, REAL interval = 0, bool useQueue = false)
     {
         REAL dueTime = tSysTimeFloat() + delayInSeconds;
-        if (isTaskScheduled(id) && !useQueue)
-        {
-            DelayedTask newTask(id, dueTime, interval, delayInSeconds, std::move(task));
-            pendingTasks[id].push(newTask);
-            return true;
-        }
 
-        if (useQueue && taskCounts.find(id) != taskCounts.end())
+        if (isTaskScheduled(id))
         {
-            id = id + "_" + std::to_string(++taskCounts[id]);
+            if (!useQueue)
+            {
+                return false; 
+            }
+            else
+            {
+                DelayedTask newTask(id, dueTime, interval, delayInSeconds, std::move(task));
+                pendingTasks[id].push(newTask);
+                return true;
+            }
         }
 
         auto delayedTask = DelayedTask(id, dueTime, interval, delayInSeconds, std::move(task));
         tasksQueue.push(delayedTask);
         tasksMap[id] = delayedTask;
+
         return true;
     }
+
 
     void enqueueChain(const std::function<void()>& chain)
     {

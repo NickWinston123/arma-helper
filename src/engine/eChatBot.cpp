@@ -544,6 +544,8 @@ tString exactStatFunc(tString message)
     
     if (stat == "kd")
         statValue << (stats->getKDRatio(false));
+    else if (stat == "speed" || stat == "fastest")
+        statValue << stats->getSpeed(false);
     else
         statValue << stats->getAnyValue(stat.TrimWhitespace());
     
@@ -1236,20 +1238,25 @@ static tConfItemFunc AddChatTrigger_conf = HelperCommand::tConfItemFunc("PLAYER_
 static tConfItemFunc RemoveChatTrigger_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
 static tConfItemFunc ReloadChatTriggers_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_RELOAD", &ReloadChatTriggers);
 
-const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings = {
+const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings = 
+{
     {"hackermans", "TEXT PRIMARY KEY",
-     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats){ sqlite3_bind_text(stmt, col++, "HACKERMANS", -1, SQLITE_STATIC); },
-     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { col++; }},
+        [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats){ sqlite3_bind_text(stmt, col++, "HACKERMANS", -1, SQLITE_STATIC); },
+        [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { col++; }
+    },
 
     {"total_uptime", "REAL",
-     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_double(stmt, col++, stats.total_up_time + tSysTimeFloat()); },
-     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_up_time = sqlite3_column_double(stmt, col++); }},
+        [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_double(stmt, col++, stats.total_up_time + tSysTimeFloat()); },
+        [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_up_time = sqlite3_column_double(stmt, col++); }
+    },
 
     {"total_messages_read", "INTEGER",
-     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.total_messages_read); },
-     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_messages_read = sqlite3_column_int(stmt, col++); }},
+        [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.total_messages_read); },
+        [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_messages_read = sqlite3_column_int(stmt, col++); }
+    },
 
     {"total_messages_sent", "INTEGER",
-     [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.total_messages_sent); },
-     [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_messages_sent = sqlite3_column_int(stmt, col++); }}
+        [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.total_messages_sent); },
+        [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_messages_sent = sqlite3_column_int(stmt, col++); }
+    },
 };

@@ -8232,6 +8232,12 @@ static void se_OptionalNameFilters(tString &remoteName, int owner)
     }
 }
 
+static bool se_playerMessageSpecEnter = false;
+static tConfItem<bool> se_playerMessageSpecEnterConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ENTER_SPEC", se_playerMessageSpecEnter);
+
+static bool se_playerMessageSpecLeft = false;
+static tConfItem<bool> se_playerMessageSpecLeftConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LEFT_SPEC", se_playerMessageSpecLeft);
+
 void ePlayerNetID::ReadSync(nMessage &m)
 {
     // check whether this is the first sync
@@ -8308,14 +8314,34 @@ void ePlayerNetID::ReadSync(nMessage &m)
             bool newSpectate = ((flags & 2) != 0);
             bool newStealth = ((flags & 4) != 0);
 
-            if (spectating_ && !newSpectate && strlen(GetLogName()) > 0)
+            if (!nameFirstSync) 
             {
-                se_playerSpecLeaveWriter << GetLogName() << GetName();
-                se_playerSpecLeaveWriter.write();
 
-                LogActivity(ACTIVITY_JOINED_GAME_FROM_SPECTATOR);
+                if (spectating_ && !newSpectate && strlen(GetLogName()) > 0)
+                {
+                    se_playerSpecLeaveWriter << GetLogName() << GetName();
+                    se_playerSpecLeaveWriter.write();
+                    
+                    if (se_playerTriggerMessages && se_playerMessageSpecEnter && greetedByChatBot && !greetedSpecByChatBot) 
+                    {
+                        eChatBot::InitiateAction(this, tString("$enterspec"), true);
+                        greetedSpecByChatBot = true;
+                        departedSpecByChatBot = false;
+                    }
+                        
+                    LogActivity(ACTIVITY_JOINED_GAME_FROM_SPECTATOR);
+                } 
+                else if (spectating_ && newSpectate)
+                {
+                    if (se_playerTriggerMessages && se_playerMessageSpecLeft && greetedByChatBot && !departedSpecByChatBot) 
+                    {
+                        eChatBot::InitiateAction(this, tString("$leftspec"), true);
+                        departedSpecByChatBot = true;
+                        greetedSpecByChatBot = false;
+                    }
+                }
             }
-
+            
             chatting_ = newChat;
             spectating_ = newSpectate;
             stealth_ = newStealth;
@@ -12662,8 +12688,11 @@ void ePlayerNetID::UpdateName(void)
         if (nameFirstSync && !isLocal() && !nameEmpty)
         {
             if (se_playerTriggerMessages && se_playerMessageEnter)
+            {
                 eChatBot::InitiateAction(this, tString( IsHuman() ? "$enter" : "$enterbot" ), true);;
-
+                greetedByChatBot = true;
+            }
+            
             if (se_playerStats)
                 ePlayerStats::playerJoined(this);
 

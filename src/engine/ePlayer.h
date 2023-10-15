@@ -377,6 +377,9 @@ public:
     nTimeAbsolute createdTime() { return timeCreated_; }
 
     bool encryptVerified = false;
+    bool greetedByChatBot = false;
+    bool departedSpecByChatBot = false;
+    bool greetedSpecByChatBot = false;
 private:
 
     int listID;                          // ID in the list of all players

@@ -4,6 +4,15 @@
 #include "sqlite3.h"
 #include "../tron/gHelper/gHelperUtilities.h"
 
+template <typename T>
+struct ColumnMapping 
+{
+    std::string columnName;
+    std::string columnType;
+    std::function<void(sqlite3_stmt*, int&, const T&)> bindFunc;
+    std::function<void(sqlite3_stmt*, int&, T&)> extractFunc;
+};
+
 template <typename T, typename M>
 class tDatabase
 {

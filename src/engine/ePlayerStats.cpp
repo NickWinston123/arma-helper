@@ -120,15 +120,57 @@ void ePlayerStats::reloadStatsFromDB()
 
 std::unordered_map<tString, PlayerData> ePlayerStats::playerStatsMap;
 
-std::set<std::string> PlayerData::valueMapdisplayFields =
+const std::string DELIMITER = "-+HACKERMANS+-";
+
+std::string join(const std::vector<std::string> &vec, const std::string &delimiter)
+{
+    return std::accumulate(std::begin(vec), std::end(vec), std::string(),
+                           [&](const std::string &ss, const std::string &s)
+                           {
+                               return ss.empty() ? s : ss + delimiter + s;
+                           });
+}
+
+
+std::vector<std::string> deserializeVector(const std::string &str)
+{
+    std::vector<std::string> vec;
+
+    if (str.find(DELIMITER) == std::string::npos)
+    {
+        vec.push_back(str);
+        return vec;
+    }
+
+    std::string::size_type pos = 0;
+    std::string::size_type prev = 0;
+    while ((pos = str.find(DELIMITER, prev)) != std::string::npos)
+    {
+        vec.push_back(str.substr(prev, pos - prev));
+        prev = pos + DELIMITER.length();
+    }
+    vec.push_back(str.substr(prev));
+    return vec;
+}
+
+std::string serializeVector(const std::vector<std::string> &vec)
+{
+    return std::accumulate(vec.begin(), vec.end(), std::string(),
+                           [](const std::string &a, const std::string &b)
+                           {
+                               return a + (a.length() > 0 ? DELIMITER : "") + b;
+                           });
+}
+
+
+const std::set<std::string> PlayerData::valueMapdisplayFields =
 {
     "rgb", "chats", "kills", "deaths", "match_wins",
     "match_losses", "round_wins", "round_losses", "rounds_played",
     "matches_played", "play_time", "spec_time", "times_joined",
     "kd", "chat_count", "fastest", "score"
 };
-
-std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
+const std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
     {"rgb", [](PlayerDataBase *self)
      {
          return self->rgbString();
@@ -238,19 +280,19 @@ std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
     {"fastest", [](PlayerDataBase *self)
      {
          tString result("");
-         result << self->fastest_speed;
+         result << self->getSpeed();
          return result;
      }},
     {"fastest_speed", [](PlayerDataBase *self)
      {
          tString result("");
-         result << self->fastest_speed;
+         result << self->getSpeed();
          return result;
      }},
     {"speed", [](PlayerDataBase *self)
      {
          tString result("");
-         result << self->fastest_speed;
+         result << self->getSpeed();
          return result;
      }},
     {"total_score", [](PlayerDataBase *self)
@@ -268,44 +310,119 @@ std::map<std::string, PlayerData::StatFunction> PlayerData::valueMap = {
 
 };
 
-const std::string DELIMITER = "-+HACKERMANS+-";
-
-std::string join(const std::vector<std::string> &vec, const std::string &delimiter)
+const std::vector<PlayerDataColumnMapping > ePlayerStatsMappings = 
 {
-    return std::accumulate(std::begin(vec), std::end(vec), std::string(),
-                           [&](const std::string &ss, const std::string &s)
-                           {
-                               return ss.empty() ? s : ss + delimiter + s;
-                           });
-}
+    {"name", "TEXT PRIMARY KEY",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) {
+            sqlite3_bind_text(stmt, col++, stats.name.c_str(), -1, SQLITE_STATIC);
+        },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) {
+            stats.name = tString((char *)sqlite3_column_text(stmt, col++));
+        }
+    },
 
+    {"matches_played", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.matches_played); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.matches_played = sqlite3_column_int(stmt, col++); }
+    },
 
-std::vector<std::string> deserializeVector(const std::string &str)
-{
-    std::vector<std::string> vec;
+    {"rounds_played", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.rounds_played); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.rounds_played = sqlite3_column_int(stmt, col++); }
+    },
 
-    if (str.find(DELIMITER) == std::string::npos)
-    {
-        vec.push_back(str);
-        return vec;
-    }
+    {"total_messages", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.total_messages); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_messages = sqlite3_column_int(stmt, col++); }
+    },
 
-    std::string::size_type pos = 0;
-    std::string::size_type prev = 0;
-    while ((pos = str.find(DELIMITER, prev)) != std::string::npos)
-    {
-        vec.push_back(str.substr(prev, pos - prev));
-        prev = pos + DELIMITER.length();
-    }
-    vec.push_back(str.substr(prev));
-    return vec;
-}
+    {"b", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.b); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.b = sqlite3_column_int(stmt, col++); }
+    },
 
-std::string serializeVector(const std::vector<std::string> &vec)
-{
-    return std::accumulate(vec.begin(), vec.end(), std::string(),
-                           [](const std::string &a, const std::string &b)
-                           {
-                               return a + (a.length() > 0 ? DELIMITER : "") + b;
-                           });
-}
+    {"g", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.g); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.g = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"r", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.r); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.r = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"round_losses", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.round_losses); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.round_losses = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"round_wins", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.round_wins); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.round_wins = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"total_play_time", "REAL",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_double(stmt, col++, stats.total_play_time); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_play_time = sqlite3_column_double(stmt, col++); }
+    },
+
+    {"match_losses", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.match_losses); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.match_losses = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"deaths", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.deaths); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.deaths = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"match_wins", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.match_wins); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.match_wins = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"kills", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.kills); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.kills = sqlite3_column_int(stmt, col++);  }
+    },
+
+    {"times_joined", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.times_joined); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.times_joined = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"total_spec_time", "REAL",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_double(stmt, col++, stats.total_spec_time); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_spec_time = sqlite3_column_double(stmt, col++); }
+    },
+
+    {"chat_messages", "TEXT",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_text(stmt, col++, serializeVector(stats.chat_messages).c_str(), -1, SQLITE_STATIC); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) {
+            const char *chatSerialized = reinterpret_cast<const char *>(sqlite3_column_text(stmt, col++));
+            if (chatSerialized)
+                stats.chat_messages = deserializeVector(chatSerialized);
+        }
+    },
+
+    {"fastest_speed", "REAL",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_double(stmt, col++, stats.fastest_speed); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.fastest_speed = sqlite3_column_double(stmt, col++); }
+    },
+
+    {"last_seen", "BIGINT",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int64(stmt, col++, static_cast<sqlite3_int64>(stats.last_seen)); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.last_seen = static_cast<time_t>(sqlite3_column_int64(stmt, col++)); }
+    },
+
+    {"human", "BOOLEAN",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.human ? 1 : 0); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.human = sqlite3_column_int(stmt, col++) != 0; }
+    },
+
+    {"total_score", "INTEGER",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_int(stmt, col++, stats.total_score); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_score = sqlite3_column_int(stmt, col++);  }
+    },
+
+};

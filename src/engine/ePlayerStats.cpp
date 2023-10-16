@@ -164,10 +164,10 @@ std::string serializeVector(const std::vector<std::string> &vec)
 
 const std::set<std::string> PlayerData::valueMapdisplayFields =
 {
-    "rgb", "chats", "kills", "deaths", "match_wins",
+    "all", "rgb", "chats", "kills", "deaths", "match_wins",
     "match_losses", "round_wins", "round_losses", "rounds_played",
     "matches_played", "play_time", "spec_time", "times_joined",
-    "kd", "chat_count", "fastest", "score", "seen"
+    "kd", "chat_count", "fastest", "score", "seen", "hidden"
 };
 
 void insertFunction(std::map<std::string, std::pair<std::string, PlayerData::StatFunction>>& map,
@@ -306,6 +306,12 @@ auto initValueMap = []() {
         return result;
     });
 
+    insertFunction(tempMap, {"privated_messages", "privated", "private", "hide", "hidden"}, "Hidden Stats", [](PlayerDataBase *self) {
+        tString result("");
+        result << tString(self->getHiddenStats());
+        return result;
+    });
+
     return tempMap;
 };
 std::map<std::string, std::pair<std::string, PlayerData::StatFunction>> PlayerData::valueMap = initValueMap();
@@ -425,4 +431,12 @@ const std::vector<PlayerDataColumnMapping > ePlayerStatsMappings =
         [](sqlite3_stmt* stmt, int& col, PlayerData& stats) { stats.total_score = sqlite3_column_int(stmt, col++);  }
     },
 
+    {"privated_stats", "TEXT",
+        [](sqlite3_stmt* stmt, int& col, const PlayerData& stats) { sqlite3_bind_text(stmt, col++, serializeVector(stats.privated_stats).c_str(), -1, SQLITE_STATIC); },
+        [](sqlite3_stmt* stmt, int& col, PlayerData& stats) {
+            const char *chatSerialized = reinterpret_cast<const char *>(sqlite3_column_text(stmt, col++));
+            if (chatSerialized)
+                stats.privated_stats = deserializeVector(chatSerialized);
+        }
+    },
 };

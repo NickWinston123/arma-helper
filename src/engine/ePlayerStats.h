@@ -31,7 +31,9 @@ public:
     REAL total_spec_time = 0;
     int times_joined     = 0;
     time_t last_seen     = 0;
+
     std::vector<std::string> chat_messages;
+    std::vector<std::string> privated_stats;
 
     bool human = true;
 
@@ -117,6 +119,24 @@ public:
         return messages;
     }
 
+    tString getHiddenStats()
+    {
+        tString messages;
+        bool first = true;
+
+        for (auto messageIt = privated_stats.rbegin(); messageIt != privated_stats.rend(); ++messageIt)
+        {
+            if (!first)
+                messages << ", ";
+            else
+                first = false;
+
+            messages << *messageIt;
+        }
+
+        return messages;
+    }
+
     REAL getKDRatio(bool round = true) const
     {
         REAL result = 0.0;
@@ -158,9 +178,14 @@ public:
 
         if (source == "leaderboardFunc")
         {
-            // remove: rgb, chat_messages
             displayFields.erase("rgb");
             displayFields.erase("chat_messages");
+            displayFields.erase("hidden");
+        } 
+
+        if (source != "hidestatfunc")
+        {
+            displayFields.erase("all");
         }
 
         tString result;
@@ -173,6 +198,51 @@ public:
                 result << ", ";
         }
         return result;
+    }
+
+    void addPrivateStat(tString statLabel)
+    {
+        std::string label = statLabel.stdString();
+
+        if (label == "ALL STATS")
+        {
+            privated_stats.clear();
+            privated_stats.push_back(label);
+            return;
+        }
+
+        auto allStatsIt = std::find(privated_stats.begin(), privated_stats.end(), "ALL STATS");
+        if (allStatsIt != privated_stats.end())
+            privated_stats.erase(allStatsIt);
+
+        if (!privateStat(statLabel))
+            privated_stats.push_back(label);
+    }
+
+    void removePrivateStat(tString statLabel)
+    {
+        std::string label = statLabel.stdString();
+
+        if (label == "ALL STATS")
+        {
+            privated_stats.clear();
+            return;
+        }
+
+        auto it = std::find(privated_stats.begin(), privated_stats.end(), label);
+        if (it != privated_stats.end())
+            privated_stats.erase(it);
+    }
+
+    bool privateStat(tString statLabel)
+    {
+        if (privated_stats.empty())
+            return false;
+
+        if (std::find(privated_stats.begin(), privated_stats.end(), "ALL STATS") != privated_stats.end())
+            return true;
+
+        return std::find(privated_stats.begin(), privated_stats.end(), statLabel.stdString()) != privated_stats.end();
     }
 
     tString getAnyValue(tString variable)
@@ -209,8 +279,6 @@ public:
 
     PlayerDataBase data_from_db;
 };
-
-#include <algorithm>
 
 class ePlayerStats
 {
@@ -341,10 +409,12 @@ public:
         stats.r = r;
         stats.g = g;
         stats.b = b;
-        stats.last_seen = time(NULL);
-        stats.in_server = true;
-        stats.human = player->IsHuman();
         stats.name = name;
+    }
+
+    static void setColor(ePlayerNetID * player)
+    {
+        setColor(player, player->r, player->g, player->b);
     }
 
     static void playerInit(PlayerData &stats, bool isHuman )
@@ -367,6 +437,7 @@ public:
 
         playerLeft(oldStats);
         playerInit(newStats, player->IsHuman());
+        setColor(player);
 
     }
 
@@ -374,6 +445,7 @@ public:
     {
         PlayerData &stats = getStats(player);
         playerInit(stats, player->IsHuman());
+        setColor(player);
     }
 
     static void playerLeft(ePlayerNetID * player)

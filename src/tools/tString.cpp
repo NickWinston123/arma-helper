@@ -2599,6 +2599,8 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
                << "MS";
     }
 
+    if (result.empty())
+        result << 0;
     return result;
 }
 

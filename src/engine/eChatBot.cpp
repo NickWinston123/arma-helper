@@ -244,9 +244,9 @@ tString statsFunc(tString message)
         {
             tString timeString;
             if (!statsTargetPlayer || playingPlayer)
-                timeString << ", Play Time " << st_GetFormatTime(stats->getTotalPlayTime(statsTargetPlayer), false, false);
+                timeString << ", Play Time: " << st_GetFormatTime(stats->getTotalPlayTime(), false, false);
             else
-                timeString << ", Spec Time " << st_GetFormatTime(stats->getTotalSpecTime(statsTargetPlayer), false, false);
+                timeString << ", Spec Time: " << st_GetFormatTime(stats->getTotalSpecTime(), false, false);
 
             output << "RGB: " << stats->rgbString()
                    << timeString
@@ -413,12 +413,10 @@ tString playerKDFunc(tString message)
                << ", "
                << "Losses: "     << stats->match_losses
 
-               << " | Score- "      << stats->total_score;
+               << " | Score: "      << stats->total_score;
     }
     else
-    {
         output << "Player not found!";
-    }
 
     return tString(output);
 }
@@ -450,7 +448,7 @@ tString leaderboardFunc(tString message)
         statName = desriredStat;
     }
 
-    statLabel = statName;
+    statLabel = PlayerData::getAnyLabel(statName);
 
     tString pageStr = message.ExtractNonBlankSubString(pos);
 
@@ -469,17 +467,19 @@ tString leaderboardFunc(tString message)
                              });
     sortedPlayers.erase(it, sortedPlayers.end());
 
-    bool lastSeenStat = (statName == "seen" || statName == "last_seen");
+    bool lastSeenStat = (statLabel == "Last Seen");
     bool showLabel = !desiredStatChoosen || se_playerMessageTriggersLeaderboardLabels;
+    bool playTimeStat = (statLabel == "Play Time");
+    bool specTimeStat = (statLabel == "Spec Time");
 
     if (showLabel)
     {
-        bool fastestStat = !lastSeenStat && (statName == "fastest" || statName == "fastest_speed" || statName == "speed");
+        bool fastestStat = !lastSeenStat && (statLabel == "Fastest Speed");
         if (lastSeenStat || fastestStat)
             showLabel = false;
     }
 
-    auto sortUsingGetAnyValue = [lastSeenStat, &statName](auto &a, auto &b)
+    auto sortUsingGetAnyValue = [&lastSeenStat, &statName, &playTimeStat, &specTimeStat](auto &a, auto &b)
     {
         if (lastSeenStat)
         {
@@ -489,6 +489,14 @@ tString leaderboardFunc(tString message)
             if (b.second.in_server) return false;
 
             return a.second.last_seen > b.second.last_seen;
+        }
+        else if (playTimeStat)
+        {
+            return a.second.total_play_time > b.second.total_play_time;
+        }
+        else if (specTimeStat)
+        {
+            return a.second.total_spec_time > b.second.total_spec_time;
         }
         else
         {
@@ -520,19 +528,25 @@ tString leaderboardFunc(tString message)
 
     for (int i = startIdx; i < endIdx; ++i)
     {
+        PlayerData &stats = sortedPlayers[i].second;
         if (i > startIdx)
         {
             result << ", ";
         }
 
         result << (i + 1) << ") " << sortedPlayers[i].first;
-
-        tString value = sortedPlayers[i].second.getAnyValue(statName);
+        tString value;
+        if (playTimeStat)
+            value << st_GetFormatTime(stats.getTotalPlayTime(), false, false);
+        else if (specTimeStat)
+            value << st_GetFormatTime(stats.getTotalSpecTime(), false, false);
+        else
+            value << stats.getAnyValue(statName);
         result << " ("
                << value;
         if (showLabel)
         {
-            result << " " << statName;
+            result << " " << statLabel;
         }
         result << ")";
 
@@ -561,9 +575,8 @@ tString exactStatFunc(tString message)
     stat = message.ExtractNonBlankSubString(pos);
 
     tString statLabel;
-    if (!stat.empty())
-        statLabel = PlayerData::getAnyLabel(stat);
-
+    statLabel = PlayerData::getAnyLabel(stat);
+    
     if (statLabel.empty())
     {
         output << "Stat not found! Usage: '"
@@ -608,16 +621,16 @@ tString exactStatFunc(tString message)
 
     tString statValue;
 
-    if (stat == "kd")
+    if (statLabel == "Kill Death Ratio")
         statValue << (stats->getKDRatio(false));
-    else if (stat == "speed" || stat == "fastest")
+    else if (statLabel == "Fastest Speed")
         statValue << stats->getSpeed(false);
-    else if (stat == "seen" || stat == "last_seen")
+    else if (statLabel == "Last Seen")
         statValue << stats->getLastSeenAgoStr(true);
     else
         statValue << stats->getAnyValue(stat.TrimWhitespace());
 
-    if (!statValue.empty())
+    if (!statValue.empty() || statLabel == "Chats")
         output << (!stats->name.empty() ? (!stats->name.empty() ? stats->name: playerName) : playerName)
                << ": "
                << statLabel
@@ -636,7 +649,7 @@ tString masterFunc(tString message)
     eChatBotStats &stats = bot.Stats();
 
     if (!stats.lastTriggeredBy || !stats.lastTriggeredBy->encryptVerified )
-        return output;
+        return message;
 
     bot.masterFuncResponse = true;
 

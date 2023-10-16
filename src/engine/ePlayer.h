@@ -352,6 +352,7 @@ public:
     static bool canChatWithMsg();
     static void setNextSpeakTime(REAL seconds);
 
+    tString lastName = tString("");
     bool isLocal() { return pID != -1; }
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastDiedByPlayer = nullptr;

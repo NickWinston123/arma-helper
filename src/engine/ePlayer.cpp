@@ -6442,6 +6442,9 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
         RequestSync();
     acknowledgeEnterSpectatorByChatbot = true;
     acknowledgeLeftSpectatorByChatbot = true;
+
+    if (se_playerStats)
+        ePlayerStats::playerJoined(this);
 }
 
 tColoredString playerWatchStatusToStr(playerWatchStatus status)
@@ -12696,13 +12699,18 @@ void ePlayerNetID::UpdateName(void)
 
     coloredNickname.Clear();
     if (!nickname.empty())
-    {
         coloredNickname << tColoredString::ColorString(r, g, b) << nickname;
-    }
 
     bool nameChange = name_ != newName;
     if (nameChange || lastAccessLevel != GetAccessLevel())
     {
+        if (!nameFirstSync)
+        {
+            lastName = name_;
+
+            if (se_playerStats)
+                ePlayerStats::playerRenamed(this);
+        }
         // copy it to the name, removing colors of course
         name_ = newName;
 

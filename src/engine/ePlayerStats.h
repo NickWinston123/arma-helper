@@ -89,14 +89,14 @@ public:
         return exact ? st_GetFormatTime(lastSeen) : getTimeAgoString(lastSeen);
     }
 
-    REAL getTotalPlayTime(bool add = true)
+    REAL getTotalPlayTime()
     {
-        return total_play_time + (add ? se_GameTime() : 0);
+        return total_play_time + (in_server ? se_GameTime() : 0);
     }
 
-    REAL getTotalSpecTime(bool add = true)
+    REAL getTotalSpecTime()
     {
-        return total_spec_time + (add ? se_GameTime() : 0);
+        return total_spec_time + (in_server ? se_GameTime() : 0);
     }
 
     tString getChatMessages()
@@ -180,7 +180,7 @@ public:
         auto stat = valueMap.find(variable.stdString());
         if (stat != valueMap.end())
         {
-            auto func = stat->second.second; 
+            auto func = stat->second.second;
             return func(this);
         }
         else
@@ -192,6 +192,9 @@ public:
 
     static tString getAnyLabel(tString variable)
     {
+        if (variable.empty())
+            return tString("");
+
         auto stat = valueMap.find(variable.stdString());
         if (stat != valueMap.end())
         {
@@ -256,7 +259,7 @@ public:
 
         if (!matchedPlayers.empty())
         {
-            std::sort(matchedPlayers.begin(), matchedPlayers.end(), 
+            std::sort(matchedPlayers.begin(), matchedPlayers.end(),
                     [](const auto &a, const auto &b) {
                         return a.second.last_seen > b.second.last_seen;
                     });
@@ -271,7 +274,7 @@ public:
             playerStatsMap.erase(it);
         }
 
-        static PlayerData defaultPlayerData; 
+        static PlayerData defaultPlayerData;
         return defaultPlayerData;
     }
 
@@ -333,21 +336,22 @@ public:
     static void setColor(ePlayerNetID * player, int r, int g, int b)
     {
         tString name = player->GetRealName().ToLower();
-    
+
         PlayerData &stats = playerStatsMap[name];
         stats.r = r;
         stats.g = g;
         stats.b = b;
+        stats.last_seen = time(NULL);
+        stats.in_server = true;
+        stats.human = player->IsHuman();
         stats.name = name;
     }
 
-    static void playerJoined(ePlayerNetID * player)
+    static void playerInit(PlayerData &stats, bool isHuman )
     {
-        PlayerData &stats = getStats(player);
-
         stats.times_joined++;
         stats.last_seen = time(NULL);
-        stats.human = player->IsHuman();
+        stats.human = isHuman;
         stats.in_server = true;
 
         if (!stats.seen_this_session)
@@ -356,10 +360,30 @@ public:
         stats.seen_this_session = true;
     }
 
+    static void playerRenamed(ePlayerNetID *player)
+    {
+        PlayerData &oldStats = getStats(player->lastName);
+        PlayerData &newStats = getStats(player);
+
+        playerLeft(oldStats);
+        playerInit(newStats, player->IsHuman());
+
+    }
+
+    static void playerJoined(ePlayerNetID * player)
+    {
+        PlayerData &stats = getStats(player);
+        playerInit(stats, player->IsHuman());
+    }
+
     static void playerLeft(ePlayerNetID * player)
     {
         PlayerData &stats = getStats(player);
+        playerLeft(stats);
+    }
 
+    static void playerLeft(PlayerData &stats)
+    {
         stats.last_seen = time(NULL);
         stats.in_server = false;
     }

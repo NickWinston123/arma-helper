@@ -1216,27 +1216,37 @@ bool ReverseCommand::execute(tString args)
 
 bool SpectateCommand::execute(tString args)
 {
-    con << CommandText()
-        << "Spectating player '" << player->name << "'...\n";
-
     if (helperConfig::sghuk)
     {
         tString id;
-        tRemoveFromList(se_disableCreateSpecific,player->ID()+1);
+        tRemoveFromList(se_disableCreateSpecific, player->ID() + 1);
         se_disableCreate = 0;
         se_forceJoinTeam = false;
     }
-    
 
     ePlayer *local_p = player;
-    local_p->spectate = true;
+    bool spectating = local_p->spectate;
 
-    if (netPlayer)
+    if (!spectating || netPlayer)
     {
-        if (helperConfig::sghuk && se_spectateCommandInstant)
-            netPlayer->Clear(local_p);
+        con << CommandText()
+            << "Spectating player '" << player->name << "'...\n";
 
-        netPlayer->ForcedUpdate();
+        if (netPlayer)
+        {
+
+            if (helperConfig::sghuk && se_spectateCommandInstant)
+                netPlayer->Clear(local_p);
+
+            netPlayer->ForcedUpdate();
+        }
+    }
+    else 
+    {
+        con << CommandText()
+            << ErrorText()
+            << "You are already spectating\n";
+
     }
     return true;
 }

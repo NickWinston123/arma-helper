@@ -63,7 +63,7 @@ void ePlayerStats::saveStatsToDB()
         eChatBot::InitiateAction(nullptr, tString("$statssaved"), true);
 }
 
-void ePlayerStats::updateMatchWinsAndLoss(ePlayerNetID *matchWinner)
+void ePlayerStats::updateStatsMatchEnd(ePlayerNetID *matchWinner)
 {
     for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
     {
@@ -82,7 +82,7 @@ void ePlayerStats::updateMatchWinsAndLoss(ePlayerNetID *matchWinner)
     }
 }
 
-void ePlayerStats::updateRoundWinsAndLoss()
+void ePlayerStats::updateStatsRoundEnd()
 {
     for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
     {
@@ -99,16 +99,20 @@ void ePlayerStats::updateRoundWinsAndLoss()
                     stats.round_wins++;
                 else
                     stats.round_losses++;
+                    
+                stats.rounds_played++;
             }
 
             stats.total_play_time += se_GameTime();
-            stats.rounds_played++;
         }
         else
         {
             stats.total_spec_time += se_GameTime();
         }
     }
+}
+void ePlayerStats::updateStatsRoundStart()
+{    
 }
 
 void ePlayerStats::reloadStatsFromDB()

@@ -408,7 +408,7 @@ tString playerKDFunc(tString message)
         tString displayName = (!statsTargetPlayer ? (!stats->name.empty() ? stats->name : playerName) : playerName);
         output << displayName << ": ";
 
-        std::vector<tString> orderedKeys = 
+        std::vector<tString> orderedKeys =
         {
             tString("kills"),
             tString("deaths"),
@@ -422,7 +422,7 @@ tString playerKDFunc(tString message)
             tString("total_score")
         };
 
-        std::vector<tString> separators = 
+        std::vector<tString> separators =
         {
             tString(", "),
             tString(", "),
@@ -768,7 +768,6 @@ tString masterFunc(tString message)
 tString hideStatFunc(tString message)
 {
     tString output;
-    int pos = 0;
     message = message.TrimWhitespace();
 
     if (!se_playerStats)
@@ -778,26 +777,55 @@ tString hideStatFunc(tString message)
     }
 
     eChatBotStats &chatBotStats = eChatBot::getInstance().Stats();
+    bool symLinkFunc = chatBotStats.lastTriggerType == "symfunc";
     ePlayerNetID *triggeredBy = chatBotStats.lastTriggeredBy;
     PlayerData &stats = ePlayerStats::getStats(triggeredBy);
+    int pos = 0;
+    tString desiredAction = message.ExtractNonBlankSubString(pos); // Extract action first
 
-    tString desiredAction = message.ExtractNonBlankSubString(pos);
-    tString desiredStat = message.ExtractNonBlankSubString(pos);
+    if (desiredAction.empty())
+    {
+        output << "Desired action not found. "
+               << "Usage: '"
+               << chatBotStats.lastMatchedTrigger
+               << " ";
+        if (!symLinkFunc)
+            output << "unprivate or private"
+                   << " ";
+            output << "stat'";
+        return output;
+    }
+    tArray<tString> statsArray = message.Split(" "); 
+    statsArray.RemoveAt(0);
 
-    tString statLabel;
-    statLabel = PlayerData::getAnyLabel(desiredStat);
+    std::vector<tString> validStats;
+    std::vector<tString> invalidStats;
 
-    if (desiredStat.ToLower() == "all")
-        statLabel = "ALL STATS";
+    for (const auto &statName : statsArray)
+    {
+        tString statLabel = PlayerData::getAnyLabel(statName);
 
-    if (statLabel.empty())
+        if (statName.ToLower() == "all")
+            statLabel = "ALL STATS";
+
+        if (statLabel.empty())
+            invalidStats.push_back(statName);
+        else
+            validStats.push_back(statLabel);
+    }
+
+    if (validStats.empty() && invalidStats.size() == 1)
     {
         output << "Stat not found! Usage: '"
                << chatBotStats.lastMatchedTrigger
-               << " "
-               << desiredAction
-               << " "
-               << PlayerData::getAvailableStatsStr("hidestatfunc");
+               << " ";
+        if (!symLinkFunc)
+            output << desiredAction
+                   << " ";
+
+
+        output << "stat' "
+                << PlayerData::getAvailableStatsStr("hidestatfunc");
         return output;
     }
 
@@ -806,19 +834,43 @@ tString hideStatFunc(tString message)
     if (desiredAction == "private")
     {
         action << "hidden";
-        stats.addPrivateStat(statLabel);
+        for (const auto &statLabel : validStats)
+            stats.addPrivateStat(statLabel);
     }
     else if (desiredAction == "unprivate")
     {
         action << "unhidden";
-        stats.removePrivateStat(statLabel);
+        for (const auto &statLabel : validStats)
+            stats.removePrivateStat(statLabel);
     }
 
-    output << triggeredBy->GetName()
-           << ": "
-           << statLabel
-           << " has been "
-           << action;
+    output << triggeredBy->GetName();
+
+    if (!validStats.empty())
+    {
+        output << ": ";
+        for (size_t i = 0; i < validStats.size(); ++i)
+        {
+            if (i > 0)
+                output << ", ";
+            output << validStats[i];
+        }
+        output << " has been " << action;
+    }
+
+    if (!invalidStats.empty())
+    {
+        if (!validStats.empty())
+            output << ". ";
+
+        output << "Not found: ";
+        for (size_t i = 0; i < invalidStats.size(); ++i)
+        {
+            if (i > 0)
+                output << ", ";
+            output << invalidStats[i];
+        }
+    }
 
     return output;
 }
@@ -1256,7 +1308,7 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
             partToSend = preAppend + partToSend;
 
         bool shouldSend = numParts == 1 || !partToSend.empty();
-        
+
         if (shouldSend)
         {
             if (player != nullptr)

@@ -1231,7 +1231,7 @@ bool SpectateCommand::execute(tString args)
     {
         con << CommandText()
             << "Spectating player '" << player->name << "'...\n";
-
+        local_p->spectate = true;
         if (netPlayer)
         {
 

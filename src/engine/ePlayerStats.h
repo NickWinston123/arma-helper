@@ -76,6 +76,11 @@ public:
         return lastSeen;
     }
 
+    REAL calculatedScore()
+    {
+        return total_score;
+    }
+
     tString getLastSeenAgoStr(bool exact = false)
     {
         REAL lastSeen = getLastSeenAgo();
@@ -181,7 +186,7 @@ public:
             displayFields.erase("rgb");
             displayFields.erase("chat_messages");
             displayFields.erase("hidden");
-        } 
+        }
 
         if (source != "hidestatfunc")
         {
@@ -426,7 +431,6 @@ public:
 
         if (!stats.seen_this_session)
             players_record_this_session++;
-
         stats.seen_this_session = true;
     }
 
@@ -477,8 +481,9 @@ public:
         stats.total_messages++;
     }
 
-    static void updateMatchWinsAndLoss(ePlayerNetID *matchWinner);
-    static void updateRoundWinsAndLoss();
+    static void updateStatsMatchEnd(ePlayerNetID *matchWinner);
+    static void updateStatsRoundStart();
+    static void updateStatsRoundEnd();
 
     static void loadStatsFromDB();
     static void saveStatsToDB();

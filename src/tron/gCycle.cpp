@@ -331,331 +331,11 @@ extern REAL sg_cycleBrakeDeplete;
 #endif
 #endif
 
-static bool sg_smarterBot = false;
-static tConfItem<bool> sg_smarterBotConf = HelperCommand::tConfItem("SMARTER_BOT", sg_smarterBot);
-
-bool sg_smarterBotTeam = false; // absolute unit - does not include owner
-static tConfItem<bool> sg_smarterBotTeamConf = HelperCommand::tConfItem("SMARTER_BOT_TEAM", sg_smarterBotTeam);
-
-bool sg_smarterBotTeamOwner = false; // absolute unit
-static tConfItem<bool> sg_smarterBotTeamOwnerConf = HelperCommand::tConfItem("SMARTER_BOT_TEAM_OWNER", sg_smarterBotTeamOwner);
-
-static void gSmarterBotReset(std::istream &s)
-{
-    if (s.eof()){
-        con << "Need a ID\n Usage: SMARTER_BOT_RESET <ID>\n";
-        return;
-    }
-
-    int ID;
-    s >> ID;
-
-    ePlayer *local_p = ePlayer::PlayerConfig(ID-1);
-
-    if (!local_p)
-    {
-        con << "No player found with ID " << ID << "\n";
-        return;
-    }
-
-    con << "Setting smarter bot defaults for Player " << ID << "\n";
-
-    // Define function to verify and set default
-    auto verifyAndSet = [](std::string commandName)
-    {
-        tConfItemBase* item = tConfItemBase::GetConfigItem(commandName);
-        if (item && !item->IsDefault())
-            item->SetDefault();
-    };
-
-    // List of command name suffixes
-    std::vector<std::string> commandSuffixes = {
-        "THINK", "RANGE", "RANDOMNESS", "RUBBER", "SURVIVE", "TRAP",
-        "FOLLOW", "FOLLOW_TARGET", "FOLLOW_ZONE", "FOLLOW_TAIL",
-        "FOLLOW_BLOCKED_LOGIC", "FOLLOW_TRY_LOGIC",
-        "FOLLOW_TRY_LOGIC_OPPOSITE_TURN", "FOLLOW_CHECK_LOGIC",
-        "FOLLOW_PREDICT_TIME", "FOLLOW_ALIGNED_THRESHOLD",
-        "FOLLOW_SET_TARGET", "FOLLOW_TEAM_LIST", "PLAN",
-        "TAIL", "SPACE", "COWARD", "TUNNEL", "SPEED",
-        "NEXT_TIME_MULT", "TURN_TIME_RAND_MULT", "STATE"
-    };
-
-    // Build command name and verify and set default for each command
-    for (const auto& suffix : commandSuffixes) {
-        std::string confname = "SMARTER_BOT_" + std::to_string(ID) + "_" + suffix;
-        verifyAndSet(confname);
-    }
-}
-
-static tConfItemFunc gSmarterBotResetConf = HelperCommand::tConfItemFunc("SMARTER_BOT_RESET", &gSmarterBotReset);
-
-
-gSmarterBot::~gSmarterBot()
-{
-}
-
-gSmarterBot::gSmarterBot(gCycle *owner)
-    : gAINavigator(owner), owner_(owner), nextChatAI_(0), nextAFKCheck_(0), player_(owner->netPlayer_), local_player(ePlayer::gCycleToLocalPlayer(owner))
-
-{
-    settings_.range = owner_->Speed() * local_player->sg_smarterBotRange;
-    settings_.newWallBlindness = 0;
-}
-
-gSmarterBot &gSmarterBot::Get(gCycle *cycle)
-{
-    tASSERT(cycle);
-
-    // create
-    if (cycle->smarterBot_.get() == 0)
-        cycle->smarterBot_.reset(new gSmarterBot(cycle));
-
-    return *cycle->smarterBot_;
-}
-
-void gSmarterBot::Survive(gCycle *owner)
-{
-    gSmarterBot &bot = gSmarterBot::Get(owner);
-    if (&bot)
-        bot.gAINavigator::Activate(se_GameTime(), 0);
-}
-void playersCheck()
-{
-}
-
 bool sg_smarterBotChattingSmartDisable = false;
 static tConfItem<bool> sg_smarterBotChattingSmartDisableConf = HelperCommand::tConfItem("SMARTER_BOT_CHATTING_SMART_DISABLE", sg_smarterBotChattingSmartDisable);
 
 REAL sg_smarterBotChattingSmartDisableDist = 10;
 static tConfItem<REAL> sg_smarterBotChattingSmartDisableDistConf = HelperCommand::tConfItem("SMARTER_BOT_CHATTING_SMART_DISABLE_DISTANCE", sg_smarterBotChattingSmartDisableDist);
-
-
-REAL gSmarterBot::annoyanceCheck()
-{
-    if (!owner_ || !owner_->Alive())
-        return false;
-
-    ePlayerNetID* alivePlayer = nullptr;
-    int alivePlayerCount = 0;
-    int totalPlayerCount = 0;
-
-    for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
-    {
-        auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
-        bool isDifferentPlayer = se_PlayerNetIDs[i]->pID != owner_->Player()->pID;
-
-        if (se_PlayerNetIDs[i]->CurrentTeam() && isDifferentPlayer)
-        {
-            totalPlayerCount++;
-            if (other && other->Alive())
-            {
-                if (alivePlayer)
-                {
-                    alivePlayerCount++;
-                    break;
-                }
-                alivePlayer = se_PlayerNetIDs[i];
-                alivePlayerCount++;
-            }
-        }
-    }
-
-    // con << "Total players: " << totalPlayerCount << ", Alive players: " << alivePlayerCount << "\n";
-
-    if (alivePlayerCount == 1 && totalPlayerCount > 1 && alivePlayer)
-    {
-        // con << "ONLY ONE PLAYER ALIVE\n";
-
-        if (!sg_smarterBotAFKCheckIfChatting || (alivePlayer->ChattingTime() > sg_smarterBotAFKCheckTime) )
-        {
-            con << "SmarterBot: The alive player is chatting for too long.\n";
-            return sg_smarterBotAFKCheckTime;
-        }
-
-        if (alivePlayer->isLocal() && alivePlayer->NetPlayerToCycle())
-        {
-            double timeSinceLastTurn = se_GameTime() - alivePlayer->NetPlayerToCycle()->lastTurnTime;
-            if (timeSinceLastTurn > sg_smarterBotAFKCheckTime * 2)
-            {
-                con << "SmarterBot: The alive player hasn't turned for too long.\n";
-                return sg_smarterBotAFKCheckTime;
-            }
-        }
-    }
-    return 0;
-}
-
-
-REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
-{
-    if (!local_player)
-        return 5;
-
-    if (sg_smarterBotChattingSmartDisable && chattingSmartDisable())
-        return 0;
-
-    if (sg_smarterBotAFKCheck && nextAFKCheck_ < tSysTimeFloat())
-    {
-        REAL nextTime = annoyanceCheck();
-        if (nextTime != 0)
-        {
-            for (int i = 0; i < 4; i++)
-            {
-                owner_->Turn(1);
-            }
-
-            nextAFKCheck_ = tSysTimeFloat() + nextTime;
-            return 5;
-        }
-        else
-        {
-            nextAFKCheck_ = tSysTimeFloat() + sg_smarterBotAFKCheckTime;
-        }
-    }
-
-
-    UpdatePaths();
-    EvaluationManager manager(GetPaths());
-    switch (local_player->sg_smarterBotState)
-    {
-    case 0:
-    {
-        break;
-    }
-    case 1:
-    {
-        manager.Evaluate(SuicideEvaluator(*Owner()), 1);
-        manager.Evaluate(SuicideEvaluator(*Owner(), 0), 1);
-        manager.Evaluate(TrapEvaluator(*Owner()), 5);
-        manager.Reset();
-        manager.Evaluate(CowardEvaluator(*Owner()), 1);
-        manager.Evaluate(SpaceEvaluator(*Owner()), 1);
-        manager.Evaluate(PlanEvaluator(), .1);
-        break;
-    }
-    case 2:
-    {
-        manager.Evaluate(SuicideEvaluator(*Owner()), 1);
-        manager.Evaluate(TrapEvaluator(*Owner()), 5);
-        manager.Reset();
-        manager.Evaluate(RubberEvaluator(*Owner()), .2);
-        manager.Evaluate(FollowEvaluator(*Owner()), .3);
-        break;
-    }
-    case 3:
-    {
-        manager.Evaluate(SuicideEvaluator(*Owner()), 4);
-        manager.Evaluate(TrapEvaluator(*Owner()), 10);
-        manager.Evaluate(PlanEvaluator(), 2);
-        break;
-    }
-    case 4:
-    {
-        manager.Evaluate(TailChaseEvaluator(*Owner()), 10);
-        break;
-    }
-    case 5:
-    {
-        manager.Evaluate(SuicideEvaluator(*Owner()), 15);
-        manager.Evaluate(TrapEvaluator(*Owner()), 100);
-        manager.Evaluate(TunnelEvaluator(*Owner()), 10);
-        manager.Evaluate(PlanEvaluator(), 3);
-        break;
-    }
-    case 6:
-    {
-        manager.Evaluate(SuicideEvaluator(*Owner()), 1);
-        manager.Evaluate(TrapEvaluator(*Owner()), 5);
-        manager.Evaluate(FollowEvaluator(*Owner()), 5);
-        break;
-    }
-    case 7:
-    {
-        manager.Evaluate(SuicideEvaluator(*Owner()), 4);
-        manager.Evaluate(TrapEvaluator(*Owner()), 12);
-        manager.Evaluate(TunnelEvaluator(*Owner()), 2);
-        manager.Evaluate(PlanEvaluator(), 1);
-        manager.Reset();
-        break;
-    }
-    case 8:
-    {
-        manager.Evaluate(SuicideEvaluator(*Owner()), 1);
-        manager.Evaluate(SuicideEvaluator(*Owner(), 0), 1);
-        manager.Evaluate(TrapEvaluator(*Owner()), 5);
-        manager.Reset();
-        manager.Evaluate(SpaceEvaluator(*Owner()), 1);
-        break;
-    }
-    default:
-    {
-        local_player->sg_smarterBotState = 1;
-        break;
-    }
-    }
-
-    manager.Reset();
-
-    if (local_player->sg_smarterBotSurviveEval > 0)
-        manager.Evaluate(SuicideEvaluator(*Owner()), local_player->sg_smarterBotSurviveEval);
-
-    if (local_player->sg_smarterBotRubberEval > 0)
-        manager.Evaluate(RubberEvaluator(*Owner()), local_player->sg_smarterBotRubberEval);
-
-    if (local_player->sg_smarterBotRandomScale > 0)
-        manager.Evaluate(RandomEvaluator(*Owner()), local_player->sg_smarterBotRandomScale);
-
-    if (local_player->sg_smarterBotTrapScale > 0)
-        manager.Evaluate(TrapEvaluator(*Owner()), local_player->sg_smarterBotTrapScale);
-
-    if (local_player->sg_smarterBotFollowScale > 0)
-        manager.Evaluate(FollowEvaluator(*Owner()), local_player->sg_smarterBotFollowScale);
-
-    if (local_player->sg_smarterBotPlanScale > 0)
-        manager.Evaluate(PlanEvaluator(), local_player->sg_smarterBotPlanScale);
-
-    if (local_player->sg_smarterBotTailScale > 0)
-        manager.Evaluate(TailChaseEvaluator(*Owner()), local_player->sg_smarterBotTailScale);
-
-    if (local_player->sg_smarterBotSpaceScale > 0)
-        manager.Evaluate(SpaceEvaluator(*Owner()), local_player->sg_smarterBotSpaceScale);
-
-    if (local_player->sg_smarterBotCowardScale > 0)
-        manager.Evaluate(CowardEvaluator(*Owner()), local_player->sg_smarterBotCowardScale);
-
-    if (local_player->sg_smarterBotTunnelScale > 0)
-        manager.Evaluate(TunnelEvaluator(*Owner()), local_player->sg_smarterBotTunnelScale);
-
-    if (local_player->sg_smarterBotSpeedScale > 0)
-        manager.Evaluate(SpeedEvaluator(*Owner()), local_player->sg_smarterBotSpeedScale);
-
-    REAL turnDelay = 0;
-    if (local_player->sg_smarterBotTurnRandMult > 0)
-    {
-        tRandomizer &randomizer = tReproducibleRandomizer::GetInstance();
-        turnDelay = randomizer.Get(0.0, local_player->sg_smarterBotTurnRandMult);
-    }
-
-    CycleControllerAction controller;
-    return manager.Finish(controller, *Owner(), minStep, turnDelay);
-}
-
-void gSmarterBot::Activate(REAL currentTime)
-{
-    if (!local_player || !helperConfig::sghuk)
-        return;
-
-    if (local_player->sg_smarterBotThink)
-    {
-        gAINavigator::Activate(currentTime, 0);
-    }
-
-    if (nextChatAI_ <= se_GameTime())
-    {
-        REAL nextThought = Think(currentTime,0);
-        nextChatAI_ = (nextThought * local_player->sg_smarterBotNextThinkMult) + se_GameTime();
-    }
-}
 
 tString sg_smarterBotEnabledPlayers("1,2,3,4");
 static tConfItem<tString> sg_smarterBotEnabledPlayersConf = HelperCommand::tConfItem("SMARTER_BOT_ENABLED_PLAYERS", sg_smarterBotEnabledPlayers);
@@ -1473,7 +1153,339 @@ private:
     WallHug hugReplacement_; //!< a possible replacement candidate for one of the hugged walls
 };
 
-//  *****************************************************************
+
+static bool sg_smarterBot = false;
+static tConfItem<bool> sg_smarterBotConf = HelperCommand::tConfItem("SMARTER_BOT", sg_smarterBot);
+
+bool sg_smarterBotTeam = false; // absolute unit - does not include owner
+static tConfItem<bool> sg_smarterBotTeamConf = HelperCommand::tConfItem("SMARTER_BOT_TEAM", sg_smarterBotTeam);
+
+bool sg_smarterBotTeamOwner = false; // absolute unit
+static tConfItem<bool> sg_smarterBotTeamOwnerConf = HelperCommand::tConfItem("SMARTER_BOT_TEAM_OWNER", sg_smarterBotTeamOwner);
+
+static void gSmarterBotReset(std::istream &s)
+{
+    if (s.eof())
+    {
+        con << "Need a ID\n Usage: SMARTER_BOT_RESET <ID>\n";
+        return;
+    }
+
+    int ID;
+    s >> ID;
+
+    ePlayer *local_p = ePlayer::PlayerConfig(ID-1);
+
+    if (!local_p)
+    {
+        con << "No player found with ID " << ID << "\n";
+        return;
+    }
+
+    con << "Setting smarter bot defaults for Player " << ID << "\n";
+
+    auto verifyAndSet = [](std::string commandName)
+    {
+        tConfItemBase* item = tConfItemBase::GetConfigItem(commandName);
+        if (item && !item->IsDefault())
+            item->SetDefault();
+    };
+
+    std::vector<std::string> commandSuffixes = 
+    {
+        "THINK", "RANGE", "RANDOMNESS", "RUBBER", "SURVIVE", "TRAP",
+        "FOLLOW", "FOLLOW_TARGET", "FOLLOW_ZONE", "FOLLOW_TAIL",
+        "FOLLOW_BLOCKED_LOGIC", "FOLLOW_TRY_LOGIC",
+        "FOLLOW_TRY_LOGIC_OPPOSITE_TURN", "FOLLOW_CHECK_LOGIC",
+        "FOLLOW_PREDICT_TIME", "FOLLOW_ALIGNED_THRESHOLD",
+        "FOLLOW_SET_TARGET", "FOLLOW_TEAM_LIST", "PLAN",
+        "TAIL", "SPACE", "COWARD", "TUNNEL", "SPEED",
+        "NEXT_TIME_MULT", "TURN_TIME_RAND_MULT", "STATE"
+    };
+
+    for (const auto& suffix : commandSuffixes) 
+    {
+        std::string confname = "SMARTER_BOT_" + std::to_string(ID) + "_" + suffix;
+        verifyAndSet(confname);
+    }
+}
+
+static tConfItemFunc gSmarterBotResetConf = HelperCommand::tConfItemFunc("SMARTER_BOT_RESET", &gSmarterBotReset);
+
+
+gSmarterBot::~gSmarterBot()
+{
+}
+
+gSmarterBot::gSmarterBot(gCycle *owner)
+    : gAINavigator(owner), owner_(owner), nextChatAI_(0), nextAFKCheck_(0), player_(owner->netPlayer_), local_player(ePlayer::gCycleToLocalPlayer(owner))
+{
+    settings_.range = owner_->Speed() * local_player->sg_smarterBotRange;
+    settings_.newWallBlindness = 0;
+}
+
+gSmarterBot &gSmarterBot::Get(gCycle *cycle)
+{
+    tASSERT(cycle);
+
+    // create
+    if (cycle->smarterBot_.get() == 0)
+        cycle->smarterBot_.reset(new gSmarterBot(cycle));
+
+    return *cycle->smarterBot_;
+}
+
+void gSmarterBot::Survive(gCycle *owner)
+{
+    gSmarterBot &bot = gSmarterBot::Get(owner);
+    if (&bot)
+        bot.gAINavigator::Activate(se_GameTime(), 0);
+}
+
+REAL gSmarterBot::annoyanceCheck()
+{
+    if (!owner_ || !owner_->Alive())
+        return false;
+
+    ePlayerNetID* alivePlayer = nullptr;
+    int alivePlayerCount = 0;
+    int totalPlayerCount = 0;
+
+    for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+    {
+        auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
+        bool isDifferentPlayer = se_PlayerNetIDs[i]->pID != owner_->Player()->pID;
+
+        if (se_PlayerNetIDs[i]->CurrentTeam() && se_PlayerNetIDs[i]->IsHuman() && isDifferentPlayer)
+        {
+            totalPlayerCount++;
+            if (other && other->Alive())
+            {
+                if (alivePlayer)
+                {
+                    alivePlayerCount++;
+                    break;
+                }
+                alivePlayer = se_PlayerNetIDs[i];
+                alivePlayerCount++;
+            }
+        }
+    }
+
+    // con << "Total players: " << totalPlayerCount << ", Alive players: " << alivePlayerCount << "\n";
+
+    if (alivePlayerCount == 1 && totalPlayerCount > 1 && alivePlayer)
+    {
+        if (!sg_smarterBotAFKCheckIfChatting || (alivePlayer->ChattingTime() > sg_smarterBotAFKCheckTime) )
+        {
+            tString output;
+            if (!sg_smarterBotAFKCheckIfChatting)
+                output << "SmarterBot: You were the last player alive.\n";
+            else
+                output << "SmarterBot: The alive player is chatting for too long.\n";
+
+            con << output;
+            return sg_smarterBotAFKCheckTime;
+        }
+
+        if (alivePlayer->isLocal() && alivePlayer->NetPlayerToCycle())
+        {
+            double timeSinceLastTurn = se_GameTime() - alivePlayer->NetPlayerToCycle()->lastTurnTime;
+            if (timeSinceLastTurn > sg_smarterBotAFKCheckTime)
+            {
+                con << "SmarterBot: The alive player hasn't turned for too long.\n";
+                return sg_smarterBotAFKCheckTime;
+            }
+        }
+    }
+    return 0;
+}
+
+bool gSmarterBot::chattingSmartDisable()
+{
+    if (((!owner_ || !owner_->Alive() || !owner_->Player())) || !owner_->Player()->IsChatting())
+        return false;
+
+    std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction());
+    sensor->detect(sg_smarterBotChattingSmartDisableDist);
+
+    if (sensor->hit >= owner_->Speed() * (1 / sg_smarterBotChattingSmartDisableDist))
+    {
+        gCycleChatBot &bot = gCycleChatBot::Get(owner_);
+        bot.Activate(0, false);
+        return true;
+    }
+    return false;
+}
+
+REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
+{
+    if (!local_player)
+        return 5;
+
+    if (sg_smarterBotChattingSmartDisable && chattingSmartDisable())
+        return 0;
+
+    if (sg_smarterBotAFKCheck && nextAFKCheck_ < tSysTimeFloat())
+    {
+        REAL nextTime = annoyanceCheck();
+        if (nextTime != 0)
+        {
+            for (int i = 0; i < 4; i++)
+                owner_->Turn(1);
+
+            owner_->smartBotSuicide = true;
+            nextAFKCheck_ = tSysTimeFloat() + nextTime;
+            return 5;
+        }
+        else
+        {
+            nextAFKCheck_ = tSysTimeFloat() + sg_smarterBotAFKCheckTime;
+        }
+    }
+
+
+    UpdatePaths();
+    EvaluationManager manager(GetPaths());
+    switch (local_player->sg_smarterBotState)
+    {
+    case 0:
+    {
+        break;
+    }
+    case 1:
+    {
+        manager.Evaluate(SuicideEvaluator(*Owner()), 1);
+        manager.Evaluate(SuicideEvaluator(*Owner(), 0), 1);
+        manager.Evaluate(TrapEvaluator(*Owner()), 5);
+        manager.Reset();
+        manager.Evaluate(CowardEvaluator(*Owner()), 1);
+        manager.Evaluate(SpaceEvaluator(*Owner()), 1);
+        manager.Evaluate(PlanEvaluator(), .1);
+        break;
+    }
+    case 2:
+    {
+        manager.Evaluate(SuicideEvaluator(*Owner()), 1);
+        manager.Evaluate(TrapEvaluator(*Owner()), 5);
+        manager.Reset();
+        manager.Evaluate(RubberEvaluator(*Owner()), .2);
+        manager.Evaluate(FollowEvaluator(*Owner()), .3);
+        break;
+    }
+    case 3:
+    {
+        manager.Evaluate(SuicideEvaluator(*Owner()), 4);
+        manager.Evaluate(TrapEvaluator(*Owner()), 10);
+        manager.Evaluate(PlanEvaluator(), 2);
+        break;
+    }
+    case 4:
+    {
+        manager.Evaluate(TailChaseEvaluator(*Owner()), 10);
+        break;
+    }
+    case 5:
+    {
+        manager.Evaluate(SuicideEvaluator(*Owner()), 15);
+        manager.Evaluate(TrapEvaluator(*Owner()), 100);
+        manager.Evaluate(TunnelEvaluator(*Owner()), 10);
+        manager.Evaluate(PlanEvaluator(), 3);
+        break;
+    }
+    case 6:
+    {
+        manager.Evaluate(SuicideEvaluator(*Owner()), 1);
+        manager.Evaluate(TrapEvaluator(*Owner()), 5);
+        manager.Evaluate(FollowEvaluator(*Owner()), 5);
+        break;
+    }
+    case 7:
+    {
+        manager.Evaluate(SuicideEvaluator(*Owner()), 4);
+        manager.Evaluate(TrapEvaluator(*Owner()), 12);
+        manager.Evaluate(TunnelEvaluator(*Owner()), 2);
+        manager.Evaluate(PlanEvaluator(), 1);
+        manager.Reset();
+        break;
+    }
+    case 8:
+    {
+        manager.Evaluate(SuicideEvaluator(*Owner()), 1);
+        manager.Evaluate(SuicideEvaluator(*Owner(), 0), 1);
+        manager.Evaluate(TrapEvaluator(*Owner()), 5);
+        manager.Reset();
+        manager.Evaluate(SpaceEvaluator(*Owner()), 1);
+        break;
+    }
+    default:
+    {
+        local_player->sg_smarterBotState = 1;
+        break;
+    }
+    }
+
+    manager.Reset();
+
+    if (local_player->sg_smarterBotSurviveEval > 0)
+        manager.Evaluate(SuicideEvaluator(*Owner()), local_player->sg_smarterBotSurviveEval);
+
+    if (local_player->sg_smarterBotRubberEval > 0)
+        manager.Evaluate(RubberEvaluator(*Owner()), local_player->sg_smarterBotRubberEval);
+
+    if (local_player->sg_smarterBotRandomScale > 0)
+        manager.Evaluate(RandomEvaluator(*Owner()), local_player->sg_smarterBotRandomScale);
+
+    if (local_player->sg_smarterBotTrapScale > 0)
+        manager.Evaluate(TrapEvaluator(*Owner()), local_player->sg_smarterBotTrapScale);
+
+    if (local_player->sg_smarterBotFollowScale > 0)
+        manager.Evaluate(FollowEvaluator(*Owner()), local_player->sg_smarterBotFollowScale);
+
+    if (local_player->sg_smarterBotPlanScale > 0)
+        manager.Evaluate(PlanEvaluator(), local_player->sg_smarterBotPlanScale);
+
+    if (local_player->sg_smarterBotTailScale > 0)
+        manager.Evaluate(TailChaseEvaluator(*Owner()), local_player->sg_smarterBotTailScale);
+
+    if (local_player->sg_smarterBotSpaceScale > 0)
+        manager.Evaluate(SpaceEvaluator(*Owner()), local_player->sg_smarterBotSpaceScale);
+
+    if (local_player->sg_smarterBotCowardScale > 0)
+        manager.Evaluate(CowardEvaluator(*Owner()), local_player->sg_smarterBotCowardScale);
+
+    if (local_player->sg_smarterBotTunnelScale > 0)
+        manager.Evaluate(TunnelEvaluator(*Owner()), local_player->sg_smarterBotTunnelScale);
+
+    if (local_player->sg_smarterBotSpeedScale > 0)
+        manager.Evaluate(SpeedEvaluator(*Owner()), local_player->sg_smarterBotSpeedScale);
+
+    REAL turnDelay = 0;
+    if (local_player->sg_smarterBotTurnRandMult > 0)
+    {
+        tRandomizer &randomizer = tReproducibleRandomizer::GetInstance();
+        turnDelay = randomizer.Get(0.0, local_player->sg_smarterBotTurnRandMult);
+    }
+
+    CycleControllerAction controller;
+    return manager.Finish(controller, *Owner(), minStep, turnDelay);
+}
+
+void gSmarterBot::Activate(REAL currentTime)
+{
+    if (!local_player || !helperConfig::sghuk)
+        return;
+    
+    if (local_player->sg_smarterBotThink)
+        gAINavigator::Activate(currentTime, 0);
+
+    if (nextChatAI_ <= se_GameTime())
+    {
+        REAL nextThought = Think(currentTime,0);
+        nextChatAI_ = (nextThought * local_player->sg_smarterBotNextThinkMult) + se_GameTime();
+    }
+}
+
 
 static void sg_ArchiveCoord(eCoord &coord, int level)
 {
@@ -6871,9 +6883,7 @@ void gCycle::ReadSync(nMessage &m)
             Player()->lastDiedByPlayer = killer;
 
             if (se_playerStats)
-            {
                 ePlayerStats::addKill(killer);
-            }
 
         }
 
@@ -6893,7 +6903,7 @@ void gCycle::ReadSync(nMessage &m)
             }
 
             if (Player()) {
-                if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently)
+                if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently && !smartBotSuicide)
                     eChatBot::InitiateAction(killer,tString("$died"),true);
                 else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
                     eChatBot::InitiateAction(killer,tString("$diedother"),true);
@@ -8552,21 +8562,4 @@ void gCycle::FillWallInfo(WallInfo &info, REAL rubberRatio, REAL offset) const
 void gCycle::FillWallInfo(WallInfo &info) const
 {
     FillWallInfoFlexible(info, ThisWallsLength());
-}
-
-bool gSmarterBot::chattingSmartDisable()
-{
-    if (((!owner_ || !owner_->Alive() || !owner_->Player())) || !owner_->Player()->IsChatting())
-        return false;
-
-    std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction());
-    sensor->detect(sg_smarterBotChattingSmartDisableDist);
-
-    if (sensor->hit >= owner_->Speed() * (1/sg_smarterBotChattingSmartDisableDist))
-    {
-        gCycleChatBot &bot = gCycleChatBot::Get(owner_);
-        bot.Activate(0, false);
-        return true;
-    }
-    return false;
 }

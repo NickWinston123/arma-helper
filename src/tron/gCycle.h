@@ -203,7 +203,7 @@ class gCycle : public gCycleMovement
     REAL spawnTime_;   //!< time the cycle spawned at
     REAL lastTimeAnim; //!< last time animation was simulated at
     REAL timeCameIntoView;
-
+    bool smartBotSuicide = false;
     friend class gCycleChatBot;
     // friend class gHelperEmergencyTurn;
     std::unique_ptr<gCycleChatBot> chatBot_;

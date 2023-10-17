@@ -3301,34 +3301,38 @@ class gMainMenu : public uMenu
 public:
     gMainMenu(const tOutput &t, bool exit_item=true) : uMenu(t, exit_item) {}
 
-    virtual void OnRender() override {
+    virtual void OnRender() override 
+    {
 
         static double sg_MainMenuUpdateTimeout = -1E+32f;
 
-        if (!in_game || !CurrentServer()) 
+        if (shouldJoinServer() && sg_MainMenuUpdateTimeout < tSysTimeFloat())
         {
-            if (!sg_connectToLastServerFromMenu && sg_MainMenuUpdateTimeout < tSysTimeFloat())
-            {
-                Update();
-                sg_MainMenuUpdateTimeout = tSysTimeFloat() + 5.0f;
-            }
+            JoinLastServer();
+            sg_MainMenuUpdateTimeout = tSysTimeFloat() + 5.0f;
         }
     }
 
+    bool shouldJoinServer()
+    {
+        return sg_connectToLastServerFromMenu && (!in_game || !CurrentServer());
+    }
     //! enters the submenu
     virtual void Enter()
     {
-        Update();
+        if (shouldJoinServer())
+            JoinLastServer();
         uMenu::Enter();
     }
 
     void GenericBackground(REAL top)
     {
-        Update();
+        if (shouldJoinServer())
+            JoinLastServer();
         uMenu::GenericBackground();
     }
     
-    void Update()
+    void JoinLastServer()
     {
         if (!CurrentServer())
         {
@@ -4077,8 +4081,8 @@ void gGame::StateUpdate()
         {
         case GS_DELETE_GRID:
             // sr_con.autoDisplayAtNewline=true;
-            if (!roundWinnerProcessed)
-                ePlayerStats::updateRoundWinsAndLoss();
+            if (se_playerStats && roundWinnerProcessed)
+                ePlayerStats::updateStatsRoundEnd();
             roundWinnerProcessed = false;
 #ifdef DEBUG
             con << tOutput("$gamestate_deleting_grid");
@@ -4183,6 +4187,8 @@ void gGame::StateUpdate()
 
         case GS_CREATE_GRID:
             // sr_con.autoDisplayAtNewline=true;
+            // if (se_playerStats)
+            //     ePlayerStats::updateStatsRoundStart();
 
             //  reset ingame timer
             gGameSpawnTimer::Reset();

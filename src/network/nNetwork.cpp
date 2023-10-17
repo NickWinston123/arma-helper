@@ -3541,7 +3541,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
             bool isLocal = sg_playerMessageMatchWinnerSelf && potentialWinner && potentialWinner->isLocal();
 
             if (se_playerStats)
-                ePlayerStats::updateMatchWinsAndLoss(potentialWinner);
+                ePlayerStats::updateStatsMatchEnd(potentialWinner);
 
             if (se_playerTriggerMessages && sg_playerMessageMatchWinner)
                 eChatBot::InitiateAction(potentialWinner, isLocal ? tString("$matchwinnerself") : tString("$matchwinner"), true);
@@ -3656,7 +3656,7 @@ static void client_cen_handler(nMessage &m)
 
                 roundWinnerProcessed = true;
                 if (se_playerStats)
-                    ePlayerStats::updateRoundWinsAndLoss();
+                    ePlayerStats::updateStatsRoundEnd();
             }
         }
     }

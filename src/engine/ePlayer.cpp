@@ -1810,6 +1810,12 @@ static void se_DisplayChatLocally(ePlayerNetID *p, const tString &say)
 static bool se_playerMessageChat = false;
 static tConfItem<bool> se_playerMessageChatConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT", se_playerMessageChat);
 
+static bool se_playerMessageChatPrivateMsgs = true;
+static tConfItem<bool> se_playerMessageChatPrivateMsgsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_MSGS", se_playerMessageChatPrivateMsgs);
+
+static bool se_playerMessageChatAlwaysSendMsg = false;
+static tConfItem<bool> se_playerMessageChatAlwaysSendMsgConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_ALWAYS_SEND_PRIVATE_MSG", se_playerMessageChatAlwaysSendMsg);
+
 static void se_validate(std::istream &s)
 {
     tString params;
@@ -1850,6 +1856,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         const int nameLength = p->GetRealName().Len() + 1;
 
         bool encyptedMessage = false;
+        bool sentFromTeamMember = false;
 
         ePlayerNetID *ourPlayer;
         bool privateMessage = false;
@@ -1857,12 +1864,12 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         tString possiblePrivateMessageStr;
         int privateMessageMsgPos = -1;
-        for (auto localPlayer : se_GetLocalPlayers())
+        for (auto localNetPlayer : se_GetLocalPlayers())
         {
             possiblePrivateMessageStr.Clear();
             possiblePrivateMessageStr << p->GetName()
                                       << " --> "
-                                      << localPlayer->GetName()
+                                      << localNetPlayer->GetName()
                                       << ": ";
 
             privateMessageMsgPos = colorlessMessage.StrPos(possiblePrivateMessageStr);
@@ -1872,12 +1879,24 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
                 ourPlayer->lastMessagedByPlayer = p;
                 ourPlayer->lastMessagedPlayer = nullptr;
 
-                ourPlayer = localPlayer;
+                ourPlayer = localNetPlayer;
                 privateMessage = true;
-                privateMessageParams = colorlessMessage.SubStr(privateMessageMsgPos + possiblePrivateMessageStr.Len()-1);
+                privateMessageParams = colorlessMessage.SubStr(privateMessageMsgPos + possiblePrivateMessageStr.Len() - 1);
                 break;
             }
+
+            if (se_silenceEnemies)
+            {
+                if (localNetPlayer)
+                {
+                    if ((!localNetPlayer->Object() || !localNetPlayer->Object()->Alive()) || localNetPlayer->CurrentTeam() == p->CurrentTeam())
+                        sentFromTeamMember = true;
+                }
+                if (!sentFromTeamMember)
+                    return;
+            }
         }
+
 
         if (privateMessage)
         {
@@ -1893,48 +1912,40 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         {
             tString params(colorlessMessage);
             tString preAppend;
-            if (privateMessage && ourPlayer)
+            bool initiate = true;
+            bool preAppended = false;
+            bool  validPrivateMessage = privateMessage && ourPlayer;
+
+            if (validPrivateMessage)
             {
-                preAppend << "/msg "
-                          << p->GetRealName().Filter()
-                          << " ";
-                params = privateMessageParams;
+                if ((validPrivateMessage && se_playerMessageChatPrivateMsgs))
+                {
+                    preAppend << "/msg "
+                            << p->GetRealName().Filter()
+                            << " ";
+                    preAppended = true;
+                    params = privateMessageParams;
+                }
+                else
+                {
+                    initiate = false;
+                }
             }
             else
             {
                 params = params.SubStr(nameLength);
             }
-            eChatBot::InitiateAction(p, params, false, preAppend);
-        }
 
-        bool sentFromTeamMember = false;
-        if (se_silenceEnemies)
-        {
-            rViewportConfiguration *viewportConfiguration = rViewportConfiguration::CurrentViewportConfiguration();
-            if (viewportConfiguration == 0)
-                return;
-
-            for (int viewport = viewportConfiguration->num_viewports - 1; viewport >= 0; --viewport)
+            if (!preAppended && se_playerMessageChatAlwaysSendMsg)
             {
-                ePlayer *player = ePlayer::PlayerConfig(sr_viewportBelongsToPlayer[viewport]);
-
-                if (!player)
-                    continue;
-
-                ePlayerNetID *me = player->netPlayer;
-                if (me)
-                {
-                    if (se_silenceEnemies)
-                    {
-                        // If we're dead, display all chat
-                        if ((!me->Object() || !me->Object()->Alive()) || me->CurrentTeam() == p->CurrentTeam())
-                            sentFromTeamMember = true;
-                    }
-                }
+                    preAppend << "/msg "
+                              << p->GetRealName().Filter()
+                              << " ";
             }
+
+            if (initiate)
+                eChatBot::InitiateAction(p, params, false, preAppend);
         }
-        if (se_silenceEnemies && !sentFromTeamMember)
-            return;
 
         if (p->CurrentTeam())
         {
@@ -1949,22 +1960,26 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             actualMessage = actualMessage.Replace(p->coloredName_, p->GetColoredName());
         }
 
-        if (se_highlightNames && actualMessage.Contains(p->GetName()))
+        if (se_highlightNames)
         {
-            tString strOld = p->GetName();
-            tColoredString strReplace;
-            strReplace << p->GetColoredName() << tColoredString::ColorString(1, 1, .5);
+            for (ePlayerNetID *currP : se_PlayerNetIDs)
+            {
+                tString currName = currP->GetName();
 
-            actualMessage = actualMessage.Replace(strOld, strReplace);
+                if (actualMessage.ContainsInsensitive(currName))
+                {
+                    tColoredString highlightedName;
+                    highlightedName << p->GetColoredName() << tColoredString::ColorString(1, 1, .5);
+
+                    actualMessage = actualMessage.ReplaceInsensitive(currName, highlightedName);
+                }
+            }
         }
 
         se_SaveToChatLog(actualMessage);
 
-
         if (se_chatTimeStamp && !sr_consoleTimeStamp)
-        {
             actualMessage = st_GetCurrentTime("%H:%M:%S| ") << actualMessage;
-        }
 
         con << actualMessage << "\n";
 

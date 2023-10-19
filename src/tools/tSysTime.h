@@ -37,4 +37,6 @@ void tDelayForce( int usecdelay );            //! delays for the specified numbe
 std::string getTimeString(bool hudShowTime24hour = false);
 std::string getTimeStringBase(struct tm &thistime, bool hudShowTime24hour = false);
 struct tm getCurrentLocalTime();
+time_t convertToTimeT(struct tm date);
+time_t getDifferenceInSeconds(struct tm date1, struct tm date2) ;
 #endif

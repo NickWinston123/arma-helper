@@ -345,7 +345,7 @@ void tAdvanceFrame( int usecdelay )
         static tTime oldRelative = timeRelative;
         tTime timeStep = timeRelative - oldRelative;
         oldRelative = timeRelative;
-        
+
         // detect unusually large timesteps
         static REAL bigStep = 10;
         bigStep *= .99;
@@ -409,6 +409,19 @@ double tRealSysTimeFloat ()
     return ( timeRealRelative.seconds + timeRealRelative.microseconds*1E-6 ) * st_timeFactor;
 }
 
+time_t convertToTimeT(struct tm date) 
+{
+    return mktime(&date);
+}
+
+time_t getDifferenceInSeconds(struct tm date1, struct tm date2) 
+{
+    time_t t1 = convertToTimeT(date1);
+    time_t t2 = convertToTimeT(date2);
+    return difftime(t1, t2); // returns difference in seconds (t1 - t2)
+}
+
+
 struct tm getCurrentLocalTime()
 {
     struct tm thisTime;
@@ -417,9 +430,9 @@ struct tm getCurrentLocalTime()
     time(&rawtime);
     struct tm *tempTime = localtime(&rawtime);
 
-    if (tempTime) 
+    if (tempTime)
         thisTime = *tempTime;
-    
+
 
     return thisTime;
 }

@@ -3502,19 +3502,13 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
     if (sg_playerSilenced)
     {
-        if (!currentlySuspended && s.Contains(tString("silenced by the server administrator.")))
-            sn_quitAction(true, false);
-
-        if (currentlySuspended && (!sn_playerSilencedWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame()) )
+        if (s.Contains(tString("silenced by the server administrator.")))
             sn_quitAction(true, sg_playerSilencedQuit);
     }
     
     if (sn_playerSuspendWatch)
     {
-        if (!currentlySuspended && s.Contains(tString("suspended from playing for the next")))
-            sn_quitAction(true, false);
-
-        if (currentlySuspended && (!sn_playerSuspendWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame()) )
+        if (s.Contains(tString("suspended from playing for the next")) && (!sn_playerSuspendWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame()) )
             sn_quitAction(true, sn_playerSuspendWatchQuit);
     }
 
@@ -5768,16 +5762,11 @@ std::vector<unsigned short> nMessage::nMessageToDataVector(nMessage& msg) {
     return data;
 }
 
-static void sn_bannedCMD(std::istream &s)
-{
-    sn_bannedWatchAction();
-}
-static tConfItemFunc sn_bannedCMDConf("BANNED",&sn_bannedCMD);
-
 #include "../tron/gGame.h"
 void sn_quitAction(bool save, bool quit)
 {
-
+    FileManager(tString("banned.txt"), tDirectories::Var()).Write(tString("banned"));
+    
     if (save)
         st_SaveConfig();
 
@@ -5790,8 +5779,11 @@ void sn_quitAction(bool save, bool quit)
 }
 void sn_bannedWatchAction()
 {
-    if (sn_bannedWatch)
-        FileManager(tString("banned.txt"), tDirectories::Var()).Write(tString("banned"));
-
-    sn_quitAction(true,sn_bannedWatchQuit);    
+    sn_quitAction(true, sn_bannedWatchQuit);    
 }
+
+static void sn_bannedCMD(std::istream &s)
+{
+    sn_bannedWatchAction();
+}
+static tConfItemFunc sn_bannedCMDConf("BANNED",&sn_bannedCMD);

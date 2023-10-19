@@ -151,7 +151,9 @@ public:
 
     //! confirms whether the tofind exists within the current string
     bool Contains(tString tofind);
+    bool ContainsInsensitive(tString tofind);
     bool Contains(const char *tofind);
+    bool ContainsInsensitive(const char *tofind);
 
     bool empty() const;
 
@@ -203,6 +205,8 @@ public:
 
     tString Replace(tString old_word, tString new_word);
     tString Replace(const char *old_word, const char *new_word);
+    tString ReplaceInsensitive(tString old_word, tString new_word);
+    tString ReplaceInsensitive(const char *old_word, const char *new_word);
 
     tString ExtractNonBlankSubString( int &pos, int numWordsToSkip = 0) const; //!< Extract non blank char sequence starting at pos
 

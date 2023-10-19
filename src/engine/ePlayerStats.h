@@ -477,7 +477,6 @@ public:
 
         if (!message.empty())
             stats.chat_messages.push_back(message.stdString());
-
         stats.total_messages++;
     }
 

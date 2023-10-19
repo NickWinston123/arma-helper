@@ -269,10 +269,17 @@ tString statsFunc(tString message)
                 output << ", ";
 
             if (se_GetLocalPlayer()->createdTime() <= statsTargetPlayer->createdTime())
-            output << "Joined: "
-                   << getTimeStringBase(statsTargetPlayer->createTime_)
-                   << " EST, ";
-
+            {
+                struct tm created = statsTargetPlayer->createTime_;
+                struct tm now = getCurrentLocalTime();
+                time_t difference = getDifferenceInSeconds(now, created);
+                tString formattedDifference = st_GetFormatTime(difference, false, false);
+                output << "Joined: "
+                    << getTimeStringBase(statsTargetPlayer->createTime_)
+                    << " EST ("
+                    << formattedDifference
+                    << "), ";
+            }
             output << "Last Active: "
                    << st_GetFormatTime(statsTargetPlayer->LastActivity(), false, false);
         }
@@ -668,19 +675,7 @@ tString exactStatFunc(tString message)
 
     if (playerName.empty())
     {
-        if (symLinkFunc)
-        {
-            statsTargetPlayer = chatBotStats.lastTriggeredBy;
-        }
-        else
-        {
-            output << "Player not found! Usage: "
-                   << chatBotStats.lastMatchedTrigger
-                   << " "
-                   << stat
-                   << " stat";
-            return output;
-        }
+        statsTargetPlayer = chatBotStats.lastTriggeredBy;
     }
 
     if (!statsTargetPlayer)
@@ -781,7 +776,7 @@ tString hideStatFunc(tString message)
     ePlayerNetID *triggeredBy = chatBotStats.lastTriggeredBy;
     PlayerData &stats = ePlayerStats::getStats(triggeredBy);
     int pos = 0;
-    tString desiredAction = message.ExtractNonBlankSubString(pos); // Extract action first
+    tString desiredAction = message.ExtractNonBlankSubString(pos); 
 
     if (desiredAction.empty())
     {
@@ -795,7 +790,7 @@ tString hideStatFunc(tString message)
             output << "stat'";
         return output;
     }
-    tArray<tString> statsArray = message.Split(" "); 
+    tArray<tString> statsArray = message.Split(" ");
     statsArray.RemoveAt(0);
 
     std::vector<tString> validStats;
@@ -875,6 +870,58 @@ tString hideStatFunc(tString message)
     return output;
 }
 
+tString whatsThefunc(tString message)
+{
+    tString output;
+
+    tString target = message.TrimWhitespace();
+
+    if (target.Contains("score"))
+    {
+        ePlayerNetID::SortByScore();
+
+        int max = se_PlayerNetIDs.Len();
+        for (int i = 0; i < max; ++i)
+        {
+            ePlayerNetID *p = se_PlayerNetIDs(i);
+            if (p && p->CurrentTeam())
+            {
+                output << p->GetName() << " (" << p->Score() << ")";
+                if (i < max - 1 && se_PlayerNetIDs(i + 1) && se_PlayerNetIDs(i + 1)->CurrentTeam())
+                    output << ", ";
+            }
+        }
+    }
+    else if (target.Contains("game_time"))
+    {
+        output << se_GameTime();
+    }
+    else if (target.Contains("joined_time"))
+    {
+        eChatBotStats &stats = eChatBot::getInstance().Stats();
+        struct tm created = stats.lastTriggeredBy->createTime_;
+        output << getTimeStringBase(created)
+               << " EST";
+    }
+    else if (target.Contains("time"))
+    {
+        struct tm now = getCurrentLocalTime();
+        output << getTimeStringBase(now)
+               << " EST";
+    }
+    else if (target.Contains("been_here_for"))
+    {
+        eChatBotStats &stats = eChatBot::getInstance().Stats();
+        struct tm created = stats.lastTriggeredBy->createTime_;
+        struct tm now = getCurrentLocalTime();
+        time_t difference = getDifferenceInSeconds(now, created);
+        tString formattedDifference = st_GetFormatTime(difference, false, false);
+        output << formattedDifference;
+    }
+    
+    return output;
+}
+
 void eChatBot::InitChatFunctions()
 {
     RegisterFunction(tString("$numbadderfunc"), numberAdderFunc);
@@ -888,6 +935,7 @@ void eChatBot::InitChatFunctions()
     RegisterFunction(tString("$exactstatfunc"), exactStatFunc);
     RegisterFunction(tString("$masterfunc"), masterFunc);
     RegisterFunction(tString("$hidestatfunc"), hideStatFunc);
+    RegisterFunction(tString("$whatsthefunc"), whatsThefunc);
 }
 
 void eChatBot::LoadChatTriggers()

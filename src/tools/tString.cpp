@@ -2561,48 +2561,43 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (days > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "")
-               << days
-               << (color ? eChatCommand::MainText() : "")
-               << "D:";
+        result << (color ? eChatCommand::ItemText() : "") << days << (color ? eChatCommand::MainText() : "") << "D";
+        if (hours || minutes || remainingSeconds || milliseconds)
+            result << ":";
     }
 
     if (hours > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "")
-               << ((hours < 10) ? "0" : "") << hours
-               << (color ? eChatCommand::MainText() : "")
-               << "H:";
+        result << (color ? eChatCommand::ItemText() : "") << ((hours < 10) ? "0" : "") << hours << (color ? eChatCommand::MainText() : "") << "H";
+        if (minutes || remainingSeconds || milliseconds)
+            result << ":";
     }
 
     if (minutes > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "")
-               << ((minutes < 10) ? "0" : "") << minutes
-               << (color ? eChatCommand::MainText() : "")
-               << "M:";
+        result << (color ? eChatCommand::ItemText() : "") << ((minutes < 10) ? "0" : "") << minutes << (color ? eChatCommand::MainText() : "") << "M";
+        if (remainingSeconds || milliseconds)
+            result << ":";
     }
 
     if (remainingSeconds > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "")
-               << ((remainingSeconds < 10) ? "0" : "") << remainingSeconds
-               << (color ? eChatCommand::MainText() : "")
-               << "S:";
+        result << (color ? eChatCommand::ItemText() : "") << ((remainingSeconds < 10) ? "0" : "") << remainingSeconds << (color ? eChatCommand::MainText() : "") << "S";
+        if (milliseconds)
+            result << ":";
     }
 
     if (milliseconds > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "")
-               << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") << milliseconds
-               << (color ? eChatCommand::MainText() : "")
-               << "MS";
+        result << (color ? eChatCommand::ItemText() : "") << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") << milliseconds << (color ? eChatCommand::MainText() : "") << "MS";
     }
 
     if (result.empty())
         result << 0;
     return result;
 }
+
+
 
 
 tString st_GetCurrentTime( char const * szFormat , struct tm pTime)
@@ -2661,6 +2656,36 @@ bool tString::Contains(tString tofind)
     // if they don't match at all, too bad!
     return false;
 }
+
+bool tString::ContainsInsensitive(tString tofind)
+{
+    // if the length of tofind longer than the string, quit it!
+    if (tofind.Len() > Len())
+        return false;
+
+    // Convert both strings to const char* for simpler comparison
+    const char* thisStr = this->c_str();
+    const char* tofindStr = tofind.c_str();
+
+    // the total length of tofind, minus the 1 extra garbage
+    int strCount = tofind.Len() - 1;
+
+    for (int i = 0; i < Len() - strCount; ++i)
+    {
+        #ifdef _WIN32  
+        if (_strnicmp(thisStr + i, tofindStr, strCount) == 0)
+        #else 
+        if (strncasecmp(thisStr + i, tofindStr, strCount) == 0)
+        #endif
+        {
+            return true;
+        }
+    }
+
+    // if they don't match at all, too bad!
+    return false;
+}
+
 
 
 // void computeLPSArray(const tString& pat, int* lps)
@@ -2735,6 +2760,11 @@ bool tString::Contains(tString tofind)
 bool tString::Contains(const char *tofind)
 {
     return Contains(tString(tofind));
+}
+
+bool tString::ContainsInsensitive(const char *tofind)
+{
+    return ContainsInsensitive(tString(tofind));
 }
 
 bool tString::empty() const {
@@ -2962,6 +2992,41 @@ tString tString::Replace(tString old_word, tString new_word)
 tString tString::Replace(const char *old_word, const char *new_word)
 {
     return Replace(tString(old_word), tString(new_word));
+}
+
+size_t findCaseInsensitive(const std::string &strHaystack, const std::string &strNeedle)
+{
+    auto it = std::search(
+        strHaystack.begin(), strHaystack.end(),
+        strNeedle.begin(),   strNeedle.end(),
+        [](char ch1, char ch2) -> bool { return std::tolower(ch1) == std::tolower(ch2); }
+    );
+
+    if (it != strHaystack.end())
+        return it - strHaystack.begin();
+    else
+        return std::string::npos;
+}
+
+tString tString::ReplaceInsensitive(tString old_word, tString new_word)
+{
+    std::string source = this->stdString();
+    std::string oldStr = old_word.stdString();
+    std::string newStr = new_word.stdString();
+
+    size_t pos = 0;
+    while ((pos = findCaseInsensitive(source, oldStr)) != std::string::npos)
+    {
+        source.replace(pos, oldStr.length(), newStr);
+        pos += newStr.length();
+    }
+
+    return tString(source.c_str());
+}
+
+tString tString::ReplaceInsensitive(const char *old_word, const char *new_word)
+{
+    return ReplaceInsensitive(tString(old_word), tString(new_word));
 }
 
 // **********************************************************************

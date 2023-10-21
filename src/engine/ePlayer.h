@@ -76,6 +76,9 @@ extern std::deque<tString> se_chatHistory;
 
 extern bool se_chatLog, se_chatTimeStamp;
 
+extern bool se_playerWatchAutoRandomName, forceRandomRename;
+extern REAL se_playerWatchAutoRandomNameRevertTime;
+
 extern bool se_avoidPlayerWatch, se_avoidPlayerWatchDisable;
 extern REAL se_avoidPlayerWatchActionTime;
 extern tString se_avoidPlayerWatchList;
@@ -89,6 +92,8 @@ extern bool se_watchActiveStatus;
 extern int se_watchActiveStatusTime;
 
 extern bool sg_playerSpamProtectionWatch;
+
+extern bool sg_playerSilencedWatch, sg_playerSilencedWatchQuit, sn_playerSilencedWatchQuitWaitForAvoidPlayers;
 
 extern void se_UniqueColor(ePlayer *local_p );
 extern void se_RandomizeColor(ePlayer *local_p);
@@ -1025,5 +1030,47 @@ extern bool se_highlightNames, se_tabCompletion, se_tabCompletionWithColors,se_t
 static ePlayer * se_chatterPlanned=NULL;
 static ePlayer * se_chatter =NULL;
 static tString se_say;
+
+class MessageTracker 
+{
+private:
+    static std::deque<tString> outgoingMessages;
+    static std::deque<tString> incomingMessages;
+    static const size_t maxSize;  
+
+public:
+    static void AddOutgoingMessage(const tString& msg) 
+    {
+        if (outgoingMessages.size() >= maxSize) 
+            outgoingMessages.pop_front();
+
+        outgoingMessages.push_back(msg);
+    }
+
+    static void AddIncomingMessage(const tString& msg) 
+    {
+        if (incomingMessages.size() >= maxSize) 
+            incomingMessages.pop_front();
+        
+        incomingMessages.push_back(msg);
+    }
+
+    static bool CheckIfSilenced() 
+    {
+        if (!outgoingMessages.empty()) 
+        {
+            const tString lastOutgoing = outgoingMessages.back();
+            for (auto it = incomingMessages.rbegin(); it != incomingMessages.rend(); ++it) 
+            {
+                tString msg = *it;            
+
+                if (msg.Contains(lastOutgoing))
+                    return false;
+            }
+            return true;
+        }
+        return false; 
+    }
+};
 
 #endif

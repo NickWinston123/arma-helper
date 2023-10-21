@@ -1851,6 +1851,10 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
     // con << "message " << message << "\n";
     if (p && !p->IsSilenced() && se_enableChat)
     {
+
+        if (sg_playerSilencedWatch && p->isLocal())
+            MessageTracker::AddIncomingMessage(message);
+
         tColoredString actualMessage(message);
         tString colorlessMessage(tColoredString::RemoveColors(message));
         const int nameLength = p->GetRealName().Len() + 1;
@@ -5151,6 +5155,14 @@ void ePlayerNetID::setNextSpeakTime(REAL seconds)
     // con << "nextupdatetime " << nextSpeakTime << "\n";
 }
 
+bool sg_playerSilencedWatch = false;
+static tConfItem<bool> sg_playerSilencedWatchConf("PLAYER_WATCH_SILENCED", sg_playerSilencedWatch);
+bool sg_playerSilencedWatchQuit = false;
+static tConfItem<bool> sg_playerSilencedWatchQuitConf("PLAYER_WATCH_SILENCED_QUIT", sg_playerSilencedWatchQuit);
+bool sn_playerSilencedWatchQuitWaitForAvoidPlayers = false;
+static tConfItem<bool> sn_playerSilencedWatchQuitWaitForAvoidPlayersConf("PLAYER_WATCH_SILENCED_QUIT_WAIT_FOR_AVOID_PLAYERS", sn_playerSilencedWatchQuitWaitForAvoidPlayers);
+
+
 void ePlayerNetID::Chat(const tString &s_orig)
 {
     tColoredString s(s_orig);
@@ -5164,6 +5176,9 @@ void ePlayerNetID::Chat(const tString &s_orig)
         return;
 
     s = s.SubStr(0, se_SpamMaxLen - 1);
+
+    if (sg_playerSilencedWatch)
+        MessageTracker::AddOutgoingMessage(s);
 
 #endif // if not dedicated
 
@@ -5201,14 +5216,14 @@ std::vector<ePlayerNetID *> se_GetLocalPlayers()
 {
     std::vector<ePlayerNetID *> localPlayers;
 
-    for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+    for (int i = MAX_PLAYERS - 1; i >= 0; i--)
     {
-        ePlayerNetID *p = se_PlayerNetIDs[i];
+        ePlayer *p = ePlayer::PlayerConfig(i);
 
-        if (p->Owner() == sn_myNetID && p->IsHuman())
-            localPlayers.push_back(p);
+        if (p && p->netPlayer)
+            localPlayers.push_back(p->netPlayer);
     }
-
+    
     return localPlayers;
 }
 
@@ -5817,11 +5832,20 @@ static tConfItem<bool> se_randomNamePingConf = HelperCommand::tConfItem("PLAYER_
 bool se_randomName = false;
 static tConfItem<bool> se_randomNameConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME", se_randomName);
 
+bool se_randomNameSmart = false;
+static tConfItem<bool> se_randomNameSmartConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_SMART", se_randomNameSmart);
+
 tString se_randomNameEnabledPlayers("1,2,3,4");
 static tConfItem<tString> se_randomNameEnabledPlayersConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_ENABLED_PLAYERS", se_randomNameEnabledPlayers);
 
 int se_randomNameLength = 15;
 static tConfItem<int> se_randomNameLengthConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_LENGTH", se_randomNameLength);
+
+bool se_randomNameLengthRandom = false;
+static tConfItem<bool> se_randomNameLengthRandomConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_LENGTH_RANDOM", se_randomNameLengthRandom);
+
+int se_randomNameLengthRandomMin = 8;
+static tConfItem<int> se_randomNameLengthRandomMinConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_LENGTH_RANDOM_MIN", se_randomNameLengthRandomMin);
 
 int se_randomNameMode = 0;
 static tConfItem<int> se_randomNameModeConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_MODE", se_randomNameMode);
@@ -5863,6 +5887,12 @@ tString randomName()
     }
 
     int length = se_randomNameLength;
+
+    if (se_randomNameLengthRandom) 
+    {
+         length = se_randomNameLengthRandomMin + rand() % (se_randomNameLength - se_randomNameLengthRandomMin + 1);
+    }
+
     std::string randomStr;
     randomStr.resize(length);
     for (int i = 0; i < length; i++)
@@ -5870,6 +5900,65 @@ tString randomName()
         int index = rand() % charset.length();
         randomStr[i] = charset[index];
     }
+    return tString(randomStr);
+}
+
+
+tString randomNameSmart() 
+{
+    std::string vowels = "aeiou";
+    std::string consonants = "bcdfghjklmnpqrstvwxyz";
+    
+    int length = se_randomNameLength;
+
+    if (se_randomNameLengthRandom) 
+    {
+        if (se_randomNameLength < se_randomNameLengthRandomMin)
+        {
+            return randomName();
+        }
+
+        length = se_randomNameLengthRandomMin + rand() % (se_randomNameLength - se_randomNameLengthRandomMin + 1);
+    }
+
+    std::string randomStr;
+    
+    int prefixLength = 1 + (rand() % 2);
+    for (int i = 0; i < prefixLength; ++i)
+    {
+        randomStr += consonants[rand() % consonants.size()];
+        randomStr += vowels[rand() % vowels.size()];
+    }
+
+    while (randomStr.size() < length - 2) 
+    {
+        if (rand() % 2)
+        {
+            randomStr += consonants[rand() % consonants.size()];
+            randomStr += vowels[rand() % vowels.size()];
+        }
+        else 
+        {
+            randomStr += vowels[rand() % vowels.size()];
+            randomStr += consonants[rand() % consonants.size()];
+        }
+    }
+
+    if (randomStr.size() < length && !randomStr.empty())
+    {
+        char lastChar = randomStr.back();
+        if (vowels.find(lastChar) != std::string::npos)
+            randomStr += consonants[rand() % consonants.size()];
+        else
+            randomStr += vowels[rand() % vowels.size()];
+    }
+
+    while (randomStr.size() < length)
+        randomStr += vowels[rand() % vowels.size()];
+
+    while (randomStr.size() > length)
+        randomStr.pop_back();
+
     return tString(randomStr);
 }
 
@@ -10444,7 +10533,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
             if (bool(p) && in_game) // update
             {
 
-                bool playerAlive = (p->Object() && p->Object()->Alive());
+                //bool playerAlive = (p->Object() && p->Object()->Alive());
 
                 if (se_forceJoinTeam && !bool(p->currentTeam))
                 {
@@ -10585,8 +10674,13 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     newName = pingName;
                 }
 
-                if (se_randomName && tIsInList(se_randomNameEnabledPlayers, p->pID + 1))
-                    newName = randomName();
+                if (forceRandomRename || tIsInList(se_randomNameEnabledPlayers, p->pID + 1))
+                {
+                    if (se_randomNameSmart || forceRandomRename)
+                        newName = randomNameSmart();
+                    else if (se_randomName)
+                        newName = randomName();
+                }
 
                 if ((sn_GetNetState() == nSTANDALONE ||
                      (sn_GetNetState() == nCLIENT && sn_Connections[0].version.Max() == 18)) &&
@@ -10652,8 +10746,12 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     p->RequestSync();
                 }
 
-                if (!playerAlive || ignoreAlive)
+                if (!updatedThisRound || ignoreAlive)
+                {
                     p->SetName(newName);
+                    if (!updatedThisRound)
+                        updatedThisRound = true;
+                }
 
                 local_p->updateIteration++;
                 if (se_forceSync)
@@ -12629,6 +12727,15 @@ static tConfItem<REAL> se_avoidPlayerWatchActionTimeConf = HelperCommand::tConfI
 tString se_avoidPlayerWatchList("");
 static tConfItem<tString> se_avoidPlayerWatchListConf = HelperCommand::tConfItem("PLAYER_WATCH_AVOID_LIST", se_avoidPlayerWatchList);
 
+bool forceRandomRename = false;
+static tConfItem<bool> forceRandomRenameConf = HelperCommand::tConfItem("FORCERANDOMRENAME", forceRandomRename);
+
+bool se_playerWatchAutoRandomName = false;
+static tConfItem<bool> se_playerWatchAutoRandomNameConf = HelperCommand::tConfItem("PLAYER_WATCH_RANDOM_NAME_AUTO", se_playerWatchAutoRandomName);
+
+REAL se_playerWatchAutoRandomNameRevertTime = 900;
+static tConfItem<REAL> se_playerWatchAutoRandomNameRevertTimeConf = HelperCommand::tConfItem("PLAYER_WATCH_RANDOM_NAME_AUTO_REVERT_WAIT_SECONDS", se_playerWatchAutoRandomNameRevertTime);
+
 bool avoidPlayerInGame(tString name)
 {
     if (!name.empty())
@@ -12722,7 +12829,7 @@ void ePlayerNetID::UpdateName(void)
         if (!nameFirstSync)
         {
             lastName = name_;
-
+            name_    = newName;
             if (se_playerStats)
                 ePlayerStats::playerRenamed(this);
         }
@@ -14281,3 +14388,14 @@ void ePlayerNetID::RespawnPlayer(bool local)
     }
 }
 
+std::deque<tString> MessageTracker::outgoingMessages;
+std::deque<tString> MessageTracker::incomingMessages;
+const size_t MessageTracker::maxSize = 4;
+
+
+static void se_checkSilenced(std::istream &s)
+{
+    con << "SILENCED? " << MessageTracker::CheckIfSilenced() << "\n";
+}
+
+static tConfItemFunc se_checkSilencedC("CHECKSILENCED", &se_checkSilenced);

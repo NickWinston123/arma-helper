@@ -1629,7 +1629,7 @@ void login_deny_handler(nMessage &m){
     if (sn_GetNetState()!=nSERVER)
     {
 
-        sn_bannedWatchAction();
+        sn_bannedWatchAction(sn_DenyReason);
 
         login_failed=true;
         login_succeeded=false;
@@ -3482,16 +3482,20 @@ static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WA
 static tString sg_playerSpamProtectionWatchSearchString("");
 static tConfItem<tString> sg_playerSpamProtectionWatchSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_SEARCH_STRING", sg_playerSpamProtectionWatchSearchString);
 
-bool sg_playerSilenced = false;
-static tConfItem<bool> sg_playerSilencedConf("PLAYER_WATCH_SILENCED", sg_playerSilenced);
-bool sg_playerSilencedQuit = false;
-static tConfItem<bool> sg_playerSilencedQuitConf("PLAYER_WATCH_SILENCED_QUIT", sg_playerSilencedQuit);
-bool sn_playerSilencedWatchQuitWaitForAvoidPlayers = false;
-static tConfItem<bool> sn_playerSilencedWatchQuitWaitForAvoidPlayersConf("PLAYER_WATCH_SILENCED_QUIT_WAIT_FOR_AVOID_PLAYERS", sn_playerSilencedWatchQuitWaitForAvoidPlayers);
-
 static bool currentlySuspended = false;
 static bool currentlySilenced = false;
 
+bool validateSuspended()
+{
+    for (auto localnetp : se_GetLocalPlayers())
+    {
+        ePlayer *localp = ePlayer::NetToLocalPlayer(localnetp);
+        if (localnetp && !localp->spectate && !localnetp->CurrentTeam())
+            return true;
+    }
+
+    return false;
+}
 static void sn_ConsoleOut_handler(nMessage &m)
 {
     if (sn_GetNetState() != nSERVER)
@@ -3500,15 +3504,17 @@ static void sn_ConsoleOut_handler(nMessage &m)
     m >> s;
     con << s;
 
-    if (sg_playerSilenced)
+    if (sg_playerSilencedWatch)
     {
-        if (s.Contains(tString("silenced by the server administrator.")))
-            sn_quitAction(true, sg_playerSilencedQuit);
+        if (s.Contains(tString("silenced by the server administrator.")) && MessageTracker::CheckIfSilenced())
+        {
+            sn_quitAction(true, sg_playerSilencedWatchQuit);
+        }
     }
-    
+
     if (sn_playerSuspendWatch)
     {
-        if (s.Contains(tString("suspended from playing for the next")) && (!sn_playerSuspendWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame()) )
+        if (s.Contains(tString("suspended from playing for the next")) && validateSuspended() && (!sn_playerSuspendWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame()) )
             sn_quitAction(true, sn_playerSuspendWatchQuit);
     }
 
@@ -5763,9 +5769,20 @@ std::vector<unsigned short> nMessage::nMessageToDataVector(nMessage& msg) {
 }
 
 #include "../tron/gGame.h"
-void sn_quitAction(bool save, bool quit)
+void sn_quitAction(bool save, bool quit, tString message)
 {
-    FileManager(tString("banned.txt"), tDirectories::Var()).Write(tString("banned"));
+    FileManager(tString("banned.txt"), tDirectories::Var()).Write(message);
+
+    if (se_playerStats)
+    {
+        eChatBotStats &stats = eChatBot::getInstance().Stats();
+
+        stats.last_banned = time(nullptr); 
+        stats.times_banned++;
+
+        if (se_playerWatchAutoRandomName) 
+            forceRandomRename = true;
+    }
     
     if (save)
         st_SaveConfig();
@@ -5775,11 +5792,11 @@ void sn_quitAction(bool save, bool quit)
         {
             uMenu::quickexit = uMenu::QuickExit_Total;
         });
-
+    
 }
-void sn_bannedWatchAction()
+void sn_bannedWatchAction(tString reason)
 {
-    sn_quitAction(true, sn_bannedWatchQuit);    
+    sn_quitAction(true, sn_bannedWatchQuit, reason);
 }
 
 static void sn_bannedCMD(std::istream &s)

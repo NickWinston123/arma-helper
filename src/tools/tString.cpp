@@ -2561,35 +2561,51 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (days > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") << days << (color ? eChatCommand::MainText() : "") << "D";
+        result << (color ? eChatCommand::ItemText() : "") 
+               << days 
+               << (color ? eChatCommand::MainText() : "") 
+               << "D";
         if (hours || minutes || remainingSeconds || milliseconds)
             result << ":";
     }
 
     if (hours > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") << ((hours < 10) ? "0" : "") << hours << (color ? eChatCommand::MainText() : "") << "H";
+        result << (color ? eChatCommand::ItemText() : "") 
+               << ((hours < 10) ? "0" : "") 
+               << hours 
+               << (color ? eChatCommand::MainText() : "") 
+               << "H";
         if (minutes || remainingSeconds || milliseconds)
             result << ":";
     }
 
     if (minutes > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") << ((minutes < 10) ? "0" : "") << minutes << (color ? eChatCommand::MainText() : "") << "M";
+        result << (color ? eChatCommand::ItemText() : "") 
+               << ((minutes < 10) ? "0" : "") 
+               << minutes << (color ? eChatCommand::MainText() : "") 
+               << "M";
         if (remainingSeconds || milliseconds)
             result << ":";
     }
 
     if (remainingSeconds > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") << ((remainingSeconds < 10) ? "0" : "") << remainingSeconds << (color ? eChatCommand::MainText() : "") << "S";
+        result << (color ? eChatCommand::ItemText() : "") 
+               << ((remainingSeconds < 10) ? "0" : "") 
+               << remainingSeconds << (color ? eChatCommand::MainText() : "") 
+               << "S";
         if (milliseconds)
             result << ":";
     }
 
     if (milliseconds > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") << milliseconds << (color ? eChatCommand::MainText() : "") << "MS";
+        result << (color ? eChatCommand::ItemText() : "") 
+               << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") 
+               << milliseconds << (color ? eChatCommand::MainText() : "") 
+               << "MS";
     }
 
     if (result.empty())
@@ -2633,6 +2649,9 @@ bool st_StringEndsWith( tString const & test, char const * end )
 
 bool tString::Contains(tString tofind)
 {
+    RecomputeLength();
+    tofind.RecomputeLength();
+    
     // if the length of tofind longer than the string, quit it!
     if (tofind.Len() > Len())
         return false;

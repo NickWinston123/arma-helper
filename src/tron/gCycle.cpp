@@ -351,6 +351,12 @@ static tConfItem<REAL> sg_smarterBotAFKCheckTimeConf = HelperCommand::tConfItem(
 bool sg_smarterBotAFKCheckIfChatting = true;
 static tConfItem<bool> sg_smarterBotAFKCheckIfChattingConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_IF_CHATTING", sg_smarterBotAFKCheckIfChatting);
 
+bool sg_smarterBotAFKCheckQuit = false;
+static tConfItem<bool> sg_smarterBotAFKCheckQuitConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_QUIT", sg_smarterBotAFKCheckQuit);
+
+REAL sg_smarterBotAFKCheckQuitTime = 300;
+static tConfItem<REAL> sg_smarterBotAFKCheckQuitTimeConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_QUIT_TIME", sg_smarterBotAFKCheckQuitTime);
+
 static REAL sg_lastTimeHackMult = 0;
 static tConfItem<REAL> sg_lastTimeHackMultConf = HelperCommand::tConfItem("CYCLE_LAST_TIME_HACK_ADD", sg_lastTimeHackMult);
 
@@ -1245,11 +1251,11 @@ void gSmarterBot::Survive(gCycle *owner)
 REAL gSmarterBot::annoyanceCheck()
 {
     if (!owner_ || !owner_->Alive())
-        return false;
+        return 0.0;
 
-    ePlayerNetID* alivePlayer = nullptr;
     int alivePlayerCount = 0;
     int totalPlayerCount = 0;
+    int totalChattingPlayers = 0;
 
     for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
     {
@@ -1261,44 +1267,28 @@ REAL gSmarterBot::annoyanceCheck()
             totalPlayerCount++;
             if (other && other->Alive())
             {
-                if (alivePlayer)
-                {
-                    alivePlayerCount++;
-                    break;
-                }
-                alivePlayer = se_PlayerNetIDs[i];
+                if (se_PlayerNetIDs[i]->ChattingTime() > sg_smarterBotAFKCheckTime) 
+                    totalChattingPlayers++;
+
                 alivePlayerCount++;
             }
         }
     }
 
-    // con << "Total players: " << totalPlayerCount << ", Alive players: " << alivePlayerCount << "\n";
-
-    if (alivePlayerCount == 1 && totalPlayerCount > 1 && alivePlayer)
+    if (alivePlayerCount == 1 && totalPlayerCount > 1)
     {
-        if (!sg_smarterBotAFKCheckIfChatting || (alivePlayer->ChattingTime() > sg_smarterBotAFKCheckTime) )
+        if (!sg_smarterBotAFKCheckIfChatting)
         {
-            tString output;
-            if (!sg_smarterBotAFKCheckIfChatting)
-                output << "SmarterBot: You were the last player alive.\n";
-            else
-                output << "SmarterBot: The alive player is chatting for too long.\n";
-
-            con << output;
+            con << "SmarterBot: You were the last player alive.\n";
             return sg_smarterBotAFKCheckTime;
         }
-
-        if (alivePlayer->isLocal() && alivePlayer->NetPlayerToCycle())
+        else if (totalChattingPlayers == alivePlayerCount) 
         {
-            double timeSinceLastTurn = se_GameTime() - alivePlayer->NetPlayerToCycle()->lastTurnTime;
-            if (timeSinceLastTurn > sg_smarterBotAFKCheckTime)
-            {
-                con << "SmarterBot: The alive player hasn't turned for too long.\n";
-                return sg_smarterBotAFKCheckTime;
-            }
+            con << "SmarterBot: The alive player is chatting for too long.\n";
+            return sg_smarterBotAFKCheckTime;
         }
     }
-    return 0;
+    return 0.0;
 }
 
 bool gSmarterBot::chattingSmartDisable()
@@ -1318,6 +1308,17 @@ bool gSmarterBot::chattingSmartDisable()
     return false;
 }
 
+bool gSmarterBot::afkQuitCheck()
+{
+    REAL timeSinceLastTurn = tSysTimeFloat() - owner_->lastTurnSysTime;
+    if (timeSinceLastTurn > sg_smarterBotAFKCheckQuitTime)
+    {
+        sn_quitAction(true, true);
+        return true;
+    }
+    return false;
+}
+
 REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
 {
     if (!local_player)
@@ -1326,7 +1327,17 @@ REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
     if (sg_smarterBotChattingSmartDisable && chattingSmartDisable())
         return 0;
 
-    if (sg_smarterBotAFKCheck && nextAFKCheck_ < tSysTimeFloat())
+    REAL time = tSysTimeFloat();
+
+    if (sg_smarterBotAFKCheckQuit && nextAFKQuitCheck_ < time) 
+    {
+        if (afkQuitCheck())
+            return 100;
+        else
+            nextAFKQuitCheck_ = time + sg_smarterBotAFKCheckQuitTime;
+    }
+    
+    if (sg_smarterBotAFKCheck && nextAFKCheck_ < time)
     {
         REAL nextTime = annoyanceCheck();
         if (nextTime != 0)
@@ -1335,15 +1346,15 @@ REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
                 owner_->Turn(1);
 
             owner_->smartBotSuicide = true;
-            nextAFKCheck_ = tSysTimeFloat() + nextTime;
+            nextAFKCheck_ = time + nextTime;
             return 5;
         }
         else
         {
-            nextAFKCheck_ = tSysTimeFloat() + sg_smarterBotAFKCheckTime;
+            nextAFKCheck_ = time + sg_smarterBotAFKCheckTime;
         }
     }
-
+    
 
     UpdatePaths();
     EvaluationManager manager(GetPaths());
@@ -6738,6 +6749,9 @@ extern REAL sg_cycleBrakeDeplete;
 bool sg_playerMessageDeathSelf = false;
 static tConfItem<bool> sg_playerMessageDeathSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_SELF", sg_playerMessageDeathSelf);
 
+bool sg_playerMessageDeathSelfBotSuicide = false;
+static tConfItem<bool> sg_playerMessageDeathSelfBotSuicideConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_SELF_BOT_SUI", sg_playerMessageDeathSelfBotSuicide);
+
 bool sg_playerMessageDeathOther = false;
 static tConfItem<bool> sg_playerMessageDeathOtherConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_OTHER", sg_playerMessageDeathOther);
 
@@ -6903,8 +6917,12 @@ void gCycle::ReadSync(nMessage &m)
             }
 
             if (Player()) {
-                if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently && !smartBotSuicide)
-                    eChatBot::InitiateAction(killer,tString("$died"),true);
+                if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently){
+                    if (!smartBotSuicide)
+                        eChatBot::InitiateAction(killer,tString("$died"),true);
+                    else if (sg_playerMessageDeathSelfBotSuicide)
+                        eChatBot::InitiateAction(killer,tString("$diedbotsui"),true);
+                }
                 else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
                     eChatBot::InitiateAction(killer,tString("$diedother"),true);
             }

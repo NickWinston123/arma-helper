@@ -3522,6 +3522,7 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
         if (helperSmartTurning && !botTurn && playerIsMe)
         {
             this->lastTurnTime = currentTime;
+            this->lastTurnSysTime = tSysTimeFloat();
             this->lastTurnDir = dir;
         }
 

@@ -13,6 +13,7 @@
 #include "../tron/gHelper/gHelperUtilities.h"
 
 #include "eTimer.h"
+#include "eChatBot.h"
 
 extern bool se_playerStats, se_playerStatsLog;
 
@@ -20,22 +21,27 @@ std::vector<std::string> deserializeVector(const std::string &str);
 std::string serializeVector(const std::vector<std::string> &vec);
 std::string join(const std::vector<std::string> &vec, const std::string &delimiter);
 
+extern bool se_playerStatsLocalForcedName;
+
 class PlayerDataBase
 {
 public:
     // Player
     int r,g,b;
     tString name;
-    int total_messages   = 0;
-    REAL total_play_time = 0;
-    REAL total_spec_time = 0;
-    int times_joined     = 0;
-    time_t last_seen     = 0;
+    int total_messages     = 0;
+    REAL total_play_time   = 0;
+    REAL total_spec_time   = 0;
+    int times_joined       = 0;
+    time_t last_seen       = 0;
+    bool is_local          = false;
+    bool human             = true;
+    bool in_server         = false;
+    bool seen_this_session = false;
 
     std::vector<std::string> chat_messages;
     std::vector<std::string> privated_stats;
 
-    bool human = true;
 
     tString rgbString()
     {
@@ -51,19 +57,20 @@ public:
     }
 
     // Cycle
-    int kills           = 0;
-    int deaths          = 0;
-    int match_wins      = 0;
-    int match_losses    = 0;
-    int round_wins      = 0;
-    int round_losses    = 0;
-    int rounds_played   = 0;
-    int matches_played  = 0;
-    int total_score     = 0;
-    REAL fastest_speed  = 0;
-
-    bool in_server      = false;
-    bool seen_this_session = false;
+    int kills               = 0;
+    int deaths              = 0;
+    int match_wins          = 0;
+    int match_losses        = 0;
+    int round_wins          = 0;
+    int round_losses        = 0;
+    int rounds_played       = 0;
+    int matches_played      = 0;
+    int total_score         = 0;
+    REAL fastest_speed      = 0;
+    int current_kill_streak = 0;
+    int max_kill_streak     = 0;
+    int kills_while_dead    = 0;
+    bool alive              = false;
 
     REAL getLastSeenAgo()
     {
@@ -289,9 +296,33 @@ class ePlayerStats
 {
 public:
 
+    static bool shouldEnforceLocalName(ePlayerNetID * player)
+    {
+        return player->isLocal() && se_playerStatsLocalForcedName;
+    }
+
+    static tString getEnforcedLocalName(ePlayerNetID * player)
+    {
+        ePlayer * local_p = ePlayer::NetToLocalPlayer(player);
+        tString name;
+        name << local_p->Name();
+
+        if (local_p)
+            return name.ToLower();
+
+        return tString("");
+    }
+
     static PlayerData& getStats(ePlayerNetID * player)
     {
-        return playerStatsMap[player->GetRealName().ToLower()];
+        tString name;
+
+        if (shouldEnforceLocalName(player))
+            name << getEnforcedLocalName(player);
+        else
+            name << player->GetRealName().ToLower();
+
+        return playerStatsMap[name];
     }
 
     static PlayerData& getStats(tString playerName)
@@ -312,6 +343,13 @@ public:
 
             if (currentNameLower == playerNameLower)
             {
+                if (se_playerStatsLocalForcedName)
+                {
+                    ePlayerNetID *ourPlayer = ePlayerNetID::GetPlayerByRealName(playerName, false);
+                    if (shouldEnforceLocalName(ourPlayer))
+                        return playerStatsMap[getEnforcedLocalName(ourPlayer)];
+                }
+
                 return playerStatsMap[kv.first];
             }
         }
@@ -329,7 +367,7 @@ public:
                 matchedPlayers.push_back(kv);
             }
         }
-
+        
         if (!matchedPlayers.empty())
         {
             std::sort(matchedPlayers.begin(), matchedPlayers.end(),
@@ -353,13 +391,26 @@ public:
 
     static void addKill(ePlayerNetID *player)
     {
-        playerStatsMap[player->GetRealName().ToLower()].kills++;
+        PlayerData &stats = getStats(player);
+
+        if (!stats.alive)
+            stats.kills_while_dead++;
+
+        stats.kills++;
+        stats.current_kill_streak++;
+        if (stats.current_kill_streak > stats.max_kill_streak)
+            stats.max_kill_streak = stats.current_kill_streak;
     }
 
-    static void addDeath(ePlayerNetID * player)
+
+    static void addDeath(ePlayerNetID *player)
     {
-        playerStatsMap[player->GetRealName().ToLower()].deaths++;
+        PlayerData &stats = getStats(player);
+        stats.deaths++;
+        stats.current_kill_streak = 0;
+        stats.alive = false;
     }
+
 
     static void addMatchWin(ePlayerNetID * player)
     {
@@ -408,7 +459,8 @@ public:
 
     static void setColor(ePlayerNetID * player, int r, int g, int b)
     {
-        tString name = player->GetRealName().ToLower();
+        tString name;
+        name << ((shouldEnforceLocalName(player) ? getEnforcedLocalName(player) : player->GetRealName().ToLower()));
 
         PlayerData &stats = playerStatsMap[name];
         stats.r = r;
@@ -422,25 +474,30 @@ public:
         setColor(player, player->r, player->g, player->b);
     }
 
-    static void playerInit(PlayerData &stats, bool isHuman )
+    static void playerInit(PlayerData &stats, bool isHuman, bool isLocal, bool enforceLocalName )
     {
         stats.times_joined++;
         stats.last_seen = time(NULL);
         stats.human = isHuman;
+        stats.is_local = isLocal;
         stats.in_server = true;
 
         if (!stats.seen_this_session)
             players_record_this_session++;
         stats.seen_this_session = true;
+        stats.current_kill_streak = 0;
     }
 
     static void playerRenamed(ePlayerNetID *player)
     {
+        if (shouldEnforceLocalName(player))
+            return;
+
         PlayerData &oldStats = getStats(player->lastName);
         PlayerData &newStats = getStats(player);
 
         playerLeft(oldStats);
-        playerInit(newStats, player->IsHuman());
+        playerInit(newStats, player->IsHuman(), player->isLocal(), false);
         setColor(player);
 
     }
@@ -448,7 +505,7 @@ public:
     static void playerJoined(ePlayerNetID * player)
     {
         PlayerData &stats = getStats(player);
-        playerInit(stats, player->IsHuman());
+        playerInit(stats, player->IsHuman(), player->isLocal(), shouldEnforceLocalName(player));
         setColor(player);
     }
 
@@ -462,6 +519,7 @@ public:
     {
         stats.last_seen = time(NULL);
         stats.in_server = false;
+        stats.current_kill_streak = 0;
     }
 
     static void addScore(ePlayerNetID * player, int score)
@@ -477,6 +535,7 @@ public:
 
         if (!message.empty())
             stats.chat_messages.push_back(message.stdString());
+
         stats.total_messages++;
     }
 
@@ -501,30 +560,35 @@ public:
 using PlayerDataColumnMapping = ColumnMapping<PlayerData>;
 extern const std::vector<PlayerDataColumnMapping > ePlayerStatsMappings;
 
-class ePlayerStatsDBAction  : public tDatabase<PlayerData, PlayerDataColumnMapping > {
+class ePlayerStatsDBAction  : public tDatabase<PlayerData, PlayerDataColumnMapping >
+{
 public:
     ePlayerStatsDBAction (sqlite3* db)
         : tDatabase<PlayerData, PlayerDataColumnMapping >(db, "ePlayerStats", ePlayerStatsMappings) {}
 
-    PlayerData& getTargetObject(const tString &name) override {
+    PlayerData& getTargetObject(const tString &name) override
+    {
         return ePlayerStats::getStats(name);
     }
 
-std::vector<PlayerData> getAllObjects() override {
-    std::vector<PlayerData> playerDataVec;
-    for (auto& pair : ePlayerStats::playerStatsMap)
+    std::vector<PlayerData> getAllObjects() override
     {
-        pair.second.name = pair.first;
-        playerDataVec.push_back(pair.second);
-    }
-    return playerDataVec;
-}
+        std::vector<PlayerData> playerDataVec;
+        for (auto& pair : ePlayerStats::playerStatsMap)
+        {
+            PlayerData &stats = pair.second;
 
-    void postLoadActions(PlayerData& playerData) override {
+            stats.name = pair.first;
+            if (stats.rounds_played >= 1 || stats.total_spec_time >= 100 )
+                playerDataVec.push_back(stats);
+        }
+        return playerDataVec;
+    }
+
+    void postLoadActions(PlayerData& playerData) override
+    {
         playerData.data_from_db = playerData;
     }
 };
-
-
 
 #endif

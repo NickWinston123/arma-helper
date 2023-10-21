@@ -25,6 +25,8 @@ struct eChatBotStatsBase
     tString name = tString("hackermans");
     int total_messages_read = 0;
     int total_messages_sent = 0;
+    int times_banned        = 0;
+    time_t last_banned      = 0;
     REAL total_up_time      = 0;
     tString lastMatchedTrigger;
     tString lastTriggerType;
@@ -111,6 +113,29 @@ public:
         return stats;
     }
 
+    void roundEndAnalyzeBanStatus()
+    {
+        int num_spectators = 0;
+
+        for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
+        {
+            ePlayerNetID *p = se_PlayerNetIDs(i);
+            if (p && p->IsHuman() && p->IsSpectating())
+            {
+                num_spectators++;
+            }
+        }
+
+        time_t now = time(nullptr);        
+        time_t difference = now - Stats().last_banned;
+
+        if(difference > se_playerWatchAutoRandomNameRevertTime && Stats().total_up_time > se_playerWatchAutoRandomNameRevertTime && num_spectators == 0) 
+        {
+            forceRandomRename = false;
+        }
+    }
+
+
     bool masterFuncResponse = false;
     std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString chatMessage, bool eventTrigger);
     static bool InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger = false, tString preAppend = tString(""));
@@ -122,20 +147,24 @@ public:
 };
 
 #include "tDatabase.h"
-class eChatBotStatsDBAction : public tDatabase<eChatBotStats, ChatBotColumnMapping> {
+class eChatBotStatsDBAction : public tDatabase<eChatBotStats, ChatBotColumnMapping> 
+{
 public:
     eChatBotStatsDBAction(sqlite3* db)
         : tDatabase<eChatBotStats, ChatBotColumnMapping>(db, "eChatBotStats", eChatBotStats::eChatBotStatsMappings) {}
 
-    eChatBotStats& getTargetObject(const tString &name) override {
+    eChatBotStats& getTargetObject(const tString &name) override 
+    {
         return eChatBot::getInstance().Stats();
     }
 
-    std::vector<eChatBotStats> getAllObjects() override {
+    std::vector<eChatBotStats> getAllObjects() override 
+    {
         return {eChatBot::getInstance().Stats()};
     }
 
-    void postLoadActions(eChatBotStats& chatBotStats) override {
+    void postLoadActions(eChatBotStats& chatBotStats) override 
+    {
         chatBotStats.data_from_db = chatBotStats;
     }
 };

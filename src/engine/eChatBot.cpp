@@ -79,6 +79,7 @@ tString numberAdderFunc(tString message)
 {
     std::string input(message.stdString());
 
+
     bool isNegative = input[0] == '-';
     size_t idx = isNegative ? 1 : 0;
 
@@ -92,27 +93,37 @@ tString numberAdderFunc(tString message)
             fracPart += input[idx++];
     }
 
-    if (intPart == "0")
-        isNegative = false;
+    bool originalIsNegativeZero = isNegative && intPart.empty();
 
-    int carry = isNegative ? -se_playerMessageTriggersFuncAdderVal : se_playerMessageTriggersFuncAdderVal;
+    int carry;
+    if (originalIsNegativeZero) {
+        carry = se_playerMessageTriggersFuncAdderVal;
+    } else {
+        carry = isNegative ? -se_playerMessageTriggersFuncAdderVal : se_playerMessageTriggersFuncAdderVal;
+    }
 
-    for (int i = fracPart.size() - 1; i >= 0 && carry != 0; i--)
-    {
+    for (int i = fracPart.size() - 1; i >= 0; i--) {
         int sum = (fracPart[i] - '0') + carry;
-        carry = sum < 0 ? -1 : sum / 10;
-        fracPart[i] = '0' + (sum < 0 ? 10 + sum : sum % 10);
+        carry = sum / 10;
+        fracPart[i] = '0' + (sum % 10);
     }
 
-    for (int i = intPart.size() - 1; i >= 0 && carry != 0; i--)
-    {
+    if (intPart.empty()) intPart = "0";
+
+    for (int i = intPart.size() - 1; i >= 0 && carry != 0; i--) {
         int sum = (intPart[i] - '0') + carry;
-        carry = sum < 0 ? -1 : sum / 10;
-        intPart[i] = '0' + (sum < 0 ? 10 + sum : sum % 10);
+        carry = sum / 10;
+        intPart[i] = '0' + (sum % 10);
     }
 
-    if (carry != 0)
-        intPart = (carry == -1 ? "-" : "") + std::to_string(std::abs(carry)) + intPart;
+    while (carry != 0) {
+        intPart = char('0' + (carry % 10)) + intPart;
+        carry /= 10;
+    }
+
+    if (originalIsNegativeZero && !fracPart.empty() && fracPart == "0") {
+        isNegative = true;
+    }
 
     std::string result = isNegative ? "-" : "";
     result += intPart;
@@ -231,11 +242,11 @@ tString statsFunc(tString message)
 
         PlayerData *stats;
         if (statsTargetPlayer)
-            stats = &ePlayerStats::getStats(playerName);
+            stats = &ePlayerStats::getStats(statsTargetPlayer);
         else
             stats = &ePlayerStats::getStatsForAnalysis(playerName);
 
-        output << (!statsTargetPlayer ? (!stats->name.empty() ? stats->name : playerName) : playerName)
+        output << (!statsTargetPlayer || ePlayerStats::shouldEnforceLocalName(statsTargetPlayer) ? (!stats->name.empty() ? stats->name : playerName) : playerName)
                 << ": ";
 
         bool playingPlayer = statsTargetPlayer && statsTargetPlayer->CurrentTeam();
@@ -408,11 +419,11 @@ tString playerKDFunc(tString message)
     {
         PlayerData *stats;
         if (statsTargetPlayer)
-            stats = &ePlayerStats::getStats(playerName);
+            stats = &ePlayerStats::getStats(statsTargetPlayer);
         else
             stats = &ePlayerStats::getStatsForAnalysis(playerName);
 
-        tString displayName = (!statsTargetPlayer ? (!stats->name.empty() ? stats->name : playerName) : playerName);
+        tString displayName = (!statsTargetPlayer || ePlayerStats::shouldEnforceLocalName(statsTargetPlayer) ? (!stats->name.empty() ? stats->name : playerName) : playerName);
         output << displayName << ": ";
 
         std::vector<tString> orderedKeys =
@@ -426,7 +437,7 @@ tString playerKDFunc(tString message)
             tString("matches_played"),
             tString("match_wins"),
             tString("match_losses"),
-            tString("total_score")
+            //tString("total_score")
         };
 
         std::vector<tString> separators =
@@ -439,7 +450,7 @@ tString playerKDFunc(tString message)
             tString(" | Matches- "),
             tString(", "),
             tString(", "),
-            tString(" | Score: ")
+            //tString(" | Score: ")
         };
 
         for (size_t i = 0; i < orderedKeys.size(); ++i)
@@ -462,8 +473,8 @@ tString playerKDFunc(tString message)
                 label = "Wins";
             else if (key == "match_losses")
                 label = "Losses";
-            else if (key == "total_score")
-                label = "";
+            //else if (key == "total_score")
+            //    label = "";
 
             if (i != 0)
                 output << separators[i - 1];
@@ -527,19 +538,30 @@ tString leaderboardFunc(tString message)
     if (page <= 0)
         page = 1;
 
-    std::vector<std::pair<tString, PlayerData>> sortedPlayers(ePlayerStats::playerStatsMap.begin(), ePlayerStats::playerStatsMap.end());
-
-    auto it = std::remove_if(sortedPlayers.begin(), sortedPlayers.end(),
-                             [](const std::pair<tString, PlayerData>& player)
-                             {
-                                 return !player.second.human;
-                             });
-    sortedPlayers.erase(it, sortedPlayers.end());
-
     bool lastSeenStat = (statLabel == "Last Seen");
     bool showLabel = !desiredStatChoosen || se_playerMessageTriggersLeaderboardLabels;
     bool playTimeStat = (statLabel == "Play Time");
     bool specTimeStat = (statLabel == "Spec Time");
+    bool currentKillStreakStat = (statLabel == "Current Kill Streak");
+
+
+    bool penalizePlayersNotInGame = false;
+    bool ignorePlayersNotInGame = false;
+
+    if (lastSeenStat)
+        penalizePlayersNotInGame = true;
+    if (currentKillStreakStat)
+        ignorePlayersNotInGame = true;
+
+    std::vector<std::pair<tString, PlayerData>> sortedPlayers(ePlayerStats::playerStatsMap.begin(), ePlayerStats::playerStatsMap.end());
+    auto it = std::remove_if(sortedPlayers.begin(), sortedPlayers.end(),
+                             [ignorePlayersNotInGame](const std::pair<tString, PlayerData>& player)
+                             {
+                                 return !player.second.human || (ignorePlayersNotInGame && !player.second.in_server);
+                             });
+
+    sortedPlayers.erase(it, sortedPlayers.end());
+
 
     if (showLabel)
     {
@@ -548,7 +570,7 @@ tString leaderboardFunc(tString message)
             showLabel = false;
     }
 
-    auto sortUsingGetAnyValue = [&statName, &statLabel, &lastSeenStat, &playTimeStat, &specTimeStat](auto &a, auto &b)
+    auto sortUsingGetAnyValue = [&statName, &statLabel, &penalizePlayersNotInGame, &playTimeStat, &specTimeStat](auto &a, auto &b)
     {
         bool aPrivate = a.second.privateStat(statLabel);
         bool bPrivate = b.second.privateStat(statLabel);
@@ -556,7 +578,7 @@ tString leaderboardFunc(tString message)
         if (aPrivate && !bPrivate) return false;
         if (!aPrivate && bPrivate) return true;
 
-        if (lastSeenStat)
+        if (penalizePlayersNotInGame)
         {
             if (a.second.in_server && b.second.in_server)
                 return a.second.last_seen < b.second.last_seen;
@@ -601,6 +623,11 @@ tString leaderboardFunc(tString message)
 
     int totalPages = (sortedPlayers.size() + playersPerPage - 1) / playersPerPage;
 
+    if (showLabel)
+    {
+        result << statLabel << ": ";
+    }
+
     for (int i = startIdx; i < endIdx; ++i)
     {
         PlayerData &stats = sortedPlayers[i].second;
@@ -625,14 +652,7 @@ tString leaderboardFunc(tString message)
         {
             value << "?";
         }
-        result << " ("
-               << value;
-        if (showLabel)
-        {
-            result << " " << statLabel;
-        }
-        result << ")";
-
+        result << " (" << value << ")";
     }
     result << " (" << page << "/" << totalPages << ")\n";
 
@@ -686,7 +706,7 @@ tString exactStatFunc(tString message)
 
     PlayerData *stats;
     if (statsTargetPlayer)
-        stats = &ePlayerStats::getStats(playerName);
+        stats = &ePlayerStats::getStats(statsTargetPlayer);
     else
         stats = &ePlayerStats::getStatsForAnalysis(playerName);
 
@@ -710,7 +730,7 @@ tString exactStatFunc(tString message)
     }
 
     if (!statValue.empty() || statLabel == "Chats" || statLabel == "Hidden Stats")
-        output << (!stats->name.empty() ? (!stats->name.empty() ? stats->name: playerName) : playerName)
+        output << (!stats->name.empty() ? stats->name : playerName)
                << ": "
                << statLabel
                << " - "
@@ -776,7 +796,7 @@ tString hideStatFunc(tString message)
     ePlayerNetID *triggeredBy = chatBotStats.lastTriggeredBy;
     PlayerData &stats = ePlayerStats::getStats(triggeredBy);
     int pos = 0;
-    tString desiredAction = message.ExtractNonBlankSubString(pos); 
+    tString desiredAction = message.ExtractNonBlankSubString(pos);
 
     if (desiredAction.empty())
     {
@@ -870,6 +890,38 @@ tString hideStatFunc(tString message)
     return output;
 }
 
+time_t getStartTimeOfDay()
+{
+    time_t now;
+    struct tm newyear;
+    double seconds;
+
+    time(&now);  /* get current time; same as: now = time(NULL)  */
+    newyear = *localtime(&now);
+
+    newyear.tm_hour = 0;
+    newyear.tm_min = 0;
+    newyear.tm_sec = 0;
+
+    return mktime(&newyear);
+}
+
+time_t getStartOfCurrentHour()
+{
+    time_t now;
+    struct tm hourStart;
+    double seconds;
+
+    time(&now);
+    hourStart = *localtime(&now);
+
+    hourStart.tm_min = 0;
+    hourStart.tm_sec = 0;
+
+    return mktime(&hourStart);
+}
+
+
 tString whatsThefunc(tString message)
 {
     tString output;
@@ -918,7 +970,42 @@ tString whatsThefunc(tString message)
         tString formattedDifference = st_GetFormatTime(difference, false, false);
         output << formattedDifference;
     }
-    
+    else if (target.Contains("current_server"))
+    {
+        nServerInfoBase *connectedServer = CurrentServer();
+        if (connectedServer)
+            output << tColoredString::RemoveColors(connectedServer->GetConnectionName());
+        else 
+            output << "No Server?";
+    }
+    else if (target.Contains("players_today"))
+    {
+        time_t startOfDay = getStartTimeOfDay();
+        
+        int number_of_players = 0;
+        for (auto stats : ePlayerStats::playerStatsMap)
+        {
+            if (stats.second.last_seen >= startOfDay)
+                number_of_players++;
+        }
+
+        output << "Number of players since 12:00AM EST: " << number_of_players << "\n";
+    }
+    else if (target.Contains("players_this_hour"))
+    {
+        time_t startOfHour = getStartOfCurrentHour();
+
+        int number_of_players = 0;
+        for (auto statPair : ePlayerStats::playerStatsMap)
+        {
+            if (statPair.second.last_seen >= startOfHour || statPair.second.in_server)
+                number_of_players++;
+        }
+
+        output << "Number of players since start of this hour: " << number_of_players << "\n";
+    }
+
+
     return output;
 }
 
@@ -992,7 +1079,8 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, 
     if (!bot.ShouldAnalyze())
         return initiated;
 
-    bot.Stats().total_messages_read++;
+    if (!eventTrigger)
+        bot.Stats().total_messages_read++;
 
     auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(triggeredByPlayer, message, eventTrigger);
 
@@ -1644,5 +1732,16 @@ const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings =
     {"total_messages_sent", "INTEGER",
         [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.total_messages_sent); },
         [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.total_messages_sent = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"last_banned", "BIGINT",
+        [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, static_cast<sqlite3_int64>(stats.last_banned)); },
+        [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.last_banned = static_cast<time_t>(sqlite3_column_int64(stmt, col++)); }
+    },
+
+
+    {"times_banned", "INTEGER",
+        [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.times_banned); },
+        [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.times_banned = sqlite3_column_int(stmt, col++); }
     },
 };

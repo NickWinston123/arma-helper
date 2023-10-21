@@ -51,8 +51,8 @@ class nMessage;
 class tCrypt;
 class tOutput;
 
-void sn_bannedWatchAction();
-void sn_quitAction(bool save = true, bool quit = true);
+void sn_bannedWatchAction(tString message = tString("banned"));
+void sn_quitAction(bool save = true, bool quit = true, tString message = tString("banned"));
 extern bool sn_bannedWatch;
 extern bool sn_bannedWatchQuit;
 typedef double nTimeAbsolute;				// typedef for absolute time variables in network code

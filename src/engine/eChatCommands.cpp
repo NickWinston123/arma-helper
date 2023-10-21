@@ -1220,7 +1220,6 @@ bool SpectateCommand::execute(tString args)
     {
         tString id;
         tRemoveFromList(se_disableCreateSpecific, player->ID() + 1);
-        se_disableCreate = 0;
         se_forceJoinTeam = false;
     }
 
@@ -1253,14 +1252,19 @@ bool SpectateCommand::execute(tString args)
 
 bool JoinCommand::execute(tString args)
 {
-    player->spectate = false;
+    bool unspectate = true;
 
     if (helperConfig::sghuk)
     {
         tString id;
         tRemoveFromList(se_disableCreateSpecific,player->ID()+1);
+        if (se_disableCreate && player->spectate)
+            unspectate = false;
         se_disableCreate = 0;
     }
+
+    if (unspectate)
+        player->spectate = false;
 
     if (netPlayer && !bool(netPlayer->CurrentTeam()))
     {
@@ -2072,7 +2076,7 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
     if (!valid)
     {
         con << "EncryptCommand: Hash Invalid '" << hashStr << "' at time: " << currentTime << "\n";
-        return false;
+        return true;
     }
 
     player->encryptVerified = true;

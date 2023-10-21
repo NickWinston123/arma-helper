@@ -4050,6 +4050,7 @@ void gGame::RebuildGrid(int requestedState)
 
 static bool sg_saveConfigOnRoundEnd = false;
 static tConfItem<bool> sg_saveConfigOnRoundEndConf("SAVE_CONFIG_ON_ROUND_END", sg_saveConfigOnRoundEnd);
+bool updatedThisRound = false;
 
 void gGame::StateUpdate()
 {
@@ -4081,9 +4082,14 @@ void gGame::StateUpdate()
         {
         case GS_DELETE_GRID:
             // sr_con.autoDisplayAtNewline=true;
+
+            if (se_playerWatchAutoRandomName)
+                eChatBot::getInstance().roundEndAnalyzeBanStatus();
+
             if (se_playerStats && roundWinnerProcessed)
                 ePlayerStats::updateStatsRoundEnd();
             roundWinnerProcessed = false;
+            updatedThisRound = false;
 #ifdef DEBUG
             con << tOutput("$gamestate_deleting_grid");
 #endif
@@ -4187,8 +4193,8 @@ void gGame::StateUpdate()
 
         case GS_CREATE_GRID:
             // sr_con.autoDisplayAtNewline=true;
-            // if (se_playerStats)
-            //     ePlayerStats::updateStatsRoundStart();
+            if (se_playerStats)
+                ePlayerStats::updateStatsRoundStart();
 
             //  reset ingame timer
             gGameSpawnTimer::Reset();

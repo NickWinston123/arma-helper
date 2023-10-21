@@ -225,6 +225,7 @@ gAINavigator::CycleController::~CycleController() {}
 
 void gAINavigator::CycleControllerBasic::Turn(gCycle &cycle, int dir)
 {
+    cycle.lastTurnSysTime = tSysTimeFloat();
     cycle.Turn(dir);
 }
 
@@ -237,6 +238,7 @@ gAINavigator::CycleControllerBasic::~CycleControllerBasic() {}
 
 void gAINavigator::CycleControllerAction::Turn(gCycle &cycle, int dir)
 {
+    cycle.lastTurnSysTime = tSysTimeFloat();
     cycle.Act(dir > 0 ? &gCycle::se_turnRight : &gCycle::se_turnLeft, 1);
 }
 

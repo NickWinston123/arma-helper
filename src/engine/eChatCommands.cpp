@@ -293,6 +293,9 @@ bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<t
         return true;
     }
 
+    if (SymLinkedCommandRunnertStr(commandName))
+        return true;
+
     return false;
 }
 
@@ -1453,7 +1456,7 @@ bool SearchCommand::execute(tString args)
                     if (copyToClipboard(message))
                     {
                         con << CommandText()
-                            << "Copied content to clipboard.";
+                            << "Copied content to clipboard.\n";
                         numMatches++;
                         output << endLineNumber << " " << MainText() << message << "\n";
                         found = true;
@@ -1480,7 +1483,7 @@ bool SearchCommand::execute(tString args)
 
                             if (copyToClipboard(lineToCopy))
                                 con << HeaderText()
-                                    << "Copied content to clipboard.";
+                                    << "Copied content to clipboard.\n";
                             found = true;
                             break;
                         }

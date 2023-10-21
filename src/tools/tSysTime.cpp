@@ -421,6 +421,37 @@ time_t getDifferenceInSeconds(struct tm date1, struct tm date2)
     return difftime(t1, t2); // returns difference in seconds (t1 - t2)
 }
 
+time_t getStartTimeOfDay()
+{
+    time_t now;
+    struct tm newyear;
+    double seconds;
+
+    time(&now); 
+    newyear = *localtime(&now);
+
+    newyear.tm_hour = 0;
+    newyear.tm_min = 0;
+    newyear.tm_sec = 0;
+
+    return mktime(&newyear);
+}
+
+time_t getStartOfCurrentHour()
+{
+    time_t now;
+    struct tm hourStart;
+    double seconds;
+
+    time(&now);
+    hourStart = *localtime(&now);
+
+    hourStart.tm_min = 0;
+    hourStart.tm_sec = 0;
+
+    return mktime(&hourStart);
+}
+
 
 struct tm getCurrentLocalTime()
 {

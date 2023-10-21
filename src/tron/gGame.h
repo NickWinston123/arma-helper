@@ -67,7 +67,8 @@ typedef enum
 } gGameType;
 
 extern bool tryConnectLastServer;
-extern bool sg_forcePlayerUpdate, updatedThisRound;
+extern bool sg_forcePlayerUpdate;
+
 // extern gGameType sg_gameType;      // the current game type
 extern bool sg_TalkToMaster; // should this server be known on the internet?
 extern bool sg_RequestedDisconnection, sg_connectToLastServerFromMenu;
@@ -338,7 +339,7 @@ public:
         {
             if (!useQueue)
             {
-                return false; 
+                return false;
             }
             else
             {
@@ -382,20 +383,20 @@ public:
             tasksQueue.pop();
             tasksMap.erase(task.id);
 
-            task.task(); 
+            task.task();
 
             if(pendingTasks.count(task.id) > 0 && !pendingTasks[task.id].empty())
             {
                 DelayedTask nextTask = pendingTasks[task.id].front();
                 pendingTasks[task.id].pop();
 
-                nextTask.dueTime = tSysTimeFloat() + nextTask.originalDelay; 
+                nextTask.dueTime = tSysTimeFloat() + nextTask.originalDelay;
 
                 tasksQueue.push(nextTask);
                 tasksMap[nextTask.id] = nextTask;
-                
+
                 if(pendingTasks[task.id].empty())
-                    pendingTasks.erase(task.id); 
+                    pendingTasks.erase(task.id);
             }
             else if(task.interval > 0)
             {
@@ -423,7 +424,7 @@ public:
         }
         tasksMap.clear();
     }
-    
+
     std::unordered_map<std::string, DelayedTask> getTasks() const
     {
         return tasksMap;

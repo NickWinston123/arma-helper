@@ -1256,13 +1256,16 @@ REAL gSmarterBot::annoyanceCheck()
     int alivePlayerCount = 0;
     int totalPlayerCount = 0;
     int totalChattingPlayers = 0;
+    int totalLocalPlayers = 0;
 
     for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
     {
         auto other = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
-        bool isDifferentPlayer = se_PlayerNetIDs[i]->pID != owner_->Player()->pID;
+        bool isJoiningPlayer = se_PlayerNetIDs[i]->CurrentTeam();
+        bool isHuman         = se_PlayerNetIDs[i]->IsHuman();
+        bool isNotOwner      = se_PlayerNetIDs[i]->pID != owner_->Player()->pID;
 
-        if (se_PlayerNetIDs[i]->CurrentTeam() && se_PlayerNetIDs[i]->IsHuman() && isDifferentPlayer)
+        if (isJoiningPlayer && isHuman && isNotOwner)
         {
             totalPlayerCount++;
             if (other && other->Alive())
@@ -1270,21 +1273,34 @@ REAL gSmarterBot::annoyanceCheck()
                 if (se_PlayerNetIDs[i]->ChattingTime() > sg_smarterBotAFKCheckTime) 
                     totalChattingPlayers++;
 
+                if (se_PlayerNetIDs[i]->isLocal())
+                    totalLocalPlayers++;
+
                 alivePlayerCount++;
             }
         }
     }
-
-    if (alivePlayerCount == 1 && totalPlayerCount > 1)
+    
+    if (totalPlayerCount > 1)
     {
-        if (!sg_smarterBotAFKCheckIfChatting)
+        if (totalLocalPlayers == alivePlayerCount)
+        {
+            con << "SmarterBot: All players are local players.\n";
+            return sg_smarterBotAFKCheckTime;
+        }
+        if ( alivePlayerCount == 1 && !sg_smarterBotAFKCheckIfChatting)
         {
             con << "SmarterBot: You were the last player alive.\n";
             return sg_smarterBotAFKCheckTime;
         }
-        else if (totalChattingPlayers == alivePlayerCount) 
+        else if (alivePlayerCount == 1 && totalChattingPlayers == alivePlayerCount) 
         {
             con << "SmarterBot: The alive player is chatting for too long.\n";
+            return sg_smarterBotAFKCheckTime;
+        }
+        else if (totalLocalPlayers >= 1 && totalChattingPlayers > 1) 
+        {
+            con << "SmarterBot: More than one local player and the alive player is chatting for too long.\n";
             return sg_smarterBotAFKCheckTime;
         }
     }
@@ -1311,6 +1327,7 @@ bool gSmarterBot::chattingSmartDisable()
 bool gSmarterBot::afkQuitCheck()
 {
     REAL timeSinceLastTurn = tSysTimeFloat() - owner_->lastTurnSysTime;
+    
     if (timeSinceLastTurn > sg_smarterBotAFKCheckQuitTime)
     {
         sn_quitAction(true, true);
@@ -1332,7 +1349,7 @@ REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
     if (sg_smarterBotAFKCheckQuit && nextAFKQuitCheck_ < time) 
     {
         if (afkQuitCheck())
-            return 100;
+            return 5;
         else
             nextAFKQuitCheck_ = time + sg_smarterBotAFKCheckQuitTime;
     }

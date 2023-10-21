@@ -26,6 +26,7 @@ struct eChatBotStatsBase
     int total_messages_read = 0;
     int total_messages_sent = 0;
     int times_banned        = 0;
+    int times_banned_today  = 0;
     time_t last_banned      = 0;
     REAL total_up_time      = 0;
     tString lastMatchedTrigger;
@@ -129,7 +130,12 @@ public:
         time_t now = time(nullptr);        
         time_t difference = now - Stats().last_banned;
 
-        if(difference > se_playerWatchAutoRandomNameRevertTime && Stats().total_up_time > se_playerWatchAutoRandomNameRevertTime && num_spectators == 0) 
+        if(Stats().times_banned_today <= se_playerWatchAutoRandomNameBanLimit 
+           && !avoidPlayerInGame() &&
+           difference > se_playerWatchAutoRandomNameRevertTime && 
+           Stats().upTime() > (se_playerWatchAutoRandomNameRevertTime/2) 
+           && num_spectators == 0 
+           ) 
         {
             forceRandomRename = false;
         }
@@ -139,7 +145,7 @@ public:
     bool masterFuncResponse = false;
     std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString chatMessage, bool eventTrigger);
     static bool InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger = false, tString preAppend = tString(""));
-    void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player, tString preAppend = tString(""));
+    void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player, tString preAppend = tString(""), bool eventTrigger = true);
     REAL determineReadingDelay(tString message);
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
     REAL calculateResponseSmartDelay(tString response, REAL wpm);

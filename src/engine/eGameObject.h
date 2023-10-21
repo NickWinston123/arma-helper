@@ -89,18 +89,6 @@ protected:
     // the object)
 public:
     static int number_of_gCycles;
-    REAL localCurrentTime;
-    REAL lastTurnAttemptTime;
-    REAL lastTurnAttemptDir;
-    REAL lastTurnTime;
-    REAL lastTurnSysTime;
-    REAL turnIgnoreTime;
-    REAL lastTurnDir; // 0 = NONE, -1 = left, 1 = right
-    REAL blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
-    REAL forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
-    REAL lastBlockedTurn;
-    REAL lastBotTurnTime;
-    REAL lastBotTurnDir;
 
     bool autodelete;
     REAL lastTime;          // the time it was last updated

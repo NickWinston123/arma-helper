@@ -78,6 +78,7 @@ extern bool se_chatLog, se_chatTimeStamp;
 
 extern bool se_playerWatchAutoRandomName, forceRandomRename;
 extern REAL se_playerWatchAutoRandomNameRevertTime;
+extern int se_playerWatchAutoRandomNameBanLimit;
 
 extern bool se_avoidPlayerWatch, se_avoidPlayerWatchDisable;
 extern REAL se_avoidPlayerWatchActionTime;
@@ -150,16 +151,26 @@ class eVoter;
 class gCycle;
 class eChatCommand;
 
-class ePlayer: public uPlayerPrototype{
+class ePlayer: public uPlayerPrototype
+{
     friend class eMenuItemChat;
     static uActionPlayer s_chat;
     static uActionPlayer s_con;
     static uActionTooltip s_chatTooltip;
-
     TempConfItemManager confItems;
 
     double lastTooltip_;
 public:
+    static std::pair<ePlayer*, bool> updatedThisRoundArray[4];
+
+    static void resetPlayerUpdateStatuses()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            updatedThisRoundArray[i].second = false;
+        }
+    }
+
     int updateIteration;
     tString    name;                 // the player's screen name
     tString    globalID;             // the global ID of the player in user@authority form

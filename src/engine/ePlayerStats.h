@@ -298,7 +298,7 @@ public:
 
     static bool shouldEnforceLocalName(ePlayerNetID * player)
     {
-        return player->isLocal() && se_playerStatsLocalForcedName;
+        return player && player->isLocal() && se_playerStatsLocalForcedName;
     }
 
     static tString getEnforcedLocalName(ePlayerNetID * player)
@@ -345,8 +345,8 @@ public:
             {
                 if (se_playerStatsLocalForcedName)
                 {
-                    ePlayerNetID *ourPlayer = ePlayerNetID::GetPlayerByRealName(playerName, false);
-                    if (shouldEnforceLocalName(ourPlayer))
+                    ePlayerNetID *ourPlayer = ePlayerNetID::GetPlayerByRealName(playerName, true);
+                    if (ourPlayer && shouldEnforceLocalName(ourPlayer))
                         return playerStatsMap[getEnforcedLocalName(ourPlayer)];
                 }
 
@@ -367,7 +367,7 @@ public:
                 matchedPlayers.push_back(kv);
             }
         }
-        
+
         if (!matchedPlayers.empty())
         {
             std::sort(matchedPlayers.begin(), matchedPlayers.end(),

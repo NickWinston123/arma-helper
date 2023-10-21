@@ -2711,7 +2711,20 @@ gCycleMovement::gCycleMovement(eGrid *grid, const eCoord &pos, const eCoord &dir
       verletSpeed_(sg_speedCycleStart * SpeedMultiplier()),
       pendingTurns()
 {
+
+    lastTurnAttemptTime = -999;
+    lastTurnAttemptDir = -999;
+    lastTurnTime = -999;
+    turnIgnoreTime = -999;
+    lastTurnDir = NONE; // 0 = NONE, -1 = left, 1 = right
+    blockTurn = NONE; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
+    forceTurn = NONE; // 0 = NONE, -1 = LEFT, 1 = RIGHT
+    lastBlockedTurn = NONE;
+    lastBotTurnTime = -999;
+    lastBotTurnDir = -999;
+    lastTurnSysTime = tSysTimeFloat();
     windingNumberWrapped_ = windingNumber_ = Grid()->DirectionWinding(dir);
+    localCurrentTime = -999; 
 
     MyInitAfterCreation();
 }
@@ -2735,6 +2748,21 @@ gCycleMovement::gCycleMovement(nMessage &message)
       verletSpeed_(5)
 {
     windingNumberWrapped_ = windingNumber_ = 2;
+
+    lastTurnAttemptTime = -999;
+    lastTurnAttemptDir = -999;
+    lastTurnTime = -999;
+    turnIgnoreTime = -999;
+    lastTurnDir = NONE; // 0 = NONE, -1 = left, 1 = right
+    blockTurn = NONE; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
+    forceTurn = NONE; // 0 = NONE, -1 = LEFT, 1 = RIGHT
+    lastBlockedTurn = NONE;
+    lastBotTurnTime = -999;
+    lastBotTurnDir = -999;
+    lastTurnSysTime = tSysTimeFloat();
+    windingNumberWrapped_ = windingNumber_ = Grid()->DirectionWinding(dir);
+    localCurrentTime = -999; 
+    
 
     // MyInitAfterCreation();
 }
@@ -3518,11 +3546,13 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
         int wn = windingNumberWrapped_;
 
         Grid()->Turn(wn, dir);
+        
+        if (playerIsMe)
+            this->lastTurnSysTime = tSysTimeFloat();
 
         if (helperSmartTurning && !botTurn && playerIsMe)
         {
             this->lastTurnTime = currentTime;
-            this->lastTurnSysTime = tSysTimeFloat();
             this->lastTurnDir = dir;
         }
 

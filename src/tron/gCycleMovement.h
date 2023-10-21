@@ -242,6 +242,19 @@ protected:
     REAL brakeUsage;  //!< current brake usage
     REAL rubberUsage; //!< current rubber usage (not from hitting a wall, but from tunneling. Without taking efficiency into account.)
 
+public:
+    REAL lastTurnAttemptTime;
+    REAL lastTurnAttemptDir;
+    REAL lastTurnTime;
+    REAL lastTurnSysTime;
+    REAL turnIgnoreTime;
+    REAL lastTurnDir; // 0 = NONE, -1 = left, 1 = right
+    REAL blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
+    REAL forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
+    REAL lastBlockedTurn;
+    REAL lastBotTurnTime;
+    REAL lastBotTurnDir;
+    REAL localCurrentTime;
     // room for accessors
 public:
     gEnemyInfluence getEnemyInfluence() const

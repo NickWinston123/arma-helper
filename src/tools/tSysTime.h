@@ -39,4 +39,7 @@ std::string getTimeStringBase(struct tm &thistime, bool hudShowTime24hour = fals
 struct tm getCurrentLocalTime();
 time_t convertToTimeT(struct tm date);
 time_t getDifferenceInSeconds(struct tm date1, struct tm date2) ;
+time_t getStartTimeOfDay();
+time_t getStartOfCurrentHour();
+
 #endif

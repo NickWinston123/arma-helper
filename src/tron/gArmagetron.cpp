@@ -709,6 +709,7 @@ int main(int argc, char **argv)
 
         st_LoadConfig();
         LoadChatCommandConfCommands();
+        SymLinkedCommandsLoader();
 
 
         if (sn_bannedWatch)

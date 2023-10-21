@@ -803,11 +803,14 @@ class TempConfItemManager
         tASSERT(CurrentConfitem < CONFITEMS_STORED_SIZE);
         configuration[CurrentConfitem++] = c;
     }
-
+ 
+    void DeleteConfitem(const tString& command);
     void DeleteConfitems();
 
 };
 
-
+void SymLinkedCommandsLoader();
+bool SymLinkedCommandRunnertStr(tString &input);
+void SymLinkedCommandRunner(std::istream& input);
 #endif
 

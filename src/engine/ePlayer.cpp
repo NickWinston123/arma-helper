@@ -1236,6 +1236,19 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
 
     lastTooltip_ = -100;
 
+    bool initialized = false;
+    for (int i = 0; i < 4; ++i)
+    {
+        if (!updatedThisRoundArray[i].first)
+        {
+            updatedThisRoundArray[i].first = this;
+            updatedThisRoundArray[i].second = false;
+            initialized = true;
+            break;
+        }
+    }
+
+
     nameTeamAfterMe = false;
     favoriteNumberOfPlayersPerTeam = 3;
 
@@ -5223,7 +5236,7 @@ std::vector<ePlayerNetID *> se_GetLocalPlayers()
         if (p && p->netPlayer)
             localPlayers.push_back(p->netPlayer);
     }
-    
+
     return localPlayers;
 }
 
@@ -5888,7 +5901,7 @@ tString randomName()
 
     int length = se_randomNameLength;
 
-    if (se_randomNameLengthRandom) 
+    if (se_randomNameLengthRandom)
     {
          length = se_randomNameLengthRandomMin + rand() % (se_randomNameLength - se_randomNameLengthRandomMin + 1);
     }
@@ -5904,14 +5917,14 @@ tString randomName()
 }
 
 
-tString randomNameSmart() 
+tString randomNameSmart()
 {
     std::string vowels = "aeiou";
     std::string consonants = "bcdfghjklmnpqrstvwxyz";
-    
+
     int length = se_randomNameLength;
 
-    if (se_randomNameLengthRandom) 
+    if (se_randomNameLengthRandom)
     {
         if (se_randomNameLength < se_randomNameLengthRandomMin)
         {
@@ -5922,7 +5935,7 @@ tString randomNameSmart()
     }
 
     std::string randomStr;
-    
+
     int prefixLength = 1 + (rand() % 2);
     for (int i = 0; i < prefixLength; ++i)
     {
@@ -5930,14 +5943,14 @@ tString randomNameSmart()
         randomStr += vowels[rand() % vowels.size()];
     }
 
-    while (randomStr.size() < length - 2) 
+    while (randomStr.size() < length - 2)
     {
         if (rand() % 2)
         {
             randomStr += consonants[rand() % consonants.size()];
             randomStr += vowels[rand() % vowels.size()];
         }
-        else 
+        else
         {
             randomStr += vowels[rand() % vowels.size()];
             randomStr += consonants[rand() % consonants.size()];
@@ -10442,7 +10455,6 @@ void ePlayerNetID::ForcedUpdate(ePlayer* updatePlayer)
     ignoreAlive = true;
     Update(updatePlayer);
 }
-
 void ePlayerNetID::Update(ePlayer* updatePlayer)
 {
 #ifdef KRAWALL_SERVER
@@ -10746,11 +10758,29 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     p->RequestSync();
                 }
 
-                if (!updatedThisRound || ignoreAlive)
+
+                bool allowedRename = p->nameFromClient_ == p->nameFromServer_;
+
+                std::pair<ePlayer*, bool>* playerStatus = nullptr;
+
+                for (int i = 0; i < 4; i++)
                 {
-                    p->SetName(newName);
-                    if (!updatedThisRound)
-                        updatedThisRound = true;
+                    if (ePlayer::updatedThisRoundArray[i].first == local_p)
+                    {
+                        playerStatus = &ePlayer::updatedThisRoundArray[i];
+                        break;
+                    }
+                }
+
+
+                if (playerStatus)
+                {
+                    if (!playerStatus->second)
+                    {
+                        if (allowedRename)
+                            p->SetName(newName);
+                        playerStatus->second = true;
+                    }
                 }
 
                 local_p->updateIteration++;
@@ -12735,6 +12765,8 @@ static tConfItem<bool> se_playerWatchAutoRandomNameConf = HelperCommand::tConfIt
 
 REAL se_playerWatchAutoRandomNameRevertTime = 900;
 static tConfItem<REAL> se_playerWatchAutoRandomNameRevertTimeConf = HelperCommand::tConfItem("PLAYER_WATCH_RANDOM_NAME_AUTO_REVERT_WAIT_SECONDS", se_playerWatchAutoRandomNameRevertTime);
+int se_playerWatchAutoRandomNameBanLimit = 6;
+static tConfItem<int> se_playerWatchAutoRandomNameBanLimitConf = HelperCommand::tConfItem("PLAYER_WATCH_RANDOM_NAME_AUTO_REVERT_BAN_LIMIT", se_playerWatchAutoRandomNameBanLimit);
 
 bool avoidPlayerInGame(tString name)
 {
@@ -14399,3 +14431,5 @@ static void se_checkSilenced(std::istream &s)
 }
 
 static tConfItemFunc se_checkSilencedC("CHECKSILENCED", &se_checkSilenced);
+
+std::pair<ePlayer*, bool> ePlayer::updatedThisRoundArray[4] = {{nullptr, false}, {nullptr, false}, {nullptr, false}, {nullptr, false}};

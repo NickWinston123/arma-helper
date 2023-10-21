@@ -133,17 +133,6 @@ eGameObject::eGameObject(eGrid *g,const eCoord &p,const eCoord &d,eFace *current
     team = 0;
     initPos = p;
     initDir = d;
-    localCurrentTime = -999;
-    lastTurnAttemptTime = -999;
-    lastTurnAttemptDir = -999;
-    lastTurnTime = -999;
-    turnIgnoreTime = -999;
-    lastTurnDir = 0; // 0 = NONE, -1 = left, 1 = right
-    blockTurn = 0; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
-    forceTurn = 0; // 0 = NONE, -1 = LEFT, 1 = RIGHT
-    lastBlockedTurn = 0;
-    lastBotTurnTime = -999;
-    lastBotTurnDir = -999;
 }
 
 eGameObject::~eGameObject(){

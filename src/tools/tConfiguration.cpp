@@ -1748,8 +1748,8 @@ void st_SaveConfig()
 {
 
     if (se_playerStats)
-        ePlayerStats::saveStatsToDB();   
-         
+        ePlayerStats::saveStatsToDB();
+
     // don't save while playing back
     if ( st_settingsFromRecording )
     {
@@ -2311,3 +2311,205 @@ void TempConfItemManager::DeleteConfitems()
         tDESTROY(configuration[CurrentConfitem]);
     }
 }
+
+void TempConfItemManager::DeleteConfitem(const tString& command)
+{
+    for (int i = 0; i < CurrentConfitem; i++)
+    {
+        con << "COMPARING '" << configuration[i]->GetTitle() << "' vs '" << command << "'\n";
+        if (configuration[i]->GetTitle() == command)
+        {
+            for (int j = i; j < CurrentConfitem - 1; j++)
+            {
+                configuration[j] = configuration[j + 1];
+            }
+            CurrentConfitem--;
+            return;
+        }
+    }
+}
+
+
+tString se_symLinkedCommands("");
+static tConfItem<tString> se_symLinkedCommandsConf("SYM_LINKED_COMMANDS_STORED_COMMAND_STR", se_symLinkedCommands);
+static TempConfItemManager *symLinkedConfItems = NULL;
+std::unordered_map<tString, tString> symLinkedCommands;
+
+bool SymLinkedCommandRunnerCore(tString commandStr)
+{
+    if (symLinkedCommands.find(commandStr) != symLinkedCommands.end())
+    {
+        tString action = symLinkedCommands[commandStr];
+
+        tCurrentAccessLevel level(tAccessLevel_Owner, true);
+        std::stringstream s(action.stdString());
+        tConfItemBase::LoadAll(s);
+        return true;
+    }
+    return false;
+}
+
+void SymLinkedCommandRunner(std::istream& input)
+{
+    tString commandStr;
+    commandStr.ReadLine(input, true);
+    SymLinkedCommandRunnerCore(commandStr);
+}
+
+bool SymLinkedCommandRunnertStr(tString &input)
+{
+    return SymLinkedCommandRunnerCore(input);
+}
+
+void AddSymLinkedCommand(const tString& originalCommand, const tString& action)
+{
+    tString command(originalCommand.ToUpper());
+
+    if(symLinkedCommands.find(command) != symLinkedCommands.end())
+    {
+        con << "Command " << command << " already exists. Choose a different name.\n";
+        return;
+    }
+
+    symLinkedCommands[command] = action;
+
+    if (!se_symLinkedCommands.empty())
+    {
+        se_symLinkedCommands += ";";
+    }
+    se_symLinkedCommands << command << "," << action;
+
+    if (symLinkedConfItems == nullptr)
+    {
+        symLinkedConfItems = new TempConfItemManager();
+    }
+    symLinkedConfItems->StoreConfitem(new tConfItemFunc(tString(command), &SymLinkedCommandRunner));
+}
+
+void RemoveSymLinkedCommand(const tString& command)
+{
+    tString upperCommand(command.ToUpper());
+
+    symLinkedCommands.erase(upperCommand);
+
+    if (symLinkedConfItems)
+        symLinkedConfItems->DeleteConfitem(tString(upperCommand));
+}
+
+static void SymLinkCommandManager(std::istream &s)
+{
+    tString params;
+    params.ReadLine(s, true);
+
+    if (params.empty())
+    {
+        con << "Usage for adding symbolic link: SYM_LINK_MANAGE ADD <commandName> <command to be executed>\n";
+        con << "Usage for removing symbolic link: SYM_LINK_MANAGE REMOVE <commandName>\n";
+        con << "Usage for listing all symbolic links: SYM_LINK_MANAGE LIST\n";
+
+        con << "List of symbolic links:\n";
+        for (const auto& pair : symLinkedCommands)
+        {
+            con << pair.first << " -> " << pair.second << "\n";
+        }
+        return;
+    }
+
+    int pos = 0;
+    tString action = params.ExtractNonBlankSubString(pos).TrimWhitespace();
+
+    if (action.ToLower() == "add")
+    {
+        tString commandName = params.ExtractNonBlankSubString(pos).TrimWhitespace().ToUpper();
+        tString commandToExecute = params.SubStr(pos).TrimWhitespace();
+
+        if (commandName.empty() || commandToExecute.empty())
+        {
+            con << "For adding a symbolic link, please provide both commandName and the command to be executed.\n";
+            return;
+        }
+
+        AddSymLinkedCommand(commandName, commandToExecute);
+        con << "Added symbolic link: '" << commandName << "' -> '" << commandToExecute << "'\n";
+    }
+    else if (action.ToLower() == "remove")
+    {
+        tString commandName = params.ExtractNonBlankSubString(pos).TrimWhitespace().ToUpper();
+
+        if (symLinkedCommands.find(commandName) == symLinkedCommands.end())
+        {
+            con << "No symbolic link found for: '" << commandName << "'\n";
+            return;
+        }
+
+        symLinkedCommands.erase(commandName);
+        con << "Removed symbolic link for: '" << commandName << "'\n";
+    }
+    else if (action.ToLower() == "list")
+    {
+        if (symLinkedCommands.empty())
+        {
+            con << "No symbolic links found.\n";
+            return;
+        }
+
+        con << "List of symbolic links:\n";
+        for (const auto& pair : symLinkedCommands)
+        {
+            con << pair.first << " -> " << pair.second << "\n";
+        }
+    }
+    else if (action.ToLower() == "clear")
+    {
+        symLinkedCommands.clear();
+        se_symLinkedCommands.Clear();
+        con << "Cleared all symbolic links.\n";
+    }
+    else
+    {
+        con << "Unknown action: '" << action << "'. Valid actions are ADD, REMOVE, CLEAR, LIST.\n";
+    }
+}
+static tConfItemFunc SymLinkCommandManagerConf("SYM_LINK_MANAGE", &SymLinkCommandManager);
+
+void SymLinkedCommandsLoader()
+{
+    if (symLinkedConfItems == nullptr)
+        symLinkedConfItems = new TempConfItemManager();
+
+    if (!symLinkedConfItems)
+        return;
+
+    symLinkedConfItems->DeleteConfitems();
+
+    if (se_symLinkedCommands.empty())
+        return;
+
+    tArray<tString> symLinkedEntries = se_symLinkedCommands.Split(";");
+
+    for (int i = 0; i < symLinkedEntries.Len(); ++i) 
+    {
+        tArray<tString> entry = symLinkedEntries[i].Split(",");
+        if (entry.Len() == 2) 
+        {
+            tString action = entry[1].TrimWhitespace();
+            tString command = entry[0].TrimWhitespace().ToUpper();
+
+            if(symLinkedCommands.find(command) == symLinkedCommands.end())
+            {
+                symLinkedCommands[command] = action;
+
+                symLinkedConfItems->StoreConfitem(new tConfItemFunc(tString(command), &SymLinkedCommandRunner));
+            }
+            else
+            {
+                con << "DUPLICATE COMMAND AT INDEX " << i << ": " << command << ". Skipping...\n";
+            }
+        } 
+        else
+        {
+            con << "MALFORMED INDEX AT " << i << ": " << symLinkedEntries[i] << "\n";
+        }
+    }
+}
+

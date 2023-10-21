@@ -890,38 +890,6 @@ tString hideStatFunc(tString message)
     return output;
 }
 
-time_t getStartTimeOfDay()
-{
-    time_t now;
-    struct tm newyear;
-    double seconds;
-
-    time(&now);  /* get current time; same as: now = time(NULL)  */
-    newyear = *localtime(&now);
-
-    newyear.tm_hour = 0;
-    newyear.tm_min = 0;
-    newyear.tm_sec = 0;
-
-    return mktime(&newyear);
-}
-
-time_t getStartOfCurrentHour()
-{
-    time_t now;
-    struct tm hourStart;
-    double seconds;
-
-    time(&now);
-    hourStart = *localtime(&now);
-
-    hourStart.tm_min = 0;
-    hourStart.tm_sec = 0;
-
-    return mktime(&hourStart);
-}
-
-
 tString whatsThefunc(tString message)
 {
     tString output;
@@ -953,12 +921,6 @@ tString whatsThefunc(tString message)
         eChatBotStats &stats = eChatBot::getInstance().Stats();
         struct tm created = stats.lastTriggeredBy->createTime_;
         output << getTimeStringBase(created)
-               << " EST";
-    }
-    else if (target.Contains("time"))
-    {
-        struct tm now = getCurrentLocalTime();
-        output << getTimeStringBase(now)
                << " EST";
     }
     else if (target.Contains("been_here_for"))
@@ -1003,6 +965,32 @@ tString whatsThefunc(tString message)
         }
 
         output << "Number of players since start of this hour: " << number_of_players << "\n";
+    }
+    else if (target.Contains("times_banned_today"))
+    {
+        eChatBotStats &stats = eChatBot::getInstance().Stats();
+        output << stats.times_banned_today;
+               
+    }
+    else if (target.Contains("times_banned"))
+    {
+        eChatBotStats &stats = eChatBot::getInstance().Stats();
+        output << stats.times_banned;
+               
+    }
+    else if (target.Contains("last_time_banned"))
+    {
+        eChatBotStats &stats = eChatBot::getInstance().Stats();
+        struct tm lastTimeBanned;
+        localtime_s(&lastTimeBanned, &stats.last_banned);
+        output << getTimeStringBase(lastTimeBanned)
+               << " EST";
+    }
+    else if (target.Contains("time"))
+    {
+        struct tm now = getCurrentLocalTime();
+        output << getTimeStringBase(now)
+               << " EST";
     }
 
 
@@ -1087,7 +1075,7 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, 
     if (!response.empty() && !bot.masterFuncResponse)
     {
         initiated = true;
-        bot.preparePlayerMessage(response, delay, sendingPlayer, preAppend);
+        bot.preparePlayerMessage(response, delay, sendingPlayer, preAppend, eventTrigger);
     }
     else if (eventTrigger)
         con << "No trigger set for '" << message << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
@@ -1397,7 +1385,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
     return std::make_tuple(tString(""), 0.0, nullptr);
 }
 
-void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player, tString preAppend)
+void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player, tString preAppend, bool eventTrigger)
 {
     if (!helperConfig::sghuk)
         return;
@@ -1458,8 +1446,13 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
             else
             {
                 tArray<tString> players = se_playerMessageTargetPlayer.Split(",");
-                for (int i = 0; i < players.Len(); i++)
+                int numPlayers = players.Len();
+
+                for (int i = 0; i < numPlayers; i++)
                 {
+                    if (!eventTrigger && numPlayers > 1 && i > 0)
+                        continue;
+
                     ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
                     if (!local_p)
                         continue;
@@ -1467,9 +1460,11 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
                     ePlayerNetID *netPlayer = local_p->netPlayer;
                     if (!netPlayer)
                         continue;
+
                     scheduled = true;
                     scheduleMessageTask(netPlayer, partToSend, !forceSpecialDelay && se_playerMessageChatFlag, totalDelay, flagDelay);
                 }
+
             }
         }
 
@@ -1736,12 +1731,16 @@ const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings =
 
     {"last_banned", "BIGINT",
         [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, static_cast<sqlite3_int64>(stats.last_banned)); },
-        [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.last_banned = static_cast<time_t>(sqlite3_column_int64(stmt, col++)); }
+        [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.last_banned  = static_cast<time_t>(sqlite3_column_int64(stmt, col++)); }
     },
-
 
     {"times_banned", "INTEGER",
         [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.times_banned); },
         [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.times_banned = sqlite3_column_int(stmt, col++); }
+    },
+
+    {"times_banned_today", "INTEGER",
+        [](sqlite3_stmt *stmt, int &col, const eChatBotStats &stats) { sqlite3_bind_int(stmt, col++, stats.times_banned_today); },
+        [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.times_banned_today = sqlite3_column_int(stmt, col++); }
     },
 };

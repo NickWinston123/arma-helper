@@ -5780,9 +5780,19 @@ void sn_quitAction(bool save, bool quit, tString message)
         stats.last_banned = time(nullptr); 
         stats.times_banned++;
 
+        time_t startOfDay = getStartTimeOfDay();
+
+        if (stats.last_banned < startOfDay)
+        {
+            stats.times_banned_today = 0; 
+        }
+
+        stats.times_banned_today++; 
+
         if (se_playerWatchAutoRandomName) 
             forceRandomRename = true;
     }
+
     
     if (save)
         st_SaveConfig();
@@ -5794,6 +5804,7 @@ void sn_quitAction(bool save, bool quit, tString message)
         });
     
 }
+
 void sn_bannedWatchAction(tString reason)
 {
     sn_quitAction(true, sn_bannedWatchQuit, reason);

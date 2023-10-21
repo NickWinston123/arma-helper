@@ -4050,7 +4050,7 @@ void gGame::RebuildGrid(int requestedState)
 
 static bool sg_saveConfigOnRoundEnd = false;
 static tConfItem<bool> sg_saveConfigOnRoundEndConf("SAVE_CONFIG_ON_ROUND_END", sg_saveConfigOnRoundEnd);
-bool updatedThisRound = false;
+
 
 void gGame::StateUpdate()
 {
@@ -4089,7 +4089,9 @@ void gGame::StateUpdate()
             if (se_playerStats && roundWinnerProcessed)
                 ePlayerStats::updateStatsRoundEnd();
             roundWinnerProcessed = false;
-            updatedThisRound = false;
+        
+            ePlayer::resetPlayerUpdateStatuses();
+
 #ifdef DEBUG
             con << tOutput("$gamestate_deleting_grid");
 #endif

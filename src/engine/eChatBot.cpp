@@ -70,6 +70,9 @@ static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenConf = HelperCommand::t
 REAL se_playerTriggerMessagesSpamMaxlenPartAdd = 0.5;
 static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenPartAddConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DELAY_SPAM_MAXLEN_NEGATIVE_PART_ADD", se_playerTriggerMessagesSpamMaxlenPartAdd);
 
+static bool se_playerMessageChatFunctionsOnly = false;
+static tConfItem<bool> se_playerMessageChatFunctionsOnlyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_FUNCTIONS_ONLY", se_playerMessageChatFunctionsOnly);
+
 
 tString stripNonOperatorsOrNumbers(const tString &input);
 bool containsMath(tString input, bool exact);
@@ -1299,7 +1302,6 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
             bool function = false;
             while ((dollarPos = chosenResponse.StrPos(dollarPos, "$")) != -1)
             {
-                function = true;
 
                 int openParenPos = chosenResponse.StrPos(dollarPos + 1, "(");
                 int closeParenPos = -1;
@@ -1314,7 +1316,6 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                     {
                         functionName = chosenResponse.SubStr(dollarPos, openParenPos - dollarPos).TrimWhitespace();
                         functionInput = chosenResponse.SubStr(openParenPos + 1, closeParenPos - openParenPos - 1);
-                        Stats().lastTriggerType = "symfunc";
                     }
                 }
 
@@ -1333,6 +1334,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 bool functionResponse = !functionName.StartsWith("$p1");
                 if (functionResponse)
                 {
+                    function = true;
                     tString finalFunctionInput(functionInput);
 
                     if (finalFunctionInput.empty())
@@ -1354,6 +1356,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
                         toReplace = Stats().lastMatchedTrigger;
                         finalFunctionInput = finalFunctionInput.Replace(toReplace,"");
+                        Stats().lastTriggerType = "symfunc";
                     }
 
                     tString result = ExecuteFunction(functionName, finalFunctionInput);
@@ -1375,7 +1378,11 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
             if (function && Stats().lastTriggerType != "symfunc")
                 Stats().lastTriggerType = "func";
+
             chosenResponse = responseStr;
+            
+            if (!forceRandomRename && se_playerMessageChatFunctionsOnly && Stats().lastTriggerType == "normal" )
+                return std::make_tuple(tString(""), 0.0, nullptr);
 
             return std::make_tuple(chosenResponse, extraDelay, sendingPlayer);
         }

@@ -121,7 +121,7 @@ public:
         for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
         {
             ePlayerNetID *p = se_PlayerNetIDs(i);
-            if (p && p->IsHuman() && p->IsSpectating())
+            if (p && p->IsHuman() && !p->isLocal() && p->IsSpectating())
             {
                 num_spectators++;
             }
@@ -132,8 +132,7 @@ public:
 
         if(Stats().times_banned_today <= se_playerWatchAutoRandomNameBanLimit 
            && !avoidPlayerInGame() &&
-           difference > se_playerWatchAutoRandomNameRevertTime && 
-           Stats().upTime() > (se_playerWatchAutoRandomNameRevertTime/2) 
+           ((difference > se_playerWatchAutoRandomNameRevertTime && Stats().upTime() > (se_playerWatchAutoRandomNameRevertTime/2)) || difference > se_playerWatchAutoRandomNameRevertTime*2 )
            && num_spectators == 0 
            ) 
         {

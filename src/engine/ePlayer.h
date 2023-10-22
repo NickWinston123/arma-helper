@@ -161,13 +161,14 @@ class ePlayer: public uPlayerPrototype
 
     double lastTooltip_;
 public:
-    static std::pair<ePlayer*, bool> updatedThisRoundArray[4];
+    bool updatedThisRound = false;
 
     static void resetPlayerUpdateStatuses()
     {
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < MAX_PLAYERS; ++i)
         {
-            updatedThisRoundArray[i].second = false;
+            ePlayer *local_p = ePlayer::PlayerConfig(i);
+            local_p->updatedThisRound = false;
         }
     }
 

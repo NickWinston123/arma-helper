@@ -1281,7 +1281,7 @@ REAL gSmarterBot::annoyanceCheck()
         }
     }
     
-    if (totalPlayerCount > 1)
+    if (totalPlayerCount > 1 && alivePlayerCount >= 1)
     {
         if (totalLocalPlayers == alivePlayerCount)
         {

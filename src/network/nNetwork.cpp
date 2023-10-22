@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eChatBot.h"
 #include <string.h>
 #include "../tron/gHelper/gHelperUtilities.h"
+#include "../tron/gGame.h"
 
 #ifndef WIN32
 #include  <netinet/in.h>
@@ -1608,6 +1609,9 @@ void login_deny_handler(nMessage &m){
         sn_DenyReason = tOutput( "$network_kill_unknown" );
     }
 
+    if (sn_networkErrorQuit)
+        sn_quitAction(true, true, sn_DenyReason);
+
     if ( !m.End() )
     {
         // read redirection data from message
@@ -1628,8 +1632,6 @@ void login_deny_handler(nMessage &m){
 
     if (sn_GetNetState()!=nSERVER)
     {
-
-        sn_bannedWatchAction(sn_DenyReason);
 
         login_failed=true;
         login_succeeded=false;

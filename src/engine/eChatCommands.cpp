@@ -271,7 +271,7 @@ bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<t
     spaceIndex = (spaceIndex == -1) ? args.Len() : spaceIndex;
     tString commandName = args.SubStr(0, spaceIndex);
     tString arguments = args.SubStr(spaceIndex + 1);
-
+    tString commandNameUpper(commandName.ToUpper());
     // Find and execute the chat command
     auto chatcmdFactory = commandFactories.find(commandName.ToLower());
     if (chatcmdFactory != commandFactories.end())
@@ -293,7 +293,7 @@ bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<t
         return true;
     }
 
-    if (SymLinkedCommandRunnertStr(commandName))
+    if (SymLinkedCommandRunnertStr(commandNameUpper))
         return true;
 
     return false;

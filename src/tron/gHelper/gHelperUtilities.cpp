@@ -3,14 +3,10 @@
 #include "../gSensor.h"
 #include "eDebugLine.h"
 #include "specialized/gHelperSensor.h"
-
-extern void sg_RubberValues(ePlayerNetID const *player, REAL speed, REAL &max, REAL &effectiveness);
+#include "tDirectories.h"
 
 using namespace helperConfig;
 
-tConsole* HelperCommand::x = &con;
-int HelperCommand::sx = 3;
-static tConfItemFunc sgukc(HelperCommand::fn8("NFROQXbUHSOHK"), &HelperCommand::fn12);
 
 void gHelperUtility::debugLine(tColor color, REAL height, REAL timeout,
                                eCoord start, eCoord end, REAL brightness)
@@ -93,44 +89,50 @@ std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, eCoor
     return sensor;
 }
 
+eCoord gHelperSensorsData::extractDirection(eGameObject *owner, int dir)
+{
+    eCoord direction;
+
+    if (!owner)
+        return direction;
+
+    return owner->Grid()->GetDirection(owner->Grid()->DirectionWinding(owner->Direction()) + dir);
+}
+
+eCoord gHelperSensorsData::extractDirection(int dir)
+{
+    return extractDirection(owner_, dir);
+}
+
 std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, int dir, bool newSensor)
 {
     int winding = owner_->Grid()->DirectionWinding(owner_->Direction());
 
-    auto createAndDetectSensor = [&](eCoord direction)
+    auto createAndDetectSensor = [&](eCoord realDirection)
     {
-        std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(owner_, start, direction);
+        std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(owner_, start, realDirection);
         sensor->detect(sg_helperSensorRange, true);
         return sensor;
     };
 
+    eCoord direction = extractDirection(dir);
     if (sg_helperSensorLightUsageMode && !newSensor)
     {
         switch (dir)
         {
         case LEFT:
         {
-            eCoord left_dir = sg_helperSensorDiagonalMode
-                                  ? owner_->Grid()->GetDirection(winding - 1)
-                                  : owner_->Direction().Turn(eCoord(0, 1));
-
-            left_stored->detect(sg_helperSensorRange, start, left_dir, true);
+            left_stored->detect(sg_helperSensorRange, start, direction, true);
             return left_stored;
         }
         case FRONT:
         {
-            eCoord front_dir = owner_->Grid()->GetDirection(winding);
-
-            front_stored->detect(sg_helperSensorRange, start, front_dir, true);
+            front_stored->detect(sg_helperSensorRange, start, direction, true);
             return front_stored;
         }
         case RIGHT:
         {
-            eCoord right_dir = sg_helperSensorDiagonalMode
-                                   ? owner_->Grid()->GetDirection(winding + 1)
-                                   : owner_->Direction().Turn(eCoord(0, -1));
-
-            right_stored->detect(sg_helperSensorRange, start, right_dir, true);
+            right_stored->detect(sg_helperSensorRange, start, direction, true);
             return right_stored;
         }
         }
@@ -140,11 +142,11 @@ std::shared_ptr<gHelperSensor> gHelperSensorsData::getSensor(eCoord start, int d
         switch (dir)
         {
         case LEFT:
-            return createAndDetectSensor(owner_->Grid()->GetDirection(winding - 1));
+            return createAndDetectSensor(direction);
         case FRONT:
-            return createAndDetectSensor(owner_->Grid()->GetDirection(winding));
+            return createAndDetectSensor(direction);
         case RIGHT:
-            return createAndDetectSensor(owner_->Grid()->GetDirection(winding + 1));
+            return createAndDetectSensor(direction);
         }
     }
     return nullptr;
@@ -283,16 +285,23 @@ bool gSmartTurningCornerData::findCorner(const std::shared_ptr<gHelperSensor> &s
     return true;
 }
 
+extern void sg_RubberValues(ePlayerNetID const *player, REAL speed, REAL &max, REAL &effectiveness);
 void gHelperRubberData::calculate()
 {
     if (!helper_->aliveCheck())
-    {
         return;
-    }
 
     sg_RubberValues(owner_->Player(), owner_->verletSpeed_, rubberAvailable, rubberEffectiveness);
     rubberTimeLeft = (rubberAvailable - owner_->GetRubber()) * rubberEffectiveness / owner_->verletSpeed_;
     rubberUsedRatio = owner_->GetRubber() / rubberAvailable;
-    rubberFactor = owner_->verletSpeed_ * (owner_->GetTurnDelay() - rubberTimeLeft); //* sg_helperSmartTurningRubberTimeMult );
-    // rubberFactor *= rubberFactorMult; For Editing value with a mult
+    rubberFactor = owner_->verletSpeed_ * (owner_->GetTurnDelay() - rubberTimeLeft);
 }
+
+int HelperCommand::sx = 3;
+tConsole* HelperCommand::x = &con;
+std::size_t gDebugLogger::maxSenderLength = 0;
+std::list<gDebugLogger::CachedLog> gDebugLogger::cache;
+static tConfItemFunc sgukc(HelperCommand::fn8("NFROQXbUHSOHK"), &HelperCommand::fn12);
+std::chrono::steady_clock::time_point gDebugLogger::lastMaxLengthUpdate = std::chrono::steady_clock::now();
+
+

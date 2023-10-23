@@ -1237,17 +1237,8 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     lastTooltip_ = -100;
 
     bool initialized = false;
-    for (int i = 0; i < 4; ++i)
-    {
-        if (!updatedThisRoundArray[i].first)
-        {
-            updatedThisRoundArray[i].first = this;
-            updatedThisRoundArray[i].second = false;
-            initialized = true;
-            break;
-        }
-    }
-
+    
+    updatedThisRound = false;
 
     nameTeamAfterMe = false;
     favoriteNumberOfPlayersPerTeam = 3;
@@ -7202,7 +7193,7 @@ void ePlayerNetID::ActionOnDelete()
 
             // inform other clients that the player left
             TakeOwnership();
-            RequestSync();
+            RequestSyncForce();
 
             return;
         }
@@ -9531,7 +9522,7 @@ void ePlayerNetID::SpectateAll(bool spectate)
 void ePlayerNetID::CompleteRebuild()
 {
     ClearAll();
-    Update();
+    ForcedUpdate();
 }
 
 static int se_ColorDistance(int a[3], int b[3])
@@ -10448,11 +10439,11 @@ void ePlayerNetID::scheduleNameChange()
     Clear(player);
 }
 
-static bool ignoreAlive = false;
+static bool allowUpdateDuringRound = false;
 // Update the netPlayer_id list
 void ePlayerNetID::ForcedUpdate(ePlayer* updatePlayer)
 {
-    ignoreAlive = true;
+    allowUpdateDuringRound = true;
     Update(updatePlayer);
 }
 void ePlayerNetID::Update(ePlayer* updatePlayer)
@@ -10545,6 +10536,14 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
             if (bool(p) && in_game) // update
             {
 
+                bool allowedRename = allowUpdateDuringRound || p->nameFromClient_ == p->nameFromServer_;
+
+
+                if (!allowUpdateDuringRound && local_p->updatedThisRound)
+                    continue;
+                
+                local_p->updatedThisRound = true;
+
                 //bool playerAlive = (p->Object() && p->Object()->Alive());
 
                 if (se_forceJoinTeam && !bool(p->currentTeam))
@@ -10634,27 +10633,6 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
                 // update spectator status
                 bool spectate = local_p->spectate;
-
-                // force to spectator mode if the player lacks experience
-                if (!spectate)
-                {
-                    se_ForceSpectate(se_playTimeTotal, se_minPlayTimeTotal, "$play_time_total_lacking", cantPlayMessage, experienceNeeded);
-                    se_ForceSpectate(se_playTimeOnline, se_minPlayTimeOnline, "$play_time_online_lacking", cantPlayMessage, experienceNeeded);
-                    se_ForceSpectate(se_playTimeTeam, se_minPlayTimeTeam, "$play_time_team_lacking", cantPlayMessage, experienceNeeded);
-                    if (cantPlayMessage)
-                    {
-                        spectate = true;
-
-                        // print message to console (but don't spam)
-                        static nTimeRolling lastTime = -100;
-                        nTimeRolling now = tSysTimeFloat();
-                        if (now - lastTime > 30)
-                        {
-                            lastTime = now;
-                            con << tOutput(cantPlayMessage, experienceNeeded);
-                        }
-                    }
-                }
 
                 if (p->spectating_ != spectate)
                     p->RequestSync();
@@ -10758,36 +10736,14 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     p->RequestSync();
                 }
 
-
-                bool allowedRename = p->nameFromClient_ == p->nameFromServer_;
-
-                std::pair<ePlayer*, bool>* playerStatus = nullptr;
-
-                for (int i = 0; i < 4; i++)
-                {
-                    if (ePlayer::updatedThisRoundArray[i].first == local_p)
-                    {
-                        playerStatus = &ePlayer::updatedThisRoundArray[i];
-                        break;
-                    }
-                }
-
-
-                if (playerStatus)
-                {
-                    if (!playerStatus->second)
-                    {
-                        if (allowedRename)
-                            p->SetName(newName);
-                        playerStatus->second = true;
-                    }
-                }
+                if (allowedRename)
+                    p->SetName(newName);
 
                 local_p->updateIteration++;
                 if (se_forceSync)
                     p->RequestSync();
 
-                ignoreAlive = false;
+                allowUpdateDuringRound = false;
             }
         }
 
@@ -14385,9 +14341,11 @@ void ePlayerNetID::RequestSyncForce(bool ack)
 
 void ePlayerNetID::RequestSync(bool ack)
 {
-    if (se_disableCreate || tIsInList(se_disableCreateSpecific, pID + 1) || se_avoidPlayerWatchDisable)
+    if ((se_disableCreate || tIsInList(se_disableCreateSpecific, pID + 1) || se_avoidPlayerWatchDisable))
+    {   
         return;
-
+    }
+    
     nNetObject::RequestSync(ack);
 }
 
@@ -14431,5 +14389,3 @@ static void se_checkSilenced(std::istream &s)
 }
 
 static tConfItemFunc se_checkSilencedC("CHECKSILENCED", &se_checkSilenced);
-
-std::pair<ePlayer*, bool> ePlayer::updatedThisRoundArray[4] = {{nullptr, false}, {nullptr, false}, {nullptr, false}, {nullptr, false}};

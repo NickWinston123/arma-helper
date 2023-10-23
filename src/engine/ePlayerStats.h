@@ -72,9 +72,9 @@ public:
     int kills_while_dead    = 0;
     bool alive              = false;
 
-    REAL getLastSeenAgo()
+    REAL getLastSeenAgo(bool current = true)
     {
-        if (last_seen == 0 || in_server)
+        if (current && (last_seen == 0 || in_server))
             return 0;
 
         time_t now = time(NULL);
@@ -88,11 +88,11 @@ public:
         return total_score;
     }
 
-    tString getLastSeenAgoStr(bool exact = false)
+    tString getLastSeenAgoStr(bool current = true, bool exact = false)
     {
-        REAL lastSeen = getLastSeenAgo();
+        REAL lastSeen = getLastSeenAgo(current);
 
-        if (lastSeen == 0)
+        if (current && lastSeen == 0)
         {
             if (in_server)
                 return tString("Now");

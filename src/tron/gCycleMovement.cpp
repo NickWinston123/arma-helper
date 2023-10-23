@@ -2724,7 +2724,7 @@ gCycleMovement::gCycleMovement(eGrid *grid, const eCoord &pos, const eCoord &dir
     lastBotTurnDir = -999;
     lastTurnSysTime = tSysTimeFloat();
     windingNumberWrapped_ = windingNumber_ = Grid()->DirectionWinding(dir);
-    localCurrentTime = -999; 
+    localCurrentTime = -999;
 
     MyInitAfterCreation();
 }
@@ -2761,8 +2761,8 @@ gCycleMovement::gCycleMovement(nMessage &message)
     lastBotTurnDir = -999;
     lastTurnSysTime = tSysTimeFloat();
     windingNumberWrapped_ = windingNumber_ = Grid()->DirectionWinding(dir);
-    localCurrentTime = -999; 
-    
+    localCurrentTime = -999;
+
 
     // MyInitAfterCreation();
 }
@@ -3421,8 +3421,6 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
     {
         playerIsMe = true;
 
-        // gCycle *cycle = dynamic_cast<gCycle *>(this);
-        // cycle->helper_.get()->smartTurning.get()->smartTurningSurvive();
         bool ignoreTurn = false;
 
         currentTime = this->localCurrentTime;
@@ -3444,18 +3442,15 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
         {
             this->lastTurnAttemptTime = currentTime;
             this->lastTurnAttemptDir = dir;
-            // this->blockTurn = 0;
-            tString debugstr;
-            debugstr << "Ignoring turn: " << dir << "\n";
-            std::string debug(debugstr);
-            gHelperUtility::Debug("SMART TURNING SURVIVE", debug);
+
+            if (dir != NONE)
+                gHelperUtility::Debug("SMART TURNING SURVIVE", "Ignoring turn: " + dir, "");
             return false;
         }
 
         if (this->forceTurn != 0)
         {
             dir = this->forceTurn;
-            // this->forceTurn = 0;
         }
     }
 
@@ -3546,7 +3541,7 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
         int wn = windingNumberWrapped_;
 
         Grid()->Turn(wn, dir);
-        
+
         if (playerIsMe)
             this->lastTurnSysTime = tSysTimeFloat();
 

@@ -32,10 +32,13 @@ namespace helperConfig
 
     extern bool sg_helperDebug;
     extern bool sg_helperDebugSpamFilter;
+    extern REAL sg_helperDebugSpamProtectionInterval;
+    extern REAL sg_helperDebugMaxLengthHoldDuraction;
     extern tString sg_helperDebugIgnoreList;
     extern REAL sg_helperDebugDelay;
     extern bool sg_helperDebugTimeStamp;
     extern bool sg_helperDebugLog;
+    extern tString sg_helperDebugLogFile;
 
     extern bool sg_helperSmartTurning;
 
@@ -46,12 +49,13 @@ namespace helperConfig
     extern REAL sg_helperSmartTurningFrontBotActivationSpace;
     extern REAL sg_helperSmartTurningFrontBotDisableTime;
 
-    extern bool sg_helperSmartTurningClosedIn;
+    extern bool sg_helperSmartTurningDisableWhileClosedIn;
 
     extern bool sg_helperSmartTurningAutoTrace;
     extern REAL sg_helperSmartTurningAutoTraceDistance;
 
     extern bool sg_helperSmartTurningSurvive;
+    extern bool sg_helperSmartTurningSurviveDebug;
     extern bool sg_helperSmartTurningSurviveTrace;
     extern bool sg_helperSmartTurningSurviveTraceTurnOnce;
     extern REAL sg_helperSmartTurningSurviveTraceTurnTime;
@@ -59,10 +63,7 @@ namespace helperConfig
     extern REAL sg_helperSmartTurningSurviveTraceCloseFactor;
 
     extern bool sg_helperSmartTurningOpposite;
-    extern REAL sg_helperSmartTurningClosedInMult;
-
-    extern REAL sg_helperSmartTurningRubberTimeMult;
-    extern REAL sg_helperSmartTurningRubberFactorMult;
+    extern REAL sg_helperSmartTurningDisableWhileClosedInMult;
 
     extern REAL sg_helperSmartTurningSpace;
     extern bool sg_helperSmartTurningPlan;

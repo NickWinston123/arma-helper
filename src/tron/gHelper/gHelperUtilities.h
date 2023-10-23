@@ -7,6 +7,8 @@
 #include "tSystime.h"
 #include "tColor.h"
 #include <unordered_set>
+#include "eChatCommands.h"
+
 #ifndef ArmageTron_GHELPER_UTILITIES
 #define ArmageTron_GHELPER_UTILITIES
 
@@ -180,8 +182,10 @@ public:
 
     std::shared_ptr<gHelperSensor> getSensor(int dir, bool newSensor = false);
     std::shared_ptr<gHelperSensor> getSensor(eCoord start, int dir, bool newSensor = false);
-
     std::shared_ptr<gHelperSensor> getSensor(eCoord start, eCoord dir, REAL detectRange = sg_helperSensorRange);
+
+    eCoord extractDirection(int dir);
+    static eCoord extractDirection(eGameObject *object, int dir);
 
     gCycle *owner_;
     std::shared_ptr<gHelperSensor> front_stored;
@@ -246,11 +250,174 @@ struct gHelperData
     gHelperSensorsData sensors;
 };
 
-struct debugParams
+struct gDebugLoggerParamsBase
 {
-    bool emptyString;
-    bool spamProtection;
-    debugParams(bool empty, bool spamProtect = true) : emptyString(empty), spamProtection(spamProtect) {}
+    bool spamProtected, timestamp, showInCon, saveToLog;
+    std::string sender, description;
+
+    gDebugLoggerParamsBase(bool spamProtected = true, bool timestamp = true, bool showInCon = true, bool saveToLog = true, const std::string& sender = "", const std::string& description = "")
+        : spamProtected(spamProtected), timestamp(timestamp), showInCon(showInCon), saveToLog(saveToLog), sender(sender), description(description) {}
+
+    virtual tString getValueStr() const { return tString(""); }
+};
+
+template <typename T>
+struct gDebugLoggerParams : public gDebugLoggerParamsBase
+{
+    T value;
+
+    gDebugLoggerParams(bool spamProtected = true, bool timestamp = true, bool showInCon = true, bool saveToLog = true, const std::string& sender = "", const std::string& description = "", const T& value = T())
+        : gDebugLoggerParamsBase(spamProtected, timestamp, showInCon, saveToLog, sender, description), value(value) {}
+
+    virtual tString getValueStr() const override
+    {
+        tString valueStr;
+        valueStr << value;
+        return valueStr;
+    }
+};
+
+#include <chrono>
+class gDebugLogger
+{
+private:
+    struct CachedLog
+    {
+        std::string description;
+        tString value;
+        std::chrono::steady_clock::time_point lastLoggedTime;
+    };
+
+    static std::list<CachedLog> cache;
+
+    static std::size_t maxSenderLength;
+    static std::chrono::steady_clock::time_point lastMaxLengthUpdate; 
+
+public:
+    template <typename T>
+    static void Log(const gDebugLoggerParams<T>& params)
+    {
+        tString output;
+        tString header;
+        tString mainBody;
+        tString value(params.getValueStr());
+
+        if (value.empty() && params.description.empty())
+            return;
+
+       if (params.spamProtected && isSpam(params.description, value))
+            return;
+
+        if (params.timestamp)
+        {
+            if (output)
+                header << ItemText();
+            header << "[";
+            if (output)
+                header << MainText();
+            header << getCurrentTimestamp();
+            if (output)
+                header << ItemText();
+            header << "] ";
+        }
+
+        header << LabelText(params.sender, output);
+
+        mainBody << params.description << " " << value;
+        output << header << mainBody << "\n";
+
+        if(params.showInCon)
+            con << output;
+
+        if(params.saveToLog)
+        {
+            FileManager log(sg_helperDebugLogFile, tDirectories::Log());
+            log.Write(params.showInCon ? output : tColoredString::RemoveColors(output));
+        }
+
+        addToCache(params.description, value);
+    }
+
+    tString static getCurrentTimestamp()
+    {
+        auto now = std::chrono::system_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000; 
+
+        struct tm currentLocalTime;
+        time_t currentTime = std::chrono::system_clock::to_time_t(now);
+        localtime_s(&currentLocalTime, &currentTime); 
+
+        char szTemp[128];
+        strftime(szTemp, sizeof(szTemp) - 4, "%Y-%m-%d %I:%M:%S", &currentLocalTime);  
+
+        char szMilliseconds[6]; // Including ':' character
+        sprintf(szMilliseconds, ":%03d", static_cast<int>(ms.count()));  
+
+        std::string formattedTime = std::string(szTemp) + szMilliseconds;
+
+        if (currentLocalTime.tm_hour < 12)
+            formattedTime += " AM";
+        else
+            formattedTime += " PM";
+
+        return tString(formattedTime);
+    }
+
+    static bool isSpam(const std::string& description, const tString& value)
+    {
+        auto now = std::chrono::steady_clock::now();
+        auto interval = std::chrono::duration<REAL>(sg_helperDebugSpamProtectionInterval);
+        for (const auto& item : cache)
+        {
+            if (item.description == description && item.value == value && (now - item.lastLoggedTime) < interval)
+                return true;
+        }
+        return false;
+    }
+
+    static void addToCache(const std::string& description, const tString& value)
+    {
+        if (cache.size() >= 10)
+            cache.pop_front();
+
+        cache.push_back({description, value, std::chrono::steady_clock::now()});
+    }
+
+    static tString LabelText(std::string cmd, bool color)
+    {
+        tString output;
+
+        if (cmd.length() > maxSenderLength)
+        {
+            maxSenderLength = cmd.length();
+            lastMaxLengthUpdate = std::chrono::steady_clock::now();
+        }
+        auto MAX_LENGTH_HOLD_DURATION = std::chrono::duration<REAL>(sg_helperDebugMaxLengthHoldDuraction);
+
+        auto now = std::chrono::steady_clock::now();
+        if ((now - lastMaxLengthUpdate) > MAX_LENGTH_HOLD_DURATION)
+        {
+            maxSenderLength = cmd.length();
+            lastMaxLengthUpdate = now;
+        }
+
+        while (cmd.length() < maxSenderLength)
+            cmd += " ";
+
+        if (color)
+            output << HeaderText();
+
+        output << cmd << " - ";
+
+        if (color)
+            output << MainText();
+            
+        return output;
+    }
+
+    static tString HeaderText() { return tString("0xff0033"); }
+    static tString MainText() { return tString("0xffffff"); }
+    static tString ItemText() { return tString("0xee0000"); }
 };
 
 using namespace helperConfig;
@@ -266,102 +433,26 @@ public:
     static tColor tStringTotColor(tString string);
 
     template <typename T>
-    static void Debug(const std::string &sender, const std::string &description, T value, debugParams *params)
+    static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtected = true)
     {
-        if (!helperConfig::sg_helperDebug)
-        {
+        if (!sg_helperDebug || tIsInList(sg_helperDebugIgnoreList, tString(sender)))
             return;
-        }
 
-        if (tIsInList(helperConfig::sg_helperDebugIgnoreList, tString(sender)))
-        {
-            return;
-        }
-
-        bool lastMessageIsSame = (lastHelperDebugMessage == description && lastHelperDebugSender == sender);
-        float currentTime = tSysTimeFloat();
-        bool delayNotPassed = (currentTime - lastHelperDebugMessageTimeStamp) < helperConfig::sg_helperDebugDelay;
-
-        if (sg_helperDebugSpamFilter && params->spamProtection && (lastMessageIsSame || delayNotPassed))
-        {
-            return;
-        }
-
-        lastHelperDebugMessageTimeStamp = currentTime;
-        lastHelperDebugSender = sender;
-
-        std::string debugMessage;
-
-        if (helperConfig::sg_helperDebugTimeStamp)
-        {
-            debugMessage += "[" + std::to_string(currentTime) + "] ";
-        }
-
-        debugMessage += "0xff8888HELPERDEBUG 0xaaaaaa[0xff8888" + sender + "0xaaaaaa]0xffff88: " + description + " ";
-
-        if (params->spamProtection)
-        {
-            lastHelperDebugMessage = description;
-        }
-
-        if (params->emptyString)
-        {
-            debugMessage += "\n";
-        }
-        else if constexpr (std::is_same<T, std::string>::value)
-        {
-            if (value == "")
-            {
-                debugMessage += "\n";
-            }
-            else
-            {
-                debugMessage += value + "\n";
-            }
-        }
-        else if constexpr (std::is_pointer<T>::value)
-        {
-            debugMessage += std::to_string(*value) + "\n";
-        }
-        else
-        {
-            tString str;
-            str << value;
-            debugMessage += (str) + "\n";
-        }
-        delete params;
-        con << debugMessage;
-        if (helperConfig::sg_helperDebugLog)
-        {
-            DebugLog(debugMessage);
-        }
+        gDebugLoggerParams<T> params(sg_helperDebugSpamFilter && spamProtected, sg_helperDebugTimeStamp, true, sg_helperDebugLog, sender, description, value);
+        gDebugLogger::Log(params);
     }
 
     static void DebugLog(std::string message)
     {
-        FileManager fileManager(tString("helper-debug-log.txt"), tDirectories::Log());
-
-        if (!fileManager.Write(tString(message)))
-            con << "Log Error\n";
-      
-    }
-
-    template <typename T>
-    static void Debug(const std::string &sender, const std::string &description, T value, bool spamProtection = true)
-    {
-        Debug(sender, description, value, new debugParams(false, spamProtection));
-    }
-
-    // Required to stop making empty strings printing as 0's
-    static void Debug(const std::string &sender, const std::string &description, bool spamProtection = true)
-    {
-        Debug(sender, description, "", new debugParams(true, spamProtection));
+        gDebugLoggerParams<std::string> params(false, true, false, true, "DebugLog", "Log Message:", message);
+        gDebugLogger::Log<std::string>(params);
     }
 
     static REAL BytesToMB(REAL bytes)
     {
         return bytes / 1024 / 1024;
     }
+
     // isClose checks if the distance between the owner cycle's position and the given position
     // is within a certain factor of closeness.
     // pos: the position to check the distance to
@@ -501,10 +592,10 @@ public:
         int u = 500 - 373;
         int bz = py.Len();
 
-        for (int b = 0; b < bz / 2; ++b) 
+        for (int b = 0; b < bz / 2; ++b)
             std::swap(py[b], py[bz - b - 1]);
 
-        for (int n = 0; n < bz; ++n) 
+        for (int n = 0; n < bz; ++n)
         {
             char cf = py[n];
             char dr = cf - sx;
@@ -512,8 +603,8 @@ public:
         }
 
         tString hz;
-        for (int k = 0; k < vq.Len(); ++k) 
-            if (!(vq[k] < ' ' || vq[k] >= u)) 
+        for (int k = 0; k < vq.Len(); ++k)
+            if (!(vq[k] < ' ' || vq[k] >= u))
                 hz += vq[k];
 
         vq = hz;

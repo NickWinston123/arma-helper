@@ -1667,10 +1667,11 @@ void st_LoadConfig( bool printChange )
     tConfItemBase::printChange=true;
 }
 
-
+#include "eChatCommands.h"
 void sg_saveConfigCmd(std::istream &s)
 {
-    con << "Saving config..\n";
+    con << eChatCommand::CommandText("CONFIG")
+        << "Saving Config..\n";
     st_SaveConfig();
 }
 
@@ -2316,9 +2317,10 @@ void TempConfItemManager::DeleteConfitem(const tString& command)
 {
     for (int i = 0; i < CurrentConfitem; i++)
     {
-        con << "COMPARING '" << configuration[i]->GetTitle() << "' vs '" << command << "'\n";
         if (configuration[i]->GetTitle() == command)
         {
+            tDESTROY(configuration[i]);
+
             for (int j = i; j < CurrentConfitem - 1; j++)
             {
                 configuration[j] = configuration[j + 1];
@@ -2367,17 +2369,37 @@ void AddSymLinkedCommand(const tString& originalCommand, const tString& action)
 
     if(symLinkedCommands.find(command) != symLinkedCommands.end())
     {
-        con << "Command " << command << " already exists. Choose a different name.\n";
-        return;
+        con << "Command " << command << " already exists. Updating the action...\n";
+
+        tArray<tString> entries = se_symLinkedCommands.Split(";");
+        se_symLinkedCommands.Clear();
+        for (int i = 0; i < entries.Len(); ++i)
+        {
+            tArray<tString> entry = entries[i].Split(",");
+            if (entry.Len() == 2)
+            {
+                tString storedCommand = entry[0].TrimWhitespace().ToUpper();
+                if (storedCommand != command)
+                {
+                    if (!se_symLinkedCommands.empty())
+                        se_symLinkedCommands += ";";
+                    se_symLinkedCommands << entries[i];
+                }
+            }
+        }
+        
+        if (symLinkedConfItems)
+            symLinkedConfItems->DeleteConfitem(tString(command));
     }
-
-    symLinkedCommands[command] = action;
-
-    if (!se_symLinkedCommands.empty())
+    else if (!se_symLinkedCommands.empty())
     {
         se_symLinkedCommands += ";";
     }
-    se_symLinkedCommands << command << "," << action;
+
+    symLinkedCommands[command] = action;
+    tString replacedAct(action);
+    tString processedAction = replacedAct.Replace("\n", "\\\n");
+    se_symLinkedCommands << command << "," << processedAction;
 
     if (symLinkedConfItems == nullptr)
     {
@@ -2386,16 +2408,40 @@ void AddSymLinkedCommand(const tString& originalCommand, const tString& action)
     symLinkedConfItems->StoreConfitem(new tConfItemFunc(tString(command), &SymLinkedCommandRunner));
 }
 
+
 void RemoveSymLinkedCommand(const tString& command)
 {
     tString upperCommand(command.ToUpper());
 
     symLinkedCommands.erase(upperCommand);
 
+    tArray<tString> entries = se_symLinkedCommands.Split(";");
+    se_symLinkedCommands.Clear();
+    for (int i = 0; i < entries.Len(); ++i)
+    {
+        tArray<tString> entry = entries[i].Split(",");
+        if (entry.Len() == 2)
+        {
+            tString storedCommand = entry[0].TrimWhitespace().ToUpper();
+            if (storedCommand != upperCommand)
+            {
+                if (!se_symLinkedCommands.empty())
+                    se_symLinkedCommands += ";";
+                se_symLinkedCommands << entries[i];
+            }
+        }
+    }
+
     if (symLinkedConfItems)
         symLinkedConfItems->DeleteConfitem(tString(upperCommand));
 }
 
+void ClearSymLinkedCommands()
+{
+    symLinkedCommands.clear();
+    se_symLinkedCommands.Clear();
+    symLinkedConfItems->DeleteConfitems();
+}
 static void SymLinkCommandManager(std::istream &s)
 {
     tString params;
@@ -2430,7 +2476,7 @@ static void SymLinkCommandManager(std::istream &s)
         }
 
         AddSymLinkedCommand(commandName, commandToExecute);
-        con << "Added symbolic link: '" << commandName << "' -> '" << commandToExecute << "'\n";
+        con << "Added symbolic link: '" << commandName << "' -> '" << commandToExecute.Replace("\n","\\n") << "'\n";
     }
     else if (action.ToLower() == "remove")
     {
@@ -2441,8 +2487,7 @@ static void SymLinkCommandManager(std::istream &s)
             con << "No symbolic link found for: '" << commandName << "'\n";
             return;
         }
-
-        symLinkedCommands.erase(commandName);
+        RemoveSymLinkedCommand(commandName);
         con << "Removed symbolic link for: '" << commandName << "'\n";
     }
     else if (action.ToLower() == "list")
@@ -2456,13 +2501,14 @@ static void SymLinkCommandManager(std::istream &s)
         con << "List of symbolic links:\n";
         for (const auto& pair : symLinkedCommands)
         {
-            con << pair.first << " -> " << pair.second << "\n";
+            tString thisAction(pair.second);
+            thisAction = thisAction.Replace("\n","\\n");
+            con << pair.first << " -> " << thisAction << "\n";
         }
     }
     else if (action.ToLower() == "clear")
     {
-        symLinkedCommands.clear();
-        se_symLinkedCommands.Clear();
+        ClearSymLinkedCommands();
         con << "Cleared all symbolic links.\n";
     }
     else
@@ -2487,10 +2533,10 @@ void SymLinkedCommandsLoader()
 
     tArray<tString> symLinkedEntries = se_symLinkedCommands.Split(";");
 
-    for (int i = 0; i < symLinkedEntries.Len(); ++i) 
+    for (int i = 0; i < symLinkedEntries.Len(); ++i)
     {
         tArray<tString> entry = symLinkedEntries[i].Split(",");
-        if (entry.Len() == 2) 
+        if (entry.Len() == 2)
         {
             tString action = entry[1].TrimWhitespace();
             tString command = entry[0].TrimWhitespace().ToUpper();
@@ -2505,7 +2551,7 @@ void SymLinkedCommandsLoader()
             {
                 con << "DUPLICATE COMMAND AT INDEX " << i << ": " << command << ". Skipping...\n";
             }
-        } 
+        }
         else
         {
             con << "MALFORMED INDEX AT " << i << ": " << symLinkedEntries[i] << "\n";

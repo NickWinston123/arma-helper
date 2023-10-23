@@ -209,10 +209,9 @@ void helperSmartTurningMenu()
 {
     uMenu smartTurningMenu("Smart Turning Settings");
 
-    uMenuItemReal closedInMult(&smartTurningMenu, "Closed In Mult", "Multiplier for closed in", sg_helperSmartTurningClosedInMult, 0, 10, 0.1);
-    uMenuItemToggle closedIn(&smartTurningMenu, sg_helperSmartTurningClosedIn ? "0x00dd00Closed In" : "0xdd0000Closed In", "Toggle closed in on/off", sg_helperSmartTurningClosedIn);
-    uMenuItemReal rubberTimeMult(&smartTurningMenu, "Rubber Time Mult", "Multiplier for rubber time", sg_helperSmartTurningRubberTimeMult, 0, 10, 0.1);
-    uMenuItemReal rubberFactorMult(&smartTurningMenu, "Rubber Factor Mult", "Multiplier for rubber factor", sg_helperSmartTurningRubberFactorMult, 0, 10, 0.1);
+    uMenuItemReal closedInMult(&smartTurningMenu, "Closed In Mult", "Multiplier for closed in", sg_helperSmartTurningDisableWhileClosedInMult, 0, 10, 0.1);
+    uMenuItemToggle closedIn(&smartTurningMenu, sg_helperSmartTurningDisableWhileClosedIn ? "0x00dd00Closed In" : "0xdd0000Closed In", "Toggle closed in on/off", sg_helperSmartTurningDisableWhileClosedIn);
+
     uMenuItemReal space(&smartTurningMenu, "Space", "Smart turning space", sg_helperSmartTurningSpace, 0, 10, 0.1);
     uMenuItemToggle plan(&smartTurningMenu, sg_helperSmartTurningPlan ? "0x00dd00Plan" : "0xdd0000Plan", "Toggle plan on/off", sg_helperSmartTurningPlan);
     uMenuItemToggle survive(&smartTurningMenu, sg_helperSmartTurningSurvive ? "0x00dd00Survive" : "0xdd0000Survive", "Toggle survive on/off", sg_helperSmartTurningSurvive);

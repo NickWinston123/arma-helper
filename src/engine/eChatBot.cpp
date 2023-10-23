@@ -70,6 +70,9 @@ static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenConf = HelperCommand::t
 REAL se_playerTriggerMessagesSpamMaxlenPartAdd = 0.5;
 static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenPartAddConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DELAY_SPAM_MAXLEN_NEGATIVE_PART_ADD", se_playerTriggerMessagesSpamMaxlenPartAdd);
 
+static bool se_playerMessageChatFunctionsOnly = false;
+static tConfItem<bool> se_playerMessageChatFunctionsOnlyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_FUNCTIONS_ONLY", se_playerMessageChatFunctionsOnly);
+
 
 tString stripNonOperatorsOrNumbers(const tString &input);
 bool containsMath(tString input, bool exact);
@@ -665,7 +668,7 @@ tString exactStatFunc(tString message)
     tString playerName, stat;
     ePlayerNetID *statsTargetPlayer = nullptr;
     eChatBotStats chatBotStats = eChatBot::getInstance().Stats();
-    bool symLinkFunc = chatBotStats.lastTriggerType == "symfunc";
+    bool symLinkFunc = chatBotStats.lastTriggerType == SYM_FUNC;
 
     if (!se_playerStats)
     {
@@ -720,7 +723,11 @@ tString exactStatFunc(tString message)
         else if (statLabel == "Fastest Speed")
             statValue << stats->getSpeed(false);
         else if (statLabel == "Last Seen")
-            statValue << stats->getLastSeenAgoStr(true);
+            statValue << stats->getLastSeenAgoStr(true,true);
+            if (stats->in_server)
+                statValue << " ("
+                          << stats->getLastSeenAgoStr(false,true)
+                          << ")";
         else
             statValue << stats->getAnyValue(stat.TrimWhitespace());
     }
@@ -792,7 +799,7 @@ tString hideStatFunc(tString message)
     }
 
     eChatBotStats &chatBotStats = eChatBot::getInstance().Stats();
-    bool symLinkFunc = chatBotStats.lastTriggerType == "symfunc";
+    bool symLinkFunc = chatBotStats.lastTriggerType == SYM_FUNC;
     ePlayerNetID *triggeredBy = chatBotStats.lastTriggeredBy;
     PlayerData &stats = ePlayerStats::getStats(triggeredBy);
     int pos = 0;
@@ -937,13 +944,13 @@ tString whatsThefunc(tString message)
         nServerInfoBase *connectedServer = CurrentServer();
         if (connectedServer)
             output << tColoredString::RemoveColors(connectedServer->GetConnectionName());
-        else 
+        else
             output << "No Server?";
     }
     else if (target.Contains("players_today"))
     {
         time_t startOfDay = getStartTimeOfDay();
-        
+
         int number_of_players = 0;
         for (auto stats : ePlayerStats::playerStatsMap)
         {
@@ -970,13 +977,13 @@ tString whatsThefunc(tString message)
     {
         eChatBotStats &stats = eChatBot::getInstance().Stats();
         output << stats.times_banned_today;
-               
+
     }
     else if (target.Contains("times_banned"))
     {
         eChatBotStats &stats = eChatBot::getInstance().Stats();
         output << stats.times_banned;
-               
+
     }
     else if (target.Contains("last_time_banned"))
     {
@@ -1254,7 +1261,6 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
         if (match)
         {
             Stats().lastMatchedTrigger = trigger.TrimWhitespace();
-            Stats().lastTriggerType = "normal";
 
             // Determine the sending player based on the type of trigger
             if (triggeredByPlayer != nullptr)
@@ -1299,7 +1305,6 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
             bool function = false;
             while ((dollarPos = chosenResponse.StrPos(dollarPos, "$")) != -1)
             {
-                function = true;
 
                 int openParenPos = chosenResponse.StrPos(dollarPos + 1, "(");
                 int closeParenPos = -1;
@@ -1314,7 +1319,6 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                     {
                         functionName = chosenResponse.SubStr(dollarPos, openParenPos - dollarPos).TrimWhitespace();
                         functionInput = chosenResponse.SubStr(openParenPos + 1, closeParenPos - openParenPos - 1);
-                        Stats().lastTriggerType = "symfunc";
                     }
                 }
 
@@ -1333,6 +1337,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 bool functionResponse = !functionName.StartsWith("$p1");
                 if (functionResponse)
                 {
+                    function = true;
                     tString finalFunctionInput(functionInput);
 
                     if (finalFunctionInput.empty())
@@ -1354,6 +1359,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
                         toReplace = Stats().lastMatchedTrigger;
                         finalFunctionInput = finalFunctionInput.Replace(toReplace,"");
+                        Stats().lastTriggerType = SYM_FUNC;
                     }
 
                     tString result = ExecuteFunction(functionName, finalFunctionInput);
@@ -1373,9 +1379,13 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
                 dollarPos = (closeParenPos == -1) ? dollarPos + 1 : closeParenPos + 1;
             }
 
-            if (function && Stats().lastTriggerType != "symfunc")
-                Stats().lastTriggerType = "func";
+            if (function && Stats().lastTriggerType != SYM_FUNC)
+                Stats().lastTriggerType = NORMAL_FUNC;
+
             chosenResponse = responseStr;
+
+            if (!forceRandomRename && se_playerMessageChatFunctionsOnly && Stats().lastTriggerType == NORMAL )
+                return std::make_tuple(tString(""), 0.0, nullptr);
 
             return std::make_tuple(chosenResponse, extraDelay, sendingPlayer);
         }

@@ -1534,9 +1534,9 @@ int nSocket::Create( void )
     // set TOS to low latency ( see manpages getsockopt(2), ip(7) and socket(7) )
     // maybe this works for Windows, too?
 #ifndef WIN32
-    char tos = IPTOS_LOWDELAY;
+    char dscp = IPTOS_DSCP_AF32;
 
-    setsockopt( socket_, IPPROTO_IP, IP_TOS, &tos, sizeof(char) );
+    setsockopt( socket_, IPPROTO_IP, IP_TOS, &dscp, sizeof( dscp ) );
 #endif
 
     // unblock it

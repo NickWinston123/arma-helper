@@ -20,3 +20,6 @@ void gHelperSensor::PassEdge(const eWall *ww, REAL time, REAL a, int r)
         throw;
     }
 }
+
+gHelperSensor::gHelperSensor(eGameObject *o, const eCoord &start, int dir)
+    : gSensor(o, start, gHelperSensorsData::extractDirection(o, dir)) {}

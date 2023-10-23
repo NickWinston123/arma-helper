@@ -20,6 +20,13 @@ extern bool se_playerTriggerMessages;
 struct eChatBotStats;
 
 
+enum eChatBotMessageType
+{
+    NORMAL,				
+    NORMAL_FUNC,			
+    SYM_FUNC,
+};
+
 struct eChatBotStatsBase
 {
     tString name = tString("hackermans");
@@ -30,7 +37,7 @@ struct eChatBotStatsBase
     time_t last_banned      = 0;
     REAL total_up_time      = 0;
     tString lastMatchedTrigger;
-    tString lastTriggerType;
+    eChatBotMessageType lastTriggerType = NORMAL;
     ePlayerNetID *lastTriggeredBy;
 };
 
@@ -121,7 +128,7 @@ public:
         for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
         {
             ePlayerNetID *p = se_PlayerNetIDs(i);
-            if (p && p->IsHuman() && p->IsSpectating())
+            if (p && p->IsHuman() && !p->isLocal() && p->IsSpectating())
             {
                 num_spectators++;
             }
@@ -130,12 +137,12 @@ public:
         time_t now = time(nullptr);        
         time_t difference = now - Stats().last_banned;
 
-        if(Stats().times_banned_today <= se_playerWatchAutoRandomNameBanLimit 
-           && !avoidPlayerInGame() &&
-           difference > se_playerWatchAutoRandomNameRevertTime && 
-           Stats().upTime() > (se_playerWatchAutoRandomNameRevertTime/2) 
-           && num_spectators == 0 
-           ) 
+        bool bannedOverTodaysLimit = Stats().times_banned_today >= se_playerWatchAutoRandomNameBanLimit;
+        bool timeToRevert = ((difference > se_playerWatchAutoRandomNameRevertTime && Stats().upTime() >= (se_playerWatchAutoRandomNameRevertTime/2)) || difference > se_playerWatchAutoRandomNameRevertTime*2 );
+        bool noSpecators = num_spectators == 0;
+        bool inGameForFullWaitTime = Stats().upTime() >= (se_playerWatchAutoRandomNameRevertTime);
+
+        if(!bannedOverTodaysLimit && !avoidPlayerInGame() && timeToRevert && (noSpecators || inGameForFullWaitTime)) 
         {
             forceRandomRename = false;
         }

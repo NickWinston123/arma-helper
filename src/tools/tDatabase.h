@@ -157,11 +157,10 @@ void Save()
     std::stringstream insertSql;
     insertSql << "INSERT OR REPLACE INTO " << tableName << " (";
     for (const auto &mapping : mappings)
-    {
         insertSql << mapping.columnName << ",";
-    }
     insertSql.seekp(-1, insertSql.cur); 
     insertSql << ") VALUES (";
+
     // placeholders
     for (size_t i = 0; i < mappings.size(); ++i)
     {
@@ -181,14 +180,13 @@ void Save()
         {
             int column = 1;
             for (const auto &mapping : mappings)
-            {
                 mapping.bindFunc(stmt, column, obj);
-            }
+
             rc = sqlite3_step(stmt);
+            
             if (rc != SQLITE_DONE)
-            {
                 gHelperUtility::DebugLog("Failed to save object to DB.");
-            }
+
             sqlite3_reset(stmt); // reset the prepared statement
         }
     }
@@ -208,7 +206,7 @@ namespace tDatabaseUtility
     {
         tString databasePath = tDirectories::Var().GetReadPath(databaseFile);
 
-        gHelperUtility::DebugLog(st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ").stdString() + "Opening database at '" + databasePath.stdString() + "'");
+        gHelperUtility::DebugLog("Opening database at '" + databasePath.stdString() + "'");
 
         sqlite3 *db;
         int rc = sqlite3_open(databasePath, &db);

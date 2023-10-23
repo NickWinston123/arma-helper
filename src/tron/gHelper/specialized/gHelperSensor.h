@@ -11,6 +11,8 @@ public:
     gHelperSensor(eGameObject *o, const eCoord &start, const eCoord &d)
         : gSensor(o, start, d) {}
 
+    gHelperSensor(eGameObject *o, const eCoord &start, int dir);
+    
     virtual void PassEdge(const eWall *w, REAL time, REAL, int = 1);
 };
 #endif

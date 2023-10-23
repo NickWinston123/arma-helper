@@ -24,7 +24,7 @@ namespace helperConfig
 
     int sg_helperEnabledPlayer = 0;
     static tConfItem<int> sg_helperEnabledPlayerConf = HelperCommand::tConfItem("HELPER_ENABLED_PLAYER", sg_helperEnabledPlayer);
-    
+
     bool sg_helperCurrentTimeLocal = true; // Determines if the helper uses its own internal clock or the games to sync actions
     static tConfItem<bool> sg_helperCurrentTimeLocalConf = HelperCommand::tConfItem("HELPER_CONF_CURRENT_TIME_LOCAL", sg_helperCurrentTimeLocal);
     REAL sg_helperBrightness = 1;
@@ -40,8 +40,14 @@ namespace helperConfig
 
     bool sg_helperDebug = false;
     static tConfItem<bool> sg_helperDebugConf = HelperCommand::tConfItem("HELPER_DEBUG", sg_helperDebug);
+    REAL sg_helperDebugSpamProtectionInterval = 1;
+    static tConfItem<REAL> sg_helperDebugSpamProtectionIntervalConf = HelperCommand::tConfItem("HELPER_DEBUG_SPAM_PROTECTION_INTERVAL", sg_helperDebugSpamProtectionInterval);
+    REAL sg_helperDebugMaxLengthHoldDuraction = 30;
+    static tConfItem<REAL> sg_helperDebugMaxLengthHoldDuractionConf = HelperCommand::tConfItem("HELPER_DEBUG_MAX_LENGTH_HOLD_DURATION", sg_helperDebugMaxLengthHoldDuraction);
     bool sg_helperDebugLog = false;
     static tConfItem<bool> sg_helperDebugLogConf = HelperCommand::tConfItem("HELPER_DEBUG_LOG", sg_helperDebugLog);
+    tString sg_helperDebugLogFile("helper-debug-log.txt");
+    static tConfItem<tString> sg_helperDebugLogFileConf = HelperCommand::tConfItem("HELPER_DEBUG_LOG_FILE", sg_helperDebugLogFile);
     bool sg_helperDebugSpamFilter = true;
     static tConfItem<bool> sg_helperDebugSpamFilterConf = HelperCommand::tConfItem("HELPER_DEBUG_SPAM_FILTER", sg_helperDebugSpamFilter);
     tString sg_helperDebugIgnoreList("");
@@ -893,7 +899,7 @@ void gHelper::trace(gHelperData &data, int dir)
     if (!(owner_.pendingTurns.size() == 0))
     {
         if (helperConfig::sg_helperDebug)
-            gHelperUtility::Debug("Trace", "Not tracing due to pending turns.");
+            gHelperUtility::Debug("Trace", "Not tracing due to pending turns.", "");
         return;
     }
     eGrid *grid = owner_.Grid();
@@ -909,7 +915,7 @@ void gHelper::trace(gHelperData &data, int dir)
     if (sensor->hit > (sensorDistance[index] + sg_helperTraceReactRange))
     {
         if (helperConfig::sg_helperDebug)
-            gHelperUtility::Debug("Trace", (dir == LEFT) ? "Tracing left" : "Tracing right");
+            gHelperUtility::Debug("Trace", ((dir == LEFT) ? "Tracing left" : "Tracing right"), "");
         gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index]
         {
             this->owner_.ActTurnBot(dir);

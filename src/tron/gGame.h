@@ -68,7 +68,7 @@ typedef enum
 
 extern bool tryConnectLastServer;
 extern bool sg_forcePlayerUpdate;
-
+extern bool sn_networkErrorQuit;
 // extern gGameType sg_gameType;      // the current game type
 extern bool sg_TalkToMaster; // should this server be known on the internet?
 extern bool sg_RequestedDisconnection, sg_connectToLastServerFromMenu;

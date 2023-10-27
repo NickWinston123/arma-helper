@@ -40,8 +40,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //typedef tArray<char> string;
 class tOutput;
 
-
-
 class tString:public tArray<char>{
 private:
 public:
@@ -215,6 +213,29 @@ public:
 
     void NetFilter();                           //!< filters strings from the net for strange things like newlines
 };
+
+class tThemedText
+{
+public:
+    tThemedText(tString& headerColor, tString& mainColor, tString& itemColor, tString& errorColor) :
+        headerColor(headerColor), mainColor(mainColor), itemColor(itemColor), errorColor(errorColor) {}
+
+    tString HeaderColor() const { return headerColor; }
+    tString MainColor()   const { return mainColor;   }
+    tString ItemColor()   const { return itemColor;   }
+    tString ErrorColor()  const { return errorColor;  }
+
+    tString LabelText(const std::string& label) const;
+
+private:
+    tString& headerColor;
+    tString& mainColor;
+    tString& itemColor;
+    tString& errorColor;
+};
+
+extern tThemedText tThemedTextBase;
+extern tString st_ThemeBaseColorHeader, st_ThemeBaseColorMain, st_ThemeBaseColorItem, st_ThemeBaseColorError;
 
 //! proxy class for inserting color markings
 struct tColoredStringProxy

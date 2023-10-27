@@ -560,7 +560,7 @@ tString leaderboardFunc(tString message)
     auto it = std::remove_if(sortedPlayers.begin(), sortedPlayers.end(),
                              [ignorePlayersNotInGame](const std::pair<tString, PlayerData>& player)
                              {
-                                 return !player.second.human || (ignorePlayersNotInGame && !player.second.in_server);
+                                 return !player.second.human || (ignorePlayersNotInGame && !player.second.in_server) || player.second.deleted;
                              });
 
     sortedPlayers.erase(it, sortedPlayers.end());
@@ -723,11 +723,13 @@ tString exactStatFunc(tString message)
         else if (statLabel == "Fastest Speed")
             statValue << stats->getSpeed(false);
         else if (statLabel == "Last Seen")
+        {
             statValue << stats->getLastSeenAgoStr(true,true);
             if (stats->in_server)
                 statValue << " ("
                           << stats->getLastSeenAgoStr(false,true)
                           << ")";
+        }
         else
             statValue << stats->getAnyValue(stat.TrimWhitespace());
     }
@@ -1004,6 +1006,40 @@ tString whatsThefunc(tString message)
     return output;
 }
 
+tString consolidatePlayerStatsFunc(tString message)
+{
+    tString output;
+
+    tString params = message.TrimWhitespace();
+
+    eChatBotStats &stats = eChatBot::getInstance().Stats();
+
+    if (!stats.lastTriggeredBy || !stats.lastTriggeredBy->encryptVerified )
+    {
+        output << "You are not verified";
+        return output;
+    }
+
+    return ePlayerStats::consolidatePlayerStats(params);
+}
+
+tString statsAltFunc(tString message)
+{
+    tString output;
+
+    tString player = message.TrimWhitespace().ToLower();
+
+    eChatBotStats &stats = eChatBot::getInstance().Stats();
+
+    if (!stats.lastTriggeredBy || !stats.lastTriggeredBy->encryptVerified )
+    {
+        output << "You are not verified";
+        return output;
+    }
+
+    return ePlayerStats::deletePlayerStats(player);
+}
+
 void eChatBot::InitChatFunctions()
 {
     RegisterFunction(tString("$numbadderfunc"), numberAdderFunc);
@@ -1018,6 +1054,8 @@ void eChatBot::InitChatFunctions()
     RegisterFunction(tString("$masterfunc"), masterFunc);
     RegisterFunction(tString("$hidestatfunc"), hideStatFunc);
     RegisterFunction(tString("$whatsthefunc"), whatsThefunc);
+    RegisterFunction(tString("$consolidatestatsfunc"), consolidatePlayerStatsFunc);
+    RegisterFunction(tString("$statsaltfunc"), statsAltFunc);
 }
 
 void eChatBot::LoadChatTriggers()
@@ -1159,7 +1197,7 @@ chatMessage: the message potentially containing a trigger
 */
 std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString chatMessage, bool eventTrigger)
 {
-    tString lowerMessage(chatMessage.TrimWhitespace());
+    tString lowerMessage(tColoredString::RemoveColors(chatMessage).TrimWhitespace());
 
     if (chatMessage.empty())
         return std::make_tuple(tString(""), 0.0, nullptr);

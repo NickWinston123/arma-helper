@@ -15,6 +15,7 @@
 #include "../tron/gServerFavorites.h"
 #include "../tron/gHelper/gHelperUtilities.h"
 
+
 // Bright Red for headers
 tString se_chatCommandsThemeHeader("0xff0033");
 static tConfItem<tString> se_chatCommandsThemeHeaderConf("LOCAL_CHAT_COMMANDS_THEME_HEADER", se_chatCommandsThemeHeader);
@@ -27,6 +28,8 @@ static tConfItem<tString> se_chatCommandsThemeItemConf("LOCAL_CHAT_COMMANDS_THEM
 // Pinkish red for error messages as an accent color
 tString se_chatCommandsThemeError("0xee5577");
 static tConfItem<tString> se_chatCommandsThemeErrorConf("LOCAL_CHAT_COMMANDS_THEME_ERROR", se_chatCommandsThemeError);
+
+tThemedText eChatCommand::theme(se_chatCommandsThemeHeader,se_chatCommandsThemeMain,se_chatCommandsThemeItem,se_chatCommandsThemeError);
 
 // our local commands (should always be lowercase)
 tString se_consoleCommand("/con");
@@ -269,7 +272,7 @@ bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<t
     // Split command into commandName and arguments
     int spaceIndex = args.StrPos(" ");
     spaceIndex = (spaceIndex == -1) ? args.Len() : spaceIndex;
-    
+
     tString commandName = args.SubStr(0, spaceIndex);
     tString arguments = args.SubStr(spaceIndex + 1);
     tString commandNameUpper(commandName.ToUpper());
@@ -333,7 +336,7 @@ bool MsgCommand::execute(tString args)
 
         logOutput << netPlayer->GetName()
                   << " --> "
-                  << msgTarget->GetName()
+                  << (msgTarget ? msgTarget->GetName() : "?")
                   << ": "
                   << args;
 
@@ -386,7 +389,7 @@ tColoredString ColorsCommand::cycleColorPreview(REAL r, REAL g, REAL b)
     cyclePreview << tColoredString::ColorString(cycleR, cycleG, cycleB) << "<"
                  << tColoredString::ColorString(r, g, b) << "=="
                 //  << tColoredString::ColorString(tailR2, tailG2, tailB2) << "="
-                 << eChatCommand::MainText();
+                 << tThemedTextBase.MainColor();
 
     return cyclePreview;
 }
@@ -428,14 +431,14 @@ tColoredString ColorsCommand::localPlayerPreview(ePlayer *local_p)
     tColoredString output;
     output << tColoredString::ColorString(r/15, g/15, b/15)
            << local_p->Name()
-           << eChatCommand::MainText()
+           << tThemedTextBase.MainColor()
            << " ("
-           << eChatCommand::ItemText() << r << eChatCommand::MainText() << ", "
-           << eChatCommand::ItemText() << g << eChatCommand::MainText() << ", "
-           << eChatCommand::ItemText() << b << eChatCommand::MainText() << ") "
+           << tThemedTextBase.ItemColor() << r << tThemedTextBase.MainColor() << ", "
+           << tThemedTextBase.ItemColor() << g << tThemedTextBase.MainColor() << ", "
+           << tThemedTextBase.ItemColor() << b << tThemedTextBase.MainColor() << ") "
            << cycleColorPreview(r, g, b)
            << " (mode: "
-           << eChatCommand::ItemText() << localPlayerMode(local_p) << eChatCommand::MainText() << ") ";
+           << tThemedTextBase.ItemColor() << localPlayerMode(local_p) << tThemedTextBase.MainColor() << ") ";
 
     return output;
 }
@@ -445,22 +448,22 @@ tColoredString ColorsCommand::gatherPlayerColor(ePlayerNetID *p, bool showReset)
     tColoredString listColors, cyclePreview;
 
     if (showReset)
-        listColors << p->GetColoredName() << eChatCommand::MainText() << " (";
+        listColors << p->GetColoredName() << tThemedTextBase.MainColor() << " (";
     else
-        listColors << p->GetColoredName().StripWhitespace() << eChatCommand::MainText() << " (";
+        listColors << p->GetColoredName().StripWhitespace() << tThemedTextBase.MainColor() << " (";
 
-    listColors << eChatCommand::ItemText() << p->r << eChatCommand::MainText() << ", "
-               << eChatCommand::ItemText() << p->g << eChatCommand::MainText() << ", "
-               << eChatCommand::ItemText() << p->b << eChatCommand::MainText() << ") "
+    listColors << tThemedTextBase.ItemColor() << p->r << tThemedTextBase.MainColor() << ", "
+               << tThemedTextBase.ItemColor() << p->g << tThemedTextBase.MainColor() << ", "
+               << tThemedTextBase.ItemColor() << p->b << tThemedTextBase.MainColor() << ") "
                << cycleColorPreview(p->r, p->g, p->b);
 
     if (p->isLocal())
     {
         ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
         listColors << " (mode: "
-                   << eChatCommand::ItemText()
+                   << tThemedTextBase.ItemColor()
                    << localPlayerMode(local_p)
-                   << eChatCommand::MainText()
+                   << tThemedTextBase.MainColor()
                    << ") ";
 }
 
@@ -473,16 +476,16 @@ bool ColorsCommand::execute(tString args)
     {
         if (args.empty())
         {
-            con << CommandText() << tOutput("$player_colors_text") << MainText();
+            con << CommandLabel() << tOutput("$player_colors_text") << MainColor();
             for (int i = 0; i <= se_PlayerNetIDs.Len() - 1; i++)
-                con << ItemText() << (i + 1) << MainText() << ") " << gatherPlayerColor(se_PlayerNetIDs(i)) << "\n";
+                con << ItemColor() << (i + 1) << MainColor() << ") " << gatherPlayerColor(se_PlayerNetIDs(i)) << "\n";
         }
         else
         {
             bool playerFound = false;
             tArray<tString> searchWords = args.Split(" ");
 
-            con << CommandText() << tOutput("$player_colors_text") << MainText();
+            con << CommandLabel() << tOutput("$player_colors_text") << MainColor();
 
             int j = 0;
             for (int i = 0; i < searchWords.Len(); i++)
@@ -492,12 +495,12 @@ bool ColorsCommand::execute(tString args)
                 {
                     playerFound = true;
                     j++;
-                    con << ItemText() << j << MainText() << ") " << gatherPlayerColor(p) << "\n";
+                    con << ItemColor() << j << MainColor() << ") " << gatherPlayerColor(p) << "\n";
                 }
             }
             // No one found.
             if (!playerFound)
-                con << ErrorText() << tOutput("$player_colors_not_found", searchWords[1]) << MainText();
+                con << ErrorColor() << tOutput("$player_colors_not_found", searchWords[1]) << MainColor();
         }
     }
 
@@ -511,13 +514,13 @@ bool listPlayerInfoCommand::execute(tString args)
         if (args.empty())
         {
             if (netPlayer)
-                con << CommandText()
+                con << CommandLabel()
                     << tOutput("$player_info_text")
                     << "\n"
                     << gatherPlayerInfo(netPlayer);
             else
-                con << CommandText()
-                    << ErrorText()
+                con << CommandLabel()
+                    << ErrorColor()
                     << "net player does not exist\n";
         }
         else
@@ -526,7 +529,7 @@ bool listPlayerInfoCommand::execute(tString args)
             tArray<ePlayerNetID *> foundPlayers;
             tArray<tString> msgsExt = args.Split(" ");
 
-            con << CommandText()
+            con << CommandLabel()
                 << tOutput("$player_info_text");
 
             int j = 0;
@@ -538,13 +541,13 @@ bool listPlayerInfoCommand::execute(tString args)
                 {
                     playerFound = true;
                     j++;
-                    con << ItemText() << j << MainText() << ") " << gatherPlayerInfo(p) << "\n";
+                    con << ItemColor() << j << MainColor() << ") " << gatherPlayerInfo(p) << "\n";
                 }
             }
 
             if (!playerFound)
-                con << CommandText()
-                    << ErrorText()
+                con << CommandLabel()
+                    << ErrorColor()
                     << tOutput("$player_not_found_text", args);
         }
     }
@@ -556,10 +559,10 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
 
 
     tColoredString listInfo;
-    listInfo << eChatCommand::MainText() << "Results for " << p->GetColoredName() << eChatCommand::MainText() << ":\n";
+    listInfo << tThemedTextBase.MainColor() << "Results for " << p->GetColoredName() << tThemedTextBase.MainColor() << ":\n";
 
     // Player Info
-    listInfo << eChatCommand::MainText() << "Player Info: \n";
+    listInfo << tThemedTextBase.MainColor() << "Player Info: \n";
 
     tString nameHistory;
 
@@ -568,59 +571,59 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
         if (nameHistory.empty())
             nameHistory = p->nameHistory[i];
         else {
-            nameHistory = nameHistory + eChatCommand::MainText() + ", " + p->nameHistory[i];
+            nameHistory = nameHistory + tThemedTextBase.MainColor() + ", " + p->nameHistory[i];
         }
     }
 
-    listInfo << eChatCommand::MainText() << " Color: " << ColorsCommand::gatherPlayerColor(p) << "\n";
+    listInfo << tThemedTextBase.MainColor() << " Color: " << ColorsCommand::gatherPlayerColor(p) << "\n";
 
     gRealColor color(p->r, p->g, p->b);
     se_MakeColorValid(color.r, color.g, color.b, 1.0f);
     se_removeDarkColors(color);
-    listInfo << eChatCommand::MainText()
-             << " Filtered Color: "      << eChatCommand::MainText()            << "("
-             << eChatCommand::ItemText() << color.r << eChatCommand::MainText() << ", "
-             << eChatCommand::ItemText() << color.g << eChatCommand::MainText() << ", "
-             << eChatCommand::ItemText() << color.b << eChatCommand::MainText() << ")\n";
+    listInfo << tThemedTextBase.MainColor()
+             << " Filtered Color: "      << tThemedTextBase.MainColor()            << "("
+             << tThemedTextBase.ItemColor() << color.r << tThemedTextBase.MainColor() << ", "
+             << tThemedTextBase.ItemColor() << color.g << tThemedTextBase.MainColor() << ", "
+             << tThemedTextBase.ItemColor() << color.b << tThemedTextBase.MainColor() << ")\n";
 
     listInfo << " Name History: "
              << nameHistory
              << "\n";
 
     listInfo << " Status: "
-             << eChatCommand::ItemText() << (p->IsHuman() ? "Human" : "Bot")
-             << eChatCommand::MainText() << ", "
-             << eChatCommand::ItemText() << (p->CurrentTeam() ? "Playing" : "Spectating")
-             << (p->IsChatting() ? (eChatCommand::MainText() << "," << eChatCommand::ItemText() << " Chatting\n") : "\n");
+             << tThemedTextBase.ItemColor() << (p->IsHuman() ? "Human" : "Bot")
+             << tThemedTextBase.MainColor() << ", "
+             << tThemedTextBase.ItemColor() << (p->CurrentTeam() ? "Playing" : "Spectating")
+             << (p->IsChatting() ? (tThemedTextBase.MainColor() << "," << tThemedTextBase.ItemColor() << " Chatting\n") : "\n");
 
     listInfo << " Ping: "
-             << eChatCommand::ItemText()
+             << tThemedTextBase.ItemColor()
              << int(p->ping * 1000)
-             << eChatCommand::MainText()
+             << tThemedTextBase.MainColor()
              << " ("
-             << eChatCommand::ItemText()
+             << tThemedTextBase.ItemColor()
              << p->ping
-             << eChatCommand::MainText()
+             << tThemedTextBase.MainColor()
              << ")\n";
 
     listInfo << " Created: "
-             << eChatCommand::ItemText() << getTimeStringBase(p->createTime_)
-             << eChatCommand::MainText() << "\n"
+             << tThemedTextBase.ItemColor() << getTimeStringBase(p->createTime_)
+             << tThemedTextBase.MainColor() << "\n"
              << " Last Activity: "
-             << eChatCommand::ItemText() << st_GetFormatTime(p->LastActivity(), true)
-             << eChatCommand::MainText() << "\n";
+             << tThemedTextBase.ItemColor() << st_GetFormatTime(p->LastActivity(), true)
+             << tThemedTextBase.MainColor() << "\n";
 
     if (p->ChattingTime() > 0)
         listInfo << " Chatting For: "
-                 << eChatCommand::ItemText()
+                 << tThemedTextBase.ItemColor()
                  << st_GetFormatTime(p->ChattingTime(), true)
-                 << eChatCommand::MainText() << "\n";
+                 << tThemedTextBase.MainColor() << "\n";
 
 
     // Cycle Info
 
     if (p->CurrentTeam())
-        listInfo << eChatCommand::MainText()
+        listInfo << tThemedTextBase.MainColor()
                 << "Cycle Info: \n";
     if (p->Object())
     {
@@ -628,59 +631,59 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
         gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
 
         listInfo << " Status: "
-                 << eChatCommand::ItemText()
+                 << tThemedTextBase.ItemColor()
                  << (pCycle->Alive() ? "Alive" : "Dead")
                  << '\n'
-                 << eChatCommand::MainText()
+                 << tThemedTextBase.MainColor()
                  << " Lag: "
-                 << eChatCommand::ItemText()
+                 << tThemedTextBase.ItemColor()
                  << int(pCycle->Lag()  * 1000)
-                 << eChatCommand::MainText()
+                 << tThemedTextBase.MainColor()
                  << " ("
-                 << eChatCommand::ItemText()
+                 << tThemedTextBase.ItemColor()
                  << pCycle->Lag()
-                 << eChatCommand::MainText()
+                 << tThemedTextBase.MainColor()
                  << ")\n";
 
         if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
             listInfo << " Last Death: "
-                     << ItemText() << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, true)
+                     << ItemColor() << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, true)
                      << "\n";
         else
             listInfo << " Alive Time: "
-                     << eChatCommand::ItemText() << st_GetFormatTime(se_GameTime(), true)
+                     << tThemedTextBase.ItemColor() << st_GetFormatTime(se_GameTime(), true)
                      << "\n";
 
         if (pCycle->Alive())
         {
-            listInfo << eChatCommand::MainText()
+            listInfo << tThemedTextBase.MainColor()
                      << " Position: x: "
-                     << eChatCommand::ItemText() << pCycle->Position().x
-                     << eChatCommand::MainText()
+                     << tThemedTextBase.ItemColor() << pCycle->Position().x
+                     << tThemedTextBase.MainColor()
                      << ", y: "
-                     << eChatCommand::ItemText() << pCycle->Position().y
-                     << eChatCommand::MainText() << "\n"
+                     << tThemedTextBase.ItemColor() << pCycle->Position().y
+                     << tThemedTextBase.MainColor() << "\n"
                      << " Map Direction: x: "
-                     << eChatCommand::ItemText() << pCycle->Direction().x
-                     << eChatCommand::MainText()
+                     << tThemedTextBase.ItemColor() << pCycle->Direction().x
+                     << tThemedTextBase.MainColor()
                      << ", y: "
-                     << eChatCommand::ItemText() << pCycle->Direction().y
-                     << eChatCommand::MainText() << '\n'
+                     << tThemedTextBase.ItemColor() << pCycle->Direction().y
+                     << tThemedTextBase.MainColor() << '\n'
                      << " Speed: "
-                     << eChatCommand::ItemText() << pCycle->verletSpeed_
-                     << eChatCommand::MainText() << '\n'
+                     << tThemedTextBase.ItemColor() << pCycle->verletSpeed_
+                     << tThemedTextBase.MainColor() << '\n'
                      << " Rubber: "
-                     << eChatCommand::ItemText() << pCycle->GetRubber() << "/" << sg_rubberCycle
-                     << eChatCommand::MainText() << '\n';
+                     << tThemedTextBase.ItemColor() << pCycle->GetRubber() << "/" << sg_rubberCycle
+                     << tThemedTextBase.MainColor() << '\n';
         }
     }
     else if (p->CurrentTeam())
     {
         listInfo << " Status: "
-                 << eChatCommand::ItemText() << "Dead\n";
+                 << tThemedTextBase.ItemColor() << "Dead\n";
 
         listInfo << " Last Death: "
-                    << ItemText() << st_GetFormatTime(tSysTimeFloat() - p->lastCycleDeathTime, true)
+                    << ItemColor() << st_GetFormatTime(tSysTimeFloat() - p->lastCycleDeathTime, true)
                     << "\n";
     }
 
@@ -707,11 +710,11 @@ void RgbCommand::se_outputColorInfo(int index, const tString &name, REAL r, REAL
 
     output << (index + 1) << ") "
            << tColoredString::ColorString(r/15, g/15, b/15)
-           << name << eChatCommand::MainText()
+           << name << tThemedTextBase.MainColor()
            << " ("
-           << eChatCommand::ItemText() << r << eChatCommand::MainText() << ", "
-           << eChatCommand::ItemText() << g << eChatCommand::MainText() << ", "
-           << eChatCommand::ItemText() << b << eChatCommand::MainText() << ") "
+           << tThemedTextBase.ItemColor() << r << tThemedTextBase.MainColor() << ", "
+           << tThemedTextBase.ItemColor() << g << tThemedTextBase.MainColor() << ", "
+           << tThemedTextBase.ItemColor() << b << tThemedTextBase.MainColor() << ") "
            << ColorsCommand::cycleColorPreview(r, g, b) << "\n";
 
     con << output;
@@ -726,7 +729,7 @@ bool RgbCommand::execute(tString args)
 
     if (args.empty())
     {
-        con << CommandText()
+        con << CommandLabel()
             << tOutput("$player_colors_current_text");
         for (int i = 0; i < MAX_PLAYERS; ++i)
         {
@@ -753,8 +756,8 @@ bool RgbCommand::execute(tString args)
             local_p = ePlayer::PlayerConfig(atoi(commandArgs[0]) - 1);
             if (!local_p)
             {
-                con << CommandText()
-                    << ErrorText()
+                con << CommandLabel()
+                    << ErrorColor()
                     << tOutput("$player_colors_changed_usage_error");
             }
             targetPlayer = nullptr;
@@ -775,7 +778,7 @@ bool RgbCommand::execute(tString args)
 
         if (command == "help")
         {
-            con << CommandText() << "\n"
+            con << CommandLabel() << "\n"
                 << tOutput("$player_colors_command_help", se_colorVarFile);
             return true;
         }
@@ -826,7 +829,7 @@ bool RgbCommand::execute(tString args)
 
             if (!correctParameters)
             {
-                con << CommandText()
+                con << CommandLabel()
                     << "Mode Usage: "
                     << se_rgbCommand << " mode modename \n"
                     << "Available Modes: \n"
@@ -856,8 +859,8 @@ bool RgbCommand::execute(tString args)
             {
                 tString playerColorStr;
 
-                con << CommandText()
-                    << ErrorText()
+                con << CommandLabel()
+                    << ErrorColor()
                     << tOutput("$player_colors_saved");
 
 
@@ -870,12 +873,12 @@ bool RgbCommand::execute(tString args)
                 output << tColoredString::RemoveColors(playerColorStr);
 
                 if (fileManager.Write(output))
-                    con << CommandText()
+                    con << CommandLabel()
                         << tOutput("$player_colors_saved")
                         << playerColorStr << "\n";
                 else
-                    con << CommandText()
-                        << ErrorText()
+                    con << CommandLabel()
+                        << ErrorColor()
                         << tOutput("$players_color_error");
             }
             else // Save specific persons color
@@ -899,17 +902,17 @@ bool RgbCommand::execute(tString args)
                     output << tColoredString::RemoveColors(playerColorStr);
 
                     if (fileManager.Write(output))
-                        con << CommandText()
+                        con << CommandLabel()
                             << tOutput("$player_colors_saved")
-                            << MainText() << playerColorStr << "\n";
+                            << MainColor() << playerColorStr << "\n";
                     else
-                        con << CommandText()
-                            << ErrorText()
+                        con << CommandLabel()
+                            << ErrorColor()
                             << tOutput("$players_color_error");
                 }
                 else
-                    con << CommandText()
-                        << ErrorText()
+                    con << CommandLabel()
+                        << ErrorColor()
                         << tOutput("$player_colors_not_found", combinedName);
             }
             return true;
@@ -920,8 +923,8 @@ bool RgbCommand::execute(tString args)
 
             if (commandArgs.Empty()) // No Line #
             {
-                con << CommandText()
-                    << ErrorText()
+                con << CommandLabel()
+                    << ErrorColor()
                     << tOutput("$player_colors_changed_usage_error");
             }
             else if (commandArgs.Len() == 1) // Line # specified
@@ -945,8 +948,8 @@ bool RgbCommand::execute(tString args)
                     }
                 }
                 else
-                    con << CommandText()
-                        << ErrorText()
+                    con << CommandLabel()
+                        << ErrorColor()
                         << tOutput("$players_color_line_not_found", se_colorVarFile, savedColorsCount, lineNumber + 1);
             }
             return true;
@@ -970,8 +973,8 @@ bool RgbCommand::execute(tString args)
                 }
             }
             else
-                con << CommandText()
-                    << ErrorText()
+                con << CommandLabel()
+                    << ErrorColor()
                     << tOutput("$player_colors_empty");
             return true;
         }
@@ -983,7 +986,7 @@ bool RgbCommand::execute(tString args)
             else
             {
                 fileManager.Clear(atoi(commandArgs[0]));
-                con << CommandText() << "\n"
+                con << CommandLabel() << "\n"
                     << tOutput("$player_colors_cleared", se_colorVarFile);
                 return true;
             }
@@ -991,7 +994,7 @@ bool RgbCommand::execute(tString args)
         else if (command == "clearall")
         {
             fileManager.Clear();
-            con << CommandText()
+            con << CommandLabel()
                 << tOutput("$player_colors_cleared", se_colorVarFile);
             return true;
         }
@@ -1008,7 +1011,7 @@ bool RgbCommand::execute(tString args)
         // If the correct parameters are passed, display the changes.
         if (correctParameters)
         {
-            con << CommandText()
+            con << CommandLabel()
                 << tOutput("$player_colors_current_text");
 
             tString listColors;
@@ -1025,8 +1028,8 @@ bool RgbCommand::execute(tString args)
             con << listColors << "\n";
         }
         else // display the error message.
-            con << CommandText()
-                << ErrorText()
+            con << CommandLabel()
+                << ErrorColor()
                 << tOutput("$player_colors_changed_usage_error");
     }
     return true;
@@ -1058,17 +1061,17 @@ bool SpeakCommand::execute(tString args)
             delay = flag = 0;
 
         if (delay > 0)
-            con << CommandText()
+            con << CommandLabel()
                 << "Sending message with delay: '"
-                << ItemText()
+                << ItemColor()
                 << delay
-                << HeaderText() << "'\n";
+                << HeaderColor() << "'\n";
 
         eChatBot::scheduleMessageTask(targetPlayer, chatString, flag, delay, delay * 0.5);
     }
     else if (targetPlayer && !targetPlayer->isLocal())
-        con << CommandText()
-            << ErrorText()
+        con << CommandLabel()
+            << ErrorColor()
             << "Not a local player.\n";
     return true;
 }
@@ -1080,7 +1083,7 @@ bool RebuildCommand::execute(tString args)
 
     if (PlayerNumb.empty())
     {
-        con << CommandText()
+        con << CommandLabel()
             << "Rebuilding all players...\n";
         ePlayerNetID::CompleteRebuild();
     }
@@ -1089,11 +1092,11 @@ bool RebuildCommand::execute(tString args)
         ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb) - 1);
         if (local_p)
         {
-            con << CommandText()
+            con << CommandLabel()
                 << "Rebuilding player '"
-                << ItemText()
+                << ItemColor()
                 << local_p->Name()
-                << MainText() << "'\n";
+                << MainColor() << "'\n";
 
             netPlayer->Clear(local_p);
             netPlayer->ForcedUpdate();
@@ -1119,34 +1122,34 @@ bool WatchCommand::execute(tString args)
         targetPlayer = ePlayerNetID::FindPlayerByName(targetPlayerName);
         if (!targetPlayer || !targetPlayer->Object() || !targetPlayer->CurrentTeam())
         {
-            con << CommandText()
-                << ErrorText()
+            con << CommandLabel()
+                << ErrorColor()
                 << "Player not found or is spectating.\n";
             return true;
         }
         else if (targetPlayer != nullptr && localPlayer->watchPlayer == targetPlayer)
         {
-            con << CommandText()
-                << ErrorText()
+            con << CommandLabel()
+                << ErrorColor()
                 << "Player '"
                 << targetPlayer->GetColoredName()
-                << MainText()
+                << MainColor()
                 << "' "
                 << "already set to the watch player.\n";
             return true;
         }
         else
         {
-            con << CommandText()
+            con << CommandLabel()
                 << "Watch Player set to '"
                 << targetPlayer->GetColoredName()
-                << MainText() << "'\n";
+                << MainColor() << "'\n";
             localPlayer->watchPlayer = targetPlayer;
         }
     }
     else
     {
-        con << CommandText() << "Watch Player removed.\n";
+        con << CommandLabel() << "Watch Player removed.\n";
         localPlayer->watchPlayer = nullptr;
     }
     return true;
@@ -1172,18 +1175,18 @@ bool ActiveStatusCommand::execute(tString args)
 
 
     tColoredString listInfo;
-    listInfo << CommandText()
+    listInfo << CommandLabel()
              << "Status for " << p->GetColoredName()
-             << MainText() << ":\n"
+             << MainColor() << ":\n"
              << "Created: "
-             << ItemText() << getTimeStringBase(p->createTime_)
-             << MainText() << "\n"
+             << ItemColor() << getTimeStringBase(p->createTime_)
+             << MainColor() << "\n"
              << "Last Activity: "
-             << ItemText() << st_GetFormatTime(p->LastActivity(), true)
-             << MainText() << "\n"
+             << ItemColor() << st_GetFormatTime(p->LastActivity(), true)
+             << MainColor() << "\n"
              << "Chatting For: "
-             << ItemText() << st_GetFormatTime(chattingTime, true)
-             << MainText() << "\n";
+             << ItemColor() << st_GetFormatTime(chattingTime, true)
+             << MainColor() << "\n";
 
 
     gCycle *cycle = p->NetPlayerToCycle();
@@ -1192,20 +1195,20 @@ bool ActiveStatusCommand::execute(tString args)
         if (!cycle->Alive() && cycle->lastDeathTime > 0)
         {
             listInfo << "Last Death: "
-                     << ItemText() << st_GetFormatTime(tSysTimeFloat() - cycle->lastDeathTime, true)
+                     << ItemColor() << st_GetFormatTime(tSysTimeFloat() - cycle->lastDeathTime, true)
                      << "\n";
         }
         else
         {
             listInfo << "Alive Time: "
-                     << ItemText() << st_GetFormatTime(se_GameTime(), true)
+                     << ItemColor() << st_GetFormatTime(se_GameTime(), true)
                      << "\n";
         }
     }
     else if (p->CurrentTeam())
     {
         listInfo << "Last Death: "
-                    << ItemText() << st_GetFormatTime(tSysTimeFloat() - p->lastCycleDeathTime, true)
+                    << ItemColor() << st_GetFormatTime(tSysTimeFloat() - p->lastCycleDeathTime, true)
                     << "\n";
     }
 
@@ -1233,7 +1236,7 @@ bool SpectateCommand::execute(tString args)
 
     if (!spectating || netPlayer)
     {
-        con << CommandText()
+        con << CommandLabel()
             << "Spectating player '" << player->name << "'...\n";
         local_p->spectate = true;
         if (netPlayer)
@@ -1245,10 +1248,10 @@ bool SpectateCommand::execute(tString args)
             netPlayer->ForcedUpdate();
         }
     }
-    else 
+    else
     {
-        con << CommandText()
-            << ErrorText()
+        con << CommandLabel()
+            << ErrorColor()
             << "You are already spectating\n";
 
     }
@@ -1273,16 +1276,16 @@ bool JoinCommand::execute(tString args)
 
     if (netPlayer && !bool(netPlayer->CurrentTeam()))
     {
-        con << CommandText()
+        con << CommandLabel()
             << "Joining the game...\n";
 
         netPlayer->CreateNewTeamWish();
         netPlayer->ForcedUpdate();
-    } 
+    }
     else if (netPlayer)
     {
-        con << CommandText()
-            << ErrorText()
+        con << CommandLabel()
+            << ErrorColor()
             << "Already joined the game\n";
 
     }
@@ -1297,31 +1300,31 @@ bool SearchCommand::execute(tString args)
     tString output;
     if (fileName.empty())
     {
-        output << CommandText()
+        output << CommandLabel()
                << "Available files to search:\n"
-               << MainText();
+               << MainColor();
 
         int i = 1;
         for (const auto &searchableFile : searchableFiles)
         {
             output << i << ") "
-                   << ItemText()
+                   << ItemColor()
                    << searchableFile.first
-                   << MainText()
+                   << MainColor()
                    << " (" << searchableFile.second
                    << ")\n";
             i++;
         }
 
-        output << CommandText()
+        output << CommandLabel()
                << "Uses: \n"
-               << MainText()
-               << ItemText() << "/search chat hack the planet (by search phrase)\n"
-               << ItemText() << "/search chat #102 (by line number)\n"
-               << ItemText() << "/search chat #102-105 (by line number range)\n"
-               << ItemText() << "/search chat #102 copy (copy text by single line number)\n"
-               << ItemText() << "/search chat @5 copy (copy match #5 from last search)\n"
-               << ItemText() << "/search chat @5 (copy match #5 from last search)\n";
+               << MainColor()
+               << ItemColor() << "/search chat hack the planet (by search phrase)\n"
+               << ItemColor() << "/search chat #102 (by line number)\n"
+               << ItemColor() << "/search chat #102-105 (by line number range)\n"
+               << ItemColor() << "/search chat #102 copy (copy text by single line number)\n"
+               << ItemColor() << "/search chat @5 copy (copy match #5 from last search)\n"
+               << ItemColor() << "/search chat @5 (copy match #5 from last search)\n";
 
         con << output;
         return true;
@@ -1358,8 +1361,8 @@ bool SearchCommand::execute(tString args)
 
         if (!fileFound)
         {
-            con << CommandText()
-                << ErrorText()
+            con << CommandLabel()
+                << ErrorColor()
                 << "File not found: '"
                 << fileName << "'\n";
             return true;
@@ -1373,8 +1376,8 @@ bool SearchCommand::execute(tString args)
 
         if (fileSizeMB > fileSizeMaxMB)
         {
-            con << CommandText()
-                << ErrorText()
+            con << CommandLabel()
+                << ErrorColor()
                 << "Error: File is too big: '" << fileName << "' ("
                 << fileSizeMB << " MB /"
                 << fileSizeMaxMB << " MB)\n";
@@ -1387,22 +1390,22 @@ bool SearchCommand::execute(tString args)
             int start = std::max(0, lines.Len() - se_searchCommandEmptySearchNumLines); // don't go below 0
             int count = 1;
             tString fileNameOut;
-            fileNameOut << CommandText()
-                        << "\nFile '" << ItemText() << fileName      << MainText()
-                        << "- "       << ItemText() << fileSizeMB    << MainText()
-                        << " MB / "   << ItemText() << fileSizeMaxMB << MainText() << " MB\n";
+            fileNameOut << CommandLabel()
+                        << "\nFile '" << ItemColor() << fileName      << MainColor()
+                        << "- "       << ItemColor() << fileSizeMB    << MainColor()
+                        << " MB / "   << ItemColor() << fileSizeMaxMB << MainColor() << " MB\n";
 
-            con << fileNameOut << MainText()
-                << "Nothing to search. Showing last " << ItemText()
+            con << fileNameOut << MainColor()
+                << "Nothing to search. Showing last " << ItemColor()
                 << se_searchCommandEmptySearchNumLines
-                << MainText() << " lines:\n";
+                << MainColor() << " lines:\n";
 
             for (int i = start; i < lines.Len(); ++i)
             {
                 netPlayer->lastSearch.Add(lines[i]);
-                con << ItemText()   << count++
-                    << HeaderText() <<  ") " << HeaderText()
-                    << "Line " << MainText() << (i + 1)
+                con << ItemColor()   << count++
+                    << HeaderColor() <<  ") " << HeaderColor()
+                    << "Line " << MainColor() << (i + 1)
                     << ": "    << lines[i]   << "\n";
             }
             return true;
@@ -1448,8 +1451,8 @@ bool SearchCommand::execute(tString args)
             {
                 if (!netPlayer->lastSearch.Len() > 0 || netPlayer->lastSearch.Len() < endLineNumber)
                 {
-                    con << CommandText()
-                        << ErrorText()
+                    con << CommandLabel()
+                        << ErrorColor()
                         << "Nothing to copy from.\n";
                 }
                 else
@@ -1457,10 +1460,10 @@ bool SearchCommand::execute(tString args)
                     tString message(netPlayer->lastSearch[endLineNumber - 1]);
                     if (copyToClipboard(message))
                     {
-                        con << CommandText()
+                        con << CommandLabel()
                             << "Copied content to clipboard.\n";
                         numMatches++;
-                        output << endLineNumber << " " << MainText() << message << "\n";
+                        output << endLineNumber << " " << MainColor() << message << "\n";
                         found = true;
                     }
                 }
@@ -1472,10 +1475,10 @@ bool SearchCommand::execute(tString args)
                     if ((lineNumber >= startLineNumber && lineNumber <= endLineNumber))
                     {
                         numMatches++;
-                        output << MainText()
+                        output << MainColor()
                                << numMatches << ") "
-                               << HeaderText()
-                               << "Line " << ItemText() << lineNumber << MainText()
+                               << HeaderColor()
+                               << "Line " << ItemColor() << lineNumber << MainColor()
                                << ": " << line << "\n";
 
                         if (copy && startLineNumber == endLineNumber) // only copy for one line
@@ -1484,7 +1487,7 @@ bool SearchCommand::execute(tString args)
                             lineToCopy = output.SubStr(output.StrPos(": ") + 2); // Remove everything before the line content
 
                             if (copyToClipboard(lineToCopy))
-                                con << HeaderText()
+                                con << HeaderColor()
                                     << "Copied content to clipboard.\n";
                             found = true;
                             break;
@@ -1503,11 +1506,11 @@ bool SearchCommand::execute(tString args)
             if (!found)
             {
                 if (!copyNumMatch)
-                    con << CommandText()
-                        << ErrorText()
-                        << "Line Range: " << ItemText()
+                    con << CommandLabel()
+                        << ErrorColor()
+                        << "Line Range: " << ItemColor()
                         << startLineNumber << "-" << endLineNumber
-                        << ErrorText() << " not found.\n";
+                        << ErrorColor() << " not found.\n";
                 return true;
             }
         }
@@ -1531,9 +1534,9 @@ bool SearchCommand::execute(tString args)
                 {
                     found = true;
                     numMatches++;
-                    output << numMatches << ") " << HeaderText() << "Line "
-                           << ItemText() << lineNumber
-                           << MainText()
+                    output << numMatches << ") " << HeaderColor() << "Line "
+                           << ItemColor() << lineNumber
+                           << MainColor()
                            << ": "       << line << "\n";
                     netPlayer->lastSearch.Add(line);
                 }
@@ -1544,32 +1547,32 @@ bool SearchCommand::execute(tString args)
         if (!found && !copy)
         {
             tString fileNameOut;
-            fileNameOut << "\n"     << HeaderText()
-                        << "File '" << ItemText() << fileName      << MainText()
-                        << "- "     << ItemText() << fileSizeMB    << MainText()
-                        << " MB / " << ItemText() << fileSizeMaxMB << MainText() << " MB\n";
+            fileNameOut << "\n"     << HeaderColor()
+                        << "File '" << ItemColor() << fileName      << MainColor()
+                        << "- "     << ItemColor() << fileSizeMB    << MainColor()
+                        << " MB / " << ItemColor() << fileSizeMaxMB << MainColor() << " MB\n";
 
-            con << CommandText()
+            con << CommandLabel()
                 << fileNameOut
-                << "No matches found for the search phrase: '" << ItemText()
-                << searchPhrase << MainText() << "'\n";
+                << "No matches found for the search phrase: '" << ItemColor()
+                << searchPhrase << MainColor() << "'\n";
         }
         else
         {
             tString fileNameOut;
-            fileNameOut << HeaderText()
-                        << "\nFile '" << ItemText() << fileName << MainText()
-                        << "- " << ItemText() << fileSizeMB << MainText()
-                        << " MB / " << ItemText() << fileSizeMaxMB << MainText() << " MB\n";
+            fileNameOut << HeaderColor()
+                        << "\nFile '" << ItemColor() << fileName << MainColor()
+                        << "- " << ItemColor() << fileSizeMB << MainColor()
+                        << " MB / " << ItemColor() << fileSizeMaxMB << MainColor() << " MB\n";
 
             tString matches;
             matches << fileNameOut << "Found "
-                    << ItemText() << numMatches
-                    << MainText() << " matches for: ";
+                    << ItemColor() << numMatches
+                    << MainColor() << " matches for: ";
 
-            output = CommandText()
-                     << matches << tString("'") << ItemText()
-                     << searchPhrase << MainText() << tString("'\n")
+            output = CommandLabel()
+                     << matches << tString("'") << ItemColor()
+                     << searchPhrase << MainColor() << tString("'\n")
                      << output;
 
             con << output;
@@ -1585,8 +1588,8 @@ bool NameSpeakCommand::execute(tString args)
 
     if (args.empty())
     {
-        con << CommandText()
-            << ErrorText()
+        con << CommandLabel()
+            << ErrorColor()
             << "Usage: " << se_nameSpeakCommand << " <name> <message>\n";
         return true;
     }
@@ -1613,19 +1616,19 @@ bool NameSpeakCommand::execute(tString args)
 
     if (!found || !local_p)
     {
-        con << CommandText()
-            << ErrorText()
+        con << CommandLabel()
+            << ErrorColor()
             << "No usable players!\n";
         ePlayerNetID::nameSpeakWords.Clear();
         return true;
     }
 
-    con << CommandText()
+    con << CommandLabel()
         << "\n  - Using Player '"
-        << ItemText() << ePlayerNetID::nameSpeakPlayerID + 1
-        << MainText()
-        << "'. Message: '" << ItemText() << args
-        << MainText() << "'\n";
+        << ItemColor() << ePlayerNetID::nameSpeakPlayerID + 1
+        << MainColor()
+        << "'. Message: '" << ItemColor() << args
+        << MainColor() << "'\n";
 
     ePlayerNetID::nameSpeakForceUpdate = true;
     ePlayerNetID::nameSpeakCheck = true;
@@ -1638,7 +1641,7 @@ bool NameSpeakCommand::execute(tString args)
 
 bool RespawnCommand::execute(tString args)
 {
-    con << CommandText()
+    con << CommandLabel()
         << "Respawning player '" << netPlayer->GetName() << "'\n";
     netPlayer->RespawnPlayer(true);
     return true;
@@ -1649,8 +1652,8 @@ bool RebuildGridCommand::execute(tString args)
     tArray<tString> passedString = args.Split(" ");
     if (args.empty())
     {
-        con << CommandText()
-            << ErrorText()
+        con << CommandLabel()
+            << ErrorColor()
             << "Usage: " << se_rebuildCommand << " <#state>\n";
         return true;
     }
@@ -1670,8 +1673,8 @@ bool ReplyCommand::execute(tString args)
 {
     if (netPlayer->lastMessagedByPlayer == nullptr && netPlayer->lastMessagedPlayer == nullptr)
     {
-        con << CommandText()
-            << ErrorText()
+        con << CommandLabel()
+            << ErrorColor()
             << "You have not messaged anyone yet!\n";
         return false;
     }
@@ -1723,7 +1726,7 @@ bool NicknameCommand::execute(tString args)
             p->nickname.Clear();
             p->coloredNickname.Clear();
         }
-        con << CommandText()
+        con << CommandLabel()
             << "All nicknames have been cleared.\n";
         return true;
     }
@@ -1736,9 +1739,9 @@ bool NicknameCommand::execute(tString args)
         ePlayerNetID *target = ePlayerNetID::FindPlayerByName(targetName);
         if (target)
         {
-            con << CommandText()
+            con << CommandLabel()
                 << target->coloredName_
-                << MainText()
+                << MainColor()
                 << "'s nickname has been cleared.\n";
             target->nickname.Clear();
             target->coloredNickname.Clear();
@@ -1757,20 +1760,20 @@ bool NicknameCommand::execute(tString args)
             target->nickname = nickname;
             target->UpdateName();
 
-            con << CommandText()
+            con << CommandLabel()
                 << target->coloredName_
-                << MainText()
+                << MainColor()
                 << " is now nicknamed '" << target->GetColoredName()
-                << MainText() << "'\n";
+                << MainColor() << "'\n";
 
             return true;
         }
     }
 
-    con << CommandText()
-        << ErrorText()
-        << "Could not find player '" << ItemText()
-        << args << ErrorText() << "'\n";
+    con << CommandLabel()
+        << ErrorColor()
+        << "Could not find player '" << ItemColor()
+        << args << ErrorColor() << "'\n";
     return false;
 }
 
@@ -1779,7 +1782,7 @@ bool StatsCommand::execute(tString args)
 
     nServerInfoBase *connectedServer = CurrentServer();
     if (connectedServer)
-        con << CommandText()
+        con << CommandLabel()
             << "Current Server = "
             << connectedServer->GetName()
             << "\n";
@@ -1800,8 +1803,8 @@ bool StatsCommand::execute(tString args)
 
     if (!se_playerStats)
     {
-        con << CommandText()
-            << ErrorText()
+        con << CommandLabel()
+            << ErrorColor()
             << "PlayerStats are disabled!\n";
         return true;
     }
@@ -1809,18 +1812,18 @@ bool StatsCommand::execute(tString args)
     PlayerData playerData = ePlayerStats::getStats(p->GetName());
 
     tColoredString statsInfo;
-    statsInfo << CommandText()
-              << "\nStats for " << ItemText() << p->GetColoredName() << "\n"
-              << MainText()
-              << "Kills: " << ItemText() << playerData.kills << "\n"
-              << MainText()
-              << "Deaths: " << ItemText() << playerData.deaths << "\n"
-              << MainText()
-              << "Match Wins: " << ItemText() << playerData.match_wins << "\n"
-              << MainText()
-              << "Match Losses: " << ItemText() << playerData.match_losses << "\n"
-              << MainText()
-              << "K/D Ratio: " << ItemText() << playerData.getKDRatio() << "\n";
+    statsInfo << CommandLabel()
+              << "\nStats for " << ItemColor() << p->GetColoredName() << "\n"
+              << MainColor()
+              << "Kills: " << ItemColor() << playerData.kills << "\n"
+              << MainColor()
+              << "Deaths: " << ItemColor() << playerData.deaths << "\n"
+              << MainColor()
+              << "Match Wins: " << ItemColor() << playerData.match_wins << "\n"
+              << MainColor()
+              << "Match Losses: " << ItemColor() << playerData.match_losses << "\n"
+              << MainColor()
+              << "K/D Ratio: " << ItemColor() << playerData.getKDRatio() << "\n";
 
     con << statsInfo;
     return true;
@@ -1831,7 +1834,7 @@ bool ReconnectCommand::execute(tString args)
     nServerInfoBase *connectedServer = CurrentServer();
     if (connectedServer)
     {
-        con << CommandText()
+        con << CommandLabel()
             << "Reconnecting to '" << connectedServer->GetName() << "'...\n";
 
     if(ePlayer::PlayerIsInGame(player->ID()))
@@ -1842,8 +1845,8 @@ bool ReconnectCommand::execute(tString args)
     else
     {
         if (!ConnectToLastServer())
-            con << CommandText()
-                << ErrorText()
+            con << CommandLabel()
+                << ErrorColor()
                 << "You are not connected to a server!\n";
     }
     return true;
@@ -1853,9 +1856,9 @@ bool ReconnectCommand::execute(tString args)
 #include <queue>
 bool CalculateCommand::execute(tString args)
 {
-    con << CommandText()
-        << "Performing calculation: '" << ItemText()
-        << args << MainText() << "'\n";
+    con << CommandLabel()
+        << "Performing calculation: '" << ItemColor()
+        << args << MainColor() << "'\n";
     std::stack<double> values;
     std::queue<tString> postfix = infixToPostfix(preprocess(args));
 
@@ -1872,7 +1875,7 @@ bool CalculateCommand::execute(tString args)
         {
             if (values.size() < 2)
             {
-                con << ErrorText()
+                con << ErrorColor()
                     << "Error: Not enough values for operation\n";
                 return false;
             }
@@ -1892,7 +1895,7 @@ bool CalculateCommand::execute(tString args)
             {
                 if (rhs == 0)
                 {
-                    con << ErrorText()
+                    con << ErrorColor()
                         << "Error: Division by zero\n";
                     return false;
                 }
@@ -1905,7 +1908,7 @@ bool CalculateCommand::execute(tString args)
 
     if (values.size() != 1)
     {
-        con << ErrorText()
+        con << ErrorColor()
             << "Error: Too many values\n";
         return false;
     }
@@ -1923,10 +1926,10 @@ bool CalculateCommand::execute(tString args)
             str.erase(lastNonZero + 1, str.length() - lastNonZero - 1);
     }
 
-con << MainText()
-    << "Result: '" << ItemText()
+con << MainColor()
+    << "Result: '" << ItemColor()
     << str
-    << MainText() << "'\n";
+    << MainColor() << "'\n";
 
     return true;
 }
@@ -2000,7 +2003,7 @@ bool UpdateCommand::execute(tString args)
 
     if (PlayerNumb.empty())
     {
-        con << CommandText()
+        con << CommandLabel()
             << "Updating all players...\n";
         ePlayerNetID::ForcedUpdate();
     }
@@ -2009,22 +2012,22 @@ bool UpdateCommand::execute(tString args)
         ePlayer *local_p = ePlayer::PlayerConfig(atoi(PlayerNumb) - 1);
         if (local_p)
         {
-            con << CommandText()
+            con << CommandLabel()
                 << "Updating player '"
-                << ItemText()
+                << ItemColor()
                 << local_p->Name()
-                << MainText() << "'\n";
+                << MainColor() << "'\n";
 
             ePlayerNetID::Update(local_p);
         }
         else
         {
-            con << CommandText()
-                << ErrorText()
+            con << CommandLabel()
+                << ErrorColor()
                 << "No player for ID '"
-                << ItemText()
+                << ItemColor()
                 << PlayerNumb
-                << ErrorText()
+                << ErrorColor()
                 << "'\n";
         }
     }
@@ -2160,11 +2163,11 @@ bool EncryptCommand::execute(tString args)
     {
         REAL currentTime = getEncryptLocaltime();
 
-        con << CommandText()
+        con << CommandLabel()
             << "Creating hash at time: '"
-            << ItemText()
+            << ItemColor()
             << currentTime
-            << MainText() << "'\n";
+            << MainColor() << "'\n";
 
         tString hash = GenerateHash(currentTime);
 
@@ -2177,8 +2180,8 @@ bool EncryptCommand::execute(tString args)
         se_NewChatMessage(netPlayer, messageToSend)->BroadCast();
     }
     else
-        con << CommandText()
-            << ErrorText()
+        con << CommandLabel()
+            << ErrorColor()
             << "Player not found for '"
             << args
             << "'\n";
@@ -2213,11 +2216,11 @@ bool VoteCommand::execute(tString args)
 
 void VoteCommand::displayPollsMenu()
 {
-    con << CommandText() << "Polls:\n";
+    con << CommandLabel() << "Polls:\n";
 
     if (eVoter::ChatDisplayVotes())
     {
-        con << "0x888888 - Example Usage: (/vote ID yes)" << MainText() << "\n";
+        con << "0x888888 - Example Usage: (/vote ID yes)" << MainColor() << "\n";
     }
 }
 
@@ -2243,7 +2246,7 @@ void VoteCommand::processVote(const tArray<tString> &params)
 
 bool RenameCommand::execute(tString args)
 {
-    con << CommandText()
+    con << CommandLabel()
         << "Renaming player '" << player->name << "' to '" << args << "'...\n";
 
     player->name = args;
@@ -2260,7 +2263,7 @@ bool LeaveCommand::execute(tString args)
     if (connectedServer)
         server << connectedServer->GetName();
 
-    con << CommandText()
+    con << CommandLabel()
         << "Leaving server '" << server << "'";
 
     ret_to_MainMenu();
@@ -2278,8 +2281,8 @@ bool QuitCommand::execute(tString args)
         quitTime = atoi(args.ExtractNonBlankSubString(pos));
 
     st_SaveConfig();
-    
-    con << CommandText()
+
+    con << CommandLabel()
         << "Quiting game in '" << quitTime << "' seconds...\n";
 
     gTaskScheduler.schedule("QuitCommand", quitTime, []
@@ -2296,13 +2299,13 @@ bool BookmarksCommand::execute(tString args)
 
     if (!CurrentServer() || (input == "poll" || input == "1" || input == "yes" || input == "true"))
     {
-        con << CommandText()
+        con << CommandLabel()
             << "Disconnecting and loading bookmark menu.\n";
         gServerFavorites::FavoritesMenuForceQuery(true);
     }
     else
     {
-        con << CommandText()
+        con << CommandLabel()
             << "Loading bookmark menu. (Polling a server will disconnect you from the game).\n";
         gServerFavorites::FavoritesMenuForceQuery(false);
     }

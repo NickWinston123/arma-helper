@@ -1237,7 +1237,7 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     lastTooltip_ = -100;
 
     bool initialized = false;
-    
+
     updatedThisRound = false;
 
     nameTeamAfterMe = false;
@@ -6590,23 +6590,23 @@ void ePlayerNetID::watchPlayerStatus()
         REAL lastActivity = p->LastActivity();
 
         message << getTimeString() << " | "
-                << eChatCommand::HeaderText()
+                << tThemedTextBase.HeaderColor()
                 << "Watch Status: " << p->GetColoredName()
-                << eChatCommand::MainText()
+                << tThemedTextBase.MainColor()
                 << " is now " << playerWatchStatusToStr(p->lastWatchStatus)
-                << eChatCommand::MainText()
-                << ". (" << eChatCommand::ItemText() << lastActivity
-                << eChatCommand::MainText() << " seconds)";
+                << tThemedTextBase.MainColor()
+                << ". (" << tThemedTextBase.ItemColor() << lastActivity
+                << tThemedTextBase.MainColor() << " seconds)";
 
         if (chattingTime == 0 || lastActivity != 0)
         {
             tString lastActivityStr = getTimeAgoString(p->LastActivity());
             tString chattingTimeStr = getTimeAgoString(p->ChattingTime());
 
-            message << eChatCommand::MainText() << "\n - Last activity: "
-                    << eChatCommand::ItemText() << lastActivityStr
-                    << eChatCommand::MainText() << "\n - Last chat activity: "
-                    << eChatCommand::ItemText() << chattingTimeStr;
+            message << tThemedTextBase.MainColor() << "\n - Last activity: "
+                    << tThemedTextBase.ItemColor() << lastActivityStr
+                    << tThemedTextBase.MainColor() << "\n - Last chat activity: "
+                    << tThemedTextBase.ItemColor() << chattingTimeStr;
         }
 
         message << "\n";
@@ -9831,9 +9831,9 @@ static void loadCrossfadePreset(size_t selection)
     currentCrossfadePreset = selection;
     currentCrossadeColorIndex = 0; // Reset color index
     ticksSinceLastColor = 0;       // Reset ticks count
-    con << eChatCommand::HeaderText()
-        << "Using preset " << eChatCommand::ItemText() << (selection + 1)
-        << eChatCommand::MainText() << ": " << presets[selection].description
+    con << tThemedTextBase.HeaderColor()
+        << "Using preset " << tThemedTextBase.ItemColor() << (selection + 1)
+        << tThemedTextBase.MainColor() << ": " << presets[selection].description
         << " - (" << presets[selection].colors.size() << " colors)\n";
 }
 
@@ -9846,18 +9846,18 @@ static void crossfadePresetList()
     {
         if (i == currentCrossfadePreset)
         {
-            currentPresetStr << eChatCommand::ItemText() << (i + 1)
-                             << ": " << eChatCommand::MainText() << presets[i].description
-                             << "\n  - (" << eChatCommand::ItemText() << presets[i].colors.size()
-                             << eChatCommand::MainText() << " colors)\n";
+            currentPresetStr << tThemedTextBase.ItemColor() << (i + 1)
+                             << ": " << tThemedTextBase.MainColor() << presets[i].description
+                             << "\n  - (" << tThemedTextBase.ItemColor() << presets[i].colors.size()
+                             << tThemedTextBase.MainColor() << " colors)\n";
             con << currentPresetStr;
         }
         else
         {
-            con << eChatCommand::ItemText() << (i + 1)
-                << ": " << eChatCommand::MainText() << presets[i].description
-                << eChatCommand::MainText() << " \n  - (" << eChatCommand::ItemText()
-                << presets[i].colors.size() << eChatCommand::MainText() << " colors)\n";
+            con << tThemedTextBase.ItemColor() << (i + 1)
+                << ": " << tThemedTextBase.MainColor() << presets[i].description
+                << tThemedTextBase.MainColor() << " \n  - (" << tThemedTextBase.ItemColor()
+                << presets[i].colors.size() << tThemedTextBase.MainColor() << " colors)\n";
         }
     }
     con << "Current preset: " << currentPresetStr;
@@ -9878,9 +9878,9 @@ void crossfadeUsingPreset(const Preset &preset, ePlayer *local_p)
             loadCrossfadePreset(desiredCrossfadePresetSizeT - 1);
         else
         {
-            con << eChatCommand::ErrorText()
+            con << tThemedTextBase.ErrorColor()
                 << "Error invalid preset, using preset 1. Available presets: \n"
-                << eChatCommand::MainText();
+                << tThemedTextBase.MainColor();
             currentCrossfadePreset = 0;
             desiredCrossfadePreset = 1;
             crossfadePresetList();
@@ -10536,12 +10536,12 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
             if (bool(p) && in_game) // update
             {
 
-                bool allowedRename = allowUpdateDuringRound || p->nameFromClient_ == p->nameFromServer_;
+                bool allowedRename = allowUpdateDuringRound || true;//p->nameFromClient_ == p->nameFromServer_;
 
 
                 if (!allowUpdateDuringRound && local_p->updatedThisRound)
                     continue;
-                
+
                 local_p->updatedThisRound = true;
 
                 //bool playerAlive = (p->Object() && p->Object()->Alive());
@@ -10550,7 +10550,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                 {
                     if (local_p->spectate)
                     {
-                        con << eChatCommand::CommandText("FORCE_JOIN_TEAM")
+                        con << tThemedTextBase.LabelText("FORCE_JOIN_TEAM")
                             << "Setting spectate to false\n";
                         local_p->spectate = false;
                     }
@@ -14342,10 +14342,10 @@ void ePlayerNetID::RequestSyncForce(bool ack)
 void ePlayerNetID::RequestSync(bool ack)
 {
     if ((se_disableCreate || tIsInList(se_disableCreateSpecific, pID + 1) || se_avoidPlayerWatchDisable))
-    {   
+    {
         return;
     }
-    
+
     nNetObject::RequestSync(ack);
 }
 

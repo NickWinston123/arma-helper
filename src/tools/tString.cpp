@@ -2561,9 +2561,9 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (days > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "") 
                << days 
-               << (color ? eChatCommand::MainText() : "") 
+               << (color ? tThemedTextBase.MainColor() : "") 
                << "D";
         if (hours || minutes || remainingSeconds || milliseconds)
             result << ":";
@@ -2571,10 +2571,10 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (hours > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "") 
                << ((hours < 10) ? "0" : "") 
                << hours 
-               << (color ? eChatCommand::MainText() : "") 
+               << (color ? tThemedTextBase.MainColor() : "") 
                << "H";
         if (minutes || remainingSeconds || milliseconds)
             result << ":";
@@ -2582,9 +2582,9 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (minutes > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "") 
                << ((minutes < 10) ? "0" : "") 
-               << minutes << (color ? eChatCommand::MainText() : "") 
+               << minutes << (color ? tThemedTextBase.MainColor() : "") 
                << "M";
         if (remainingSeconds || milliseconds)
             result << ":";
@@ -2592,9 +2592,9 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (remainingSeconds > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "") 
                << ((remainingSeconds < 10) ? "0" : "") 
-               << remainingSeconds << (color ? eChatCommand::MainText() : "") 
+               << remainingSeconds << (color ? tThemedTextBase.MainColor() : "") 
                << "S";
         if (milliseconds)
             result << ":";
@@ -2602,9 +2602,9 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (milliseconds > 0 || showIfZero)
     {
-        result << (color ? eChatCommand::ItemText() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "") 
                << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") 
-               << milliseconds << (color ? eChatCommand::MainText() : "") 
+               << milliseconds << (color ? tThemedTextBase.MainColor() : "") 
                << "MS";
     }
 
@@ -3337,3 +3337,30 @@ tString getTimeAgoString(REAL seconds)
 
     return result;
 }
+
+tString tThemedText::LabelText(const std::string& label) const
+{
+    tString output;
+    output << HeaderColor()
+           << label
+           << " - "
+           << MainColor();
+
+    return output;
+}
+
+// Bright Red for headers
+tString st_ThemeBaseColorHeader("0xff0033");
+static tConfItem<tString> st_ThemeBaseColorHeaderConf("LABEL_BASE_COLOR_HEADER", st_ThemeBaseColorHeader);
+// White for main
+tString st_ThemeBaseColorMain("0xffffff");
+static tConfItem<tString> st_ThemeBaseColorMainConf("LABEL_BASE_COLOR_MAIN", st_ThemeBaseColorMain);
+// Dark Red for items
+tString st_ThemeBaseColorItem("0xee0000");
+static tConfItem<tString> st_ThemeBaseColorItemConf("LABEL_BASE_COLOR_ITEM", st_ThemeBaseColorItem);
+// Pinkish red for error messages as an accent color
+tString st_ThemeBaseColorError("0xee5577");
+static tConfItem<tString> st_ThemeBaseColorErrorConf("LABEL_BASE_COLOR_ERROR", st_ThemeBaseColorError);
+
+
+tThemedText tThemedTextBase(st_ThemeBaseColorHeader, st_ThemeBaseColorMain, st_ThemeBaseColorItem, st_ThemeBaseColorError);

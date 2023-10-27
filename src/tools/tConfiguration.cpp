@@ -1670,7 +1670,7 @@ void st_LoadConfig( bool printChange )
 #include "eChatCommands.h"
 void sg_saveConfigCmd(std::istream &s)
 {
-    con << eChatCommand::CommandText("CONFIG")
+    con << tThemedTextBase.LabelText("CONFIG")
         << "Saving Config..\n";
     st_SaveConfig();
 }
@@ -2387,7 +2387,7 @@ void AddSymLinkedCommand(const tString& originalCommand, const tString& action)
                 }
             }
         }
-        
+
         if (symLinkedConfItems)
             symLinkedConfItems->DeleteConfitem(tString(command));
     }

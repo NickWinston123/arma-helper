@@ -51,7 +51,7 @@ void ePlayerStats::saveStatsToDB()
     if (!db)
         return;
 
-    con << eChatCommand::CommandText("Player Stats")
+    con << tThemedTextBase.LabelText("Player Stats")
         << "Saving stats to database..\n";
 
     ePlayerStatsDBAction  playerDataAction(db);
@@ -132,6 +132,7 @@ void ePlayerStats::updateStatsRoundStart()
 
 void ePlayerStats::reloadStatsFromDB()
 {
+    saveStatsToDB();
     playerStatsMap.clear(); // clear the current stats
     loadStatsFromDB();      // reload stats from DB
 }
@@ -644,3 +645,59 @@ const std::vector<PlayerDataColumnMapping> ePlayerStatsMappings =
          [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
          { stats.is_local = sqlite3_column_int(stmt, col++) != 0; }},
 };
+
+static void se_playerStatsConsolidate(std::istream &s)
+{
+    if (!se_playerStats)
+    {
+        con << tThemedTextBase.LabelText("Player Stats")
+            << tThemedTextBase.ErrorColor()
+            << "PlayerStats not initialized. PlayerStats are disabled!\n";
+        return;
+    }
+
+    tString params;
+    params.ReadLine(s, true);
+
+    con << ePlayerStats::consolidatePlayerStats(params.ToLower().TrimWhitespace());
+}
+
+static tConfItemFunc se_playerStatsConsolidate_conf = HelperCommand::tConfItemFunc("PLAYER_STATS_CONSOLIDATE", &se_playerStatsConsolidate);
+
+static void se_playerStatsDelete(std::istream &s)
+{
+    if (!se_playerStats)
+    {
+        con << tThemedTextBase.LabelText("Player Stats")
+            << tThemedTextBase.ErrorColor()
+            << "PlayerStats not initialized. PlayerStats are disabled!\n";
+        return;
+    }
+
+    tString params;
+    params.ReadLine(s, true);
+
+    con << ePlayerStats::deletePlayerStats(params.ToLower().TrimWhitespace());
+}
+static tConfItemFunc se_playerStatsDelete_conf = HelperCommand::tConfItemFunc("PLAYER_STATS_DELETE", &se_playerStatsDelete);
+
+static void se_playerStatsReload(std::istream &s)
+{
+    if (!se_playerStats)
+    {
+        con << tThemedTextBase.LabelText("Player Stats")
+            << tThemedTextBase.ErrorColor()
+            << "PlayerStats not initialized. PlayerStats are disabled!\n";
+        return;
+    }
+
+    con << tThemedTextBase.LabelText("Player Stats")
+        << tThemedTextBase.MainColor()
+        << "Reloading stats..";
+
+    ePlayerStats::reloadStatsFromDB();
+}
+static tConfItemFunc se_playerStatsReload_conf = HelperCommand::tConfItemFunc("PLAYER_STATS_RELOAD", &se_playerStatsReload);
+
+CommandState ePlayerStats::deleteState;
+CommandState ePlayerStats::consolidateState;

@@ -12,6 +12,7 @@
 
 #include "eFloor.h"
 #include "../tron/gCycle.h"
+#include "../tron/gHelper/gHelperUtilities.h"
 
 extern tString se_chatCommandsThemeHeader;
 extern tString se_chatCommandsThemeMain;
@@ -55,9 +56,15 @@ extern tString se_leaveCommand;
 extern tString se_quitCommand;
 extern int se_quitCommandTime;
 
+
 class eChatCommand
 {
 public:
+    bool playerRequired()
+    {
+        return requirePlayer;
+    }
+
     virtual bool execute(tString args) = 0;
 
     bool execute(ePlayer *p, tString args)
@@ -71,37 +78,21 @@ public:
 
         if (playerRequired() && netPlayer == nullptr)
         {
-            con << CommandText() << "Player is required to run this command.\n";
+            con << CommandLabel() << "Player is required to run this command.\n";
             return false;
         }
 
         return execute(args);
     }
 
-    static tString HeaderText() { return se_chatCommandsThemeHeader; }
-    static tString MainText() { return se_chatCommandsThemeMain; }
-    static tString ItemText() { return se_chatCommandsThemeItem; }
-    static tString ErrorText() { return se_chatCommandsThemeError; }
+    tString HeaderColor() { return theme.HeaderColor(); }
+    tString MainColor() { return theme.MainColor(); }
+    tString ItemColor() { return theme.ItemColor(); }
+    tString ErrorColor() { return theme.ErrorColor(); }
 
-    bool playerRequired()
+    tString CommandLabel()
     {
-        return requirePlayer;
-    }
-
-    static tString CommandText(std::string cmd)
-    {
-        tString output;
-
-        output << HeaderText()
-               << cmd
-               << " - "
-               << MainText();
-        return output;
-    }
-
-    tString CommandText()
-    {
-        return CommandText(commandName);
+        return theme.LabelText(commandName);
     }
 
     const std::string &getCommandName() const
@@ -111,8 +102,6 @@ public:
 
 protected:
     eChatCommand(const std::string &name) : commandName(name) {}
-
-protected:
     bool requirePlayer = true;
 
 private:
@@ -121,6 +110,7 @@ private:
 public:
     ePlayer *player;
     ePlayerNetID *netPlayer;
+    static tThemedText theme;
 };
 
 std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> CommandFactory();
@@ -178,7 +168,7 @@ Usage: /info - Returns own information
 class listPlayerInfoCommand : public eChatCommand
 {
 public:
-    listPlayerInfoCommand() : eChatCommand("listPlayerInfoCommand") 
+    listPlayerInfoCommand() : eChatCommand("listPlayerInfoCommand")
     {
         requirePlayer = false;
     }
@@ -242,7 +232,7 @@ public:
 class ActiveStatusCommand : public eChatCommand
 {
 public:
-    ActiveStatusCommand() : eChatCommand("ActiveStatusCommand") 
+    ActiveStatusCommand() : eChatCommand("ActiveStatusCommand")
     {
         requirePlayer = false;
     }
@@ -285,7 +275,7 @@ static std::vector<std::pair<tString, tString>> searchableFiles =
 class SearchCommand : public eChatCommand
 {
 public:
-    SearchCommand() : eChatCommand("SearchCommand") 
+    SearchCommand() : eChatCommand("SearchCommand")
     {
         requirePlayer = false;
     }
@@ -295,7 +285,7 @@ public:
 class NameSpeakCommand : public eChatCommand
 {
 public:
-    NameSpeakCommand() : eChatCommand("NameSpeakCommand") 
+    NameSpeakCommand() : eChatCommand("NameSpeakCommand")
     {
         requirePlayer = false;
     }

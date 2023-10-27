@@ -3296,12 +3296,12 @@ void InitHelperItems(bool ingame)
         FileManager(tString("consolelog-limited.txt"), tDirectories::Log()).CheckAndClearFileBySize(sr_consoleLogLimitedSize);
 }
 
-class gMainMenu : public uMenu 
+class gMainMenu : public uMenu
 {
 public:
     gMainMenu(const tOutput &t, bool exit_item=true) : uMenu(t, exit_item) {}
 
-    virtual void OnRender() override 
+    virtual void OnRender() override
     {
 
         static double sg_MainMenuUpdateTimeout = -1E+32f;
@@ -3331,7 +3331,7 @@ public:
             JoinLastServer();
         uMenu::GenericBackground();
     }
-    
+
     void JoinLastServer()
     {
         if (!CurrentServer())
@@ -4089,7 +4089,7 @@ void gGame::StateUpdate()
             if (se_playerStats && roundWinnerProcessed)
                 ePlayerStats::updateStatsRoundEnd();
             roundWinnerProcessed = false;
-        
+
             ePlayer::resetPlayerUpdateStatuses();
 
 #ifdef DEBUG
@@ -4108,10 +4108,10 @@ void gGame::StateUpdate()
                 SetState(GS_TRANSFER_SETTINGS, GS_CREATE_GRID);
             else
                 state = GS_CREATE_GRID;
-            
+
             if (sg_saveConfigOnRoundEnd)
             {
-                con << eChatCommand::CommandText("CONFIG")
+                con << tThemedTextBase.LabelText("CONFIG")
                     << "Saving Config..\n";
 
                 st_SaveConfig();

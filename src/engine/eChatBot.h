@@ -179,6 +179,11 @@ public:
     void postLoadActions(eChatBotStats& chatBotStats) override 
     {
         chatBotStats.data_from_db = chatBotStats;
+        time_t startOfDay = getStartTimeOfDay();
+
+        if (chatBotStats.last_banned < startOfDay)
+            chatBotStats.times_banned_today = 0; 
+
     }
 };
 

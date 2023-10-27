@@ -288,6 +288,7 @@ private:
         std::chrono::steady_clock::time_point lastLoggedTime;
     };
 
+    static tThemedText theme;
     static std::list<CachedLog> cache;
 
     static std::size_t maxSenderLength;
@@ -311,13 +312,13 @@ public:
         if (params.timestamp)
         {
             if (output)
-                header << ItemText();
+                header << theme.ItemColor();
             header << "[";
             if (output)
-                header << MainText();
+                header << theme.MainColor();
             header << getCurrentTimestamp();
             if (output)
-                header << ItemText();
+                header << theme.ItemColor();
             header << "] ";
         }
 
@@ -405,19 +406,18 @@ public:
             cmd += " ";
 
         if (color)
-            output << HeaderText();
+            output << theme.HeaderColor();
 
-        output << cmd << " - ";
+        output << cmd
+               << theme.ItemColor()
+               << " - "
+               << theme.MainColor();
 
         if (color)
-            output << MainText();
+            output << theme.MainColor();
             
         return output;
     }
-
-    static tString HeaderText() { return tString("0xff0033"); }
-    static tString MainText() { return tString("0xffffff"); }
-    static tString ItemText() { return tString("0xee0000"); }
 };
 
 using namespace helperConfig;

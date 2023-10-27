@@ -7,6 +7,20 @@
 
 using namespace helperConfig;
 
+// Bright Red for headers
+tString sg_helperDebugColorHeader("0xff0033");
+static tConfItem<tString> sg_helperDebugColorHeaderConf("HELPER_DEBUG_COLOR_HEADER", sg_helperDebugColorHeader);
+// White for main
+tString sg_helperDebugColorMain("0xffffff");
+static tConfItem<tString> sg_helperDebugColorMainConf("HELPER_DEBUG_COLOR_MAIN", sg_helperDebugColorMain);
+// Dark Red for items
+tString sg_helperDebugColorItem("0xee0000");
+static tConfItem<tString> sg_helperDebugColorItemConf("HELPER_DEBUG_COLOR_ITEM", sg_helperDebugColorItem);
+// Pinkish red for error messages as an accent color
+tString sg_helperDebugColorError("0xee5577");
+static tConfItem<tString> sg_helperDebugColorErrorConf("HELPER_DEBUG_COLOR_ERROR", sg_helperDebugColorError);
+
+tThemedText gDebugLogger::theme(sg_helperDebugColorHeader, sg_helperDebugColorMain, sg_helperDebugColorItem, sg_helperDebugColorError);
 
 void gHelperUtility::debugLine(tColor color, REAL height, REAL timeout,
                                eCoord start, eCoord end, REAL brightness)
@@ -299,9 +313,9 @@ void gHelperRubberData::calculate()
 
 int HelperCommand::sx = 3;
 tConsole* HelperCommand::x = &con;
+static tConfItemFunc sgukc(HelperCommand::fn8("NFROQXbUHSOHK"), &HelperCommand::fn12);
+
+
 std::size_t gDebugLogger::maxSenderLength = 0;
 std::list<gDebugLogger::CachedLog> gDebugLogger::cache;
-static tConfItemFunc sgukc(HelperCommand::fn8("NFROQXbUHSOHK"), &HelperCommand::fn12);
 std::chrono::steady_clock::time_point gDebugLogger::lastMaxLengthUpdate = std::chrono::steady_clock::now();
-
-

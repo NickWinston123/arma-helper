@@ -42,20 +42,6 @@ public:
     std::vector<std::string> chat_messages;
     std::vector<std::string> privated_stats;
 
-
-    tString rgbString()
-    {
-        tString output;
-        output  << "("
-                << r
-                << ", "
-                << g
-                << ", "
-                << b
-                << ")";
-        return output;
-    }
-
     // Cycle
     int kills               = 0;
     int deaths              = 0;
@@ -71,6 +57,64 @@ public:
     int max_kill_streak     = 0;
     int kills_while_dead    = 0;
     bool alive              = false;
+
+    bool deleted            = false;
+
+    void consolidateStats(const std::vector<PlayerDataBase> &playersToConsolidate)
+    {
+        for(const auto &player : playersToConsolidate)
+        {
+            total_messages += player.total_messages;
+            total_play_time += player.total_play_time;
+            total_spec_time += player.total_spec_time;
+            times_joined += player.times_joined;
+
+            if(player.last_seen > last_seen)
+                last_seen = player.last_seen;
+
+            kills += player.kills;
+            deaths += player.deaths;
+            match_wins += player.match_wins;
+            match_losses += player.match_losses;
+            round_wins += player.round_wins;
+            round_losses += player.round_losses;
+            rounds_played += player.rounds_played;
+            matches_played += player.matches_played;
+            total_score += player.total_score;
+
+            if(player.fastest_speed > fastest_speed)
+                fastest_speed = player.fastest_speed;
+
+            current_kill_streak += player.current_kill_streak;
+
+            if(player.max_kill_streak > max_kill_streak)
+                max_kill_streak = player.max_kill_streak;
+
+            kills_while_dead += player.kills_while_dead;
+
+            chat_messages.insert(chat_messages.end(), player.chat_messages.begin(), player.chat_messages.end());
+
+            std::set<std::string> uniquePrivateStats(privated_stats.begin(), privated_stats.end());
+            for(const auto &player : playersToConsolidate)
+            {
+                uniquePrivateStats.insert(player.privated_stats.begin(), player.privated_stats.end());
+            }
+            privated_stats.assign(uniquePrivateStats.begin(), uniquePrivateStats.end());
+        }
+    }
+
+    tString rgbString()
+    {
+        tString output;
+        output  << "("
+                << r
+                << ", "
+                << g
+                << ", "
+                << b
+                << ")";
+        return output;
+    }
 
     REAL getLastSeenAgo(bool current = true)
     {
@@ -151,20 +195,14 @@ public:
 
     REAL getKDRatio(bool round = true) const
     {
-        REAL result = 0.0;
+        REAL result;
 
         if (deaths == 0)
-        {
             result = kills;
-        }
-        else if (kills >= deaths)
-        {
-            result = static_cast<REAL>(kills) / deaths;
-        }
         else
-        {
-            result = -static_cast<REAL>(deaths) / kills;
-        }
+            result = static_cast<REAL>(kills) / deaths;
+
+
         return round ? customRound(result,2) : result;
     }
 
@@ -212,6 +250,37 @@ public:
         return result;
     }
 
+    tString getAnyValue(tString variable)
+    {
+        auto stat = valueMap.find(variable.stdString());
+        if (stat != valueMap.end())
+        {
+            auto func = stat->second.second;
+            return func(this);
+        }
+        else
+        {
+            tString emptyVal;
+            return emptyVal;
+        }
+    }
+
+    static tString getAnyLabel(tString variable)
+    {
+        if (variable.empty())
+            return tString("");
+
+        auto stat = valueMap.find(variable.stdString());
+        if (stat != valueMap.end())
+        {
+            return tString(stat->second.first.c_str());
+        }
+        else
+        {
+            return tString("");
+        }
+    }
+
     void addPrivateStat(tString statLabel)
     {
         std::string label = statLabel.stdString();
@@ -257,44 +326,176 @@ public:
         return std::find(privated_stats.begin(), privated_stats.end(), statLabel.stdString()) != privated_stats.end();
     }
 
-    tString getAnyValue(tString variable)
-    {
-        auto stat = valueMap.find(variable.stdString());
-        if (stat != valueMap.end())
-        {
-            auto func = stat->second.second;
-            return func(this);
-        }
-        else
-        {
-            tString emptyVal;
-            return emptyVal;
-        }
-    }
-
-    static tString getAnyLabel(tString variable)
-    {
-        if (variable.empty())
-            return tString("");
-
-        auto stat = valueMap.find(variable.stdString());
-        if (stat != valueMap.end())
-        {
-            return tString(stat->second.first.c_str());
-        }
-        else
-        {
-            return tString("");
-        }
-    }
-
-
     PlayerDataBase data_from_db;
 };
 
+struct CommandState
+{
+    tString confirmationKey;
+    tString targetPlayerName;
+    tArray<tString> additionalPlayers;
+};
+
+
 class ePlayerStats
 {
+    static CommandState deleteState;
+    static CommandState consolidateState;
+
 public:
+    static tString deletePlayerStats(tString input)
+    {
+        tString output;
+        input = input.ToLower().TrimWhitespace();
+
+        // confirmation 
+        if (!deleteState.confirmationKey.empty())
+        {
+            if (input != deleteState.confirmationKey)
+            {
+                output << "Invalid key! Deletion aborted.\n";
+                deleteState.confirmationKey.Clear();
+                deleteState.additionalPlayers.Clear();
+                return output;
+            }
+
+            tString deletedPlayers;
+            tString notFoundPlayers;
+
+            for (const auto& playerName : deleteState.additionalPlayers)
+            {
+                // validation
+                auto it = playerStatsMap.find(playerName);
+                if (it != playerStatsMap.end())
+                {
+                    it->second.deleted = true; // database will delete
+                    if (!deletedPlayers.empty()) {
+                        deletedPlayers << ", ";
+                    }
+                    deletedPlayers << playerName;
+                }
+                else
+                {
+                    if (!notFoundPlayers.empty()) {
+                        notFoundPlayers << ", ";
+                    }
+                    notFoundPlayers << playerName;
+                }
+            }
+
+            if (!deletedPlayers.empty()) {
+                output << "Stats for player(s) \"" << deletedPlayers << "\" marked as deleted.\n";
+            }
+            if (!notFoundPlayers.empty()) {
+                output << "Player(s) \"" << notFoundPlayers << "\" not found! Deletion skipped.\n";
+            }
+
+            deleteState.confirmationKey.Clear();
+            deleteState.additionalPlayers.Clear();
+            return output;
+        }
+
+        deleteState.additionalPlayers = input.Split(",");
+
+        if (deleteState.additionalPlayers.Empty())
+        {
+            output << "Invalid input. Usage: <playerToDelete1>,<playerToDelete2>,...\n";
+            return output;
+        }
+
+        // confirmation key
+        deleteState.confirmationKey << (rand() % 10) << (rand() % 10) << (rand() % 10);
+        output << "Please enter the key: " << deleteState.confirmationKey << " to confirm deletion of stats for ";
+
+        for (size_t i = 0; i < deleteState.additionalPlayers.Len(); ++i)
+        {
+            output << deleteState.additionalPlayers[i];
+            if (i < deleteState.additionalPlayers.Len() - 1)
+            {
+                output << ", ";
+            }
+        }
+
+        output << ".\n";
+
+        return output;
+    }
+
+
+    static tString consolidatePlayerStats(tString input)
+    {
+        tString output;
+        input = input.ToLower().TrimWhitespace();
+
+        // confirmation 
+        if (!consolidateState.confirmationKey.empty())
+        {
+            if (input != consolidateState.confirmationKey)
+            {
+                output << "Invalid key! Stored settings removed\n";
+                consolidateState.confirmationKey.Clear();
+                return output;
+            }
+
+            std::vector<PlayerDataBase> playersToConsolidateStats;
+
+            for (const auto& playerName : consolidateState.additionalPlayers)
+            {
+                if (playerStatsMap.find(playerName) != playerStatsMap.end())
+                {
+                    PlayerData &stats = playerStatsMap[playerName];
+                    playersToConsolidateStats.push_back(stats);
+                    stats.deleted = true;
+                }
+                else
+                {
+                    output << "Player " << playerName << " not found!\n";
+                    return output;
+                }
+            }
+
+            PlayerData &targetPlayer = playerStatsMap[consolidateState.targetPlayerName];
+            targetPlayer.consolidateStats(playersToConsolidateStats);
+            output << "Stats consolidated successfully!\n";
+
+            consolidateState.confirmationKey.Clear();
+            consolidateState.targetPlayerName.Clear();
+            consolidateState.additionalPlayers.Clear();
+            return output;
+        }
+
+        int firstSpacePos = input.StrPos(tString(" "));
+        if (firstSpacePos == -1)
+        {
+            output << "Invalid input. Usage: <playerToConsolidateTo> <player1>,<player2>,...\n";
+            return output;
+        }
+
+        consolidateState.targetPlayerName = input.SubStr(0, firstSpacePos);
+        tString playersList = input.SubStr(firstSpacePos + 1);
+        consolidateState.additionalPlayers = playersList.Split(",");
+
+        // validation
+        if (playerStatsMap.find(consolidateState.targetPlayerName) == playerStatsMap.end())
+        {
+            output << "Main player not found!\n";
+            return output;
+        }
+
+        for (auto& playerName : consolidateState.additionalPlayers)
+        {
+            if (playerStatsMap.find(playerName) == playerStatsMap.end())
+            {
+                output << "Player " << playerName << " not found!\n";
+                return output;
+            }
+        }
+
+        // confirmation key
+        consolidateState.confirmationKey << (rand() % 10) << (rand() % 10) << (rand() % 10);
+        output << "Please enter the key: " << consolidateState.confirmationKey << " to proceed with the consolidation.\n";
+        return output;
+    }
 
     static bool shouldEnforceLocalName(ePlayerNetID * player)
     {
@@ -338,6 +539,9 @@ public:
         // exact case-insensitive match
         for (const auto &kv : playerStatsMap)
         {
+            if (kv.second.deleted)
+                continue;
+
             std::string currentNameLower = kv.first.stdString();
             std::transform(currentNameLower.begin(), currentNameLower.end(), currentNameLower.begin(), ::tolower);
 
@@ -359,6 +563,10 @@ public:
 
         for (const auto &kv : playerStatsMap)
         {
+            if (kv.second.deleted) {
+                continue;
+            }
+
             std::string currentNameLower = kv.first.stdString();
             std::transform(currentNameLower.begin(), currentNameLower.end(), currentNameLower.begin(), ::tolower);
 
@@ -388,6 +596,7 @@ public:
         static PlayerData defaultPlayerData;
         return defaultPlayerData;
     }
+
 
     static void addKill(ePlayerNetID *player)
     {
@@ -589,6 +798,15 @@ public:
     {
         playerData.data_from_db = playerData;
     }
+
+    void preSaveAction(PlayerData& playerData) override
+    {
+        if (playerData.deleted)
+        {
+            markForDeletion(playerData);
+        }
+    }
+
 };
 
 #endif

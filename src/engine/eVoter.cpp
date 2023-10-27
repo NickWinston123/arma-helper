@@ -1034,13 +1034,16 @@ static void se_HandleServerVoteChanged( nMessage& m )
 static bool se_VoteKickAutoDeny = false;
 static tConfItem< bool > se_VoteKickAutoDenyConf = HelperCommand::tConfItem("VOTE_POLL_AUTO_DENY", se_VoteKickAutoDeny );
 
+static bool se_VoteKickAutoRebuild = false;
+static tConfItem< bool > se_VoteKickAutoRebuildConf = HelperCommand::tConfItem("VOTE_POLL_AUTO_REBUILD", se_VoteKickAutoRebuild );
+
 void denyPollAction(eVoteItem *item)
 {
     if (!item)
         return;
 
     tString description = item->GetDescription();
-    
+
     for (auto localPlayer : se_GetLocalPlayers())
     {
         if (localPlayer->greeted)
@@ -1071,6 +1074,9 @@ static void se_HandleNewServerVote(nMessage &m)
 
     if (se_VoteKickAutoDeny)
         denyPollAction(item);
+        
+    if (se_VoteKickAutoRebuild)
+        ePlayerNetID::CompleteRebuild();
 }
 
 static nDescriptor new_server_vote_handler(232,se_HandleNewServerVote,"Server controlled vote");
@@ -1192,7 +1198,7 @@ protected:
         return eVoteItemHarm::DoFillToMessage( m );
     }
 
-    virtual bool 
+    virtual bool
     DoFillFromMessage( nMessage& m )
     {
         // read player ID
@@ -1698,7 +1704,7 @@ static void se_HandleKickVote( nMessage& m )
             return;
         }
     }
-    
+
 }
 
 static nDescriptor kill_vote_handler(231,se_HandleKickVote,"Kick vote");
@@ -2199,12 +2205,12 @@ bool eVoter::ChatDisplayVotes()
     int size = voteItems.Len();
 
     if (size <= 0) {
-        con << eChatCommand::ErrorText() << "There are currently no polls.\n";
+        con << tThemedTextBase.ErrorColor() << "There are currently no polls.\n";
         return false;
     }
 
     for (int i = 0; i < size ; i++) {
-        con << eChatCommand::ItemText() << i+1 << eChatCommand::MainText() << ") " << voteItems[i]->GetDescription() << "\n";
+        con << tThemedTextBase.ItemColor() << i+1 << tThemedTextBase.MainColor() << ") " << voteItems[i]->GetDescription() << "\n";
     }
 
     return true;
@@ -2217,14 +2223,14 @@ void eVoter::ChatSubmitPoll(int pollID, bool accept)
     int size = voteItems.Len();
 
     if (pollID > size || pollID <= 0) {
-        con << eChatCommand::ErrorText() << "No poll found with ID '" << eChatCommand::ItemText() << pollID << eChatCommand::ErrorText() << "'\n";
+        con << tThemedTextBase.ErrorColor() << "No poll found with ID '" << tThemedTextBase.ItemColor() << pollID << tThemedTextBase.ErrorColor() << "'\n";
         return;
     }
 
     eVoteItem* voteItem = eVoteItem::GetItems()(pollID-1);
 
     if (!voteItem) {
-        con << eChatCommand::ErrorText() << "No poll found with ID '" << eChatCommand::ItemText() << pollID << eChatCommand::ErrorText() << "'\n";
+        con << tThemedTextBase.ErrorColor() << "No poll found with ID '" << tThemedTextBase.ItemColor() << pollID << tThemedTextBase.ErrorColor() << "'\n";
         return;
     }
 

@@ -3542,8 +3542,10 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
     if (se_playerTriggerMessages && sg_playerMessageMatchWinner || se_playerStats)
     {
-        if (s.Contains("Overall Winner"))
+        if (s.Contains("Overall Winner:"))
         {
+            con << s << "\n";
+
             ePlayerNetID *potentialWinner = ePlayerNetID::HighestScoringPlayer();
             bool isLocal = sg_playerMessageMatchWinnerSelf && potentialWinner && potentialWinner->isLocal();
 
@@ -5784,21 +5786,19 @@ void sn_quitAction(bool save, bool quit, tString message)
     {
         eChatBotStats &stats = eChatBot::getInstance().Stats();
 
-        stats.last_banned = time(nullptr); 
-        stats.times_banned++;
-
         time_t startOfDay = getStartTimeOfDay();
 
         if (stats.last_banned < startOfDay)
-        {
             stats.times_banned_today = 0; 
-        }
 
+        stats.last_banned = time(nullptr); 
+        stats.times_banned++;
         stats.times_banned_today++; 
 
         if (se_playerWatchAutoRandomName) 
             forceRandomRename = true;
     }
+
 
     
     if (save)

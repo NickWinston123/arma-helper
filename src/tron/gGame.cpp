@@ -3288,7 +3288,15 @@ void restrictionTimeCheck(bool ingame)
 void InitHelperItems(bool ingame)
 {
     if (HelperCommand::fn6() && se_playerTriggerMessages)
-        eChatBot::getInstance().LoadChatTriggers();
+    {
+        eChatBot &bot = eChatBot::getInstance();
+
+        if (bot.functionMap.empty())
+            bot.InitChatFunctions();
+
+        bot.LoadChatTriggers();
+        bot.LoadChatCommandConfCommands();
+    }
 
     restrictionTimeCheck(ingame);
 

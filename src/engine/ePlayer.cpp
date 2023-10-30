@@ -5834,28 +5834,31 @@ bool se_randomNamePing = false;
 static tConfItem<bool> se_randomNamePingConf = HelperCommand::tConfItem("PLAYER_NAME_PING", se_randomNamePing);
 
 bool se_randomName = false;
-static tConfItem<bool> se_randomNameConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME", se_randomName);
+static tConfItem<bool> se_randomNameConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM", se_randomName);
 
 bool se_randomNameSmart = false;
-static tConfItem<bool> se_randomNameSmartConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_SMART", se_randomNameSmart);
+static tConfItem<bool> se_randomNameSmartConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_SMART", se_randomNameSmart);
+
+bool se_playerNamePlayerIDs = false;
+static tConfItem<bool> se_playerNamePlayerIDsConf = HelperCommand::tConfItem("PLAYER_NAME_PLAYERIDS", se_playerNamePlayerIDs);
 
 tString se_randomNameEnabledPlayers("1,2,3,4");
-static tConfItem<tString> se_randomNameEnabledPlayersConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_ENABLED_PLAYERS", se_randomNameEnabledPlayers);
+static tConfItem<tString> se_randomNameEnabledPlayersConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_ENABLED_PLAYERS", se_randomNameEnabledPlayers);
 
 int se_randomNameLength = 15;
-static tConfItem<int> se_randomNameLengthConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_LENGTH", se_randomNameLength);
+static tConfItem<int> se_randomNameLengthConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_LENGTH", se_randomNameLength);
 
 bool se_randomNameLengthRandom = false;
-static tConfItem<bool> se_randomNameLengthRandomConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_LENGTH_RANDOM", se_randomNameLengthRandom);
+static tConfItem<bool> se_randomNameLengthRandomConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_LENGTH_RANDOM", se_randomNameLengthRandom);
 
 int se_randomNameLengthRandomMin = 8;
-static tConfItem<int> se_randomNameLengthRandomMinConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_LENGTH_RANDOM_MIN", se_randomNameLengthRandomMin);
+static tConfItem<int> se_randomNameLengthRandomMinConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_LENGTH_RANDOM_MIN", se_randomNameLengthRandomMin);
 
 int se_randomNameMode = 0;
-static tConfItem<int> se_randomNameModeConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_MODE", se_randomNameMode);
+static tConfItem<int> se_randomNameModeConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_MODE", se_randomNameMode);
 
 tString se_randomNameCharset("");
-static tConfItem<tString> se_randomNameCharsetConf = HelperCommand::tConfItem("PLAYER_RANDOM_NAME_CHARSET", se_randomNameCharset);
+static tConfItem<tString> se_randomNameCharsetConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_CHARSET", se_randomNameCharset);
 
 #include <string>
 #include <cstdlib>
@@ -5964,6 +5967,32 @@ tString randomNameSmart()
         randomStr.pop_back();
 
     return tString(randomStr);
+}
+
+tString playerIDName()
+{
+    tString ID;
+    std::vector<int> IDs;
+
+    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; i--)
+    {
+        ePlayerNetID *p = se_PlayerNetIDs[i];
+        if (!p->isLocal() && p->Owner() != 0) {
+            IDs.push_back(p->Owner());
+        }
+    }
+
+    if (!IDs.empty()) {
+        static tReproducibleRandomizer randomizer;
+        int randomIndex = randomizer.Get(0, IDs.size());
+
+        int somerandomID = IDs[randomIndex];
+        ID << somerandomID;
+    } else {
+        ID << "0"; 
+    }
+
+    return ID;
 }
 
 
@@ -10670,6 +10699,8 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                         newName = randomNameSmart();
                     else if (se_randomName)
                         newName = randomName();
+                    else if (se_playerNamePlayerIDs)
+                        newName = playerIDName();
                 }
 
                 if ((sn_GetNetState() == nSTANDALONE ||

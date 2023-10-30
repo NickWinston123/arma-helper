@@ -72,8 +72,9 @@ void ePlayerStats::updateStatsMatchEnd(ePlayerNetID *matchWinner)
     {
         ePlayerNetID *currentPlayer = se_PlayerNetIDs[i];
         PlayerData &stats = getStats(currentPlayer);
-
-        if (currentPlayer->CurrentTeam())
+        stats.in_game = currentPlayer->CurrentTeam() != nullptr;
+        
+        if (stats.in_game)
         {
             if (currentPlayer == matchWinner)
                 stats.match_wins++;
@@ -91,8 +92,9 @@ void ePlayerStats::updateStatsRoundEnd()
     {
         ePlayerNetID *currentPlayer = se_PlayerNetIDs[i];
         PlayerData &stats = getStats(currentPlayer);
+        stats.in_game = currentPlayer->CurrentTeam() != nullptr;
 
-        if (currentPlayer->CurrentTeam())
+        if (stats.in_game)
         {
             gCycle *cycle = ePlayerNetID::NetPlayerToCycle(currentPlayer);
 
@@ -106,11 +108,13 @@ void ePlayerStats::updateStatsRoundEnd()
                 stats.rounds_played++;
             }
 
-            stats.total_play_time += se_GameTime();
+            stats.total_play_time        += se_GameTime();
+            stats.play_time_this_session += se_GameTime();
         }
         else
         {
-            stats.total_spec_time += se_GameTime();
+            stats.total_spec_time        += se_GameTime();
+            stats.spec_time_this_session += se_GameTime();
         }
     }
 }
@@ -121,8 +125,9 @@ void ePlayerStats::updateStatsRoundStart()
     {
         ePlayerNetID *currentPlayer = se_PlayerNetIDs[i];
         PlayerData &stats = getStats(currentPlayer);
+        stats.in_game = currentPlayer->CurrentTeam() != nullptr;
 
-        if (currentPlayer->CurrentTeam())
+        if (stats.in_game)
         {
             stats.alive = true;
         }
@@ -200,7 +205,7 @@ const std::set<std::string> PlayerData::valueMapdisplayFields =
     "match_losses", "round_wins", "round_losses", "rounds_played",
     "matches_played", "play_time", "spec_time", "times_joined",
     "kd", "chat_count", "fastest", "score", "seen", "hidden",
-    "highest_kill_streak", "kill_streak", "kills_while_dead"
+    "highest_kill_streak", "kill_streak", "kills_while_dead", "name_history"
 };
 
 void insertFunction(std::map<std::string, std::pair<std::string, PlayerData::StatFunction>>& map,
@@ -254,7 +259,7 @@ auto initValueMap = []() {
     [](PlayerDataBase *self)
     {
         tString result("");
-        result << self->total_messages;
+        result << self->getMessageCount();
         return result;
     });
 
@@ -335,16 +340,16 @@ auto initValueMap = []() {
     [](PlayerDataBase *self)
     {
         tString result("");
-        result << st_GetFormatTime(self->getTotalPlayTime(), false);
+        result << st_GetFormatTime(self->getPlayTime(), false);
         return result;
     });
 
     insertFunction(tempMap,
-    {"spec_time", "st"}, "Spec Time",
+    {"spec_time", "st"}, "Spectate Time",
     [](PlayerDataBase *self)
     {
         tString result("");
-        result << st_GetFormatTime(self->getTotalSpecTime(), false);
+        result << st_GetFormatTime(self->getSpecTime(), false);
         return result;
     });
 
@@ -453,6 +458,15 @@ auto initValueMap = []() {
     {
         tString result("");
         result << (self->is_local ? "Yes" : "No");
+        return result;
+    });
+
+    insertFunction(tempMap,
+    {"names", "name_history", "nh"}, "Name History",
+    [](PlayerDataBase *self)
+    {
+        tString result("");
+        result = tString(self->getNameHistory());
         return result;
     });
 
@@ -644,6 +658,22 @@ const std::vector<PlayerDataColumnMapping> ePlayerStatsMappings =
          { sqlite3_bind_int(stmt, col++, stats.is_local ? 1 : 0); },
          [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
          { stats.is_local = sqlite3_column_int(stmt, col++) != 0; }},
+
+        {"name_history", "TEXT",
+         [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+         {
+             std::string serializedData = serializeVector(stats.name_history);
+             sqlite3_bind_text(stmt, col++, serializedData.c_str(), -1, SQLITE_TRANSIENT);
+         },
+         [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+         {
+             const char *nameHistorySerialized = reinterpret_cast<const char *>(sqlite3_column_text(stmt, col++));
+             if (nameHistorySerialized)
+             {
+                 stats.name_history = deserializeVector(nameHistorySerialized);
+             }
+         }},
+
 };
 
 static void se_playerStatsConsolidate(std::istream &s)

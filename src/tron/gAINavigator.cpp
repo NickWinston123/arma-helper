@@ -1743,7 +1743,7 @@ void displayTurn(int dir, int numberOfTurns, std::string reason)
     // Log the direction of the turn made
     gHelperUtility::Debug("SMART TURNING FRONT BOT",
                           std::to_string(numberOfTurns) + " Turn(s) made: " +
-                          std::string(dir == LEFT ? "LEFT" : "RIGHT") + ", Reason: " + (reason), "");
+                          std::string(dir == LEFT ? "LEFT" : "RIGHT") + ", Reason: " + (reason));
 }
 
 void displayTurnAct(uActionPlayer *action, int numberOfTurns, std::string reason)

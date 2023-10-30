@@ -29,36 +29,41 @@ public:
     // Player
     int r,g,b;
     tString name;
-    int total_messages     = 0;
-    REAL total_play_time   = 0;
-    REAL total_spec_time   = 0;
-    int times_joined       = 0;
-    time_t last_seen       = 0;
-    bool is_local          = false;
-    bool human             = true;
-    bool in_server         = false;
-    bool seen_this_session = false;
-
+    int total_messages              = 0;
+    int messages_this_session       = 0;
+    REAL total_play_time            = 0;
+    REAL play_time_this_session     = 0;
+    REAL total_spec_time            = 0;
+    REAL spec_time_this_session     = 0;
+    int times_joined                = 0;
+    time_t last_seen                = 0;
+    bool is_local                   = false;
+    bool human                      = true;
+    bool in_server                  = false;
+    bool seen_this_session          = false;
+    bool in_game                    = false; // current team?
+    
     std::vector<std::string> chat_messages;
     std::vector<std::string> privated_stats;
+    std::vector<std::string> name_history;
 
     // Cycle
-    int kills               = 0;
-    int deaths              = 0;
-    int match_wins          = 0;
-    int match_losses        = 0;
-    int round_wins          = 0;
-    int round_losses        = 0;
-    int rounds_played       = 0;
-    int matches_played      = 0;
-    int total_score         = 0;
-    REAL fastest_speed      = 0;
-    int current_kill_streak = 0;
-    int max_kill_streak     = 0;
-    int kills_while_dead    = 0;
-    bool alive              = false;
-
-    bool deleted            = false;
+    int kills                       = 0;
+    int deaths                      = 0;
+    int match_wins                  = 0;
+    int match_losses                = 0;
+    int round_wins                  = 0;
+    int round_losses                = 0;
+    int rounds_played               = 0;
+    int matches_played              = 0;
+    int total_score                 = 0;
+    REAL fastest_speed              = 0;
+    int current_kill_streak         = 0;
+    int max_kill_streak             = 0;
+    int kills_while_dead            = 0;
+    bool alive                      = false;
+    
+    bool deleted                    = false;
 
     void consolidateStats(const std::vector<PlayerDataBase> &playersToConsolidate)
     {
@@ -147,14 +152,29 @@ public:
         return exact ? st_GetFormatTime(lastSeen) : getTimeAgoString(lastSeen);
     }
 
-    REAL getTotalPlayTime()
+    REAL getPlayTime(bool current = true)
     {
-        return total_play_time + (in_server ? se_GameTime() : 0);
+        if (current && !in_game)
+            return 0; 
+
+        if (in_server)
+        {
+            if (in_game)
+                return current ? play_time_this_session + se_GameTime() : total_play_time + se_GameTime();
+
+            return current ? play_time_this_session : total_play_time;
+        }
+
+        return total_play_time;
     }
 
-    REAL getTotalSpecTime()
+    REAL getSpecTime(bool current = true)
     {
-        return total_spec_time + (in_server ? se_GameTime() : 0);
+        if (in_server)
+        {
+            return current ? spec_time_this_session + se_GameTime() : total_spec_time + se_GameTime();
+        }
+        return total_spec_time;
     }
 
     tString getChatMessages()
@@ -173,6 +193,33 @@ public:
         }
 
         return messages;
+    }
+
+    int getMessageCount(bool current = true)
+    {
+        if (in_server)
+        {
+            return current ? messages_this_session : total_messages;
+        }
+        return total_messages;
+    }
+
+    tString getNameHistory()
+    {
+        tString names;
+        bool first = true;
+
+        for (const auto& name : name_history)
+        {
+            if (!first)
+                names << ", ";
+            else
+                first = false;
+
+            names << name;
+        }
+
+        return names;
     }
 
     tString getHiddenStats()
@@ -231,6 +278,7 @@ public:
             displayFields.erase("rgb");
             displayFields.erase("chat_messages");
             displayFields.erase("hidden");
+            displayFields.erase("name_history");
         }
 
         if (source != "hidestatfunc")
@@ -335,7 +383,6 @@ struct CommandState
     tString targetPlayerName;
     tArray<tString> additionalPlayers;
 };
-
 
 class ePlayerStats
 {
@@ -683,18 +730,21 @@ public:
         setColor(player, player->r, player->g, player->b);
     }
 
-    static void playerInit(PlayerData &stats, bool isHuman, bool isLocal, bool enforceLocalName )
+    static void playerInit(PlayerData &stats, ePlayerNetID *player)
     {
-        stats.times_joined++;
-        stats.last_seen = time(NULL);
-        stats.human = isHuman;
-        stats.is_local = isLocal;
-        stats.in_server = true;
+        stats.last_seen           = time(NULL);
+        stats.human               = player->IsHuman();
+        stats.is_local            = player->isLocal();
+        stats.in_server           = true;
 
+        stats.seen_this_session   = true;
+        stats.current_kill_streak = 0;
+
+        stats.times_joined++;
         if (!stats.seen_this_session)
             players_record_this_session++;
-        stats.seen_this_session = true;
-        stats.current_kill_streak = 0;
+
+        stats.in_game = player->CurrentTeam() != nullptr;
     }
 
     static void playerRenamed(ePlayerNetID *player)
@@ -706,7 +756,8 @@ public:
         PlayerData &newStats = getStats(player);
 
         playerLeft(oldStats);
-        playerInit(newStats, player->IsHuman(), player->isLocal(), false);
+        playerInit(newStats, player);
+        newStats.name_history.push_back(player->lastName.stdString());
         setColor(player);
 
     }
@@ -714,7 +765,7 @@ public:
     static void playerJoined(ePlayerNetID * player)
     {
         PlayerData &stats = getStats(player);
-        playerInit(stats, player->IsHuman(), player->isLocal(), shouldEnforceLocalName(player));
+        playerInit(stats, player);
         setColor(player);
     }
 
@@ -726,9 +777,12 @@ public:
 
     static void playerLeft(PlayerData &stats)
     {
-        stats.last_seen = time(NULL);
-        stats.in_server = false;
-        stats.current_kill_streak = 0;
+        stats.last_seen                   = time(NULL);
+        stats.in_server                   = false;
+        stats.current_kill_streak         = 0;
+        stats.spec_time_this_session      = 0;
+        stats.play_time_this_session      = 0;
+        stats.messages_this_session       = 0;
     }
 
     static void addScore(ePlayerNetID * player, int score)
@@ -736,7 +790,6 @@ public:
         PlayerData &stats = getStats(player);
         stats.total_score += score;
     }
-
 
     static void addMessage(ePlayerNetID * player, tString message)
     {
@@ -746,6 +799,7 @@ public:
             stats.chat_messages.push_back(message.stdString());
 
         stats.total_messages++;
+        stats.messages_this_session++;
     }
 
     static void updateStatsMatchEnd(ePlayerNetID *matchWinner);

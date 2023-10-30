@@ -3444,7 +3444,7 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
             this->lastTurnAttemptDir = dir;
 
             if (dir != NONE)
-                gHelperUtility::Debug("SMART TURNING SURVIVE", "Ignoring turn: " + dir, "");
+                gHelperUtility::Debug("SMART TURNING SURVIVE", "Ignoring turn: " + dir);
             return false;
         }
 

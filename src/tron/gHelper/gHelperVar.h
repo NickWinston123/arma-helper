@@ -3,6 +3,7 @@
 
 #ifndef ArmageTron_GHELPER_VAR
 #define ArmageTron_GHELPER_VAR
+
 enum turnDirection
 {
     NONE = 0,

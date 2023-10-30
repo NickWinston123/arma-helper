@@ -126,7 +126,7 @@ void gSmartTurning::smartTurningPlan(gHelperData &data)
     {
         if (helper_.turnHelper->makeTurnIfPossible(data, dir, 5))
         {
-            gHelperUtility::Debug("SMART TURNING PLAN", std::string("MADE TURN: ") + ((dir == LEFT) ? "LEFT" : "RIGHT"), "");
+            gHelperUtility::Debug("SMART TURNING PLAN", std::string("MADE TURN: ") + ((dir == LEFT) ? "LEFT" : "RIGHT"));
         }
     }
 }
@@ -309,7 +309,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     // If the player cannot survive either of the turn, block both turns.
     if (!surviveData.canSurviveLeftTurn && !surviveData.canSurviveRightTurn)
     {
-        gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING BOTH TURNS", "");
+        gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING BOTH TURNS");
         this->blockTurn = BOTH;
         return;
     }
@@ -317,10 +317,10 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     // If the player cannot survive the left turn, block the left turn.
     if (!surviveData.canSurviveLeftTurn)
     {
-        gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS", "");
+        gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS");
 
         if (sg_helperSmartTurningSurviveDebug)
-            gHelperUtility::Debug("SMART TURNING SURVIVE", std::string(surviveData.debug), "");
+            gHelperUtility::Debug("SMART TURNING SURVIVE", std::string(surviveData.debug));
 
         this->blockTurn = LEFT;
         return;
@@ -329,10 +329,10 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     // If the player cannot survive the right turn, block the right turn.
     if (!surviveData.canSurviveRightTurn)
     {
-        gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN", "");
+        gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN");
 
         if (sg_helperSmartTurningSurviveDebug)
-            gHelperUtility::Debug("SMART TURNING SURVIVE", std::string(surviveData.debug), "");
+            gHelperUtility::Debug("SMART TURNING SURVIVE", std::string(surviveData.debug));
 
         this->blockTurn = RIGHT;
         return;
@@ -345,14 +345,14 @@ UN_BLOCKTURN:
         // Store the last blocked turn for smartTurningSurviveTrace before clearing
         owner_.lastBlockedTurn = this->blockTurn;
 
-        gHelperUtility::Debug("SMART TURNING SURVIVE", "UNBLOCKING TURNS", "");
+        gHelperUtility::Debug("SMART TURNING SURVIVE", "UNBLOCKING TURNS");
 
         // Set the blockTurn to NONE to indicate that the player can now turn in either direction.
         this->blockTurn = NONE;
     }
 
     // Check if the smartTurningSurviveTrace is enabled and call the function if it is.
-    if (sg_helperSmartTurningSurviveTrace)
+    if (sg_helperSmartTurningSurviveTrace && owner_.lastTurnAttemptDir != NONE)
         smartTurningSurviveTrace(data);
 }
 
@@ -379,9 +379,9 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
 
     if (!aliveCheck || lastTurnAttemptCheck)
     {
-        gHelperUtility::Debug("SMART TURNING TRACE", "CONDITIONS NOT MET",
-                              "aliveCheck: " + std::to_string(aliveCheck) +
-                              ", lastTurnAttemptCheck: " + std::to_string(lastTurnAttemptCheck));
+        // gHelperUtility::Debug("SMART TURNING TRACE", "CONDITIONS NOT MET",
+        //                       "aliveCheck: " + std::to_string(aliveCheck) +
+        //                       ", lastTurnAttemptCheck: " + std::to_string(lastTurnAttemptCheck));
         return;
     }
 
@@ -397,7 +397,10 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
     gSmartTurningCornerData &corner = helper_.getCorner(lastBlockedDir);
 
     if (!corner.exist)
+    {
+        gHelperUtility::Debug("SMART TURNING TRACE","No corner");
         return;
+    }
 
     // con << "lastBlockedDir " << lastBlockedDir << "\n";
     // Calculate the time factor for the turn
@@ -431,7 +434,7 @@ void gSmartTurning::smartTurningSurviveTrace(gHelperData &data)
         if (helper_.turnHelper->makeTurnIfPossible(data, lastBlockedDir, 1))
         {
             // Print the turn
-            gHelperUtility::Debug("SMART TURNING TRACE", std::string("TURNED") + ((lastBlockedDir == LEFT) ? "LEFT" : "RIGHT"), "");
+            gHelperUtility::Debug("SMART TURNING TRACE", std::string("TURNED") + ((lastBlockedDir == LEFT) ? "LEFT" : "RIGHT"));
         }
     }
 }
@@ -454,8 +457,7 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
     // or the smartTurningFrontBotTurnOnce flag is set and
     // the last bot turn was made more recently than the last turn
 
-    if (
-        !owner_.pendingTurns.empty() ||
+    if (!owner_.pendingTurns.empty() ||
         (sg_helperSmartTurningFrontBotTurnOnce && owner_.lastBotTurnTime > owner_.lastTurnTime))
         return;
 

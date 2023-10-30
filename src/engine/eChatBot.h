@@ -23,7 +23,7 @@ struct eChatBotStats;
 enum eChatBotMessageType
 {
     NORMAL,				
-    NORMAL_FUNC,			
+    FUNC,			
     SYM_FUNC,
 };
 
@@ -86,6 +86,7 @@ public:
     std::vector<tString> chatTriggerKeys;
 
     eChatBotStats stats;
+    TempConfItemManager *chatBotCommandConfItems;
 
     // instance
     static eChatBot &getInstance()
@@ -100,7 +101,8 @@ public:
     void InitChatFunctions();
 
     void LoadChatTriggers();
-
+    void LoadChatCommandConfCommands();
+    
     std::map<tString, ChatFunction> functionMap;
     void RegisterFunction(const tString &name, ChatFunction func)
     {

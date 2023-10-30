@@ -29,11 +29,18 @@ void gHelperUtility::debugLine(tColor color, REAL height, REAL timeout,
     {
         timeout = 1;
     }
+
     REAL startHeight = height;
+
     if (start == end)
         startHeight = 0;
+
     eDebugLine::SetTimeout(timeout);
-    eDebugLine::SetColor(color.r_ * sg_helperBrightness * brightness, color.g_ * sg_helperBrightness * brightness, color.b_ * sg_helperBrightness * brightness);
+    
+    eDebugLine::SetColor((color.r_ * sg_helperBrightness * brightness),  // R
+                         (color.g_ * sg_helperBrightness * brightness),  // G
+                         (color.b_ * sg_helperBrightness * brightness)); // B
+
     eDebugLine::Draw(start, startHeight, end, height);
 }
 

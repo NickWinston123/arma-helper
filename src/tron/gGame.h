@@ -356,6 +356,11 @@ public:
         return true;
     }
 
+    void checkAndClearQueueIfOverloaded(int size) 
+    {
+        if (tasksQueue.size() > size) 
+            clear(); 
+    }
 
     void enqueueChain(const std::function<void()>& chain)
     {
@@ -423,7 +428,19 @@ public:
             tasksQueue.pop();
         }
         tasksMap.clear();
+
+        while (!taskChains.empty()) {
+            taskChains.pop();
+        }
+
+        for (auto& taskQueuePair : pendingTasks) {
+            while (!taskQueuePair.second.empty()) {
+                taskQueuePair.second.pop();
+            }
+        }
+        pendingTasks.clear();
     }
+
 
     std::unordered_map<std::string, DelayedTask> getTasks() const
     {

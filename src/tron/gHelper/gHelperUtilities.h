@@ -20,12 +20,11 @@ struct gHelperClosestEnemyData
     gCycle *owner_;
 
     int enemySide;
-    bool canCutEnemy, canCutUs;
-    bool dangerous;
-
     bool enemyIsFacingOurLeft, enemyIsFacingOurRight;
-    bool enemyIsOnLeft, enemyIsOnRight;
-    bool oppositeDirectionofEnemy;
+    bool enemyIsFacingOurFront;
+
+    bool dangerous;
+    bool canCutEnemy, canCutUs;
 
     bool faster(gCycle *helperOwner);
 };
@@ -306,23 +305,23 @@ public:
         if (value.empty() && params.description.empty())
             return;
 
-       if (params.spamProtected && isSpam(params.description, value))
+        if (params.spamProtected && isSpam(params.description, value))
             return;
 
         if (params.timestamp)
         {
-            if (output)
+            if (params.showInCon)
                 header << theme.ItemColor();
             header << "[";
-            if (output)
+            if (params.showInCon)
                 header << theme.MainColor();
             header << getCurrentTimestamp();
-            if (output)
+            if (params.showInCon)
                 header << theme.ItemColor();
             header << "] ";
         }
 
-        header << LabelText(params.sender, output);
+        header << LabelText(params.sender, params.showInCon);
 
         mainBody << params.description << " " << value;
         output << header << mainBody << "\n";
@@ -333,7 +332,7 @@ public:
         if(params.saveToLog)
         {
             FileManager log(sg_helperDebugLogFile, tDirectories::Log());
-            log.Write(params.showInCon ? output : tColoredString::RemoveColors(output));
+            log.Write(params.showInCon ? tColoredString::RemoveColors(output) : output);
         }
 
         addToCache(params.description, value);
@@ -351,7 +350,7 @@ public:
         char szTemp[128];
         strftime(szTemp, sizeof(szTemp) - 4, "%Y-%m-%d %I:%M:%S", &currentLocalTime);  
 
-        char szMilliseconds[6]; // Including ':' character
+        char szMilliseconds[6];
         sprintf(szMilliseconds, ":%03d", static_cast<int>(ms.count()));  
 
         std::string formattedTime = std::string(szTemp) + szMilliseconds;
@@ -407,12 +406,12 @@ public:
 
         if (color)
             output << theme.HeaderColor();
-
-        output << cmd
-               << theme.ItemColor()
-               << " - "
-               << theme.MainColor();
-
+        output << cmd;
+        if (color)
+            output << theme.ItemColor();
+        output << " - ";
+        if (color)
+            output << theme.MainColor();
         if (color)
             output << theme.MainColor();
             
@@ -442,6 +441,11 @@ public:
         gDebugLogger::Log(params);
     }
 
+    static void Debug(const std::string &sender, const std::string &description, bool spamProtected = true)
+    {
+        Debug(sender, description, std::string{}, spamProtected);
+    }
+
     static void DebugLog(std::string message)
     {
         gDebugLoggerParams<std::string> params(false, true, false, true, "DebugLog", "Log Message:", message);
@@ -462,10 +466,12 @@ public:
     static bool isClose(gCycle *owner_, gCycle *enemy_, REAL closeFactor);
 };
 
-// See how close two coordinates are, lower the threshold the more strict the comparison
-static bool directionsAreClose(const eCoord &dir1, const eCoord &dir2, REAL threshold = 0.1)
+// See how close two directions are. The threshold represents the minimum cosine 
+// of the angle between the directions for them to be considered close. 
+// A higher threshold means a stricter comparison (smaller angle).
+static bool directionsAreClose(const eCoord &dir1, const eCoord &dir2, REAL threshold = 0.95)
 {
-    return dir1.Dot(dir2) >= 1 - threshold;
+    return dir1.Dot(dir2) >= threshold;
 }
 
 // Calculates the Euclidean distance between two points

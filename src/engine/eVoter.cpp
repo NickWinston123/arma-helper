@@ -1037,10 +1037,10 @@ static tConfItem< bool > se_VoteKickAutoDenyConf = HelperCommand::tConfItem("VOT
 static bool se_VoteKickAutoRebuild = false;
 static tConfItem< bool > se_VoteKickAutoRebuildConf = HelperCommand::tConfItem("VOTE_POLL_AUTO_REBUILD", se_VoteKickAutoRebuild );
 
-void denyPollAction(eVoteItem *item)
+bool isPollAgainstUs(eVoteItem *item)
 {
     if (!item)
-        return;
+        return false;
 
     tString description = item->GetDescription();
 
@@ -1051,14 +1051,24 @@ void denyPollAction(eVoteItem *item)
             const tString &playerName = localPlayer->GetName();
             if (description.Contains(playerName))
             {
-                tString desiredVote;
-                desiredVote << "Voice " << playerName;
-
-                item->Vote(description.Contains(desiredVote));
+                return true;
             }
         }
     }
+    return false;
 }
+
+void denyPollAction(eVoteItem *item)
+{
+    if (!item)
+        return;
+
+    tString description = item->GetDescription();
+    tString desiredVote;
+    desiredVote << "Voice ";
+    item->Vote(description.Contains(desiredVote));
+}
+
 #include "ePlayer.h"
 static void se_HandleNewServerVote(nMessage &m)
 {
@@ -1072,10 +1082,12 @@ static void se_HandleNewServerVote(nMessage &m)
         return;
     }
 
-    if (se_VoteKickAutoDeny)
+    bool pollAgainstUs = isPollAgainstUs(item);
+
+    if (pollAgainstUs && se_VoteKickAutoDeny)
         denyPollAction(item);
-        
-    if (se_VoteKickAutoRebuild)
+
+    if (pollAgainstUs && se_VoteKickAutoRebuild)
         ePlayerNetID::CompleteRebuild();
 }
 

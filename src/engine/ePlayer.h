@@ -731,6 +731,7 @@ protected:
 public:
     inline tColoredString const & GetNameFromClient( void ) const;	//!< Gets this player's name as the client wants it to be. Avoid using it when possilbe.
     inline tColoredString const & GetNameFromServer( void ) const;	//!< Gets this player's name as the client wants it to be. Avoid using it when possilbe.
+    inline tColoredString const & GetNameFromAdmin( void ) const;	//!< Gets this player's name as the client wants it to be. Avoid using it when possilbe.
     inline ePlayerNetID const & GetNameFromClient( tColoredString & nameFromClient ) const;	//!< Gets this player's name as the client wants it to be. Avoid using it when possilbe.
     inline tColoredString const & GetColoredName( void ) const;	//!< Gets this player's name, cleared by the server. Use this for onscreen screen display.
     inline ePlayerNetID const & GetColoredName( tColoredString & coloredName ) const;	//!< Gets this player's name, cleared by the server. Use this for onscreen screen display.
@@ -857,6 +858,11 @@ tColoredString const & ePlayerNetID::GetNameFromClient( void ) const
 tColoredString const & ePlayerNetID::GetNameFromServer( void ) const
 {
     return this->nameFromServer_;
+}
+
+tColoredString const & ePlayerNetID::GetNameFromAdmin( void ) const
+{
+    return this->nameFromAdmin_;
 }
 
 // ******************************************************************************************

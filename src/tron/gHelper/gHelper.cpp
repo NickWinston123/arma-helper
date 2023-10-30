@@ -73,30 +73,7 @@ namespace helperConfig
     REAL sg_helperRubberRatioBrakeDifference = 0.3;
     static tConfItem<REAL> sg_helperRubberRatioBrakeDifferenceConf = HelperCommand::tConfItem("HELPER_SELF_RUBBER_RATIO_BRAKE_DIFFERENCE", sg_helperRubberRatioBrakeDifference);
 
-
     tString sghk("");
-    bool sg_pathHelper = false;
-    static tConfItem<bool> sg_pathHelperC = HelperCommand::tConfItem("HELPER_SELF_PATH", sg_pathHelper);
-    bool sg_pathHelperRenderPath = false;
-    static tConfItem<bool> sg_pathHelperRenderPathC = HelperCommand::tConfItem("HELPER_SELF_PATH_RENDER", sg_pathHelperRenderPath);
-    bool sg_pathHelperShowTurn = false;
-    static tConfItem<bool> sg_pathHelperShowTurnC = HelperCommand::tConfItem("HELPER_SELF_PATH_RENDER_TURN", sg_pathHelperShowTurn);
-    bool sg_pathHelperShowTurnAct = false;
-    static tConfItem<bool> sg_pathHelperShowTurnActC = HelperCommand::tConfItem("HELPER_SELF_PATH_RENDER_TURN_ACT", sg_pathHelperShowTurnAct);
-    REAL sg_pathHelperShowTurnAhead = 0;
-    static tConfItem<REAL> sg_pathHelperShowTurnAheadC = HelperCommand::tConfItem("HELPER_SELF_PATH_RENDER_TURN_AHEAD", sg_pathHelperShowTurnAhead);
-    int sg_pathHelperMode = 0;
-    static tConfItem<int> sg_pathHelperModeC = HelperCommand::tConfItem("HELPER_SELF_PATH_MODE", sg_pathHelperMode);
-    REAL sg_pathHelperAutoCloseDistance = 150;
-    static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC = HelperCommand::tConfItem("HELPER_SELF_PATH_AUTO_CLOSE_DISTANCE", sg_pathHelperAutoCloseDistance);
-    REAL sg_pathHelperUpdateTime = -1000;
-    static tConfItem<REAL> sg_pathHelperUpdateTimeC = HelperCommand::tConfItem("HELPER_SELF_PATH_UPDATE_TIME", sg_pathHelperUpdateTime);
-    REAL se_pathHeight = 1;
-    static tConfItem<REAL> se_pathHeightC = HelperCommand::tConfItem("HELPER_SELF_PATH_RENDER_HEIGHT", se_pathHeight);
-    REAL se_pathBrightness = 1;
-    static tConfItem<REAL> se_pathBrightnessC = HelperCommand::tConfItem("HELPER_SELF_PATH_BRIGHTNESS", se_pathBrightness);
-    REAL sg_pathHelperUpdateDistance = 1;
-    static tConfItem<REAL> sg_pathHelperUpdateDistanceC = HelperCommand::tConfItem("HELPER_SELF_PATH_UPDATE_DISTANCE", sg_pathHelperUpdateDistance);
 
     bool sg_helperShowCorners = false;
     static tConfItem<bool> sg_helperShowCornersConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_CORNERS", sg_helperShowCorners);
@@ -154,8 +131,8 @@ namespace helperConfig
     static tConfItem<REAL> sg_showHitDataRangeConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_RANGE", sg_showHitDataRange);
     REAL sg_showHitDataFreeRange = 1;
     static tConfItem<REAL> sg_showHitDataFreeRangeConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_OPEN_RANGE", sg_showHitDataFreeRange);
-    int sg_showHitDataRecursion = 0;
-    static tConfItem<int> sg_showHitDataRecursionConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_RECURSION", sg_showHitDataRecursion);
+    int sg_showHitDataRecursion = 1;
+    static tConfItem<int> sg_showHitDataRecursionConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_SIDE_LINES", sg_showHitDataRecursion);
     REAL sg_showHitDataTimeout = 1;
     static tConfItem<REAL> sg_showHitDataTimeoutConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_TIMEOUT", sg_showHitDataTimeout);
     REAL sg_showHitDataHeightFront = 1;
@@ -169,7 +146,7 @@ namespace helperConfig
     REAL sg_helperShowHitFrontLineHeight = 2;
     static tConfItem<REAL> sg_helperShowHitFrontLineHeightConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_FRONT_LINE_HEIGHT", sg_helperShowHitFrontLineHeight);
     int sg_helperShowHitStartMode = 0;
-    static tConfItem<int> sg_helperShowHitStartModeConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_START_MODE", sg_helperShowHitStartMode);
+    static tConfItem<int> sg_helperShowHitStartModeConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_MODE", sg_helperShowHitStartMode);
 
     bool sg_helperTraceLeft = false;
     tSettingItem<bool> sg_helperTraceLeftConf = HelperCommand::tSettingItem("HELPER_SELF_TRACE_LEFT", sg_helperTraceLeft);
@@ -193,13 +170,15 @@ namespace helperConfig
 
     bool sg_helperDetectCut = false;
     static tConfItem<bool> sg_helperDetectCutConf = HelperCommand::tConfItem("HELPER_ENEMY_DETECT_CUT", sg_helperDetectCut);
+    REAL sg_helperDetectCutComparisonStrictness = 0.95;
+    static tConfItem<REAL> sg_helperDetectCutComparisonStrictnessConf = HelperCommand::tConfItem("HELPER_ENEMY_DETECT_CUT_DIRECTION_COMPARISON_MARGIN", sg_helperDetectCutComparisonStrictness);
     REAL sg_helperDetectCutDetectionRange = 150;
     static tConfItem<REAL> sg_helperDetectCutDetectionRangeConf = HelperCommand::tConfItem("HELPER_ENEMY_DETECT_CUT_DETECTION_RANGE", sg_helperDetectCutDetectionRange);
     REAL sg_helperDetectCutTimeout = .001;
     static tConfItem<REAL> sg_helperDetectCutTimeoutConf = HelperCommand::tConfItem("HELPER_ENEMY_DETECT_CUT_TIMEOUT", sg_helperDetectCutTimeout);
     REAL sg_helperDetectCutHeight = 0;
     static tConfItem<REAL> sg_helperDetectCutHeightConf = HelperCommand::tConfItem("HELPER_ENEMY_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
-    REAL sg_helperDetectCutReact = .02; // .005 ?
+    REAL sg_helperDetectCutReact = .02;
     static tConfItem<REAL> sg_helperDetectCutReactConf = HelperCommand::tConfItem("HELPER_ENEMY_DETECT_CUT_REACTION_TIME", sg_helperDetectCutReact);
     bool sg_helperEnemyTracers = false;
 
@@ -387,29 +366,26 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // Goal: Exploit symmetry along the x axis, put enemy on the right side of
     // our relative coordinate system ( so .x > 0 )
 
-    // Check if the enemy is facing opposite direction of ours
-    enemyData.oppositeDirectionofEnemy = directionsAreClose(enemyDir, ourDir.Turn(LEFT).Turn(LEFT), 0.05);
+    // Check if the enemy is facing with the head of their cycle facing ours
+    enemyData.enemyIsFacingOurFront = directionsAreClose(enemyDir, ourDir.Turn(LEFT).Turn(LEFT), sg_helperDetectCutComparisonStrictness);
 
-    // Check if the enemy is on the left side of us
-    enemyData.enemyIsOnLeft = relEnemyPos.x < 0;
-
-    // Check if the enemy is on the right side of us
-    enemyData.enemyIsOnRight = !enemyData.enemyIsOnLeft;
+    // Determine which side the enemy is on, check if the enemy is on the left side of us, if not they must be on our right
+    enemyData.enemySide = (relEnemyPos.x < 0) ? LEFT : RIGHT;
 
     // Check if the enemy is facing right direction of ours
-    enemyData.enemyIsFacingOurRight = directionsAreClose(enemyDir, ourDir.Turn(RIGHT), 0.05);
+    enemyData.enemyIsFacingOurRight = directionsAreClose(enemyDir, ourDir.Turn(RIGHT), sg_helperDetectCutComparisonStrictness);
 
     // Check if the enemy is facing left direction of ours
-    enemyData.enemyIsFacingOurLeft = directionsAreClose(enemyDir, ourDir.Turn(LEFT), 0.05);
+    enemyData.enemyIsFacingOurLeft = directionsAreClose(enemyDir, ourDir.Turn(LEFT), sg_helperDetectCutComparisonStrictness);
 
-    // If the enemy is facing opposite direction of ours, flip the relative position
-    if (enemyData.oppositeDirectionofEnemy)
+    // If the enemy is facing opposite direction of ours (towards our cycle), flip the relative position so we are facing the same direction
+    if (enemyData.enemyIsFacingOurFront)
         relEnemyPos.y *= -1;
     // If the enemy is facing right direction of ours and on the left side, rotate the relative position
-    else if (enemyData.enemyIsOnLeft && enemyData.enemyIsFacingOurRight)
+    else if (enemyData.enemySide == LEFT && enemyData.enemyIsFacingOurRight)
         relEnemyPos = relEnemyPos.Turn(LEFT);
     // If the enemy is facing left direction of ours and on the right side, rotate the relative position
-    else if (enemyData.enemyIsOnRight && enemyData.enemyIsFacingOurLeft)
+    else if (enemyData.enemySide == RIGHT && enemyData.enemyIsFacingOurLeft)
         relEnemyPos = relEnemyPos.Turn(RIGHT);
 
     // If the enemy is on the left side, flip the relative position
@@ -442,18 +418,16 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // and then he turns left or right.
     relEnemyPos.x -= enemydist;
 
-    enemyData.enemySide = (enemyData.enemyIsOnLeft ? LEFT : RIGHT);
-    enemyData.canCutUs = relEnemyPos.y * enemySpeed > relEnemyPos.x * ourSpeed; // right ahead of us? (and faster)
-    enemyData.canCutEnemy = relEnemyPos.y * ourSpeed < -relEnemyPos.x * enemySpeed;
+    enemyData.canCutUs    = relEnemyPos.y * enemySpeed >  relEnemyPos.x * ourSpeed;   // right ahead of us (and faster)
+    enemyData.canCutEnemy = relEnemyPos.y * ourSpeed   < -relEnemyPos.x * enemySpeed;
 
     if (enemyData.canCutUs)
-        gHelperUtility::debugLine(tColor(1, 0, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
+        gHelperUtility::debugLine(tColor(1, 0, 0),    sg_helperDetectCutHeight, timeout, ourPos, enemyPos); // Red line 
     else if (enemyData.canCutEnemy)
-        gHelperUtility::debugLine(tColor(0, 1, 0), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
+        gHelperUtility::debugLine(tColor(0, 1, 0),    sg_helperDetectCutHeight, timeout, ourPos, enemyPos); // Green Line
     else
-        gHelperUtility::debugLine(tColor(.4, .4, .4), sg_helperDetectCutHeight, timeout, ourPos, enemy->pos);
+        gHelperUtility::debugLine(tColor(.4, .4, .4), sg_helperDetectCutHeight, timeout, ourPos, enemyPos); // Gray Line
 }
-
 
 void gHelper::rubberRatioBrake(gHelperData &data)
 {
@@ -583,7 +557,8 @@ void gHelper::enemyTracers(gHelperData &data)
             R = 1, G = 0, B = 1;
 
         // Draw the tracer line on the screen
-        gHelperUtility::debugLine(tColor(R, G, B), sg_helperEnemyTracersHeight, sg_helperEnemyTracersTimeout * data.ownerData.speedFactorF(), ownerPos, enemyPos, sg_helperEnemyTracersBrightness);
+        if (sg_helperEnemyTracersPassthrough <= 0 || canSeeTarget((enemyPos), sg_helperShowTailPassthrough))
+            gHelperUtility::debugLine(tColor(R, G, B), sg_helperEnemyTracersHeight, sg_helperEnemyTracersTimeout * data.ownerData.speedFactorF(), ownerPos, enemyPos, sg_helperEnemyTracersBrightness);
     }
 }
 
@@ -765,8 +740,11 @@ void gHelper::showHit(gHelperData &data)
     if (!aliveCheck() || (!sg_helperShowHitEnableWhileNotStraight && !drivingStraight()))
         return;
 
+    std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(&owner_, owner_.Position(), FRONT);
+    sensor->detect(sg_helperSensorRange);
+
     // get the front hit distance and check if it's close to the wall
-    REAL frontHit = data.sensors.getSensor(FRONT)->hit;
+    REAL frontHit = sensor->hit;
     bool wallClose = frontHit < data.ownerData.turnSpeedFactorF() * sg_showHitDataRange;
 
     // calculate the timeout value
@@ -780,8 +758,9 @@ void gHelper::showHit(gHelperData &data)
     if (!wallClose)
         return;
 
+
     // get the front before hit position
-    eCoord frontBeforeHit = data.sensors.getSensor(FRONT)->before_hit;
+    eCoord frontBeforeHit = sensor->before_hit;
 
     // draw a line from the owner's current position to the front before hit position
     gHelperUtility::debugLine(tColor(1, .5, 0), sg_showHitDataHeightFront, timeout, ownerPos, frontBeforeHit);
@@ -839,7 +818,9 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     eCoord newDir = initDir.Turn(eCoord(0, sensorDir * -1));
 
     // Get the information of the sensor at the current position and direction.
-    std::shared_ptr<gHelperSensor> sensor = data.sensors.getSensor(currentPos, initDir);
+    std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(&owner_, currentPos, initDir);
+    sensor->detect(sg_helperSensorRange);
+
     eCoord hitPos = sensor->before_hit;
     REAL hitDistance = sensor->hit;
 
@@ -890,8 +871,8 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
 // Function to check if the owner is alive and exists on the grid.
 bool gHelper::aliveCheck()
 {
-    // Return true if the owner exists, is alive, and grid exist.
-    return &owner_ && owner_.Alive() && owner_.Grid();
+    // Return true if the owner exists, grid exist, and owner is alive.
+    return &owner_ && owner_.Grid() && owner_.Alive();
 }
 
 void gHelper::trace(gHelperData &data, int dir)
@@ -899,28 +880,38 @@ void gHelper::trace(gHelperData &data, int dir)
     if (!(owner_.pendingTurns.size() == 0))
     {
         if (helperConfig::sg_helperDebug)
-            gHelperUtility::Debug("Trace", "Not tracing due to pending turns.", "");
+            gHelperUtility::Debug("Trace", "Not tracing due to pending turns.");
         return;
     }
-    eGrid *grid = owner_.Grid();
 
-    std::shared_ptr<gHelperSensor> sensor = data.sensors.getSensor(owner_.Position(),
-                                                                   grid->GetDirection(grid->DirectionWinding(owner_.Direction()) + dir),
-                                                                   1000);
+    std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(&owner_, owner_.Position(), dir);
+    sensor->detect(sg_helperSensorRange);
 
     // Initialize to a large value
     static float sensorDistance[2] = {1E+30, 1E+30};
+    static bool initialized[2] = {false, false};
+
     int index = (dir == LEFT) ? 0 : 1;
 
-    if (sensor->hit > (sensorDistance[index] + sg_helperTraceReactRange))
+    if (!initialized[index])
+    {
+        sensorDistance[index] = sensor->hit;
+        initialized[index] = true;
+        return;
+    }
+    REAL lastChangeDist = sensorDistance[index] + sg_helperTraceReactRange;
+    if (sensor->hit > lastChangeDist)
     {
         if (helperConfig::sg_helperDebug)
-            gHelperUtility::Debug("Trace", ((dir == LEFT) ? "Tracing left" : "Tracing right"), "");
+            gHelperUtility::Debug("Trace", ((dir == LEFT) ? "Tracing left" : "Tracing right"));
+
         gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index]
         {
             this->owner_.ActTurnBot(dir);
         });
+
         sensorDistance[index] = 1E+30;
+        initialized[index] = false;
     }
     else
     {

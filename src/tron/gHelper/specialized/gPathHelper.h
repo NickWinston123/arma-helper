@@ -5,6 +5,15 @@
 #ifndef ArmageTron_GHELPER_PATHHELPER
 #define ArmageTron_GHELPER_PATHHELPER
 
+
+enum gPathHelperMode
+{
+    AUTO = 0,
+    TAIL = 1,
+    ENEMY = 2,
+    CORNER = 3,
+};
+
 class gPathHelper
 {
 public:
@@ -29,7 +38,7 @@ public:
     static gPathHelper &Get(gHelper &helper, gCycle &owner);
 
 private:
-    gCycle &owner_; // Pointer to the owner cycle
+    gCycle &owner_; 
     gHelper &helper_;
 
     eCoord target;

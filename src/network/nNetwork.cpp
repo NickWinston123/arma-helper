@@ -1695,6 +1695,11 @@ static tConfItem<bool> sn_bannedWatchQuitConf("PLAYER_WATCH_BANNED_QUIT",sn_bann
 REAL sn_bannedWatchQuitTime = 5;
 static tConfItem<REAL> sn_bannedWatchQuitTimeConf("PLAYER_WATCH_BANNED_QUIT_TIME",sn_bannedWatchQuitTime);
 
+bool sn_playerUnableToRenameWatch = false;
+static tConfItem<bool> sn_playerUnableToRenameWatchConf("PLAYER_WATCH_RENAME",sn_playerUnableToRenameWatch);
+bool sn_playerUnableToRenameWatchRebuild = true;
+static tConfItem<bool> sn_playerUnableToRenameWatchRebuildConf("PLAYER_WATCH_RENAME_REBUILD",sn_playerUnableToRenameWatchRebuild);
+
 bool sn_playerSuspendWatch = false;
 static tConfItem<bool> sn_playerSuspendWatchConf("PLAYER_WATCH_SUSPENDED",sn_playerSuspendWatch);
 bool sn_playerSuspendWatchQuit = false;
@@ -3498,6 +3503,7 @@ bool validateSuspended()
 
     return false;
 }
+
 static void sn_ConsoleOut_handler(nMessage &m)
 {
     if (sn_GetNetState() != nSERVER)
@@ -3522,6 +3528,15 @@ static void sn_ConsoleOut_handler(nMessage &m)
                 sn_quitAction(true, sn_playerSuspendWatchQuit);
             else if (se_playerWatchAutoRandomName)
                 forceRandomRename = true;
+        }
+    }
+
+    if (sn_playerUnableToRenameWatch)
+    {
+        if (s.Contains(tString("not allowed to rename to ")))
+        {
+            if (sn_playerUnableToRenameWatchRebuild)
+                ePlayerNetID::CompleteRebuild();
         }
     }
 

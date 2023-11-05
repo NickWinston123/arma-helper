@@ -358,9 +358,16 @@ public:
 
     void checkAndClearQueueIfOverloaded(int size) 
     {
-        if (tasksQueue.size() > size) 
+        int totalSize = tasksQueue.size();
+        for (const auto& pendingTask : pendingTasks) 
+            totalSize += pendingTask.second.size();
+        
+        totalSize += taskChains.size();
+
+        if (totalSize > size) 
             clear(); 
     }
+
 
     void enqueueChain(const std::function<void()>& chain)
     {

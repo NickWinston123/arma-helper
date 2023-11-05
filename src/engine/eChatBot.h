@@ -22,8 +22,8 @@ struct eChatBotStats;
 
 enum eChatBotMessageType
 {
-    NORMAL,				
-    FUNC,			
+    NORMAL,
+    FUNC,
     SYM_FUNC,
 };
 
@@ -102,7 +102,7 @@ public:
 
     void LoadChatTriggers();
     void LoadChatCommandConfCommands();
-    
+
     std::map<tString, ChatFunction> functionMap;
     void RegisterFunction(const tString &name, ChatFunction func)
     {
@@ -136,7 +136,7 @@ public:
             }
         }
 
-        time_t now = time(nullptr);        
+        time_t now = time(nullptr);
         time_t difference = now - Stats().last_banned;
 
         bool bannedOverTodaysLimit = Stats().times_banned_today >= se_playerWatchAutoRandomNameBanLimit;
@@ -144,7 +144,7 @@ public:
         bool noSpecators = num_spectators == 0;
         bool inGameForFullWaitTime = Stats().upTime() >= (se_playerWatchAutoRandomNameRevertTime);
 
-        if(!bannedOverTodaysLimit && !avoidPlayerInGame() && timeToRevert && (noSpecators || inGameForFullWaitTime)) 
+        if(!bannedOverTodaysLimit && !avoidPlayerInGame() && timeToRevert && (noSpecators || inGameForFullWaitTime))
         {
             forceRandomRename = false;
         }
@@ -162,30 +162,44 @@ public:
 };
 
 #include "tDatabase.h"
-class eChatBotStatsDBAction : public tDatabase<eChatBotStats, ChatBotColumnMapping> 
+class eChatBotStatsDBAction : public tDatabase<eChatBotStats, TableDefinition<eChatBotStats>>
 {
 public:
     eChatBotStatsDBAction(sqlite3* db)
-        : tDatabase<eChatBotStats, ChatBotColumnMapping>(db, "eChatBotStats", eChatBotStats::eChatBotStatsMappings) {}
-
-    eChatBotStats& getTargetObject(const tString &name) override 
+        : tDatabase<eChatBotStats, TableDefinition<eChatBotStats>>(
+            db,
+            "eChatBotStats",
+            TableDefinition<eChatBotStats>(
+                [] { // Primary key
+                    TableDefinition<eChatBotStats>::PrimaryKey pk;
+                    pk.columnName = "name";
+                    pk.getValueFunc = [](const eChatBotStats &stats) -> std::string {
+                        return stats.name.stdString(); 
+                    };
+                    return pk;
+                }(),
+                eChatBotStats::eChatBotStatsMappings 
+            )
+        )
+    {}
+    
+    eChatBotStats& getTargetObject(const tString &name) override
     {
         return eChatBot::getInstance().Stats();
     }
 
-    std::vector<eChatBotStats> getAllObjects() override 
+    std::vector<eChatBotStats> getAllObjects() override
     {
         return {eChatBot::getInstance().Stats()};
     }
 
-    void postLoadActions(eChatBotStats& chatBotStats) override 
+    void postLoadActions(eChatBotStats& chatBotStats) override
     {
         chatBotStats.data_from_db = chatBotStats;
         time_t startOfDay = getStartTimeOfDay();
 
         if (chatBotStats.last_banned < startOfDay)
-            chatBotStats.times_banned_today = 0; 
-
+            chatBotStats.times_banned_today = 0;
     }
 };
 

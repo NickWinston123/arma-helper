@@ -432,7 +432,11 @@ static void display_hud_subby(ePlayer *player)
                             
                             if (stats.fastest_speed < currentPlayerSpeed)
                                 stats.fastest_speed = currentPlayerSpeed;
+
+                            if (stats.thisSession().fastest_speed < currentPlayerSpeed)
+                                stats.thisSession().fastest_speed = currentPlayerSpeed;
                         }
+
 
                         if (h->Speed() > max)
                         {

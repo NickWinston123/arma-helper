@@ -9,16 +9,16 @@ using namespace helperConfig;
 
 // Bright Red for headers
 tString sg_helperDebugColorHeader("0xff0033");
-static tConfItem<tString> sg_helperDebugColorHeaderConf("HELPER_DEBUG_COLOR_HEADER", sg_helperDebugColorHeader);
+static tConfItem<tString> sg_helperDebugColorHeaderConf = HelperCommand::tConfItem("HELPER_DEBUG_COLOR_HEADER", sg_helperDebugColorHeader);
 // White for main
 tString sg_helperDebugColorMain("0xffffff");
-static tConfItem<tString> sg_helperDebugColorMainConf("HELPER_DEBUG_COLOR_MAIN", sg_helperDebugColorMain);
+static tConfItem<tString> sg_helperDebugColorMainConf = HelperCommand::tConfItem("HELPER_DEBUG_COLOR_MAIN", sg_helperDebugColorMain);
 // Dark Red for items
 tString sg_helperDebugColorItem("0xee0000");
-static tConfItem<tString> sg_helperDebugColorItemConf("HELPER_DEBUG_COLOR_ITEM", sg_helperDebugColorItem);
+static tConfItem<tString> sg_helperDebugColorItemConf = HelperCommand::tConfItem("HELPER_DEBUG_COLOR_ITEM", sg_helperDebugColorItem);
 // Pinkish red for error messages as an accent color
 tString sg_helperDebugColorError("0xee5577");
-static tConfItem<tString> sg_helperDebugColorErrorConf("HELPER_DEBUG_COLOR_ERROR", sg_helperDebugColorError);
+static tConfItem<tString> sg_helperDebugColorErrorConf = HelperCommand::tConfItem("HELPER_DEBUG_COLOR_ERROR", sg_helperDebugColorError);
 
 tThemedText gDebugLogger::theme(sg_helperDebugColorHeader, sg_helperDebugColorMain, sg_helperDebugColorItem, sg_helperDebugColorError);
 

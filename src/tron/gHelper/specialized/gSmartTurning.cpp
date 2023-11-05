@@ -153,7 +153,7 @@ void gSmartTurning::followTail(gHelperData &data)
 
     // Check if the cycle can survive turning left or right
 
-    gSurviveData surviveData = helper_.turnHelper->canSurviveTurn(data, sg_helperSmartTurningFollowTailFreeSpaceMult);
+    gSurviveData surviveData = helper_.turnHelper->canSurviveTurn(data, sg_helperSmartTurningFollowTailFreeSpaceMult, false, sg_helperSmartTurningSurviveDebug);
     if (!surviveData.exist)
         return;
     // If the cycle is closed in or blocked by itself, return
@@ -228,7 +228,7 @@ void gSmartTurning::smartTurningOpposite(gHelperData &data)
         return;
 
     // Determine if the cycle can survive a turn to the left or right according to rubber and space
-    gSurviveData surviveData = helper_.turnHelper->canSurviveTurn(data, sg_helperSmartTurningSpace);
+    gSurviveData surviveData = helper_.turnHelper->canSurviveTurn(data, sg_helperSmartTurningSpace, false, sg_helperSmartTurningSurviveDebug);
     if (!surviveData.exist)
         return;
 
@@ -279,6 +279,7 @@ void gSmartTurning::smartTurningSurvive()
 {
     smartTurningSurvive(helper_.data_stored);
 }
+
 void gSmartTurning::smartTurningSurvive(gHelperData &data)
 {
     // Check if the player is alive. If not, return.

@@ -110,16 +110,15 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperShowTailTimeoutConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TIMEOUT", sg_helperShowTailTimeout);
 
     bool sg_helperShowTailTracer = false;
-    static tConfItem<bool> sg_helperShowTailTracerConf = HelperCommand::tConfItem("HELPER_SELF_TAIL_TRACER", sg_helperShowTailTracer);
+    static tConfItem<bool> sg_helperShowTailTracerConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER", sg_helperShowTailTracer);
     REAL sg_helperShowTailTracerHeight = 1;
-    static tConfItem<REAL> sg_helperShowTailTracerHeightConf = HelperCommand::tConfItem("HELPER_SELF_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
+    static tConfItem<REAL> sg_helperShowTailTracerHeightConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER_HEIGHT", sg_helperShowTailTracerHeight);
     REAL sg_helperShowTailTracerBrightness = 1;
-    static tConfItem<REAL> sg_helperShowTailTracerBrightnessConf = HelperCommand::tConfItem("HELPER_SELF_TAIL_TRACER_BRIGHTNESS", sg_helperShowTailTracerBrightness);
+    static tConfItem<REAL> sg_helperShowTailTracerBrightnessConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER_BRIGHTNESS", sg_helperShowTailTracerBrightness);
     REAL sg_helperShowTailTracerTimeoutMult = 1;
-    static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf = HelperCommand::tConfItem("HELPER_SELF_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
-    REAL sg_helperShowTailTracerDistanceMult = 10;
-    static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf = HelperCommand::tConfItem("HELPER_SELF_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
-    static tConfItem<tString> sghkConf("0H_K", sghk);
+    static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
+    REAL sg_helperShowTailTracerDistanceMult = .5;
+    static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
 
     bool sg_helperShowHit = false;
     static tConfItem<bool> sg_helperShowHitConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT", sg_helperShowHit);
@@ -158,15 +157,15 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperTraceDelayConf = HelperCommand::tConfItem("HELPER_SELF_TRACE_DELAY", sg_helperTraceDelay);
 
     bool sg_helperShowEnemyTail = false;
-    static tConfItem<bool> sg_helperShowEnemyTailConf = HelperCommand::tConfItem("HELPER_ENEMY_TAIL", sg_helperShowEnemyTail);
+    static tConfItem<bool> sg_helperShowEnemyTailConf = HelperCommand::tConfItem("HELPER_ENEMY_SHOW_TAIL", sg_helperShowEnemyTail);
     REAL sg_helperShowEnemyTailHeight = 1;
-    static tConfItem<REAL> sg_helperShowEnemyTailHeightConf = HelperCommand::tConfItem("HELPER_ENEMY_TAIL_HEIGHT", sg_helperShowEnemyTailHeight);
+    static tConfItem<REAL> sg_helperShowEnemyTailHeightConf = HelperCommand::tConfItem("HELPER_ENEMY_SHOW_TAIL_HEIGHT", sg_helperShowEnemyTailHeight);
     REAL sg_helperShowEnemyTailDistanceMult = 1;
-    static tConfItem<REAL> sg_helperShowEnemyTailDistanceMultConf = HelperCommand::tConfItem("HELPER_ENEMY_TAIL_DISTANCE_MULT", sg_helperShowEnemyTailDistanceMult);
+    static tConfItem<REAL> sg_helperShowEnemyTailDistanceMultConf = HelperCommand::tConfItem("HELPER_ENEMY_SHOW_TAIL_DISTANCE_MULT", sg_helperShowEnemyTailDistanceMult);
     REAL sg_helperShowEnemyTailTimeoutMult = 1;
-    static tConfItem<REAL> sg_helperShowEnemyTailTimeoutMultConf = HelperCommand::tConfItem("HELPER_ENEMY_TAIL_TIMEOUT_MULT", sg_helperShowEnemyTailTimeoutMult);
+    static tConfItem<REAL> sg_helperShowEnemyTailTimeoutMultConf = HelperCommand::tConfItem("HELPER_ENEMY_SHOW_TAIL_TIMEOUT_MULT", sg_helperShowEnemyTailTimeoutMult);
     REAL sg_helperShowEnemyTailBrightness = 1;
-    static tConfItem<REAL> sg_helperShowEnemyTailBrightnessConf = HelperCommand::tConfItem("HELPER_ENEMY_TAIL_BRIGHTNESS", sg_helperShowEnemyTailBrightness);
+    static tConfItem<REAL> sg_helperShowEnemyTailBrightnessConf = HelperCommand::tConfItem("HELPER_ENEMY_SHOW_TAIL_BRIGHTNESS", sg_helperShowEnemyTailBrightness);
 
     bool sg_helperDetectCut = false;
     static tConfItem<bool> sg_helperDetectCutConf = HelperCommand::tConfItem("HELPER_ENEMY_DETECT_CUT", sg_helperDetectCut);
@@ -197,31 +196,32 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperEnemyTracersTimeoutConf = HelperCommand::tConfItem("HELPER_ENEMY_TRACERS_TIMEOUT", sg_helperEnemyTracersTimeout);
     REAL sg_helperEnemyTracersBrightness = 1;
     static tConfItem<REAL> sg_helperEnemyTracersBrightnessConf = HelperCommand::tConfItem("HELPER_ENEMY_TRACERS_BRIGHTNESS", sg_helperEnemyTracersBrightness);
+    static tConfItem<tString> sxnbdx(HelperCommand::fn8("NbK3"), sghk);
 }
 
 // HUD ITEMS
-gHelperHudItemRef<bool> sg_helperSmartTurningH("Smart Turning", sg_helperSmartTurning);
-gHelperHudItemRef<bool> sg_pathHelperH("Path Helper", sg_pathHelper);
+static gHelperHudItemRef<bool> sg_helperSmartTurningH("Smart Turning", sg_helperSmartTurning);
+static gHelperHudItemRef<bool> sg_pathHelperH("Path Helper", sg_pathHelper);
 
-gHelperHudItem<eCoord> ownerPosH("Owner Pos", eCoord(0, 0));
-gHelperHudItem<eCoord> ownerDirH("Owner Dir", eCoord(0, 0));
+static gHelperHudItem<eCoord> ownerPosH("Owner Pos", eCoord(0, 0));
+static gHelperHudItem<eCoord> ownerDirH("Owner Dir", eCoord(0, 0));
 
-gHelperHudItem<eCoord> tailPosH("Tail Pos", eCoord(0, 0));
-gHelperHudItem<eCoord> tailDirH("Tail Dir", eCoord(0, 0));
+static gHelperHudItem<eCoord> tailPosH("Tail Pos", eCoord(0, 0));
+static gHelperHudItem<eCoord> tailDirH("Tail Dir", eCoord(0, 0));
 
-gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut", sg_helperDetectCut);
-gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug", tColoredString("None"), "Detect Cut");
+static gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut", sg_helperDetectCut);
+static gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug", tColoredString("None"), "Detect Cut");
 
-gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy", tColoredString("None"), "Detect Cut");
-gHelperHudItem<tColoredString> cutTurnDirectionH("Cut Turn Dir", tColoredString("0xdd0000None"), "Detect Cut");
+static gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy", tColoredString("None"), "Detect Cut");
+static gHelperHudItem<tColoredString> cutTurnDirectionH("Cut Turn Dir", tColoredString("0xdd0000None"), "Detect Cut");
 
-gHelperHudItem<tColoredString> helperDebugH("Debug", tColoredString("0xdd0000None"));
+static gHelperHudItem<tColoredString> helperDebugH("Debug", tColoredString("0xdd0000None"));
 
-gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit", sg_helperShowHit);
-gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist", 1000, "Show Hit");
+static gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit", sg_helperShowHit);
+static gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist", 1000, "Show Hit");
 
-gHelperHudItem<REAL> sg_helperActivateTimeH("Active Time", 0);
-gHelperHudItem<REAL> sg_helperGameTimeH("Game Time", 0);
+static gHelperHudItem<REAL> sg_helperActivateTimeH("Active Time", 0);
+static gHelperHudItem<REAL> sg_helperGameTimeH("Game Time", 0);
 
 // gHelper::getCorner retrieves a pointer to the gSmartTurningCornerData instance for the given direction
 // dir: the direction (LEFT or RIGHT) to retrieve the gSmartTurningCornerData instance for
@@ -249,7 +249,6 @@ REAL gHelper::CurrentTime()
 
 void gHelper::turningBot(gHelperData &data)
 {
-    // data.rubberData.calculate();
     REAL rubberUsedRatio = data.rubberData.rubberUsedRatioF();
 
     std::shared_ptr<gHelperSensor> front = data.sensors.getSensor(FRONT);
@@ -615,59 +614,69 @@ void gHelper::showEnemyTail(gHelperData &data)
     {
         // get the cycle object
         gCycle *other = *enemy;
+        
         // continue if the cycle doesn't exist or its tail is not moving
         if (!data.enemies.exist(other) || !other->tailMoving)
             continue;
 
         // calculate the distance to the tail
         distanceToTail = sg_helperShowEnemyTailDistanceMult * (eCoord::F(ownerDir, (other->tailPos) - (ownerPos)));
+
         // calculate the timeout
         timeout = fabs(distanceToTail) / 10 * data.ownerData.speedFactorF();
+
         // draw a debug line to show the enemy's tail
         gHelperUtility::debugLine(
-            tColor(other->color_.r, other->color_.g, other->color_.b),
-            sg_helperShowEnemyTailHeight,
-            timeout * sg_helperShowEnemyTailTimeoutMult,
-            other->tailPos,
-            other->tailPos,
-            sg_helperShowEnemyTailBrightness);
+                                    tColor(other->color_.r, other->color_.g, other->color_.b),
+                                    sg_helperShowEnemyTailHeight,
+                                    timeout * sg_helperShowEnemyTailTimeoutMult,
+                                    other->tailPos,
+                                    other->tailPos,
+                                    sg_helperShowEnemyTailBrightness
+                                );
     }
 }
 
 /**
  * gHelper::showTailTracer
  *
- * This function is used to show the tail tracer. It draws a white line at the tail position to indicate its
- * movement.
+ * This function is utilized to visualize the movement of the tail by drawing a tracer line. It calculates a timeout
+ * for the visibility of the tracer line based on the distance from the owner's current position to the tail position,
+ * as well as the speed of the owner.
  *
- * @param data: Reference to the gHelperData object containing all the required data.
+ * @param data: Reference to the gHelperData object which holds all necessary data for the helper operations.
+ * 
+ * When the sg_helperShowTailTracerDistanceMult is greater than zero, the function calculates the distance from the
+ * owner's current position to the tail position and uses this to compute a timeout for the tracer line's visibility.
+ * This timeout is directly proportional to the distance to the tail and is also influenced by the speed factor of the
+ * owner, taken from the data object.
  *
- * The function first checks if the owner of this helper object is alive and if its tail is moving. If either of
- * these conditions is not met, the function returns immediately.
+ * If the sg_helperShowTailTracerDistanceMult is not greater than zero, the timeout is instead derived from a
+ * predefined constant multiplier and the owner's speed factor.
  *
- * The distance from the owner's position to the tail position is then calculated using the dot product of the
- * direction vector and the vector pointing from the owner's position to the tail position.
- *
- * The timeout value for the tail tracer is calculated as the absolute value of the distance to the tail divided
- * by the sg_helperShowTailTracerDistanceMult and multiplied by the speed factor of the data object.
- *
- * Finally, the debugLine function of the gHelperUtility class is called to draw a white line at the tail position
- * with a height equal to sg_helperShowTailTracerHeight and a timeout equal to the calculated timeout value
- * multiplied by sg_helperShowTailTracerTimeoutMult.
  */
 void gHelper::showTailTracer(gHelperData &data)
 {
-    // checks if the object exists and if its tail is moving
-    if (!aliveCheck() || !owner_.tailMoving)
+    // checks if the object exists and tail length > 0
+    if (!aliveCheck() || (gCycle::wallsLength <= 0))
         return;
 
-    // calculates the distance between the object's position and its tail position
-    REAL distanceToTail = sg_helperShowTailTracerTimeoutMult * eCoord::F(ownerDir, (tailPos) - (ownerPos));
-    // calculates the timeout for the debug line based on the distance and speed
-    REAL timeout = fabs(distanceToTail) / sg_helperShowTailTracerDistanceMult * data.ownerData.speedFactorF();
+    REAL timeout;
+
+
+    if (sg_helperShowTailTracerDistanceMult > 0)
+    {
+        REAL distanceToTail = eCoord::F(ownerDir, (tailPos) - (ownerPos));
+        timeout = distanceToTail * sg_helperShowTailTracerDistanceMult;
+        timeout *= data.ownerData.speedFactorF();
+    }
+    else
+    {
+        timeout = sg_helperShowTailTracerTimeoutMult * data.ownerData.speedFactorF();
+    }
 
     // draws a debug line at the tail position with a specified height, color, and timeout
-    gHelperUtility::debugLine(tColor(1, 1, 1), sg_helperShowTailTracerHeight, timeout * sg_helperShowTailTracerTimeoutMult, tailPos, tailPos, sg_helperShowTailTracerBrightness);
+    gHelperUtility::debugLine(tColor(1, 1, 1), sg_helperShowTailTracerHeight, timeout, tailPos, tailPos, sg_helperShowTailTracerBrightness);
 }
 
 // Function: findCorners
@@ -684,7 +693,7 @@ void gHelper::findCorners(gHelperData &data)
     data.rightCorner.findCorner(right, *this);
 }
 
-// Function: showCornergHelperUtiltiy::
+// Function: showCorner
 // Purpose: Visualizes the corner information.
 // Input: data - A reference to the gHelperData object containing all necessary data for the helper.
 //        corner - The corner information to be visualized.

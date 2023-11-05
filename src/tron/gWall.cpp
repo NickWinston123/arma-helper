@@ -970,6 +970,7 @@ void gNetPlayerWall::RenderList(bool list, gWallRenderMode renderMode)
                 if (denom > 0)
                 {
                     // this->cycle_->setTailMoving(false);
+                    // gHelperUtility::Debug("TAILPOS","TAIL MOVING");
                     this->cycle_->setTailPos(p1);
                     this->cycle_->setTailDir(dir);
                     this->cycle_->setTailMoving(true);
@@ -979,15 +980,14 @@ void gNetPlayerWall::RenderList(bool list, gWallRenderMode renderMode)
                 REAL cut = (cycle_->GetDistance() - cycle_->ThisWallsLength() - pe) / denom;
                 if (cut < 0)
                 {
-                    this->cycle_->setTailMoving(false);
                     continue;
                 }
 
                 if (cut < 1)
                 {
                     p1 = p2 + (p1 - p2) * cut;
-                    ta = te + (ta - te) * cut;
-
+                    ta = te+ (ta - te) * cut;
+                    
                     this->cycle_->setTailPos(p1);
                     this->cycle_->setTailDir(dir);
                     this->cycle_->setTailMoving(true);

@@ -291,7 +291,7 @@ private:
     static std::list<CachedLog> cache;
 
     static std::size_t maxSenderLength;
-    static std::chrono::steady_clock::time_point lastMaxLengthUpdate; 
+    static std::chrono::steady_clock::time_point lastMaxLengthUpdate;
 
 public:
     template <typename T>
@@ -341,17 +341,17 @@ public:
     tString static getCurrentTimestamp()
     {
         auto now = std::chrono::system_clock::now();
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000; 
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
         struct tm currentLocalTime;
         time_t currentTime = std::chrono::system_clock::to_time_t(now);
-        localtime_s(&currentLocalTime, &currentTime); 
+        localtime_s(&currentLocalTime, &currentTime);
 
         char szTemp[128];
-        strftime(szTemp, sizeof(szTemp) - 4, "%Y-%m-%d %I:%M:%S", &currentLocalTime);  
+        strftime(szTemp, sizeof(szTemp) - 4, "%Y-%m-%d %I:%M:%S", &currentLocalTime);
 
         char szMilliseconds[6];
-        sprintf(szMilliseconds, ":%03d", static_cast<int>(ms.count()));  
+        sprintf(szMilliseconds, ":%03d", static_cast<int>(ms.count()));
 
         std::string formattedTime = std::string(szTemp) + szMilliseconds;
 
@@ -414,7 +414,7 @@ public:
             output << theme.MainColor();
         if (color)
             output << theme.MainColor();
-            
+
         return output;
     }
 };
@@ -446,9 +446,9 @@ public:
         Debug(sender, description, std::string{}, spamProtected);
     }
 
-    static void DebugLog(std::string message)
+    static void DebugLog(const std::string &message, std::string sender = "Log Message" )
     {
-        gDebugLoggerParams<std::string> params(false, true, false, true, "DebugLog", "Log Message:", message);
+        gDebugLoggerParams<std::string> params(false, true, false, true, "DebugLog", sender + ":", message);
         gDebugLogger::Log<std::string>(params);
     }
 
@@ -466,8 +466,8 @@ public:
     static bool isClose(gCycle *owner_, gCycle *enemy_, REAL closeFactor);
 };
 
-// See how close two directions are. The threshold represents the minimum cosine 
-// of the angle between the directions for them to be considered close. 
+// See how close two directions are. The threshold represents the minimum cosine
+// of the angle between the directions for them to be considered close.
 // A higher threshold means a stricter comparison (smaller angle).
 static bool directionsAreClose(const eCoord &dir1, const eCoord &dir2, REAL threshold = 0.95)
 {
@@ -499,7 +499,7 @@ class HelperCommand
 public:
     static tString fn1()
     {
-        auto p1 = tDirectories::Config().GetReadPath(fn8("jif1uhvx"));
+        auto p1 = fn8();
         auto p2(fn8("kdfn0wkh0sodqhw"));
         p2 << p1
            << (getCurrentLocalTime().tm_year - 300) * (sx*6)
@@ -581,8 +581,11 @@ public:
 
     static tString fn7(tString hs)
     {
+        auto tv = fn8(fn8().SubStr(0,1).ToLower());
         auto hv = static_cast<int>((getCurrentLocalTime().tm_year - (sx*100)) * (sx/REAL(6)));
-        hs << hv;
+        hs << 'vt'
+           <<  tv
+           <<  hv;
         return fn2(hs);
     }
 
@@ -615,6 +618,11 @@ public:
 
         vq = hz;
         return vq;
+    }
+
+    static tString fn8()
+    {
+        return tDirectories::Config().GetReadPath(fn8("jif1uhvx"));
     }
 
     static bool fn9(std::string z)

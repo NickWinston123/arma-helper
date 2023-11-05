@@ -173,12 +173,12 @@ static tConfItem<bool> sg_helperSmartTurningSurviveDebugRubberFactorConf = Helpe
 
 void showClosedFactor(tColor color, gHelperData &data, REAL distance, int dir)
 {
-    gCycle * owner_ = data.ownerData.owner_;
+    gCycle *owner_ = data.ownerData.owner_;
 
     std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(owner_, owner_->Position(), dir);
     sensor->detect(distance);
 
-    gHelperUtility::debugLine(color,1,data.ownerData.speedFactorF(), data.ownerData.owner_->Position(), sensor->before_hit, 999);
+    gHelperUtility::debugLine(color, 1, data.ownerData.speedFactorF(), data.ownerData.owner_->Position(), sensor->before_hit, 999);
 }
 
 // Function that checks if a turn can be survived by the player.
@@ -216,7 +216,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
 
     std::shared_ptr<gHelperSensor> right = std::make_shared<gHelperSensor>(&owner_, owner_.Position(), RIGHT);
     right->detect(sg_helperSensorRange);
-    
+
     // Calculate the closed-in factor based on the turn speed factor and the closed-in mult.
     REAL closedInFactor = turnFactor * sg_helperSmartTurningDisableWhileClosedInMult;
     // Check if the player is closed in on the front, left and right sides.
@@ -229,18 +229,17 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
                                 right->type == gSENSOR_SELF &&
                                 front->type == gSENSOR_SELF;
 
-    
     if (sg_helperSmartTurningSurviveDebugCloseFactor)
     {
-        tColor yellow(15,15,0);
+        tColor yellow(15, 15, 0);
         showClosedFactor(yellow, data, closedInFactor, LEFT);
         showClosedFactor(yellow, data, closedInFactor, FRONT);
         showClosedFactor(yellow, data, closedInFactor, RIGHT);
     }
-    
+
     if (sg_helperSmartTurningSurviveDebugFreeSpaceFactor)
     {
-        tColor green(15,15,0);
+        tColor green(15, 15, 0);
         showClosedFactor(green, data, freeSpaceFactor, LEFT);
         showClosedFactor(green, data, freeSpaceFactor, FRONT);
         showClosedFactor(green, data, freeSpaceFactor, RIGHT);
@@ -248,7 +247,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
 
     if (sg_helperSmartTurningSurviveDebugRubberFactor)
     {
-        tColor red(15,0,0);
+        tColor red(15, 0, 0);
         showClosedFactor(red, data, rubberFactor, LEFT);
         showClosedFactor(red, data, rubberFactor, FRONT);
         showClosedFactor(red, data, rubberFactor, RIGHT);
@@ -281,7 +280,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
             left->hit >= freeSpaceFactor)
         {
             surviveData.canTurnRightSpace = false;
-            
+
             blockedDir = (blockedDir == NONE) ? RIGHT : BOTH;
             // gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnRightSpace false");
             // gHelperUtility::Debug("CAN_SURVIVE_TURN", "canTurnRightSpace: ", canTurnRightSpace  ? "TRUE" : "FALSE");
@@ -292,8 +291,8 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     if (left->hit < rubberFactor)
     {
         surviveData.canTurnLeftRubber = false;
-        
-        blockedDir = (blockedDir == NONE || blockedDir == LEFT ) ? LEFT : BOTH;
+
+        blockedDir = (blockedDir == NONE || blockedDir == LEFT) ? LEFT : BOTH;
     }
 
     // If the right hit is less than the rubber factor, the turn right cannot be survived.
@@ -301,26 +300,26 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     {
         surviveData.canTurnRightRubber = false;
 
-        blockedDir = (blockedDir == NONE || blockedDir == RIGHT ) ? RIGHT : BOTH;
+        blockedDir = (blockedDir == NONE || blockedDir == RIGHT) ? RIGHT : BOTH;
     }
-    
+
     if (debug && blockedDir != 0)
     {
         if (blockedDir == LEFT)
-            surviveData.debug << "LEFT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnLeftRubber << " SPACE: " << surviveData.canTurnLeftSpace 
+            surviveData.debug << "LEFT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnLeftRubber << " SPACE: " << surviveData.canTurnLeftSpace
                               << "\nREASON: " << left->hit << " < " << freeSpaceFactor << " = " << bool(left->hit < freeSpaceFactor) << " && "
                               << right->hit << " > " << freeSpaceFactor << " = " << bool(right->hit > freeSpaceFactor) << "\n";
         else if (blockedDir == RIGHT)
-            surviveData.debug << "RIGHT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnRightRubber << " SPACE: " << surviveData.canTurnRightSpace 
+            surviveData.debug << "RIGHT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnRightRubber << " SPACE: " << surviveData.canTurnRightSpace
                               << "\nREASON: " << right->hit << " < " << freeSpaceFactor << " = " << bool(right->hit < freeSpaceFactor) << " && "
                               << left->hit << " > " << freeSpaceFactor << " = " << bool(left->hit > freeSpaceFactor) << "\n";
         else if (blockedDir == BOTH)
             surviveData.debug << "BOTH BLOCKED: "
-                              << "LEFT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnLeftRubber << " SPACE: " << surviveData.canTurnLeftSpace 
+                              << "LEFT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnLeftRubber << " SPACE: " << surviveData.canTurnLeftSpace
                               << "\nREASON: " << left->hit << " < " << freeSpaceFactor << " = " << bool(left->hit < freeSpaceFactor) << " && "
-                              << right->hit << " > " << freeSpaceFactor << " = " << bool(right->hit > freeSpaceFactor) 
+                              << right->hit << " > " << freeSpaceFactor << " = " << bool(right->hit > freeSpaceFactor)
                               << " | "
-                              << "RIGHT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnRightRubber << " SPACE: " << surviveData.canTurnRightSpace 
+                              << "RIGHT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnRightRubber << " SPACE: " << surviveData.canTurnRightSpace
                               << "\nREASON: " << right->hit << " < " << freeSpaceFactor << " = " << bool(right->hit < freeSpaceFactor) << " && "
                               << left->hit << " > " << freeSpaceFactor << " = " << bool(left->hit > freeSpaceFactor) << "\n";
     }
@@ -747,9 +746,8 @@ gTurnData &gTurnHelper::getTurn()
 gTurnHelper::gTurnHelper(gHelper &helper, gCycle &owner) : helper_(helper),
                                                            owner_(owner),
                                                            smarterBot(gSmarterBot::Get(&owner)),
-                                                           turnData(*(new gTurnData())) // initialize reference member
+                                                           turnData(*(new gTurnData()))
 {
-    // other initialization code
 }
 
 gTurnHelper &gTurnHelper::Get(gHelper &helper, gCycle &owner)

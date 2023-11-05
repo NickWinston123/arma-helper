@@ -1250,7 +1250,7 @@ void gSmarterBot::Survive(gCycle *owner)
 
 REAL gSmarterBot::annoyanceCheck()
 {
-    if (!owner_ || !owner_->Alive())
+    if (!owner_ || !owner_->Alive() || se_GameTime() < 5)
         return 0.0;
 
     int alivePlayerCount = 0;

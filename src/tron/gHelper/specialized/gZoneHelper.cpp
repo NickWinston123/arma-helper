@@ -178,22 +178,7 @@ gZone *gZoneHelper::findClosestZone(eGameObject *owner_)
 
 gZone *gZoneHelper::findClosestZone()
 {
-    gZone *closestZone = nullptr;
-    REAL closestZoneDistanceSquared = 999999999;
-    for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
-    {
-        gZone *zone = *i;
-        if (zone)
-        {
-            REAL positionDifference = st_GetDifference(zone->Position(), owner_.Position());
-            if (positionDifference < closestZoneDistanceSquared)
-            {
-                closestZoneDistanceSquared = positionDifference;
-                closestZone = zone;
-            }
-        }
-    }
-    return closestZone;
+    return findClosestZone(&owner_);
 }
 
 void gZoneHelper::showZones(gHelperData &data)

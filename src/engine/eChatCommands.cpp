@@ -731,12 +731,10 @@ bool RgbCommand::execute(tString args)
     {
         con << CommandLabel()
             << tOutput("$player_colors_current_text");
-        for (int i = 0; i < MAX_PLAYERS; ++i)
+            
+        for (auto localNetPlayer : se_GetLocalPlayers())
         {
-            ePlayer *loc_p = ePlayer::PlayerConfig(i);
-            ePlayerNetID *net_p = loc_p->netPlayer.get();
-            if (bool(net_p))
-                con << ColorsCommand::gatherPlayerColor(net_p) << "\n";
+            con << ColorsCommand::gatherPlayerColor(localNetPlayer) << "\n";
         }
     }
     else
@@ -1763,7 +1761,7 @@ bool NicknameCommand::execute(tString args)
             con << CommandLabel()
                 << target->coloredName_
                 << MainColor()
-                << " is now nicknamed '" << target->GetColoredName()
+                << " is now nicknamed '" << target->GetColoredNickName()
                 << MainColor() << "'\n";
 
             return true;
@@ -2136,14 +2134,10 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
             feedback << tConfItemBase::lastLoadOutput;
 
         messageToSend << "/msg " << player->GetName().Filter() << " " << feedback << "\n";
-        for (int i = MAX_PLAYERS - 1; i >= 0; i--)
+        for (auto localNetPlayer : se_GetLocalPlayers())
         {
-            ePlayer *local_p = ePlayer::PlayerConfig(i);
-            if (local_p && local_p->netPlayer)
-            {
-                se_NewChatMessage(local_p->netPlayer, messageToSend)->BroadCast();
-                break;
-            }
+            se_NewChatMessage(localNetPlayer, messageToSend)->BroadCast();
+            break;            
         }
     }
 

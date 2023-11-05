@@ -72,16 +72,25 @@ void ePlayerStats::updateStatsMatchEnd(ePlayerNetID *matchWinner)
     {
         ePlayerNetID *currentPlayer = se_PlayerNetIDs[i];
         PlayerData &stats = getStats(currentPlayer);
+        PlayerDataBase &statsThisSession = stats.thisSession();
+
         stats.in_game = currentPlayer->CurrentTeam() != nullptr;
-        
+        statsThisSession.in_game = stats.in_game;
+
         if (stats.in_game)
         {
             if (currentPlayer == matchWinner)
+            {
                 stats.match_wins++;
+                statsThisSession.match_wins++;
+            }
             else
+            {
                 stats.match_losses++;
-
+                statsThisSession.match_losses++;
+            }
             stats.matches_played++;
+            statsThisSession.matches_played++;
         }
     }
 }
@@ -92,7 +101,10 @@ void ePlayerStats::updateStatsRoundEnd()
     {
         ePlayerNetID *currentPlayer = se_PlayerNetIDs[i];
         PlayerData &stats = getStats(currentPlayer);
+        PlayerDataBase &statsThisSession = stats.thisSession();
+
         stats.in_game = currentPlayer->CurrentTeam() != nullptr;
+        statsThisSession.in_game = stats.in_game;
 
         if (stats.in_game)
         {
@@ -101,20 +113,26 @@ void ePlayerStats::updateStatsRoundEnd()
             if (roundWinnerProcessed)
             {
                 if (cycle && cycle->Alive())
+                {
                     stats.round_wins++;
+                    statsThisSession.round_wins++;
+                }
                 else
+                {
                     stats.round_losses++;
-
+                    statsThisSession.round_losses++;
+                }
                 stats.rounds_played++;
+                statsThisSession.rounds_played++;
             }
 
-            stats.total_play_time        += se_GameTime();
-            stats.play_time_this_session += se_GameTime();
+            stats.total_play_time += se_GameTime();
+            statsThisSession.total_play_time += se_GameTime();
         }
         else
         {
-            stats.total_spec_time        += se_GameTime();
-            stats.spec_time_this_session += se_GameTime();
+            stats.total_spec_time += se_GameTime();
+            statsThisSession.total_spec_time += se_GameTime();
         }
     }
 }
@@ -125,13 +143,16 @@ void ePlayerStats::updateStatsRoundStart()
     {
         ePlayerNetID *currentPlayer = se_PlayerNetIDs[i];
         PlayerData &stats = getStats(currentPlayer);
+        PlayerDataBase &statsThisSession = stats.thisSession();
+
         stats.in_game = currentPlayer->CurrentTeam() != nullptr;
+        statsThisSession.in_game = stats.in_game;
 
         if (stats.in_game)
         {
             stats.alive = true;
+            statsThisSession.alive = true;
         }
-
     }
 }
 
@@ -208,17 +229,17 @@ const std::set<std::string> PlayerData::valueMapdisplayFields =
     "highest_kill_streak", "kill_streak", "kills_while_dead", "name_history"
 };
 
-void insertFunction(std::map<std::string, std::pair<std::string, PlayerData::StatFunction>>& map,
+void insertFunction(std::map<std::string, std::pair<std::string, PlayerDataBase::StatFunction>>& map,
                     const std::vector<std::string>& keys,
                     const std::string& label,
-                    PlayerData::StatFunction func)
+                    PlayerDataBase::StatFunction func)
 {
     for (const auto& key : keys)
         map[key] = {label, func};
 }
 
 auto initValueMap = []() {
-    std::map<std::string, std::pair<std::string, PlayerData::StatFunction>> tempMap;
+    std::map<std::string, std::pair<std::string, PlayerDataBase::StatFunction>> tempMap;
 
     insertFunction(tempMap,
     {"rgb"}, "RGB",
@@ -340,7 +361,7 @@ auto initValueMap = []() {
     [](PlayerDataBase *self)
     {
         tString result("");
-        result << st_GetFormatTime(self->getPlayTime(), false);
+        result << self->getPlayTimeStr();
         return result;
     });
 
@@ -349,7 +370,7 @@ auto initValueMap = []() {
     [](PlayerDataBase *self)
     {
         tString result("");
-        result << st_GetFormatTime(self->getSpecTime(), false);
+        result << self->getSpecTimeStr();
         return result;
     });
 
@@ -473,8 +494,9 @@ auto initValueMap = []() {
     return tempMap;
 };
 
-std::map<std::string, std::pair<std::string, PlayerData::StatFunction>> PlayerData::valueMap = initValueMap();
-std::string joinVector(const std::vector<std::string>& vec) {
+std::map<std::string, std::pair<std::string, PlayerDataBase::StatFunction>> PlayerDataBase::valueMap = initValueMap();
+std::string joinVector(const std::vector<std::string>& vec) 
+{
     if (vec.empty()) return "";
 
     std::string result = vec[0];

@@ -385,7 +385,6 @@ public:
     static gCycle *NetPlayerToCycle(ePlayerNetID *player);
     gCycle *NetPlayerToCycle();
     static ePlayerNetID *GetPlayerByName(tString name, bool exact = true);
-    static ePlayerNetID *GetPlayerByRealName(tString name, bool exact = true);
     int lastsyncedColor[3] = {0, 0, 0};
     tColoredString lastColoredName;
     int currentShift = 0;
@@ -426,7 +425,7 @@ private:
 
     int favoriteNumberOfPlayersPerTeam;		// join team if number of players on it is less than this; create new team otherwise
     bool nameTeamAfterMe; 					// player prefers to call his team after his name
-public: 
+public:
     bool greeted;        					// did the server already greet him?
     bool disconnected;   					// did he disconnect from the game?
 private:
@@ -703,6 +702,7 @@ private:
 public:
     tColoredString  coloredNickname;
     tString         nickname;
+    tString         chatBotNickname;
     tColoredString  coloredName_;           //!< this player's name, cleared by the server. Use this for onscreen screen display.
     tString         name_;                  //!< this player's name without colors.
 private:
@@ -734,9 +734,10 @@ public:
     inline tColoredString const & GetNameFromAdmin( void ) const;	//!< Gets this player's name as the client wants it to be. Avoid using it when possilbe.
     inline ePlayerNetID const & GetNameFromClient( tColoredString & nameFromClient ) const;	//!< Gets this player's name as the client wants it to be. Avoid using it when possilbe.
     inline tColoredString const & GetColoredName( void ) const;	//!< Gets this player's name, cleared by the server. Use this for onscreen screen display.
+    inline tColoredString const & GetColoredNickName( void ) const;	//!< Gets this player's name, cleared by the server. Use this for onscreen screen display.
     inline ePlayerNetID const & GetColoredName( tColoredString & coloredName ) const;	//!< Gets this player's name, cleared by the server. Use this for onscreen screen display.
     inline tString const & GetName( void ) const;	//!< Gets this player's name without colors.
-    inline tString const & GetRealName( void ) const;	//!< Gets this player's name without colors.
+    inline tString const & GetNickName( void ) const;	//!< Gets this player's name without colors.
     inline ePlayerNetID const & GetName( tString & name ) const;	//!< Gets this player's name without colors.
 
     inline tString const & GetUserName( void ) const;	//!< Gets this player's full name. Use for writing to files or comparing with admin input.
@@ -911,10 +912,12 @@ ePlayerNetID & ePlayerNetID::SetNameFromClient( tColoredString const & nameFromC
 
 tColoredString const & ePlayerNetID::GetColoredName( void ) const
 {
-    if (this->coloredNickname.empty())
-        return this->coloredName_;
-    else
-        return this->coloredNickname;
+    return this->coloredName_;
+}
+
+tColoredString const & ePlayerNetID::GetColoredNickName( void ) const
+{
+    return this->coloredNickname.empty() ? this->coloredName_ : this->coloredNickname;
 }
 
 
@@ -964,12 +967,12 @@ ePlayerNetID & ePlayerNetID::SetColoredName( tColoredString const & coloredName 
 
 tString const & ePlayerNetID::GetName( void ) const
 {
-    return this->nickname.empty() ? this->name_ : this->nickname;
+    return this->name_;
 }
 
-tString const & ePlayerNetID::GetRealName( void ) const
+tString const & ePlayerNetID::GetNickName( void ) const
 {
-    return this->name_; 
+    return this->nickname.empty() ? this->name_ : this->nickname;
 }
 
 // ******************************************************************************************
@@ -1049,45 +1052,45 @@ static ePlayer * se_chatterPlanned=NULL;
 static ePlayer * se_chatter =NULL;
 static tString se_say;
 
-class MessageTracker 
+class MessageTracker
 {
 private:
     static std::deque<tString> outgoingMessages;
     static std::deque<tString> incomingMessages;
-    static const size_t maxSize;  
+    static const size_t maxSize;
 
 public:
-    static void AddOutgoingMessage(const tString& msg) 
+    static void AddOutgoingMessage(const tString& msg)
     {
-        if (outgoingMessages.size() >= maxSize) 
+        if (outgoingMessages.size() >= maxSize)
             outgoingMessages.pop_front();
 
         outgoingMessages.push_back(msg);
     }
 
-    static void AddIncomingMessage(const tString& msg) 
+    static void AddIncomingMessage(const tString& msg)
     {
-        if (incomingMessages.size() >= maxSize) 
+        if (incomingMessages.size() >= maxSize)
             incomingMessages.pop_front();
-        
+
         incomingMessages.push_back(msg);
     }
 
-    static bool CheckIfSilenced() 
+    static bool CheckIfSilenced()
     {
-        if (!outgoingMessages.empty()) 
+        if (!outgoingMessages.empty())
         {
             const tString lastOutgoing = outgoingMessages.back();
-            for (auto it = incomingMessages.rbegin(); it != incomingMessages.rend(); ++it) 
+            for (auto it = incomingMessages.rbegin(); it != incomingMessages.rend(); ++it)
             {
-                tString msg = *it;            
+                tString msg = *it;
 
                 if (msg.Contains(lastOutgoing))
                     return false;
             }
             return true;
         }
-        return false; 
+        return false;
     }
 };
 

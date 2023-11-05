@@ -1134,9 +1134,10 @@ ePlayer *ePlayer::PlayerConfig(int p)
 
 ePlayerNetID *ePlayerNetID::GetPlayerByName(tString name, bool exact)
 {
+    name = name.Filter();
     for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
     {
-        if (se_PlayerNetIDs[i] && se_PlayerNetIDs[i]->GetName().Filter() == name.Filter())
+        if (se_PlayerNetIDs[i] && se_PlayerNetIDs[i]->GetName().Filter() == name)
             return se_PlayerNetIDs[i];
     }
 
@@ -1145,27 +1146,7 @@ ePlayerNetID *ePlayerNetID::GetPlayerByName(tString name, bool exact)
 
     for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
     {
-        if (se_PlayerNetIDs[i]->GetName().Filter().Contains(name.Filter()))
-            return se_PlayerNetIDs[i];
-    }
-
-    return NULL;
-}
-
-ePlayerNetID *ePlayerNetID::GetPlayerByRealName(tString name, bool exact)
-{
-    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
-    {
-        if (se_PlayerNetIDs[i] && se_PlayerNetIDs[i]->GetRealName().Filter() == name.Filter())
-            return se_PlayerNetIDs[i];
-    }
-
-    if (exact)
-        return NULL;
-
-    for (int i = se_PlayerNetIDs.Len() - 1; i >= 0; --i)
-    {
-        if (se_PlayerNetIDs[i]->GetRealName().Filter().Contains(name.Filter()))
+        if (se_PlayerNetIDs[i]->GetName().Filter().Contains(name))
             return se_PlayerNetIDs[i];
     }
 
@@ -1861,7 +1842,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         tColoredString actualMessage(message);
         tString colorlessMessage(tColoredString::RemoveColors(message));
-        const int nameLength = p->GetRealName().Len() + 1;
+        const int nameLength = p->GetName().Len() + 1;
 
         bool encyptedMessage = false;
         bool sentFromTeamMember = false;
@@ -1929,7 +1910,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
                 if ((validPrivateMessage && se_playerMessageChatPrivateMsgs))
                 {
                     preAppend << "/msg "
-                            << p->GetRealName().Filter()
+                            << p->GetName().Filter()
                             << " ";
                     preAppended = true;
                     params = privateMessageParams;
@@ -1947,7 +1928,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             if (!preAppended && se_playerMessageChatAlwaysSendMsg)
             {
                     preAppend << "/msg "
-                              << p->GetRealName().Filter()
+                              << p->GetName().Filter()
                               << " ";
             }
 
@@ -1965,7 +1946,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         if (!p->coloredNickname.empty())
         {
-            actualMessage = actualMessage.Replace(p->coloredName_, p->GetColoredName());
+            actualMessage = actualMessage.Replace(p->coloredName_, p->GetColoredNickName());
         }
 
         if (se_highlightNames)
@@ -5632,9 +5613,9 @@ static void ChatTabCompletition(tString &strString, int &curserPos, bool changeL
                     if (p && p->IsActive())
                     {
                         if (isFirst && !isChat && se_tabCompletionColon)
-                            word = (se_tabCompletionWithColors ? p->GetColoredName() + breaker : p->GetName()) + ": ";
+                            word = (se_tabCompletionWithColors ? p->GetColoredNickName() + breaker : p->GetNickName()) + ": ";
                         else
-                            word = (se_tabCompletionWithColors ? p->GetColoredName() + breaker : p->GetName()) + " ";
+                            word = (se_tabCompletionWithColors ? p->GetColoredNickName() + breaker : p->GetNickName()) + " ";
                     }
                 }
                 else // if (foundPlayers.Len() > 1)
@@ -5644,7 +5625,7 @@ static void ChatTabCompletition(tString &strString, int &curserPos, bool changeL
                     for (int k = 0; k < foundPlayers.Len(); k++)
                     {
                         p = foundPlayers[k];
-                        if (p && p->IsActive() && (changeLast || p->GetName().Filter() == word.Filter()))
+                        if (p && p->IsActive() && (changeLast || p->GetNickName().Filter() == word.Filter()))
                         {
                             // exact match forced first
                             if (!changeLast)
@@ -5655,9 +5636,9 @@ static void ChatTabCompletition(tString &strString, int &curserPos, bool changeL
                                 continue;
                             }
                             if (isFirst && !isChat && se_tabCompletionColon)
-                                word = (se_tabCompletionWithColors ? p->GetColoredName() + breaker : p->GetName()) + ": ";
+                                word = (se_tabCompletionWithColors ? p->GetColoredNickName() + breaker : p->GetNickName()) + ": ";
                             else
-                                word = (se_tabCompletionWithColors ? p->GetColoredName() + breaker : p->GetName()) + " ";
+                                word = (se_tabCompletionWithColors ? p->GetColoredNickName() + breaker : p->GetNickName()) + " ";
                             found = true;
                             break;
                         }
@@ -5989,7 +5970,7 @@ tString playerIDName()
         int somerandomID = IDs[randomIndex];
         ID << somerandomID;
     } else {
-        ID << "0"; 
+        ID << "0";
     }
 
     return ID;
@@ -6620,7 +6601,7 @@ void ePlayerNetID::watchPlayerStatus()
 
         message << getTimeString() << " | "
                 << tThemedTextBase.HeaderColor()
-                << "Watch Status: " << p->GetColoredName()
+                << "Watch Status: " << p->GetColoredNickName()
                 << tThemedTextBase.MainColor()
                 << " is now " << playerWatchStatusToStr(p->lastWatchStatus)
                 << tThemedTextBase.MainColor()
@@ -9246,7 +9227,7 @@ tString ePlayerNetID::Ranking(int MAX, bool cut)
             if (p->IsChatting() && (!p->IsSilenced() || se_playerTabMenuChattingIndiciatorWhileSilenced) && !se_playerTabMenuChattingIndiciator.empty())
                 line << tColoredString::ColorString(-1, -1, -1) << se_playerTabMenuChattingIndiciator;
             line.SetPos(2, cut);
-            line << *p << tColoredString::ColorString(-1, -1, -1);
+            line << p->GetColoredNickName() << tColoredString::ColorString(-1, -1, -1);
             line.SetPos(19, false);
             if (p->Object() && p->Object()->Alive() && !p->respawnedLocally)
             {
@@ -9277,7 +9258,7 @@ tString ePlayerNetID::Ranking(int MAX, bool cut)
                     // teamtemp.RemoveHex()z`;
                     // Not sure why we need to filter the color here.
                     //  line << tColoredString::RemoveColors(p->currentTeam->Name());
-                    line << p->currentTeam->GetColoredName();
+                    line << (p->nickname.empty() ? p->currentTeam->GetColoredName() : p->GetColoredNickName());
                     line.SetPos(56, cut);
                 }
             }
@@ -10338,7 +10319,7 @@ void se_ForcePlayerColorMenu()
     {
         auto p = se_PlayerNetIDs[i];
 
-        auto playermenu = new eMenuPlayerOverriddenColor(p->GetColoredName(), p, i);
+        auto playermenu = new eMenuPlayerOverriddenColor(p->GetColoredNickName(), p, i);
         menus[curr_menu++] = playermenu;
         items[curr_item++] = new uMenuItemSubmenu(&menu, playermenu, "Override cycle color for player");
 

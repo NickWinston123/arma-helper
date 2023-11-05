@@ -4,108 +4,155 @@
 #include "sqlite3.h"
 #include "../tron/gHelper/gHelperUtilities.h"
 
+namespace tDatabaseUtility
+{
+    static void DebugLog(const std::string &table, const std::string &message, bool utility = false);
+}
+
 template <typename T>
 struct ColumnMapping
 {
     std::string columnName;
     std::string columnType;
-    std::function<void(sqlite3_stmt*, int&, const T&)> bindFunc;
-    std::function<void(sqlite3_stmt*, int&, T&)> extractFunc;
+    std::function<void(sqlite3_stmt *, int &, const T &)> bindFunc;
+    std::function<void(sqlite3_stmt *, int &, T &)> extractFunc;
 };
 
-template <typename T, typename M>
+
+template <typename T>
+class TableDefinition {
+public:
+    struct PrimaryKey
+    {
+        std::string columnName;
+        std::function<std::string(const T &)> getValueFunc;
+
+        PrimaryKey() {}
+
+        virtual ~PrimaryKey() {}
+
+        std::string getPrimaryColumn() const { return columnName; }
+        virtual std::string getPrimaryKeyValue(const T &object) const 
+        {
+            return getValueFunc ? getValueFunc(object) : "";
+        }
+    };
+
+    std::vector<ColumnMapping<T>> columnMappings;
+    PrimaryKey primaryKey;
+
+    TableDefinition(const PrimaryKey& pk, const std::vector<ColumnMapping<T>>& mappings)
+        : primaryKey(pk), columnMappings(mappings) {}
+};
+
+template <typename T, typename TD>
 class tDatabase
 {
 protected:
     sqlite3 *db;
     std::string tableName;
-    const std::vector<M> &mappings;
     std::vector<T> objectsToDelete;
+    TD tableDefinition;
+
 public:
-    tDatabase(sqlite3 *db, const std::string &tableName, const std::vector<M> &mappings)
-        : db(db), tableName(tableName), mappings(mappings) {}
+    tDatabase(sqlite3* db, const std::string& tableName, const TD& tableDef)
+        : db(db), tableName(tableName), tableDefinition(tableDef) {}
 
     virtual T &getTargetObject(const tString &name) = 0; // specific fetch logic
 
     virtual std::vector<T> getAllObjects() = 0; // all objects to save
 
-    void markForDeletion(const T& object)
+    void markForDeletion(const T &object)
     {
         objectsToDelete.push_back(object);
     }
 
-    void DeleteBatch(const std::vector<T>& objects)
+    void DeleteBatch(const std::vector<T> &objects)
     {
         ensureTableAndColumnsExist();
 
-        if (objects.empty()) {
-            gHelperUtility::DebugLog("No objects to delete in batch.");
+        if (objects.empty())
+        {
+            tDatabaseUtility::DebugLog(tableName, "No objects to delete in batch.");
             return;
         }
 
-        std::string idColumn = "name"; // MAKE THIS DYNAMIC
+        std::string idColumn = tableDefinition.primaryKey.getPrimaryColumn();
 
         std::stringstream deleteSql;
         deleteSql << "DELETE FROM " << tableName << " WHERE " << idColumn << " IN (";
 
-        for (size_t i = 0; i < objects.size(); ++i) {
+        for (size_t i = 0; i < objects.size(); ++i)
+        {
             deleteSql << "?";
             if (i < objects.size() - 1)
                 deleteSql << ",";
         }
         deleteSql << ");";
 
-        gHelperUtility::DebugLog("Preparing batch delete SQL: " + deleteSql.str());
+        tDatabaseUtility::DebugLog(tableName, "Preparing batch delete SQL: " + deleteSql.str());
 
         sqlite3_stmt *stmt;
         int rc = sqlite3_prepare_v2(db, deleteSql.str().c_str(), -1, &stmt, 0);
 
-        if (rc == SQLITE_OK) {
+        if (rc == SQLITE_OK)
+        {
             int bindIndex = 1;
-            for (const auto& obj : objects) {
-                std::string identifier = obj.name.stdString();
+            for (const auto &obj : objects)
+            {
+                std::string identifier = tableDefinition.primaryKey.getPrimaryKeyValue(obj);
                 sqlite3_bind_text(stmt, bindIndex++, identifier.c_str(), -1, SQLITE_STATIC);
             }
 
             rc = sqlite3_step(stmt);
-            if (rc != SQLITE_DONE) {
-                gHelperUtility::DebugLog("Failed to delete batch from " + tableName + ". SQLite error code: " + std::to_string(rc));
-            } else {
-                gHelperUtility::DebugLog("Successfully deleted batch from " + tableName);
+            if (rc != SQLITE_DONE)
+            {
+                tDatabaseUtility::DebugLog(tableName, "Failed to delete batch from " + tableName + ". SQLite error code: " + std::to_string(rc));
+            }
+            else
+            {
+                tDatabaseUtility::DebugLog(tableName, "Successfully deleted batch from " + tableName);
             }
 
             sqlite3_finalize(stmt);
-        } else {
-            gHelperUtility::DebugLog("Failed to prepare SQL delete statement for batch. SQL: " + deleteSql.str() + " SQLite error code: " + std::to_string(rc));
+        }
+        else
+        {
+            tDatabaseUtility::DebugLog(tableName, "Failed to prepare SQL delete statement for batch. SQL: " + deleteSql.str() + " SQLite error code: " + std::to_string(rc));
         }
     }
 
-    void deleteMarkedObjects(std::vector<T>& allObjects)
+    void deleteMarkedObjects(std::vector<T> &allObjects)
     {
-        if (!objectsToDelete.empty()) {
-            gHelperUtility::DebugLog("Deleting marked objects.");
+        if (!objectsToDelete.empty())
+        {
+            tDatabaseUtility::DebugLog(tableName, "Deleting marked objects.");
 
             DeleteBatch(objectsToDelete);
 
-            for (const auto& objToDelete : objectsToDelete) {
-                auto it = std::find_if(allObjects.begin(), allObjects.end(), 
-                    [&objToDelete](const T& existingObj) { 
-                        return objToDelete.name == existingObj.name; // MAKE THIS DYNAMIC
-                    });
+            for (const auto &objToDelete : objectsToDelete)
+            {
+                auto it = std::find_if(allObjects.begin(), allObjects.end(),
+                                       [&objToDelete, this](const T &existingObj)
+                                       {
+                                           return tableDefinition.primaryKey.getPrimaryKeyValue(objToDelete) == tableDefinition.primaryKey.getPrimaryKeyValue(existingObj); // Dynamic comparison
+                                       });
 
-                if (it != allObjects.end()) {
+                if (it != allObjects.end())
+                {
                     allObjects.erase(it);
-                    gHelperUtility::DebugLog("Deleted object: " + objToDelete.name.stdString());
+                    tDatabaseUtility::DebugLog(tableName, "Deleted object: " + tableDefinition.primaryKey.getPrimaryKeyValue(objToDelete));
                 }
             }
 
             objectsToDelete.clear();
-            gHelperUtility::DebugLog("Cleared objects marked for deletion.");
-        } else {
-            gHelperUtility::DebugLog("No objects marked for deletion.");
+            tDatabaseUtility::DebugLog(tableName, "Cleared objects marked for deletion.");
+        }
+        else
+        {
+            tDatabaseUtility::DebugLog(tableName, "No objects marked for deletion.");
         }
     }
-
 
     void ensureTableAndColumnsExist()
     {
@@ -114,26 +161,31 @@ public:
 
         std::stringstream checkTableSql;
         checkTableSql << "SELECT name FROM sqlite_master WHERE type='table' AND name='" << tableName << "';";
+        tDatabaseUtility::DebugLog(tableName, "Checking if table exists with SQL: " + checkTableSql.str());
 
         sqlite3_stmt *stmt;
         rc = sqlite3_prepare_v2(db, checkTableSql.str().c_str(), -1, &stmt, NULL);
 
-        bool tableExists = false;
-
-        if (rc == SQLITE_OK)
+        if (rc != SQLITE_OK)
         {
-            if (sqlite3_step(stmt) == SQLITE_ROW)
-                tableExists = true;
-            sqlite3_finalize(stmt);
+            tDatabaseUtility::DebugLog(tableName, "sqlite3_prepare_v2 failed with code: " + std::to_string(rc));
+            return;
         }
 
-        // table exists ?
+        bool tableExists = false;
+        if (sqlite3_step(stmt) == SQLITE_ROW)
+        {
+            tDatabaseUtility::DebugLog(tableName, "Table " + tableName + " exists.");
+            tableExists = true;
+        }
+        sqlite3_finalize(stmt);
+
         if (!tableExists)
         {
             std::stringstream createTableSql;
             createTableSql << "CREATE TABLE " << tableName << "(";
             bool first = true;
-            for (const auto &mapping : mappings)
+            for (const auto &mapping : tableDefinition.columnMappings)
             {
                 if (!first)
                     createTableSql << ", ";
@@ -142,49 +194,68 @@ public:
             }
             createTableSql << ");";
 
+            tDatabaseUtility::DebugLog(tableName, "Creating table with SQL: " + createTableSql.str());
+
             rc = sqlite3_exec(db, createTableSql.str().c_str(), 0, 0, &errMsg);
             if (rc != SQLITE_OK)
             {
-                gHelperUtility::DebugLog("SQL error during table creation: " + std::string(errMsg));
+                tDatabaseUtility::DebugLog(tableName, "SQL error during table creation: " + std::string(errMsg));
                 sqlite3_free(errMsg);
+            }
+            else
+            {
+                tDatabaseUtility::DebugLog(tableName, "Table " + tableName + " created successfully.");
             }
         }
         else
         {
-            for (const auto &mapping : mappings)
+            std::unordered_set<std::string> existingColumns;
+            std::stringstream tableInfoSql;
+            tableInfoSql << "PRAGMA table_info(" << tableName << ");";
+            tDatabaseUtility::DebugLog(tableName, "Retrieving table info with SQL: " + tableInfoSql.str());
+
+            rc = sqlite3_prepare_v2(db, tableInfoSql.str().c_str(), -1, &stmt, NULL);
+
+            if (rc == SQLITE_OK)
             {
-                std::stringstream checkColumnSql;
-                checkColumnSql << "PRAGMA table_info(" << tableName << ");";
-                rc = sqlite3_prepare_v2(db, checkColumnSql.str().c_str(), -1, &stmt, NULL);
-
-                bool columnExists = false;
-
-                if (rc == SQLITE_OK)
+                while (sqlite3_step(stmt) == SQLITE_ROW)
                 {
-                    while (sqlite3_step(stmt) == SQLITE_ROW)
-                    {
-                        std::string columnName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-                        if (columnName == mapping.columnName)
-                        {
-                            columnExists = true;
-                            break;
-                        }
-                    }
-                    sqlite3_finalize(stmt);
+                    std::string columnName = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+                    existingColumns.insert(columnName);
                 }
+            }
+            else
+            {
+                tDatabaseUtility::DebugLog(tableName, "Failed to retrieve table info with code: " + std::to_string(rc));
+            }
+            sqlite3_finalize(stmt);
 
-                if (!columnExists)
+            bool allColumnsExist = true;
+            bool error = false;
+            for (const auto &mapping : tableDefinition.columnMappings)
+            {
+                if (existingColumns.find(mapping.columnName) == existingColumns.end())
                 {
+                    allColumnsExist = false;
                     std::stringstream addColumnSql;
                     addColumnSql << "ALTER TABLE " << tableName << " ADD COLUMN " << mapping.columnName << " " << mapping.columnType << ";";
+                    tDatabaseUtility::DebugLog(tableName, "Column " + mapping.columnName + " is missing, adding with SQL: " + addColumnSql.str());
+
                     rc = sqlite3_exec(db, addColumnSql.str().c_str(), 0, 0, &errMsg);
                     if (rc != SQLITE_OK)
                     {
-                        gHelperUtility::DebugLog("SQL error during column addition: " + std::string(errMsg));
+                        error = true;
+                        tDatabaseUtility::DebugLog(tableName, "SQL error during column addition: " + std::string(errMsg));
                         sqlite3_free(errMsg);
                     }
                 }
             }
+            if (allColumnsExist)
+                tDatabaseUtility::DebugLog(tableName, "All required columns exist in table " + tableName + ".");
+            else if (!error)
+                tDatabaseUtility::DebugLog(tableName, "Missing columns were added to table " + tableName + ".");
+            else
+                tDatabaseUtility::DebugLog(tableName, "Error adding required columns to table " + tableName + ".");
         }
     }
 
@@ -194,14 +265,14 @@ public:
 
         std::stringstream selectSql;
         selectSql << "SELECT ";
-        for (const auto &mapping : mappings)
+        for (const auto &mapping : tableDefinition.columnMappings)
             selectSql << mapping.columnName << ",";
 
         std::string query = selectSql.str();
         query.pop_back();
         query += " FROM " + tableName + ";";
 
-        gHelperUtility::DebugLog("Loading using SQL: " + query);
+        tDatabaseUtility::DebugLog(tableName, "Loading using SQL: " + query);
 
         sqlite3_stmt *stmt;
         int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, 0);
@@ -214,7 +285,7 @@ public:
                 T &targetObject = getTargetObject(name);
 
                 int column = 0;
-                for (const auto &mapping : mappings)
+                for (const auto &mapping : tableDefinition.columnMappings)
                     mapping.extractFunc(stmt, column, targetObject);
 
                 postLoadActions(targetObject);
@@ -222,7 +293,7 @@ public:
         }
         else
         {
-            gHelperUtility::DebugLog("Failed to prepare SQL statement: " + query);
+            tDatabaseUtility::DebugLog(tableName, "Failed to prepare SQL statement: " + query);
         }
         sqlite3_finalize(stmt);
     }
@@ -231,7 +302,7 @@ public:
     {
         ensureTableAndColumnsExist();
 
-        auto objectsToSave = getAllObjects(); 
+        auto objectsToSave = getAllObjects();
 
         for (auto &obj : objectsToSave)
             preSaveAction(obj);
@@ -239,25 +310,24 @@ public:
         // DELETE ITEMS
         deleteMarkedObjects(objectsToSave);
 
-
         // INSERT OR REPLACE
         std::stringstream insertSql;
         insertSql << "INSERT OR REPLACE INTO " << tableName << " (";
-        for (const auto &mapping : mappings)
+        for (const auto &mapping : tableDefinition.columnMappings)
             insertSql << mapping.columnName << ",";
         insertSql.seekp(-1, insertSql.cur);
         insertSql << ") VALUES (";
 
         // placeholders
-        for (size_t i = 0; i < mappings.size(); ++i)
+        for (size_t i = 0; i < tableDefinition.columnMappings.size(); ++i)
         {
             insertSql << "?";
-            if (i < mappings.size() - 1)
+            if (i < tableDefinition.columnMappings.size() - 1)
                 insertSql << ",";
         }
         insertSql << ");";
 
-        gHelperUtility::DebugLog("Saving using SQL: " + insertSql.str());
+        tDatabaseUtility::DebugLog(tableName, "Saving using SQL: " + insertSql.str());
 
         sqlite3_stmt *stmt;
         int rc = sqlite3_prepare_v2(db, insertSql.str().c_str(), -1, &stmt, 0);
@@ -266,30 +336,29 @@ public:
             for (const auto &obj : objectsToSave)
             {
                 int column = 1;
-                for (const auto &mapping : mappings)
+                for (const auto &mapping : tableDefinition.columnMappings)
                     mapping.bindFunc(stmt, column, obj);
 
                 rc = sqlite3_step(stmt);
                 if (rc != SQLITE_DONE)
-                    gHelperUtility::DebugLog("Failed to save object to DB.");
+                    tDatabaseUtility::DebugLog(tableName, "Failed to save object to DB.");
 
                 sqlite3_reset(stmt); // reset the prepared statement
             }
         }
         else
         {
-            gHelperUtility::DebugLog("Failed to prepare SQL statement: " + insertSql.str());
+            tDatabaseUtility::DebugLog(tableName, "Failed to prepare SQL statement: " + insertSql.str());
         }
         sqlite3_finalize(stmt);
     }
 
-
-    void Delete(const T& object)
+    void Delete(const T &object)
     {
         ensureTableAndColumnsExist();
 
-        std::string idColumn = "name"; // MAKE THIS DYNAMIC
-        std::string identifier = object.name.stdString();
+        std::string idColumn = tableDefinition.primaryKey.getPrimaryColumn();
+        std::string identifier = tableDefinition.primaryKey.getPrimaryKeyValue(object);
 
         std::stringstream deleteSql;
         deleteSql << "DELETE FROM " << tableName << " WHERE " << idColumn << " = ?;";
@@ -297,19 +366,25 @@ public:
         sqlite3_stmt *stmt;
         int rc = sqlite3_prepare_v2(db, deleteSql.str().c_str(), -1, &stmt, 0);
 
-        if (rc == SQLITE_OK) {
+        if (rc == SQLITE_OK)
+        {
             sqlite3_bind_text(stmt, 1, identifier.c_str(), -1, SQLITE_STATIC);
 
             rc = sqlite3_step(stmt);
-            if (rc != SQLITE_DONE) {
-                gHelperUtility::DebugLog("Failed to delete " + identifier + " from " + tableName + ". SQLite error code: " + std::to_string(rc));
-            } else {
-                gHelperUtility::DebugLog("Successfully deleted " + identifier + " from " + tableName);
+            if (rc != SQLITE_DONE)
+            {
+                tDatabaseUtility::DebugLog(tableName, "Failed to delete " + identifier + " from " + tableName + ". SQLite error code: " + std::to_string(rc));
+            }
+            else
+            {
+                tDatabaseUtility::DebugLog(tableName, "Successfully deleted " + identifier + " from " + tableName);
             }
 
             sqlite3_finalize(stmt);
-        } else {
-            gHelperUtility::DebugLog("Failed to prepare SQL delete statement for " + identifier + ". SQL: " + deleteSql.str() + " SQLite error code: " + std::to_string(rc));
+        }
+        else
+        {
+            tDatabaseUtility::DebugLog(tableName, "Failed to prepare SQL delete statement for " + identifier + ". SQL: " + deleteSql.str() + " SQLite error code: " + std::to_string(rc));
         }
     }
 
@@ -319,22 +394,32 @@ public:
 
 namespace tDatabaseUtility
 {
+
+    static void DebugLog(const std::string &table, const std::string &message, bool utility)
+    {
+        std::string sender = utility ? "tDatabaseUtility" : ("tDatabase (" + table + ")");
+        gHelperUtility::DebugLog(message, sender);
+    }
+
     static sqlite3 *OpenDatabase(tString databaseFile)
     {
         tString databasePath = tDirectories::Var().GetReadPath(databaseFile);
 
-        gHelperUtility::DebugLog("Opening database at '" + databasePath.stdString() + "'");
+        DebugLog("", "Opening database at '" + databasePath.stdString() + "'", true);
 
         sqlite3 *db;
-        int rc = sqlite3_open(databasePath, &db);
+        int rc = sqlite3_open(databasePath.stdString().c_str(), &db);
+
         if (rc != SQLITE_OK)
         {
-            gHelperUtility::DebugLog(std::string("Cannot open database: ") + sqlite3_errmsg(db) + "\n");
+            DebugLog("", "Cannot open database: " + std::string(sqlite3_errmsg(db)) + "\n", true);
             sqlite3_close(db);
             return nullptr;
         }
 
         return db;
     }
+
 }
+
 #endif

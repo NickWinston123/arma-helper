@@ -141,7 +141,7 @@ class ColorsCommand : public eChatCommand
 public:
     ColorsCommand() : eChatCommand("ColorsCommand") {}
 
-    static tColoredString cycleColorPreview(REAL r, REAL g, REAL b);
+    static tColoredString cycleColorPreview(REAL r, REAL g, REAL b, bool resetColor = true);
     static tColoredString cycleColorPreview(tColor rgb);
 
     static tColoredString localPlayerPreview(ePlayer *local_p);

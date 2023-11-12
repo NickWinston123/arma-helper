@@ -69,8 +69,6 @@ public:
 
     void DeleteBatch(const std::vector<T> &objects)
     {
-        ensureTableAndColumnsExist();
-
         if (objects.empty())
         {
             tDatabaseUtility::DebugLog(tableName, "No objects to delete in batch.");
@@ -107,7 +105,7 @@ public:
             rc = sqlite3_step(stmt);
             if (rc != SQLITE_DONE)
             {
-                tDatabaseUtility::DebugLog(tableName, "Failed to delete batch from " + tableName + ". SQLite error code: " + std::to_string(rc));
+                tDatabaseUtility::DebugLog(tableName, "Failed to delete batch from " + tableName + ". SQLite error code: " + std::to_string(rc) + ", Error message: " + sqlite3_errmsg(db));
             }
             else
             {
@@ -118,7 +116,7 @@ public:
         }
         else
         {
-            tDatabaseUtility::DebugLog(tableName, "Failed to prepare SQL delete statement for batch. SQL: " + deleteSql.str() + " SQLite error code: " + std::to_string(rc));
+            tDatabaseUtility::DebugLog(tableName, "Failed to prepare SQL delete statement for batch. SQL: " + deleteSql.str() + " SQLite error code: " + std::to_string(rc) + ", Error message: " + sqlite3_errmsg(db));
         }
     }
 
@@ -149,9 +147,7 @@ public:
             tDatabaseUtility::DebugLog(tableName, "Cleared objects marked for deletion.");
         }
         else
-        {
             tDatabaseUtility::DebugLog(tableName, "No objects marked for deletion.");
-        }
     }
 
     void ensureTableAndColumnsExist()

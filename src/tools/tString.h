@@ -312,6 +312,8 @@ void tToUpper( tString & toTransform );
 
 tString htmlentities(tString str);
 
+tString randomStr(std::string charset, int length);
+
 //#define tMAX_STRING_OUTPUT 1000
 //extern char st_stringOutputBuffer[tMAX_STRING_OUTPUT];
 

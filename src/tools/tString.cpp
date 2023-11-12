@@ -3338,6 +3338,18 @@ tString getTimeAgoString(REAL seconds)
     return result;
 }
 
+tString randomStr(std::string charset, int length)
+{
+    std::string randomStr;
+    randomStr.resize(length);
+    for (int i = 0; i < length; i++)
+    {
+        int index = rand() % charset.length();
+        randomStr[i] = charset[index];
+    }
+    return tString(randomStr);
+}
+
 tString tThemedText::LabelText(const std::string& label) const
 {
     tString output;

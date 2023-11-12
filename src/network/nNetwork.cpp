@@ -3489,6 +3489,15 @@ static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WA
 static tString sg_playerSpamProtectionWatchSearchString("");
 static tConfItem<tString> sg_playerSpamProtectionWatchSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_SEARCH_STRING", sg_playerSpamProtectionWatchSearchString);
 
+static tString sg_playerSpamProtectionWatchCommonPrefixSearchString("");
+static tConfItem<tString> sg_playerSpamProtectionWatchCommonPrefixSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_COMMON_PREFIX_SEARCH_STRING", sg_playerSpamProtectionWatchCommonPrefixSearchString);
+
+static tString sg_playerSpamProtectionWatchRepeatSearchString("");
+static tConfItem<tString> sg_playerSpamProtectionWatchRepeatSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_REPEAT_SEARCH_STRING", sg_playerSpamProtectionWatchRepeatSearchString);
+
+static REAL sg_playerSpamProtectionWatchRepeatWaitTime = 0;
+static tConfItem<REAL> sg_playerSpamProtectionWatchRepeatWaitTimeConf("CHAT_SPAM_PROTECTION_WATCH_REPEAT_WAIT_TIME", sg_playerSpamProtectionWatchRepeatWaitTime);
+
 static bool currentlySuspended = false;
 static bool currentlySilenced = false;
 
@@ -3548,11 +3557,52 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
         if (startIdx != -1)
         {
-            std::istringstream stream(s.SubStr(startIdx + input.Len()-1).stdString());
+            tString secondsStr = s.SubStr(startIdx + input.Len()-1);
+            gHelperUtility::stream() << "secondsStr = " << secondsStr;
+
+            std::istringstream stream(secondsStr.stdString());
             REAL seconds;
             if (stream >> seconds)
                 ePlayerNetID::setNextSpeakTime(seconds);
+            gHelperUtility::stream() << "seconds = " << seconds;
         }
+
+        input = (sg_playerSpamProtectionWatchCommonPrefixSearchString.empty() ? tString("your messages have a common prefix: ") : sg_playerSpamProtectionWatchCommonPrefixSearchString);
+
+        startIdx = s.StrPos(input);
+
+        if (startIdx != -1)
+        {
+            int endIdx = s.StrPos(startIdx, "\nSPAM PROTECTION:");
+            tString prefix = s.SubStr(startIdx + input.Len()-1, endIdx - (startIdx + input.Len()));
+
+            int secondsStartIdx = endIdx + strlen("\nSPAM PROTECTION: messages with this prefix will be allowed again in ");
+            tString secondsStr = s.SubStr(secondsStartIdx, s.Len() - secondsStartIdx);
+            //gHelperUtility::stream() << "prefix = " << prefix << ", secondsStr = " << secondsStr;
+
+            std::istringstream stream(secondsStr.stdString());
+            REAL seconds;
+            if (stream >> seconds)
+            {
+                ePlayerNetID::setNextSpeakTimeCommonPrefix(prefix, seconds);
+              //  gHelperUtility::stream() << "Common Prefix Silence Set for Seconds = " << seconds;
+            }
+        }
+
+        input = (sg_playerSpamProtectionWatchRepeatSearchString.empty() ? tString("you already said: ") : sg_playerSpamProtectionWatchRepeatSearchString);
+
+        startIdx = s.StrPos(input);
+
+        if (startIdx != -1)
+        {
+            int endIdx = s.StrPos(startIdx, "\n");
+            tString repeatedMessage = s.SubStr(startIdx + input.Len()-1, endIdx - (startIdx + input.Len()));
+
+            REAL seconds = sg_playerSpamProtectionWatchRepeatWaitTime; 
+            ePlayerNetID::setNextSpeakTimeCommonPrefix(repeatedMessage, seconds);
+         //   gHelperUtility::stream() << "Repeated Message Detected: " << repeatedMessage << ", Silence Set for Seconds = " << seconds;
+        }
+
     }
 
     if (se_playerTriggerMessages && sg_playerMessageMatchWinner || se_playerStats)

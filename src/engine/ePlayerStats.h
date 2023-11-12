@@ -493,7 +493,8 @@ public:
         if (!response.empty())
         {
             announced = true;
-            bot.preparePlayerMessage(response, delay, nullptr, tString(""), true);
+            bot.SetParams(response, delay, nullptr, tString(""), true);
+            bot.preparePlayerMessage();
 
             return announced;
         }
@@ -509,9 +510,6 @@ private:
 
         if (currentKills % se_playerTriggerMessagesAcheivementsKillsChangeVal == 0)
         {
-            if (!response.empty())
-                response << " | ";
-
             tString trigger ("$acheivements_kills");
             tString value;
             value << currentKills;
@@ -523,6 +521,9 @@ private:
 
         if (currentKillStreak % se_playerTriggerMessagesAcheivementsKillStreakChangeVal == 0)
         {
+            if (!response.empty())
+                response << " | ";
+
             tString trigger ("$acheivements_current_killstreak");
             tString value;
             value << currentKillStreak;

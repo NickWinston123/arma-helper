@@ -319,6 +319,9 @@ bool MsgCommand::execute(tString args)
     tString messageToSend;
     messageToSend << "/msg " << args;
 
+    if (!ePlayerNetID::canChatWithMsg(messageToSend))
+        return true;
+
     if (se_chatLog)
     {
         tString logOutput;
@@ -371,7 +374,7 @@ tColoredString ColorsCommand::cycleColorPreview(tColor rgb)
     return cycleColorPreview(rgb.r_, rgb.g_, rgb.b_);
 }
 
-tColoredString ColorsCommand::cycleColorPreview(REAL r, REAL g, REAL b)
+tColoredString ColorsCommand::cycleColorPreview(REAL r, REAL g, REAL b, bool resetColor)
 {
     r /= 15.0;
     g /= 15.0;
@@ -392,9 +395,11 @@ tColoredString ColorsCommand::cycleColorPreview(REAL r, REAL g, REAL b)
 
     tColoredString cyclePreview;
     cyclePreview << tColoredString::ColorString(cycleR, cycleG, cycleB) << "<"
-                 << tColoredString::ColorString(r, g, b) << "=="
+                 << tColoredString::ColorString(r, g, b) << "==";
+    if (resetColor)
+        cyclePreview << tThemedTextBase.MainColor();
+
                 //  << tColoredString::ColorString(tailR2, tailG2, tailB2) << "="
-                 << tThemedTextBase.MainColor();
 
     return cyclePreview;
 }

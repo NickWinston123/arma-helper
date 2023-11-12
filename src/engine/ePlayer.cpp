@@ -1794,14 +1794,14 @@ static void se_DisplayChatLocally(ePlayerNetID *p, const tString &say)
     }
 }
 
-static bool se_playerMessageChat = false;
-static tConfItem<bool> se_playerMessageChatConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT", se_playerMessageChat);
+static bool se_playerMessageTriggersChat = false;
+static tConfItem<bool> se_playerMessageTriggersChatConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT", se_playerMessageTriggersChat);
 
-static bool se_playerMessageChatPrivateMsgs = true;
-static tConfItem<bool> se_playerMessageChatPrivateMsgsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_MSGS", se_playerMessageChatPrivateMsgs);
+static bool se_playerMessageTriggersChatPrivateMsgs = true;
+static tConfItem<bool> se_playerMessageTriggersChatPrivateMsgsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_MSGS", se_playerMessageTriggersChatPrivateMsgs);
 
-static bool se_playerMessageChatAlwaysSendMsg = false;
-static tConfItem<bool> se_playerMessageChatAlwaysSendMsgConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_ALWAYS_SEND_PRIVATE_MSG", se_playerMessageChatAlwaysSendMsg);
+static bool se_playerMessageTriggersChatAlwaysSendMsg = false;
+static tConfItem<bool> se_playerMessageTriggersChatAlwaysSendMsgConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_ALWAYS_SEND_PRIVATE_MSG", se_playerMessageTriggersChatAlwaysSendMsg);
 
 static void se_validate(std::istream &s)
 {
@@ -1844,7 +1844,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         tColoredString actualMessage(message);
         tString colorlessMessage(tColoredString::RemoveColors(message));
-        
+
         const int nameLength = p->GetName().Len() + 1;
 
         bool encyptedMessage = false;
@@ -1906,7 +1906,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             ePlayerStats::addMessage(p, colorlessMessage.SubStr(nameLength).TrimWhitespace());
         }
 
-        if (se_playerTriggerMessages && se_playerMessageChat && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
+        if (se_playerTriggerMessages && se_playerMessageTriggersChat && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
         {
             tString params(colorlessMessage);
             tString preAppend;
@@ -1916,7 +1916,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
             if (validPrivateMessage)
             {
-                if ((validPrivateMessage && se_playerMessageChatPrivateMsgs))
+                if ((validPrivateMessage && se_playerMessageTriggersChatPrivateMsgs))
                 {
                     preAppend << "/msg "
                             << p->GetName().Filter()
@@ -1934,7 +1934,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
                 params = params.SubStr(nameLength);
             }
 
-            if (!preAppended && se_playerMessageChatAlwaysSendMsg)
+            if (!preAppended && se_playerMessageTriggersChatAlwaysSendMsg)
             {
                     preAppend << "/msg "
                               << p->GetName().Filter()
@@ -5121,31 +5121,63 @@ static tConfItem<REAL> sg_playerSpamProtectionWatchExtraAddConf("CHAT_SPAM_PROTE
 
 
 REAL ePlayerNetID::nextSpeakTime = 0;
+REAL ePlayerNetID::nextSpeakTimePrefix = 0;
+tString ePlayerNetID::nextSpeakTimePrefixCommonPrefix = tString("");
 
 bool ePlayerNetID::canChat()
 {
-    // con << "COMPARING " << nextSpeakTime << " vs " << tSysTimeFloat() << "\n";
+    // gHelperUtility::stream() << "COMPARING " << nextSpeakTime << " vs " << tSysTimeFloat() << "\n";
+    // gHelperUtility::stream() << "Can chat: " << (nextSpeakTime <= tSysTimeFloat()) << "\n";
     return nextSpeakTime <= tSysTimeFloat();
 }
 
-bool ePlayerNetID::canChatWithMsg()
+bool ePlayerNetID::canChatCommonPrefix(tString &message)
+{
+    // gHelperUtility::stream() << "COMPARING " << nextSpeakTimePrefix << " vs " << tSysTimeFloat() << "\n";
+    // gHelperUtility::stream() << "canChatCommonPrefix: " << (nextSpeakTime <= tSysTimeFloat()) << "\n";
+    return nextSpeakTimePrefix <= tSysTimeFloat() || !message.Contains(nextSpeakTimePrefixCommonPrefix);
+}
+
+bool ePlayerNetID::canChatWithMsg(tString message)
 {
     bool ableToChat = canChat();
-    // con << " CAN CHAT ? " << ableToChat << "\n";
+    bool ableToChatCommonPrefix = canChatCommonPrefix(message);
+
+    if (!ableToChatCommonPrefix)
+    {
+        con << "You can not use the common prefix '"
+            << nextSpeakTimePrefixCommonPrefix
+            << "' for "
+            << nextSpeakTimePrefix - tSysTimeFloat()
+            << " seconds. Do not use this prefix!\n";
+        return ableToChatCommonPrefix;
+    }
 
     if (!ableToChat)
     {
         con << "You are silenced for "
             << nextSpeakTime - tSysTimeFloat()
             << " seconds. Do not try to chat!\n";
+        return ableToChat;
     }
-    return ableToChat;
+
+    return true;
 }
 
 void ePlayerNetID::setNextSpeakTime(REAL seconds)
 {
     // con << "SECONDS " << seconds << "\n";
     nextSpeakTime = tSysTimeFloat() + seconds + sg_playerSpamProtectionWatchExtraAdd;
+    // con << "nextupdatetime " << nextSpeakTime << "\n";
+}
+
+void ePlayerNetID::setNextSpeakTimeCommonPrefix(tString commonPrefix, REAL seconds)
+{
+    // con << "SECONDS " << seconds << "\n";
+    nextSpeakTimePrefixCommonPrefix = commonPrefix;
+    // gHelperUtility::stream() << " nextSpeakTimePrefixCommonPrefix = '" << nextSpeakTimePrefixCommonPrefix << "'\n";
+
+    nextSpeakTimePrefix = tSysTimeFloat() + seconds + sg_playerSpamProtectionWatchExtraAdd;
     // con << "nextupdatetime " << nextSpeakTime << "\n";
 }
 
@@ -5157,7 +5189,7 @@ bool sn_playerSilencedWatchQuitWaitForAvoidPlayers = false;
 static tConfItem<bool> sn_playerSilencedWatchQuitWaitForAvoidPlayersConf("PLAYER_WATCH_SILENCED_QUIT_WAIT_FOR_AVOID_PLAYERS", sn_playerSilencedWatchQuitWaitForAvoidPlayers);
 
 
-void ePlayerNetID::Chat(const tString &s_orig)
+void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
 {
     tColoredString s(s_orig);
     s.NetFilter();
@@ -5166,9 +5198,23 @@ void ePlayerNetID::Chat(const tString &s_orig)
     if (se_enableChatCommands && s_orig.StartsWith("/") && LocalChatCommands(ePlayer::NetToLocalPlayer(this), s_orig))
         return;
 
-    if (sg_playerSpamProtectionWatch && !ePlayerNetID::canChatWithMsg())
-        return;
+    if (sg_playerSpamProtectionWatch)
+    {
+        bool canChat = ePlayerNetID::canChatWithMsg(s_orig);
 
+        if (se_playerTriggerMessages && chatBotMessage)
+        {
+            eChatBot &bot = eChatBot::getInstance();
+            bool pentalized = bot.Stats().data.pentalized_for_last_message = !canChat;
+
+            if (se_playerTriggerMessagesResendSilencedMessages && pentalized)
+                bot.ResendMessage();
+        }
+
+        if (!canChat)
+            return;
+    }
+    
     s = s.SubStr(0, se_SpamMaxLen - 1);
 
     if (sg_playerSilencedWatch)
@@ -5886,18 +5932,9 @@ tString randomName()
     int length = se_randomNameLength;
 
     if (se_randomNameLengthRandom)
-    {
          length = se_randomNameLengthRandomMin + rand() % (se_randomNameLength - se_randomNameLengthRandomMin + 1);
-    }
 
-    std::string randomStr;
-    randomStr.resize(length);
-    for (int i = 0; i < length; i++)
-    {
-        int index = rand() % charset.length();
-        randomStr[i] = charset[index];
-    }
-    return tString(randomStr);
+    return randomStr(charset, length);
 }
 
 

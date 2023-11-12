@@ -14,6 +14,9 @@
 bool se_playerTriggerMessages = false;
 static tConfItem<bool> se_playerTriggerMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS", se_playerTriggerMessages);
 
+bool se_playerTriggerMessagesResendSilencedMessages = false;
+static tConfItem<bool> se_playerTriggerMessagesResendSilencedMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES", se_playerTriggerMessagesResendSilencedMessages);
+
 int se_playerTriggerMessagesQueueMaxOverloadedSize = 10;
 static tConfItem<int> se_playerTriggerMessagesQueueMaxOverloadedSizeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_QUEUE_OVERLOADED_MAX_SIZE", se_playerTriggerMessagesQueueMaxOverloadedSize);
 
@@ -46,11 +49,11 @@ static tConfItem<REAL> se_playerMessageSmartDelayReadingWPMConf = HelperCommand:
 static REAL se_playerMessageSmartDelayReactionTime = 0.25;
 static tConfItem<REAL> se_playerMessageSmartDelayReactionTimeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DELAY_SMART_REACTION_TIME", se_playerMessageSmartDelayReactionTime);
 
-static bool se_playerMessageChatFlag = false;
-static tConfItem<bool> se_playerMessageChatFlagConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHATFLAG", se_playerMessageChatFlag);
+static bool se_playerMessageTriggersChatFlag = false;
+static tConfItem<bool> se_playerMessageTriggersChatFlagConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHATFLAG", se_playerMessageTriggersChatFlag);
 
-static REAL se_playerMessageChatFlagStartMult = 0.5;
-static tConfItem<REAL> se_playerMessageChatFlagStartMultConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHATFLAG_START_MULT", se_playerMessageChatFlagStartMult);
+static REAL se_playerMessageTriggersChatFlagStartMult = 0.5;
+static tConfItem<REAL> se_playerMessageTriggersChatFlagStartMultConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHATFLAG_START_MULT", se_playerMessageTriggersChatFlagStartMult);
 
 static bool se_playerMessageDisplayScheduledMessages = false;
 static tConfItem<bool> se_playerMessageDisplayScheduledMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SHOW_SCHEDULED_MESSAGES", se_playerMessageDisplayScheduledMessages);
@@ -77,8 +80,8 @@ static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenConf = HelperCommand::t
 REAL se_playerTriggerMessagesSpamMaxlenPartAdd = 0.5;
 static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenPartAddConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DELAY_SPAM_MAXLEN_NEGATIVE_PART_ADD", se_playerTriggerMessagesSpamMaxlenPartAdd);
 
-static bool se_playerMessageChatFunctionsOnly = false;
-static tConfItem<bool> se_playerMessageChatFunctionsOnlyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_FUNCTIONS_ONLY", se_playerMessageChatFunctionsOnly);
+static bool se_playerMessageTriggersChatFunctionsOnly = false;
+static tConfItem<bool> se_playerMessageTriggersChatFunctionsOnlyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_FUNCTIONS_ONLY", se_playerMessageTriggersChatFunctionsOnly);
 
 bool se_playerTriggerMessagesAcheivements = false;
 static tConfItem<bool> se_playerTriggerMessagesAcheivementsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS", se_playerTriggerMessagesAcheivements);
@@ -105,13 +108,19 @@ extern int se_playerTriggerMessagesAcheivementsBansChangeVal = 5;
 static tConfItem<int> se_playerTriggerMessagesAcheivementsBansChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_BANS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsBansChangeVal);
 
 
+void addPrefix(tString &input, tString &prefix)
+{
+    tString prefixedString(prefix);
+    prefixedString << input;
+    input = prefixedString;
+}
+
 void validateOutput(tString &input)
 {
     if (!input.empty() && input[0] == '/')
     {
         tString paddedString(" ");
-        paddedString << input;
-        input = paddedString;
+        addPrefix(input, paddedString);
     }
 }
 
@@ -419,7 +428,7 @@ tString nicknameFunc(tString message)
         return output;
     }
 
-    ePlayerNetID *lastTriggeredBy = eChatBot::getInstance().Stats().lastTriggeredBy;
+    ePlayerNetID *lastTriggeredBy = eChatBot::getInstance().Stats().data.triggeredBy;
     PlayerData &stats = ePlayerStats::getStats(lastTriggeredBy);
 
     newNickname = newNickname.SubStr(0, 16);
@@ -503,7 +512,7 @@ tString playerKDFunc(tString message)
     else
     {
         eChatBot &bot = eChatBot::getInstance();
-        statsTargetPlayer = bot.stats.lastTriggeredBy;
+        statsTargetPlayer = bot.stats.data.triggeredBy;
         if (statsTargetPlayer)
             playerName = statsTargetPlayer->GetName();
     }
@@ -641,7 +650,7 @@ tString leaderboardFunc(tString message)
 
     if (lastSeenStat || nicknameStat)
         penalizePlayersNotInGame = true;
-        
+
     if (currentKillStreakStat)
         ignorePlayersNotInGame = true;
 
@@ -649,8 +658,8 @@ tString leaderboardFunc(tString message)
     auto it = std::remove_if(sortedPlayers.begin(), sortedPlayers.end(),
                              [ignorePlayersNotInGame, nicknameStat](const std::pair<tString, PlayerData>& player)
                              {
-                                 return !player.second.human || 
-                                        (ignorePlayersNotInGame && !player.second.in_server) || 
+                                 return !player.second.human ||
+                                        (ignorePlayersNotInGame && !player.second.in_server) ||
                                         player.second.deleted ||
                                         (nicknameStat && player.second.nickname.empty());
                              });
@@ -763,7 +772,7 @@ tString exactStatFunc(tString message)
     tString playerName, stat;
     ePlayerNetID *statsTargetPlayer = nullptr;
     eChatBotStats chatBotStats = eChatBot::getInstance().Stats();
-    bool symLinkFunc = chatBotStats.lastTriggerType == SYM_FUNC;
+    bool symLinkFunc = chatBotStats.data.triggerType == eChatBotStats::ResponseType::SYM_FUNC;
 
     if (!se_playerStats)
     {
@@ -781,7 +790,7 @@ tString exactStatFunc(tString message)
     if (statLabel.empty())
     {
         output << "Stat not found! Usage: '"
-               << chatBotStats.lastMatchedTrigger
+               << chatBotStats.data.matchedTrigger
                << " "
                << "stat"
                << " player' "
@@ -793,7 +802,7 @@ tString exactStatFunc(tString message)
 
     if (playerName.empty())
     {
-        statsTargetPlayer = chatBotStats.lastTriggeredBy;
+        statsTargetPlayer = chatBotStats.data.triggeredBy;
     }
 
     if (!statsTargetPlayer)
@@ -815,6 +824,8 @@ tString exactStatFunc(tString message)
     tString statAfterValue;
     if (showValue)
     {
+        bool showCurrentSessionVal = true;
+
         tString currentSessionStatValue;
         if (statLabel == "Kill Death Ratio")
         {
@@ -858,10 +869,35 @@ tString exactStatFunc(tString message)
                             << stats.thisSession().times_banned
                             << ")";
         }
+        else if (statLabel == "RGB")
+        {
+            statValue << stats.rgbString();
+
+            if (!chatBotStats.data.pentalized_for_last_message)
+            {
+                int r,g,b;
+                if (statsTargetPlayer)
+                {
+                    r = statsTargetPlayer->r;
+                    g = statsTargetPlayer->g;
+                    b = statsTargetPlayer->g;
+                }
+                else
+                {
+                    r = stats.r;
+                    g = stats.g;
+                    b = stats.b;
+                }
+
+                statValue << " "
+                          << ColorsCommand::cycleColorPreview(r, g, b, false);
+            }
+            showCurrentSessionVal = false;
+        }
         else
             statValue << stats.getAnyValue(stat.TrimWhitespace());
 
-        if (stats.in_server)
+        if (showCurrentSessionVal && stats.in_server)
         {
             if (currentSessionStatValue.empty())
                 currentSessionStatValue << stats.thisSession().getAnyValue(stat.TrimWhitespace());
@@ -900,7 +936,7 @@ tString masterFunc(tString message)
     eChatBot &bot = eChatBot::getInstance();
     eChatBotStats &stats = bot.Stats();
 
-    if (!stats.lastTriggeredBy || !stats.lastTriggeredBy->encryptVerified )
+    if (!stats.data.triggeredBy || !stats.data.triggeredBy->encryptVerified )
         return sayFunc(message);
 
     bot.masterFuncResponse = true;
@@ -941,8 +977,8 @@ tString hideStatFunc(tString message)
     }
 
     eChatBotStats &chatBotStats = eChatBot::getInstance().Stats();
-    bool symLinkFunc = chatBotStats.lastTriggerType == SYM_FUNC;
-    ePlayerNetID *triggeredBy = chatBotStats.lastTriggeredBy;
+    bool symLinkFunc = chatBotStats.data.triggerType == eChatBotStats::ResponseType::SYM_FUNC;
+    ePlayerNetID *triggeredBy = chatBotStats.data.triggeredBy;
     PlayerData &stats = ePlayerStats::getStats(triggeredBy);
     int pos = 0;
     tString desiredAction = message.ExtractNonBlankSubString(pos);
@@ -951,7 +987,7 @@ tString hideStatFunc(tString message)
     {
         output << "Desired action not found. "
                << "Usage: '"
-               << chatBotStats.lastMatchedTrigger
+               << chatBotStats.data.matchedTrigger
                << " ";
         if (!symLinkFunc)
             output << "unprivate or private"
@@ -981,7 +1017,7 @@ tString hideStatFunc(tString message)
     if (validStats.empty() && invalidStats.size() == 1)
     {
         output << "Stat not found! Usage: '"
-               << chatBotStats.lastMatchedTrigger
+               << chatBotStats.data.matchedTrigger
                << " ";
         if (!symLinkFunc)
             output << desiredAction
@@ -1074,21 +1110,21 @@ tString whatsThefunc(tString message)
     else if (target.Contains("joined_time"))
     {
         eChatBotStats &stats = eChatBot::getInstance().Stats();
-        struct tm created = stats.lastTriggeredBy->createTime_;
+        struct tm created = stats.data.triggeredBy->createTime_;
         output << getTimeStringBase(created)
                << " EST";
     }
     else if (target.Contains("been_here_for"))
     {
         eChatBotStats &stats = eChatBot::getInstance().Stats();
-        if (se_GetLocalPlayer()->createdTime() <= stats.lastTriggeredBy->createdTime())
+        if (se_GetLocalPlayer()->createdTime() <= stats.data.triggeredBy->createdTime())
         {
             output << "not sure, you joined before me";
         }
         else
         {
             struct tm now = getCurrentLocalTime();
-            struct tm created = stats.lastTriggeredBy->createTime_;
+            struct tm created = stats.data.triggeredBy->createTime_;
             time_t difference = getDifferenceInSeconds(now, created);
             tString formattedDifference = st_GetFormatTime(difference, false, false);
             output << formattedDifference;
@@ -1144,9 +1180,16 @@ tString whatsThefunc(tString message)
     {
         eChatBotStats &stats = eChatBot::getInstance().Stats();
         struct tm lastTimeBanned;
+
+        time_t now = time(NULL);
+        double lastBanned = difftime(now, stats.last_banned);
+
         localtime_s(&lastTimeBanned, &stats.last_banned);
         output << getTimeStringBase(lastTimeBanned)
-               << " EST";
+               << " EST"
+               << " ("
+               << st_GetFormatTime(lastBanned, false, false)
+               << " ago)";
     }
     else if (target.Contains("time"))
     {
@@ -1157,15 +1200,17 @@ tString whatsThefunc(tString message)
     else if (target.Contains("my_color"))
     {
         eChatBotStats &stats = eChatBot::getInstance().Stats();
-        ePlayerNetID *targetPlayer = stats.lastTriggeredBy;
+        ePlayerNetID *targetPlayer = stats.data.triggeredBy;
         if (targetPlayer)
         {
-            PlayerData *stats = &ePlayerStats::getStatsForAnalysis(targetPlayer);
+            PlayerData *stats = &ePlayerStats::getStats(targetPlayer);
             if (stats)
             {
                 output << targetPlayer->GetName()
-                       << ":"
-                       << stats->rgbString();
+                       << ": "
+                       << stats->rgbString()
+                       << " "
+                       << ColorsCommand::cycleColorPreview(targetPlayer->r,targetPlayer->g,targetPlayer->b, false);
             }
         }
     }
@@ -1181,7 +1226,7 @@ tString consolidatePlayerStatsFunc(tString message)
 
     eChatBotStats &stats = eChatBot::getInstance().Stats();
 
-    if (!stats.lastTriggeredBy || !stats.lastTriggeredBy->encryptVerified )
+    if (!stats.data.triggeredBy || !stats.data.triggeredBy->encryptVerified )
     {
         output << "You are not verified";
         return output;
@@ -1198,7 +1243,7 @@ tString statsAltFunc(tString message)
 
     eChatBotStats &stats = eChatBot::getInstance().Stats();
 
-    if (!stats.lastTriggeredBy || !stats.lastTriggeredBy->encryptVerified )
+    if (!stats.data.triggeredBy || !stats.data.triggeredBy->encryptVerified )
     {
         output << "You are not verified";
         return output;
@@ -1238,7 +1283,7 @@ tString searchFunc(tString message)
     if (statLabel.empty())
     {
         result << "Stat not found! Usage: '"
-               << chatBotStats.lastMatchedTrigger
+               << chatBotStats.data.matchedTrigger
                << " "
                << "stat"
                << " search value' "
@@ -1259,7 +1304,7 @@ tString searchFunc(tString message)
             if (playerData.is_local)
                 continue;
 
-            std::string trigger = toLower(chatBotStats.lastMatchedTrigger.stdString());
+            std::string trigger = toLower(chatBotStats.data.matchedTrigger.stdString());
             for (const auto& chatMessage : playerData.chat_messages)
             {
 
@@ -1311,7 +1356,7 @@ tString sayOutLoudFunc(tString message)
 
     for (auto localNetPlayer : se_GetLocalPlayers())
     {
-        localNetPlayer->Chat(output);
+        localNetPlayer->Chat(output, true);
     }
 
     return output;
@@ -1322,19 +1367,26 @@ std::vector<std::string> getAllPlayerChatsPaginated(size_t pageSize, int page,
 {
     std::vector<std::string> allChats;
     size_t start = (page - 1) * pageSize;
-    size_t end = start + pageSize;
 
-    for (auto &statsPair : ePlayerStats::GetPlayerStatsMap())
+    // sort
+    std::vector<std::pair<tString, PlayerData>> sortedPlayers;
+    for (const auto &statsPair : ePlayerStats::GetPlayerStatsMap())
+        sortedPlayers.push_back(statsPair);
+
+    std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+              [](const auto &a, const auto &b) { return a.second.last_seen > b.second.last_seen; });
+
+    totalNumOfChats = 0;
+    for (auto &statsPair : sortedPlayers)
     {
-        auto &playerName = statsPair.first;
+        const auto &playerName = statsPair.first;
         auto &playerData = statsPair.second;
 
-        if (playerData.is_local)
+        if (playerData.is_local || playerData.isPrivate(tString("Chats")))
             continue;
 
         for (const auto &chatMessage : playerData.chat_messages)
         {
-
             if (chatMessage.find(lastMatchedTrigger) != std::string::npos)
                 continue;
 
@@ -1364,7 +1416,7 @@ std::vector<std::string> searchAllPlayerChats(const tString &searchPhrase, size_
         tString playerName = statsPair.first;
         auto &playerData = statsPair.second;
 
-        if (playerData.is_local)
+        if (playerData.is_local || playerData.isPrivate(tString("Chats")))
             continue;
 
         for (const auto &chatMessage : playerData.chat_messages)
@@ -1403,9 +1455,7 @@ std::vector<std::string> searchChats(const std::vector<std::string> &chatMessage
             continue;
 
         if (rit->find(searchPhrase.stdString()) != std::string::npos)
-        {
             tempChats.push_back(*rit);
-        }
     }
 
     totalNumOfChats = tempChats.size();
@@ -1414,19 +1464,13 @@ std::vector<std::string> searchChats(const std::vector<std::string> &chatMessage
     size_t end = start + pageSize;
 
     if (start >= totalNumOfChats)
-    {
         return foundChats;
-    }
 
     if (end > totalNumOfChats)
-    {
         end = totalNumOfChats;
-    }
 
     for (size_t i = start; i < end; ++i)
-    {
         foundChats.push_back(tempChats[i]);
-    }
 
     return foundChats;
 }
@@ -1437,7 +1481,7 @@ tString chatScrollSearchFunc(tString message)
     bool showUsage = false;
     tString output;
     eChatBotStats chatBotStats = eChatBot::getInstance().Stats();
-    std::string lastMatchedTrigger(chatBotStats.lastMatchedTrigger.stdString());
+    std::string lastMatchedTrigger(chatBotStats.data.matchedTrigger.stdString());
 
     if (!se_playerStats)
     {
@@ -1455,11 +1499,14 @@ tString chatScrollSearchFunc(tString message)
     const size_t pageSize = se_playerMessageTriggersChatSearchMaxResults;
     tString param = message.ExtractNonBlankSubString(pos);
     size_t totalNumOfChats = 0;
+
     if (all)
     {
-        if (param.isNumber())
+        bool params = !param.empty();
+        if (param.isNumber() || !params)
         {
-            page = atoi(param.c_str());
+            if (params)
+                page = atoi(param.c_str());
             chatsToDisplay = getAllPlayerChatsPaginated(pageSize, page, totalNumOfChats, lastMatchedTrigger);
         }
         else
@@ -1473,7 +1520,7 @@ tString chatScrollSearchFunc(tString message)
         ePlayerNetID *statsTargetPlayer = nullptr;
         if (playerName.empty())
         {
-            statsTargetPlayer = chatBotStats.lastTriggeredBy;
+            statsTargetPlayer = chatBotStats.data.triggeredBy;
             showUsage = true;
         }
         else
@@ -1527,6 +1574,7 @@ tString chatScrollSearchFunc(tString message)
         output << " | Usage: "
                << lastMatchedTrigger
                << " name 2";
+
     return output;
 }
 
@@ -1568,16 +1616,16 @@ tString banFunc(tString message)
     message = message.TrimWhitespace();
 
     eChatBot &bot = eChatBot::getInstance();
-    ePlayerNetID *triggeredBy = bot.stats.lastTriggeredBy;
+    ePlayerNetID *triggeredBy = bot.stats.data.triggeredBy;
 
     if (!triggeredBy)
         return output;
-    
+
     ePlayerNetID *statsTargetPlayer = triggeredBy->lastDiedByPlayer;
 
     if (!statsTargetPlayer)
         return output;
-        
+
     PlayerData &triggeredByStats = ePlayerStats::getStats(triggeredBy);
 
     if (triggeredByStats.banned_a_player_this_round)
@@ -1586,7 +1634,7 @@ tString banFunc(tString message)
 
         return response;
     }
-    else 
+    else
     {
         triggeredByStats.banned_a_player_this_round = true;
         triggeredByStats.bans_given++;
@@ -1596,8 +1644,8 @@ tString banFunc(tString message)
     PlayerData &bannedPlayerStats = ePlayerStats::getStats(statsTargetPlayer);
     bannedPlayerStats.times_banned++;
     bannedPlayerStats.thisSession().times_banned++;
-    
-    
+
+
     ePlayerStatsAcheivements::performAction(bannedPlayerStats, ePlayerStatsAcheivements::AcheivementsTypes::BANS);
     auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(statsTargetPlayer, tString("$banned"), true);
 
@@ -1690,7 +1738,9 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, 
     if (!response.empty() && !bot.masterFuncResponse)
     {
         initiated = true;
-        bot.preparePlayerMessage(response, delay, sendingPlayer, preAppend, eventTrigger);
+
+        bot.SetParams(response, delay, sendingPlayer, preAppend, eventTrigger);
+        bot.preparePlayerMessage();
     }
     else if (eventTrigger)
         con << "No trigger set for '" << message << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
@@ -1750,7 +1800,7 @@ void eChatBot::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, boo
 
                     gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [netPlayer, message, chatFlag]
                     {
-                        netPlayer->Chat(message);
+                        netPlayer->Chat(message, true);
                         if (chatFlag)
                             netPlayer->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
                         ePlayerNetID::Update();
@@ -1758,7 +1808,7 @@ void eChatBot::scheduleMessageTask(ePlayerNetID *netPlayer, tString message, boo
                 }
                 else
                 {
-                    netPlayer->Chat(message);
+                    netPlayer->Chat(message, true);
                 }
             }, 0, true);
     });
@@ -1779,8 +1829,8 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
     tToLower(lowerMessage);
     ePlayerNetID *sendingPlayer = nullptr; // who should send this message?
 
-    Stats().lastTriggerType = NORMAL;
-    Stats().lastTriggeredBy = triggeredByPlayer;
+    Stats().data.triggerType = eChatBotStats::ResponseType::NORMAL;
+    Stats().data.triggeredBy = triggeredByPlayer;
 
     for (const auto &triggerKey : chatTriggerKeys)
     {
@@ -1865,7 +1915,7 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
         if (match)
         {
-            Stats().lastMatchedTrigger = trigger.TrimWhitespace();
+            Stats().data.matchedTrigger = trigger.TrimWhitespace();
 
             // Determine the sending player based on the type of trigger
             if (triggeredByPlayer != nullptr)
@@ -1944,35 +1994,37 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
                     functionName = chosenResponse.SubStr(dollarPos, endPos - dollarPos);
                 }
+
                 bool functionResponse = !functionName.StartsWith("$p1") && !functionName.StartsWith("$val1");
                 if (functionResponse)
                 {
-                    Stats().lastTriggerType = FUNC;
+                    Stats().data.triggerType = eChatBotStats::ResponseType::FUNC;
 
                     tString finalFunctionInput(functionInput);
 
                     if (finalFunctionInput.empty())
                     {
-                        tString toReplace = Stats().lastMatchedTrigger + " ";
+                        tString toReplace = Stats().data.matchedTrigger + " ";
                         finalFunctionInput = chatMessage.Replace(toReplace,"");
 
-                        toReplace = Stats().lastMatchedTrigger;
+                        toReplace = Stats().data.matchedTrigger;
                         finalFunctionInput = finalFunctionInput.Replace(toReplace,"");
                     }
                     else
                     {
-                        Stats().lastTriggerType = SYM_FUNC;
+                        Stats().data.triggerType = eChatBotStats::ResponseType::SYM_FUNC;
 
                         tString extraParams(chatMessage.TrimWhitespace());
                         if (!extraParams.empty())
                             finalFunctionInput << tString(" ") << extraParams;
 
-                        tString toReplace = Stats().lastMatchedTrigger + " ";
+                        tString toReplace = Stats().data.matchedTrigger + " ";
                         finalFunctionInput = finalFunctionInput.Replace(toReplace,"");
 
-                        toReplace = Stats().lastMatchedTrigger;
+                        toReplace = Stats().data.matchedTrigger;
                         finalFunctionInput = finalFunctionInput.Replace(toReplace,"");
                     }
+
                     finalFunctionInput = tColoredString::RemoveColors(finalFunctionInput);
                     tString result = ExecuteFunction(functionName, finalFunctionInput);
 
@@ -1992,29 +2044,61 @@ std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlaye
 
             chosenResponse = responseStr;
 
-            if (se_playerMessageChatFunctionsOnly && Stats().lastTriggerType == NORMAL )
+            if (se_playerMessageTriggersChatFunctionsOnly && Stats().data.triggerType == eChatBotStats::ResponseType::NORMAL )
                 return std::make_tuple(tString(""), 0.0, nullptr);
 
             validateOutput(chosenResponse);
+
             return std::make_tuple(chosenResponse, extraDelay, sendingPlayer);
         }
     }
 
-    // Return empty message and 0 delay if no triggers match
+    // return empty message and 0 delay if no triggers match
     return std::make_tuple(tString(""), 0.0, nullptr);
 }
 
 std::tuple<tString, REAL, ePlayerNetID *> eChatBot::findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString chatMessage, bool eventTrigger)
 {
-    return findTriggeredResponse(triggeredByPlayer, (triggeredByPlayer ? triggeredByPlayer->GetName() : tString("")), 
+    return findTriggeredResponse(triggeredByPlayer, (triggeredByPlayer ? triggeredByPlayer->GetName() : tString("")),
                                  chatMessage, eventTrigger);
 }
 
+void eChatBot::SetParams(tString &response, REAL &delay, ePlayerNetID *sendingPlayer, tString preAppend, bool eventTrigger)
+{
+    Stats().data.response = response;
+    Stats().data.delay = delay;
+    Stats().data.sendingPlayer = sendingPlayer;
+    Stats().data.preAppend = preAppend;
+    Stats().data.eventTrigger = eventTrigger;
 
-void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player, tString preAppend, bool eventTrigger)
+}
+
+bool eChatBot::ResendMessage()
+{
+    if (Stats().data.pentalized_for_last_message)
+        Stats().data.delay = 3;
+
+        if (Stats().data.pentalized_for_last_message_prefix)
+        {
+            tString prefix;
+            prefix << randomStr("!@#$%^&*()_+=-",3)
+                    << "| ";
+            addPrefix(Stats().data.response, prefix);
+        }
+        
+    return preparePlayerMessage();
+}
+
+bool eChatBot::preparePlayerMessage()
 {
     if (!helperConfig::sghuk)
-        return;
+        return false;
+
+    REAL extraDelay = Stats().data.delay;
+    tString messageToSend = Stats().data.response;
+    tString preAppend = Stats().data.preAppend;
+    bool eventTrigger = Stats().data.eventTrigger;
+    ePlayerNetID *player = Stats().data.sendingPlayer;
 
     bool forceSpecialDelay = (extraDelay < -5);
 
@@ -2041,7 +2125,7 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
 
     totalDelay = extraDelay;
 
-    REAL flagDelay = totalDelay * se_playerMessageChatFlagStartMult;
+    REAL flagDelay = totalDelay * se_playerMessageTriggersChatFlagStartMult;
 
     if (flagDelay > totalDelay)
         flagDelay = totalDelay * 0.9;
@@ -2058,7 +2142,6 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
         partToSend.RecomputeLength();
         messageToSend.RecomputeLength();
 
-
         if (messageToSend.Len() >= previousLength)
             break;
 
@@ -2074,7 +2157,7 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
                 if (tIsInList(se_playerMessageTargetPlayer, player->pID + 1))
                 {
                     scheduled = true;
-                    scheduleMessageTask(player, partToSend, !forceSpecialDelay && se_playerMessageChatFlag, totalDelay, flagDelay);
+                    scheduleMessageTask(player, partToSend, !forceSpecialDelay && se_playerMessageTriggersChatFlag, totalDelay, flagDelay);
                 }
             }
             else
@@ -2096,21 +2179,20 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
                         continue;
 
                     scheduled = true;
-                    scheduleMessageTask(netPlayer, partToSend, !forceSpecialDelay && se_playerMessageChatFlag, totalDelay, flagDelay);
+                    scheduleMessageTask(netPlayer, partToSend, !forceSpecialDelay && se_playerMessageTriggersChatFlag, totalDelay, flagDelay);
                 }
-
             }
         }
 
         if (forceSpecialDelay && numParts > 1)
         {
             totalDelay = se_playerTriggerMessagesSpamMaxlenPartAdd;
-            flagDelay  = totalDelay * se_playerMessageChatFlagStartMult;
+            flagDelay  = totalDelay * se_playerMessageTriggersChatFlagStartMult;
         }
         else
         {
             totalDelay += extraDelay + calculateResponseSmartDelay(partToSend, se_playerMessageSmartDelayTypingWPM) + se_playerMessageSmartDelayReactionTime;
-            flagDelay = totalDelay * se_playerMessageChatFlagStartMult;
+            flagDelay = totalDelay * se_playerMessageTriggersChatFlagStartMult;
             if (flagDelay > totalDelay)
                 flagDelay = totalDelay * 0.9;
         }
@@ -2127,6 +2209,8 @@ void eChatBot::preparePlayerMessage(tString messageToSend, REAL extraDelay, ePla
             << totalDelay              << " (total delay). "
             << " (ExtraTime: "         << extraDelay << " seconds.) "
             << "Sent in "              << numParts << " parts.\n";
+
+    return scheduled;
 }
 
 bool containsRepeatedCharacters(tString message, bool exact)
@@ -2403,9 +2487,9 @@ static void TempChatBotCommandRunner(std::istream &input)
     {
         eChatBot::ChatFunction &func = it->second;
 
-        bot.Stats().lastTriggeredBy = player->netPlayer;
-        bot.Stats().lastTriggerType = FUNC;
-        bot.Stats().lastMatchedTrigger = functionName;
+        bot.Stats().data.triggeredBy = player->netPlayer;
+        bot.Stats().data.triggerType = eChatBotStats::ResponseType::FUNC;
+        bot.Stats().data.matchedTrigger = functionName;
 
         tString output;
         output << func(inputStr);

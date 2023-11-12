@@ -364,10 +364,15 @@ public:
     static int nameSpeakPlayerID;
     static int playerUpdateIteration;
 
+    static REAL nextSpeakTimePrefix;
+    static tString nextSpeakTimePrefixCommonPrefix;
     static REAL nextSpeakTime;
+
     static bool canChat();
-    static bool canChatWithMsg();
+    static bool canChatCommonPrefix(tString &message);
+    static bool canChatWithMsg(tString message);
     static void setNextSpeakTime(REAL seconds);
+    static void setNextSpeakTimeCommonPrefix(tString commonPrefix, REAL seconds);
 
     tString lastName = tString("");
     bool isLocal() { return pID != -1; }
@@ -662,7 +667,7 @@ public:
 
     void GetScoreFromDisconnectedCopy(); // get the player's data from the previous login
 
-    void Chat(const tString &s);
+    void Chat(const tString &s, bool chatBotMessage = false);
 
     nTimeAbsolute GetTimeCreated() const { return timeCreated_; }
 

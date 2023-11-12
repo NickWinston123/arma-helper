@@ -45,6 +45,7 @@ $pr;!pr;!hide;$hide;$h ;!h ,$hidestatfunc(private),-999,0
 !uh;$uh;!upr;$upr;!unhide;$unhide,$hidestatfunc(unprivate),-999,0
 $,$sayfunc,-9999,0
 >,$sayoutloudfunc,-999,0
+
 //
 // Events
 //
@@ -64,6 +65,7 @@ $diedother,gg,0,1
 $leftspec,welcome to the grid $p1;its time $p1;lets get it $p1,0,1
 $enterspec,the grid needs you $p1;come back $p1;noo come back $p1;$p1 where did you go?;where did $p1 go;where did you go $p1,0,1
 #$statssaved,Stats saved..,-999,1
+
 //
 // Functions
 //
@@ -80,15 +82,17 @@ here for;long have i;i been here,about $whatsthefunc(been_here_for) $p1,-999,0
 the score,$whatsthefunc(score),-999,0
 my color;my rgb,$whatsthefunc(my_color),-999,0
 ban,$banfunc,0,0
+
 //
 // Acheivements
 //
-$acheivements_chats,$p1 you have now chatted $val1 times;that was your $val1 chat $p1,-999,0
-$acheivements_current_killstreak,$p1 is on a $val1 kill streak,-999,0
-$acheivements_max_killstreak,$p1 just set a new max kill streak - $val1 kills,-999,0
-$acheivements_kills,$p1 now has $val1 kills,-999,0
-$acheivements_joins,$p1 has joined $val1 times,-999,0
-$acheivements_bans,$p1 has been banned $val1 times,-999,0
+$acheivements_chats,$p1 you have now chatted $val1 times!;that was your $val1 chat $p1!,-999,0
+$acheivements_current_killstreak,$p1 is on a $val1 kill streak!,-999,0
+$acheivements_max_killstreak,$p1 just set a new max kill streak - $val1 kills!,-999,0
+$acheivements_kills,$p1 now has $val1 kills!,-999,0
+$acheivements_joins,$p1 has joined $val1 times!,-999,0
+$acheivements_bans,$p1 has been banned $val1 times!,-999,0
+
 //
 // General Chats
 //
@@ -109,7 +113,7 @@ bb;g2g;cu;gtg;cya;bbl,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu
  gn;gn ; good night,good night!!,0,0
 gn; good night,good night!!,0,1
 gm;gz;ghz;gg,gg;GG,0,1
- gm; gz; ghz; gg;gm ;gz ;ghz ;gg ,gg;GG,0,0
+good game; gm; gz; ghz; gg;gm ;gz ;ghz ;gg ,gg;GG,0,0
 real,yes,0,0
 how are you,doing pretty well $p1 how about you?;good as always $p1 and you? :d;great $p1!! how about you?,0,0
 worthless,doesnt add up $p1;dont think so;nah;k,0,0
@@ -312,6 +316,7 @@ luck,lucky indeed $p1;oh yeah $p1?;very lucky $p1,0,0
 mean,o sorry;srry;sorry;oops mb,0,0
 is $p1,yes $p1;i am $p1;yeah sounds right $p1,0,0
 $p1,what are you saying here $p1;huh whats that $p1?;um $p1 what;i dont know $p1;um huh $p1 what??,0,0
+
 //
 // Functions
 //

@@ -77,6 +77,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eChatCommands.h"
 #include "eChatBot.h"
 
+#define HDEBUG gHelperUtility::stream()
+
 int se_lastSaidMaxEntries = 8;
 
 bool se_forceJoinTeam = false;
@@ -1842,6 +1844,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         tColoredString actualMessage(message);
         tString colorlessMessage(tColoredString::RemoveColors(message));
+        
         const int nameLength = p->GetName().Len() + 1;
 
         bool encyptedMessage = false;
@@ -1862,6 +1865,10 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
                                       << ": ";
 
             privateMessageMsgPos = colorlessMessage.StrPos(possiblePrivateMessageStr);
+
+            if (privateMessageMsgPos != -1 && !colorlessMessage.Contains(possiblePrivateMessageStr))
+                privateMessageMsgPos = -1;
+
             if (privateMessageMsgPos != -1)
             {
                 p->lastMessagedPlayer = ourPlayer;
@@ -1870,7 +1877,9 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
                 ourPlayer = localNetPlayer;
                 privateMessage = true;
-                privateMessageParams = colorlessMessage.SubStr(privateMessageMsgPos + possiblePrivateMessageStr.Len() - 1);
+                int cutPos = privateMessageMsgPos + possiblePrivateMessageStr.Len() - 1;
+
+                privateMessageParams = colorlessMessage.SubStr(cutPos);
                 break;
             }
 

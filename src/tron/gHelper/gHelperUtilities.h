@@ -419,10 +419,60 @@ public:
     }
 };
 
+class gHelperUtilityStream
+{
+public:
+    using DebugCallback = std::function<void(const std::string &)>;
+
+    gHelperUtilityStream(DebugCallback callback)
+        : debugCallback(std::move(callback)) {}
+
+    gHelperUtilityStream(gHelperUtilityStream &&other) noexcept
+        : stream(std::move(other.stream)), debugCallback(std::move(other.debugCallback)) {}
+
+    gHelperUtilityStream &operator=(gHelperUtilityStream &&other) noexcept
+    {
+        if (this != &other)
+        {
+            stream = std::move(other.stream);
+            debugCallback = std::move(other.debugCallback);
+        }
+        return *this;
+    }
+
+    gHelperUtilityStream(const gHelperUtilityStream &) = delete;
+    gHelperUtilityStream &operator=(const gHelperUtilityStream &) = delete;
+
+    template <typename T>
+    gHelperUtilityStream &operator<<(const T &data)
+    {
+        stream << data;
+        return *this;
+    }
+
+    ~gHelperUtilityStream()
+    {
+        if (debugCallback)
+        {
+            debugCallback(stream.str());
+        }
+    }
+
+private:
+    std::ostringstream stream;
+    DebugCallback debugCallback;
+};
+
 using namespace helperConfig;
 class gHelperUtility
 {
 public:
+    static gHelperUtilityStream stream()
+    {
+        return gHelperUtilityStream([](const std::string &message)
+                                     { Debug("DEBUG", message); });
+    }
+
     static void debugLine(tColor color, REAL height, REAL timeout,
                           eCoord start, eCoord end, REAL brightness = 1);
 
@@ -446,7 +496,7 @@ public:
         Debug(sender, description, std::string{}, spamProtected);
     }
 
-    static void DebugLog(const std::string &message, std::string sender = "Log Message" )
+    static void DebugLog(const std::string &message, std::string sender = "Log Message")
     {
         gDebugLoggerParams<std::string> params(false, true, false, true, "DebugLog", sender + ":", message);
         gDebugLogger::Log<std::string>(params);
@@ -465,6 +515,8 @@ public:
     static bool isClose(gCycle *owner_, eCoord pos, REAL closeFactor);
     static bool isClose(gCycle *owner_, gCycle *enemy_, REAL closeFactor);
 };
+
+#define HDEBUG gHelperUtility::stream()
 
 // See how close two directions are. The threshold represents the minimum cosine
 // of the angle between the directions for them to be considered close.

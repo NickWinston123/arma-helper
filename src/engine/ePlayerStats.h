@@ -39,10 +39,16 @@ public:
     bool in_server                  = false;
     bool seen_this_session          = false;
     bool in_game                    = false; // current team?
+    std::string nickname            = "";
+    
+    int times_banned                = 0;
+    bool banned_a_player_this_round = false;
+    int bans_given                  = 0;
 
     std::vector<std::string> chat_messages;
     std::vector<std::string> privated_stats;
     std::vector<std::string> name_history;
+
 
     // Cycle
     int kills                       = 0;
@@ -57,6 +63,7 @@ public:
     REAL fastest_speed              = 0;
     int current_kill_streak         = 0;
     int max_kill_streak             = 0;
+    bool new_max_kill_streak        = false;
     int kills_while_dead            = 0;
     bool alive                      = false;
 
@@ -439,6 +446,173 @@ public:
     }
 };
 
+class ePlayerStatsAcheivements
+{
+public:
+    enum AcheivementsTypes
+    {
+        KILLS,
+        CHATS,
+        JOINS,
+        BANS,
+    };
+
+    static bool performAction(PlayerData &stats, AcheivementsTypes type)
+    {
+        bool announced;
+
+        eChatBot &bot = eChatBot::getInstance();
+
+        if (!se_playerTriggerMessagesAcheivements ||
+            (stats.is_local && !se_playerTriggerMessagesAcheivementsLocal) ||
+            !bot.ShouldAnalyze())
+            return announced;
+
+        tString response;
+        REAL delay = 0.0;
+        tString playerName(stats.name);
+
+        switch (type)
+        {
+            case KILLS:
+                handleKills(bot, stats, playerName, response, delay);
+                break;
+            case CHATS:
+                handleChats(bot, stats, playerName, response, delay);
+                break;
+            case JOINS:
+                handleJoins(bot, stats, playerName, response, delay);
+                break;
+            case BANS:
+                handleBans(bot, stats, playerName, response, delay);
+                break;
+            default:
+                break;
+        }
+
+        if (!response.empty())
+        {
+            announced = true;
+            bot.preparePlayerMessage(response, delay, nullptr, tString(""), true);
+
+            return announced;
+        }
+        return announced;
+    }
+
+private:
+    static void handleKills(eChatBot &bot, const PlayerData &stats, tString playerName, tString &response, REAL &delay)
+    {
+        int currentKills = stats.kills;
+        int currentKillStreak = stats.current_kill_streak;
+        int maxKillStreak = stats.max_kill_streak;
+
+        if (currentKills % se_playerTriggerMessagesAcheivementsKillsChangeVal == 0)
+        {
+            if (!response.empty())
+                response << " | ";
+
+            tString trigger ("$acheivements_kills");
+            tString value;
+            value << currentKills;
+
+            auto [res, del] = getResponse(bot, playerName, trigger, value);
+            response << res;
+            delay += del;
+        }
+
+        if (currentKillStreak % se_playerTriggerMessagesAcheivementsKillStreakChangeVal == 0)
+        {
+            tString trigger ("$acheivements_current_killstreak");
+            tString value;
+            value << currentKillStreak;
+
+            auto [res, del] = getResponse(bot, playerName, trigger, value);
+            response << res;
+            delay += del;
+        }
+
+        if (maxKillStreak > 1 && maxKillStreak % se_playerTriggerMessagesAcheivementsMaxKillStreak == 0 && stats.new_max_kill_streak)
+        {
+            if (!response.empty())
+                response << " | ";
+
+            tString trigger ("$acheivements_max_killstreak");
+            tString value;
+            value << maxKillStreak;
+
+            auto [res, del] = getResponse(bot, playerName, trigger, value);
+            response << res;
+            delay += del;
+        }
+
+    }
+
+    static void handleChats(eChatBot &bot, const PlayerData &stats, tString playerName, tString &response, REAL &delay)
+    {
+        int totalChats = stats.total_messages;
+
+        if (totalChats % se_playerTriggerMessagesAcheivementsChatsChangeVal == 0)
+        {
+            tString trigger ("$acheivements_chats");
+            tString value;
+            value << totalChats;
+
+            auto [res, del] = getResponse(bot, playerName, trigger, value);
+            response << res;
+            delay += del;
+        }
+    }
+
+    static void handleJoins(eChatBot &bot, const PlayerData &stats, tString playerName, tString &response, REAL &delay)
+    {
+        int timesJoined = stats.times_joined;
+
+        if (timesJoined % se_playerTriggerMessagesAcheivementsJoinsChangeVal == 0)
+        {
+            tString trigger ("$acheivements_joins");
+            tString value;
+            value << timesJoined;
+
+            auto [res, del] = getResponse(bot, playerName, trigger, value);
+            response << res;
+            delay += del;
+        }
+    }
+
+    static void handleBans(eChatBot &bot, const PlayerData &stats, tString playerName, tString &response, REAL &delay)
+    {
+        int timesBanned = stats.times_banned;
+
+        if (timesBanned % se_playerTriggerMessagesAcheivementsBansChangeVal == 0)
+        {
+            tString trigger ("$acheivements_bans");
+            tString value;
+            value << timesBanned;
+
+            auto [res, del] = getResponse(bot, playerName, trigger, value);
+            response << res;
+            delay += del;
+        }
+    }
+
+    static std::tuple<tString, REAL> getResponse(eChatBot &bot, tString playerName, tString trigger, tString value)
+    {
+        static const tString valString = tString("$val1");
+
+        auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(nullptr, playerName, trigger, true);
+
+        if (!response.empty())
+            response = response.Replace(valString, value);
+        else
+            con << "No trigger set for '" << trigger << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+
+        return std::make_tuple(response, delay);
+    }
+    static void performAction(tString playerName, AcheivementsTypes type);
+    static void performAction(ePlayerNetID *player, AcheivementsTypes type);
+};
+
 struct CommandState
 {
     tString confirmationKey;
@@ -554,6 +728,11 @@ public:
         return defaultPlayerData;
     }
 
+    static PlayerData& getStatsForAnalysis(ePlayerNetID *player)
+    {
+        return getStatsForAnalysis(player->GetName());
+    }
+
     static void playerInit(PlayerData &stats, ePlayerNetID *player)
     {
         stats.last_seen = time(NULL);
@@ -566,10 +745,19 @@ public:
             stats.thisSession().Reset();
             stats.seen_this_session = true;
             players_record_this_session++;
+        } 
+        else 
+        {
+            stats.thisSession().last_seen = stats.last_seen;
+            stats.thisSession().human = stats.human;
+            stats.thisSession().is_local = stats.is_local;
+            stats.thisSession().in_server = stats.in_server;
         }
 
         stats.times_joined++;
         stats.in_game = player->CurrentTeam() != nullptr;
+        
+        ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::JOINS);
     }
 
     static void playerRenamed(ePlayerNetID *player)
@@ -584,7 +772,7 @@ public:
         newStats.name_history.push_back(player->lastName.stdString());
         
         newStats.thisSession().name_history.push_back(player->lastName.stdString());
-
+        oldStats.nickname = "";
         playerLeft(oldStats);
         playerInit(newStats, player);
         setColor(player);
@@ -633,7 +821,14 @@ public:
         {
             stats.max_kill_streak = stats.current_kill_streak;
             statsThisSession.max_kill_streak = std::max(statsThisSession.max_kill_streak, stats.current_kill_streak);
+            stats.new_max_kill_streak = true;
         }
+        else
+        {
+            stats.new_max_kill_streak = false;
+        }
+
+        ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::KILLS);
     }
 
     static void addDeath(ePlayerNetID *player)
@@ -697,6 +892,7 @@ public:
         }
         stats.total_messages++;
         statsThisSession.total_messages++;
+        ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::CHATS);
     }
 
     static tString deletePlayerStats(tString input)
@@ -903,16 +1099,23 @@ public:
     std::vector<PlayerData> getAllObjects() override
     {
         std::vector<PlayerData> playerDataVec;
+        time_t currentTime = time(NULL);
+        const time_t seventyTwoHoursInSeconds = 72 * 60 * 60; 
+
         for (auto& pair : ePlayerStats::GetPlayerStatsMap())
         {
             PlayerData &stats = pair.second;
-
+            
+            if (currentTime - stats.last_seen > seventyTwoHoursInSeconds)
+                stats.nickname = "";
+                
             stats.name = pair.first;
-            if (stats.rounds_played >= 1 || stats.total_spec_time >= 100 )
+            if (stats.rounds_played >= 1 || stats.total_spec_time >= 100)
                 playerDataVec.push_back(stats);
         }
         return playerDataVec;
     }
+
 
     void postLoadActions(PlayerData& playerData) override
     {

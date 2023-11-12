@@ -46,6 +46,10 @@ public:
 
     bool operator==(const tColor &other) const; //!< comparison operator
 
+    bool operator!=(const tColor &other) const {
+        return !(*this == other);
+    }
+    
     static bool VerifyColorCode(const char *c);    // Verifys it's a valid color code
     static bool VerifyColorCode(const wchar_t *c); // Verifys it's a valid color code
 

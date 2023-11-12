@@ -142,10 +142,12 @@ public:
     ColorsCommand() : eChatCommand("ColorsCommand") {}
 
     static tColoredString cycleColorPreview(REAL r, REAL g, REAL b);
+    static tColoredString cycleColorPreview(tColor rgb);
 
     static tColoredString localPlayerPreview(ePlayer *local_p);
 
     static tColoredString gatherPlayerColor(ePlayerNetID *p, bool showReset = true);
+    static tColoredString gatherPlayerColor(tString playerName, tColor rgb, tString mode = tString(""), bool showReset = true);
 
 static tString localPlayerMode(ePlayer *local_p);
     bool execute(tString args) override;

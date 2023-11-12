@@ -152,6 +152,7 @@ void ePlayerStats::updateStatsRoundStart()
         {
             stats.alive = true;
             statsThisSession.alive = true;
+            stats.banned_a_player_this_round = false;
         }
     }
 }
@@ -226,7 +227,8 @@ const std::set<std::string> PlayerData::valueMapdisplayFields =
     "match_losses", "round_wins", "round_losses", "rounds_played",
     "matches_played", "play_time", "spec_time", "times_joined",
     "kd", "chat_count", "fastest", "score", "seen", "hidden",
-    "highest_kill_streak", "kill_streak", "kills_while_dead", "name_history"
+    "highest_kill_streak", "kill_streak", "kills_while_dead", "name_history",
+    "nick", "bans", "bans_given"
 };
 
 void insertFunction(std::map<std::string, std::pair<std::string, PlayerDataBase::StatFunction>>& map,
@@ -491,6 +493,33 @@ auto initValueMap = []() {
         return result;
     });
 
+    insertFunction(tempMap,
+    {"nick", "nicknames"}, "Nickname",
+    [](PlayerDataBase *self)
+    {
+        tString result("");
+        result = tString(self->nickname);
+        return result;
+    });
+
+    insertFunction(tempMap,
+    {"bans", "times_banned"}, "Times Banned",
+    [](PlayerDataBase *self)
+    {
+        tString result("");
+        result << (self->times_banned);
+        return result;
+    });
+
+    insertFunction(tempMap,
+    {"bans_given"}, "Bans Given",
+    [](PlayerDataBase *self)
+    {
+        tString result("");
+        result << (self->bans_given);
+        return result;
+    });
+
     return tempMap;
 };
 
@@ -696,6 +725,31 @@ const std::vector<PlayerDataColumnMapping> ePlayerStatsMappings =
              }
          }},
 
+        {"nickname", "TEXT",
+        [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+        {
+            const char* nicknameCStr = stats.nickname.c_str();
+            sqlite3_bind_text(stmt, col++, nicknameCStr, -1, SQLITE_TRANSIENT);
+        },
+        [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+        {
+            const unsigned char* text = sqlite3_column_text(stmt, col++);
+            if (text != nullptr) {
+                stats.nickname = reinterpret_cast<const char*>(text);
+            }
+        }},
+
+        {"times_banned", "INTEGER",
+         [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+         { sqlite3_bind_int(stmt, col++, stats.times_banned); },
+         [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+         { stats.times_banned = sqlite3_column_int(stmt, col++); }},
+
+        {"bans_given", "INTEGER",
+         [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+         { sqlite3_bind_int(stmt, col++, stats.bans_given); },
+         [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+         { stats.bans_given = sqlite3_column_int(stmt, col++); }},
 };
 
 static void se_playerStatsConsolidate(std::istream &s)

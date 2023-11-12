@@ -366,6 +366,11 @@ bool ConsoleCommand::execute(tString args)
     return true;
 }
 
+tColoredString ColorsCommand::cycleColorPreview(tColor rgb)
+{
+    return cycleColorPreview(rgb.r_, rgb.g_, rgb.b_);
+}
+
 tColoredString ColorsCommand::cycleColorPreview(REAL r, REAL g, REAL b)
 {
     r /= 15.0;
@@ -443,31 +448,42 @@ tColoredString ColorsCommand::localPlayerPreview(ePlayer *local_p)
     return output;
 }
 
-tColoredString ColorsCommand::gatherPlayerColor(ePlayerNetID *p, bool showReset)
+tColoredString ColorsCommand::gatherPlayerColor(tString playerName, tColor rgb, tString mode, bool showReset)
 {
     tColoredString listColors, cyclePreview;
 
     if (showReset)
-        listColors << p->GetColoredName() << tThemedTextBase.MainColor() << " (";
+        listColors << playerName << tThemedTextBase.MainColor() << " (";
     else
-        listColors << p->GetColoredName().StripWhitespace() << tThemedTextBase.MainColor() << " (";
+        listColors << playerName.StripWhitespace() << tThemedTextBase.MainColor() << " (";
 
-    listColors << tThemedTextBase.ItemColor() << p->r << tThemedTextBase.MainColor() << ", "
-               << tThemedTextBase.ItemColor() << p->g << tThemedTextBase.MainColor() << ", "
-               << tThemedTextBase.ItemColor() << p->b << tThemedTextBase.MainColor() << ") "
-               << cycleColorPreview(p->r, p->g, p->b);
+    listColors << tThemedTextBase.ItemColor() << rgb.r_ << tThemedTextBase.MainColor() << ", "
+               << tThemedTextBase.ItemColor() << rgb.g_ << tThemedTextBase.MainColor() << ", "
+               << tThemedTextBase.ItemColor() << rgb.b_ << tThemedTextBase.MainColor() << ") "
+               << cycleColorPreview(rgb);
 
-    if (p->isLocal())
+    if (!mode.empty())
     {
-        ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
         listColors << " (mode: "
                    << tThemedTextBase.ItemColor()
-                   << localPlayerMode(local_p)
+                   << mode
                    << tThemedTextBase.MainColor()
                    << ") ";
 }
 
     return listColors;
+}
+
+tColoredString ColorsCommand::gatherPlayerColor(ePlayerNetID *p, bool showReset)
+{
+    tString mode;
+    if (p->isLocal())
+    {
+        ePlayer *local_p = ePlayer::NetToLocalPlayer(p);
+        mode = localPlayerMode(local_p);
+    }
+
+    return gatherPlayerColor(p->GetColoredName(), tColor(p->r,p->g,p->b), mode, showReset);
 }
 
 bool ColorsCommand::execute(tString args)
@@ -724,9 +740,12 @@ bool RgbCommand::execute(tString args)
 {
     ePlayer *local_p = player;
     ePlayerNetID *targetPlayer = netPlayer;
+    tColor oldColor;
+    tString oldMode;
+
     if (!local_p)
         return false;
-
+    
     if (args.empty())
     {
         con << CommandLabel()
@@ -761,6 +780,9 @@ bool RgbCommand::execute(tString args)
             targetPlayer = nullptr;
             removeSecondElement = true;
         }
+
+        oldColor = tColor(local_p->rgb[0], local_p->rgb[1], local_p->rgb[2]);
+        oldMode = ColorsCommand::localPlayerMode(local_p);
 
         command = commandArgs[0];
 
@@ -1009,23 +1031,44 @@ bool RgbCommand::execute(tString args)
         // If the correct parameters are passed, display the changes.
         if (correctParameters)
         {
+            tColor currentColor(local_p->rgb[0], local_p->rgb[1], local_p->rgb[2]);
+            bool colorChanged = oldColor != currentColor;
+
             con << CommandLabel()
                 << tOutput("$player_colors_current_text");
 
             tString listColors;
             listColors << local_p->ID() + 1 << ") ";
 
+
             if (targetPlayer != nullptr)
             {
                 ePlayerNetID::ForcedUpdate();
+                if (colorChanged)
+                {
+                    tColoredString oldColoredName;
+                    oldColoredName << tColoredString::ColorString(oldColor.r_/15, oldColor.g_/15, oldColor.b_/15) << targetPlayer->GetName();
+
+                    listColors << ColorsCommand::gatherPlayerColor(oldColoredName, oldColor, oldMode)
+                               << "--> ";
+                }
                 listColors << ColorsCommand::gatherPlayerColor(targetPlayer);
             }
             else
-                listColors << ColorsCommand::localPlayerPreview(local_p);
+            {
+                if (colorChanged)
+                {
+                    tColoredString oldColoredName;
+                    oldColoredName << tColoredString::ColorString(local_p->rgb[0]/15,local_p->rgb[1]/15, local_p->rgb[2]/15) << local_p->Name();
 
+                    listColors << ColorsCommand::gatherPlayerColor(oldColoredName, oldColor, oldMode)
+                               << "--> ";
+                }
+                listColors << ColorsCommand::localPlayerPreview(local_p);
+            }
             con << listColors << "\n";
         }
-        else // display the error message.
+        else // incorrect params, error
             con << CommandLabel()
                 << ErrorColor()
                 << tOutput("$player_colors_changed_usage_error");
@@ -1270,8 +1313,12 @@ bool JoinCommand::execute(tString args)
     }
 
     if (unspectate)
+    {
         player->spectate = false;
-
+        if (!netPlayer)
+            con << CommandLabel()
+                << "No longer spectating...\n";
+    }
     if (netPlayer && !bool(netPlayer->CurrentTeam()))
     {
         con << CommandLabel()

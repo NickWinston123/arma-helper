@@ -108,7 +108,7 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperShowTailPassthroughConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_PASSTHROUGH", sg_helperShowTailPassthrough);
     REAL sg_helperShowTailTimeout = 1;
     static tConfItem<REAL> sg_helperShowTailTimeoutConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TIMEOUT", sg_helperShowTailTimeout);
-
+  
     bool sg_helperShowTailTracer = false;
     static tConfItem<bool> sg_helperShowTailTracerConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER", sg_helperShowTailTracer);
     REAL sg_helperShowTailTracerHeight = 1;
@@ -119,6 +119,8 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperShowTailTracerTimeoutMultConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER_TIMEOUT_MULT", sg_helperShowTailTracerTimeoutMult);
     REAL sg_helperShowTailTracerDistanceMult = .5;
     static tConfItem<REAL> sg_helperShowTailTracerDistanceMultConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER_DISTANCE_MULT", sg_helperShowTailTracerDistanceMult);
+    REAL sg_helperShowTailTracerExtrapolateDist = 0;
+    static tConfItem<REAL> sg_helperShowTailTracerExtrapolateDistConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER_EXTRAPOLATE_DISTANCE", sg_helperShowTailTracerExtrapolateDist);
 
     bool sg_helperShowHit = false;
     static tConfItem<bool> sg_helperShowHitConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT", sg_helperShowHit);
@@ -561,6 +563,11 @@ void gHelper::enemyTracers(gHelperData &data)
     }
 }
 
+eCoord extrapolate(const eCoord &currentPos, const eCoord &direction, REAL distance) {
+    eCoord normalizedDirection = direction.GetNormalized();
+    return currentPos + normalizedDirection * distance;
+}
+
 /**
  * gHelper::showTail
  *
@@ -577,7 +584,7 @@ void gHelper::showTail(gHelperData &data)
 {
     if (!aliveCheck() || owner_.tailMoving != true)
         return;
-
+        
     REAL timeout = sg_helperShowTailTimeout * data.ownerData.speedFactorF();
 
     if (canSeeTarget((tailPos), sg_helperShowTailPassthrough))
@@ -663,10 +670,12 @@ void gHelper::showTailTracer(gHelperData &data)
 
     REAL timeout;
 
-
+    // extrapolating the tail position
+    eCoord tailPosMoved = extrapolate(tailPos, owner_.tailDir, sg_helperShowTailTracerExtrapolateDist);
+    
     if (sg_helperShowTailTracerDistanceMult > 0)
     {
-        REAL distanceToTail = eCoord::F(ownerDir, (tailPos) - (ownerPos));
+        REAL distanceToTail = eCoord::F(ownerDir, (tailPosMoved) - (ownerPos));
         timeout = distanceToTail * sg_helperShowTailTracerDistanceMult;
         timeout *= data.ownerData.speedFactorF();
     }
@@ -678,6 +687,7 @@ void gHelper::showTailTracer(gHelperData &data)
     // draws a debug line at the tail position with a specified height, color, and timeout
     gHelperUtility::debugLine(tColor(1, 1, 1), sg_helperShowTailTracerHeight, timeout, tailPos, tailPos, sg_helperShowTailTracerBrightness);
 }
+
 
 // Function: findCorners
 // Purpose: Finds the corners on the left and right of the vehicle.

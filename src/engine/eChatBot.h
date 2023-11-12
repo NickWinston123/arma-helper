@@ -11,11 +11,19 @@
 #include "sqlite3.h"
 #include "tDatabase.h"
 
-extern bool se_playerTriggerMessagesReactToSelf;
-extern tString se_playerTriggerMessagesFile;
-extern tString se_playerTriggerMessagesIgnoreList;
-
 extern bool se_playerTriggerMessages;
+extern bool se_playerTriggerMessagesReactToSelf;
+
+extern tString se_playerTriggerMessagesFile;
+
+extern bool se_playerTriggerMessagesAcheivements;
+extern bool se_playerTriggerMessagesAcheivementsLocal;
+extern int se_playerTriggerMessagesAcheivementsKillsChangeVal;
+extern int se_playerTriggerMessagesAcheivementsKillStreakChangeVal;
+extern int se_playerTriggerMessagesAcheivementsMaxKillStreak;
+extern int se_playerTriggerMessagesAcheivementsChatsChangeVal;
+extern int se_playerTriggerMessagesAcheivementsJoinsChangeVal;
+extern int se_playerTriggerMessagesAcheivementsBansChangeVal;
 
 struct eChatBotStats;
 
@@ -153,6 +161,7 @@ public:
 
     bool masterFuncResponse = false;
     std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString chatMessage, bool eventTrigger);
+    std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString triggeredByPlayerName, tString chatMessage, bool eventTrigger);
     static bool InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger = false, tString preAppend = tString(""));
     void preparePlayerMessage(tString messageToSend, REAL extraDelay, ePlayerNetID *player, tString preAppend = tString(""), bool eventTrigger = true);
     REAL determineReadingDelay(tString message);

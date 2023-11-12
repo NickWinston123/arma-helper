@@ -138,6 +138,7 @@ namespace helperConfig
     extern REAL sg_helperShowTailHeight;
     extern REAL sg_helperShowTailPassthrough;
     extern REAL sg_helperShowTailTimeout;
+    extern REAL sg_helperShowTailTracerExtrapolateDist;
 
     extern bool sg_helperShowEnemyTail;
     extern REAL sg_helperShowEnemyTailHeight;

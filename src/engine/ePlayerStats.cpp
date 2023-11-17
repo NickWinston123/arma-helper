@@ -28,6 +28,9 @@ static tConfItem<bool> se_playerMessageTriggersStatsSaveConf("PLAYER_MESSAGE_TRI
 bool se_playerStatsLocalForcedName = false;
 static tConfItem<bool> se_playerStatsLocalForcedNameConf("PLAYER_STATS_LOCAL_FORCED_NAME", se_playerStatsLocalForcedName);
 
+REAL se_playerStatsRageQuitTime = 3;
+static tConfItem<REAL> se_playerStatsRageQuitTimeConf("PLAYER_STATS_RAGE_QUIT_TIME", se_playerStatsRageQuitTime);
+
 int ePlayerStats::players_record_this_session = 0;
 
 void ePlayerStats::loadStatsFromDB()
@@ -520,6 +523,24 @@ auto initValueMap = []() {
         return result;
     });
 
+    insertFunction(tempMap,
+    {"rage_quits","rage","rq"}, "Rage Quits",
+    [](PlayerDataBase *self)
+    {
+        tString result("");
+        result << (self->rage_quits);
+        return result;
+    });
+
+    insertFunction(tempMap,
+    {"ah","acheivements"}, "Acheivement History",
+    [](PlayerDataBase *self)
+    {
+        tString result("");
+        result << (self->getAcheivmentsString());
+        return result;
+    });
+
     return tempMap;
 };
 
@@ -750,6 +771,27 @@ const std::vector<PlayerDataColumnMapping> ePlayerStatsMappings =
          { sqlite3_bind_int(stmt, col++, stats.bans_given); },
          [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
          { stats.bans_given = sqlite3_column_int(stmt, col++); }},
+
+        {"rage_quits", "INTEGER",
+         [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+         { sqlite3_bind_int(stmt, col++, stats.rage_quits); },
+         [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+         { stats.rage_quits = sqlite3_column_int(stmt, col++); }},
+
+        {"acheivement_history", "TEXT",
+         [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+         {
+             std::string serializedData = serializeVector(stats.acheivement_history);
+             sqlite3_bind_text(stmt, col++, serializedData.c_str(), -1, SQLITE_TRANSIENT);
+         },
+         [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+         {
+             const char *acheivementHistorySerialized = reinterpret_cast<const char *>(sqlite3_column_text(stmt, col++));
+             if (acheivementHistorySerialized)
+             {
+                 stats.acheivement_history = deserializeVector(acheivementHistorySerialized);
+             }
+         }},
 };
 
 static void se_playerStatsConsolidate(std::istream &s)

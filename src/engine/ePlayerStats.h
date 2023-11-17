@@ -23,6 +23,8 @@ std::string join(const std::vector<std::string> &vec, const std::string &delimit
 
 extern bool se_playerStatsLocalForcedName;
 
+extern REAL  se_playerStatsRageQuitTime;
+
 class PlayerDataBase
 {
 public:
@@ -44,10 +46,12 @@ public:
     int times_banned                = 0;
     bool banned_a_player_this_round = false;
     int bans_given                  = 0;
+    int rage_quits                  = 0;
 
     std::vector<std::string> chat_messages;
     std::vector<std::string> privated_stats;
     std::vector<std::string> name_history;
+    std::vector<std::string> acheivement_history;
 
 
     // Cycle
@@ -90,6 +94,7 @@ public:
         chat_messages.clear();
         privated_stats.clear();
         name_history.clear();
+        acheivement_history.clear();
 
         // Cycle
         kills = 0;
@@ -191,6 +196,24 @@ public:
         bool first = true;
 
         for (auto messageIt = chat_messages.rbegin(); messageIt != chat_messages.rend(); ++messageIt)
+        {
+            if (!first)
+                messages << ", ";
+            else
+                first = false;
+
+            messages << *messageIt;
+        }
+
+        return messages;
+    }
+
+    tString getAcheivmentsString()
+    {
+        tString messages;
+        bool first = true;
+
+        for (auto messageIt = acheivement_history.rbegin(); messageIt != acheivement_history.rend(); ++messageIt)
         {
             if (!first)
                 messages << ", ";
@@ -459,46 +482,43 @@ public:
 
     static bool performAction(PlayerData &stats, AcheivementsTypes type)
     {
-        bool announced;
-
-        eChatBot &bot = eChatBot::getInstance();
-
-        if (!se_playerTriggerMessagesAcheivements ||
-            (stats.is_local && !se_playerTriggerMessagesAcheivementsLocal) ||
-            !bot.ShouldAnalyze())
-            return announced;
+        bool stored;
 
         tString response;
         REAL delay = 0.0;
         tString playerName(stats.name);
+        eChatBot &bot = eChatBot::getInstance();
 
         switch (type)
         {
-            case KILLS:
-                handleKills(bot, stats, playerName, response, delay);
-                break;
-            case CHATS:
-                handleChats(bot, stats, playerName, response, delay);
-                break;
-            case JOINS:
-                handleJoins(bot, stats, playerName, response, delay);
-                break;
-            case BANS:
-                handleBans(bot, stats, playerName, response, delay);
-                break;
-            default:
-                break;
+        case KILLS:
+            handleKills(bot, stats, playerName, response, delay);
+            break;
+        case CHATS:
+            handleChats(bot, stats, playerName, response, delay);
+            break;
+        case JOINS:
+            handleJoins(bot, stats, playerName, response, delay);
+            break;
+        case BANS:
+            handleBans(bot, stats, playerName, response, delay);
+            break;
+        default:
+            break;
         }
 
         if (!response.empty())
         {
-            announced = true;
-            bot.SetParams(response, delay, nullptr, tString(""), true);
-            bot.preparePlayerMessage();
+            stats.acheivement_history.push_back(response.stdString());
+            stored = true;
 
-            return announced;
+            if ((se_playerTriggerMessages && se_playerTriggerMessagesAcheivements) && (!stats.is_local || se_playerTriggerMessagesAcheivementsLocal))
+            {
+                bot.SetOutputParams(response, delay);
+                bot.SendMessage();
+            }
         }
-        return announced;
+        return stored;
     }
 
 private:
@@ -510,13 +530,15 @@ private:
 
         if (currentKills % se_playerTriggerMessagesAcheivementsKillsChangeVal == 0)
         {
-            tString trigger ("$acheivements_kills");
             tString value;
+            tString trigger ("$acheivements_kills");
+            
             value << currentKills;
 
-            auto [res, del] = getResponse(bot, playerName, trigger, value);
-            response << res;
-            delay += del;
+            findResponse(bot, playerName, trigger, value);
+            
+            delay    += bot.Params().delay;
+            response << bot.Params().response;
         }
 
         if (currentKillStreak % se_playerTriggerMessagesAcheivementsKillStreakChangeVal == 0)
@@ -524,13 +546,15 @@ private:
             if (!response.empty())
                 response << " | ";
 
-            tString trigger ("$acheivements_current_killstreak");
             tString value;
+            tString trigger ("$acheivements_current_killstreak");
+            
             value << currentKillStreak;
 
-            auto [res, del] = getResponse(bot, playerName, trigger, value);
-            response << res;
-            delay += del;
+            findResponse(bot, playerName, trigger, value);
+            
+            delay    += bot.Params().delay;
+            response << bot.Params().response;
         }
 
         if (maxKillStreak > 1 && maxKillStreak % se_playerTriggerMessagesAcheivementsMaxKillStreak == 0 && stats.new_max_kill_streak)
@@ -538,13 +562,15 @@ private:
             if (!response.empty())
                 response << " | ";
 
-            tString trigger ("$acheivements_max_killstreak");
             tString value;
+            tString trigger ("$acheivements_max_killstreak");
+            
             value << maxKillStreak;
 
-            auto [res, del] = getResponse(bot, playerName, trigger, value);
-            response << res;
-            delay += del;
+            findResponse(bot, playerName, trigger, value);
+            
+            delay    += bot.Params().delay;
+            response << bot.Params().response;
         }
 
     }
@@ -555,13 +581,15 @@ private:
 
         if (totalChats % se_playerTriggerMessagesAcheivementsChatsChangeVal == 0)
         {
-            tString trigger ("$acheivements_chats");
             tString value;
+            tString trigger ("$acheivements_chats");
+            
             value << totalChats;
 
-            auto [res, del] = getResponse(bot, playerName, trigger, value);
-            response << res;
-            delay += del;
+            findResponse(bot, playerName, trigger, value);
+            
+            delay    += bot.Params().delay;
+            response << bot.Params().response;
         }
     }
 
@@ -571,13 +599,15 @@ private:
 
         if (timesJoined % se_playerTriggerMessagesAcheivementsJoinsChangeVal == 0)
         {
-            tString trigger ("$acheivements_joins");
             tString value;
+            tString trigger ("$acheivements_joins");
+            
             value << timesJoined;
 
-            auto [res, del] = getResponse(bot, playerName, trigger, value);
-            response << res;
-            delay += del;
+            findResponse(bot, playerName, trigger, value);
+            
+            delay    += bot.Params().delay;
+            response << bot.Params().response;
         }
     }
 
@@ -587,31 +617,33 @@ private:
 
         if (timesBanned % se_playerTriggerMessagesAcheivementsBansChangeVal == 0)
         {
-            tString trigger ("$acheivements_bans");
             tString value;
+            tString trigger ("$acheivements_bans");
+            
             value << timesBanned;
 
-            auto [res, del] = getResponse(bot, playerName, trigger, value);
-            response << res;
-            delay += del;
+            findResponse(bot, playerName, trigger, value);
+            
+            delay    += bot.Params().delay;
+            response << bot.Params().response;
         }
     }
 
-    static std::tuple<tString, REAL> getResponse(eChatBot &bot, tString playerName, tString trigger, tString value)
+    static void findResponse(eChatBot &bot, tString playerName, tString trigger, tString value)
     {
-        static const tString valString = tString("$val1");
+        static const tString valDelim = tString("$val1");
 
-        auto [response, delay, sendingPlayer] = bot.findTriggeredResponse(nullptr, playerName, trigger, true);
+        bot.ResetParams();
+        bot.Params().triggeredByName = playerName;
+        bot.SetInputParams(nullptr, trigger, true);
+        bot.FindTriggeredResponse();
 
-        if (!response.empty())
-            response = response.Replace(valString, value);
+        if (!bot.Params().response.empty())
+            bot.Params().response = bot.Params().response.Replace(valDelim, value);
         else
             con << "No trigger set for '" << trigger << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
 
-        return std::make_tuple(response, delay);
     }
-    static void performAction(tString playerName, AcheivementsTypes type);
-    static void performAction(ePlayerNetID *player, AcheivementsTypes type);
 };
 
 struct CommandState
@@ -773,7 +805,6 @@ public:
         newStats.name_history.push_back(player->lastName.stdString());
         
         newStats.thisSession().name_history.push_back(player->lastName.stdString());
-        oldStats.nickname = "";
         playerLeft(oldStats);
         playerInit(newStats, player);
         setColor(player);
@@ -790,6 +821,26 @@ public:
     {
         PlayerData &stats = getStats(player);
         playerLeft(stats);
+
+        gCycle *cycle = player->NetPlayerToCycle();
+
+        if (cycle && ((tSysTimeFloat() - cycle->lastDeathTime) < se_playerStatsRageQuitTime))
+        {
+            stats.rage_quits++;         
+                
+
+            if (se_playerTriggerMessages && se_playerTriggerMessagesRageQuits)
+            {
+                eChatBot &bot = eChatBot::getInstance();
+                bot.ResetParams();
+                bot.Params().triggeredByName = (stats.name.empty() ? player->GetName() : stats.name);
+                bot.SetInputParams(nullptr, tString("$ragequit"), true);
+                bot.FindTriggeredResponse();
+                bot.SendMessage();
+            }
+            
+   
+        }
     }
 
     static void playerLeft(PlayerData &stats)
@@ -836,7 +887,7 @@ public:
     {
         PlayerData &stats = getStats(player);
         PlayerDataBase &statsThisSession = stats.thisSession();
-
+        
         stats.deaths++;
         statsThisSession.deaths++;
 

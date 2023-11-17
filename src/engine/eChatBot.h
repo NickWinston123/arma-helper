@@ -12,10 +12,12 @@
 #include "tDatabase.h"
 
 extern bool se_playerTriggerMessages;
+extern tString se_playerTriggerMessagesFile;
+
 extern bool se_playerTriggerMessagesReactToSelf;
 extern bool se_playerTriggerMessagesResendSilencedMessages;
 
-extern tString se_playerTriggerMessagesFile;
+extern bool se_playerTriggerMessagesRageQuits;
 
 extern bool se_playerTriggerMessagesAcheivements;
 extern bool se_playerTriggerMessagesAcheivementsLocal;
@@ -27,15 +29,18 @@ extern int se_playerTriggerMessagesAcheivementsJoinsChangeVal;
 extern int se_playerTriggerMessagesAcheivementsBansChangeVal;
 
 struct eChatBotStats;
+class eChatBotData;
 
-struct eChatBotStatsBase
+
+enum ResponseType
 {
-    enum ResponseType
-    {
-        NORMAL,
-        FUNC,
-        SYM_FUNC,
-    };
+    NORMAL,
+    FUNC,
+    SYM_FUNC,
+};
+
+struct eChatBotDataBase
+{
 
     struct MessagePart
     {
@@ -49,48 +54,55 @@ struct eChatBotStatsBase
                        response(tString("")), preAppend(tString("")),
                        eventTrigger(false), currentPartIndex(0) {}
 
-        // PARAMS
-        REAL delay;
-        tString response;
-        tString preAppend;
-        bool eventTrigger;
+        // INPUT PARAMS
+        tString      preAppend;
+        tString      inputMessage;
+        tString      triggeredByName;
+        bool         eventTrigger;
+        ePlayerNetID *triggeredBy;
+
+        //OUTPUT PARAMS
+        REAL         delay;
+        tString      response;
+        tString      matchedTrigger;
+        ResponseType triggerType;
         ePlayerNetID *sendingPlayer;
+
+        bool validateOutput = true;
 
         // SCHEDULED
         int currentPartIndex = 0;
         std::vector<MessagePart> parts;
 
-        //DATA
-        tString matchedTrigger;
-        ePlayerNetID *triggeredBy;
-        ResponseType triggerType;
-
+        // OTHER
+        
+        bool abortOutput                          = false;
         bool pentalized_for_last_message          = false;
         bool pentalized_for_last_message_prefix   = false;
     };
 
-    // DATA
-    ActionData data;
 
-    // DATABASE
-    tString name            = tString("hackermans"); // Primary key
-    int total_messages_read = 0;
-    int total_messages_sent = 0;
-    int times_banned        = 0;
-    int times_banned_today  = 0;
-    time_t last_banned      = 0;
-    REAL total_up_time      = 0;
+    // DATABASE STATS
+    struct eChatBotStatsBase
+    {
+        tString name            = tString("hackermans"); // Primary key
+        int total_messages_read = 0;
+        int total_messages_sent = 0;
+        int times_banned        = 0;
+        int times_banned_today  = 0;
+        time_t last_banned      = 0;
+        REAL total_up_time      = 0;
+    };
+
 };
 
 using ChatBotColumnMapping = ColumnMapping<eChatBotStats>;
-class eChatBotStats : public eChatBotStatsBase
+
+class eChatBotStats : public eChatBotDataBase::eChatBotStatsBase
 {
 public:
+
     static const std::vector<ChatBotColumnMapping> eChatBotStatsMappings;
-
-    static void loadChatBotStatsFromDB(sqlite3* db);
-    static void saveChatBotStatsToDB(sqlite3* db);
-
     REAL upTime(bool current = true)
     {
         return current ? tSysTimeFloat() : total_up_time + tSysTimeFloat();
@@ -107,6 +119,14 @@ public:
     }
 
     eChatBotStatsBase data_from_db;
+};
+
+
+class eChatBotData : public eChatBotDataBase
+{
+public:
+    eChatBotStats stats;
+    ActionData    params;
 };
 
 class eChatBot
@@ -126,7 +146,8 @@ public:
     std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
     std::vector<tString> chatTriggerKeys;
 
-    eChatBotStats stats;
+    eChatBotData data;
+
     TempConfItemManager *chatBotCommandConfItems;
 
     // instance
@@ -159,9 +180,14 @@ public:
         return tString("");
     }
 
-    eChatBotStats& Stats()
+    eChatBotStats &Stats()
     {
-        return stats;
+        return data.stats;
+    }
+
+    eChatBotData::ActionData &Params()
+    {
+        return data.params;
     }
 
     void roundEndAnalyzeBanStatus()
@@ -191,21 +217,27 @@ public:
         }
     }
 
+    void SetInputParams(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger, tString preAppend = tString(""));
+    void SetOutputParams(tString &response, REAL &delay, ePlayerNetID *sendingPlayer = nullptr);
 
-    bool masterFuncResponse = false;
-    std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString chatMessage, bool eventTrigger);
-    std::tuple<tString, REAL, ePlayerNetID *> findTriggeredResponse(ePlayerNetID *triggeredByPlayer, tString triggeredByPlayerName, tString chatMessage, bool eventTrigger);
-    static bool InitiateAction(ePlayerNetID *triggeredByPlayer, tString message, bool eventTrigger = false, tString preAppend = tString(""));
+    void ResetParams();
 
-    void SetParams(tString &response, REAL &delay, ePlayerNetID *sendingPlayer, tString preAppend, bool eventTrigger);
+    static bool InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger = false, tString preAppend = tString(""));
+    
+    bool ShouldAnalyze();
+    
+    void FindTriggeredResponse();
 
-    bool preparePlayerMessage();
+    bool SendMessage();
+    
+    bool ResendMessage();
+
     static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
 
     REAL determineReadingDelay(tString message);
     REAL calculateResponseSmartDelay(tString response, REAL wpm);
-    bool ShouldAnalyze();
-    bool ResendMessage();
+
+
 };
 
 #include "tDatabase.h"

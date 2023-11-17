@@ -89,12 +89,14 @@ bool gHelperUtility::isClose(gCycle *owner_, gCycle *enemy_, REAL closeFactor)
     return isClose(owner_, enemy_->Position(), closeFactor);
 }
 
-gHelperSensors::gHelperSensors(std::shared_ptr<gHelperSensor> front_, std::shared_ptr<gHelperSensor> left_, std::shared_ptr<gHelperSensor> right_) : front(front_), left(left_), right(right_) {}
+gHelperSensors::gHelperSensors(std::shared_ptr<gHelperSensor> front_, std::shared_ptr<gHelperSensor> left_, std::shared_ptr<gHelperSensor> right_) :
+    front(front_), left(left_), right(right_) {}
 
-gHelperSensorsData::gHelperSensorsData(gCycle *owner) : owner_(owner),
-                                                        front_stored(std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction())),
-                                                        left_stored(std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(LEFT)))),
-                                                        right_stored(std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(RIGHT))))
+gHelperSensorsData::gHelperSensorsData(gCycle *owner) :
+    owner_(owner),
+    front_stored(std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction())),
+    left_stored(std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(LEFT)))),
+    right_stored(std::make_shared<gHelperSensor>(owner_, owner_->Position(), owner_->Direction().Turn(eCoord(RIGHT))))
 {
 }
 

@@ -9,17 +9,20 @@ $$,$masterfunc,-9999,0
 !estat;$estat;!es;$es,$exactstatfunc,-9999,0
 !names;$names,$exactstatfunc(name_history),-999,0
 !pt;$pt;$playt;!playt,$exactstatfunc(play_time),-999,0
-!cks;$cks;!ks;$ks;$killsteak;!kills;!killsteak;$kills,$leaderboardfunc(kill_streak),-999,0
+!cks;$cks;!ks;$ks;$killsteak;!killsteak;$leaderboardfunc(kill_streak),-999,0
 !lhks;$lhks;!lmks;$lmks,$leaderboardfunc(max_kill_streak),-999,0
 !hks;$hks;!mks;$mks;$maxkillsteak;!maxkills;!maxkillsteak;$maxkills,$exactstatfunc(max_kill_streak),-999,0
 !dice;$dice;!ro;$ro;!roll;$roll,1;2;3;4;5;6;7;8;9;10,0,0
 !flip;$flip,heads;tails,0,0
 $lbans;!lbans,$leaderboardfunc(bans),-9999,0
+!kills;$kills,$exactstatfunc(kills),-999,0
 !leaderboard;!lb;$lb;$leaderboard,$leaderboardfunc,-9999,0
 !kdnow;$kdnow;!kdn;$kdn,$KDfunc(now),-9999,0
 !kd;$kd,$KDfunc(total),-9999,0
 !nicknames;$nicknames;!nicks;$nicks,$leaderboardfunc(nick),-9999,0
 !nick;$nick,$nicknamefunc,-9999,0
+!rqs;$rqs,$leaderboardfunc(rq),-999,0
+!rq;$rq,$exactstatfunc(rq),-999,0
 !rev;$rev,$revfunc,-9999,0
 $bans;!bans,$exactstatfunc(bans),-9999,0
 !lls;$lls;!lseen;$lseen,$leaderboardfunc(seen),-999,0
@@ -43,6 +46,10 @@ $show;!show,$hidestatfunc(unprivate),-999,0
 !hn;!hidden;$hn;$hidden,$exactstatfunc(hide),-999,0
 $pr;!pr;!hide;$hide;$h ;!h ,$hidestatfunc(private),-999,0
 !uh;$uh;!upr;$upr;!unhide;$unhide,$hidestatfunc(unprivate),-999,0
+$rebuild,$unvalidatedsayfunc(/rebuild),-999,0
+$me,$unvalidatedsayfunc(/me),-999,0
+$ah;!ah,$exactstatfunc(ah),-999,0
+
 $,$sayfunc,-9999,0
 >,$sayoutloudfunc,-999,0
 
@@ -65,7 +72,7 @@ $diedother,gg,0,1
 $leftspec,welcome to the grid $p1;its time $p1;lets get it $p1,0,1
 $enterspec,the grid needs you $p1;come back $p1;noo come back $p1;$p1 where did you go?;where did $p1 go;where did you go $p1,0,1
 #$statssaved,Stats saved..,-999,1
-
+$ragequit,+1 rq for $p1,-9999,0
 //
 // Functions
 //

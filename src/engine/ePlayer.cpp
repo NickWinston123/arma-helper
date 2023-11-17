@@ -5131,11 +5131,11 @@ bool ePlayerNetID::canChat()
     return nextSpeakTime <= tSysTimeFloat();
 }
 
-bool ePlayerNetID::canChatCommonPrefix(tString &message)
+bool ePlayerNetID::canChatCommonPrefix(tString message)
 {
     // gHelperUtility::stream() << "COMPARING " << nextSpeakTimePrefix << " vs " << tSysTimeFloat() << "\n";
     // gHelperUtility::stream() << "canChatCommonPrefix: " << (nextSpeakTime <= tSysTimeFloat()) << "\n";
-    return nextSpeakTimePrefix <= tSysTimeFloat() || !message.Contains(nextSpeakTimePrefixCommonPrefix);
+    return nextSpeakTimePrefix <= tSysTimeFloat() || !message.StartsWith(nextSpeakTimePrefixCommonPrefix);
 }
 
 bool ePlayerNetID::canChatWithMsg(tString message)
@@ -5200,14 +5200,35 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
 
     if (sg_playerSpamProtectionWatch)
     {
-        bool canChat = ePlayerNetID::canChatWithMsg(s_orig);
+
+        bool ableToChat = canChat();
+        bool ableToChatCommonPrefix = canChatCommonPrefix(s_orig);
+
+        bool canChat = (ableToChat && ableToChatCommonPrefix);
+        
+        if (!ableToChatCommonPrefix)
+        {
+            con << "You can not use the common prefix '"
+                << nextSpeakTimePrefixCommonPrefix
+                << "' for "
+                << nextSpeakTimePrefix - tSysTimeFloat()
+                << " seconds. Do not use this prefix!\n";
+        }
+        else if (!ableToChat)
+        {
+            con << "You are silenced for "
+                << nextSpeakTime - tSysTimeFloat()
+                << " seconds. Do not try to chat!\n";
+        }
 
         if (se_playerTriggerMessages && chatBotMessage)
         {
             eChatBot &bot = eChatBot::getInstance();
-            bool pentalized = bot.Stats().data.pentalized_for_last_message = !canChat;
 
-            if (se_playerTriggerMessagesResendSilencedMessages && pentalized)
+            bot.Params().pentalized_for_last_message = !ableToChat;
+            bot.Params().pentalized_for_last_message_prefix = !ableToChatCommonPrefix;
+
+            if (se_playerTriggerMessagesResendSilencedMessages && !canChat)
                 bot.ResendMessage();
         }
 
@@ -7089,24 +7110,27 @@ static void player_removed_from_game_handler(nMessage &m)
     ePlayerNetID *p = dynamic_cast<ePlayerNetID *>(nNetObject::ObjectDangerous(id));
     if (p && sn_GetNetState() != nSERVER)
     {
-        if (se_playerTriggerMessages && se_playerMessageLeave && !p->departedByChatBot)
+        if (!p->removedFromGame)
         {
-            eChatBot::InitiateAction(nullptr, tString( p->IsHuman() ? "$left" : "$leftbot" ), true);
-            p->departedByChatBot = true;
-        }
-
-        if (se_playerStats)
-            ePlayerStats::playerLeft(p);
-
-        if (se_avoidPlayerWatch)
-        {
-            if (tIsInList(se_avoidPlayerWatchList,p->GetName()))
+            if (se_playerTriggerMessages && se_playerMessageLeave && !p->departedByChatBot)
             {
-                se_avoidPlayerWatchDisable = false;
-                ePlayerNetID::CompleteRebuild();
+                eChatBot::InitiateAction(nullptr, tString( p->IsHuman() ? "$left" : "$leftbot" ), true);
+                p->departedByChatBot = true;
             }
-        }
 
+            if (se_playerStats)
+                ePlayerStats::playerLeft(p);
+
+            if (se_avoidPlayerWatch)
+            {
+                if (tIsInList(se_avoidPlayerWatchList,p->GetName()))
+                {
+                    se_avoidPlayerWatchDisable = false;
+                    ePlayerNetID::CompleteRebuild();
+                }
+            }
+            p->removedFromGame = true;
+        }
         p->RemoveFromGame();
     }
 }

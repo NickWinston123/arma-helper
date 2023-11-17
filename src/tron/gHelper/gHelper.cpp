@@ -52,8 +52,6 @@ namespace helperConfig
     static tConfItem<bool> sg_helperDebugSpamFilterConf = HelperCommand::tConfItem("HELPER_DEBUG_SPAM_FILTER", sg_helperDebugSpamFilter);
     tString sg_helperDebugIgnoreList("");
     static tConfItem<tString> sg_helperDebugIgnoreListConf = HelperCommand::tConfItem("HELPER_DEBUG_IGNORE_LIST", sg_helperDebugIgnoreList);
-    REAL sg_helperDebugDelay = 0.15;
-    static tConfItem<REAL> sg_helperDebugDelayConf = HelperCommand::tConfItem("HELPER_DEBUG_DELAY", sg_helperDebugDelay);
     bool sg_helperDebugTimeStamp = true;
     static tConfItem<bool> sg_helperDebugTimeStampConf = HelperCommand::tConfItem("HELPER_DEBUG_TIMESTAMP", sg_helperDebugTimeStamp);
 
@@ -77,7 +75,7 @@ namespace helperConfig
 
     bool sg_helperShowCorners = false;
     static tConfItem<bool> sg_helperShowCornersConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_CORNERS", sg_helperShowCorners);
-    bool sg_helperShowCornersPassed = 0;
+    bool sg_helperShowCornersPassed = false;
     static tConfItem<bool> sg_helperShowCornersPassedConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_CORNERS_PASSED", sg_helperShowCornersPassed);
     REAL sg_helperShowCornersPassedRange = 1;
     static tConfItem<REAL> sg_helperShowCornersPassedRangeConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_CORNERS_PASSED_RANGE", sg_helperShowCornersPassedRange);
@@ -181,8 +179,8 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperDetectCutHeightConf = HelperCommand::tConfItem("HELPER_ENEMY_DETECT_CUT_HEIGHT", sg_helperDetectCutHeight);
     REAL sg_helperDetectCutReact = .02;
     static tConfItem<REAL> sg_helperDetectCutReactConf = HelperCommand::tConfItem("HELPER_ENEMY_DETECT_CUT_REACTION_TIME", sg_helperDetectCutReact);
-    bool sg_helperEnemyTracers = false;
 
+    bool sg_helperEnemyTracers = false;
     static tConfItem<bool> sg_helperEnemyTracersConf = HelperCommand::tConfItem("HELPER_ENEMY_TRACERS", sg_helperEnemyTracers);
     REAL sg_helperEnemyTracersHeight = 0;
     static tConfItem<REAL> sg_helperEnemyTracersHeightConf = HelperCommand::tConfItem("HELPER_ENEMY_TRACERS_HEIGHT", sg_helperEnemyTracersHeight);

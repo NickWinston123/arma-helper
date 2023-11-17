@@ -356,6 +356,7 @@ public:
         {
         }
     };
+    bool removedFromGame = false;
     SyncData lastSyncMessage_;
     static tArray<tString> nameSpeakWords;
     static int nameSpeakIndex;
@@ -369,7 +370,7 @@ public:
     static REAL nextSpeakTime;
 
     static bool canChat();
-    static bool canChatCommonPrefix(tString &message);
+    static bool canChatCommonPrefix(tString message);
     static bool canChatWithMsg(tString message);
     static void setNextSpeakTime(REAL seconds);
     static void setNextSpeakTimeCommonPrefix(tString commonPrefix, REAL seconds);
@@ -1090,7 +1091,7 @@ public:
             {
                 tString msg = *it;
 
-                if (msg.Contains(lastOutgoing))
+                if (msg.StartsWith(lastOutgoing))
                     return false;
             }
             return true;

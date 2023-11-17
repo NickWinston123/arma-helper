@@ -120,6 +120,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 TaskScheduler gTaskScheduler;
 
+
+static void taskSchedulerClear(std::istream &s)
+{
+    gTaskScheduler.clear();
+}
+static tConfItemFunc taskSchedulerClear_conf = HelperCommand::tConfItemFunc("TASK_SCHEDULER_CLEAR", &taskSchedulerClear);
+
+
 tCONFIG_ENUM(gGameType);
 tCONFIG_ENUM(gFinishType);
 

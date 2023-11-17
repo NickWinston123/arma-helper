@@ -36,7 +36,6 @@ namespace helperConfig
     extern REAL sg_helperDebugSpamProtectionInterval;
     extern REAL sg_helperDebugMaxLengthHoldDuraction;
     extern tString sg_helperDebugIgnoreList;
-    extern REAL sg_helperDebugDelay;
     extern bool sg_helperDebugTimeStamp;
     extern bool sg_helperDebugLog;
     extern tString sg_helperDebugLogFile;

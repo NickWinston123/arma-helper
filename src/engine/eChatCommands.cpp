@@ -1127,7 +1127,7 @@ bool RebuildCommand::execute(tString args)
     int pos = 0;
     tString PlayerNumb = args.ExtractNonBlankSubString(pos);
 
-    if (PlayerNumb.empty())
+    if (PlayerNumb.empty() || !PlayerNumb.isNumber())
     {
         con << CommandLabel()
             << "Rebuilding all players...\n";

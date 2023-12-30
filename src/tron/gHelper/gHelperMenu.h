@@ -230,14 +230,6 @@ void helperDebugMenu()
 {
     uMenu smartDebugMenu("Debug Menu");
 
-    uMenuItemReal helperDebugDelay(&smartDebugMenu,
-                                   "Helper Debug Delay",
-                                   "Helper Debug Message delay",
-                                   sg_helperDebugDelay,
-                                   0,
-                                   1,
-                                   0.01);
-
     uMenuItemToggle helperDebugTimeStamp(&smartDebugMenu,
                                          "Helper Debug Timestamp",
                                          "Helper Debug Timestamp",

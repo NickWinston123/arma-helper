@@ -3003,7 +3003,7 @@ tString tString::Replace(tString old_word, tString new_word)
         pos += newStr.length();
     }
 
-    return tString(source.c_str());
+    return tString(source);
 }
 
 

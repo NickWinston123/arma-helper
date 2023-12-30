@@ -1112,8 +1112,8 @@ bool SpeakCommand::execute(tString args)
                 << ItemColor()
                 << delay
                 << HeaderColor() << "'\n";
-
-        eChatBot::scheduleMessageTask(targetPlayer, chatString, flag, delay, delay * 0.5);
+        targetPlayer->Chat(chatString);
+        // eChatBot::scheduleMessageTask(targetPlayer, chatString, flag, delay, delay * 0.5);
     }
     else if (targetPlayer && !targetPlayer->isLocal())
         con << CommandLabel()

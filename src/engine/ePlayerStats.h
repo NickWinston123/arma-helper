@@ -514,8 +514,8 @@ public:
 
             if ((se_playerTriggerMessages && se_playerTriggerMessagesAcheivements) && (!stats.is_local || se_playerTriggerMessagesAcheivementsLocal))
             {
-                bot.SetOutputParams(response, delay);
-                bot.SendMessage();
+                bot.Messager()->SetOutputParams(response, delay);
+                bot.Messager()->Send();
             }
         }
         return stored;
@@ -537,8 +537,8 @@ private:
 
             findResponse(bot, playerName, trigger, value);
             
-            delay    += bot.Params().delay;
-            response << bot.Params().response;
+            delay    += bot.Messager()->Params().delay;
+            response << bot.Messager()->Params().response;
         }
 
         if (currentKillStreak % se_playerTriggerMessagesAcheivementsKillStreakChangeVal == 0)
@@ -553,8 +553,8 @@ private:
 
             findResponse(bot, playerName, trigger, value);
             
-            delay    += bot.Params().delay;
-            response << bot.Params().response;
+            delay    += bot.Messager()->Params().delay;
+            response << bot.Messager()->Params().response;
         }
 
         if (maxKillStreak > 1 && maxKillStreak % se_playerTriggerMessagesAcheivementsMaxKillStreak == 0 && stats.new_max_kill_streak)
@@ -569,8 +569,8 @@ private:
 
             findResponse(bot, playerName, trigger, value);
             
-            delay    += bot.Params().delay;
-            response << bot.Params().response;
+            delay    += bot.Messager()->Params().delay;
+            response << bot.Messager()->Params().response;
         }
 
     }
@@ -588,8 +588,8 @@ private:
 
             findResponse(bot, playerName, trigger, value);
             
-            delay    += bot.Params().delay;
-            response << bot.Params().response;
+            delay    += bot.Messager()->Params().delay;
+            response << bot.Messager()->Params().response;
         }
     }
 
@@ -606,8 +606,8 @@ private:
 
             findResponse(bot, playerName, trigger, value);
             
-            delay    += bot.Params().delay;
-            response << bot.Params().response;
+            delay    += bot.Messager()->Params().delay;
+            response << bot.Messager()->Params().response;
         }
     }
 
@@ -624,8 +624,8 @@ private:
 
             findResponse(bot, playerName, trigger, value);
             
-            delay    += bot.Params().delay;
-            response << bot.Params().response;
+            delay    += bot.Messager()->Params().delay;
+            response << bot.Messager()->Params().response;
         }
     }
 
@@ -633,13 +633,13 @@ private:
     {
         static const tString valDelim = tString("$val1");
 
-        bot.ResetParams();
-        bot.Params().triggeredByName = playerName;
-        bot.SetInputParams(nullptr, trigger, true);
-        bot.FindTriggeredResponse();
+        bot.Messager()->ResetParams();
+        bot.Messager()->Params().triggeredByName = playerName;
+        bot.Messager()->SetInputParams(nullptr, trigger, true);
+        bot.Messager()->FindTriggeredResponse();
 
-        if (!bot.Params().response.empty())
-            bot.Params().response = bot.Params().response.Replace(valDelim, value);
+        if (!bot.Messager()->Params().response.empty())
+            bot.Messager()->Params().response = bot.Messager()->Params().response.Replace(valDelim, value);
         else
             con << "No trigger set for '" << trigger << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
 
@@ -832,11 +832,11 @@ public:
             if (se_playerTriggerMessages && se_playerTriggerMessagesRageQuits)
             {
                 eChatBot &bot = eChatBot::getInstance();
-                bot.ResetParams();
-                bot.Params().triggeredByName = (stats.name.empty() ? player->GetName() : stats.name);
-                bot.SetInputParams(nullptr, tString("$ragequit"), true);
-                bot.FindTriggeredResponse();
-                bot.SendMessage();
+                bot.Messager()->ResetParams();
+                bot.Messager()->Params().triggeredByName = (stats.name.empty() ? player->GetName() : stats.name);
+                bot.Messager()->SetInputParams(nullptr, tString("$ragequit"), true);
+                bot.Messager()->FindTriggeredResponse();
+                bot.Messager()->Send();
             }
             
    

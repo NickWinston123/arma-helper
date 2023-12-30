@@ -5205,7 +5205,7 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
         bool ableToChatCommonPrefix = canChatCommonPrefix(s_orig);
 
         bool canChat = (ableToChat && ableToChatCommonPrefix);
-        
+
         if (!ableToChatCommonPrefix)
         {
             con << "You can not use the common prefix '"
@@ -5225,18 +5225,19 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
         {
             eChatBot &bot = eChatBot::getInstance();
 
-            bot.Params().pentalized_for_last_message = !ableToChat;
-            bot.Params().pentalized_for_last_message_prefix = !ableToChatCommonPrefix;
+            bot.Messager()->Params().pentalized_for_last_message = !ableToChat;
+            bot.Messager()->Params().pentalized_for_last_message_prefix = !ableToChatCommonPrefix;
 
-            if (se_playerTriggerMessagesResendSilencedMessages && !canChat)
-                bot.ResendMessage();
+            // if (se_playerTriggerMessagesResendSilencedMessages && !canChat)
+            //     bot.ResendMessage();
         }
 
         if (!canChat)
             return;
     }
-    
+
     s = s.SubStr(0, se_SpamMaxLen - 1);
+    s.RecomputeLength();
 
     if (sg_playerSilencedWatch)
         MessageTracker::AddOutgoingMessage(s);
@@ -6079,13 +6080,13 @@ void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs, ePlayerNetID *player)
             if (se_toggleChatFlag)
                 continue;
 
-            if (se_BlockChatFlags)
+            bool blockChatFlag  = se_BlockChatFlags       && tIsInList(se_BlockChatFlagsEnabledPlayers,       p->pID + 1);
+            bool chatFlagAlways = se_toggleChatFlagAlways && tIsInList(se_toggleChatFlagAlwaysEnabledPlayers, p->pID + 1);
+
+            if (blockChatFlag && !chatFlagAlways)
             {
-                if (tIsInList(se_BlockChatFlagsEnabledPlayers, p->pID + 1))
-                {
-                    p->SetChatting(flag, false);
-                    continue;
-                }
+                p->SetChatting(flag, false);
+                continue;
             }
 
             p->SetChatting(flag, cs);
@@ -8867,10 +8868,31 @@ void se_SaveToLadderLog(tOutput const &out)
 
 bool se_chatLog = false;
 static bool se_chatLogColors = false;
+static bool se_chatLogNoData = false;
+static bool se_chatLogNoDataClearLocal = false;
+static bool se_chatLogNoDataClearNames = false;
 static tConfItem<bool> se_chatLogConf("CHAT_LOG", se_chatLog);
+static tConfItem<bool> se_chatLogNoDataConf("CHAT_LOG_NO_DATA", se_chatLogNoData);
+static tConfItem<bool> se_chatLogNoDataIgnoreLocalConf("CHAT_LOG_NO_DATA_CLEAR_LOCAL", se_chatLogNoDataClearLocal);
+static tConfItem<bool> se_chatLogNoDataClearNamesConf("CHAT_LOG_NO_DATA_CLEAR_NAMES", se_chatLogNoDataClearNames);
 static tConfItem<bool> se_chatLogColorsConf("CHAT_LOG_COLORS", se_chatLogColors);
 
 static eLadderLogWriter se_chatWriter("CHAT", false);
+
+
+void sg_storeChatLogNoDataContent(std::istream &s)
+{
+    tString fullInput;
+    fullInput.ReadLine(s);
+
+    FileManager fileManager(tString("chatlognodata.txt"), tDirectories::Log());
+   
+    fileManager.Write(fullInput);
+
+}
+
+static tConfItemFunc sg_storeChatLogNoDataContentConf("STORE_CHAT_LOG_NO_DATA", &sg_storeChatLogNoDataContent);
+
 
 void se_SaveToChatLog(tOutput const &out)
 {
@@ -8892,6 +8914,42 @@ void se_SaveToChatLog(tOutput const &out)
             tString finalLine;
             finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColors(colStr);
             fileManager.Write(finalLine);
+        }
+
+        if (se_chatLogNoData)
+        {
+            FileManager fileManager(tString("chatlognodata.txt"), tDirectories::Log());
+
+            std::string finalLine = tColoredString::RemoveColors(tColoredString::RemoveBadColors(colStr)).stdString();
+            if (se_chatLogNoDataClearNames)
+            {
+                for (int i = 1; i < se_PlayerNetIDs.Len(); i++)
+                {
+                    std::string nameToReplace = (se_PlayerNetIDs[i]->GetName().stdString() + ": ");
+
+                    if (!se_PlayerNetIDs[i]->isLocal() || !se_chatLogNoDataClearLocal)
+                    {
+                        size_t startPos = finalLine.find(nameToReplace);
+                        while (startPos != std::string::npos)
+                        {
+                            finalLine.replace(startPos, nameToReplace.length(), "");
+                            startPos = finalLine.find(nameToReplace);
+                        }
+                    }
+                    else
+                    {
+                        if (finalLine.find(nameToReplace) != std::string::npos)
+                        {
+                            finalLine.clear();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // con << "WRITING LINE TO FILE : '" << finalLine << "'\n";
+            if (!finalLine.empty())
+                fileManager.Write(tString(finalLine));
         }
 
         if (se_chatLogColors)
@@ -10496,6 +10554,35 @@ tString RandomStr(int maxLength)
     return randomStr;
 }
 
+tString sg_setAllChattingStatusEnabledPlayers("1,2,3,4");
+static tConfItem<tString> sg_setAllChattingStatusEnabledPlayersConf = HelperCommand::tConfItem("SET_ALL_CHATTING_ENABLED_PLAYERS", sg_setAllChattingStatusEnabledPlayers);
+
+void sg_setAllChattingStatus(std::istream &s)
+{
+    tString fullInput;
+    fullInput.ReadLine(s);
+
+    if (fullInput.empty())
+    {
+        con << "Invalid input. Either 1 or 0\n";
+    }
+    REAL value = atoi(fullInput);
+
+    bool chatting = false;
+
+    if (value != 0)
+        chatting = true;
+
+     for (auto localNetPlayer : se_GetLocalPlayers())
+     {
+        if (tIsInList(sg_setAllChattingStatusEnabledPlayers, localNetPlayer->pID + 1))
+            localNetPlayer->SetChatting(ePlayerNetID::ChatFlags_Chat, chatting);
+     }
+}
+
+static tConfItemFunc sg_setAllChattingStatusConf("SET_ALL_CHATTING", &sg_setAllChattingStatus);
+
+
 tArray<tString> ePlayerNetID::nameSpeakWords;
 bool ePlayerNetID::nameSpeakForceUpdate = false;
 bool ePlayerNetID::nameSpeakCheck = false;
@@ -10526,6 +10613,7 @@ void ePlayerNetID::ForcedUpdate(ePlayer* updatePlayer)
     allowUpdateDuringRound = true;
     Update(updatePlayer);
 }
+
 void ePlayerNetID::Update(ePlayer* updatePlayer)
 {
 #ifdef KRAWALL_SERVER
@@ -10660,13 +10748,8 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     }
                 }
 
-                if (se_toggleChatFlagAlways)
-                {
-                    if (tIsInList(se_toggleChatFlagAlwaysEnabledPlayers, p->pID + 1))
-                    {
-                        p->SetChatting(ePlayerNetID::ChatFlags_Chat, true);
-                    }
-                }
+                if (se_toggleChatFlagAlways && tIsInList(se_toggleChatFlagAlwaysEnabledPlayers, p->pID + 1))
+                    p->SetChatting(ePlayerNetID::ChatFlags_Chat, true);
 
                 p->favoriteNumberOfPlayersPerTeam = local_p->favoriteNumberOfPlayersPerTeam;
                 p->nameTeamAfterMe = local_p->nameTeamAfterMe;

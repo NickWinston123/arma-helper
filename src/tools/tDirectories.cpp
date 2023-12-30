@@ -1797,15 +1797,18 @@ bool FileManager::Backup()
     return backedup;
 }
 
-bool FileManager::Clear()
+bool FileManager::Clear(bool output)
 {
     bool cleared = Write(tString(""), std::ios::trunc,false);
     
     o.close();
-    if (cleared)
-        con << tOutput("$file_manager_cleared_file", fileName);
-    else
-        con << tOutput("$file_manager_error_clearing_file", fileName);
+    if (output)
+    {
+        if (cleared)
+            con << tOutput("$file_manager_cleared_file", fileName);
+        else
+            con << tOutput("$file_manager_error_clearing_file", fileName);
+    }
     return cleared;
 }
 

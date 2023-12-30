@@ -176,6 +176,22 @@ static tSettingItem<tString> sg_revertMapFileConf("REVERT_MAP_FILE", sg_revertMa
 static tString sg_mapOnChangeInclude("");
 static tSettingItem<tString> sg_mapOnChangeIncludeConf("MAP_ONCHANGE_INCLUDE", sg_mapOnChangeInclude);
 
+
+static tString sg_commandWatchFile("commands.txt");
+static tConfItem<tString> sg_commandWatchFileConf("COMMAND_WATCH_FILE", sg_commandWatchFile);
+
+static bool sg_commandWatch = false;
+static tConfItem<bool> sg_commandWatchConf("COMMAND_WATCH", sg_commandWatch);
+
+static bool sg_commandWatchClear = true;
+static tConfItem<bool> sg_commandWatchClearConf("COMMAND_WATCH_CLEAR", sg_commandWatchClear);
+
+static bool sg_commandWatchFeedback = false;
+static tConfItem<bool> sg_commandWatchFeedbackConf("COMMAND_WATCH_FEEDBACK", sg_commandWatchFeedback);
+
+static REAL sg_commandWatchCheckTime = 3;
+static tConfItem<REAL> sg_commandWatchCheckTimeConf("COMMAND_WATCH_CHECK_TIME", sg_commandWatchCheckTime);
+
 void LoadMap(tString mapName)
 {
     conf_mapfile.Set(mapName);
@@ -2618,6 +2634,8 @@ bool ConnectToServerCore(nServerInfoBase *server)
 
     bool to = sr_textOut;
 
+    nConfItemBase::serverConfig.Clear();
+
     {
 #ifndef DEDICATED
         rSysDep::SwapGL();
@@ -3299,7 +3317,7 @@ void InitHelperItems(bool ingame)
     {
         eChatBot &bot = eChatBot::getInstance();
 
-        if (bot.functionMap.empty())
+        if (bot.Functions()->functionMap.empty())
             bot.InitChatFunctions();
 
         bot.LoadChatTriggers();
@@ -5872,6 +5890,38 @@ bool gGame::GameLoop(bool input)
         });
     }
 
+    static REAL next_command_watch_check_time = tSysTimeFloat();
+
+    if (sg_commandWatch && tSysTimeFloat() > next_command_watch_check_time)
+    {
+        FileManager fileManager(sg_commandWatchFile, tDirectories::Var());
+
+        next_command_watch_check_time = tSysTimeFloat() + sg_commandWatchCheckTime;
+
+        auto lines = fileManager.Load();
+
+        if (lines.Len() >= 1)
+        {
+            for (auto line : lines)
+            {
+                if (line.Len() > 0)
+                {
+                    if (sg_commandWatchFeedback)
+                        con << tThemedTextBase.LabelText("COMMAND WATCH") << "Loading line '" << line << "'\n";
+
+                    sn_consoleUser(ePlayer::NetToLocalPlayer(se_GetLocalPlayer()));
+
+                    tCurrentAccessLevel level(tAccessLevel_Owner, true);
+                    std::stringstream s(static_cast<char const *>(line));
+                    tConfItemBase::LoadAll(s);
+                }
+            }
+            
+            if (sg_commandWatchClear)
+                fileManager.Clear(sg_commandWatchFeedback);
+        }
+    }
+
     if (sg_forcePlayerUpdate || sg_forceSyncAll || sg_forcePlayerRebuild || ePlayerNetID::nameSpeakForceUpdate)
     {
         gTaskScheduler.schedule("forcedUpdate", sg_forceClockDelay, []
@@ -7025,12 +7075,33 @@ bool ConnectToLastServerFromStr()
     if (sg_lastServerStr.empty())
         return false;
 
-    nServerInfoBase * server = getSeverFromStr(sg_lastServerStr);
+    nServerInfoBase * serverBase = getSeverFromStr(sg_lastServerStr);
 
-    if (server != nullptr)
+    if (serverBase == nullptr)
+        return false;
+
+
+    // Link serverBase to serverInfo
+    nServerInfo::GetFromMaster(0, "", false);
+    nServerInfo *serverInfo = nServerInfo::GetFirstServer();
+
+    while (serverInfo)
     {
-        ConnectToServer(server);
-        return true;
+        bool isMatch = serverInfo->GetConnectionName() == serverBase->GetConnectionName() && serverInfo->GetPort() == serverBase->GetPort();
+        if (isMatch)
+        {
+            break;
+        }
+        serverInfo = serverInfo->Next();
+    }
+
+    if (serverInfo)
+    {
+        ConnectToServer(serverInfo);
+    }
+    else
+    {
+        ConnectToServer(serverBase);
     }
 
     return false;

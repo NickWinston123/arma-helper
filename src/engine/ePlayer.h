@@ -85,7 +85,6 @@ extern REAL se_avoidPlayerWatchActionTime;
 extern tString se_avoidPlayerWatchList;
 
 extern tString se_disableCreateSpecific;
-extern std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
 
 extern bool se_forceJoinTeam;
 

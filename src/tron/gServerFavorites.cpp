@@ -96,11 +96,18 @@ public:
     //! connects to the server
     void Connect()
     {
-        gServerInfoFavorite fav(address_, port_);
+        if (!server_)
+        {
+            gServerInfoFavorite fav(address_, port_);
 
-        gLogo::SetDisplayed(false);
-
-        ConnectToServer(&fav);
+            gLogo::SetDisplayed(false);
+        
+            ConnectToServer(&fav);
+        }
+        else
+        {
+            ConnectToServer(server_);
+        }
     }
 
     //! returns the index in the favorite holder

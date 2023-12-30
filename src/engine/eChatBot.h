@@ -44,8 +44,14 @@ struct eChatBotDataBase
 
     struct MessagePart
     {
-        tString content;
-        bool isSent;
+        MessagePart(tString message, REAL delay, bool useChatFlag = false, REAL chatFlagPercentage = 0)
+            : message(message), delay(delay), useChatFlag(useChatFlag), chatFlagPercentage(chatFlagPercentage) {}
+
+        REAL calculateDelay();
+        tString message;
+        REAL delay;
+        REAL chatFlagPercentage;
+        bool useChatFlag;
     };
 
     struct ActionData
@@ -67,15 +73,15 @@ struct eChatBotDataBase
         tString      matchedTrigger;
         ResponseType triggerType;
         ePlayerNetID *sendingPlayer;
+        
+        bool useChatFlag    = true;
 
         bool validateOutput = true;
 
         // SCHEDULED
         int currentPartIndex = 0;
-        std::vector<MessagePart> parts;
+        std::vector<MessagePart> messageParts;
 
-        // OTHER
-        
         bool abortOutput                          = false;
         bool pentalized_for_last_message          = false;
         bool pentalized_for_last_message_prefix   = false;
@@ -121,51 +127,13 @@ public:
     eChatBotStatsBase data_from_db;
 };
 
+typedef tString (*ChatFunction)(tString);
 
-class eChatBotData : public eChatBotDataBase
+class eChatBotFunctions
 {
-public:
-    eChatBotStats stats;
-    ActionData    params;
-};
+public:  
+    eChatBotFunctions(eChatBotData *data): data(data) {}
 
-class eChatBot
-{
-private:
-    eChatBot()
-    {
-        InitChatFunctions();
-    }
-
-    eChatBot(const eChatBot &) = delete;
-    eChatBot &operator=(const eChatBot &) = delete;
-
-public:
-    typedef tString (*ChatFunction)(tString);
-
-    std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
-    std::vector<tString> chatTriggerKeys;
-
-    eChatBotData data;
-
-    TempConfItemManager *chatBotCommandConfItems;
-
-    // instance
-    static eChatBot &getInstance()
-    {
-        static eChatBot instance;
-        if (instance.functionMap.empty())
-            instance.InitChatFunctions();
-
-        return instance;
-    }
-
-    void InitChatFunctions();
-
-    void LoadChatTriggers();
-    void LoadChatCommandConfCommands();
-
-    std::map<tString, ChatFunction> functionMap;
     void RegisterFunction(const tString &name, ChatFunction func)
     {
         functionMap[name] = func;
@@ -180,14 +148,107 @@ public:
         return tString("");
     }
 
+    eChatBotData &Data()
+    {
+        return *data;
+    }
+    
+    eChatBotData *data;    
+    std::map<tString, ChatFunction> functionMap;
+};
+
+class eChatBotMessager
+{
+public:  
+    eChatBotMessager(eChatBotData *data): data(data) {}
+
+    void SetInputParams(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger, tString preAppend = tString(""));
+    void SetOutputParams(tString &response, REAL &delay, ePlayerNetID *sendingPlayer = nullptr);
+
+    void ResetParams();
+
+    void FindTriggeredResponse();
+
+    bool Send();
+    
+    bool ScheduleMessageParts();
+    
+    REAL determineReadingDelay(tString message);
+    REAL calculateResponseSmartDelay(tString response, REAL wpm);
+
+    eChatBotDataBase::ActionData &Params();
+
+    eChatBotStats &Stats();
+
+    eChatBotData &Data();
+
+    eChatBotData *data;    
+};
+
+class eChatBotData : public eChatBotDataBase
+{
+public:
+    eChatBotData()
+    {
+        functions = new eChatBotFunctions(this);
+        messager  = new eChatBotMessager(this);
+    }
+
+    std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
+    std::vector<tString> chatTriggerKeys;
+    TempConfItemManager *chatBotCommandConfItems;
+
+    eChatBotStats stats;
+    ActionData    params;
+    eChatBotFunctions *functions;
+    eChatBotMessager *messager;
+};
+
+
+class eChatBot
+{
+private:
+    eChatBot()
+    {
+        InitChatFunctions();
+    }
+
+    eChatBot(const eChatBot &) = delete;
+    eChatBot &operator=(const eChatBot &) = delete;
+
+public:
+
+    eChatBotData data;
+
+
+    // instance
+    static eChatBot &getInstance()
+    {
+        static eChatBot instance;
+        if (instance.data.functions->functionMap.empty())
+            instance.InitChatFunctions();
+
+        return instance;
+    }
+
+    void InitChatFunctions();
+
+    void LoadChatTriggers();
+    void LoadChatCommandConfCommands();
+
     eChatBotStats &Stats()
     {
         return data.stats;
     }
 
-    eChatBotData::ActionData &Params()
+    eChatBotFunctions *Functions()
     {
-        return data.params;
+        return data.functions;
+    }
+
+    eChatBotMessager *Messager()
+    {
+        return data.messager;
     }
 
     void roundEndAnalyzeBanStatus()
@@ -217,27 +278,9 @@ public:
         }
     }
 
-    void SetInputParams(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger, tString preAppend = tString(""));
-    void SetOutputParams(tString &response, REAL &delay, ePlayerNetID *sendingPlayer = nullptr);
-
-    void ResetParams();
-
     static bool InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger = false, tString preAppend = tString(""));
     
     bool ShouldAnalyze();
-    
-    void FindTriggeredResponse();
-
-    bool SendMessage();
-    
-    bool ResendMessage();
-
-    static void scheduleMessageTask(ePlayerNetID *netPlayer, tString message, bool chatFlag, REAL totalDelay, REAL flagDelay);
-
-    REAL determineReadingDelay(tString message);
-    REAL calculateResponseSmartDelay(tString response, REAL wpm);
-
-
 };
 
 #include "tDatabase.h"

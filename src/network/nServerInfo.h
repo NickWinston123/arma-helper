@@ -52,6 +52,9 @@ tString const & sn_GetMyDNSName();
 class nServerInfoBase
 {
 public:
+
+    tString options_;			// description of non-default options
+    
     nServerInfoBase();
     virtual ~nServerInfoBase();
 
@@ -149,7 +152,6 @@ protected:
     tString userNames_;		// names of the connected users
     tString userGlobalIDs_;		// IDs of the connected users
     tString userNamesOneLine_;// names of the connected users in one line
-    tString options_;			// description of non-default options
     tString url_;				// url asociated with the server
 
     REAL    score;            // score based on ping and number of users (and game mode...)

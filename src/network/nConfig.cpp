@@ -43,6 +43,61 @@ nConfItemBase::nConfItemBase(const char *title)
 
 nConfItemBase::~nConfItemBase(){}
 
+tArray<tString> nConfItemBase::serverConfig;
+
+#include "tDirectories.h"
+#include "../tron/gGame.h"
+void nConfItemBase::SaveServerSettings(std::istream &s)
+{
+    tString input;
+    input.ReadLine(s,true);
+
+    tString currentServer;
+    nServerInfoBase *connectedServer = CurrentServer();
+
+    if (!input.empty())
+    {
+        currentServer << input
+                      << "-";
+    } 
+    
+    if (!connectedServer)
+    {
+        currentServer << "currentServer";
+    }
+    else
+    {
+        currentServer << connectedServer->GetName();
+    }
+
+    tString filePath("servers/");
+    filePath << tColoredString::RemoveColors(currentServer) << ".txt";
+
+    FileManager fileManager(filePath, tDirectories::Config());
+
+    fileManager.Clear(false);
+
+    tString config;
+
+    if (connectedServer)
+    {
+        config << "SERVER_NAME "          << connectedServer->GetName() << "\n";
+        config << "SERVER_OPTIONS "       << connectedServer->GetName() << "0xffffff!" "\n";
+        config << "ROUND_CENTER_MESSAGE " << connectedServer->GetName() << "0xffffff!" "\n";
+    }
+
+    for (int i = 0; i < serverConfig.Len(); i++)
+        config << serverConfig[i] << "\n";
+
+    con << tThemedTextBase.LabelText("Server Settings")
+        << "Saving " << currentServer << "0xRESETT config to '" << filePath << "'\n";
+
+    fileManager.Write(config);
+}
+
+static tConfItemFunc sg_saveServerSettingsConf("SAVE_SERVER_SETTINGS", &nConfItemBase::SaveServerSettings);
+
+
 void nConfItemBase::s_GetConfigMessage(nMessage &m){
     if (sn_GetNetState()==nSERVER){
         nReadError(); // never accept config messages from the clients
@@ -67,6 +122,11 @@ void nConfItemBase::s_GetConfigMessage(nMessage &m){
                     netitem->lastChangeMessage_ = m.MessageIDBig();
                     netitem->lastChangeTime_ = tSysTimeFloat();
                     netitem->NetReadVal(m);
+                    tString configItem;
+                    configItem << netitem->GetTitle() << " " << netitem->getValue();
+                    serverConfig.Add(configItem);
+                    if (netitem->GetTitle() == "CYCLE_WALLS_LENGTH")
+                        configItem << "SP_WALLS_LENGTH" << " " << netitem->getValue();
                 }
                 else
                 {
@@ -142,7 +202,7 @@ bool nConfItemBase::Writable()
 {
     if (sn_unlocknSettings)
         return true;
-        
+
     // network settings are read only on the client
     if ( sn_GetNetState() == nCLIENT)
         return false;

@@ -102,11 +102,16 @@ public:
 
     static void s_RevertToSavedValues();    //!< reverts all settings to the saved values
     inline void RevertToSavedValue();       //!< reverts to the saved value
+
+    static tArray<tString> serverConfig;
+    static void SaveServerSettings(std::istream &s);
+
 private:
     virtual void OnRevertToDefaults()=0;      //!< revert this setting to its default
 
     virtual void OnSaveValue()=0;             //!< saves value for later restoring
     virtual void OnRevertToSavedValue()=0;    //!< reverts to the saved value
+
 };
 
 

@@ -90,8 +90,6 @@ static tConfItem<bool> se_forceSyncConf = HelperCommand::tConfItem("FORCE_SYNC",
 static bool se_forceSyncOverride = false;
 static tConfItem<bool> se_forceSyncOverrideConf = HelperCommand::tConfItem("FORCE_SYNC_OVERRIDE", se_forceSyncOverride);
 
-static int se_playerRandomColorNameStartMode = 1;
-
 // call on commands that only work on the server; quit if it returns true
 bool se_NeedsServer(char const *command, std::istream &s, bool strict)
 {
@@ -1157,7 +1155,10 @@ ePlayerNetID *ePlayerNetID::GetPlayerByName(tString name, bool exact)
 
 ePlayer *ePlayer::NetToLocalPlayer(ePlayerNetID *player)
 {
-    return PlayerConfig(player->pID);
+    if (player)
+        return PlayerConfig(player->pID);
+    else
+        return NULL;
 }
 
 ePlayer *ePlayer::gCycleToLocalPlayer(gCycle *owner)
@@ -1392,11 +1393,18 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
                                        "$PLAYER_COLOR_MODE_HELP",
                                        colorMode));
     confname.Clear();
-    confname << "PLAYER_NAME_MODE_CUSTOM_" << id + 1;
+    confname << "PLAYER_NAME_MODE_" << id + 1;
     colorNameMode = 0;
     confItems.StoreConfitem(tNEW(tConfItem<int>)(confname,
                                        "$player_random_color_help",
                                        colorNameMode));
+
+    confname.Clear();
+    confname << "PLAYER_NAME_COLOR_CUSTOM_SHIFT_START_MODE" << id + 1;
+    playerRandomColorNameStartMode = 0;
+    confItems.StoreConfitem(tNEW(tConfItem<int>)(confname,
+                                       "$PLAYER_NAME_COLOR_CUSTOM_SHIFT_START_MODE_help",
+                                       playerRandomColorNameStartMode));
 
     // SMARTER BOT
     // sg_smarterBotThink
@@ -5894,6 +5902,9 @@ static tConfItem<bool> se_randomNamePingConf = HelperCommand::tConfItem("PLAYER_
 bool se_randomName = false;
 static tConfItem<bool> se_randomNameConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM", se_randomName);
 
+bool se_randomNameOncePerRound = true;
+static tConfItem<bool> se_randomNameOncePerRoundConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_ONCE_PER_ROUND", se_randomNameOncePerRound);
+
 bool se_randomNameSmart = false;
 static tConfItem<bool> se_randomNameSmartConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_SMART", se_randomNameSmart);
 
@@ -6080,9 +6091,9 @@ void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs, ePlayerNetID *player)
             if (se_toggleChatFlag)
                 continue;
 
-            bool blockChatFlag  = se_BlockChatFlags       && tIsInList(se_BlockChatFlagsEnabledPlayers,       p->pID + 1);
-            bool chatFlagAlways = se_toggleChatFlagAlways && tIsInList(se_toggleChatFlagAlwaysEnabledPlayers, p->pID + 1);
-
+        bool blockChatFlag  = se_BlockChatFlags       && tIsEnabledForPlayer(se_BlockChatFlagsEnabledPlayers,       p->pID + 1);
+        bool chatFlagAlways = se_toggleChatFlagAlways && tIsEnabledForPlayer(se_toggleChatFlagAlwaysEnabledPlayers, p->pID + 1);
+            
             if (blockChatFlag && !chatFlagAlways)
             {
                 p->SetChatting(flag, false);
@@ -6544,7 +6555,6 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                timeSinceLastChat_(-1),
                                                createTime_(getCurrentLocalTime()),
                                                lastWatchStatus(playerWatchStatus::ACTIVE),
-                                               lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                                syncIteration(0),
                                                lastMessagedPlayer(nullptr),
                                                lastMessagedByPlayer(nullptr),
@@ -6702,7 +6712,6 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           timeSinceLastChat_(-1),
                                           createTime_(getCurrentLocalTime()),
                                           lastWatchStatus(playerWatchStatus::ACTIVE),
-                                          lastplayerRandomColorNameStartMode(se_playerRandomColorNameStartMode),
                                           syncIteration(0),
                                           lastMessagedPlayer(nullptr),
                                           lastMessagedByPlayer(nullptr),
@@ -6763,7 +6772,7 @@ void ePlayerNetID::Activity()
     if (sn_GetNetState() != nSERVER && Owner() != ::sn_myNetID)
         return;
 
-    if (!se_toggleChatFlag && !se_toggleChatFlagAlways)
+    if (!se_toggleChatFlag && !se_toggleChatFlagAlways && !tIsInList(forcedChattingPlayers, pID + 1))
         chatting_ = false;
 
     if (chatting_ || disconnected)
@@ -7115,7 +7124,7 @@ static void player_removed_from_game_handler(nMessage &m)
         {
             if (se_playerTriggerMessages && se_playerMessageLeave && !p->departedByChatBot)
             {
-                eChatBot::InitiateAction(nullptr, tString( p->IsHuman() ? "$left" : "$leftbot" ), true);
+                eChatBot::InitiateAction(p, tString( p->IsHuman() ? "$left" : "$leftbot" ), true);
                 p->departedByChatBot = true;
             }
 
@@ -8886,7 +8895,7 @@ void sg_storeChatLogNoDataContent(std::istream &s)
     fullInput.ReadLine(s);
 
     FileManager fileManager(tString("chatlognodata.txt"), tDirectories::Log());
-   
+
     fileManager.Write(fullInput);
 
 }
@@ -8919,17 +8928,22 @@ void se_SaveToChatLog(tOutput const &out)
         if (se_chatLogNoData)
         {
             FileManager fileManager(tString("chatlognodata.txt"), tDirectories::Log());
-
+            // con << "Line Before: '" << colStr << "'\n";
             std::string finalLine = tColoredString::RemoveColors(tColoredString::RemoveBadColors(colStr)).stdString();
+            // con << "Line After removing colors: '" << finalLine << "'\n";
+
             if (se_chatLogNoDataClearNames)
             {
                 for (int i = 1; i < se_PlayerNetIDs.Len(); i++)
                 {
                     std::string nameToReplace = (se_PlayerNetIDs[i]->GetName().stdString() + ": ");
+                    // con << "Name to replace: '" << nameToReplace << "'\n";
 
                     if (!se_PlayerNetIDs[i]->isLocal() || !se_chatLogNoDataClearLocal)
                     {
+                        
                         size_t startPos = finalLine.find(nameToReplace);
+                        // con << "Non Local, Got startPos: '" << startPos << "'\n";
                         while (startPos != std::string::npos)
                         {
                             finalLine.replace(startPos, nameToReplace.length(), "");
@@ -8937,12 +8951,31 @@ void se_SaveToChatLog(tOutput const &out)
                         }
                     }
                     else
-                    {
-                        if (finalLine.find(nameToReplace) != std::string::npos)
+                    {   
+                        size_t startPos = finalLine.find(nameToReplace);
+                        
+                        // con << "Local, Got startPos: '" << startPos << "'\n";
+                        if (startPos != std::string::npos)
                         {
+
                             finalLine.clear();
                             break;
                         }
+                    }
+                }
+            } else if (se_chatLogNoDataClearLocal) {
+
+                for (auto localNetPlayer : se_GetLocalPlayers()) {
+
+                    std::string nameToReplace = (localNetPlayer->GetName().stdString() + ": ");
+                    // con << "Name to replace: '" << nameToReplace << "'\n";
+
+                    size_t startPos = finalLine.find(nameToReplace);
+                    // con << "Local, Got startPos: '" << startPos << "'\n";
+                    if (startPos != std::string::npos)
+                    {
+                        finalLine.clear();
+                        break;
                     }
                 }
             }
@@ -10165,7 +10198,6 @@ static tConfItem<int> se_playerRandomColorNameShiftBounceIntervalConf("PLAYER_NA
 static bool se_playerRandomColorNameShiftBounceNameLength = false;
 static tConfItem<bool> se_playerRandomColorNameShiftBounceNameLengthConf("PLAYER_NAME_COLOR_CUSTOM_SHIFT_BOUNCE_NAME_LENGTH", se_playerRandomColorNameShiftBounceNameLength);
 
-static tConfItem<int> se_playerRandomColorNameStartModeConf("PLAYER_NAME_COLOR_CUSTOM_SHIFT_START_MODE", se_playerRandomColorNameStartMode);
 
 tColoredString sg_ShiftColors(const tColoredString &original, int shift)
 {
@@ -10515,13 +10547,15 @@ static REAL prevRainbowSaturation = -1;
 static REAL prevGradientR = -1, prevGradientG = -1, prevGradientB = -1;
 static int prevRgb[3] = {-1, -1, -1};
 
-bool shouldUpdateLastName(int rgb[3])
+bool shouldUpdateLastName(ePlayer *local_p, int rgb[3])
 {
-    bool hasChanged = false;
+    bool hasChanged;
 
     if (prevRainbowNumColors != se_playerRandomColorNameRandRainbowNumColors ||
         prevRainbowBrightness != se_playerRandomColorNameRandRainbowBrightness ||
-        prevRainbowSaturation != se_playerRandomColorNameRandRainbowSaturation || (se_playerRandomColorNameStartMode != 1 && (prevRgb[0] != rgb[0] || prevRgb[1] != rgb[1] || prevRgb[2] != rgb[2])) || (prevGradientR != gradientR || prevGradientG != gradientG || prevGradientB != gradientB))
+        prevRainbowSaturation != se_playerRandomColorNameRandRainbowSaturation || 
+        (local_p->playerRandomColorNameStartMode != 1 && (prevRgb[0] != rgb[0] || prevRgb[1] != rgb[1] || prevRgb[2] != rgb[2])) || 
+        (prevGradientR != gradientR || prevGradientG != gradientG || prevGradientB != gradientB))
     {
         hasChanged = true;
 
@@ -10554,6 +10588,7 @@ tString RandomStr(int maxLength)
     return randomStr;
 }
 
+tString forcedChattingPlayers = tString("");
 tString sg_setAllChattingStatusEnabledPlayers("1,2,3,4");
 static tConfItem<tString> sg_setAllChattingStatusEnabledPlayersConf = HelperCommand::tConfItem("SET_ALL_CHATTING_ENABLED_PLAYERS", sg_setAllChattingStatusEnabledPlayers);
 
@@ -10571,13 +10606,19 @@ void sg_setAllChattingStatus(std::istream &s)
     bool chatting = false;
 
     if (value != 0)
+    {
+        forcedChattingPlayers = sg_setAllChattingStatusEnabledPlayers;
         chatting = true;
-
-     for (auto localNetPlayer : se_GetLocalPlayers())
-     {
-        if (tIsInList(sg_setAllChattingStatusEnabledPlayers, localNetPlayer->pID + 1))
+    }
+    else
+    {
+        forcedChattingPlayers = tString("");
+    }
+    for (auto localNetPlayer : se_GetLocalPlayers())
+    {
+        if (tIsEnabledForPlayer(sg_setAllChattingStatusEnabledPlayers, localNetPlayer->pID + 1))
             localNetPlayer->SetChatting(ePlayerNetID::ChatFlags_Chat, chatting);
-     }
+    }
 }
 
 static tConfItemFunc sg_setAllChattingStatusConf("SET_ALL_CHATTING", &sg_setAllChattingStatus);
@@ -10613,6 +10654,9 @@ void ePlayerNetID::ForcedUpdate(ePlayer* updatePlayer)
     allowUpdateDuringRound = true;
     Update(updatePlayer);
 }
+
+static int se_maxPlayers = 4;
+static tSettingItem<int> se_maxPlayersConf("MAX_PLAYERS", se_maxPlayers);
 
 void ePlayerNetID::Update(ePlayer* updatePlayer)
 {
@@ -10739,16 +10783,10 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                 if (!se_forceSendMessageString.empty())
                     p->Chat(se_forceSendMessageString);
 
-                if (se_toggleChatFlag)
-                {
-                    // toggle This Players ChatFlag?
-                    if (tIsInList(se_toggleChatFlagEnabledPlayers, p->pID + 1))
-                    {
+                if (se_toggleChatFlag && (tIsEnabledForPlayer(se_toggleChatFlagEnabledPlayers, p->pID + 1)))
                         p->chatting_ = !p->chatting_;
-                    }
-                }
-
-                if (se_toggleChatFlagAlways && tIsInList(se_toggleChatFlagAlwaysEnabledPlayers, p->pID + 1))
+                
+                if (se_toggleChatFlagAlways && tIsEnabledForPlayer(se_toggleChatFlagAlwaysEnabledPlayers, p->pID + 1))
                     p->SetChatting(ePlayerNetID::ChatFlags_Chat, true);
 
                 p->favoriteNumberOfPlayersPerTeam = local_p->favoriteNumberOfPlayersPerTeam;
@@ -10827,7 +10865,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     newName = pingName;
                 }
 
-                if (forceRandomRename || tIsInList(se_randomNameEnabledPlayers, p->pID + 1))
+                if (forceRandomRename || tIsEnabledForPlayer(se_randomNameEnabledPlayers, p->pID + 1))
                 {
                     if (se_randomNameSmart || forceRandomRename)
                         newName = randomNameSmart();
@@ -10864,11 +10902,11 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                         int rgb[3] = {p->r, p->g, p->b};
 
                         // Name changed or lastColoredName not set or gradient mode and color change
-                        bool shouldUpdateName = newName != p->GetName() || p->lastColoredName.empty() || shouldUpdateLastName(rgb) || se_playerRandomColorNameStartMode != p->lastplayerRandomColorNameStartMode;
+                        bool shouldUpdateName = newName != p->GetName() || p->lastColoredName.empty() || shouldUpdateLastName(local_p, rgb) || local_p->playerRandomColorNameStartMode != local_p->lastplayerRandomColorNameStartMode;
                         if (shouldUpdateName)
                         {
-                            p->lastplayerRandomColorNameStartMode = se_playerRandomColorNameStartMode;
-                            p->lastColoredName = (se_playerRandomColorNameStartMode == 1) ? sg_RainbowNameGeneration(nameToUse) : sg_ColorGradientGeneration(rgb, nameToUse);
+                            local_p->lastplayerRandomColorNameStartMode = local_p->playerRandomColorNameStartMode;
+                            p->lastColoredName = (local_p->playerRandomColorNameStartMode == 1) ? sg_RainbowNameGeneration(nameToUse) : sg_ColorGradientGeneration(rgb, nameToUse);
                             p->shiftIter = 0;
                         }
 
@@ -10908,9 +10946,10 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                 if (se_forceSync)
                     p->RequestSync();
 
-                allowUpdateDuringRound = false;
             }
         }
+        
+        allowUpdateDuringRound = false;
 
         // account for play time
         nTimeRolling now = tSysTimeFloat();
@@ -11465,6 +11504,11 @@ void ePlayerNetID::SetChatting(ChatFlags flag, bool chatting)
     }
     else
     {
+        bool forceChatFlag  = !forcedChattingPlayers.empty() && tIsInList(forcedChattingPlayers, pID + 1);
+
+        if (forceChatFlag)
+            return;
+
         chatFlags_ &= ~flag;
         if (0 == chatFlags_)
         {
@@ -13033,7 +13077,7 @@ void ePlayerNetID::UpdateName(void)
                 if (avoidPlayerInGame(GetName()))
                 {
                     se_avoidPlayerWatchDisable = true;
-                    gTaskScheduler.schedule("AvoidPlayerWatch", se_avoidPlayerWatchActionTime, []
+                    gTaskScheduler.schedule("AvoidPlayerWatch", se_avoidPlayerWatchActionine, []
                     {
                         ePlayerNetID::CompleteRebuild();
                     });

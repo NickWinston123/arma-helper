@@ -457,9 +457,13 @@ void gExplosion::Render(const eCamera *cam){
 #endif
 }
 
+
+REAL s_cycleExplosionsSoundVolume = 1;
+static tConfItem<REAL> s_cycleExplosionsSoundVolumeC("CYCLE_SOUND_EXPLOSIONS_VOLUME", s_cycleExplosionsSoundVolume);
+
 void gExplosion::SoundMix(Uint8 *dest,unsigned int len,
                           int viewer,REAL rvol,REAL lvol){
-    sound.Mix(dest,len,viewer,rvol*4,lvol*4);
+    sound.Mix(dest,len,viewer,rvol*4 * s_cycleExplosionsSoundVolume,lvol*4 * s_cycleExplosionsSoundVolume);
 }
 #endif
 

@@ -631,6 +631,9 @@ private:
 
     static void findResponse(eChatBot &bot, tString playerName, tString trigger, tString value)
     {
+        if (!se_playerTriggerMessages)
+            return;
+            
         static const tString valDelim = tString("$val1");
 
         bot.Messager()->ResetParams();

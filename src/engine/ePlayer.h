@@ -85,7 +85,7 @@ extern REAL se_avoidPlayerWatchActionTime;
 extern tString se_avoidPlayerWatchList;
 
 extern tString se_disableCreateSpecific;
-
+extern tString forcedChattingPlayers;
 extern bool se_forceJoinTeam;
 
 extern bool se_watchActiveStatus;
@@ -231,7 +231,9 @@ public:
 
     int colorMode; // The players color randomization
     int colorNameMode; // The players name color randomization
+    int playerRandomColorNameStartMode;
 
+    int lastplayerRandomColorNameStartMode;
     tString instantChatString[MAX_INSTANT_CHAT];
     // instant chat macros
 
@@ -394,7 +396,6 @@ public:
     tColoredString lastColoredName;
     int currentShift = 0;
     int shiftIter = 0;
-    int lastplayerRandomColorNameStartMode;
     tArray<tString> lastSearch;
     tArray<tString> nameHistory;
     bool nameFirstSync  = true;

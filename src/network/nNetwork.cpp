@@ -708,6 +708,10 @@ static void sn_SynGenerateCookie(int stamp, nMessage const &m, nCookie & ret)
 // *************************************************************
 
 
+REAL sg_ackDelay = 0;
+static tConfItem<REAL> sg_ackDelayConf = HelperCommand::tConfItem("ACK_DELAY",sg_ackDelay);
+
+
 void ack_handler(nMessage &m){
     if( m.SenderID() == MAXCLIENTS+1 )
     {
@@ -746,10 +750,25 @@ void ack_handler(nMessage &m){
     {
         sn_Connections[m.SenderID()].AckReceived();
 
-        unsigned short ack;
-        m.Read(ack);
+    
         //con << "Got ack:" << ack << ":" << m.SenderID() << '\n';
-        nWaitForAck::Ackt(ack,m.SenderID());
+        if (sg_ackDelay <= 0) {
+            unsigned short ack;
+        m.Read(ack);
+            nWaitForAck::Ackt(ack,m.SenderID());
+        
+        }
+        else {
+
+        gTaskScheduler.schedule("ackDelay", sg_ackDelay, [&m]
+        {
+            unsigned short ack;
+            m.Read(ack);
+            nWaitForAck::Ackt(ack,m.SenderID());
+        });
+
+
+        }
     }
 }
 

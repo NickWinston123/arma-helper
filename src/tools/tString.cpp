@@ -2456,6 +2456,53 @@ bool tIsInList(tString const &list_, int number)
     return tIsInList(list_, intTotString(number));
 }
 
+bool tIsEnabledForPlayer(const tString &list_, int playerID)
+{
+
+    if (list_.empty())
+        return false;
+
+    if (list_ == "*")
+        return true;
+
+    tString playerIDStr(std::to_string(playerID));
+
+    if (list_.StartsWith("*"))
+    {
+        tString negationItem("!");
+                negationItem << playerIDStr << ",";
+        if (list_.StrPos(negationItem) != -1)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    int pos = 0;
+    while (true)
+    {
+        pos = list_.StrPos(pos, playerIDStr);
+        if (pos == -1)
+            break;
+
+        if (pos > 0 && list_[pos - 1] == '!')
+        {
+            pos += playerIDStr.Len();
+            continue;
+        }
+
+        bool isStart = (pos == 0 || list_[pos - 1] == ',' || isblank(list_[pos - 1]));
+        bool isEnd = (pos + playerIDStr.Len() >= list_.Len() || list_[pos + playerIDStr.Len()] == ',' || isblank(list_[pos + playerIDStr.Len()]));
+
+        if (isStart && isEnd)
+            return true;
+
+        pos += playerIDStr.Len();
+    }
+
+    return false;
+}
+
 bool tRemoveFromList(tString &list, const tString &item)
 {
     bool itemRemoved = false;
@@ -2561,9 +2608,9 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (days > 0 || showIfZero)
     {
-        result << (color ? tThemedTextBase.ItemColor() : "") 
-               << days 
-               << (color ? tThemedTextBase.MainColor() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "")
+               << days
+               << (color ? tThemedTextBase.MainColor() : "")
                << "D";
         if (hours || minutes || remainingSeconds || milliseconds)
             result << ":";
@@ -2571,10 +2618,10 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (hours > 0 || showIfZero)
     {
-        result << (color ? tThemedTextBase.ItemColor() : "") 
-               << ((hours < 10) ? "0" : "") 
-               << hours 
-               << (color ? tThemedTextBase.MainColor() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "")
+               << ((hours < 10) ? "0" : "")
+               << hours
+               << (color ? tThemedTextBase.MainColor() : "")
                << "H";
         if (minutes || remainingSeconds || milliseconds)
             result << ":";
@@ -2582,9 +2629,9 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (minutes > 0 || showIfZero)
     {
-        result << (color ? tThemedTextBase.ItemColor() : "") 
-               << ((minutes < 10) ? "0" : "") 
-               << minutes << (color ? tThemedTextBase.MainColor() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "")
+               << ((minutes < 10) ? "0" : "")
+               << minutes << (color ? tThemedTextBase.MainColor() : "")
                << "M";
         if (remainingSeconds || milliseconds)
             result << ":";
@@ -2592,9 +2639,9 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (remainingSeconds > 0 || showIfZero)
     {
-        result << (color ? tThemedTextBase.ItemColor() : "") 
-               << ((remainingSeconds < 10) ? "0" : "") 
-               << remainingSeconds << (color ? tThemedTextBase.MainColor() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "")
+               << ((remainingSeconds < 10) ? "0" : "")
+               << remainingSeconds << (color ? tThemedTextBase.MainColor() : "")
                << "S";
         if (milliseconds)
             result << ":";
@@ -2602,9 +2649,9 @@ tString st_GetFormatTime(REAL seconds, bool color, bool showIfZero)
 
     if (milliseconds > 0 || showIfZero)
     {
-        result << (color ? tThemedTextBase.ItemColor() : "") 
-               << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "") 
-               << milliseconds << (color ? tThemedTextBase.MainColor() : "") 
+        result << (color ? tThemedTextBase.ItemColor() : "")
+               << ((milliseconds < 100) ? (milliseconds < 10 ? "00" : "0") : "")
+               << milliseconds << (color ? tThemedTextBase.MainColor() : "")
                << "MS";
     }
 
@@ -2651,7 +2698,7 @@ bool tString::Contains(tString tofind)
 {
     RecomputeLength();
     tofind.RecomputeLength();
-    
+
     // if the length of tofind longer than the string, quit it!
     if (tofind.Len() > Len())
         return false;
@@ -2691,9 +2738,9 @@ bool tString::ContainsInsensitive(tString tofind)
 
     for (int i = 0; i < Len() - strCount; ++i)
     {
-        #ifdef _WIN32  
+        #ifdef _WIN32
         if (_strnicmp(thisStr + i, tofindStr, strCount) == 0)
-        #else 
+        #else
         if (strncasecmp(thisStr + i, tofindStr, strCount) == 0)
         #endif
         {

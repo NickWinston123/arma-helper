@@ -299,8 +299,11 @@ std::istream & operator>> (std::istream &s,tString &x);
 bool tIsInList( tString const & list, tString const & item );
 bool tIsInList( tString const & list, int number );
 
+bool tIsEnabledForPlayer(tString const &list_, int playerID);
+
 bool tRemoveFromList(tString & list, const tString & item);
 bool tRemoveFromList(tString & list, int number);
+
 
 tString tintTotString( int number );
 

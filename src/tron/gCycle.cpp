@@ -3281,7 +3281,7 @@ bool gCycle::Timestep(REAL currentTime)
             bool activateSmarterBotForThisPlayer = sg_smarterBot &&
                 ((sg_smarterBotAlwaysActive && (!player->IsChatting() || sg_smarterBotEnabledWhileChatting)) ||
                 (!sg_smarterBotAlwaysActive && player->IsChatting() && sg_smarterBotEnabledWhileChatting)) &&
-                tIsInList(sg_smarterBotEnabledPlayers, player->pID + 1);
+                tIsEnabledForPlayer(sg_smarterBotEnabledPlayers, player->pID + 1);
 
             // A local bot is activated for the player under these conditions:
             // 1. Either the 'smarter bot' is not activated for this player OR both types of bots can be activated simultaneously.
@@ -3292,14 +3292,14 @@ bool gCycle::Timestep(REAL currentTime)
             bool activateLocalBotForThisPlayer = (!activateSmarterBotForThisPlayer || sg_botActivationDualMode) && sg_localBot &&
                 ((sg_localBotAlwaysActive && (!player->IsChatting() || sg_localBotEnabledWhileChatting)) ||
                 (!sg_localBotAlwaysActive && player->IsChatting() && sg_localBotEnabledWhileChatting)) &&
-                tIsInList(sg_localBotEnableForPlayers, player->pID + 1);
+                tIsEnabledForPlayer(sg_localBotEnableForPlayers, player->pID + 1);
 
             // A chat bot is activated for the player under these conditions:
             // 1. The local bot is not activated for this player.
             // 2. The player's ID is in the list of players for whom the 'chat bot' is enabled AND the 'chat flag hack' is not enabled.
             // 3. The 'chat bot' is always active OR the player is currently chatting.
             bool activateChatBotForThisPlayer = !activateLocalBotForThisPlayer &&
-                tIsInList(sg_chatBotEnabledForPlayers, player->pID + 1) &&
+                tIsEnabledForPlayer(sg_chatBotEnabledForPlayers, player->pID + 1) &&
                 (sg_chatBotAlwaysActive || player->IsChatting());
             if (activateChatBotForThisPlayer || activateLocalBotForThisPlayer)
             {
@@ -6183,6 +6183,15 @@ bool gCycle::RenderCockpitFixedBefore(bool)
     return true;
 }
 
+REAL s_cycleTurnSoundVolume = 1;
+static tConfItem<REAL> s_cycleTurnSoundVolumeC("CYCLE_SOUND_TURN_VOLUME", s_cycleTurnSoundVolume);
+
+REAL s_cycleEngineVolume = 1;
+static tConfItem<REAL> s_cycleEngineVolumeC("CYCLE_SOUND_ENGINE_VOLUME", s_cycleEngineVolume);
+
+REAL s_cycleSparksVolume = 1;
+static tConfItem<REAL> s_cycleSparksVolumeC("CYCLE_SOUND_SPARKS_VOLUME", s_cycleSparksVolume);
+
 void gCycle::SoundMix(Uint8 *dest, unsigned int len,
                       int viewer, REAL rvol, REAL lvol)
 {
@@ -6196,18 +6205,18 @@ void gCycle::SoundMix(Uint8 *dest, unsigned int len,
         */
 
         if (engine)
-            engine->Mix(dest, len, viewer, rvol, lvol, verletSpeed_ / (sg_speedCycleSound * SpeedMultiplier()));
+            engine->Mix(dest, len, viewer, rvol * s_cycleEngineVolume, lvol * s_cycleEngineVolume, verletSpeed_ / (sg_speedCycleSound * SpeedMultiplier()));
 
         if (turning)
         {
             if (turn_wav.alt)
-                turning->Mix(dest, len, viewer, rvol, lvol, 5);
+                turning->Mix(dest, len, viewer, rvol * s_cycleTurnSoundVolume, lvol * s_cycleTurnSoundVolume, 5);
             else
-                turning->Mix(dest, len, viewer, rvol, lvol, 1);
+                turning->Mix(dest, len, viewer, rvol * s_cycleTurnSoundVolume, lvol * s_cycleTurnSoundVolume, 1);
         }
 
         if (spark)
-            spark->Mix(dest, len, viewer, rvol * .5, lvol * .5, 4);
+            spark->Mix(dest, len, viewer, rvol * .5 * s_cycleSparksVolume, lvol * .5 * s_cycleSparksVolume, 4);
     }
 }
 #endif

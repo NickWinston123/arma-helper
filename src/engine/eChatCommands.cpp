@@ -1691,9 +1691,18 @@ bool NameSpeakCommand::execute(tString args)
 
 bool RespawnCommand::execute(tString args)
 {
-    con << CommandLabel()
-        << "Respawning player '" << netPlayer->GetName() << "'\n";
-    netPlayer->RespawnPlayer(true);
+    gCycle *cycle = netPlayer->NetPlayerToCycle();
+
+    if (!cycle || !cycle->Alive()) {
+        con << CommandLabel()
+            << "Respawning player '" << netPlayer->GetName() << "'\n";
+        netPlayer->RespawnPlayer(true);
+    }
+    else
+        con << CommandLabel()
+            << ErrorColor()
+            << "You are already alive!\n";
+
     return true;
 }
 
@@ -1705,9 +1714,8 @@ bool RebuildGridCommand::execute(tString args)
         con << CommandLabel()
             << ErrorColor()
             << "Usage: " << se_rebuildCommand << " <#state>\n";
-        return true;
     }
-    if (gGame::CurrentGame())
+    else if (gGame::CurrentGame())
         gGame::CurrentGame()->RebuildGrid(atoi(passedString[1]));
 
     return true;

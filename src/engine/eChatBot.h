@@ -82,6 +82,7 @@ struct eChatBotDataBase
         int currentPartIndex = 0;
         std::vector<MessagePart> messageParts;
 
+        bool matchFound                           = false;
         bool abortOutput                          = false;
         bool pentalized_for_last_message          = false;
         bool pentalized_for_last_message_prefix   = false;

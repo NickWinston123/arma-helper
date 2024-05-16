@@ -435,8 +435,8 @@ protected:
 
     unsigned int readOut;
 
-    ~nMessage();
 public:
+    ~nMessage();
     unsigned short Descriptor() const{
         return descriptor;
     }

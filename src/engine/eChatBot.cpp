@@ -1711,6 +1711,7 @@ void eChatBot::InitChatFunctions()
 
 void eChatBot::LoadChatTriggers()
 {
+    gHelperUtility::Debug("eChatBot","Loading chat triggers...");
     FileManager fileManager(se_playerTriggerMessagesFile, tDirectories::Var());
     tArray<tString> lines = fileManager.Load();
 
@@ -1783,7 +1784,7 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, b
 
     if (!eventTrigger)
         bot.Stats().total_messages_read++;
-
+    gHelperUtility::Debug("eChatBot","Received Input:", inputMessage);
     bot.Messager()->ResetParams();
     bot.Messager()->SetInputParams(triggeredBy, inputMessage, eventTrigger, preAppend);
     bot.Messager()->FindTriggeredResponse();
@@ -1791,11 +1792,16 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, b
     //con << "initiate action with input " << inputMessage << "\n";
     if (!bot.Messager()->Params().abortOutput)
     {
+        gHelperUtility::Debug("eChatBot","Sending message:", bot.Messager()->Params().response);
         initiated = true;
         bot.Messager()->Send();
     }
     else if (eventTrigger)
         con << "No trigger set for '" << inputMessage << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
+    else if (bot.Messager()->Params().abortOutput && bot.Messager()->Params().matchFound)
+        gHelperUtility::Debug("eChatBot","Aborting output..");
+    else if (!bot.Messager()->Params().matchFound)
+        gHelperUtility::Debug("eChatBot","No match found..");
 
     return initiated;
 }
@@ -2045,7 +2051,6 @@ static tConfItemFunc AddChatTrigger_conf = HelperCommand::tConfItemFunc("PLAYER_
 static tConfItemFunc RemoveChatTrigger_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_REMOVE", &RemoveChatTrigger);
 static tConfItemFunc ReloadChatTriggers_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_RELOAD", &ReloadChatTriggers);
 
-
 static void TempChatBotCommandRunner(std::istream &input)
 {
     ePlayer *player = sn_consoleUser();
@@ -2136,6 +2141,7 @@ void eChatBotMessager::ResetParams()
     Params().validateOutput   = true;
     Params().abortOutput      = false;
     Params().eventTrigger     = false;
+    Params().matchFound       = false;
 
     Params().sendingPlayer    = nullptr;
     Params().triggeredBy      = nullptr;
@@ -2279,7 +2285,7 @@ void eChatBotMessager::FindTriggeredResponse()
 
             // random response from the vector
             tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
-            
+
             chosenResponse = chosenResponse.Replace("$p1", Params().triggeredByName);
 
             tString responseStr = chosenResponse;
@@ -2325,7 +2331,7 @@ void eChatBotMessager::FindTriggeredResponse()
                 bool functionResponse = !functionName.StartsWith("$p1") &&
                                         !functionName.StartsWith("$val1");
 
-                gHelperUtility::stream() << "functionName" << functionName << "\n";
+                gHelperUtility::Debug("eChatBot","functionName:", functionName);
 
                 if (functionResponse)
                 {
@@ -2365,7 +2371,7 @@ void eChatBotMessager::FindTriggeredResponse()
                     if (!functionInput.empty())
                         functionPattern += tString("(") + functionInput + tString(")");
                     // con << "functionPattern = " << functionPattern << "\n";
-                    
+
                     if (!result.empty()) {
                         responseStr = responseStr.Replace(functionPattern, result);
                     } else {
@@ -2378,8 +2384,12 @@ void eChatBotMessager::FindTriggeredResponse()
 
             chosenResponse = responseStr;
 
-            if (se_playerMessageTriggersChatFunctionsOnly && Params().triggerType == ResponseType::NORMAL )
+            if (!chosenResponse.empty())
+                Params().matchFound = true;
+
+            if (se_playerMessageTriggersChatFunctionsOnly && Params().matchFound && Params().triggerType == ResponseType::NORMAL )
             {
+                gHelperUtility::Debug("eChatBot","PLAYER_MESSAGE_TRIGGER_CHAT_FUNCTIONS_ONLY set to TRUE, aborting output..");
                 Params().abortOutput = true;
                 return;
             }
@@ -2440,7 +2450,7 @@ bool eChatBotMessager::Send()
 
     if (messageLength > se_playerTriggerMessagesSpamMaxlen)
     {
-        gHelperUtility::Debug("sendMessage","messageToSend cut because length > " +
+        gHelperUtility::Debug("eChatBot","messageToSend cut because length > " +
                                                      std::to_string(se_playerTriggerMessagesSpamMaxlen) +
                                                      " Length: " +
                                                      std::to_string(messageLength));
@@ -2468,10 +2478,14 @@ bool eChatBotMessager::Send()
     for (int i = 0; i < messageParts.Len(); i++)
     {
         tString partToSend = messageParts[i];
+        partToSend.RecomputeLength();
+
+        gHelperUtility::Debug("eChatBot","partToSend", partToSend);
+
         if (!Params().preAppend.empty())
             partToSend = Params().preAppend + partToSend;
 
-        REAL delayForPart = Params().delay/numberOfParts;
+        REAL delayForPart = totalDelay/numberOfParts;
 
         eChatBotData::MessagePart part(partToSend, delayForPart,
                                        !forceSpecialDelay && se_playerMessageTriggersChatFlag,
@@ -2556,13 +2570,6 @@ REAL eChatBotMessager::calculateResponseSmartDelay(tString response, REAL wpm)
 }
 
 
-
-
-
-
-
-
-
 const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings =
 {
     {"hackermans", "TEXT PRIMARY KEY",
@@ -2600,8 +2607,6 @@ const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings =
         [](sqlite3_stmt *stmt, int &col, eChatBotStats &stats) { stats.times_banned_today = sqlite3_column_int(stmt, col++); }
     },
 };
-
-
 
     eChatBotDataBase::ActionData  & eChatBotMessager::Params()
     {

@@ -4682,7 +4682,7 @@ static void sg_Respawn(REAL time, eGrid *grid, gArena &arena)
                 continue;
             ePlayerNetID *np = p->netPlayer;
 
-            if (!np || !tIsInList(sg_localRespawnEnabledPlayers, np->pID + 1))
+            if (!np || !tIsEnabledForPlayer(sg_localRespawnEnabledPlayers, np->pID + 1))
                 continue;
 
             np->RespawnPlayer(true);
@@ -5875,6 +5875,15 @@ static tSettingItem<bool> sg_forceSyncAllConf = HelperCommand::tSettingItem("FOR
 
 static REAL sg_forceClockDelay = 0.5;
 static tConfItem<REAL> sg_forceClockDelayConf = HelperCommand::tConfItem("FORCE_CLOCK_DELAY", sg_forceClockDelay);
+
+
+// static void update_task_scheduler()
+// {
+//     con << "UPDATING\n";
+//     gTaskScheduler.update();
+// }
+
+// static rPerFrameTask updateTasks(&update_task_scheduler);
 
 bool gGame::GameLoop(bool input)
 {

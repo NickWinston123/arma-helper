@@ -31,6 +31,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gCycleMovement.h"
 #endif
 
+#include "gHelper/gHelperVar.h"
+
 #include "tMath.h"
 
 #include "nConfig.h"
@@ -1078,8 +1080,14 @@ bool gCycleMovement::CanMakeTurn(REAL time, int direction) const
 
 REAL gCycleMovement::GetTurnDelay(void) const
 {
+
+    REAL cycleDelay = sg_delayCycle;
+    
+    if (sg_helperSmartDelay && sg_helperSmartDelayUse)
+        cycleDelay = sg_helperSmartDelayValue;
+
     // the basic delay as it was before 0.2.8 looked like this:
-    REAL baseDelay = fmax(sg_delayCycleLimit, sg_delayCycle) * sg_delayCycleBonus / SpeedMultiplier();
+    REAL baseDelay = fmax(sg_delayCycleLimit, cycleDelay) * sg_delayCycleBonus / SpeedMultiplier();
 
     // we're modifying it by a power law to make speed turns easier or harder:
     REAL speedFactor = verletSpeed_ / (sg_speedCycle * SpeedMultiplier());
@@ -1090,9 +1098,15 @@ REAL gCycleMovement::GetTurnDelay(void) const
 //!		@return	the delay between turns in seconds
 REAL gCycleMovement::GetTurnDelayDb(void) const
 {
+    
+    REAL cycleDelay = sg_delayCycle;
+    
+    if (sg_helperSmartDelay && sg_helperSmartDelayUse)
+        cycleDelay = sg_helperSmartDelayValue;
+        
     // the basic delay as it was before 0.2.8 looked like this:
     // REAL baseDelay   = sg_delayCycle*(sg_delayDbCycleBonus)/SpeedMultiplier()*sg_delayCycleDoublebindBonus;
-    REAL baseDelay = fmax(sg_delayCycleLimit, sg_delayCycle) * (sg_delayDbCycleBonus) / SpeedMultiplier() * sg_delayCycleDoublebindBonus;
+    REAL baseDelay = fmax(sg_delayCycleLimit, cycleDelay) * (sg_delayDbCycleBonus) / SpeedMultiplier() * sg_delayCycleDoublebindBonus;
 
     // we're modifying it by a power law to make speed turns easier or harder:
     REAL speedFactor = verletSpeed_ / (sg_speedCycle * SpeedMultiplier());
@@ -2713,7 +2727,7 @@ gCycleMovement::gCycleMovement(eGrid *grid, const eCoord &pos, const eCoord &dir
 {
 
     lastTurnAttemptTime = -999;
-    lastTurnAttemptDir = -999;
+    lastTurnAttemptDir = NONE;
     lastTurnTime = -999;
     turnIgnoreTime = -999;
     lastTurnDir = NONE; // 0 = NONE, -1 = left, 1 = right
@@ -3444,7 +3458,7 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
             this->lastTurnAttemptDir = dir;
 
             if (dir != NONE)
-                gHelperUtility::Debug("SMART TURNING SURVIVE", "Ignoring turn: " + dir);
+                gHelperUtility::Debug("SMART TURNING SURVIVE", "Ignoring turn:", ((dir == LEFT) ? "LEFT" : "RIGHT"));
             return false;
         }
 

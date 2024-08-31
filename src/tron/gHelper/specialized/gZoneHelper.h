@@ -31,7 +31,7 @@ public:
     void zoneTracer(gHelperData &data);
 
     gZone *findClosestZone();
-    static gZone *findClosestZone(eGameObject *owner_);
+    static gZone *findClosestZone(eGameObject *owner_, bool onlyOwnedZones = false);
 
     void showZones(gHelperData &data);
     void zoneData(gHelperData &data);

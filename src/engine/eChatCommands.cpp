@@ -1278,9 +1278,13 @@ bool SpectateCommand::execute(tString args)
     }
 
     ePlayer *local_p = player;
+
+    if (!local_p)
+        return false;
+        
     bool spectating = local_p->spectate;
 
-    if (!spectating || netPlayer)
+    if (!spectating)
     {
         con << CommandLabel()
             << "Spectating player '" << player->name << "'...\n";
@@ -1319,10 +1323,11 @@ bool JoinCommand::execute(tString args)
 
     if (unspectate)
     {
-        player->spectate = false;
-        if (!netPlayer)
+        if (!netPlayer || player->spectate) {
             con << CommandLabel()
                 << "No longer spectating...\n";
+            player->spectate = false;
+        }
     }
     if (netPlayer && !bool(netPlayer->CurrentTeam()))
     {

@@ -245,7 +245,7 @@ public:
     static gZone* lastCreatedZone;
     static gZone* GetLastCreatedZone();
 
-protected:
+public:
     int id_;
 
     bool wallInteract_;
@@ -536,7 +536,7 @@ private:
 public:
     REAL conquered_; //!< conquest status; zero if it is free, 1 if it has been completely conquered by the enemy
                      //!< time spend in the zone
-private:
+public:
     REAL conquerer_[MAXCLIENTS + 1];
     int enemiesInside_; //!< count of enemies currently inside the zone
 

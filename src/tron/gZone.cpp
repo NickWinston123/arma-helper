@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eTimer.h"
 #include "eGrid.h"
 #include "gCycle.h"
+#include "gHelper/gHelperUtilities.h"
 #include "gGame.h"
 #include "eTeam.h"
 #include "ePlayer.h"
@@ -582,6 +583,10 @@ void gZone::FindAll(tString object_id_str, bool byId, std::function<bool(gZone *
 gZone::gZone(eGrid *grid, const eCoord &pos, bool dynamicCreation, bool delayCreation)
     : eNetGameObject(grid, pos, eCoord(0, 0), NULL, true), rotation_(1, 0), lastCoord_(0), nextUpdate_(-1)
 {
+
+    if(sg_helperDebug)
+        gHelperUtility::Debug("gZone::gZone(grid)", "Creation Event");
+
 #ifdef DEBUG
     con << "GOT CREATION EVENT gZone 1"
         << "\n";
@@ -723,6 +728,11 @@ void gZone::HelperTrackedZonesManager(bool newZone)
 gZone::gZone(nMessage &m)
     : eNetGameObject(m), rotation_(1, 0)
 {
+
+    // if (player)
+    //     gHelperUtility::Debug("gZone::gZone(nMessage &m)", "Got player:",player->GetName(), false);
+    if(sg_helperDebug)
+        gHelperUtility::Debug("gZone::gZone(nMessage &m)", "Owned?",booleanToString(Owned() || Owner() > 0), false);
 #ifdef DEBUG
     con << "GOT CREATION EVENT gZone 2"
         << "\n";
@@ -905,6 +915,10 @@ void gZone::ReadSync(nMessage &m)
         this->radius_.SetSlope(sg_expansionSpeed);
         SetPosition(pos);
         SetVelocity(eCoord());
+    }
+
+    if (Owned() || Owner() > 0){
+        gHelperUtility::Debug("gZone::ReadSync", "Owned ZONE, resizeRequested_?", booleanToString(resizeRequested_), false);
     }
 
     // read rotation speed
@@ -1293,7 +1307,7 @@ bool gZone::Timestep(REAL time)
 
     if (sn_GetNetState() == nCLIENT)
     {
-        if (this->destroyed_)
+        if (this->destroyed_ || this->helperDestroyed_)
         {
             HelperTrackedZonesRemover();
         }
@@ -1349,6 +1363,9 @@ bool gZone::Timestep(REAL time)
 
     bool doRequestSync = false;
 
+    if (Owned() || Owner() > 0){
+        gHelperUtility::Debug("gZone::Timestep", "Owned ZONE, resizeRequested_?", booleanToString(resizeRequested_), false);
+    }
     // resize
     if (resizeRequested_)
     {
@@ -1987,13 +2004,17 @@ void gZone::OnEnter(gSensor *target, REAL time) { con << "gsensor entered zone\n
 void gZone::OnExit(gSensor *target, REAL time) { con << "gsensor left zone\n"; };     //!< reacts to objects leaving the zone
 void gZone::OnNear(gSensor *target, REAL time) { con << "gsensor near zone\n"; };     //!< reacts to objects near the zone
 
+bool sg_zoneForceInteract = false;
+static tConfItem<bool> sg_zoneForceInteractConf("ZONE_FORCE_INTERACT", sg_zoneForceInteract);
+
 void gZone::InteractWith(eGameObject *target, REAL time, int recursion)
 {
     if (target == this || destroyed_)
         return;
 
+    // gHelperUtility::Debug("gZone::InteractWith", "InteractWith 1 - interacts with cycle? ", booleanToString(InteractsWithCycle()));
     gCycle *prey = dynamic_cast<gCycle *>(target);
-    if (InteractsWithCycle() && prey)
+    if (prey && (InteractsWithCycle() || sg_zoneForceInteract))
     {
         if (prey->Player() && prey->Alive())
         {
@@ -2430,6 +2451,11 @@ void gZone::Render(const eCamera *cam)
 
     //  if (sr_filterZones)
     //  FilterZoneColor();
+
+
+    if (Owned() || Owner() > 0){
+        gHelperUtility::Debug("gZone::Timestep", "Owned ZONE, resizeRequested_?", booleanToString(resizeRequested_), false);
+    }
 
     ModelMatrix();
     glPushMatrix();
@@ -5003,7 +5029,7 @@ gSumoZoneHack::~gSumoZoneHack(void)
 
 bool gSumoZoneHack::Timestep(REAL time)
 {
-    // con << " SUMO ZONE DETECTED.\n";
+    con << " SUMO ZONE DETECTED.\n";
     if (currentState_ == State_Unspawned)
     {
         currentState_ = State_Spawned;

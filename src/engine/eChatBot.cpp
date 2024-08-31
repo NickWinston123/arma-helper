@@ -26,13 +26,16 @@ static tConfItem<tString> se_playerTriggerMessagesFileConf = HelperCommand::tCon
 bool se_playerTriggerMessagesReactToSelf = false;
 static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerTriggerMessagesReactToSelf);
 
+bool se_playerTriggerMessagesReactToLocal = false;
+static tConfItem<bool> se_playerTriggerMessagesReactToLocalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_REACT_TO_LOCAL", se_playerTriggerMessagesReactToLocal);
+
 static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("wd,nice,wp,gj,$diedother,annoying,n1");
 static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_KILLED_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
 
 static tString se_playerTriggerMessagesDiedByVerifiedTriggers("$died");
 static tConfItem<tString> se_playerTriggerMessagesDiedByVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DIED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesDiedByVerifiedTriggers);
 
-static tString se_playerMessageTargetPlayer = tString("");
+tString se_playerMessageTargetPlayer = tString("");
 static tConfItem<tString> se_playerMessageTargetPlayerConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_ENABLED_PLAYERS", se_playerMessageTargetPlayer);
 
 static REAL se_playerMessageDelayRandMult = 0;
@@ -253,7 +256,14 @@ tString numberCalcFunc(tString message)
         }
     }
 
-    return tString(str);
+    tString answer(str);
+    if (answer.empty())
+    {
+        eChatBot &bot = eChatBot::getInstance();
+        bot.Messager()->Params().abortOutput = true;
+    }
+
+    return answer;
 }
 
 tString sayFunc(tString message)
@@ -1687,26 +1697,26 @@ tString unvalidatedSayFunc(tString message)
 
 void eChatBot::InitChatFunctions()
 {
-    Functions()->RegisterFunction(tString("$numbadderfunc"), numberAdderFunc);
-    Functions()->RegisterFunction(tString("$numbcalcfunc"), numberCalcFunc);
-    Functions()->RegisterFunction(tString("$sayfunc"), sayFunc);
-    Functions()->RegisterFunction(tString("$revfunc"), reverseFunc);
-    Functions()->RegisterFunction(tString("$statsfunc"), statsFunc);
-    Functions()->RegisterFunction(tString("$nicknamefunc"), nicknameFunc);
-    Functions()->RegisterFunction(tString("$KDfunc"), playerKDFunc);
-    Functions()->RegisterFunction(tString("$leaderboardfunc"), leaderboardFunc);
-    Functions()->RegisterFunction(tString("$exactstatfunc"), exactStatFunc);
-    Functions()->RegisterFunction(tString("$masterfunc"), masterFunc);
-    Functions()->RegisterFunction(tString("$hidestatfunc"), hideStatFunc);
-    Functions()->RegisterFunction(tString("$whatsthefunc"), whatsThefunc);
-    Functions()->RegisterFunction(tString("$consolidatestatsfunc"), consolidatePlayerStatsFunc);
-    Functions()->RegisterFunction(tString("$statsaltfunc"), statsAltFunc);
-    Functions()->RegisterFunction(tString("$searchfunc"), searchFunc);
-    Functions()->RegisterFunction(tString("$sayoutloudfunc"), sayOutLoudFunc);
-    Functions()->RegisterFunction(tString("$chatscrollsearchfunc"), chatScrollSearchFunc);
-    Functions()->RegisterFunction(tString("$fliprepeatedcharsfunc"), flipRepeatedCharacters);
-    Functions()->RegisterFunction(tString("$banfunc"), banFunc);
-    Functions()->RegisterFunction(tString("$unvalidatedsayfunc"), unvalidatedSayFunc);
+    Functions()->RegisterFunction("$numbadderfunc", numberAdderFunc);
+    Functions()->RegisterFunction("$numbcalcfunc", numberCalcFunc);
+    Functions()->RegisterFunction("$sayfunc", sayFunc);
+    Functions()->RegisterFunction("$revfunc", reverseFunc);
+    Functions()->RegisterFunction("$statsfunc", statsFunc);
+    Functions()->RegisterFunction("$nicknamefunc", nicknameFunc);
+    Functions()->RegisterFunction("$KDfunc", playerKDFunc);
+    Functions()->RegisterFunction("$leaderboardfunc", leaderboardFunc);
+    Functions()->RegisterFunction("$exactstatfunc", exactStatFunc);
+    Functions()->RegisterFunction("$masterfunc", masterFunc);
+    Functions()->RegisterFunction("$hidestatfunc", hideStatFunc);
+    Functions()->RegisterFunction("$whatsthefunc", whatsThefunc);
+    Functions()->RegisterFunction("$consolidatestatsfunc", consolidatePlayerStatsFunc);
+    Functions()->RegisterFunction("$statsaltfunc", statsAltFunc);
+    Functions()->RegisterFunction("$searchfunc", searchFunc);
+    Functions()->RegisterFunction("$sayoutloudfunc", sayOutLoudFunc);
+    Functions()->RegisterFunction("$chatscrollsearchfunc", chatScrollSearchFunc);
+    Functions()->RegisterFunction("$fliprepeatedcharsfunc", flipRepeatedCharacters);
+    Functions()->RegisterFunction("$banfunc", banFunc);
+    Functions()->RegisterFunction("$unvalidatedsayfunc", unvalidatedSayFunc);
 }
 
 void eChatBot::LoadChatTriggers()
@@ -2386,7 +2396,9 @@ void eChatBotMessager::FindTriggeredResponse()
 
             if (!chosenResponse.empty())
                 Params().matchFound = true;
-
+            else 
+                Params().abortOutput = true;
+                
             if (se_playerMessageTriggersChatFunctionsOnly && Params().matchFound && Params().triggerType == ResponseType::NORMAL )
             {
                 gHelperUtility::Debug("eChatBot","PLAYER_MESSAGE_TRIGGER_CHAT_FUNCTIONS_ONLY set to TRUE, aborting output..");
@@ -2435,13 +2447,16 @@ bool eChatBotMessager::Send()
             break;
         }
     }
+    else if (!tIsEnabledForPlayer(se_playerMessageTargetPlayer, Params().sendingPlayer->pID + 1))
+    {
+        return false;
+    }
 
     if (!Params().sendingPlayer)
         return false;
 
     REAL extraDelay;
     tString messageToSend = Params().response;
-    // con << "MESSAGETO SEND = " << messageToSend << "\n";
 
     bool forceSpecialDelay = Params().delay < -5;
 

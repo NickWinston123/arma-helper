@@ -109,7 +109,7 @@ enum playerWatchStatus {
     ACTIVE = 2
 };
 
-extern bool se_toggleChatFlag, se_toggleChatFlagAlways, se_BlockChatFlags;
+extern bool se_toggleChatFlag, se_chatFlagAlways, se_BlockChatFlags;
 
 #define PLAYER_CONFITEMS (60+MAX_INSTANT_CHAT)
 
@@ -647,8 +647,10 @@ public:
 
     static ePlayerNetID * ReadPlayer( std::istream & s ); //!< reads a player from the stream
 
+    static void Update(int playerID);           // creates ePlayerNetIDs for new players
     static void Update(ePlayer *updatePlayer = nullptr);           // creates ePlayerNetIDs for new players
     static void ForcedUpdate(ePlayer *updatePlayer = nullptr);           // creates ePlayerNetIDs for new players
+    static void ForcedUpdate(int playerID);           // creates ePlayerNetIDs for new players
     // and destroys those of players that have left
 
 #ifdef KRAWALL_SERVER

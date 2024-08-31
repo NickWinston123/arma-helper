@@ -90,22 +90,22 @@ public:
 
     tColoredString nMessageToString(nMessage& msg) {
         tColoredString s;
-        s << "Descriptor: " << msg.Descriptor() << "\n";
-        s << "Sender ID: " << msg.SenderID() << "\n";
-        s << "Message ID: " << msg.MessageID() << "\n";
+        s << "Descriptor: "  << msg.Descriptor() << "\n";
+        s << "Sender ID: "   << msg.SenderID() << "\n";
+        s << "Message ID: "  << msg.MessageID() << "\n";
         s << "Data Length: " << msg.DataLen() << "\n";
+
         s << "Data: ";
         for (int i=0; i<msg.DataLen(); i++)
             s << msg.Data(i) << " ";
         s << "\n";
+
         return s;
     }
 
     void nMessage(nMessage& msg) {
         Print(nMessageToString(msg));
     }
-
-
 
     void CenterDisplay(tString s,REAL timeout=5,REAL r=1,REAL g=1,REAL b=1);
 

@@ -12,9 +12,9 @@
 #include "tDatabase.h"
 
 extern bool se_playerTriggerMessages;
-extern tString se_playerTriggerMessagesFile;
+extern tString se_playerTriggerMessagesFile, se_playerMessageTargetPlayer;
 
-extern bool se_playerTriggerMessagesReactToSelf;
+extern bool se_playerTriggerMessagesReactToSelf, se_playerTriggerMessagesReactToLocal;
 extern bool se_playerTriggerMessagesResendSilencedMessages;
 
 extern bool se_playerTriggerMessagesRageQuits;
@@ -140,6 +140,11 @@ public:
         functionMap[name] = func;
     }
 
+    void RegisterFunction(const std::string &name, ChatFunction func)
+    {
+        RegisterFunction(tString(name), func);
+    }
+
     tString ExecuteFunction(const tString &name, const tString &message)
     {
         if (functionMap.find(name) != functionMap.end())
@@ -220,7 +225,6 @@ private:
 public:
 
     eChatBotData data;
-
 
     // instance
     static eChatBot &getInstance()

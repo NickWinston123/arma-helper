@@ -702,6 +702,9 @@ void eGameObject::PPDisplay(){
 bool eGameObject::Act(uActionPlayer *,REAL){return false;}
 
 
+bool sn_forceInteractWith = false;
+static tConfItem<bool> sn_forceInteractWithConf("SIMULATE_INTERACT_WITH", sn_forceInteractWith);
+
 bool eGameObject::TimestepThis(REAL currentTime,eGameObject *c){
 #ifdef DEBUG
     c->grid->Check();
@@ -732,7 +735,7 @@ bool eGameObject::TimestepThis(REAL currentTime,eGameObject *c){
         // make current face valid
         c->FindCurrentFace();
 
-        if (sn_GetNetState()!=nCLIENT)
+        if (sn_GetNetState()!=nCLIENT || sn_forceInteractWith)
             for(int j=c->grid->gameObjectsInteresting.Len()-1;j>=0;j--)
                 c->InteractWith(c->grid->gameObjectsInteresting(j),currentTime,0);
 

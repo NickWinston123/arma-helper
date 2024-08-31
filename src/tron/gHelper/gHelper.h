@@ -25,6 +25,7 @@ class gHelper
     friend class gZoneHelper;
 
 public:
+    static REAL traceSensorDistance[2];
     /**
      * Constructor for the `gHelper` class.
      *
@@ -124,6 +125,8 @@ public:
      * @param data: structure to store the data gathered by the sensors
      */
     void showTailTracer(gHelperData &data);
+
+    void smartDelay(gHelperData &data);
 
     /**
      * autoBrake - Automatically apply brakes to the cycle

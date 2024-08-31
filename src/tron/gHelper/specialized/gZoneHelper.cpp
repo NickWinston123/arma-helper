@@ -19,6 +19,12 @@ namespace helperConfig
     bool sg_helperZoneShow = false;
     static tConfItem<bool> sg_helperZoneShowConf = HelperCommand::tConfItem("HELPER_ZONE_SHOW", sg_helperZoneShow);
 
+    bool sg_helperZoneInfo = false;
+    static tConfItem<bool> sg_helperZoneInfoConf = HelperCommand::tConfItem("HELPER_ZONE_INFO", sg_helperZoneInfo);
+
+    bool sg_helperZoneOnlyOwnedZones = false;
+    static tConfItem<bool> sg_helperZoneOnlyOwnedZonesConf = HelperCommand::tConfItem("HELPER_ZONE_INFO_ONLY_OWNED_ZONES", sg_helperZoneOnlyOwnedZones);
+
     REAL sg_helperZoneShowHeight = 1;
     static tConfItem<REAL> sg_helperZoneShowHeightConf = HelperCommand::tConfItem("HELPER_ZONE_SHOW_HEIGHT", sg_helperZoneShowHeight);
 
@@ -156,14 +162,14 @@ void gZoneHelper::zoneTracer(gHelperData &data)
                               owner_.Position(), closestCorner(zone), sg_helperZoneTracerBrightness);
 }
 
-gZone *gZoneHelper::findClosestZone(eGameObject *owner_)
+gZone *gZoneHelper::findClosestZone(eGameObject *owner_, bool onlyOwnedZones)
 {
     gZone *closestZone = nullptr;
     REAL closestZoneDistanceSquared = 999999999;
     for (std::deque<gZone *>::const_iterator i = sg_HelperTrackedZones.begin(); i != sg_HelperTrackedZones.end(); ++i)
     {
         gZone *zone = *i;
-        if (zone)
+        if (zone && (!onlyOwnedZones || (zone->Owned() || zone->Owner() > 0)) && zone->GetRadius() > 10)
         {
             REAL positionDifference = st_GetDifference(zone->Position(), owner_->Position());
             if (positionDifference < closestZoneDistanceSquared)
@@ -209,19 +215,62 @@ void gZoneHelper::showZones(gHelperData &data)
 
 void gZoneHelper::zoneData(gHelperData &data)
 {
-    gZone *zone = findClosestZone();
+    gZone *zone = findClosestZone(&owner_,sg_helperZoneOnlyOwnedZones);
     if (!zone)
-        return;
-    gBaseZoneHack *fortZone = dynamic_cast<gBaseZoneHack *>(zone);
-    if (fortZone)
     {
         tColoredString info;
+        info << "None";
 
-        info << "FORT ZONE "
-             << " conquered " << fortZone->conquered_;
-        info << "\n";
         zoneInfoH << info;
+        return;
     }
+
+    // if (sg_helperDebug)
+    //     gHelperUtility::Debug("zoneData","Zone found, displaying info.");
+
+    tColoredString info;
+
+    info << "ZONE ID:               " << zone->GetID() << "\n";
+    info << "ZONE ID:               " << zone->ID() << "\n";
+    info << "Position: (            " << zone->GetPosition().x << ", " << zone->GetPosition().y << ")\n";
+    info << "Velocity: (            " << zone->GetVelocity().x << ", " << zone->GetVelocity().y << ")\n";
+    info << "Radius:                " << zone->GetRadius() << "\n";
+    info << "Expansion Speed:       " << zone->GetExpansionSpeed() << "\n";
+    info << "Rotation Speed:        " << zone->GetRotationSpeed() << "\n";
+    info << "Rotation Acceleration: " << zone->GetRotationAcceleration() << "\n";
+    info << "Owner:                 " << (zone->GetOwner() ? zone->GetOwner()->GetName() : "None") << "\n";
+    info << "Player:                " << (zone->Player() ? zone->Player()->GetName() : "None") << "\n";
+    info << "Owner ID:              " << (zone->Owner()) << "\n";
+    info << "Owned by us?:          " << booleanToString(zone->Owned()) << "\n";
+    info << "Color:                 " << int(zone->GetColor().r*15) << " " << int(zone->GetColor().g*15) << " " << int(zone->GetColor().b*15) << "\n";
+    info << "Effect:                " << zone->GetEffect() << "\n";
+    info << "Zone Name:             " << zone->GetName() << "\n";
+    //info << "Destroyed:           " << booleanToString(zone->destroyed_) << "\n";
+    // info << "Helper Destroyed:      " << booleanToString(zone->helperDestroyed_) << "\n";
+    // info << "OWNERSHIP           " << booleanToString(zone->testthishere) << "\n";
+    //info << "Reference Time:      " << zone->referenceTime_ << "\n";
+    //info << "Create Time:         " << zone->createTime_ << "\n";
+    //info << "Actual Create Time:  " << zone->actualCreateTime_ << "\n";
+    //info << "Next Update:         " << zone->nextUpdate_ << "\n";
+
+    gSumoZoneHack *sumoZone = dynamic_cast<gSumoZoneHack *>(zone);
+    if (sumoZone)
+    {
+        info << "SUMO ZONE\n";
+        // info << "Conquered: " << fortZone->conquered_ << "\n";
+        // info << "Enemies Inside: " << fortZone->enemiesInside_ << "\n";
+        // info << "Owners Inside: " << fortZone->ownersInside_ << "\n";
+        // info << "Only Survivor: " << booleanToString(fortZone->onlySurvivor_) << "\n";
+        // info << "Last Enemy Contact: " << fortZone->lastEnemyContact_ << "\n";
+        // info << "Team Distance: " << fortZone->teamDistance_ << "\n";
+        // //info << "Touchy: " << booleanToStatus(fortZone->touchy_) << "\n";
+        // info << "Current State: " << fortZone->currentState_ << "\n";
+        //info << "Last Sync Time: " << fortZone->lastSync_ << "\n";
+        //info << "Last Respawn Remind Time: " << fortZone->lastRespawnRemindTime_ << "\n";
+        //info << "Last Respawn Remind Waiting: " << fortZone->lastRespawnRemindWaiting_ << "\n";
+    }
+
+    zoneInfoH << info;
 }
 
 void gZoneHelper::Activate(gHelperData &data)
@@ -241,7 +290,8 @@ void gZoneHelper::Activate(gHelperData &data)
     if (sg_helperZoneTracer)
         zoneTracer(data);
 
-    // zoneData(data);
+    if (sg_helperZoneInfo)
+        zoneData(data);
 }
 
 gZoneHelper &gZoneHelper::Get(gHelper &helper, gCycle &owner)

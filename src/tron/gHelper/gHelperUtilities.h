@@ -287,13 +287,15 @@ private:
         std::chrono::steady_clock::time_point lastLoggedTime;
     };
 
-    static tThemedText theme;
     static std::list<CachedLog> cache;
 
     static std::size_t maxSenderLength;
     static std::chrono::steady_clock::time_point lastMaxLengthUpdate;
 
 public:
+
+    static tThemedText theme;
+
     template <typename T>
     static void Log(const gDebugLoggerParams<T>& params)
     {
@@ -517,6 +519,12 @@ public:
 };
 
 #define HDEBUG gHelperUtility::stream()
+
+
+static tString booleanToString(bool trueVal)
+{
+    return ((trueVal ? tString("0xaaffaaTRUE") : tString("0xffaaaaFALSE")) += gDebugLogger::theme.MainColor());
+}
 
 // See how close two directions are. The threshold represents the minimum cosine
 // of the angle between the directions for them to be considered close.

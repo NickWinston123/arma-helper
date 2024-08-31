@@ -181,6 +181,11 @@ void showClosedFactor(tColor color, gHelperData &data, REAL distance, int dir)
     gHelperUtility::debugLine(color, 1, data.ownerData.speedFactorF(), data.ownerData.owner_->Position(), sensor->before_hit, 999);
 }
 
+tString booleanSurviveStatus(bool survivable)
+{
+    return ((survivable ? tString("0xaaffaaSURVIVABLE") : tString("0xffaaaaUNSURVIVABLE")) += gDebugLogger::theme.MainColor());
+}
+
 // Function that checks if a turn can be survived by the player.
 gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor, bool driveStraight, bool debug)
 {
@@ -197,7 +202,8 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
 
     // Calculate the rubber factor.
     REAL rubberFactor = data.rubberData.rubberFactorF();
-    REAL turnFactor = data.ownerData.turnSpeedFactorF();
+    REAL turnFactor   = data.ownerData.turnSpeedFactorF();
+
     // REAL turnTime = data.ownerData.turnTimeF(1) - se_GameTime();
     // con << "TURN TIME: " << turnTime << "\n";
     if (freeSpaceFactor > 0)
@@ -237,7 +243,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
         showClosedFactor(yellow, data, closedInFactor, RIGHT);
     }
 
-    if (sg_helperSmartTurningSurviveDebugFreeSpaceFactor)
+    if (sg_helperSmartTurningSurviveDebugFreeSpaceFactor && freeSpaceFactor > 0)
     {
         tColor green(15, 15, 0);
         showClosedFactor(green, data, freeSpaceFactor, LEFT);
@@ -261,7 +267,7 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
     //  con << "left->hit: " << left->hit << "\n";
     //  con << "right->hit: " << right->hit << "\n";
     // If free space factor is greater than 0, check the free space factor.
-    int blockedDir = 0;
+    int blockedDir = NONE;
 
     if (freeSpaceFactor > 0)
     {
@@ -303,26 +309,45 @@ gSurviveData gTurnHelper::canSurviveTurn(gHelperData &data, REAL freeSpaceFactor
         blockedDir = (blockedDir == NONE || blockedDir == RIGHT) ? RIGHT : BOTH;
     }
 
-    if (debug && blockedDir != 0)
+    if (debug && blockedDir != NONE)
     {
         if (blockedDir == LEFT)
-            surviveData.debug << "LEFT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnLeftRubber << " SPACE: " << surviveData.canTurnLeftSpace
-                              << "\nREASON: " << left->hit << " < " << freeSpaceFactor << " = " << bool(left->hit < freeSpaceFactor) << " && "
-                              << right->hit << " > " << freeSpaceFactor << " = " << bool(right->hit > freeSpaceFactor) << "\n";
+        {
+            surviveData.debug << "LEFT BLOCKED - BECAUSE: RUBBER: " << booleanSurviveStatus(surviveData.canTurnLeftRubber) << ((freeSpaceFactor > 0) ? tString(" SPACE: ") += booleanSurviveStatus(surviveData.canTurnLeftSpace) : "");
+            surviveData.debug << "\nREASON: ";
+            if (!surviveData.canTurnLeftSpace)
+                surviveData.debug << "LEFT DIST: " << left->hit << " < SPACE FACTOR: " << freeSpaceFactor << " = " << booleanToString(bool(left->hit < freeSpaceFactor)) << "\n";
+            if (!surviveData.canTurnLeftRubber)
+                surviveData.debug << "LEFT DIST: " << left->hit << " < RUBBER FACTOR: " << rubberFactor   << " = " << booleanToString(bool(left->hit < rubberFactor)) << "\n";
+        }
         else if (blockedDir == RIGHT)
-            surviveData.debug << "RIGHT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnRightRubber << " SPACE: " << surviveData.canTurnRightSpace
-                              << "\nREASON: " << right->hit << " < " << freeSpaceFactor << " = " << bool(right->hit < freeSpaceFactor) << " && "
-                              << left->hit << " > " << freeSpaceFactor << " = " << bool(left->hit > freeSpaceFactor) << "\n";
+        {
+            surviveData.debug << "RIGHT BLOCKED - BECAUSE: RUBBER: " << booleanSurviveStatus(surviveData.canTurnRightRubber) << ((freeSpaceFactor > 0) ? tString(" SPACE: ") += booleanSurviveStatus(surviveData.canTurnRightSpace) : "");
+            surviveData.debug << "\nREASON: ";
+            if (!surviveData.canTurnRightSpace)
+                surviveData.debug << "RIGHT DIST: " << right->hit << " < SPACE FACTOR: " << freeSpaceFactor << " = " << booleanToString(bool(right->hit < freeSpaceFactor)) << "\n";
+            if (!surviveData.canTurnRightRubber)
+                surviveData.debug << "RIGHT DIST: " << right->hit << " < RUBBER FACTOR: " << rubberFactor   << " = " << booleanToString(bool(right->hit < rubberFactor)) << "\n";
+        }
         else if (blockedDir == BOTH)
-            surviveData.debug << "BOTH BLOCKED: "
-                              << "LEFT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnLeftRubber << " SPACE: " << surviveData.canTurnLeftSpace
-                              << "\nREASON: " << left->hit << " < " << freeSpaceFactor << " = " << bool(left->hit < freeSpaceFactor) << " && "
-                              << right->hit << " > " << freeSpaceFactor << " = " << bool(right->hit > freeSpaceFactor)
-                              << " | "
-                              << "RIGHT BLOCKED - BECAUSE: RUBBER: " << surviveData.canTurnRightRubber << " SPACE: " << surviveData.canTurnRightSpace
-                              << "\nREASON: " << right->hit << " < " << freeSpaceFactor << " = " << bool(right->hit < freeSpaceFactor) << " && "
-                              << left->hit << " > " << freeSpaceFactor << " = " << bool(left->hit > freeSpaceFactor) << "\n";
+        {
+            surviveData.debug << "BOTH BLOCKED: ";
+            surviveData.debug << "LEFT BLOCKED - BECAUSE: RUBBER: " << booleanSurviveStatus(surviveData.canTurnLeftRubber) << ((freeSpaceFactor > 0) ? tString(" SPACE: ") += booleanSurviveStatus(surviveData.canTurnLeftSpace) : "");
+            surviveData.debug << "\nREASON: ";
+            if (!surviveData.canTurnLeftSpace)
+                surviveData.debug << "LEFT DIST: " << left->hit << " < SPACE FACTOR: " << freeSpaceFactor << " = " << booleanToString(bool(left->hit < freeSpaceFactor)) << "\n";
+            if (!surviveData.canTurnLeftRubber)
+                surviveData.debug << "LEFT DIST: " << left->hit << " < RUBBER FACTOR: " << rubberFactor   << " = " << booleanToString(bool(left->hit < rubberFactor)) << "\n";
+
+            surviveData.debug << "RIGHT BLOCKED - BECAUSE: RUBBER: " << booleanSurviveStatus(surviveData.canTurnRightRubber) << ((freeSpaceFactor > 0) ? tString(" SPACE: ") += booleanSurviveStatus(surviveData.canTurnRightSpace) : "");
+            surviveData.debug << "\nREASON: ";
+            if (!surviveData.canTurnRightSpace)
+                surviveData.debug << "RIGHT DIST: " << right->hit << " < SPACE FACTOR: " << freeSpaceFactor << " = " << booleanToString(bool(right->hit < freeSpaceFactor)) << "\n";
+            if (!surviveData.canTurnRightRubber)
+                surviveData.debug << "RIGHT DIST: " << right->hit << " < RUBBER FACTOR: " << rubberFactor   << " = " << booleanToString(bool(right->hit < rubberFactor)) << "\n";
+        }
     }
+
     // If freeSpaceFactor is greater than 0, calculate canSurviveLeftTurn and canSurviveRightTurn based on closedIn and freeSpaceFactor
     if (freeSpaceFactor > 0)
     {

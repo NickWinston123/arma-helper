@@ -983,9 +983,15 @@ bool gAINavigator::FollowEvaluator::targetZone()
 {
     gZone *closestZone = gZoneHelper::findClosestZone(&cycle_);
 
+
+    if (closestZone)
+        gHelperUtility::Debug("TargetZone",
+                            "Inside Zone?",booleanToString(closestZone->isInside(&cycle_)));
+
     if (closestZone && !closestZone->isInside(&cycle_))
     {
-        SetTarget(closestZone);
+        // SetTarget(closestZone);
+        SetTarget(closestZone->Position(), eCoord(0,0)); // + object->Lag()
         return true;
     }
 

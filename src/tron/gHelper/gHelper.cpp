@@ -55,6 +55,13 @@ namespace helperConfig
     bool sg_helperDebugTimeStamp = true;
     static tConfItem<bool> sg_helperDebugTimeStampConf = HelperCommand::tConfItem("HELPER_DEBUG_TIMESTAMP", sg_helperDebugTimeStamp);
 
+    bool sg_helperSmartDelay = false;
+    static tConfItem<bool> sg_helperSmartDelayConf = HelperCommand::tConfItem("HELPER_SELF_SMART_DELAY", sg_helperSmartDelay);
+    REAL sg_helperSmartDelayValue = 0.1;
+    static tConfItem<REAL> sg_helperSmartDelayValueConf = HelperCommand::tConfItem("HELPER_SELF_SMART_DELAY_VALUE", sg_helperSmartDelayValue);
+    bool sg_helperSmartDelayUse = false;
+    
+    
     bool sg_helperAutoBrake = false;
     static tConfItem<bool> sg_helperAutoBrakeConf = HelperCommand::tConfItem("HELPER_SELF_AUTO_BRAKE", sg_helperAutoBrake);
     REAL sg_helperAutoBrakeMin = 0;
@@ -279,10 +286,10 @@ gHelper::gHelper(gCycle &owner)
       closestEnemy(owner)
 {
 
-    data_stored.ownerData.owner_ = &owner_;
-    data_stored.sensors.owner_ = &owner_;
-    data_stored.enemies.owner_ = &owner_;
-    data_stored.rubberData.owner_ = &owner_;
+    data_stored.ownerData.owner_   = &owner_;
+    data_stored.sensors.owner_     = &owner_;
+    data_stored.enemies.owner_     = &owner_;
+    data_stored.rubberData.owner_  = &owner_;
     data_stored.rubberData.helper_ = this;
     data_stored.leftCorner.linkLastCorner(&(data_stored.lastLeftCorner));
     data_stored.rightCorner.linkLastCorner(&(data_stored.lastRightCorner));
@@ -426,6 +433,22 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
         gHelperUtility::debugLine(tColor(0, 1, 0),    sg_helperDetectCutHeight, timeout, ourPos, enemyPos); // Green Line
     else
         gHelperUtility::debugLine(tColor(.4, .4, .4), sg_helperDetectCutHeight, timeout, ourPos, enemyPos); // Gray Line
+}
+
+void gHelper::smartDelay(gHelperData &data)
+{
+    if (!aliveCheck())
+        return;
+
+    std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT);
+    std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT);
+    
+    REAL turnFactor   = data.ownerData.turnSpeedFactorF();
+
+    bool closedIn = left->hit <= turnFactor || right->hit <= turnFactor;
+
+    sg_helperSmartDelayUse = closedIn ? false : true;
+
 }
 
 void gHelper::rubberRatioBrake(gHelperData &data)
@@ -892,47 +915,70 @@ bool gHelper::aliveCheck()
     return &owner_ && owner_.Grid() && owner_.Alive();
 }
 
+REAL gHelper::traceSensorDistance[2] = {1E+30, 1E+30};
 void gHelper::trace(gHelperData &data, int dir)
 {
+    static bool locked = false;
+
+    if (locked)
+        return;
+
     if (!(owner_.pendingTurns.size() == 0))
     {
         if (helperConfig::sg_helperDebug)
             gHelperUtility::Debug("Trace", "Not tracing due to pending turns.");
+        locked = false;
         return;
     }
 
     std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(&owner_, owner_.Position(), dir);
     sensor->detect(sg_helperSensorRange);
+    
+    REAL hitDistance = sensor->hit;
 
     // Initialize to a large value
-    static float sensorDistance[2] = {1E+30, 1E+30};
+    // static float traceSensorDistance[2] = {1E+30, 1E+30};
     static bool initialized[2] = {false, false};
 
     int index = (dir == LEFT) ? 0 : 1;
 
     if (!initialized[index])
     {
-        sensorDistance[index] = sensor->hit;
+        traceSensorDistance[index] = hitDistance;
         initialized[index] = true;
         return;
     }
-    REAL lastChangeDist = sensorDistance[index] + sg_helperTraceReactRange;
-    if (sensor->hit > lastChangeDist)
-    {
-        if (helperConfig::sg_helperDebug)
-            gHelperUtility::Debug("Trace", ((dir == LEFT) ? "Tracing left" : "Tracing right"));
 
-        gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index]
+    REAL lastChangeDist = traceSensorDistance[index] + sg_helperTraceReactRange;
+
+    if (hitDistance > lastChangeDist)
+    {
+        locked = true;
+
+        if (helperConfig::sg_helperDebug)
+            gHelperUtility::Debug("Trace", ((dir == LEFT) ? "Tracing left" : "Tracing right"), std::string("because ") + std::to_string(hitDistance) + std::string(" > ") + std::to_string(lastChangeDist));
+
+        if (sg_helperTraceDelay > 0)
+        {
+            gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index, &locked]
+            {
+                locked = false;
+                this->owner_.ActTurnBot(dir);
+                traceSensorDistance[index] = 1E+30;
+            });
+        }
+        else 
         {
             this->owner_.ActTurnBot(dir);
-        });
-
-        sensorDistance[index] = 1E+30;
-        initialized[index] = false;
+            traceSensorDistance[index] = 1E+30;
+            initialized[index] = false;
+            locked = false;
+        }
     }
     else
     {
-        sensorDistance[index] = sensor->hit;
+        traceSensorDistance[index] = hitDistance;
+        locked = false;
     }
 }
 
@@ -951,14 +997,14 @@ void gHelper::Activate()
 
         tColoredString debug;
         debug << "gCycles: " << eGameObject::number_of_gCycles << "\n";
-        debug << "Walls: " << sg_netPlayerWalls.Len() << "\n";
+        debug << "Walls: "   << sg_netPlayerWalls.Len() << "\n";
         debug << "eGameObjects: " << eGrid::CurrentGrid()->gameObjects.Len() << "\n";
 
-        helperDebugH << debug;
-        ownerPosH << roundeCoord(ownerPos);
-        ownerDirH << roundeCoord(ownerDir);
-        tailPosH << roundeCoord(tailPos);
-        tailDirH << roundeCoord(owner_.tailDir);
+        helperDebugH       << debug;
+        ownerPosH          << roundeCoord(ownerPos);
+        ownerDirH          << roundeCoord(ownerDir);
+        tailPosH           << roundeCoord(tailPos);
+        tailDirH           << roundeCoord(owner_.tailDir);
         sg_helperGameTimeH << se_GameTime();
     }
 
@@ -999,6 +1045,9 @@ void gHelper::Activate()
     if (sg_helperShowEnemyTail)
         showEnemyTail(data_stored);
 
+    if (sg_helperSmartDelay)
+        smartDelay(data_stored);
+
     if (sg_helperAutoBrake)
         autoBrake();
 
@@ -1010,10 +1059,14 @@ void gHelper::Activate()
 
     if (sg_helperTraceLeft)
         trace(data_stored, LEFT);
+    else
+        traceSensorDistance[0] = 1E+30;
 
     if (sg_helperTraceRight)
         trace(data_stored, RIGHT);
-
+    else
+        traceSensorDistance[1] = 1E+30;
+        
     if (sg_helperHud)
         sg_helperActivateTimeH << (tRealSysTimeFloat() - start);
 }

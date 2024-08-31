@@ -50,6 +50,8 @@ namespace helperConfig
 
     bool sg_helperSmartTurningDisableWhileClosedIn = true;
     static tConfItem<bool> sg_helperSmartTurningDisableWhileClosedInConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_DISABLE_WHILE_CLOSED_IN", sg_helperSmartTurningDisableWhileClosedIn);
+    bool sg_helperSmartTurningDisableWhileBlockedBySelf = true;
+    static tConfItem<bool> sg_helperSmartTurningDisableWhileBlockedBySelfConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_DISABLE_WHILE_BLOCKED_BY_SELF", sg_helperSmartTurningDisableWhileBlockedBySelf);
     REAL sg_helperSmartTurningDisableWhileClosedInMult = 1;
     static tConfItem<REAL> sg_helperSmartTurningDisableWhileClosedInMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_CLOSED_IN_MULT", sg_helperSmartTurningDisableWhileClosedInMult);
 
@@ -153,7 +155,7 @@ void gSmartTurning::followTail(gHelperData &data)
 
     // Check if the cycle can survive turning left or right
 
-    gSurviveData surviveData = helper_.turnHelper->canSurviveTurn(data, sg_helperSmartTurningFollowTailFreeSpaceMult, false, sg_helperSmartTurningSurviveDebug);
+    gSurviveData surviveData = helper_.turnHelper->canSurviveTurn(data, sg_helperSmartTurningFollowTailFreeSpaceMult, false, sg_helperDebug && sg_helperSmartTurningSurviveDebug);
     if (!surviveData.exist)
         return;
     // If the cycle is closed in or blocked by itself, return
@@ -286,8 +288,9 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     if (!helper_.aliveCheck())
         return;
 
+    bool debug = sg_helperDebug && sg_helperSmartTurningSurviveDebug;
     // Check if the player can survive a turn.
-    gSurviveData surviveData = helper_.turnHelper->canSurviveTurn(data, sg_helperSmartTurningSpace, false, sg_helperSmartTurningSurviveDebug);
+    gSurviveData surviveData = helper_.turnHelper->canSurviveTurn(data, sg_helperSmartTurningSpace, false, debug);
     if (!surviveData.exist)
         return;
 
@@ -297,10 +300,11 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
         this->blockTurn = BOTH;
         return;
     }
+
     // If the player is closed in or blocked by themselves and closedIn is set, unblock both turns and return.
     if (
         (sg_helperSmartTurningDisableWhileClosedIn && surviveData.closedIn) ||
-        (surviveData.closedIn && surviveData.blockedBySelf) ||
+        (sg_helperSmartTurningDisableWhileBlockedBySelf && surviveData.closedIn && surviveData.blockedBySelf) ||
         (sg_helperSmartTurningSpace > 0 && surviveData.blockedBySelf && !surviveData.closedIn)
        )
     {
@@ -320,7 +324,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     {
         gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING LEFT TURNS");
 
-        if (sg_helperSmartTurningSurviveDebug)
+        if (debug)
             gHelperUtility::Debug("SMART TURNING SURVIVE", std::string(surviveData.debug));
 
         this->blockTurn = LEFT;
@@ -332,7 +336,7 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     {
         gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING RIGHT TURN");
 
-        if (sg_helperSmartTurningSurviveDebug)
+        if (debug)
             gHelperUtility::Debug("SMART TURNING SURVIVE", std::string(surviveData.debug));
 
         this->blockTurn = RIGHT;

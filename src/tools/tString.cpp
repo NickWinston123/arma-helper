@@ -2458,7 +2458,6 @@ bool tIsInList(tString const &list_, int number)
 
 bool tIsEnabledForPlayer(const tString &list_, int playerID)
 {
-
     if (list_.empty())
         return false;
 
@@ -2469,33 +2468,25 @@ bool tIsEnabledForPlayer(const tString &list_, int playerID)
 
     if (list_.StartsWith("*"))
     {
-        tString negationItem("!");
-                negationItem << playerIDStr << ",";
-        if (list_.StrPos(negationItem) != -1)
-        {
+        tString negationStr;
+        negationStr << "!" << playerIDStr;
+        if (list_.StrPos(negationStr) != -1)
             return false;
-        }
         return true;
     }
 
     int pos = 0;
-    while (true)
+    while ((pos = list_.StrPos(pos, playerIDStr)) != -1)
     {
-        pos = list_.StrPos(pos, playerIDStr);
-        if (pos == -1)
-            break;
-
-        if (pos > 0 && list_[pos - 1] == '!')
-        {
-            pos += playerIDStr.Len();
-            continue;
-        }
-
-        bool isStart = (pos == 0 || list_[pos - 1] == ',' || isblank(list_[pos - 1]));
-        bool isEnd = (pos + playerIDStr.Len() >= list_.Len() || list_[pos + playerIDStr.Len()] == ',' || isblank(list_[pos + playerIDStr.Len()]));
+        bool isStart = (pos == 0 || list_[pos - 1] == ',');
+        bool isEnd = (pos + playerIDStr.Len() == list_.Len() || list_[pos + playerIDStr.Len()] == ',');
 
         if (isStart && isEnd)
+        {
+            if (pos > 0 && list_[pos - 1] == '!')
+                return false;
             return true;
+        }
 
         pos += playerIDStr.Len();
     }
@@ -2503,51 +2494,41 @@ bool tIsEnabledForPlayer(const tString &list_, int playerID)
     return false;
 }
 
-bool tRemoveFromList(tString &list, const tString &item)
-{
+bool tRemoveFromList(tString &list, const tString &item) {
     bool itemRemoved = false;
-    int listLength = list.Len();
+    int pos = 0;
 
-    while (list != "")
-    {
-        // find the item
-        int pos = list.StrPos(item);
+    tString newList;
 
-        // no traditional match? shoot.
-        if (pos < 0)
-        {
+    while (pos < list.Len()) {
+        int foundPos = list.StrPos(pos, item);
+        if (foundPos == -1) {
+            newList += list.SubStr(pos);
             break;
         }
+        bool isStart = (foundPos == 0 || list[foundPos - 1] == ',' || isblank(list[foundPos - 1]));
+        bool isEnd = (foundPos + item.Len() >= list.Len() || list[foundPos + item.Len()] == ',' || isblank(list[foundPos + item.Len()]));
 
-        // check whether the match is a true list match
-        if (
-            (pos == 0 || list[pos - 1] == ',' || isblank(list[pos - 1])) &&
-            (pos + item.Len() >= list.Len() || list[pos + item.Len()] == ',' || isblank(list[pos + item.Len()])))
-        {
-            // if match found construct the list without the item
-            tString newList = list.SubStr(0, pos);
-
-            // append remaining portion after the removed item
-            if (pos + item.Len() < list.Len())
-            {
-                newList += list.SubStr(pos + item.Len() + 1); // +1 to skip the delimiter
+        if (isStart && isEnd) {
+            if (foundPos > 0) {
+                newList += list.SubStr(pos, foundPos - pos); 
             }
-
-            list = newList;
+            pos = foundPos + item.Len();
+            
+            if (pos < list.Len() && list[pos] == ',') {
+                pos++;
+            }
             itemRemoved = true;
-            break;
-        }
-        else
-        {
-            // no? Go on to the next portion
-            list = list.SubStr(pos + 1);
+        } else {
+            
+            newList += list.SubStr(pos, foundPos - pos + item.Len());
+            pos = foundPos + item.Len();
         }
     }
 
-    // restore list if no item was removed
-    if (!itemRemoved)
-    {
-        list = list.SubStr(0, listLength);
+   
+    if (itemRemoved) {
+        list = newList;
     }
 
     return itemRemoved;

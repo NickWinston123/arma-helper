@@ -703,11 +703,17 @@ public:
         return owner_->CanMakeTurn((action == &gCycle::se_turnRight) ? 1 : -1);
     }
 
-#ifdef RLBOT
-    int rlDir;
-    REAL rlLastTime;
-#endif
+    void displayTurn(int dir, int numberOfTurns, std::string reason)
+    {
+        gHelperUtility::Debug("LOCAL BOT",
+                            std::to_string(numberOfTurns) + " Turn(s) made: " +
+                            std::string(dir == LEFT ? "LEFT, " : "RIGHT,") + " Reason: " + (reason));
+    }
 
+    void displayTurn(uActionPlayer *action, int numberOfTurns, std::string reason)
+    {
+        displayTurn(gTurnHelper::ActToTurn(action), numberOfTurns, reason);
+    }
     // does the main thinking
     void Activate(REAL currentTime, bool localBot = false)
     {
@@ -729,42 +735,8 @@ public:
             chatBotDecay = sg_chatBotDecay;
             chatBotEnemyPenalty = sg_enemyChatbotTimePenalty;
         }
-#ifdef RLBOT
-        // hack chatbot for crazy turning
-        {
-            if (!owner_->Alive() || !owner_->Vulnerable())
-            {
-                return;
-            }
-            if (fabs(rlLastTime - currentTime) > 1)
-            {
-                owner_->ActTurnBot(RIGHT);
-                rlDir = -1;
-            }
-            else if (rlDir > 0)
-            {
-                if (CanMakeTurn(&gCycle::se_turnRight))
-                {
-                    owner_->ActTurnBot(RIGHT);
-                    owner_->ActTurnBot(RIGHT);
-                    owner_->ActTurnBot(RIGHT);
-                    rlDir = -1;
-                }
-            }
-            else
-            {
-                if (CanMakeTurn(&gCycle::se_turnLeft))
-                {
-                    owner_->ActTurnBot(LEFT);
-                    owner_->ActTurnBot(LEFT);
-                    owner_->ActTurnBot(LEFT);
-                    rlDir = 1;
-                }
-            }
-            rlLastTime = currentTime;
-            return;
-        }
-#endif
+
+        debug = localBot && sg_helperDebug;
 
         // is it already time for activation?
         if (localBot && currentTime < nextChatAI_)
@@ -905,11 +877,15 @@ public:
                 {
                     owner_->ActTurnBot(RIGHT);
                     owner_->ActTurnBot(RIGHT);
+                    if (debug)
+                        displayTurn(RIGHT, 1, "Override Rim Hugging 1 rightOpen > rubberTime");
                 }
                 else if (leftOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
                 {
                     owner_->ActTurnBot(LEFT);
                     owner_->ActTurnBot(LEFT);
+                    if (debug)
+                        displayTurn(LEFT, 1, "Override Rim Hugging 1 leftOpen > rubberTime");
                 }
             }
 
@@ -926,11 +902,15 @@ public:
                 {
                     owner_->ActTurnBot(LEFT);
                     owner_->ActTurnBot(LEFT);
+                    if (debug)
+                        displayTurn(LEFT, 1, "Override Rim Hugging 2 leftOpen > rubberTime");
                 }
                 else if (rightOpen > speed * (owner_->GetTurnDelay() - rubberTime * .8))
                 {
                     owner_->ActTurnBot(RIGHT);
                     owner_->ActTurnBot(RIGHT);
+                    if (debug)
+                        displayTurn(RIGHT, 1, "Override Rim Hugging 2 rightOpen > rubberTime");
                 }
             }
 
@@ -1011,8 +991,12 @@ public:
                     Sensor newDirect ( owner_, pos, scanDir.Turn( 0, -bestDir) );
                     newDirect.detect( 1 );
                     if ( newDirect.hit > direct.hit ||
-                            newDirect.hit * lookahead + rubberTime > owner_->GetTurnDelay() )
+                            newDirect.hit * lookahead + rubberTime > owner_->GetTurnDelay() ) {
                         owner_->Act( newBestAction, 1 );
+                        if (debug)
+                            displayTurn(newBestAction, 1, "newDirect.hit > direct.hit newBestAction");
+                        }
+
                 }
                 else
                 */
@@ -1024,6 +1008,8 @@ public:
                     }
 
                     owner_->ActBot(bestAction, 1);
+                    if (debug)
+                        displayTurn(bestAction, 1, "frontOpen < bestOpen Best Action");
                 }
 
                 brake = false;
@@ -1078,6 +1064,8 @@ public:
                             }
 
                             owner_->ActBot(otherAction, 1);
+                            if (debug)
+                                displayTurn(otherAction, 1, "!wait Other Action");
 
                             // there needs to be space ahead to finish the maneuver correctly
                             if (maxMoveOn < speed * owner_->GetTurnDelay())
@@ -1093,6 +1081,9 @@ public:
                     {
                         owner_->ActBot(bestAction, 1);
                         owner_->ActBot(bestAction, 1);
+
+                        if (debug)
+                            displayTurn(bestAction, 2, "!wait Best Action");
                     }
 
                     minMoveOn = maxMoveOn = moveOn = 0;
@@ -1145,6 +1136,7 @@ public:
 
     REAL nextChatAI_; //!< the next time the chat AI can be active
 private:
+    bool debug;
     REAL chatBotNewWallBlindness;
     REAL chatBotMinTimestep, chatBotDelay, chatBotRange, chatBotDecay, chatBotEnemyPenalty;
     REAL timeOnChatAI_;   //!< the total time the player was on chat AI this round
@@ -2695,7 +2687,8 @@ void gCycle::MyInitAfterCreation()
     {
         if (se_playerStats)
             ePlayerStats::setColor(Player(),Player()->r,Player()->g,Player()->b);
-        }
+    }
+
     {
         if (player && player->CurrentTeam() && player->CurrentTeam()->overrideColor)
         {
@@ -2848,12 +2841,13 @@ static tConfItem<bool> sg_updateCycleColorC("CYCLE_UPDATE_COLOR", sg_updateCycle
 
 void gCycle::updateColor()
 {
-    if (se_playerStats)
-        ePlayerStats::setColor(player,player->r,player->g,player->b);
+    if (player) {
+        if (se_playerStats)
+            ePlayerStats::setColor(player,player->r,player->g,player->b);
 
-    player->Color(color_.r, color_.g, color_.b);
-    player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
-
+        player->Color(color_.r, color_.g, color_.b);
+        player->TrailColor(trailColor_.r, trailColor_.g, trailColor_.b);
+    }
     se_MakeColorValid(color_.r, color_.g, color_.b, 1.0f);
     se_MakeColorValid(trailColor_.r, trailColor_.g, trailColor_.b, .5f);
 
@@ -3269,8 +3263,6 @@ bool gCycle::Timestep(REAL currentTime)
     // no targets are given
     else if (!currentDestination && pendingTurns.empty())
     {
-        //bool chatFlagHackEnabled = se_toggleChatFlagAlways || se_toggleChatFlag;
-
         if (playerIsMe)
         {
             // A "smarter" bot is activated for the player under these conditions:
@@ -3289,8 +3281,10 @@ bool gCycle::Timestep(REAL currentTime)
             // 3. The 'local bot' is enabled globally.
             // 4. The 'local bot' is always active OR the player is currently chatting and the 'local bot' is enabled during chatting.
             // 5. The player's ID is in the list of players for whom the 'local bot' is enabled.
+
+            bool flagHacksEnabled = se_toggleChatFlag || se_chatFlagAlways;
             bool activateLocalBotForThisPlayer = (!activateSmarterBotForThisPlayer || sg_botActivationDualMode) && sg_localBot &&
-                ((sg_localBotAlwaysActive && (!player->IsChatting() || sg_localBotEnabledWhileChatting)) ||
+                ((sg_localBotAlwaysActive && (!player->IsChatting() || sg_localBotEnabledWhileChatting || flagHacksEnabled)) ||
                 (!sg_localBotAlwaysActive && player->IsChatting() && sg_localBotEnabledWhileChatting)) &&
                 tIsEnabledForPlayer(sg_localBotEnableForPlayers, player->pID + 1);
 

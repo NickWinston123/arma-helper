@@ -1400,7 +1400,7 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
                                        colorNameMode));
 
     confname.Clear();
-    confname << "PLAYER_NAME_COLOR_CUSTOM_SHIFT_START_MODE" << id + 1;
+    confname << "PLAYER_NAME_COLOR_CUSTOM_SHIFT_START_MODE_" << id + 1;
     playerRandomColorNameStartMode = 0;
     confItems.StoreConfitem(tNEW(tConfItem<int>)(confname,
                                        "$PLAYER_NAME_COLOR_CUSTOM_SHIFT_START_MODE_help",
@@ -1821,10 +1821,10 @@ static void se_validate(std::istream &s)
         return;
 
     player->encryptVerified = true;
-    con << player->GetName() << " has been validated.\n";
+    con << player->GetName() << " has been verified.\n";
 
 }
-static tConfItemFunc se_validateConf("VALIDATE", &se_validate);
+static tConfItemFunc se_validateConf("LOCAL_CHAT_COMMAND_ENCRYPT_VERIFIY", &se_validate);
 
 static void se_unValidate(std::istream &s)
 {
@@ -1836,10 +1836,10 @@ static void se_unValidate(std::istream &s)
         return;
 
     player->encryptVerified = false;
-    con << player->GetName() << " has been unvalidated.\n";
+    con << player->GetName() << " has been unverified.\n";
 
 }
-static tConfItemFunc se_unValidateConf("UNVALIDATE", &se_unValidate);
+static tConfItemFunc se_unValidateConf("LOCAL_CHAT_COMMAND_ENCRYPT_UNVERIFY", &se_unValidate);
 
 static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 {
@@ -1914,7 +1914,10 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             ePlayerStats::addMessage(p, colorlessMessage.SubStr(nameLength).TrimWhitespace());
         }
 
-        if (se_playerTriggerMessages && se_playerMessageTriggersChat && (se_playerTriggerMessagesReactToSelf || p->pID == -1) && !encyptedMessage)
+        if (se_playerTriggerMessages && se_playerMessageTriggersChat && 
+            (p->pID == -1 || 
+            se_playerTriggerMessagesReactToSelf && tIsEnabledForPlayer(se_playerMessageTargetPlayer,p->pID+1) ||
+            se_playerTriggerMessagesReactToLocal && !tIsEnabledForPlayer(se_playerMessageTargetPlayer,p->pID+1)) && !encyptedMessage)
         {
             tString params(colorlessMessage);
             tString preAppend;
@@ -5808,8 +5811,14 @@ public:
             }
             if (!playerFound)
             {
-                con << "NET PLAYER NOT FOUND\n";
-                LocalChatCommands(me, *content);
+                bool executed = LocalChatCommands(me, *content);
+
+                if (!executed) {
+                con << tThemedTextBase.HeaderColor()
+                    << "eChatCommands: " 
+                    << tThemedTextBase.MainColor()
+                    << "Command not executed. NET PLAYER NOT FOUND\n";
+                }
             }
 
             se_BlockScores = false;
@@ -6059,15 +6068,14 @@ tString playerIDName()
 bool se_toggleChatFlag = false;
 static tConfItem<bool>  se_toggleChatFlagConf = HelperCommand::tConfItem("CHAT_FLAG_TOGGLE", se_toggleChatFlag);
 
-
 tString se_toggleChatFlagEnabledPlayers("1,2,3,4");
 static tConfItem<tString> se_toggleChatFlagEnabledPlayersConf = HelperCommand::tConfItem("CHAT_FLAG_TOGGLE_ENABLED_PLAYERS", se_toggleChatFlagEnabledPlayers);
 
-bool se_toggleChatFlagAlways = false;
-static tConfItem<bool> se_toggleChatFlagAlwaysConf = HelperCommand::tConfItem("CHAT_FLAG_ALWAYS", se_toggleChatFlagAlways);
+bool se_chatFlagAlways = false;
+static tConfItem<bool> se_chatFlagAlwaysConf = HelperCommand::tConfItem("CHAT_FLAG_ALWAYS", se_chatFlagAlways);
 
-tString se_toggleChatFlagAlwaysEnabledPlayers("1,2,3,4");
-static tConfItem<tString> se_toggleChatFlagAlwaysEnabledPlayersConf = HelperCommand::tConfItem("CHAT_FLAG_ALWAYS_ENABLED_PLAYERS", se_toggleChatFlagAlwaysEnabledPlayers);
+tString se_chatFlagAlwaysEnabledPlayers("1,2,3,4");
+static tConfItem<tString> se_chatFlagAlwaysEnabledPlayersConf = HelperCommand::tConfItem("CHAT_FLAG_ALWAYS_ENABLED_PLAYERS", se_chatFlagAlwaysEnabledPlayers);
 
 bool se_BlockChatFlags = false;
 static tConfItem<bool> se_BlockChatFlagsConf = HelperCommand::tConfItem("CHAT_FLAG_BLOCK", se_BlockChatFlags);
@@ -6088,13 +6096,18 @@ void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs, ePlayerNetID *player)
         ePlayerNetID *p = se_PlayerNetIDs[i];
         if (p->Owner() == sn_myNetID && ((player != NULL && p->pID == player->pID) || (player == NULL && p->pID >= 0)))
         {
-            if (se_toggleChatFlag)
+
+            bool chatFlagToggle = se_toggleChatFlag && tIsEnabledForPlayer(se_toggleChatFlagEnabledPlayers, p->pID + 1);
+            if (chatFlagToggle)
                 continue;
 
-        bool blockChatFlag  = se_BlockChatFlags       && tIsEnabledForPlayer(se_BlockChatFlagsEnabledPlayers,       p->pID + 1);
-        bool chatFlagAlways = se_toggleChatFlagAlways && tIsEnabledForPlayer(se_toggleChatFlagAlwaysEnabledPlayers, p->pID + 1);
+            bool chatFlagAlways = se_chatFlagAlways && tIsEnabledForPlayer(se_chatFlagAlwaysEnabledPlayers, p->pID + 1);
+            if (chatFlagAlways)
+                continue;
             
-            if (blockChatFlag && !chatFlagAlways)
+
+            bool blockChatFlag  = se_BlockChatFlags && tIsEnabledForPlayer(se_BlockChatFlagsEnabledPlayers, p->pID + 1);
+            if (blockChatFlag)
             {
                 p->SetChatting(flag, false);
                 continue;
@@ -6772,7 +6785,7 @@ void ePlayerNetID::Activity()
     if (sn_GetNetState() != nSERVER && Owner() != ::sn_myNetID)
         return;
 
-    if (!se_toggleChatFlag && !se_toggleChatFlagAlways && !tIsInList(forcedChattingPlayers, pID + 1))
+    if (!se_toggleChatFlag && !se_chatFlagAlways && !tIsInList(forcedChattingPlayers, pID + 1))
         chatting_ = false;
 
     if (chatting_ || disconnected)
@@ -9980,7 +9993,7 @@ static bool loadCrossfadePresetValidation(size_t selection)
 {
     size_t numPresets = presets.size();
 
-    if (selection == 0)
+    if (selection < 0)
     {
         con << "Preset must be 1 and above.\n";
         return false;
@@ -10162,6 +10175,9 @@ static tConfItem<tString> se_createPlayersSpecificConf = HelperCommand::tConfIte
 static bool se_forceTeamname = false;
 static tConfItem<bool> se_forceTeamnameConf = HelperCommand::tConfItem("FORCE_TEAMNAME", se_forceTeamname);
 
+static tString se_forceTeamnameString("");
+static tConfItem<tString> se_forceTeamnameStringConf = HelperCommand::tConfItem("FORCE_TEAMNAME_STRING", se_forceTeamnameString);
+
 static bool se_forceMessage = false;
 static tConfItem<bool> se_forceMessageConf = HelperCommand::tConfItem("FORCE_MESS", se_forceMessage);
 
@@ -10223,7 +10239,6 @@ tColoredString sg_ShiftColors(const tColoredString &original, int shift)
     return shifted;
 }
 
-#include <cmath>
 tColor ColorFromHSV(float h, float s, float v)
 {
     int i = static_cast<int>(h * 6);
@@ -10658,6 +10673,20 @@ void ePlayerNetID::ForcedUpdate(ePlayer* updatePlayer)
 static int se_maxPlayers = 4;
 static tSettingItem<int> se_maxPlayersConf("MAX_PLAYERS", se_maxPlayers);
 
+void ePlayerNetID::Update(int playerID)
+{
+    ePlayer *player = ePlayer::PlayerConfig(playerID);
+
+    if (player)
+        Update(player);
+}
+
+void ePlayerNetID::ForcedUpdate(int playerID)
+{
+    allowUpdateDuringRound = true;
+    Update(playerID);
+}
+
 void ePlayerNetID::Update(ePlayer* updatePlayer)
 {
 #ifdef KRAWALL_SERVER
@@ -10774,7 +10803,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     (sn_Connections[0].version.Max() == 18 ||
                      sn_Connections[0].version.Max() == 22))
                 {
-                    p->Chat(tString("/teamname ") + tString(local_p->teamname));
+                    p->Chat(tString("/teamname ") + (se_forceTeamnameString.empty() ? tString(local_p->teamname) : se_forceTeamnameString));
                 }
 
                 if (se_forceMessage)
@@ -10786,8 +10815,8 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                 if (se_toggleChatFlag && (tIsEnabledForPlayer(se_toggleChatFlagEnabledPlayers, p->pID + 1)))
                         p->chatting_ = !p->chatting_;
                 
-                if (se_toggleChatFlagAlways && tIsEnabledForPlayer(se_toggleChatFlagAlwaysEnabledPlayers, p->pID + 1))
-                    p->SetChatting(ePlayerNetID::ChatFlags_Chat, true);
+                if (se_chatFlagAlways && tIsEnabledForPlayer(se_chatFlagAlwaysEnabledPlayers, p->pID + 1))
+                    p->chatting_ = true;
 
                 p->favoriteNumberOfPlayersPerTeam = local_p->favoriteNumberOfPlayersPerTeam;
                 p->nameTeamAfterMe = local_p->nameTeamAfterMe;
@@ -13077,7 +13106,7 @@ void ePlayerNetID::UpdateName(void)
                 if (avoidPlayerInGame(GetName()))
                 {
                     se_avoidPlayerWatchDisable = true;
-                    gTaskScheduler.schedule("AvoidPlayerWatch", se_avoidPlayerWatchActionine, []
+                    gTaskScheduler.schedule("AvoidPlayerWatch", se_avoidPlayerWatchActionTime, []
                     {
                         ePlayerNetID::CompleteRebuild();
                     });

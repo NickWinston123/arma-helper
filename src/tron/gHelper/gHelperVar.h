@@ -67,6 +67,9 @@ namespace helperConfig
 
     extern REAL sg_helperSmartTurningSpace;
     extern bool sg_helperSmartTurningPlan;
+    
+    extern bool sg_helperSmartDelayUse, sg_helperSmartDelay;
+    extern REAL sg_helperSmartDelayValue;
 
     extern bool sg_helperAutoBrake;
     // extern bool sg_helperAutoBrakeDeplete ;

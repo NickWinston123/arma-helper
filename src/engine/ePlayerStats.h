@@ -633,7 +633,7 @@ private:
     {
         if (!se_playerTriggerMessages)
             return;
-            
+
         static const tString valDelim = tString("$val1");
 
         bot.Messager()->ResetParams();
@@ -672,12 +672,12 @@ public:
     static tString getEnforcedLocalName(ePlayerNetID * player)
     {
         ePlayer * local_p = ePlayer::NetToLocalPlayer(player);
-        tString name;
-        name << local_p->Name();
 
-        if (local_p)
+        if (local_p) {
+            tString name;
+            name << local_p->Name();
             return name.ToLower();
-
+        }
         return tString("");
     }
 
@@ -685,11 +685,13 @@ public:
     {
         tString name;
 
-        if (shouldEnforceLocalName(player))
-            name << getEnforcedLocalName(player);
-        else
-            name << player->GetName().ToLower();
-
+        if (player) 
+        {
+            if (shouldEnforceLocalName(player))
+                name << getEnforcedLocalName(player);
+            else
+                name << player->GetName().ToLower();
+        }
         return playerStatsMap[name];
     }
 
@@ -822,6 +824,9 @@ public:
 
     static void playerLeft(ePlayerNetID * player)
     {
+        if (!player)
+            return;
+
         PlayerData &stats = getStats(player);
         playerLeft(stats);
 

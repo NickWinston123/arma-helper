@@ -5867,6 +5867,9 @@ static tSettingItem<bool> sg_forceGamePauseConf = HelperCommand::tSettingItem("F
 bool sg_forcePlayerUpdate = false;
 static tSettingItem<bool> sg_forcePlayerUpdateConf = HelperCommand::tSettingItem("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
 
+tString sg_forcePlayerUpdateEnabledPlayers("1,2,3,4");
+static tConfItem<tString> sg_forcePlayerUpdateEnabledPlayersConf = HelperCommand::tConfItem("FORCE_PLAYER_UPDATE_ENABLED_PLAYERS", sg_forcePlayerUpdateEnabledPlayers);
+
 static bool sg_forcePlayerRebuild = false;
 static tSettingItem<bool> sg_forcePlayerRebuildConf = HelperCommand::tSettingItem("FORCE_PLAYER_ZREBUILD", sg_forcePlayerRebuild);
 
@@ -5935,6 +5938,13 @@ bool gGame::GameLoop(bool input)
     {
         gTaskScheduler.schedule("forcedUpdate", sg_forceClockDelay, []
         {
+            // if (sg_forcePlayerUpdate) {
+            //     tArray<tString> playerIDs = sg_forcePlayerUpdateEnabledPlayers.Split(",");
+            //     for (int i = 0; i < playerIDs.Len(); i++)
+            //     {
+            //         ePlayerNetID::ForcedUpdate(playerIDs[i].toInt());
+            //     }
+            // }
             if (sg_forcePlayerUpdate || ePlayerNetID::nameSpeakForceUpdate)
                 ePlayerNetID::ForcedUpdate();
 

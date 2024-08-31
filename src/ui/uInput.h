@@ -311,6 +311,8 @@ public:
 
     static uPlayerPrototype *PlayerConfig(int i);
     static int Num();
+    
+    int GetID() const { return id; }
 };
 
 class uMenuItemInput : uMenuItem

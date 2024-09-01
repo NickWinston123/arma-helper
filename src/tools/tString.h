@@ -173,6 +173,13 @@ public:
     //! compares two strings alphanumerically
     static int CompareAlphaNumerical( const tString& a, const tString &b);
 
+    template <typename T>
+    static tString ConvertToTString(const T& passedVal) {
+        tString value;
+        value << passedVal;
+        return value;
+    }
+
     //! strips all whitespace from a string
     tString StripWhitespace( void ) const;
     tString TrimWhitespace( void ) const;

@@ -1794,12 +1794,12 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, b
 
     if (!eventTrigger)
         bot.Stats().total_messages_read++;
+
     gHelperUtility::Debug("eChatBot","Received Input:", inputMessage);
     bot.Messager()->ResetParams();
     bot.Messager()->SetInputParams(triggeredBy, inputMessage, eventTrigger, preAppend);
     bot.Messager()->FindTriggeredResponse();
 
-    //con << "initiate action with input " << inputMessage << "\n";
     if (!bot.Messager()->Params().abortOutput)
     {
         gHelperUtility::Debug("eChatBot","Sending message:", bot.Messager()->Params().response);
@@ -2104,6 +2104,7 @@ static void TempChatBotCommandRunner(std::istream &input)
     }
 }
 
+// Create executable console commands from chat functions
 void eChatBot::LoadChatCommandConfCommands()
 {
     if (data.chatBotCommandConfItems == nullptr)
@@ -2125,17 +2126,17 @@ void eChatBot::LoadChatCommandConfCommands()
 
 void eChatBotMessager::SetInputParams(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger, tString preAppend)
 {
-    Params().triggeredBy = triggeredBy;
+    Params().triggeredBy  = triggeredBy;
     Params().inputMessage = inputMessage;
     Params().eventTrigger = eventTrigger;
-    Params().preAppend = preAppend;
+    Params().preAppend    = preAppend;
 }
 
 void eChatBotMessager::SetOutputParams(tString &response, REAL &delay, ePlayerNetID *sendingPlayer)
 {
-    Params().response = response;
-    Params().delay = delay;
-    Params().sendingPlayer = sendingPlayer;
+    Params().response       = response;
+    Params().delay          = delay;
+    Params().sendingPlayer  = sendingPlayer;
     Params().validateOutput = true;
 }
 
@@ -2520,7 +2521,7 @@ bool eChatBotMessager::Send()
 
 bool eChatBotMessager::ScheduleMessageParts()
 {
-    gTaskScheduler.checkAndClearQueueIfOverloaded(se_playerTriggerMessagesQueueMaxOverloadedSize);
+    gTaskScheduler.ClearQueueIfOverloaded(se_playerTriggerMessagesQueueMaxOverloadedSize);
 
     ePlayerNetID *player = Params().sendingPlayer;
 

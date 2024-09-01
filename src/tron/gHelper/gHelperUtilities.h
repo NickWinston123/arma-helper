@@ -715,15 +715,21 @@ public:
     }
 
     template<typename T>
-    static tConfItem<T>* tConfItemPtr(const char* command, T& variable)
+    static bool fn14(const T& nv)
     {
-        return new ::tConfItem<T>(command, variable, fn5);
+        return false;
     }
 
     template<typename T>
-    static tConfItem<T> tConfItem(const char* command, T& variable)
+    static tConfItem<T>* tConfItemPtr(const char* command, T& variable, const std::map<std::string, std::string>& initValueMap = {})
     {
-        return ::tConfItem<T>(command, variable, fn5);
+        return new ::tConfItem<T>(command, variable, fn5, initValueMap);
+    }
+
+    template<typename T>
+    static tConfItem<T> tConfItem(const char* command, T& variable, const std::map<std::string, std::string>& initValueMap = {})
+    {
+        return ::tConfItem<T>(command, variable, fn5, initValueMap);
     }
 
     template<typename T>

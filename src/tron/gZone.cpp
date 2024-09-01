@@ -5029,7 +5029,6 @@ gSumoZoneHack::~gSumoZoneHack(void)
 
 bool gSumoZoneHack::Timestep(REAL time)
 {
-    con << " SUMO ZONE DETECTED.\n";
     if (currentState_ == State_Unspawned)
     {
         currentState_ = State_Spawned;

@@ -58,6 +58,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <fstream>
 
+#include "nNetwork.h"
 #include "nServerInfo.h"
 #include "nSocket.h"
 
@@ -711,6 +712,11 @@ int main(int argc, char **argv)
         LoadChatCommandConfCommands();
         SymLinkedCommandsLoader();
 
+        if (sn_updateVersionOverrideValue >= 0)
+        {
+            updateVersionOverride(sn_updateVersionOverrideValue);
+        }
+
 
         if (sn_bannedWatch)
             FileManager(tString("banned.txt"),tDirectories::Var()).Clear();
@@ -735,7 +741,7 @@ int main(int argc, char **argv)
         }
         if (tConfigMigration::SavedBefore(sn_configurationSavedInVersion, sn_programVersion))
             sn_configurationSavedInVersion = sn_programVersion;
-
+        
         // record and play back the recording debug level
         tRecorderSyncBase::GetDebugLevelPlayback();
 

@@ -47,6 +47,10 @@ extern nBasicNetworkSystem sn_BasicNetworkSystem;
 
 extern bool roundWinnerProcessed;
 
+extern int sn_updateVersionOverrideValue;
+
+void updateVersionOverride(int version);
+
 class nMessage;
 class tCrypt;
 class tOutput;

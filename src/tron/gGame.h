@@ -356,7 +356,7 @@ public:
         return true;
     }
 
-    void checkAndClearQueueIfOverloaded(int size) 
+    void ClearQueueIfOverloaded(int size) 
     {
         int totalSize = tasksQueue.size();
         for (const auto& pendingTask : pendingTasks) 

@@ -241,8 +241,9 @@ int sn_GetCurrentProtocolVersion();
 
 static const int sn_currentProtocolVersion              = sn_GetCurrentProtocolVersion(); // the current version number of the network protocol
 static const int sn_backwardCompatibleProtocolVersion 	= 0;							// the smallest version of the network protocol this program is compatible with
-static const nVersion sn_myVersion( sn_backwardCompatibleProtocolVersion, sn_currentProtocolVersion);
+static nVersion sn_myVersion( sn_backwardCompatibleProtocolVersion, sn_currentProtocolVersion);
 static nVersion sn_currentVersion( sn_myVersion );
+
 
 const nVersion& sn_MyVersion()			// the version this progam maximally supports
 {
@@ -253,6 +254,58 @@ const nVersion& sn_CurrentVersion() 	// the version currently supported
 {
     return sn_currentVersion;
 }
+
+int sn_updateVersionOverrideValue = -1;
+static tConfItem<int> sn_updateVersionOverrideValueConf  = HelperCommand::tConfItem("NETWORK_VERSION_OVERRIDE_VALUE", sn_updateVersionOverrideValue);
+
+void updateVersionOverride(int version)
+{
+    nVersion newVersion( sn_backwardCompatibleProtocolVersion, version);
+    sn_updateVersionOverrideValue = version;
+    sn_currentVersion = newVersion;
+    sn_myVersion      = newVersion;
+}
+
+void updateVersionOverride(std::istream &s)
+{
+    tString params;
+    params.ReadLine(s, true);
+
+    if (params.empty())
+    {
+        tOutput o;
+        o.SetTemplateParameter(1, "NETWORK_VERSION_OVERRIDE");
+        o.SetTemplateParameter(2, sn_updateVersionOverrideValue);
+        o << "$config_message_info";
+        con << o;
+        return;
+    }
+
+    if (!params.isNumber()){
+        tOutput o;
+        o.SetTemplateParameter(1, "NETWORK_VERSION_OVERRIDE");
+        o << "$config_error_read";
+        con << o;
+        return;
+    }
+
+    int newVersion = params.toInt();
+
+    if (newVersion != sn_updateVersionOverrideValue)
+    {
+        tOutput o;
+        o.SetTemplateParameter(1, "NETWORK_VERSION_OVERRIDE");
+        o.SetTemplateParameter(2, sn_updateVersionOverrideValue);
+        o.SetTemplateParameter(3, newVersion);
+        o << "$config_value_changed";
+        con << o;
+    }
+
+    updateVersionOverride(newVersion);
+}
+
+static tConfItemFunc updateVersionOverrideConf = HelperCommand::tConfItemFunc("NETWORK_VERSION_OVERRIDE", &updateVersionOverride);
+
 
 nVersion::nVersion()
 {

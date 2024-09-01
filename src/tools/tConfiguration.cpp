@@ -465,8 +465,8 @@ tString tAbortLoading::DoGetDescription() const
     return tString(tOutput( "$abort_loading_description", command_ ));
 }
 
-tConfItemBase::tConfItemBase(const char *t)
-        :id(-1),title(t),
+tConfItemBase::tConfItemBase(const char *t, const std::map<std::string, std::string>& initValueMap)
+        :id(-1),title(t), valueMap(initValueMap),
 changed(false){
 
     tConfItemMap & confmap = ConfItemMap();
@@ -486,8 +486,8 @@ changed(false){
     setLevel      = tAccessLevel_Owner;
 }
 
-tConfItemBase::tConfItemBase(const char *t, const tOutput& h)
-        :id(-1),title(t), help(h),
+tConfItemBase::tConfItemBase(const char *t, const tOutput& h, const std::map<std::string, std::string>& initValueMap)
+        :id(-1),title(t), help(h), valueMap(initValueMap),
 changed(false){
 
     tConfItemMap & confmap = ConfItemMap();
@@ -718,7 +718,7 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
                                     mess << help;
                                     mess << ")\n";
                                     if (st_displayValue)
-                                        mess << " -  Value: " << ci->getValue() << "\n";
+                                        mess << " -  Value: " << ci->getFormatedValueMapValue(ci->getValue()) << "\n";
                                     con << mess;
                                 }
                             }

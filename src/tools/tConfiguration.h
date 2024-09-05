@@ -242,7 +242,7 @@ protected:
     //  class tString value;
     bool changed;
 
-    std::map<std::string, std::string> valueMap;
+    std::vector<std::pair<std::string, std::string>> valueMap;
 
     tAccessLevel requiredLevel; //!< access level required to change this setting
     tAccessLevel setLevel;      //!< access level of the user making the last change to this setting
@@ -263,26 +263,28 @@ public:
     static bool printChange; //!< if set, setting changes are printed to the console and, if printErrors is set as well, suggestions of typo fixes are given.
     static bool printErrors; //!< if set, unknown settings are pointed out.
 
-    tConfItemBase(const char *title, const tOutput& help, const std::map<std::string, std::string>& initValueMap = {});
-    tConfItemBase(const char *title, const std::map<std::string, std::string>& initValueMap = {});
+    tConfItemBase(const char *title, const tOutput& help, const std::vector<std::pair<std::string, std::string>>& initValueMap = {});
+    tConfItemBase(const char *title, const std::vector<std::pair<std::string, std::string>>& initValueMap = {});
 
     virtual ~tConfItemBase();
-    const std::map<std::string, std::string>& GetValueMap() const {
+    const std::vector<std::pair<std::string, std::string>>& GetValueMap() const {
         return valueMap;
     }
+
     std::string GetValueMapValueForKey(const std::string& key) const {
-        auto it = valueMap.find(key);
-        if (it != valueMap.end()) {
-            return it->second;
-        } else {
-            return ""; 
+        for (const auto& pair : valueMap) {
+            if (pair.first == key) {
+                return pair.second;
+            }
         }
+        return "";
     }
 
     tString getFormatedValueMapValue(tString key)
     {
         return getFormatedValueMapValue(key.stdString());
     }
+
     tString getFormatedValueMapValue(std::string key)
     {
         tString val;
@@ -291,26 +293,32 @@ public:
         if (!keyValue.empty())
         {
             val << key
-                << " (" 
+                << " ("
                 << keyValue
                 << ")";
-        } 
-        else 
+        }
+        else
         {
             val << key;
         }
 
         return val;
     }
-    void PrintValueMap() const {
+
+    void PrintValueMap(std::string currentVal = "") const {
         tString printedMap;
         for (const auto& pair : valueMap) {
-            printedMap << pair.first << ": " << pair.second << "\n";
+            if (!currentVal.empty() && pair.first == currentVal) {
+                printedMap << "* " << pair.first << ": " << pair.second << "\n";
+            } else {
+                printedMap << pair.first << ": " << pair.second << "\n";
+            }
         }
 
         con << printedMap;
     }
-    void SetValueMap(const std::map<std::string, std::string>& newValueMap) {
+
+    void SetValueMap(const std::vector<std::pair<std::string, std::string>>& newValueMap) {
         valueMap = newValueMap;
         changed = true;
     }
@@ -318,12 +326,6 @@ public:
     tString const & GetTitle() const {
         return title;
     }
-
-    /*void SetValue(tString newValue)
-    {
-        value = "";
-        value << newValue;
-    }*/
 
     tAccessLevel GetRequiredLevel() const { return requiredLevel; }
     tAccessLevel GetSetLevel() const { return setLevel; }
@@ -459,15 +461,15 @@ protected:
 
     tConfItem(T &t):tConfItemBase(""),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {}
 public:
-    tConfItem(const char *title,const tOutput& help,T& t, const std::map<std::string, std::string>& initValueMap = {})
+    tConfItem(const char *title,const tOutput& help,T& t, const std::vector<std::pair<std::string, std::string>>& initValueMap = {})
             :tConfItemBase(title,help, initValueMap),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
             }
 
-    tConfItem(const char *title,T& t,const std::map<std::string, std::string>& initValueMap = {})
+    tConfItem(const char *title,T& t,const std::vector<std::pair<std::string, std::string>>& initValueMap = {})
             :tConfItemBase(title, initValueMap),target(&t), shouldChangeFunc_(NULL), defaultValue(t) {
             }
 
-    tConfItem(const char*title, T& t, ShouldChangeFuncT changeFunc, const std::map<std::string, std::string>& initValueMap = {})
+    tConfItem(const char*title, T& t, ShouldChangeFuncT changeFunc, const std::vector<std::pair<std::string, std::string>>& initValueMap = {})
             :tConfItemBase(title, initValueMap),target(&t),shouldChangeFunc_(changeFunc), defaultValue(t) {
             }
 
@@ -599,7 +601,7 @@ public:
 
                 if (!GetValueMap().empty()) {
                     con << "Recommended values from value map: \n";
-                    PrintValueMap();
+                    PrintValueMap(tString::ConvertToTString(*target).stdString());
                 }
 
                 tConfItemBase::lastLoadOutput << o;
@@ -622,7 +624,7 @@ public:
                                 tOutput o;
                                 o.SetTemplateParameter(1, title);
                                 o.SetTemplateParameter(2,  getFormatedValueMapValue(tString::ConvertToTString(*target)));
-                                
+
                                 o.SetTemplateParameter(3,  getFormatedValueMapValue(tString::ConvertToTString(dummy)));
                                 o << "$config_value_changed";
                                 con << o;
@@ -850,7 +852,7 @@ class TempConfItemManager
         tASSERT(CurrentConfitem < CONFITEMS_STORED_SIZE);
         configuration[CurrentConfitem++] = c;
     }
- 
+
     void DeleteConfitem(const tString& command);
     void DeleteConfitems();
 

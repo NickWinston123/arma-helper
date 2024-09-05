@@ -20,7 +20,12 @@ REAL helperConfig::sg_pathHelperShowTurnAhead = 0;
 static tConfItem<REAL> sg_pathHelperShowTurnAheadC = HelperCommand::tConfItem("HELPER_SELF_PATH_RENDER_TURN_AHEAD", helperConfig::sg_pathHelperShowTurnAhead);
 
 int helperConfig::sg_pathHelperMode = 0;
-std::map<std::string, std::string> sg_pathHelperModeValueMap = {{"0", "AUTO"}, {"1", "TAIL"}, {"2", "ENEMY"}, {"3", "CORNER"}};
+std::vector<std::pair<std::string, std::string>> sg_pathHelperModeValueMap = {
+    {"0", "AUTO"}, 
+    {"1", "TAIL"}, 
+    {"2", "ENEMY"},
+    {"3", "CORNER"}
+};
 static tConfItem<int> sg_pathHelperModeC = HelperCommand::tConfItem("HELPER_SELF_PATH_MODE", helperConfig::sg_pathHelperMode, sg_pathHelperModeValueMap);
 REAL helperConfig::sg_pathHelperAutoCloseDistance = 150;
 static tConfItem<REAL> sg_pathHelperAutoCloseDistanceC = HelperCommand::tConfItem("HELPER_SELF_PATH_AUTO_CLOSE_DISTANCE", helperConfig::sg_pathHelperAutoCloseDistance);

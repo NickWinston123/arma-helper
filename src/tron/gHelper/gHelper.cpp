@@ -152,7 +152,12 @@ namespace helperConfig
     REAL sg_helperShowHitFrontLineHeight = 2;
     static tConfItem<REAL> sg_helperShowHitFrontLineHeightConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_FRONT_LINE_HEIGHT", sg_helperShowHitFrontLineHeight);
     int sg_helperShowHitStartMode = 0;
-    static tConfItem<int> sg_helperShowHitStartModeConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_MODE", sg_helperShowHitStartMode);
+    std::vector<std::pair<std::string, std::string>> sg_helperShowHitStartModeValueVector = {
+        {"0", "Front hit position"},
+        {"1", "Owner position"},
+        {"2", "Owner & Front hit position"}
+    };
+    static tConfItem<int> sg_helperShowHitStartModeConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_HIT_MODE", sg_helperShowHitStartMode, sg_helperShowHitStartModeValueVector);
 
     bool sg_helperTraceLeft = false;
     tSettingItem<bool> sg_helperTraceLeftConf = HelperCommand::tSettingItem("HELPER_SELF_TRACE_LEFT", sg_helperTraceLeft);

@@ -1211,6 +1211,26 @@ static const tString &se_UserName()
     return ret;
 }
 
+std::vector<std::pair<std::string, std::string>> sg_smarterBotStateValueMap = {
+    {"0", "OFF"},
+    {"1", "SuicideEval, TrapEval, CowardEval, SpaceEval, PlanEval"},
+    {"2", "SuicideEval, TrapEval, RubberEval, FollowEval"},
+    {"3", "SuicideEval, TrapEval, PlanEval"},
+    {"4", "TailChaseEval"},
+    {"5", "SuicideEval, TrapEval, TunnelEval, PlanEval"},
+    {"6", "SuicideEval, TrapEval, FollowEval"},
+    {"7", "SuicideEval, TrapEval, TunnelEval, PlanEval"},
+    {"8", "SuicideEval, TrapEval, SpaceEval"},
+};
+
+std::vector<std::pair<std::string, std::string>> colorModeValueVector = {
+    {"0", "OFF"},
+    {"1", "RANDOM"},
+    {"2", "UNIQUE"},
+    {"3", "RAINBOW"},
+    {"4", "CROSSFADE"}
+};
+
 ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
 {
     nAuthentication::SetUserPasswordCallback(&PasswordCallback);
@@ -1391,7 +1411,8 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     colorMode = 0;
     confItems.StoreConfitem(tNEW(tConfItem<int>)(confname,
                                        "$PLAYER_COLOR_MODE_HELP",
-                                       colorMode));
+                                       colorMode,
+                                       colorModeValueVector));
     confname.Clear();
     confname << "PLAYER_NAME_MODE_" << id + 1;
     colorNameMode = 0;
@@ -1566,7 +1587,7 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_STATE";
     sg_smarterBotState = 1;
-    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotState));
+    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotState, sg_smarterBotStateValueMap));
 
 
 #endif
@@ -5933,7 +5954,14 @@ int se_randomNameLengthRandomMin = 8;
 static tConfItem<int> se_randomNameLengthRandomMinConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_LENGTH_RANDOM_MIN", se_randomNameLengthRandomMin);
 
 int se_randomNameMode = 0;
-static tConfItem<int> se_randomNameModeConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_MODE", se_randomNameMode);
+std::vector<std::pair<std::string, std::string>> se_randomNameModeValueVector = {
+    {"0", "0123456789"},
+    {"2", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"},
+    {"3", "abcdefghijklmnopqrstuvwxyz"},
+    {"4", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"},
+    {"default", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"}
+};
+static tConfItem<int> se_randomNameModeConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_MODE", se_randomNameMode, se_randomNameModeValueVector);
 
 tString se_randomNameCharset("");
 static tConfItem<tString> se_randomNameCharsetConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_CHARSET", se_randomNameCharset);
@@ -6161,7 +6189,7 @@ static void chat(ePlayer *chatter)
 }
 
 static bool se_allowControlDuringChat = false;
-static tConfItem<bool> se_allowControlDuringChatConf("ALLOW_CONTROL_DURING_CHAT", se_allowControlDuringChat);
+static nSettingItem<bool> se_allowControlDuringChatConf("ALLOW_CONTROL_DURING_CHAT", se_allowControlDuringChat);
 
 uActionPlayer se_toggleSpectator("TOGGLE_SPECTATOR", -7);
 
@@ -9929,8 +9957,32 @@ size_t currentCrossadeColorIndex = 0;
 int ticksSinceLastColor = 0;
 static int ticksPerColor = 100;
 
+
+std::vector<std::pair<std::string, std::string>> crossfadePresetsValueVector = {
+    {"1", "Fade between Red -> Purple -> Green -> Orange -> Blue"},
+    {"2", "Fade between Red -> Green -> Blue"},
+    {"3", "A smooth gradient between shades of blue"},
+    {"4", "A rainbow cycle with smooth transitions"},
+    {"5", "A gradient between warm and cold colors"},
+    {"6", "Pastel colors cycling"},
+    {"7", "A gradient of purple shades"},
+    {"8", "Neon colors cycling"},
+    {"9", "A gradient of green shades"},
+    {"10", "A gradient between red and blue"},
+    {"11", "Monochrome cycling"},
+    {"12", "Ocean colors cycling"},
+    {"13", "Sunset colors cycling"},
+    {"14", "Pink and purple shades cycling"},
+    {"15", "Tricolor cycling between shades of blue, pink and yellow"},
+    {"16", "Cycling between shades of red, blue and purple"},
+    {"17", "Tricolor cycling between shades of yellow, blue and red"},
+    {"18", "Cycling between complementary colors: yellow and violet, blue and orange"},
+    {"19", "Cycling between various shades of red and blue, with a hint of green and white"}
+};
+
+
 int desiredCrossfadePreset = 0;
-static tConfItem<int> desiredCrossfadePresetConf("PLAYER_COLOR_CUSTOM_CROSSFADE_PRESET", desiredCrossfadePreset);
+static tConfItem<int> desiredCrossfadePresetConf("PLAYER_COLOR_CUSTOM_CROSSFADE_PRESET", desiredCrossfadePreset, crossfadePresetsValueVector);
 
 static tConfItem<int> ticksPerColorConf("PLAYER_COLOR_CUSTOM_CROSSFADE_SPEED", ticksPerColor);
 

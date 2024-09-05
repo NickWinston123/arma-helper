@@ -792,8 +792,8 @@ public:
         tASSERT(character);
 
         hit = false;
-
-        eDebugLine::SetTimeout(.5);
+        
+        //eDebugLine::SetTimeout(.5);
 
         gCycle *cycle = const_cast<gCycle *>(this->cycle);
 
@@ -901,7 +901,7 @@ public:
         }
 #endif
 
-        eDebugLine::SetTimeout(0);
+        //eDebugLine::SetTimeout(0);
     }
 };
 
@@ -1222,7 +1222,8 @@ gAIPlayer::gAIPlayer(nMessage &sender) : ePlayerNetID(sender),
                                          lastTime(se_GameTime()),
                                          nextTime(0),
                                          concentration(1),
-                                         log(NULL)
+                                         log(NULL),
+                                         state(AI_SURVIVE)
 {
 }
 
@@ -1234,7 +1235,8 @@ gAIPlayer::gAIPlayer() : simpleAI_(NULL),
                          lastTime(se_GameTime()),
                          nextTime(0),
                          concentration(1),
-                         log(NULL)
+                         log(NULL),
+                         state(AI_SURVIVE)
 {
     ClearTarget();
 
@@ -2582,6 +2584,7 @@ REAL gAIPlayer::Think(REAL maxStep)
     // switch to survival state if our victim died:
     if (state == AI_CLOSECOMBAT && (!target || !target->Alive()))
         SwitchToState(AI_SURVIVE, 1);
+    /*
     {
         eDebugLine::SetTimeout(.5);
         eDebugLine::SetColor(0, 1, 0);
@@ -2589,6 +2592,7 @@ REAL gAIPlayer::Think(REAL maxStep)
         eDebugLine::Draw(p, .5, p, 5.5);
         eDebugLine::SetTimeout(0);
     }
+    */
 
     triesLeft = 10;
 
@@ -2634,6 +2638,7 @@ REAL gAIPlayer::Think(REAL maxStep)
 
 void gAIPlayer::Timestep(REAL time)
 {
+
     if (!character_)
     {
         st_Breakpoint();
@@ -2655,7 +2660,7 @@ void gAIPlayer::Timestep(REAL time)
     if (concentration_ < 0)
     {
         nextTime_ = time - concentration_ + .01;
-        return;
+        //return;
     }
 
     // if (bool(Object()) && Object()->Alive() && nextTime_<time)
@@ -3114,13 +3119,13 @@ bool gAIPlayer::EmergencySurvive(ThinkData &data, int enemyevade, int preferedSi
             }
         }
     }
-
+    /*
     eDebugLine::SetTimeout(.5);
     eDebugLine::SetColor(1, 0, 1);
     eCoord p = Object()->Position();
     eDebugLine::Draw(p, .5, p, 8.5);
     eDebugLine::SetTimeout(0);
-
+    */
     // determine the total danger levels by taking the max of the individual experts:
     int fDanger = 0;
     int sDanger[2] = {0, 0};
@@ -3237,7 +3242,7 @@ bool gAIPlayer::EmergencySurvive(ThinkData &data, int enemyevade, int preferedSi
 
     return turn;
 
-    eDebugLine::SetTimeout(0);
+    //eDebugLine::SetTimeout(0);
 }
 
 void gAIPlayer::EmergencyTrace(ThinkData &data)

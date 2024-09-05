@@ -465,7 +465,7 @@ tString tAbortLoading::DoGetDescription() const
     return tString(tOutput( "$abort_loading_description", command_ ));
 }
 
-tConfItemBase::tConfItemBase(const char *t, const std::map<std::string, std::string>& initValueMap)
+tConfItemBase::tConfItemBase(const char *t, const std::vector<std::pair<std::string, std::string>>& initValueMap)
         :id(-1),title(t), valueMap(initValueMap),
 changed(false){
 
@@ -486,7 +486,7 @@ changed(false){
     setLevel      = tAccessLevel_Owner;
 }
 
-tConfItemBase::tConfItemBase(const char *t, const tOutput& h, const std::map<std::string, std::string>& initValueMap)
+tConfItemBase::tConfItemBase(const char *t, const tOutput& h, const std::vector<std::pair<std::string, std::string>>& initValueMap)
         :id(-1),title(t), help(h), valueMap(initValueMap),
 changed(false){
 

@@ -1460,6 +1460,59 @@ void tConfItemBase::DocAll(std::ostream &s){
     }
 }
 
+void tConfItemBase::DocAll()
+{
+    tConfItemMap & confmap = ConfItemMap();
+    FileManager fileManager(tString("config_all.cfg"), tDirectories::Var());
+    fileManager.Clear(false);
+
+    tString documented;
+    documented   << "##############################################################################\n"
+                 << "#                                 DOCUMENTED                                 #\n"
+                 << "##############################################################################\n";
+
+    tString undocumented;
+    undocumented << "##############################################################################\n"
+                 << "#                                UNDOCUMENTED                                #\n"
+                 << "##############################################################################\n";
+        
+    for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
+    {
+        tConfItemBase * ci = (*iter).second;
+
+        tString help ( ci->help );
+        tString line;
+        line << ci->title;
+        line.SetPos( 30, false );
+        
+        tString undocumentedHelpStr;
+
+        undocumentedHelpStr << line.ToLower().StripWhitespace() << "_help";
+
+        if ( help != "UNDOCUMENTED" && help != undocumentedHelpStr)
+        {
+            line << help;
+            documented << line << '\n';
+        } else {
+            line << help;
+            undocumented << line << '\n';
+        }
+    }
+    tString output;
+    output << documented 
+           << "\n\n\n\n"
+           << undocumented;
+
+    fileManager.Write(output);
+}
+
+static void sg_ListAllCommandsSplitByDocumented(std::istream &s)
+{
+    tConfItemBase::DocAll();
+}
+static tConfItemFunc sg_ListAllCommandsSplitByDocumentedConf("LIST_ALL_COMMANDS_SPLIT_BY_DOCUMENTED", &sg_ListAllCommandsSplitByDocumented);
+
+
 //! @param s        stream to read from
 //! @param record   set to true if the configuration is to be recorded and played back. That's usually only required if s is a file stream, so it defaults to true here.
 void tConfItemBase::LoadAll(std::ifstream &s, bool record )

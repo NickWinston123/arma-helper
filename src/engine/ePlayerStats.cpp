@@ -33,11 +33,11 @@ static tConfItem<REAL> se_playerStatsRageQuitTimeConf("PLAYER_STATS_RAGE_QUIT_TI
 
 int ePlayerStats::players_record_this_session = 0;
 
-void ePlayerStats::loadStatsFromDB()
+bool ePlayerStats::loadStatsFromDB()
 {
     sqlite3 *db = tDatabaseUtility::OpenDatabase(se_playerStatsDataBaseFile);
     if (!db)
-        return;
+        return false;
 
     ePlayerStatsDBAction  playerDataAction(db);
     playerDataAction.Load();
@@ -46,13 +46,15 @@ void ePlayerStats::loadStatsFromDB()
     chatbotStatsAction.Load();
 
     sqlite3_close(db);
+
+    return true;
 }
 
-void ePlayerStats::saveStatsToDB()
+bool ePlayerStats::saveStatsToDB()
 {
     sqlite3 *db = tDatabaseUtility::OpenDatabase(se_playerStatsDataBaseFile);
     if (!db)
-        return;
+        return false;
 
     con << tThemedTextBase.LabelText("Player Stats")
         << "Saving stats to database..\n";
@@ -67,6 +69,7 @@ void ePlayerStats::saveStatsToDB()
 
     if (se_playerTriggerMessages && se_playerMessageTriggersStatsSave)
         eChatBot::InitiateAction(nullptr, tString("$statssaved"), true);
+    return true;
 }
 
 void ePlayerStats::updateStatsMatchEnd(ePlayerNetID *matchWinner)
@@ -160,26 +163,21 @@ void ePlayerStats::updateStatsRoundStart()
     }
 }
 
-void ePlayerStats::reloadStatsFromDB()
+bool ePlayerStats::reloadStatsFromDB()
 {
-    saveStatsToDB();
-    playerStatsMap.clear(); // clear the current stats
-    loadStatsFromDB();      // reload stats from DB
+    if (saveStatsToDB()) 
+    {
+        playerStatsMap.clear(); // clear the current stats
+        loadStatsFromDB();      // reload stats from DB
+        return true;
+    }
+
+    return false;
 }
 
 std::unordered_map<tString, PlayerData> ePlayerStats::playerStatsMap;
 
 const std::string DELIMITER = "-+H4CK3RM@N5-+";
-
-std::string join(const std::vector<std::string> &vec, const std::string &delimiter)
-{
-    return std::accumulate(std::begin(vec), std::end(vec), std::string(),
-                           [&](const std::string &ss, const std::string &s)
-                           {
-                               return ss.empty() ? s : ss + delimiter + s;
-                           });
-}
-
 
 std::vector<std::string> deserializeVector(const std::string &str)
 {
@@ -218,7 +216,8 @@ std::string serializeVector(const std::vector<std::string> &vec)
     return std::accumulate(vec.begin(), vec.end(), std::string(),
                            [](const std::string &a, const std::string &b)
                            {
-                               if (b.empty()) return a;
+                               if (b.empty()) 
+                                 return a;
                                return a + (a.length() > 0 ? DELIMITER : "") + b;
                            });
 }

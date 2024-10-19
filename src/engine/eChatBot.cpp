@@ -35,8 +35,8 @@ static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf = Hel
 static tString se_playerTriggerMessagesDiedByVerifiedTriggers("$died");
 static tConfItem<tString> se_playerTriggerMessagesDiedByVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DIED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesDiedByVerifiedTriggers);
 
-tString se_playerMessageTargetPlayer = tString("");
-static tConfItem<tString> se_playerMessageTargetPlayerConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_ENABLED_PLAYERS", se_playerMessageTargetPlayer);
+tString se_playerMessageEnabledPlayers = tString("");
+static tConfItem<tString> se_playerMessageEnabledPlayersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_ENABLED_PLAYERS", se_playerMessageEnabledPlayers);
 
 static REAL se_playerMessageDelayRandMult = 0;
 static tConfItem<REAL> se_playerMessageDelayRandMultConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DELAY_RANDOM_MULT", se_playerMessageDelayRandMult);
@@ -114,6 +114,27 @@ extern int se_playerTriggerMessagesAcheivementsBansChangeVal = 5;
 static tConfItem<int> se_playerTriggerMessagesAcheivementsBansChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_BANS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsBansChangeVal);
 
 
+std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers()
+{
+    std::vector<ePlayerNetID *> enabledPlayers;
+    tArray<tString> players = se_playerMessageEnabledPlayers.Split(",");
+
+    for (int i = 0; i < players.Len(); i++)
+    {
+        ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
+        if (!local_p)
+            continue;
+
+        ePlayerNetID *netPlayer = local_p->netPlayer;
+        if (!netPlayer)
+            continue;
+
+        enabledPlayers.push_back(netPlayer);
+    }
+
+    return enabledPlayers;
+}
+
 void addPrefix(tString &input, tString &prefix)
 {
     tString prefixedString(prefix);
@@ -140,58 +161,120 @@ tString numberAdderFunc(tString message)
     std::string input(message.stdString());
 
 
-    bool isNegative = input[0] == '-';
-    size_t idx = isNegative ? 1 : 0;
+    input.erase(std::remove_if(input.begin(), input.end(), ::isspace), input.end());
 
-    std::string intPart, fracPart;
-    while (idx < input.size() && input[idx] != '.')
-        intPart += input[idx++];
-    if (idx < input.size() && input[idx] == '.')
-    {
-        idx++;
-        while (idx < input.size())
-            fracPart += input[idx++];
+    if (input.empty()) {
+        return tString("Invalid input");
     }
 
-    bool originalIsNegativeZero = isNegative && intPart.empty();
+    bool isNegative = false;
+    size_t idx = 0;
+    if (input[0] == '-') {
+        isNegative = true;
+        idx = 1;
+    }
+
+    std::string intPart, fracPart;
+    while (idx < input.size() && input[idx] != '.') {
+        if (!std::isdigit(input[idx])) {
+            return tString("Invalid input");
+        }
+        intPart += input[idx++];
+    }
+    if (idx < input.size() && input[idx] == '.') {
+        idx++;
+        while (idx < input.size()) {
+            if (!std::isdigit(input[idx])) {
+                return tString("Invalid input");
+            }
+            fracPart += input[idx++];
+        }
+    }
+
+    while (intPart.size() > 1 && intPart[0] == '0') {
+        intPart.erase(0, 1);
+    }
+    if (intPart.empty()) {
+        intPart = "0";
+    }
+
+    while (fracPart.size() > 1 && fracPart.back() == '0') {
+        fracPart.pop_back();
+    }
+
+    bool originalIsNegativeZero = isNegative && intPart == "0" && (fracPart.empty() || fracPart == "0");
+
+    int adderValue = se_playerMessageTriggersFuncAdderVal;
 
     int carry;
     if (originalIsNegativeZero) {
-        carry = se_playerMessageTriggersFuncAdderVal;
+        carry = adderValue;
+        isNegative = false; 
     } else {
-        carry = isNegative ? -se_playerMessageTriggersFuncAdderVal : se_playerMessageTriggersFuncAdderVal;
+        carry = isNegative ? -adderValue : adderValue;
     }
 
     for (int i = fracPart.size() - 1; i >= 0; i--) {
-        int sum = (fracPart[i] - '0') + carry;
+        int digit = fracPart[i] - '0';
+        int sum = digit + carry;
+
         carry = sum / 10;
-        fracPart[i] = '0' + (sum % 10);
+        sum = sum % 10;
+        if (sum < 0) {
+            sum += 10;
+            carry -= 1;
+        }
+
+        fracPart[i] = '0' + sum;
     }
 
-    if (intPart.empty()) intPart = "0";
+    for (int i = intPart.size() - 1; i >= 0; i--) {
+        int digit = intPart[i] - '0';
+        int sum = digit + carry;
 
-    for (int i = intPart.size() - 1; i >= 0 && carry != 0; i--) {
-        int sum = (intPart[i] - '0') + carry;
         carry = sum / 10;
-        intPart[i] = '0' + (sum % 10);
+        sum = sum % 10;
+        if (sum < 0) {
+            sum += 10;
+            carry -= 1;
+        }
+
+        intPart[i] = '0' + sum;
     }
+
 
     while (carry != 0) {
-        intPart = char('0' + (carry % 10)) + intPart;
-        carry /= 10;
+        int sum = carry % 10;
+        if (sum < 0) {
+            sum += 10;
+            carry = (carry / 10) - 1;
+        } else {
+            carry = carry / 10;
+        }
+        intPart = char('0' + sum) + intPart;
     }
 
-    if (originalIsNegativeZero && !fracPart.empty() && fracPart == "0") {
-        isNegative = true;
+    while (intPart.size() > 1 && intPart[0] == '0') {
+        intPart.erase(0, 1);
+    }
+
+    while (fracPart.size() > 1 && fracPart.back() == '0') {
+        fracPart.pop_back();
+    }
+
+    if (intPart == "0" && fracPart.empty()) {
+        isNegative = false;
     }
 
     std::string result = isNegative ? "-" : "";
     result += intPart;
-    if (!fracPart.empty())
+    if (!fracPart.empty()) {
         result += '.' + fracPart;
+    }
 
     return tString(result);
 }
+
 
 tString numberCalcFunc(tString message)
 {
@@ -807,6 +890,11 @@ tString exactStatFunc(tString message)
     tString statLabel;
     statLabel = PlayerData::getAnyLabel(stat);
 
+    if (statLabel.empty() && stat == "last_active")
+    {
+        statLabel = "Last Active";
+    }
+
     if (statLabel.empty())
     {
         output << "Stat not found! Usage: '"
@@ -914,10 +1002,14 @@ tString exactStatFunc(tString message)
             }
             showCurrentSessionVal = false;
         }
+        else if (statLabel == "Last Active") 
+        {
+            statValue << st_GetFormatTime(statsTargetPlayer->LastActivity(), false);
+        }
         else
             statValue << stats.getAnyValue(stat.TrimWhitespace());
 
-        if (showCurrentSessionVal && stats.in_server)
+        if (showCurrentSessionVal && stats.in_server && stat != "last_active")
         {
             if (currentSessionStatValue.empty())
                 currentSessionStatValue << stats.thisSession().getAnyValue(stat.TrimWhitespace());
@@ -1380,14 +1472,10 @@ tString sayOutLoudFunc(tString message)
     tString output;
     eChatBot &bot = eChatBot::getInstance();
 
-    bot.Messager()->Params().abortOutput = true;
+    // Force public message
+    bot.Messager()->Params().preAppend = "";
 
     output << "> " << message;
-
-    for (auto localNetPlayer : se_GetLocalPlayers())
-    {
-        localNetPlayer->Chat(output, true);
-    }
 
     return output;
 }
@@ -1659,11 +1747,13 @@ tString banFunc(tString message)
 
     PlayerData &triggeredByStats = ePlayerStats::getStats(triggeredBy);
 
+    ePlayerNetID *sendingPlayer = bot.Messager()->Params().sendingPlayer;
     if (triggeredByStats.banned_a_player_this_round)
     {
         bot.Messager()->ResetParams();
         bot.Messager()->SetInputParams(statsTargetPlayer, tString("$alreadybanned"), true);
         bot.Messager()->FindTriggeredResponse();
+        bot.Messager()->Params().sendingPlayer = sendingPlayer;
 
         return bot.Messager()->Params().response;
     }
@@ -1684,6 +1774,7 @@ tString banFunc(tString message)
     bot.Messager()->ResetParams();
     bot.Messager()->SetInputParams(statsTargetPlayer, tString("$banned"), true);
     bot.Messager()->FindTriggeredResponse();
+    bot.Messager()->Params().sendingPlayer = sendingPlayer;
 
     return bot.Messager()->Params().response;
 }
@@ -1725,8 +1816,8 @@ void eChatBot::LoadChatTriggers()
     FileManager fileManager(se_playerTriggerMessagesFile, tDirectories::Var());
     tArray<tString> lines = fileManager.Load();
 
-    data.chatTriggerKeys.clear();
     data.chatTriggers.clear();
+
     for (int i = 0; i < lines.Len(); ++i)
     {
         if (lines[i].StartsWith("\"") && lines[i].EndsWith("\""))
@@ -1745,22 +1836,23 @@ void eChatBot::LoadChatTriggers()
             {
                 trigger = trigger.ToLower();
 
-                // Split the responses by semicolon
-                std::vector<tString> responses(responsesArray.begin(), responsesArray.end());
+                eChatBotData::ChatTrigger chatTrigger;
 
-                REAL extraDelay = atof(parts[2]);
-                bool exact = atoi(parts[3]) == 1;
+                chatTrigger.trigger = trigger;
+                chatTrigger.responses = std::vector<tString>(responsesArray.begin(), responsesArray.end());
+                chatTrigger.extraDelay = atof(parts[2]);
+                chatTrigger.exact = atoi(parts[3]) == 1;
 
-                // Store the trigger and its corresponding responses, delay and exact value
-                data.chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
-
-                // store order
-                data.chatTriggerKeys.push_back(trigger);
+                data.chatTriggers.push_back(chatTrigger);
             }
         }
         else
         {
-            con << "LoadChatTriggers Error:\nMalformed line at index " << i + 1 << ": " << lines[i] << "\n";
+            con << tThemedTextBase.HeaderColor() << "LoadChatTriggers "
+                << tThemedTextBase.MainColor()   << "Error:\n"
+                << tThemedTextBase.ErrorColor()  << "Malformed line at index " 
+                << tThemedTextBase.ItemColor()   << i + 1 << ": " 
+                << lines[i] << "\n";
             continue;
         }
     }
@@ -1768,7 +1860,8 @@ void eChatBot::LoadChatTriggers()
 
 bool eChatBot::ShouldAnalyze()
 {
-    tArray<tString> players = se_playerMessageTargetPlayer.Split(",");
+    tArray<tString> players = se_playerMessageEnabledPlayers.Split(",");
+
     for (int i = 0; i < players.Len(); i++)
     {
         ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
@@ -1784,6 +1877,7 @@ bool eChatBot::ShouldAnalyze()
     return false;
 }
 
+
 bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger, tString preAppend)
 {
     bool initiated;
@@ -1796,22 +1890,49 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, b
         bot.Stats().total_messages_read++;
 
     gHelperUtility::Debug("eChatBot","Received Input:", inputMessage);
-    bot.Messager()->ResetParams();
-    bot.Messager()->SetInputParams(triggeredBy, inputMessage, eventTrigger, preAppend);
-    bot.Messager()->FindTriggeredResponse();
+    
+    tArray<tString> enabledPlayers = se_playerMessageEnabledPlayers.Split(",");
+    std::vector<ePlayerNetID *> sentByPlayers;
 
-    if (!bot.Messager()->Params().abortOutput)
+    for (int i = 0; i < enabledPlayers.Len(); i++)
     {
-        gHelperUtility::Debug("eChatBot","Sending message:", bot.Messager()->Params().response);
-        initiated = true;
-        bot.Messager()->Send();
+        ePlayer *local_p = ePlayer::PlayerConfig(atoi(enabledPlayers[i]) - 1);
+        if (!local_p)
+            continue;
+
+        ePlayerNetID *netPlayer = local_p->netPlayer;
+        if (!netPlayer)
+            continue;
+
+        if (std::find(sentByPlayers.begin(), sentByPlayers.end(), netPlayer) != sentByPlayers.end())
+            continue;
+
+        bot.Messager()->ResetParams();
+        bot.Messager()->SetInputParams(triggeredBy, inputMessage, eventTrigger, preAppend);
+
+        bot.Messager()->Params().sendingPlayer = netPlayer;
+        sentByPlayers.push_back(netPlayer);
+
+        bot.Messager()->FindTriggeredResponse();
+        
+        if (!bot.Messager()->Params().abortOutput)
+        {
+            gHelperUtility::Debug("eChatBot", "Sending message:", bot.Messager()->Params().response);
+            initiated = true;
+            bot.Messager()->Send();
+        }
+        else if (eventTrigger) 
+        {
+            gHelperUtility::Debug("eChatBot", "No trigger set for '" + inputMessage.stdString() + "' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
+        }
+        else if (bot.Messager()->Params().abortOutput && bot.Messager()->Params().matchFound)
+            gHelperUtility::Debug("eChatBot", "Aborting output..");
+        else if (!bot.Messager()->Params().matchFound)
+            gHelperUtility::Debug("eChatBot", "No match found..");
+        
+        if (bot.Messager()->Params().triggerType != ResponseType::NORMAL)
+            break;
     }
-    else if (eventTrigger)
-        con << "No trigger set for '" << inputMessage << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-    else if (bot.Messager()->Params().abortOutput && bot.Messager()->Params().matchFound)
-        gHelperUtility::Debug("eChatBot","Aborting output..");
-    else if (!bot.Messager()->Params().matchFound)
-        gHelperUtility::Debug("eChatBot","No match found..");
 
     return initiated;
 }
@@ -1932,19 +2053,28 @@ static void AddChatTrigger(std::istream &s)
     }
 
     tArray<tString> triggersArray = parts[0].Split(";");
+    tArray<tString> responsesArray = parts[1].Split(";");
+
+    REAL extraDelay = atof(parts[2].c_str());
+    bool exact = atoi(parts[3].c_str()) == 1;
+
+    if (triggersArray.Len() == 0 || responsesArray.Len() == 0)
+    {
+        con << "Error: Trigger and responses cannot be empty.\n";
+        return;
+    }
+
+    std::vector<tString> responses(responsesArray.begin(), responsesArray.end());
 
     eChatBot &bot = eChatBot::getInstance();
     FileManager fileManager(se_playerTriggerMessagesFile, tDirectories::Var());
 
+    tString lineToWrite = parts[0] + "," + parts[1] + "," + parts[2] + "," + parts[3];
+    fileManager.Write(lineToWrite); 
+
     for (auto &trigger : triggersArray)
     {
         trigger = trigger.ToLower();
-
-        tArray<tString> responsesArray = parts[1].Split(";");
-        std::vector<tString> responses(responsesArray.begin(), responsesArray.end());
-
-        REAL extraDelay = atof(parts[2].c_str());
-        bool exact = atoi(parts[3].c_str()) == 1;
 
         if (trigger.empty() || responses.empty())
         {
@@ -1952,13 +2082,19 @@ static void AddChatTrigger(std::istream &s)
             return;
         }
 
-        bot.data.chatTriggers[trigger] = std::make_tuple(responses, extraDelay, exact);
-        fileManager.Write(params);
+        eChatBotData::ChatTrigger chatTrigger;
+        chatTrigger.trigger = trigger;
+        chatTrigger.responses = responses;
+        chatTrigger.extraDelay = extraDelay;
+        chatTrigger.exact = exact;
 
-        con << "Trigger, Response, Extra Delay, Exact?\n";
-        con << "Added: " << params << "\n";
+        bot.data.chatTriggers.push_back(chatTrigger);
     }
+
+    con << "Trigger, Response, Extra Delay, Exact?\n";
+    con << "Added: " << params << "\n";
 }
+
 
 static void RemoveChatTrigger(std::istream &s)
 {
@@ -1991,16 +2127,15 @@ static void ListChatTriggers(std::istream &s)
         con << "Listing all loaded chat triggers:\n";
         con << "Line) Trigger, Response, Extra Delay, Exact?\n";
 
-        int i = 1; // Line number counter
-        for (const auto &triggerPair : chatBot.data.chatTriggers)
+        int i = 1; 
+        for (const auto &chatTrigger : chatBot.data.chatTriggers)
         {
-            const tString &trigger = triggerPair.first;
-            const auto &details = triggerPair.second;
-            const std::vector<tString> &responses = std::get<0>(details);
-            REAL extraDelay = std::get<1>(details);
-            bool exact = std::get<2>(details);
+            const tString &trigger = chatTrigger.trigger;
+            const std::vector<tString> &responses = chatTrigger.responses;
+            REAL extraDelay = chatTrigger.extraDelay;
+            bool exact = chatTrigger.exact;
 
-            // combine multiple responses into a single string separated by semicolons
+            
             std::string combinedResponses;
             for (const auto &response : responses)
             {
@@ -2011,7 +2146,12 @@ static void ListChatTriggers(std::istream &s)
                 combinedResponses += response;
             }
 
-            con << i << ") " << trigger << ", " << combinedResponses << ", " << extraDelay << ", " << (exact ? "Yes" : "No") << "\n";
+            con << i << ") " 
+                << trigger << ", " 
+                << combinedResponses << ", "
+                << extraDelay << ", " 
+                << (exact ? "Yes" : "No") 
+                << "\n";
             i++;
         }
     }
@@ -2172,31 +2312,34 @@ void eChatBotMessager::FindTriggeredResponse()
 
     tToLower(lowerMessage);
 
-    for (const auto &triggerKey : data->chatTriggerKeys)
+    for (const auto &chatTrigger : data->chatTriggers)
     {
-        auto triggerPair = data->chatTriggers.find(triggerKey);
-
-        if (triggerPair == data->chatTriggers.end())
-            continue;
-
-        bool exact = std::get<2>(triggerPair->second), match = false;
+        bool match = false;
+        bool exact = chatTrigger.exact;
 
         if (Params().eventTrigger)
             exact = true;
 
-        tString trigger = triggerPair->first.ToLower();
+        tString trigger = chatTrigger.trigger.ToLower();
 
         ePlayerNetID *potentialSender = nullptr;
-        bool chatNameTrigger = !Params().eventTrigger && (trigger.Contains("$p1 ") || trigger.EndsWith("$p1") || trigger == "$p1");
+        bool chatNameTrigger = !Params().eventTrigger && (trigger.Contains("$p0 ") || trigger.EndsWith("$p0") || trigger == "$p0");
         if (chatNameTrigger)
         {
-            for (auto localNetPlayer : se_GetLocalPlayers())
+            
+            std::vector<ePlayerNetID *> enabledPlayers;
+            if (!Params().sendingPlayer)
+                enabledPlayers = se_GetPlayerMessageEnabledPlayers();
+            else 
+                enabledPlayers.push_back(Params().sendingPlayer);
+
+            for (auto localNetPlayer : enabledPlayers)
             {
                 tString ourName = localNetPlayer->GetName().ToLower();
                 tArray<tString> nameParts = ourName.Split(" ");
 
-                tString triggerWithoutName = trigger.Replace("$p1", "").TrimWhitespace().ToLower();
-                if (!lowerMessage.Contains(triggerWithoutName))
+                tString triggerWithoutName = trigger.Replace("$p0", "").TrimWhitespace().ToLower();
+                if (!triggerWithoutName.empty() && !lowerMessage.Contains(triggerWithoutName))
                     continue;
 
                 bool nameFound = false;
@@ -2280,7 +2423,9 @@ void eChatBotMessager::FindTriggeredResponse()
                     if (potentialSender != nullptr && potentialSender->isLocal())
                         Params().sendingPlayer = potentialSender;
                 }
+
                 Params().triggeredByName = Params().triggeredBy->GetName();
+
                 if (se_playerStats)
                 {
                     PlayerData &stats = ePlayerStats::getStats(Params().triggeredBy);
@@ -2289,33 +2434,40 @@ void eChatBotMessager::FindTriggeredResponse()
                 }
             }
 
-            REAL extraDelay = std::get<1>(triggerPair->second);
+            Params().delay = chatTrigger.extraDelay;
 
             // vector of possible responses
-            std::vector<tString> possibleResponses = std::get<0>(triggerPair->second);
+            std::vector<tString> possibleResponses = chatTrigger.responses;
+
+            tString sanitizedTriggeredByName = Params().triggeredByName.Replace("$", "\\$");
 
             // random response from the vector
             tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
+            chosenResponse         = chosenResponse.Replace("$p1", sanitizedTriggeredByName);
 
-            chosenResponse = chosenResponse.Replace("$p1", Params().triggeredByName);
-
-            tString responseStr = chosenResponse;
-
-            // gHelperUtility::stream() << "responseStr before " << responseStr << "\n";
-            // responseStr = responseStr.Replace("$p1", Params().triggeredByName);
-            // gHelperUtility::stream() << "responseStr after " << responseStr << "\n";
+            if (Params().sendingPlayer) {
+                chosenResponse.RecomputeLength();
+                tString ourName = Params().sendingPlayer->GetName();
+                chosenResponse = chosenResponse.Replace("$p0", ourName);
+            }
 
             int dollarPos = 0;
-
             while ((dollarPos = chosenResponse.StrPos(dollarPos, "$")) != -1)
             {
+                if (dollarPos > 0 && chosenResponse[dollarPos - 1] == '\\')
+                {
+                    chosenResponse.RemoveSubStr(dollarPos - 1, 1); 
+                    dollarPos--; 
+                    dollarPos++; 
+                    continue;
+                }
+
                 int openParenPos = chosenResponse.StrPos(dollarPos + 1, "(");
                 int closeParenPos = -1;
 
                 tString functionName;
                 tString functionInput;
 
-                // SYM FUNC FUNCTION? - CHECK FOR ( )
                 if (openParenPos != -1)
                 {
                     closeParenPos = chosenResponse.StrPos(openParenPos + 1, ")");
@@ -2329,71 +2481,72 @@ void eChatBotMessager::FindTriggeredResponse()
                 if (closeParenPos == -1)
                 {
                     int endPos = chosenResponse.StrPos(dollarPos + 1, " ");
-                    bool keepSpace = false;
-
-                    if (endPos != -1)
-                        keepSpace = true;
-                    else
-                        endPos = chosenResponse.Len();
+                    if (endPos == -1)
+                        endPos = chosenResponse.Len() - 1;
 
                     functionName = chosenResponse.SubStr(dollarPos, endPos - dollarPos);
                 }
 
-                bool functionResponse = !functionName.StartsWith("$p1") &&
-                                        !functionName.StartsWith("$val1");
-
-                gHelperUtility::Debug("eChatBot","functionName:", functionName);
-
-                if (functionResponse)
+                if (functionName == "$p1" || functionName == "$val1")
                 {
-                    Params().triggerType = ResponseType::FUNC;
-
-                    tString finalFunctionInput(functionInput);
-
-                    if (finalFunctionInput.empty())
-                    {
-                        tString toReplace = Params().matchedTrigger + " ";
-                        finalFunctionInput = Params().inputMessage.Replace(toReplace,"");
-
-                        toReplace = Params().matchedTrigger;
-                        finalFunctionInput = finalFunctionInput.Replace(toReplace,"");
-                    }
-                    else
-                    {
-                        Params().triggerType = ResponseType::SYM_FUNC;
-
-                        tString extraParams(Params().inputMessage);
-                        if (!extraParams.empty())
-                            finalFunctionInput << tString(" ") << extraParams;
-
-                        tString toReplace = Params().matchedTrigger + " ";
-                        finalFunctionInput = finalFunctionInput.Replace(toReplace,"");
-
-                        toReplace = Params().matchedTrigger;
-                        finalFunctionInput = finalFunctionInput.Replace(toReplace,"");
-                    }
-
-                    finalFunctionInput = tColoredString::RemoveColors(finalFunctionInput);
-                    // con << "finalFunctionInput " << finalFunctionInput << "\n";
-                    tString result = data->functions->ExecuteFunction(functionName, finalFunctionInput);
-                    // con << "result = " << result << "\n";
-
-                    tString functionPattern =  functionName;
-                    if (!functionInput.empty())
-                        functionPattern += tString("(") + functionInput + tString(")");
-                    // con << "functionPattern = " << functionPattern << "\n";
-
-                    if (!result.empty()) {
-                        responseStr = responseStr.Replace(functionPattern, result);
-                    } else {
-                        responseStr = "";
-                    }
+                    dollarPos += functionName.Len();
+                    continue;
                 }
 
-                dollarPos = (closeParenPos == -1) ? dollarPos + 1 : closeParenPos + 1;
+                if (!data->functions->IsValidFunction(functionName))
+                {
+                    dollarPos += functionName.Len();
+                    continue;
+                }
+
+                Params().triggerType = ResponseType::FUNC;
+
+                tString finalFunctionInput(functionInput);
+
+                if (finalFunctionInput.empty())
+                {
+                    tString toReplace = Params().matchedTrigger + " ";
+                    finalFunctionInput = Params().inputMessage.Replace(toReplace, "");
+
+                    toReplace = Params().matchedTrigger;
+                    finalFunctionInput = finalFunctionInput.Replace(toReplace, "");
+                }
+                else
+                {
+                    Params().triggerType = ResponseType::SYM_FUNC;
+
+                    tString extraParams(Params().inputMessage);
+                    if (!extraParams.empty())
+                        finalFunctionInput << tString(" ") << extraParams;
+
+                    tString toReplace = Params().matchedTrigger + " ";
+                    finalFunctionInput = finalFunctionInput.Replace(toReplace, "");
+
+                    toReplace = Params().matchedTrigger;
+                    finalFunctionInput = finalFunctionInput.Replace(toReplace, "");
+                }
+
+                finalFunctionInput = tColoredString::RemoveColors(finalFunctionInput);
+
+                tString result = data->functions->ExecuteFunction(functionName, finalFunctionInput);
+
+                tString functionPattern = functionName;
+                if (!functionInput.empty())
+                    functionPattern += tString("(") + functionInput + tString(")");
+
+                if (!result.empty())
+                {
+                    chosenResponse = chosenResponse.Replace(functionPattern, result);
+                }
+                else
+                {
+                    chosenResponse = "";
+                    break;
+                }
+
+                dollarPos = dollarPos + result.Len();
             }
 
-            chosenResponse = responseStr;
 
             if (!chosenResponse.empty())
                 Params().matchFound = true;
@@ -2410,8 +2563,7 @@ void eChatBotMessager::FindTriggeredResponse()
             if (Params().validateOutput)
                 validateOutput(chosenResponse);
 
-            Params().delay           = extraDelay;
-            Params().response        = chosenResponse;
+            Params().response = chosenResponse;
 
             return;
         }
@@ -2425,18 +2577,16 @@ bool eChatBotMessager::Send()
     // con << "SEND()\n";
     if (!helperConfig::sghuk)
         return false;
-
-    if (!Params().sendingPlayer)
+    
+    if (!Params().sendingPlayer) 
     {
-        tArray<tString> players = se_playerMessageTargetPlayer.Split(",");
-        int numPlayers = players.Len();
+        gHelperUtility::Debug("eChatBot","No sending player set. Attemping to set one");
 
-        for (int i = 0; i < numPlayers; i++)
+        tArray<tString> players = se_playerMessageEnabledPlayers.Split(",");
+
+        for (int i = 0; i < players.Len(); i++)
         {
-            if (!Params().eventTrigger && numPlayers > 1 && i > 0)
-                continue;
-
-            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
             if (!local_p)
                 continue;
 
@@ -2447,15 +2597,14 @@ bool eChatBotMessager::Send()
             Params().sendingPlayer = netPlayer;
             break;
         }
-    }
-    else if (!tIsEnabledForPlayer(se_playerMessageTargetPlayer, Params().sendingPlayer->pID + 1))
-    {
-        return false;
+         
     }
 
-    if (!Params().sendingPlayer)
+    if ((!Params().sendingPlayer) || (!tIsEnabledForPlayer(se_playerMessageEnabledPlayers, Params().sendingPlayer->pID + 1))) {
+        gHelperUtility::Debug("eChatBot","No sending player set. Aborting");
         return false;
-
+    }
+        
     REAL extraDelay;
     tString messageToSend = Params().response;
 
@@ -2496,7 +2645,8 @@ bool eChatBotMessager::Send()
         tString partToSend = messageParts[i];
         partToSend.RecomputeLength();
 
-        gHelperUtility::Debug("eChatBot","partToSend", partToSend);
+        if (messageParts.Len() > 1)
+            gHelperUtility::Debug("eChatBot","partToSend", partToSend);
 
         if (!Params().preAppend.empty())
             partToSend = Params().preAppend + partToSend;
@@ -2624,17 +2774,17 @@ const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings =
     },
 };
 
-    eChatBotDataBase::ActionData  & eChatBotMessager::Params()
-    {
-        return Data().params;
-    }
+eChatBotDataBase::ActionData  &eChatBotMessager::Params()
+{
+    return Data().params;
+}
 
-    eChatBotStats &eChatBotMessager::Stats()
-    {
-        return Data().stats;
-    }
+eChatBotStats &eChatBotMessager::Stats()
+{
+    return Data().stats;
+}
 
-    eChatBotData & eChatBotMessager::Data()
-    {
-        return *data;
-    }
+eChatBotData & eChatBotMessager::Data()
+{
+    return *data;
+}

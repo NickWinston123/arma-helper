@@ -397,9 +397,22 @@ namespace tDatabaseUtility
         gHelperUtility::DebugLog(message, sender);
     }
 
-    static sqlite3 *OpenDatabase(tString databaseFile)
+    static sqlite3* OpenDatabase(tString databaseFile)
     {
+
         tString databasePath = tDirectories::Var().GetReadPath(databaseFile);
+
+        if (databasePath.empty())
+        {
+            DebugLog("", "GetReadPath() returned an empty path, attempting to create file in Var path", true);
+            databasePath = tDirectories::Var().GetWritePath(databaseFile);
+            
+            if (databasePath.empty())
+            {
+                DebugLog("", "Failed to obtain a valid path to create database in Var directory.", true);
+                return nullptr;
+            }
+        }
 
         DebugLog("", "Opening database at '" + databasePath.stdString() + "'", true);
 
@@ -413,8 +426,10 @@ namespace tDatabaseUtility
             return nullptr;
         }
 
+        DebugLog("", "Database successfully opened or created at '" + databasePath.stdString() + "'", true);
         return db;
     }
+
 
 }
 

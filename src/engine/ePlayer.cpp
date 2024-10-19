@@ -1882,6 +1882,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         ePlayerNetID *ourPlayer;
         bool privateMessage = false;
         tString privateMessageParams;
+        bool sentToEnabledPlayer = false;
 
         tString possiblePrivateMessageStr;
         int privateMessageMsgPos = -1;
@@ -1900,16 +1901,21 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
             if (privateMessageMsgPos != -1)
             {
+                ourPlayer = localNetPlayer;
                 p->lastMessagedPlayer = ourPlayer;
                 ourPlayer->lastMessagedByPlayer = p;
                 ourPlayer->lastMessagedPlayer = nullptr;
 
-                ourPlayer = localNetPlayer;
                 privateMessage = true;
                 int cutPos = privateMessageMsgPos + possiblePrivateMessageStr.Len() - 1;
 
                 privateMessageParams = colorlessMessage.SubStr(cutPos);
-                break;
+
+                if (tIsEnabledForPlayer(se_playerMessageEnabledPlayers, localNetPlayer->pID + 1))
+                {
+                    sentToEnabledPlayer = true;
+                    break;
+                }
             }
 
             if (se_silenceEnemies)
@@ -1924,7 +1930,6 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             }
         }
 
-
         if (privateMessage)
         {
             if (se_encryptCommandWatch)
@@ -1937,8 +1942,8 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
         if (se_playerTriggerMessages && se_playerMessageTriggersChat && 
             (p->pID == -1 || 
-            se_playerTriggerMessagesReactToSelf && tIsEnabledForPlayer(se_playerMessageTargetPlayer,p->pID+1) ||
-            se_playerTriggerMessagesReactToLocal && !tIsEnabledForPlayer(se_playerMessageTargetPlayer,p->pID+1)) && !encyptedMessage)
+            se_playerTriggerMessagesReactToSelf && tIsEnabledForPlayer(se_playerMessageEnabledPlayers,p->pID+1) ||
+            se_playerTriggerMessagesReactToLocal && !tIsEnabledForPlayer(se_playerMessageEnabledPlayers,p->pID+1)) && !encyptedMessage)
         {
             tString params(colorlessMessage);
             tString preAppend;
@@ -1948,7 +1953,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
 
             if (validPrivateMessage)
             {
-                if ((validPrivateMessage && se_playerMessageTriggersChatPrivateMsgs))
+                if (se_playerMessageTriggersChatPrivateMsgs && sentToEnabledPlayer)
                 {
                     preAppend << "/msg "
                             << p->GetName().Filter()

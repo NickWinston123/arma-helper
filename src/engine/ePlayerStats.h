@@ -482,8 +482,7 @@ public:
 
     static bool performAction(PlayerData &stats, AcheivementsTypes type)
     {
-        bool stored;
-
+        bool stored = false;
         tString response;
         REAL delay = 0.0;
         tString playerName(stats.name);
@@ -522,109 +521,65 @@ public:
     }
 
 private:
-    static void handleKills(eChatBot &bot, const PlayerData &stats, tString playerName, tString &response, REAL &delay)
+    static void handleKills(eChatBot &bot, const PlayerData &stats, const tString &playerName, tString &response, REAL &delay)
     {
         int currentKills = stats.kills;
         int currentKillStreak = stats.current_kill_streak;
         int maxKillStreak = stats.max_kill_streak;
 
-        if (currentKills % se_playerTriggerMessagesAcheivementsKillsChangeVal == 0)
+        handleAchievement(bot, stats, playerName,
+                          currentKills, se_playerTriggerMessagesAcheivementsKillsChangeVal, "$acheivements_kills",
+                          response, delay);
+
+        handleAchievement(bot, stats, playerName,
+                          currentKillStreak, se_playerTriggerMessagesAcheivementsKillStreakChangeVal, "$acheivements_current_killstreak",
+                          response, delay);
+
+        if (maxKillStreak > 1 && stats.new_max_kill_streak)
+        {
+            handleAchievement(bot, stats, playerName,
+                              maxKillStreak, se_playerTriggerMessagesAcheivementsMaxKillStreak, "$acheivements_max_killstreak",
+                              response, delay);
+        }
+    }
+
+    static void handleChats(eChatBot &bot, const PlayerData &stats, const tString &playerName, tString &response, REAL &delay)
+    {
+        handleAchievement(bot, stats, playerName,
+                          stats.total_messages, se_playerTriggerMessagesAcheivementsChatsChangeVal, "$acheivements_chats",
+                          response, delay);
+    }
+
+    static void handleJoins(eChatBot &bot, const PlayerData &stats, const tString &playerName, tString &response, REAL &delay)
+    {
+        handleAchievement(bot, stats, playerName,
+                          stats.times_joined, se_playerTriggerMessagesAcheivementsJoinsChangeVal, "$acheivements_joins",
+                          response, delay);
+    }
+
+    static void handleBans(eChatBot &bot, const PlayerData &stats, const tString &playerName, tString &response, REAL &delay)
+    {
+        handleAchievement(bot, stats, playerName,
+                          stats.times_banned, se_playerTriggerMessagesAcheivementsBansChangeVal, "$acheivements_bans",
+                          response, delay);
+    }
+
+    static void handleAchievement(eChatBot &bot, const PlayerData &stats, const tString &playerName,
+                                  int statValue, int changeVal, std::string trigger,
+                                  tString &response, REAL &delay)
+    {
+        if (statValue != 0 && statValue % changeVal == 0)
         {
             tString value;
-            tString trigger ("$acheivements_kills");
-            
-            value << currentKills;
+            value << statValue;
 
-            findResponse(bot, playerName, trigger, value);
-            
-            delay    += bot.Messager()->Params().delay;
-            response << bot.Messager()->Params().response;
-        }
+            findResponse(bot, playerName, tString(trigger), value);
 
-        if (currentKillStreak % se_playerTriggerMessagesAcheivementsKillStreakChangeVal == 0)
-        {
+            delay += bot.Messager()->Params().delay;
+
             if (!response.empty())
                 response << " | ";
 
-            tString value;
-            tString trigger ("$acheivements_current_killstreak");
-            
-            value << currentKillStreak;
-
-            findResponse(bot, playerName, trigger, value);
-            
-            delay    += bot.Messager()->Params().delay;
-            response << bot.Messager()->Params().response;
-        }
-
-        if (maxKillStreak > 1 && maxKillStreak % se_playerTriggerMessagesAcheivementsMaxKillStreak == 0 && stats.new_max_kill_streak)
-        {
-            if (!response.empty())
-                response << " | ";
-
-            tString value;
-            tString trigger ("$acheivements_max_killstreak");
-            
-            value << maxKillStreak;
-
-            findResponse(bot, playerName, trigger, value);
-            
-            delay    += bot.Messager()->Params().delay;
-            response << bot.Messager()->Params().response;
-        }
-
-    }
-
-    static void handleChats(eChatBot &bot, const PlayerData &stats, tString playerName, tString &response, REAL &delay)
-    {
-        int totalChats = stats.total_messages;
-
-        if (totalChats % se_playerTriggerMessagesAcheivementsChatsChangeVal == 0)
-        {
-            tString value;
-            tString trigger ("$acheivements_chats");
-            
-            value << totalChats;
-
-            findResponse(bot, playerName, trigger, value);
-            
-            delay    += bot.Messager()->Params().delay;
-            response << bot.Messager()->Params().response;
-        }
-    }
-
-    static void handleJoins(eChatBot &bot, const PlayerData &stats, tString playerName, tString &response, REAL &delay)
-    {
-        int timesJoined = stats.times_joined;
-
-        if (timesJoined % se_playerTriggerMessagesAcheivementsJoinsChangeVal == 0)
-        {
-            tString value;
-            tString trigger ("$acheivements_joins");
-            
-            value << timesJoined;
-
-            findResponse(bot, playerName, trigger, value);
-            
-            delay    += bot.Messager()->Params().delay;
-            response << bot.Messager()->Params().response;
-        }
-    }
-
-    static void handleBans(eChatBot &bot, const PlayerData &stats, tString playerName, tString &response, REAL &delay)
-    {
-        int timesBanned = stats.times_banned;
-
-        if (timesBanned % se_playerTriggerMessagesAcheivementsBansChangeVal == 0)
-        {
-            tString value;
-            tString trigger ("$acheivements_bans");
-            
-            value << timesBanned;
-
-            findResponse(bot, playerName, trigger, value);
-            
-            delay    += bot.Messager()->Params().delay;
             response << bot.Messager()->Params().response;
         }
     }
@@ -644,8 +599,7 @@ private:
         if (!bot.Messager()->Params().response.empty())
             bot.Messager()->Params().response = bot.Messager()->Params().response.Replace(valDelim, value);
         else
-            con << "No trigger set for '" << trigger << "'\nSet one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n";
-
+            gHelperUtility::Debug("eChatBot", "No trigger set for '" + trigger.stdString() + "' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
     }
 };
 
@@ -830,20 +784,30 @@ public:
         PlayerData &stats = getStats(player);
         playerLeft(stats);
 
-        gCycle *cycle = player->NetPlayerToCycle();
+        REAL lastDeathTime = tSysTimeFloat() - player->lastCycleDeathTime;
 
-        if (cycle && ((tSysTimeFloat() - cycle->lastDeathTime) < se_playerStatsRageQuitTime))
+        if  (lastDeathTime > 0.005 && lastDeathTime < se_playerStatsRageQuitTime)
         {
             stats.rage_quits++;         
                 
-
             if (se_playerTriggerMessages && se_playerTriggerMessagesRageQuits)
             {
+                static const tString valDelim = tString("$val1");
+
                 eChatBot &bot = eChatBot::getInstance();
                 bot.Messager()->ResetParams();
                 bot.Messager()->Params().triggeredByName = (stats.name.empty() ? player->GetName() : stats.name);
                 bot.Messager()->SetInputParams(nullptr, tString("$ragequit"), true);
                 bot.Messager()->FindTriggeredResponse();
+
+                tString value;
+                value << lastDeathTime;
+
+                if (!bot.Messager()->Params().response.empty())
+                    bot.Messager()->Params().response = bot.Messager()->Params().response.Replace(valDelim, value);
+                else
+                    gHelperUtility::Debug("eChatBot", "No trigger set for '$ragequit' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
+
                 bot.Messager()->Send();
             }
             
@@ -997,6 +961,7 @@ public:
 
             if (!deletedPlayers.empty()) {
                 output << "Stats for player(s) \"" << deletedPlayers << "\" marked as deleted.\n";
+                ePlayerStats::reloadStatsFromDB();
             }
             if (!notFoundPlayers.empty()) {
                 output << "Player(s) \"" << notFoundPlayers << "\" not found! Deletion skipped.\n";
@@ -1122,9 +1087,9 @@ public:
     static void updateStatsRoundStart();
     static void updateStatsRoundEnd();
 
-    static void loadStatsFromDB();
-    static void saveStatsToDB();
-    static void reloadStatsFromDB();
+    static bool loadStatsFromDB();
+    static bool saveStatsToDB();
+    static bool reloadStatsFromDB();
 
 };
 

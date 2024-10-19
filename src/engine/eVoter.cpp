@@ -2222,7 +2222,12 @@ bool eVoter::ChatDisplayVotes()
     }
 
     for (int i = 0; i < size ; i++) {
-        con << tThemedTextBase.ItemColor() << i+1 << tThemedTextBase.MainColor() << ") " << voteItems[i]->GetDescription() << "\n";
+        con << tThemedTextBase.ItemColor() 
+            << i+1 
+            << tThemedTextBase.MainColor() 
+            << ") " 
+            << voteItems[i]->GetDescription() 
+            << "\n";
     }
 
     return true;
@@ -2235,14 +2240,25 @@ void eVoter::ChatSubmitPoll(int pollID, bool accept)
     int size = voteItems.Len();
 
     if (pollID > size || pollID <= 0) {
-        con << tThemedTextBase.ErrorColor() << "No poll found with ID '" << tThemedTextBase.ItemColor() << pollID << tThemedTextBase.ErrorColor() << "'\n";
+        con << tThemedTextBase.ErrorColor() 
+            << "No poll found with ID '" 
+            << tThemedTextBase.ItemColor() 
+            << pollID 
+            << tThemedTextBase.ErrorColor() 
+            << "'\n";
         return;
     }
 
     eVoteItem* voteItem = eVoteItem::GetItems()(pollID-1);
 
     if (!voteItem) {
-        con << tThemedTextBase.ErrorColor() << "No poll found with ID '" << tThemedTextBase.ItemColor() << pollID << tThemedTextBase.ErrorColor() << "'\n";
+        con 
+        << tThemedTextBase.ErrorColor() 
+        << "No poll found with ID '" 
+        << tThemedTextBase.ItemColor() 
+        << pollID 
+        << tThemedTextBase.ErrorColor() 
+        << "'\n";
         return;
     }
 

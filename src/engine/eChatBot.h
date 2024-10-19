@@ -12,7 +12,7 @@
 #include "tDatabase.h"
 
 extern bool se_playerTriggerMessages;
-extern tString se_playerTriggerMessagesFile, se_playerMessageTargetPlayer;
+extern tString se_playerTriggerMessagesFile, se_playerMessageEnabledPlayers;
 
 extern bool se_playerTriggerMessagesReactToSelf, se_playerTriggerMessagesReactToLocal;
 extern bool se_playerTriggerMessagesResendSilencedMessages;
@@ -27,6 +27,8 @@ extern int se_playerTriggerMessagesAcheivementsMaxKillStreak;
 extern int se_playerTriggerMessagesAcheivementsChatsChangeVal;
 extern int se_playerTriggerMessagesAcheivementsJoinsChangeVal;
 extern int se_playerTriggerMessagesAcheivementsBansChangeVal;
+
+std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers();
 
 struct eChatBotStats;
 class eChatBotData;
@@ -154,6 +156,11 @@ public:
         return tString("");
     }
 
+    bool IsValidFunction(const tString &name)
+    {
+        return functionMap.find(name) != functionMap.end();
+    }
+
     eChatBotData &Data()
     {
         return *data;
@@ -200,8 +207,16 @@ public:
         messager  = new eChatBotMessager(this);
     }
 
-    std::map<tString, std::tuple<std::vector<tString>, REAL, bool>> chatTriggers;
-    std::vector<tString> chatTriggerKeys;
+    struct ChatTrigger 
+    {
+        tString trigger;
+        std::vector<tString> responses;
+        REAL extraDelay;
+        bool exact;
+    };
+
+    std::vector<ChatTrigger> chatTriggers;
+
     TempConfItemManager *chatBotCommandConfItems;
 
     eChatBotStats stats;

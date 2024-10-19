@@ -320,7 +320,6 @@ public:
 
     void SetValueMap(const std::vector<std::pair<std::string, std::string>>& newValueMap) {
         valueMap = newValueMap;
-        changed = true;
     }
 
     tString const & GetTitle() const {
@@ -340,6 +339,7 @@ public:
     static void LoadLine(std::istream &s, bool wildCardEnabled = false); //! loads one configuration line
     static bool LoadPlayback( bool print = false ); //! loads configuration from playback
     static void DocAll(std::ostream &s);
+    static void DocAll();
     static int AccessLevel(std::istream &s); //! Returns access level needed for command. -1 if command not found.
     static void WriteAllToFile();
     static void WriteAllLevelsToFile();

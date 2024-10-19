@@ -275,6 +275,49 @@ void gPathHelper::FindPath(gHelperData &data)
         pathUpdatedTime = helper_.CurrentTime();
         lastPos = target;
 
+        /*
+        if (!path_.Valid())
+        {
+            return;
+        }
+
+        path_.Proceed();
+
+        bool goon = path_.Proceed();
+        bool nogood = false;
+
+        do
+        {
+            if (goon)
+                goon = path_.GoBack();
+            else
+                goon = true;
+
+            eCoord pos = path_.CurrentPosition() + path_.CurrentOffset() * 0.1f;
+            eCoord opos = owner_.Position();
+            eCoord odir = pos - opos;
+
+            REAL forward = eCoord::F(odir, owner_.Direction());
+            if (forward < 0)
+            {
+                forward = 0;
+            }
+            eCoord intermediate = opos + owner_.Direction() * forward;
+
+            gSensor p(&owner_, opos, intermediate - opos);
+            p.detect(.99f);
+            nogood = p.ehit;
+
+            if (!nogood)
+            {
+                gSensor p(&owner_, intermediate, pos - intermediate);
+                p.detect(.99f);
+                nogood = p.ehit;
+            }
+
+        } while (goon && nogood);
+
+        */
         if (sg_helperDebug)
         {
             tString debugUpdateStr;

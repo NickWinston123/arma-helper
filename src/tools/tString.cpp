@@ -2468,31 +2468,78 @@ bool tIsEnabledForPlayer(const tString &list_, int playerID)
 
     if (list_.StartsWith("*"))
     {
-        tString negationStr;
-        negationStr << "!" << playerIDStr;
-        if (list_.StrPos(negationStr) != -1)
-            return false;
-        return true;
-    }
 
-    int pos = 0;
-    while ((pos = list_.StrPos(pos, playerIDStr)) != -1)
-    {
-        bool isStart = (pos == 0 || list_[pos - 1] == ',');
-        bool isEnd = (pos + playerIDStr.Len() == list_.Len() || list_[pos + playerIDStr.Len()] == ',');
-
-        if (isStart && isEnd)
+        int pos = 1; 
+        while (pos < list_.Len())
         {
-            if (pos > 0 && list_[pos - 1] == '!')
-                return false;
-            return true;
+           
+            while (pos < list_.Len() && list_[pos] == ',')
+                pos++;
+
+            if (pos >= list_.Len())
+                break;
+
+         
+            bool isNegation = false;
+            if (list_[pos] == '!')
+            {
+                isNegation = true;
+                pos++;
+            }
+
+            int start = pos;
+            while (pos < list_.Len() && list_[pos] != ',')
+                pos++;
+            tString token = list_.SubStr(start, pos - start);
+
+            if (token == playerIDStr)
+            {
+                if (isNegation)
+                    return false; 
+                else
+                    return true; 
+            }
         }
-
-        pos += playerIDStr.Len();
+        return true; 
     }
+    else
+    {
+        int pos = 0;
+        while (pos < list_.Len())
+        {
+        
+            while (pos < list_.Len() && list_[pos] == ',')
+                pos++;
 
-    return false;
+            if (pos >= list_.Len())
+                break;
+
+           
+            bool isNegation = false;
+            if (list_[pos] == '!')
+            {
+                isNegation = true;
+                pos++;
+            }
+
+           
+            int start = pos;
+            while (pos < list_.Len() && list_[pos] != ',')
+                pos++;
+            tString token = list_.SubStr(start, pos - start);
+
+            if (token == playerIDStr)
+            {
+                if (isNegation)
+                    return false; 
+                else
+                    return true; 
+            }
+        }
+        return false; 
+    }
 }
+
 
 bool tRemoveFromList(tString &list, const tString &item) {
     bool itemRemoved = false;

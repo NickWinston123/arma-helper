@@ -482,6 +482,9 @@ public:
 
     static bool performAction(PlayerData &stats, AcheivementsTypes type)
     {
+        if (!se_playerTriggerMessages || !se_playerTriggerMessagesAcheivements)
+            return false;
+            
         bool stored = false;
         tString response;
         REAL delay = 0.0;

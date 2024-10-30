@@ -39,6 +39,9 @@ bool ePlayerStats::loadStatsFromDB()
     if (!db)
         return false;
 
+    con << tThemedTextBase.LabelText("Player Stats")
+        << "Loading stats from database..\n";
+
     ePlayerStatsDBAction  playerDataAction(db);
     playerDataAction.Load();
 

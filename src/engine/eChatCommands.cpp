@@ -313,7 +313,7 @@ bool MsgCommand::execute(tString args)
     if (msgTarget)
     {
         netPlayer->lastMessagedByPlayer = nullptr;
-        netPlayer->lastMessagedPlayer = msgTarget;
+        netPlayer->lastMessagedPlayer   = msgTarget;
     }
 
     tString messageToSend;
@@ -1748,34 +1748,11 @@ bool ReplyCommand::execute(tString args)
 
     tString name = targetPlayer->GetName().Filter();
 
-    if (se_chatLog)
-    {
-        tString logOutput;
-
-        if (se_chatTimeStamp)
-            logOutput << st_GetCurrentTime("%H:%M:%S| ");
-
-        tString logArgs;
-        int spacePos = logArgs.StrPos(" ");
-
-        if (spacePos != -1)
-        {
-            spacePos++;
-            logArgs.RemoveSubStr(0, spacePos);
-        }
-
-        logOutput << netPlayer->GetName()
-                  << " --> "
-                  << targetPlayer->GetName()
-                  << ": "
-                  << logArgs;
-
-        se_SaveToChatLog(logOutput);
-    }
-
     tString messageToSend;
     messageToSend << "/msg " << name << " " << args;
+
     netPlayer->Chat(messageToSend);
+
     return true;
 }
 

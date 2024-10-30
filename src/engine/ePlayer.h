@@ -94,7 +94,7 @@ extern int se_watchActiveStatusTime;
 extern bool sg_playerSpamProtectionWatch;
 
 extern bool sg_playerSilencedWatch, sg_playerSilencedWatchQuit, sn_playerSilencedWatchQuitWaitForAvoidPlayers;
-
+extern REAL sg_playerSpamProtectionWatchExtraAdd;
 extern void se_UniqueColor(ePlayer *local_p );
 extern void se_RandomizeColor(ePlayer *local_p);
 extern void se_rainbowColor(ePlayer *local_p);

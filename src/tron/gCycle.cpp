@@ -1247,8 +1247,9 @@ void gSmarterBot::Survive(gCycle *owner)
 
 void displayDeathReason(std::string reason)
 {
-    con << tThemedTextBase.HeaderColor() << "SmarterBot: "
-        << tThemedTextBase.ErrorColor()  << reason
+    con << tThemedTextBase.LabelText("SmarterBot")
+        << tThemedTextBase.ErrorColor()  
+        << reason
         << "\n";
 }
 
@@ -1257,8 +1258,8 @@ REAL gSmarterBot::annoyanceCheck()
     if (!owner_ || !owner_->Alive() || se_GameTime() < 5)
         return 0.0;
 
-    int alivePlayerCount     = 0; // Alive Players
     int totalPlayerCount     = 0; // Total Players
+    int alivePlayerCount     = 0; // Alive Players
     int totalChattingPlayers = 0; // Total Chatting Players
     int totalLocalPlayers    = 0; // Total Local Players
     int totalActivePlayers   = 0; // Total Active Players (Not Chatting and LastActivity > sg_smarterBotAFKCheckIfActiveTime)
@@ -1273,6 +1274,7 @@ REAL gSmarterBot::annoyanceCheck()
         if (isJoiningPlayer && isHuman && isNotOwner)
         {
             totalPlayerCount++;
+                
             if (cycle && cycle->Alive())
             {
                 if (se_PlayerNetIDs[i]->ChattingTime() > sg_smarterBotAFKCheckTime) 
@@ -1281,15 +1283,22 @@ REAL gSmarterBot::annoyanceCheck()
                 if (se_PlayerNetIDs[i]->isLocal())
                     totalLocalPlayers++;
 
-                if ((!se_PlayerNetIDs[i]->IsChatting() || se_PlayerNetIDs[i]->isLocal()) && se_PlayerNetIDs[i]->LastActivity() > sg_smarterBotAFKCheckIfActiveTime)
+                if (se_PlayerNetIDs[i]->LastActivity() < sg_smarterBotAFKCheckIfActiveTime 
+                    ) // &&se_PlayerNetIDs[i]->ChattingTime() <= sg_smarterBotAFKCheckTime)
                     totalActivePlayers++;
-                
+
                 alivePlayerCount++;
             }
         }
     }
     
-    if (totalPlayerCount > 1 && alivePlayerCount >= 1 && (!sg_smarterBotAFKCheckIfActive || totalActivePlayers >= 1))
+    if (sg_smarterBotAFKCheckIfActive)
+    {
+        alivePlayerCount = totalActivePlayers;
+        totalPlayerCount = totalActivePlayers;
+    }
+
+    if (totalPlayerCount > 1 && alivePlayerCount >= 1)
     {
         if (totalLocalPlayers == alivePlayerCount)
         {

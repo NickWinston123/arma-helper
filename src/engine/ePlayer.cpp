@@ -1884,37 +1884,36 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         tString privateMessageParams;
         bool sentToEnabledPlayer = false;
 
-        tString possiblePrivateMessageStr;
         int privateMessageMsgPos = -1;
         for (auto localNetPlayer : se_GetLocalPlayers())
         {
-            possiblePrivateMessageStr.Clear();
-            possiblePrivateMessageStr << p->GetName()
-                                      << " --> "
-                                      << localNetPlayer->GetName()
-                                      << ": ";
-
-            privateMessageMsgPos = colorlessMessage.StrPos(possiblePrivateMessageStr);
-
-            if (privateMessageMsgPos != -1 && !colorlessMessage.Contains(possiblePrivateMessageStr))
-                privateMessageMsgPos = -1;
-
-            if (privateMessageMsgPos != -1)
+            if (!sentToEnabledPlayer) 
             {
-                ourPlayer = localNetPlayer;
-                p->lastMessagedPlayer = ourPlayer;
-                ourPlayer->lastMessagedByPlayer = p;
-                ourPlayer->lastMessagedPlayer = nullptr;
+                tString possiblePrivateMessageStr;
+                possiblePrivateMessageStr << p->GetName()
+                                          << " --> "
+                                          << localNetPlayer->GetName()
+                                          << ": ";
 
-                privateMessage = true;
-                int cutPos = privateMessageMsgPos + possiblePrivateMessageStr.Len() - 1;
+                privateMessageMsgPos = colorlessMessage.StrPos(possiblePrivateMessageStr);
 
-                privateMessageParams = colorlessMessage.SubStr(cutPos);
+                if (privateMessageMsgPos != -1 && !colorlessMessage.Contains(possiblePrivateMessageStr))
+                    privateMessageMsgPos = -1;
 
-                if (tIsEnabledForPlayer(se_playerMessageEnabledPlayers, localNetPlayer->pID + 1))
+                if (privateMessageMsgPos != -1)
                 {
-                    sentToEnabledPlayer = true;
-                    break;
+                    ourPlayer                       = localNetPlayer;
+                    p->lastMessagedPlayer           = ourPlayer;
+                    ourPlayer->lastMessagedByPlayer = p;
+                    ourPlayer->lastMessagedPlayer   = nullptr;
+
+                    privateMessage = true;
+                    int cutPos = privateMessageMsgPos + possiblePrivateMessageStr.Len() - 1;
+
+                    privateMessageParams = colorlessMessage.SubStr(cutPos);
+
+                    if (tIsEnabledForPlayer(se_playerMessageEnabledPlayers, localNetPlayer->pID + 1))
+                        sentToEnabledPlayer = true;
                 }
             }
 
@@ -1940,16 +1939,16 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             ePlayerStats::addMessage(p, colorlessMessage.SubStr(nameLength).TrimWhitespace());
         }
 
-        if (se_playerTriggerMessages && se_playerMessageTriggersChat && 
-            (p->pID == -1 || 
-            se_playerTriggerMessagesReactToSelf && tIsEnabledForPlayer(se_playerMessageEnabledPlayers,p->pID+1) ||
-            se_playerTriggerMessagesReactToLocal && !tIsEnabledForPlayer(se_playerMessageEnabledPlayers,p->pID+1)) && !encyptedMessage)
+        if (se_playerTriggerMessages && se_playerMessageTriggersChat &&
+            (p->pID == -1 ||
+            se_playerTriggerMessagesReactToSelf  && tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1) ||
+            se_playerTriggerMessagesReactToLocal && !tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1)) && !encyptedMessage)
         {
             tString params(colorlessMessage);
             tString preAppend;
-            bool initiate = true;
-            bool preAppended = false;
-            bool  validPrivateMessage = privateMessage && ourPlayer;
+            bool initiate             = true;
+            bool preAppended          = false;
+            bool validPrivateMessage  = privateMessage && ourPlayer;
 
             if (validPrivateMessage)
             {
@@ -2562,7 +2561,6 @@ void se_SendTeamMessage(eTeam const *team, ePlayerNetID const *sender, ePlayerNe
 
         if (se_chatLogWriteTeam)
         {
-
             se_SaveToChatLog(say);
         }
     }
@@ -5182,18 +5180,28 @@ bool ePlayerNetID::canChatWithMsg(tString message)
 
     if (!ableToChatCommonPrefix)
     {
-        con << "You can not use the common prefix '"
+        con << tThemedTextBase.LabelText("SpamProtectionWatch")
+            << tThemedTextBase.ErrorColor()
+            << "You can not use the common prefix '"
+            << tThemedTextBase.ItemColor()
             << nextSpeakTimePrefixCommonPrefix
+            << tThemedTextBase.ErrorColor()
             << "' for "
+            << tThemedTextBase.ItemColor()
             << nextSpeakTimePrefix - tSysTimeFloat()
+            << tThemedTextBase.ErrorColor()
             << " seconds. Do not use this prefix!\n";
         return ableToChatCommonPrefix;
     }
 
     if (!ableToChat)
     {
-        con << "You are silenced for "
+        con << tThemedTextBase.LabelText("SpamProtectionWatch")
+            << tThemedTextBase.ErrorColor()
+            << "You are silenced for "
+            << tThemedTextBase.ItemColor()
             << nextSpeakTime - tSysTimeFloat()
+            << tThemedTextBase.ErrorColor()
             << " seconds. Do not try to chat!\n";
         return ableToChat;
     }
@@ -5245,16 +5253,26 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
 
         if (!ableToChatCommonPrefix)
         {
-            con << "You can not use the common prefix '"
+            con << tThemedTextBase.LabelText("SpamProtectionWatch")
+                << tThemedTextBase.ErrorColor()
+                << "You can not use the common prefix '"
+                << tThemedTextBase.ItemColor()
                 << nextSpeakTimePrefixCommonPrefix
+                << tThemedTextBase.ErrorColor()
                 << "' for "
+                << tThemedTextBase.ItemColor()
                 << nextSpeakTimePrefix - tSysTimeFloat()
+                << tThemedTextBase.ErrorColor()
                 << " seconds. Do not use this prefix!\n";
         }
         else if (!ableToChat)
         {
-            con << "You are silenced for "
+            con << tThemedTextBase.LabelText("SpamProtectionWatch")
+                << tThemedTextBase.ErrorColor()
+                << "You are silenced for "
+                << tThemedTextBase.ItemColor()
                 << nextSpeakTime - tSysTimeFloat()
+                << tThemedTextBase.ErrorColor()
                 << " seconds. Do not try to chat!\n";
         }
 
@@ -5265,8 +5283,8 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
             bot.Messager()->Params().pentalized_for_last_message = !ableToChat;
             bot.Messager()->Params().pentalized_for_last_message_prefix = !ableToChatCommonPrefix;
 
-            // if (se_playerTriggerMessagesResendSilencedMessages && !canChat)
-            //     bot.ResendMessage();
+             if (se_playerTriggerMessagesResendSilencedMessages && !canChat)
+                bot.Messager()->ResendMessage(s_orig);
         }
 
         if (!canChat)
@@ -5840,9 +5858,7 @@ public:
                 bool executed = LocalChatCommands(me, *content);
 
                 if (!executed) {
-                con << tThemedTextBase.HeaderColor()
-                    << "eChatCommands: " 
-                    << tThemedTextBase.MainColor()
+                con << tThemedTextBase.LabelText("eChatCommands")
                     << "Command not executed. NET PLAYER NOT FOUND\n";
                 }
             }
@@ -5933,6 +5949,8 @@ public:
 
 bool se_randomNamePing = false;
 static tConfItem<bool> se_randomNamePingConf = HelperCommand::tConfItem("PLAYER_NAME_PING", se_randomNamePing);
+tString se_randomNamePingEnabledPlayers("*");
+static tConfItem<tString> se_randomNamePingEnabledPlayersConf = HelperCommand::tConfItem("PLAYER_NAME_PING_ENABLED_PLAYERS", se_randomNamePingEnabledPlayers);
 
 bool se_randomName = false;
 static tConfItem<bool> se_randomNameConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM", se_randomName);
@@ -5943,10 +5961,18 @@ static tConfItem<bool> se_randomNameOncePerRoundConf = HelperCommand::tConfItem(
 bool se_randomNameSmart = false;
 static tConfItem<bool> se_randomNameSmartConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_SMART", se_randomNameSmart);
 
+bool se_randomNameSteal = false;
+static tConfItem<bool> se_randomNameStealConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_STEAL", se_randomNameSteal);
+tString se_randomNameStealRange = tString("3,6");
+static tConfItem<tString> se_randomNameStealRangeConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_STEAL_RANGE", se_randomNameStealRange);
+
 bool se_playerNamePlayerIDs = false;
 static tConfItem<bool> se_playerNamePlayerIDsConf = HelperCommand::tConfItem("PLAYER_NAME_PLAYERIDS", se_playerNamePlayerIDs);
+tString se_playerNamePlayerIDsEnabledPlayers("*");
+static tConfItem<tString> se_playerNamePlayerIDsEnabledPlayersConf = HelperCommand::tConfItem("PLAYER_NAME_PLAYERIDS_ENABLED_PLAYERS", se_playerNamePlayerIDsEnabledPlayers);
 
-tString se_randomNameEnabledPlayers("1,2,3,4");
+
+tString se_randomNameEnabledPlayers("*");
 static tConfItem<tString> se_randomNameEnabledPlayersConf = HelperCommand::tConfItem("PLAYER_NAME_RANDOM_ENABLED_PLAYERS", se_randomNameEnabledPlayers);
 
 int se_randomNameLength = 15;
@@ -6010,6 +6036,97 @@ tString randomName()
          length = se_randomNameLengthRandomMin + rand() % (se_randomNameLength - se_randomNameLengthRandomMin + 1);
 
     return randomStr(charset, length);
+}
+
+tString randomNameSteal()
+{
+    static tReproducibleRandomizer randomizer;
+
+    int number1 = 1;
+    int number2 = 3;
+    tArray<tString> numberRange = se_randomNameStealRange.Split(",");
+    if (numberRange.Len() >= 2)
+    {
+        number1 = atoi(numberRange[0].c_str());
+        number2 = atoi(numberRange[1].c_str());
+        if (number1 > number2) {
+            int temp = number1;
+            number1 = number2;
+            number2 = temp;
+        }
+    }
+
+    tArray<ePlayerNetID*> nonLocalPlayers;
+    for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+    {
+        ePlayerNetID* p = se_PlayerNetIDs[i];
+        if (p && !p->isLocal())
+        {
+            nonLocalPlayers.Insert(p);
+        }
+    }
+
+    if (nonLocalPlayers.Len() == 0)
+    {
+        return tString("");
+    }
+
+    int index1 = randomizer.Get(0, nonLocalPlayers.Len());
+    ePlayerNetID* p1 = nonLocalPlayers[index1];
+
+    int index2;
+    if (nonLocalPlayers.Len() > 1)
+    {
+        do {
+            index2 = randomizer.Get(0, nonLocalPlayers.Len());
+        } while (index2 == index1);
+    }
+    else
+    {
+        index2 = index1;
+    }
+    
+    ePlayerNetID* p2 = nonLocalPlayers[index2];
+
+    tString name1 = p1->GetName();
+    tString name2 = p2->GetName();
+
+    int len1 = name1.Len() - 1; 
+    int len2 = name2.Len() - 1;
+
+    len1 = std::max(len1, 0);
+    len2 = std::max(len2, 0);
+
+    int effectiveMin1 = std::min(number1, len1);
+    int effectiveMax1 = std::min(number2, len1);
+
+    if (effectiveMin1 > effectiveMax1 || effectiveMin1 <= 0)
+    {
+        effectiveMin1 = 1;
+        effectiveMax1 = len1;
+    }
+
+    int randomCut1 = randomizer.Get(effectiveMin1, effectiveMax1 + 1); 
+
+    int effectiveMin2 = std::min(number1, len2);
+    int effectiveMax2 = std::min(number2, len2);
+
+    if (effectiveMin2 > effectiveMax2 || effectiveMin2 <= 0)
+    {
+        effectiveMin2 = 1;
+        effectiveMax2 = len2;
+    }
+
+    int randomCut2 = randomizer.Get(effectiveMin2, effectiveMax2 + 1); 
+
+    randomCut1 = std::max(randomCut1, 1);
+    randomCut2 = std::max(randomCut2, 1);
+
+    tString part1 = name1.SubStr(0, randomCut1);
+    tString part2 = name2.SubStr(0, randomCut2);
+
+    tString newName = part1 + part2;
+    return newName;
 }
 
 
@@ -6101,19 +6218,19 @@ tString playerIDName()
 bool se_toggleChatFlag = false;
 static tConfItem<bool>  se_toggleChatFlagConf = HelperCommand::tConfItem("CHAT_FLAG_TOGGLE", se_toggleChatFlag);
 
-tString se_toggleChatFlagEnabledPlayers("1,2,3,4");
+tString se_toggleChatFlagEnabledPlayers("*");
 static tConfItem<tString> se_toggleChatFlagEnabledPlayersConf = HelperCommand::tConfItem("CHAT_FLAG_TOGGLE_ENABLED_PLAYERS", se_toggleChatFlagEnabledPlayers);
 
 bool se_chatFlagAlways = false;
 static tConfItem<bool> se_chatFlagAlwaysConf = HelperCommand::tConfItem("CHAT_FLAG_ALWAYS", se_chatFlagAlways);
 
-tString se_chatFlagAlwaysEnabledPlayers("1,2,3,4");
+tString se_chatFlagAlwaysEnabledPlayers("*");
 static tConfItem<tString> se_chatFlagAlwaysEnabledPlayersConf = HelperCommand::tConfItem("CHAT_FLAG_ALWAYS_ENABLED_PLAYERS", se_chatFlagAlwaysEnabledPlayers);
 
 bool se_BlockChatFlags = false;
 static tConfItem<bool> se_BlockChatFlagsConf = HelperCommand::tConfItem("CHAT_FLAG_BLOCK", se_BlockChatFlags);
 
-tString se_BlockChatFlagsEnabledPlayers("1,2,3,4");
+tString se_BlockChatFlagsEnabledPlayers("*");
 static tConfItem<tString> se_BlockChatFlagsEnabledPlayersConf = HelperCommand::tConfItem("CHAT_FLAG_BLOCK_ENABLED_PLAYERS", se_BlockChatFlagsEnabledPlayers);
 
 bool se_watchActiveStatus = false;
@@ -6137,7 +6254,7 @@ void se_ChatState(ePlayerNetID::ChatFlags flag, bool cs, ePlayerNetID *player)
             bool chatFlagAlways = se_chatFlagAlways && tIsEnabledForPlayer(se_chatFlagAlwaysEnabledPlayers, p->pID + 1);
             if (chatFlagAlways)
                 continue;
-            
+
 
             bool blockChatFlag  = se_BlockChatFlags && tIsEnabledForPlayer(se_BlockChatFlagsEnabledPlayers, p->pID + 1);
             if (blockChatFlag)
@@ -6724,8 +6841,8 @@ void ePlayerNetID::watchPlayerStatus()
         REAL lastActivity = p->LastActivity();
 
         message << getTimeString() << " | "
-                << tThemedTextBase.HeaderColor()
-                << "Watch Status: " << p->GetColoredNickName()
+                << tThemedTextBase.LabelText("Watch Status")
+                << p->GetColoredNickName()
                 << tThemedTextBase.MainColor()
                 << " is now " << playerWatchStatusToStr(p->lastWatchStatus)
                 << tThemedTextBase.MainColor()
@@ -8987,7 +9104,7 @@ void se_SaveToChatLog(tOutput const &out)
 
                     if (!se_PlayerNetIDs[i]->isLocal() || !se_chatLogNoDataClearLocal)
                     {
-                        
+
                         size_t startPos = finalLine.find(nameToReplace);
                         // con << "Non Local, Got startPos: '" << startPos << "'\n";
                         while (startPos != std::string::npos)
@@ -8997,9 +9114,9 @@ void se_SaveToChatLog(tOutput const &out)
                         }
                     }
                     else
-                    {   
+                    {
                         size_t startPos = finalLine.find(nameToReplace);
-                        
+
                         // con << "Local, Got startPos: '" << startPos << "'\n";
                         if (startPos != std::string::npos)
                         {
@@ -10072,7 +10189,7 @@ static void loadCrossfadePreset(size_t selection)
     currentCrossfadePreset = selection;
     currentCrossadeColorIndex = 0; // Reset color index
     ticksSinceLastColor = 0;       // Reset ticks count
-    con << tThemedTextBase.HeaderColor()
+    con << tThemedTextBase.LabelText("Crossfade")
         << "Using preset " << tThemedTextBase.ItemColor() << (selection + 1)
         << tThemedTextBase.MainColor() << ": " << presets[selection].description
         << " - (" << presets[selection].colors.size() << " colors)\n";
@@ -10625,8 +10742,8 @@ bool shouldUpdateLastName(ePlayer *local_p, int rgb[3])
 
     if (prevRainbowNumColors != se_playerRandomColorNameRandRainbowNumColors ||
         prevRainbowBrightness != se_playerRandomColorNameRandRainbowBrightness ||
-        prevRainbowSaturation != se_playerRandomColorNameRandRainbowSaturation || 
-        (local_p->playerRandomColorNameStartMode != 1 && (prevRgb[0] != rgb[0] || prevRgb[1] != rgb[1] || prevRgb[2] != rgb[2])) || 
+        prevRainbowSaturation != se_playerRandomColorNameRandRainbowSaturation ||
+        (local_p->playerRandomColorNameStartMode != 1 && (prevRgb[0] != rgb[0] || prevRgb[1] != rgb[1] || prevRgb[2] != rgb[2])) ||
         (prevGradientR != gradientR || prevGradientG != gradientG || prevGradientB != gradientB))
     {
         hasChanged = true;
@@ -10661,7 +10778,7 @@ tString RandomStr(int maxLength)
 }
 
 tString forcedChattingPlayers = tString("");
-tString sg_setAllChattingStatusEnabledPlayers("1,2,3,4");
+tString sg_setAllChattingStatusEnabledPlayers("*");
 static tConfItem<tString> sg_setAllChattingStatusEnabledPlayersConf = HelperCommand::tConfItem("SET_ALL_CHATTING_ENABLED_PLAYERS", sg_setAllChattingStatusEnabledPlayers);
 
 void sg_setAllChattingStatus(std::istream &s)
@@ -10871,7 +10988,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
                 if (se_toggleChatFlag && (tIsEnabledForPlayer(se_toggleChatFlagEnabledPlayers, p->pID + 1)))
                         p->chatting_ = !p->chatting_;
-                
+
                 if (se_chatFlagAlways && tIsEnabledForPlayer(se_chatFlagAlwaysEnabledPlayers, p->pID + 1))
                     p->chatting_ = true;
 
@@ -10944,12 +11061,15 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                 // update name
                 tString newName(local_p->Name()); // LENGTH: ACTUAL IN GAME LENGTH + 1
 
-                if (se_randomNamePing)
+                if (se_randomNamePing && tIsEnabledForPlayer(se_randomNamePingEnabledPlayers, p->pID + 1))
                 {
                     tString pingName;
                     pingName << int(p->ping * 1000);
                     newName = pingName;
                 }
+
+                if (se_playerNamePlayerIDs && tIsEnabledForPlayer(se_playerNamePlayerIDsEnabledPlayers, p->pID + 1))
+                    newName = playerIDName();
 
                 if (forceRandomRename || tIsEnabledForPlayer(se_randomNameEnabledPlayers, p->pID + 1))
                 {
@@ -10957,8 +11077,13 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                         newName = randomNameSmart();
                     else if (se_randomName)
                         newName = randomName();
-                    else if (se_playerNamePlayerIDs)
-                        newName = playerIDName();
+                    else if (se_randomNameSteal)
+                    {
+                        tString testName;
+                        testName = randomNameSteal();
+                        if (!testName.empty())
+                            newName = testName;
+                    }
                 }
 
                 if ((sn_GetNetState() == nSTANDALONE ||
@@ -10988,7 +11113,10 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                         int rgb[3] = {p->r, p->g, p->b};
 
                         // Name changed or lastColoredName not set or gradient mode and color change
-                        bool shouldUpdateName = newName != p->GetName() || p->lastColoredName.empty() || shouldUpdateLastName(local_p, rgb) || local_p->playerRandomColorNameStartMode != local_p->lastplayerRandomColorNameStartMode;
+                        bool shouldUpdateName = newName != p->GetName() ||
+                                                p->lastColoredName.empty() ||
+                                                shouldUpdateLastName(local_p, rgb) ||
+                                                local_p->playerRandomColorNameStartMode != local_p->lastplayerRandomColorNameStartMode;
                         if (shouldUpdateName)
                         {
                             local_p->lastplayerRandomColorNameStartMode = local_p->playerRandomColorNameStartMode;
@@ -10996,13 +11124,14 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                             p->shiftIter = 0;
                         }
 
-                        bool updateCurrentShift = (fabs(p->currentShift) != se_playerRandomColorNameShiftAmount);
+                        bool updateCurrentShift = fabs(p->currentShift) != se_playerRandomColorNameShiftAmount;
 
                         if (updateCurrentShift)
                         {
                             p->shiftIter = 0;
                             p->currentShift = se_playerRandomColorNameShiftAmount;
                         }
+
                         bool shouldInvertCurrentShift = (se_playerRandomColorNameShiftBounceNameLength && (p->shiftIter % (nameToUse.Len() - 1) == 0)) ||
                                                         (!se_playerRandomColorNameShiftBounceNameLength && (se_playerRandomColorNameShiftBounceInterval > 0) && (p->shiftIter % se_playerRandomColorNameShiftBounceInterval == 0));
 
@@ -11034,7 +11163,7 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
             }
         }
-        
+
         allowUpdateDuringRound = false;
 
         // account for play time

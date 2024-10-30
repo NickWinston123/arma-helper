@@ -1323,8 +1323,8 @@ static void sg_RemoveDelayedCmd(std::istream &s)
 
     if (command.empty())
     {
-        con << "Usage: DELAY_COMMAND_REMOVE <command>\n";
-        con << "       <command> is the command associated with the task to be removed\n";
+        con << "Usage: DELAY_COMMAND_REMOVE <command>\n"
+            << "       <command> is the command associated with the task to be removed\n";
         return;
     }
 
@@ -1336,7 +1336,9 @@ static void sg_RemoveDelayedCmd(std::istream &s)
         return;
     }
 
-    con << "Removing delay command ( " << command << " )\n";
+    con << "Removing delay command ( " 
+        << command 
+        << " )\n";
     gTaskScheduler.remove(command);
     gTaskIDs.erase(it);
 }
@@ -1348,9 +1350,9 @@ static void sg_ListDelayedCmd(std::istream &s)
     con << "Number of delayed commands: " << tasks.size() << "\n";
     for (const auto &task : tasks)
     {
-        con << "Command: " << task.first << "\n";
-        con << "  - Due Time: " << task.second.dueTime << "\n";
-        con << "  - Interval: " << task.second.interval << "\n";
+        con << "Command: "      << task.first           << "\n"
+            << "  - Due Time: " << task.second.dueTime  << "\n"
+            << "  - Interval: " << task.second.interval << "\n";
     }
 }
 static tConfItemFunc sg_ListDelayedCmd_conf("DELAY_COMMAND_LIST", &sg_ListDelayedCmd);
@@ -1362,10 +1364,10 @@ static void sg_AddDelayedCmd(std::istream &s)
 
     if (params.empty())
     {
-        con << "Usage: DELAY_COMMAND <delay> <command>\n";
-        con << "       This will execute <command> after <delay> seconds.\n";
-        con << "       or: DELAY_COMMAND r<interval> <command>\n";
-        con << "       This will execute <command> every <interval> seconds.\n";
+        con << "Usage: DELAY_COMMAND <delay> <command>\n"
+            << "       This will execute <command> after <delay> seconds.\n"
+            << "       or: DELAY_COMMAND r<interval> <command>\n"
+            << "       This will execute <command> every <interval> seconds.\n";
         return;
     }
 
@@ -4638,7 +4640,7 @@ static tAccessLevelSetter sg_respawnallConfLevel(sg_respawnall_conf, tAccessLeve
 bool sg_localRespawn = false;
 static tConfItem<bool> sg_localRespawnConf("LOCAL_RESPAWN", sg_localRespawn);
 
-tString sg_localRespawnEnabledPlayers("1,2,3,4");
+tString sg_localRespawnEnabledPlayers("*");
 static tConfItem<tString> sg_localRespawnEnabledPlayersConf("LOCAL_RESPAWN_ENABLED_PLAYERS", sg_localRespawnEnabledPlayers);
 
 // uncomment to activate respawning
@@ -5867,7 +5869,7 @@ static tSettingItem<bool> sg_forceGamePauseConf = HelperCommand::tSettingItem("F
 bool sg_forcePlayerUpdate = false;
 static tSettingItem<bool> sg_forcePlayerUpdateConf = HelperCommand::tSettingItem("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
 
-tString sg_forcePlayerUpdateEnabledPlayers("1,2,3,4");
+tString sg_forcePlayerUpdateEnabledPlayers("*");
 static tConfItem<tString> sg_forcePlayerUpdateEnabledPlayersConf = HelperCommand::tConfItem("FORCE_PLAYER_UPDATE_ENABLED_PLAYERS", sg_forcePlayerUpdateEnabledPlayers);
 
 static bool sg_forcePlayerRebuild = false;

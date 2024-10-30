@@ -1004,7 +1004,10 @@ tString exactStatFunc(tString message)
         }
         else if (statLabel == "Last Active") 
         {
-            statValue << st_GetFormatTime(statsTargetPlayer->LastActivity(), false);
+            if (statsTargetPlayer)
+                statValue << st_GetFormatTime(statsTargetPlayer->LastActivity(), false);
+            else
+                statValue << "Not here";
         }
         else
             statValue << stats.getAnyValue(stat.TrimWhitespace());
@@ -1848,8 +1851,8 @@ void eChatBot::LoadChatTriggers()
         }
         else
         {
-            con << tThemedTextBase.HeaderColor() << "LoadChatTriggers "
-                << tThemedTextBase.MainColor()   << "Error:\n"
+            con << tThemedTextBase.LabelText("LoadChatTriggers")
+                << "Error:\n"
                 << tThemedTextBase.ErrorColor()  << "Malformed line at index " 
                 << tThemedTextBase.ItemColor()   << i + 1 << ": " 
                 << lines[i] << "\n";
@@ -1891,27 +1894,19 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, b
 
     gHelperUtility::Debug("eChatBot","Received Input:", inputMessage);
     
-    tArray<tString> enabledPlayers = se_playerMessageEnabledPlayers.Split(",");
     std::vector<ePlayerNetID *> sentByPlayers;
 
-    for (int i = 0; i < enabledPlayers.Len(); i++)
+    for (auto localNetPlayer : se_GetPlayerMessageEnabledPlayers())
     {
-        ePlayer *local_p = ePlayer::PlayerConfig(atoi(enabledPlayers[i]) - 1);
-        if (!local_p)
-            continue;
-
-        ePlayerNetID *netPlayer = local_p->netPlayer;
-        if (!netPlayer)
-            continue;
-
-        if (std::find(sentByPlayers.begin(), sentByPlayers.end(), netPlayer) != sentByPlayers.end())
+        // Don't use the same player twice
+        if (std::find(sentByPlayers.begin(), sentByPlayers.end(), localNetPlayer) != sentByPlayers.end())
             continue;
 
         bot.Messager()->ResetParams();
         bot.Messager()->SetInputParams(triggeredBy, inputMessage, eventTrigger, preAppend);
 
-        bot.Messager()->Params().sendingPlayer = netPlayer;
-        sentByPlayers.push_back(netPlayer);
+        bot.Messager()->Params().sendingPlayer = localNetPlayer;
+        sentByPlayers.push_back(localNetPlayer);
 
         bot.Messager()->FindTriggeredResponse();
         
@@ -1922,14 +1917,13 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, b
             bot.Messager()->Send();
         }
         else if (eventTrigger) 
-        {
             gHelperUtility::Debug("eChatBot", "No trigger set for '" + inputMessage.stdString() + "' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
-        }
         else if (bot.Messager()->Params().abortOutput && bot.Messager()->Params().matchFound)
             gHelperUtility::Debug("eChatBot", "Aborting output..");
         else if (!bot.Messager()->Params().matchFound)
             gHelperUtility::Debug("eChatBot", "No match found..");
         
+        // If function, no need for multiple players
         if (bot.Messager()->Params().triggerType != ResponseType::NORMAL)
             break;
     }
@@ -2552,6 +2546,9 @@ void eChatBotMessager::FindTriggeredResponse()
                 Params().matchFound = true;
             else 
                 Params().abortOutput = true;
+            
+            if (Params().matchFound)
+                gHelperUtility::Debug("eChatBot","Responding to trigger: " + Params().matchedTrigger.stdString());
                 
             if (se_playerMessageTriggersChatFunctionsOnly && Params().matchFound && Params().triggerType == ResponseType::NORMAL )
             {
@@ -2572,9 +2569,24 @@ void eChatBotMessager::FindTriggeredResponse()
     Params().abortOutput = true;
 }
 
+bool eChatBotMessager::ResendMessage(tString blockedMessage)
+{
+    
+    if (Params().pentalized_for_last_message)
+        Params().delay += 3;
+
+    if (Params().pentalized_for_last_message_prefix)
+    {
+        tString prefix;
+        prefix << randomStr("!@#$%^&*()_+=-",3)
+                << "| ";
+        addPrefix(Params().response, prefix);
+    }
+        
+    return Send();
+}
 bool eChatBotMessager::Send()
 {
-    // con << "SEND()\n";
     if (!helperConfig::sghuk)
         return false;
     

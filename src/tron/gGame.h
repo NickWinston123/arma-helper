@@ -381,14 +381,7 @@ public:
     // Check and execute due tasks
     void update()
     {
-
-        if (tasksQueue.empty() && !taskChains.empty())
-        {
-            auto taskChain = taskChains.front();
-            taskChains.pop();
-            taskChain();
-        }
-
+        // Process due tasks
         while (!tasksQueue.empty() && tSysTimeFloat() >= tasksQueue.top().dueTime)
         {
             DelayedTask task = tasksQueue.top();
@@ -397,6 +390,7 @@ public:
 
             task.task();
 
+            // Handle repeating tasks or queued tasks
             if(pendingTasks.count(task.id) > 0 && !pendingTasks[task.id].empty())
             {
                 DelayedTask nextTask = pendingTasks[task.id].front();
@@ -417,7 +411,24 @@ public:
                 tasksMap[task.id] = task;
             }
         }
+
+        if (!tasksQueue.empty() && tSysTimeFloat() < tasksQueue.top().dueTime)
+        {
+            if (!taskChains.empty())
+            {
+                auto taskChain = taskChains.front();
+                taskChains.pop();
+                taskChain();
+            }
+        }
+        else if (tasksQueue.empty() && !taskChains.empty())
+        {
+            auto taskChain = taskChains.front();
+            taskChains.pop();
+            taskChain();
+        }
     }
+
 
     // Remove a task
     void remove(const std::string& id)

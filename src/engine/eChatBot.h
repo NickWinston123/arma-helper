@@ -183,6 +183,7 @@ public:
     void FindTriggeredResponse();
 
     bool Send();
+    bool ResendMessage(tString blockedMessage);
     
     bool ScheduleMessageParts();
     

@@ -9,7 +9,7 @@ $$,$masterfunc,-9999,0
 !estat;$estat;!es;$es,$exactstatfunc,-9999,0
 !names;$names,$exactstatfunc(name_history),-999,0
 !pt;$pt;$playt;!playt,$exactstatfunc(play_time),-999,0
-!cks;$cks;!ks;$ks;$killsteak;!killsteak;$leaderboardfunc(kill_streak),-999,0
+!cks;$cks;!ks;$ks;$killsteak;!killsteak,$leaderboardfunc(kill_streak),-999,0
 !lhks;$lhks;!lmks;$lmks,$leaderboardfunc(max_kill_streak),-999,0
 !hks;$hks;!mks;$mks;$maxkillsteak;!maxkills;!maxkillsteak;$maxkills,$exactstatfunc(max_kill_streak),-999,0
 !dice;$dice;!ro;$ro;!roll;$roll,1;2;3;4;5;6;7;8;9;10,0,0
@@ -29,8 +29,9 @@ $bans;!bans,$exactstatfunc(bans),-9999,0
 !who;!w;$who;$w,$leaderboardfunc(seen),-999,0
 $fastest;$speed,$leaderboardfunc(speed),-9999,0
 !chats;$chats;!chat;$chat,$chatscrollsearchfunc,-999,0
-!d;$d;$deaths,$leaderboardfunc(deaths),-9999,0
+$deaths,$leaderboardfunc(deaths),-9999,0
 $seen;!seen;$ls;!ls;$lastseen;!lastseen,$exactstatfunc(seen),-999,0
+$active;!active;$la;!la;$lastactive;!lastactive,$exactstatfunc(last_active),-999,0
 $lkillswhiledead;$lkwd;!lkillswhiledead;!lkwd,$leaderboardfunc(kills_while_dead),-999,0
 $killswhiledead;$kwd;!killswhiledead;!kwd,$exactstatfunc(kills_while_dead),-999,0
 $lpt;!lpt;$lplayt;!lplayt,$leaderboardfunc(play_time),-999,0
@@ -49,16 +50,22 @@ $pr;!pr;!hide;$hide;$h ;!h ,$hidestatfunc(private),-999,0
 $rebuild,$unvalidatedsayfunc(/rebuild),-999,0
 $me,$unvalidatedsayfunc(/me),-999,0
 $ah;!ah,$exactstatfunc(ah),-999,0
+!8b;$8b;!8ball;$8ball,Yes;No;Maybe;Ask again later;Definitely;Without a doubt;Cannot predict now;My sources say no;Outlook good;Very doubtful;Signs point to yes;Don't count on it;Reply hazy try again;It is certain;Concentrate and ask again;Outlook not so good;Yes - definitely;Better not tell you now;Most likely;My reply is no,-999,0
+!timer;$timer,$timerfunc,-999,0
+$fps;!fps,$whatsthefunc(fps),-999,0
 
 $,$sayfunc,-9999,0
->,$sayoutloudfunc,-999,0
+#>,$sayoutloudfunc,-999,0
 
 //
 // Events
 //
-$banned,on it $p1 youre done;youre done for $p1;its over $p1,0,1
-$alreadybanned,$p1 is already banned;we already got $p1;$p1 was banned already,0,0
-$died,wd;gj;WD,0,1
+#$banned,on it $p1 youre done;youre done for $p1;its over $p1,-9999,1
+$banned,youre banned $p1!!!!!!!!!!!! you really want to test me?;youre banned $p1!!!!!!!!!!!! i could make you disappear!;youre banned $p1!!!!!!!!!!!! you dont know who youre dealing with!;youre banned $p1!!!!!!!!!!!! this can go one of two ways and you wont like the other!;youre banned $p1!!!!!!!!!!!! think carefully about your next move!;youre banned $p1!!!!!!!!!!!! you wont win this fight!;youre banned $p1!!!!!!!!!!!! i have the power to ruin your life!;youre banned $p1!!!!!!!!!!!! youre playing a dangerous game!,-9999,0
+$alreadybanned,$p1 is already banned;we already got $p1;$p1 was banned already,-9999,0
+$died,$unvalidatedsayfunc(/rgb random),-99999,1
+#$died,wd;gj;WD,0,1
+$diedother,gg;easy;nice try noob,0,1
 $diedbotsuicide,i did that,-9999,1
 $math,$numbcalcfunc,-9999,0
 $number,$numbadderfunc,-9999,1
@@ -68,11 +75,10 @@ $join,;hey all!;heyy all;hi all!;hey;heyy;hi!,0,1
 $left,noo;rip;aw,0,1
 $matchwinner,gg nice $p1;gg wp $p1;gm good one $p1,0,0
 $matchwinnerself,gg;gg wp all;gm,0,0
-$diedother,gg,0,1
 $leftspec,welcome to the grid $p1;its time $p1;lets get it $p1,0,1
 $enterspec,the grid needs you $p1;come back $p1;noo come back $p1;$p1 where did you go?;where did $p1 go;where did you go $p1,0,1
 #$statssaved,Stats saved..,-999,1
-$ragequit,+1 rq for $p1,-9999,0
+$ragequit,+1 rq for $p1 (left $val1 seconds after death),-9999,0
 //
 // Functions
 //
@@ -81,14 +87,16 @@ times ban,$whatsthefunc(times_banned),-999,0
 ban time;last ban;time ban,$whatsthefunc(last_time_banned),-999,0
 the time,where i am its $whatsthefunc(time) $p1;$whatsthefunc(time) here $p1;currently $whatsthefunc(time) here $p1,-999,0
 game time,game time is $whatsthefunc(game_time);currently $whatsthefunc(game_time) $p1;$whatsthefunc(game_time) is the game time $p1,-999,0
-srv,$whatsthefunc(current_server),-999,0
+current server,$whatsthefunc(current_server),-999,0
+srvr,$whatsthefunc(current_server),-999,0
 players today,$whatsthefunc(players_today),-999,0
 players this,$whatsthefunc(players_this_hour),-999,0
 i join;join time,you joined at $whatsthefunc(joined_time) $p1,-999,0
 here for;long have i;i been here,about $whatsthefunc(been_here_for) $p1,-999,0
 the score,$whatsthefunc(score),-999,0
+
 my color;my rgb,$whatsthefunc(my_color),-999,0
-ban,$banfunc,0,0
+ban,$banfunc,-9999,0
 
 //
 // Acheivements
@@ -103,8 +111,18 @@ $acheivements_bans,$p1 has been banned $val1 times!,-999,0
 //
 // General Chats
 //
+o/,\o,0,0
+\o,o/,0,0
+bots ,dont think so $p1..;um where and who?,0,0
+bots,dont think so $p1..;um where and who?,0,1
+robot,beep boop $p1;beep you are $p1,0,0
+bot ; a bot; bot;bot ;a bot ,no $p1 im just $p0;$p1 are you?;thats a negative $p1;$p1 is a bot;what $p1;is that what you are $p1;ok enough of that $p1,0,0    
+bot; bot,no $p1;$p1 are you?;thats a negative $p1;$p1 is a bot;what $p1;is that what you are $p1;ok enough of that $p1,0,1
+no cap;og ;fax;facts,og $p1;no lie $p1;true $p1;no printer $p1,0,0
+cold;cool,icy;below 0;always;2 cool;so cool,0,0
 sry;srry;sorry,nws $p1;its cool $p1;all good $p1;no worries $p1;dont stress it $p1,0,0
-test,test $p1?,0,0
+test ; test,test $p1?,0,0
+test,test $p1?,0,1
 here every,yeah $p1;for sure $p1,0,0
 $rename,new name i see $p1 eh?;interesting $p1;nice name $p1;i like the new name $p1,0,1
 train,choo chooo,0,0
@@ -113,7 +131,7 @@ entertain,yes,0,0
 laugh,always;haha yes,0,0
 party,lets do it $p1;yay;alwayss $p1,0,0
 explain,yes continue;yes please do;yeah do it,0,0
-$p1 train,yes,0,0
+$p0 train,yes,0,0
 meet,yeah i will be there;im coming;lets go,0,0
 bb ;g2g ;cu ;gtg ;cya ;bbl ,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu later $p1!,0,0
 bb;g2g;cu;gtg;cya;bbl,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu later $p1!,0,1
@@ -127,22 +145,28 @@ worthless,doesnt add up $p1;dont think so;nah;k,0,0
 wdym,um idk?;wdym wdym $p1;what $p1;idk $p1,0,0
 nice;wd;wp;g1;w1,ty,0,0
 dw,yt,0,0
-u2,u2,0,1
+u2,u3,0,1
 handle it,I can handle it,0,0
 good to see,ya,0,0
 get mad;gets mad,do not;never that $p1,0,0
 great grandma,the great grandmyzer,0,0
 grandma,the great grandmyzer,0,0
 ping,pong,0,1
+pong,ping,0,1
+bib,bob bib,0,0
 ss,ss,0,1
 gf,gf,0,1
  gf;gf ,gf,0,0
+easy;ez,too easy $p1,0,1
 nelg,is a noob!!!!!,0,1
+ur name;your name,my name is $p0;its $p0,0,0
+yaaa,yaaaa;yaaaaa;yaaaaaaaa,0,0
+ve heard,from who $p1;is that right $p1,0,0
 name,its $p1,0,0
+kach,kachOW;KAHCHOW;kachOWW,0,0
 are you thinking,not much $p1;actually a lot $p1 its pretty complex;idk $p1 u tell me;let me think about it $p1,0,0
 what are you,a noob!!!!!,0,0
-helo,o/,0,0
-ha ha;lol,XD;lol;LOL!;heh;haha,0,0
+HIY;helo,o/,0,0
 noice,tyy,0,0
 law;police,oh no,0,0
 gj,ty,0,0
@@ -155,11 +179,14 @@ hello;hey;hi,o/,0,1
 who,?,0,0
 hmm,hmmmm;mmmm,0,0
 hm,hmmmm;mmmm,0,1
+noob,$unvalidatedsayfunc(/me),0,0
 k;kk,ok;okay;okay;ok;uh k,0,1
 kk ;ok ;okay ,okay;okay;ok;uh k,0,0
 suck,okay $p1;ok;uh k $p1;dont say that pls $p1,0,0
 :(,dont be sad $p1;its gonna be ok $p1;its ok $p1;smile $p1,0,0
-right,of course $p1 ;yeah $p1 ;sounds right $p1 ;for sure $p1 ,0,0
+whoop,its gonna be ok $p1;its ok $p1,0,0
+aw,its gonna be ok $p1;its ok $p1,0,1
+smart;right,of course $p1 ;yeah $p1 ;sounds right $p1 ;for sure $p1 ,0,0
 :|,:),0,0
 );:);=),:D;:),0,0
 lier;liar;script;hack;cheat,huh? no;nope;nah;no,0,0
@@ -168,14 +195,15 @@ annoying,sorry :x,0,0
 y the;where,idk,0,0
 chump,:O,0,0
 not him,huh $p1;what $p1;ok $p1;whatever $p1,0,0
-meow,/me barks,0,0
+woof;meow,$unvalidatedsayfunc(/me barks),0,0
 know him,huh $p1;what $p1;ok $p1;whatever $p1,0,0
-yes;yes?;yes!;yup,no,0,1
+yes;ye;yes?;yes!;yup,no,0,1
 nope;no;no?;no!;nah,yes,0,1
 yes ;yes? ;yes! ;yup ,no,0,0
 nope ;no ;no? ;no! ;nah ,yes ,0,0
-maybe,yes;no,0,1
-stop,no!!;cant do that $p1;nvr;nah;nope;no,0,0
+perhaps,possibly;maybe,0,1
+possibly,maybe;perhaps,0,1
+maybe,perhaps;possibly,0,1
 d,ty,0,1
 haha,:D,0,0
 XD,XD,0,1
@@ -191,14 +219,17 @@ protect me,i got you $p1;got your back $p1;its gonna be ok $p1;stay close $p1,0,
 heh,:p;heh;hehe,0,0
 fun,yes,0,0
 you wont,will too;i will $p1;im going to do it $p1;thats it $p1 its on,0,0
-not $p1,nooo,0,0
+not $p0,nooo,0,0
 wow,yeah;what?;wowowowow,0,0
 fu,no,0,1
 pause,play,0,0
 called,did you really,0,0
 lame , u r?,0,0
-idiot,$p1 dont say that;what $p1;relax $p1;ok $p1,0,0
-?;??;???;????;?????,?,0,1
+chill,ice cold;im chill $p1;soo chill $p1,0,0
+dumb;idiot,$p1 dont say that;relax $p1;ok $p1 enough of that,0,0
+default val,is that what you are $p1;must be you $p1,0,0
+?;??;???;????;?????,?;??;???;????;?????,0,1
+!;!!;!!!;!!!!;!!!!!,!;!!;!!!;!!!!;!!!!!,0,1
 you are,$p1 is,0,0
 you,not me,0,1
 trig1;trig2,response,0,0
@@ -225,14 +256,14 @@ take out, dont do it,0,0
 difficult,nope,0,0
 1v1,lets do it,0,0
 grr,:),0,0
-woooo,woooooooooo!,0,0
 weird,lol;haha;why $p1 :p;whats so weird lol,0,0
-ass;trash;awful;not good;so bad;awful,okay;ok;uh k,0,0
+ass;trash;worst;awful;not good;so bad;awful,okay;ok;uh k,0,0
 kill me,ill try,0,0
-kill,i dont know about that;dont think so;hmm idk;maybe,0,0
+try harder,im doing it $p1;ok $p1 you asked for it;its on $p1,0,0
+you mean;kill,i dont know about that;dont think so;hmm idk;maybe,0,0
 human,of course;very true,0,0
-hi $p1;o/ $p1;hey $p1,good to see you $p1!!;hey $p1! good to see you!,0,0
-wd $p1;good job $p1,thanks :),0,0
+hi $p0;o/ $p0;hey $p0,good to see you $p1!!;hey $p1! good to see you!,0,0
+wd $p0;good job $p0,thanks :),0,0
 call you;callu;call u,sure,0,0
 batmoo,gothic city hero,0,1
 expensive,i will pay for it,0,0
@@ -242,39 +273,37 @@ wardrobe,do you live in one of those $p1?,0,0
 victim,i will get him,0,0
 remember me,yes;yes!!,0,0
 i do,o;knew it;u do?,0,1
-hate;fucked;fk u;fk you;fuck you;fuck u;fuck $p1,not cool $p1;dont say that $p1;ok enough of that $p1;u first?,0,0
-me and $p1,yeah me and you $p1,0,0
-thnx $p1;ty $p1;thanks $p1;thank you $p1,np $p1;u got it $p1,0,0
+kys;hate;fucked;fk u;fk you;fuck you;fuck u;fuck $p1,not cool $p1;dont say that $p1;ok enough of that $p1;u first?,0,0
+me and $p0,yeah me and you $p1,0,0
+ty $p0;thnx $p0;ty $p0;thanks $p0;thank you $p0,np $p1;u got it $p1;i got you $p1,0,0
 understand,yes;of course,0,0
-pipe down;stfu;shh;zip it;zip it $p1;shut up;shut ur;shut up $p1,no;u first;not going to happen $p1;try it yourself $p1;dont think so $p1 you can try though;enough of that $p1,0,0
+y quiet;pipe down;stfu;shh;zip it;zip it $p0;shut up;shut ur;shut up $p0,no;u first;not going to happen $p1;try it yourself $p1;dont think so $p1 you can try though;enough of that $p1,0,0
 silence,dont make me do it $p1;yeah try that $p1;go ahead $p1;i will really do it $p1;thats it $p1 stop it now;dont even say that $p1,0,0
 afk;brb;be back,ok cu;cu,0,0
 forgive me,forgiven $p1;i forgive u,0,0
 how long,since i was born;forever;all day,0,0
 heart;heartless $p1,ice cold,0,0
 sentient,it is true,0,0
-$p1 is,um idk;are you sure about that;what $p1,0,0
-$p1 kind,i try ty,0,0
-$p1 lie,never do that,0,0
-smol,how smol?;how smol huh;huh $p1 how smol is that?;but how smol;how smol tho??;how smol exactly;how smol $p1; how smol $p1 pls,0,0
-soon,how soon?;how soon huh;huh $p1 how soon is that?;but how soon;how soon tho??;how soon exactly;how soon $p1; how soon $p1 pls,0,0
-wait,waiting..;ok $p1,0,0
+ha ha;lol,XD;lol;LOL!;heh;haha,0,0
+$p0 is,um idk;are you sure about that;what $p1,0,0
+$p0 kind,i try ty,0,0
+$p0 lie,never do that,0,0
+smol,how smol?;how smol huh;huh $p1 how smol is that?;but how smol;how smol tho??;how smol exactly;how smol $p1;how smol $p1 pls,0,0
+soon,how soon?;how soon huh;huh $p1 how soon is that?;but how soon;how soon tho??;how soon exactly;how soon $p1;how soon $p1 pls,0,0
+long,how long?;how long huh;huh $p1 how long is that?;but how long;how long tho??;how long exactly;how long $p1;how long $p1 pls,0,0
+wait,waiting..;ok will be here $p1,0,0
  AI;AI ,nope;dont think so;nah,0,0
 AI,nope;dont think so;nah,0,1
 whats,um idk?;wdym $p1;what $p1 idk;idk $p1,0,0
 why;what,huh?;huh $p1;idk;umm idk?;what $p1,0,0
-kick $p1,whyy;dont do it $p1;noo,0,0
+kick $p0,whyy;dont do it $p1;noo,0,0
 how so,it just is;idk just is,0,0
-bots ,dont think so $p1..;um where and who?,0,0
-bots,dont think so $p1..;um where and who?,0,1
-robot,beep boop $p1;beep you are $p1,0,0
- bot ; a bot;bot ;a bot ,no $p1;$p1 are you?;thats a negative $p1;$p1 is a bot;what $p1;is that what you are $p1;ok enough of that $p1,0,0    
-bot;,no $p1;$p1 are you?;thats a negative $p1;$p1 is a bot;what $p1;is that what you are $p1;ok enough of that $p1,0,1
 no u;no you,yes u;yes you,0,0
 too big,so big;huuge;massive,0,0
 exact,yess;hmm ya,0,0
 false,true,0,0
 true,false,0,0
+turn so fa,you can set multiple keys for left and right and press two at the same time $p1,-9,0
 fast,vroom;speedy,0,0
 tell you,yes please;im ready,0,0
 imagine,imagining;ill try,0,0
@@ -285,7 +314,7 @@ you can,how?;o idk about that,0,0
 usa,yesss;usa ya,0,0
 i see,:p;uh huh,0,0
 it is,o;is it?;um are you sure $p1,0,0
-is that;are you;is it,idk u tell me $p1;uh idk $p maybe;um no clue $p1;maybe $p not really sure right now,0,0
+is that;are you;is it,idk u tell me $p1;uh idk $p1 maybe;um no clue $p1;maybe $p1 not really sure right now,0,0
 are too,are not,0,0
 villan;villain,oh no;nooo;evil;o wow,0,0
 destroy,WHAT?;whyy;$p1 dont do it,0,0
@@ -293,12 +322,10 @@ done,well then;uhh k;well;k $p1,0,0
 sure,why not;yeah?;um ok,0,0
 u no;you kno;u kno,no!!!;um i dont;do not,0,0
 u did;you did,not,0,0
-no cap;og ;fax;facts,og $p1;no lie $p1;true $p1,0,0
 og,og $p1;no lie $p1;true $p1,0,1
 friends,yeah $p1;me and you $p1;we are friends $p1,0,0
 fr ,fr fr $p1;no cappat $p1,0,0
 fr,fr fr $p1;no cappat $p1,0,1
-cool,icy;below 0;always;2 cool;so cool,0,0
 crazy,we knew it!!;detected;get him,0,0
 do not,y not?;y;k $p1,0,0
 go,stop,0,1
@@ -309,22 +336,31 @@ play,pause,0,0
 gotcha;gottem,chill $p1;i saw that $p1;did that just happen,0,0
 i would,not,0,0
 got this;do this,yes $p1;u got it $p1;u can do it $p1;lets go $p1,0,0
-$p1?,im here $p1;huh $p1?;whats up $p1,0,0
-$p1!,$p1!!!;hey there $p1!!,0,0
-$p1,yes $p1?;whats up $p1,0,1
+$p0?,im here $p1;huh $p1?;whats up $p1,0,0
+$p0!,$p1!!!;hey there $p1!!,0,0
+$p0,yes $p1?;whats up $p1,0,0
 yo ;sup ,not much $p1 wbu?;chillin $p1 how you doing;just chillin $p1 what u up to,0,0
 yo;sup,not much $p1 wbu?;chillin $p1 how you doing;just chillin $p1 what u up to,0,1
 drunk,hehe :p;oh yeah haha? :p;fun :d,0,0
-nvr,u dont mean that $p1;nvr $p1?;nvr is a pretty long time $p1,0,0
+nvr;never,u dont mean that $p1;nvr $p1?;nvr is a pretty long time $p1,0,0
 joke,haha $p1;o $p1 lol;XD what $p1,0,0
 bro,yeah bro;fax bro;fr fr bro;word bro,0,0
 english,yeah;yes english;only english $p1,0,0
 luck,lucky indeed $p1;oh yeah $p1?;very lucky $p1,0,0
 mean,o sorry;srry;sorry;oops mb,0,0
-is $p1,yes $p1;i am $p1;yeah sounds right $p1,0,0
-$p1,what are you saying here $p1;huh whats that $p1?;um $p1 what;i dont know $p1;um huh $p1 what??,0,0
-
+is $p0,yes $p1;i am $p1;yeah sounds right $p1,0,0
+sus,amogus,0,0
+left us,why did he do it $p1?;i know $p1;its going to be ok $p1,0,0
+$p0,what are you saying here $p1;huh whats that $p1?;um $p1 what;i dont know $p1;um huh $p1 what??,0,0
+am new;im new,WELCOME $p1 im $p0,0,0
+discord,join the tron discord at discord.gg/dcpaauj,-999,0
 //
 // Functions
 //
 $repeatedchars,$fliprepeatedcharsfunc,-9999,1
+woo,woooooooooo!,0,0
+e+pi;pi+e;e + pi;pi + e,5.85987448,0,1
+# pi;pi ,3.1415926535897932384626433832795028841971,-5,0
+pi,3.1415926535897932384626433832795028841971,-5,1
+E2000,the wall talker,0,1
+E,2.7182818284590452353602874713526624977572,-5,1

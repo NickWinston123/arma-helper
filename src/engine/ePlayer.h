@@ -370,6 +370,8 @@ public:
     static tString nextSpeakTimePrefixCommonPrefix;
     static REAL nextSpeakTime;
 
+    tString lastSentName;
+    
     static bool canChat();
     static bool canChatCommonPrefix(tString message);
     static bool canChatWithMsg(tString message);
@@ -380,6 +382,10 @@ public:
     bool isLocal() { return pID != -1; }
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastDiedByPlayer = nullptr;
+    ePlayerNetID * lastDiedByPlayerBanFunc = nullptr;
+    REAL lastDiedByTime = 0;
+    REAL lastBannedPlayerTime = 0;
+
     ePlayerNetID * lastMessagedPlayer;
     ePlayerNetID * lastMessagedByPlayer;
     std::string lastMsgType = "normal";

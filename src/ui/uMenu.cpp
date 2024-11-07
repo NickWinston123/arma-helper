@@ -863,8 +863,8 @@ bool uMenuItemString::Event(SDL_Event &e){
     bool ret=true;
     SDL_keysym &c=e.key.keysym;
     SDLMod mod = c.mod;
-    bool moveWordLeft, moveWordRight, deleteWordLeft, deleteWordRight, moveBeginning, moveEnd, killForwards, pasteText;
-    moveWordLeft = moveWordRight = deleteWordLeft = deleteWordRight = moveBeginning = moveEnd = killForwards = pasteText = false;
+    bool moveWordLeft, moveWordRight, deleteWordLeft, deleteWordRight, moveBeginning, moveEnd, killForwards, pasteText, copyText;
+    moveWordLeft = moveWordRight = deleteWordLeft = deleteWordRight = moveBeginning = moveEnd = killForwards = pasteText = copyText = false;
 
 #if defined (MACOSX)
     // For moving over/deleting words
@@ -929,6 +929,9 @@ bool uMenuItemString::Event(SDL_Event &e){
         else if (c.sym == SDLK_v) {
             pasteText = true;
         }
+        else if (c.sym == SDLK_c) {
+            copyText = true; 
+        }
     }
     // moveWordLeft = moveWordRight = deleteWordLeft = deleteWordRight = moveBeginning = moveEnd = killForwards
 
@@ -963,7 +966,11 @@ bool uMenuItemString::Event(SDL_Event &e){
             cursorPos = std::min(cursorPos, maxLength_ - 1); 
         }
     }
-
+    else if (copyText) {
+        if (!copyToClipboard(*content)) {
+            con << "Failed to copy.\n";
+        }
+    }
     else if (c.sym == SDLK_LEFT) {
         if (cursorPos > 0) {
             cursorPos--;

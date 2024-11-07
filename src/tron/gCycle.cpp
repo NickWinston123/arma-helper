@@ -2958,6 +2958,7 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos, const eCoord &d, ePlayerNetID *p)
     {
         Player()->lastKilledPlayer = nullptr;
         Player()->lastDiedByPlayer = nullptr;
+        Player()->lastBannedPlayerTime = 0;
 
     }
 }
@@ -3266,7 +3267,7 @@ bool gCycle::Timestep(REAL currentTime)
 
     bool playerExist = bool(player);
     bool playerIsMe = playerExist && player->IsHuman() && player->Owner() == sn_myNetID;
-    if (helperConfig::sg_helper && playerIsMe && player->pID == helperConfig::sg_helperEnabledPlayer)
+    if (helperConfig::sg_helper && playerIsMe && player->pID+1 == helperConfig::sg_helperEnabledPlayer)
     {
         gHelper &helper = gHelper::Get(*this);
         helper.Activate();
@@ -6419,6 +6420,7 @@ gCycle::gCycle(nMessage &m)
     {
         Player()->lastKilledPlayer = nullptr;
         Player()->lastDiedByPlayer = nullptr;
+        Player()->lastBannedPlayerTime = 0;
 
     if (se_playerStats)
         ePlayerStats::setColor(Player(),Player()->r,Player()->g,Player()->b);
@@ -6938,8 +6940,10 @@ void gCycle::ReadSync(nMessage &m)
 
         if (killer)
         {
-            killer->lastKilledPlayer = Player();
-            Player()->lastDiedByPlayer = killer;
+            killer->lastKilledPlayer             = Player();
+            Player()->lastDiedByPlayer           = killer;
+            Player()->lastDiedByPlayerBanFunc    = killer;
+            Player()->lastDiedByTime             = tSysTimeFloat();
 
             if (se_playerStats)
                 ePlayerStats::addKill(killer);

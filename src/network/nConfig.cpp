@@ -124,9 +124,12 @@ void nConfItemBase::s_GetConfigMessage(nMessage &m){
                     netitem->NetReadVal(m);
                     tString configItem;
                     configItem << netitem->GetTitle() << " " << netitem->getValue();
+
+                    if (netitem->GetTitle() == "CYCLE_WALLS_LENGTH") {
+                        configItem << "\n"
+                                   << "SP_WALLS_LENGTH" << " " << netitem->getValue();
+                    }
                     serverConfig.Add(configItem);
-                    if (netitem->GetTitle() == "CYCLE_WALLS_LENGTH")
-                        configItem << "SP_WALLS_LENGTH" << " " << netitem->getValue();
                 }
                 else
                 {

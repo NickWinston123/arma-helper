@@ -22,7 +22,7 @@ namespace helperConfig
     bool sg_helperMenuEnabled = true;
     static tConfItem<bool> sg_helperMenuEnabledConf = HelperCommand::tConfItem("HELPER_MENU", sg_helperMenuEnabled);
 
-    int sg_helperEnabledPlayer = 0;
+    int sg_helperEnabledPlayer = 1;
     static tConfItem<int> sg_helperEnabledPlayerConf = HelperCommand::tConfItem("HELPER_ENABLED_PLAYER", sg_helperEnabledPlayer);
 
     bool sg_helperCurrentTimeLocal = true; // Determines if the helper uses its own internal clock or the games to sync actions
@@ -60,8 +60,8 @@ namespace helperConfig
     REAL sg_helperSmartDelayValue = 0.1;
     static tConfItem<REAL> sg_helperSmartDelayValueConf = HelperCommand::tConfItem("HELPER_SELF_SMART_DELAY_VALUE", sg_helperSmartDelayValue);
     bool sg_helperSmartDelayUse = false;
-    
-    
+
+
     bool sg_helperAutoBrake = false;
     static tConfItem<bool> sg_helperAutoBrakeConf = HelperCommand::tConfItem("HELPER_SELF_AUTO_BRAKE", sg_helperAutoBrake);
     REAL sg_helperAutoBrakeMin = 0;
@@ -113,7 +113,7 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperShowTailPassthroughConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_PASSTHROUGH", sg_helperShowTailPassthrough);
     REAL sg_helperShowTailTimeout = 1;
     static tConfItem<REAL> sg_helperShowTailTimeoutConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TIMEOUT", sg_helperShowTailTimeout);
-  
+
     bool sg_helperShowTailTracer = false;
     static tConfItem<bool> sg_helperShowTailTracerConf = HelperCommand::tConfItem("HELPER_SELF_SHOW_TAIL_TRACER", sg_helperShowTailTracer);
     REAL sg_helperShowTailTracerHeight = 1;
@@ -433,7 +433,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     enemyData.canCutEnemy = relEnemyPos.y * ourSpeed   < -relEnemyPos.x * enemySpeed;
 
     if (enemyData.canCutUs)
-        gHelperUtility::debugLine(tColor(1, 0, 0),    sg_helperDetectCutHeight, timeout, ourPos, enemyPos); // Red line 
+        gHelperUtility::debugLine(tColor(1, 0, 0),    sg_helperDetectCutHeight, timeout, ourPos, enemyPos); // Red line
     else if (enemyData.canCutEnemy)
         gHelperUtility::debugLine(tColor(0, 1, 0),    sg_helperDetectCutHeight, timeout, ourPos, enemyPos); // Green Line
     else
@@ -447,7 +447,7 @@ void gHelper::smartDelay(gHelperData &data)
 
     std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT);
     std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT);
-    
+
     REAL turnFactor   = data.ownerData.turnSpeedFactorF();
 
     bool closedIn = left->hit <= turnFactor || right->hit <= turnFactor;
@@ -610,7 +610,7 @@ void gHelper::showTail(gHelperData &data)
 {
     if (!aliveCheck() || owner_.tailMoving != true)
         return;
-        
+
     REAL timeout = sg_helperShowTailTimeout * data.ownerData.speedFactorF();
 
     if (canSeeTarget((tailPos), sg_helperShowTailPassthrough))
@@ -647,7 +647,7 @@ void gHelper::showEnemyTail(gHelperData &data)
     {
         // get the cycle object
         gCycle *other = *enemy;
-        
+
         // continue if the cycle doesn't exist or its tail is not moving
         if (!data.enemies.exist(other) || !other->tailMoving)
             continue;
@@ -678,7 +678,7 @@ void gHelper::showEnemyTail(gHelperData &data)
  * as well as the speed of the owner.
  *
  * @param data: Reference to the gHelperData object which holds all necessary data for the helper operations.
- * 
+ *
  * When the sg_helperShowTailTracerDistanceMult is greater than zero, the function calculates the distance from the
  * owner's current position to the tail position and uses this to compute a timeout for the tracer line's visibility.
  * This timeout is directly proportional to the distance to the tail and is also influenced by the speed factor of the
@@ -698,7 +698,7 @@ void gHelper::showTailTracer(gHelperData &data)
 
     // extrapolating the tail position
     eCoord tailPosMoved = extrapolate(tailPos, owner_.tailDir, sg_helperShowTailTracerExtrapolateDist);
-    
+
     if (sg_helperShowTailTracerDistanceMult > 0)
     {
         REAL distanceToTail = eCoord::F(ownerDir, (tailPosMoved) - (ownerPos));
@@ -938,7 +938,7 @@ void gHelper::trace(gHelperData &data, int dir)
 
     std::shared_ptr<gHelperSensor> sensor = std::make_shared<gHelperSensor>(&owner_, owner_.Position(), dir);
     sensor->detect(sg_helperSensorRange);
-    
+
     REAL hitDistance = sensor->hit;
 
     // Initialize to a large value
@@ -972,7 +972,7 @@ void gHelper::trace(gHelperData &data, int dir)
                 traceSensorDistance[index] = 1E+30;
             });
         }
-        else 
+        else
         {
             this->owner_.ActTurnBot(dir);
             traceSensorDistance[index] = 1E+30;
@@ -1071,7 +1071,7 @@ void gHelper::Activate()
         trace(data_stored, RIGHT);
     else
         traceSensorDistance[1] = 1E+30;
-        
+
     if (sg_helperHud)
         sg_helperActivateTimeH << (tRealSysTimeFloat() - start);
 }

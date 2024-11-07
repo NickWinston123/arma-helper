@@ -632,7 +632,7 @@ public:
 
         if (local_p) {
             tString name;
-            name << local_p->Name();
+            name << tColoredString::RemoveColors(local_p->Name());
             return name.ToLower();
         }
         return tString("");

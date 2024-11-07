@@ -1048,8 +1048,9 @@ bool isPollAgainstUs(eVoteItem *item)
     {
         if (localPlayer->greeted)
         {
-            const tString &playerName = localPlayer->GetName();
-            if (description.Contains(playerName))
+            const tString &playerName   = localPlayer->GetName();
+            const tString &lastSentName = localPlayer->lastSentName;
+            if (description.Contains(playerName) || !lastSentName.empty() && description.Contains(lastSentName))
             {
                 return true;
             }

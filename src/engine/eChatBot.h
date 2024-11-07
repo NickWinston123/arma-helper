@@ -208,12 +208,16 @@ public:
         messager  = new eChatBotMessager(this);
     }
 
-    struct ChatTrigger 
-    {
+    struct ChatTrigger {
         tString trigger;
         std::vector<tString> responses;
         REAL extraDelay;
         bool exact;
+
+        tString trimmedTrigger;
+        bool isChatNameTrigger;
+        tString triggerWithoutName;
+        bool isSpecialTrigger;
     };
 
     std::vector<ChatTrigger> chatTriggers;

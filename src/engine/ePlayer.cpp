@@ -6722,6 +6722,7 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                lastMessagedPlayer(nullptr),
                                                lastMessagedByPlayer(nullptr),
                                                nickname(tString("")),
+                                               lastSentName(tString("")),
                                                lastKilledPlayer(nullptr)
 
 {
@@ -6879,6 +6880,7 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
                                           lastMessagedPlayer(nullptr),
                                           lastMessagedByPlayer(nullptr),
                                           nickname(tString("")),
+                                          lastSentName(tString("")),
                                           lastKilledPlayer(nullptr)
 {
     flagOverrideChat = false;
@@ -11154,8 +11156,10 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
                     p->RequestSync();
                 }
 
-                if (allowedRename)
+                if (allowedRename) {
+                    p->lastSentName = newName;
                     p->SetName(newName);
+                }
 
                 local_p->updateIteration++;
                 if (se_forceSync)
@@ -13938,7 +13942,7 @@ REAL ePlayerNetID::LastActivity(void)
     if (CurrentTeam())
     {
         gCycle *cycle = ePlayerNetID::NetPlayerToCycle(this);
-        if (cycle)
+        if (cycle && !IsChatting())
         {
             REAL lastCycleActivity = tSysTimeFloat() - cycle->lastActTime;
             if (lastCycleActivity < activity)

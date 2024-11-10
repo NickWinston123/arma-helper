@@ -13939,10 +13939,10 @@ REAL ePlayerNetID::LastActivity(void)
 
     REAL lastPlayerActivity = tSysTimeFloat() - lastActivity_;
     REAL activity = lastPlayerActivity;
-    if (CurrentTeam())
+    if (CurrentTeam() && !IsChatting())
     {
         gCycle *cycle = ePlayerNetID::NetPlayerToCycle(this);
-        if (cycle && !IsChatting())
+        if (cycle && cycle->lastActTime > 0)
         {
             REAL lastCycleActivity = tSysTimeFloat() - cycle->lastActTime;
             if (lastCycleActivity < activity)

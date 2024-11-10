@@ -1047,7 +1047,7 @@ void ConTabCompletition(tString &inputString, int &cursorPos, bool changeLast)
 
 std::deque<tString> se_consoleHistory; // global since the class doesn't live beyond the execution of the command
 static int sg_consoleHistoryMaxSize=10; // size of the console history
-static tSettingItem< int > sg_consoleHistoryMaxSizeConf("CONSOLE_HISTORY_SIZE",sg_consoleHistoryMaxSize);
+static tConfItem< int > sg_consoleHistoryMaxSizeConf("CONSOLE_HISTORY_SIZE",sg_consoleHistoryMaxSize);
 
 tString se_consoleHistoryFileName("console_history.txt");
 static tConfItem<tString> se_consoleHistoryFileNameConf("CONSOLE_HISTORY_FILE", se_consoleHistoryFileName);

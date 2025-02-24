@@ -30,6 +30,9 @@ public:
     // function to make the cycle follow its tail
     void followTail(gHelperData &data);
 
+    tColoredString getBlockedTurnString();
+    tColoredString ModeString();
+
     // Activate function to activate the smart turning feature
     void Activate(gHelperData &data);
 
@@ -47,7 +50,7 @@ private:
     REAL &lastTurnAttemptTime;
 
     // direction of the last turn attempt
-    REAL &lastTurnAttemptDir;
+    int &lastTurnAttemptDir;
 
     // time of the last turn
     REAL &lastTurnTime;
@@ -56,13 +59,13 @@ private:
     REAL &turnIgnoreTime;
 
     // direction of the last turn
-    REAL &lastTurnDir; // -1 left , 1 right
+    int &lastTurnDir; // -1 left , 1 right
 
     // block turn value (0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH)
-    REAL &blockTurn;
+    int &blockTurn;
 
     // force turn value (0 = NONE, -1 = LEFT, 1 = RIGHT)
-    REAL &forceTurn;
+    int &forceTurn;
 
 private:
     // last time turn to tail was taken

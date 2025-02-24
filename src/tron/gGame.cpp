@@ -3292,23 +3292,33 @@ bool isWithinRange()
     return false;
 }
 
-int sg_RestrictPlayTimeStartTimWarnings = 1;
-int sg_RestrictPlayTimeStartTimWarningsCap = 5;
+int sg_RestrictPlayTimeStartTimeWarnings = 1;
+int sg_RestrictPlayTimeStartTimeWarningsCap = 5;
 
 void restrictionTimeCheck(bool ingame)
 {
     if (sg_RestrictPlayTime && isWithinRange())
     {
-        tString message("You are not allowed to play within this time slot because of GAME_RESTRICT_PLAY_TIME. ");
-        message << "(Within set block time: " << sg_RestrictPlayTimeStartTime << ":00 - " << sg_RestrictPlayTimeEndTime << ":00)";
+        tString message;
+                message << "You are not allowed to play within this time slot because of GAME_RESTRICT_PLAY_TIME. "
+                        << "(Current time within set block time: " 
+                        << sg_RestrictPlayTimeStartTime 
+                        << ":00 - " 
+                        << sg_RestrictPlayTimeEndTime 
+                        << ":00)";
 
-        if (ingame && sg_RestrictPlayTimeStartTimWarnings <= sg_RestrictPlayTimeStartTimWarningsCap)
-            con << message << "(" << sg_RestrictPlayTimeStartTimWarnings << "/" << sg_RestrictPlayTimeStartTimWarningsCap << ")"
+        if (ingame && sg_RestrictPlayTimeStartTimeWarnings <= sg_RestrictPlayTimeStartTimeWarningsCap)
+            con << message 
+                << "(" 
+                << sg_RestrictPlayTimeStartTimeWarnings 
+                << "/" 
+                << sg_RestrictPlayTimeStartTimeWarningsCap 
+                << ")"
                 << "\n";
         else
             tERR_ERROR(message << "\n");
 
-        sg_RestrictPlayTimeStartTimWarnings++;
+        sg_RestrictPlayTimeStartTimeWarnings++;
         return;
     }
 }

@@ -14,11 +14,13 @@ namespace helperConfig
     extern REAL sg_helperHudY;
     extern REAL sg_helperHudSize;
 }
+
 class gHelperHudBase
 {
 public:
     int id;
-
+    static tThemedText theme;
+    
 protected:
     const std::string label;
     std::string parent;
@@ -47,7 +49,7 @@ class gHelperHudItem : virtual public gHelperHudBase
 {
 public:
     gHelperHudItem(std::string label_, T value_, std::string parent_ = "")
-        : label(label_), value(value_), id(0), parentID(0), gHelperHudBase(0, label_, parent_)
+        : value(value_), id(0), parentID(0), gHelperHudBase(0, label_, parent_)
     {
         setLastValue();
     }
@@ -59,9 +61,10 @@ public:
     REAL size;
     T value;
     T lastValue;
-    std::string label;
+    
     bool reference;
 
+    
     virtual tString getValue()
     {
         tString valueStr;
@@ -106,9 +109,12 @@ public:
     virtual tString displayString()
     {
         tString displayString;
-        displayString << "0xdddd00" << gHelperHudItem<T>::label << "0xffff88: ";
-        displayString << getValue();
-        displayString << "0xffff88\n";
+        displayString << theme.HeaderColor()
+                      << gHelperHudItem<T>::label 
+                      << "0xRESETT: "
+                      << theme.ItemColor()
+                      << getValue()
+                      << "\n";
         return displayString;
     }
 };
@@ -117,8 +123,8 @@ template <typename T>
 class gHelperHudItemRef : public gHelperHudItem<T>
 {
 public:
-    gHelperHudItemRef(std::string label_, T &value_)
-        : gHelperHudItem<T>(label_, value_), valueRef(value_), lastValueRef(valueRef), gHelperHudBase(0, label_)
+    gHelperHudItemRef(std::string label_, T &value_, std::string parent_ = "")
+        : gHelperHudItem<T>(label_, value_), valueRef(value_), lastValueRef(valueRef), gHelperHudBase(0, label_, parent_)
     {
         gHelperHudItem<T>::reference = true;
         setLastValue();
@@ -143,12 +149,20 @@ public:
 
     virtual tString displayString()
     {
-        tString displayString;
+        tString displayStr;
         tString valueStr = getValue();
-        displayString << "0xdddd00" << gHelperHudItem<T>::label << "0xffff88: ";
-        displayString << (valueStr == tString("0") ? "0xdd0000Disabled" : (valueStr == tString("1") ? "0x00dd00Enabled" : valueStr));
-        displayString << "0xffff88\n";
-        return displayString;
+        tString value;
+
+        if (valueStr == "0")
+            value << gHelperHudBase::theme.ErrorColor() << "Disabled";
+        else if (valueStr == "1")
+            value << gHelperHudBase::theme.MainColor() << "Enabled";
+        else
+            value << gHelperHudBase::theme.ItemColor() << valueStr;
+
+        displayStr << gHelperHudBase::theme.HeaderColor() << gHelperHudItem<T>::label << "0xRESETT: " << value << "\n";
+        
+        return displayStr;
     }
 
     virtual bool valueSame() { return getValue() == getLastValue(); }

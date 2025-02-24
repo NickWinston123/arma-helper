@@ -538,8 +538,15 @@ void gServerMenu::Update()
     }
 }
 
+std::vector<std::pair<std::string, std::string>> sg_browserDefaultSortValueMap = {
+    {"1", "NAME"}, 
+    {"2", "PING"}, 
+    {"3", "USERS"},
+    {"4", "SCORE"},
+    {"5", "FAVORITE"},
+};
 static int sg_browserDefaultSort = 3;
-static tConfItem<int> sg_browserDefaultSortConf("BROWSER_DEFAULT_SORT", sg_browserDefaultSort);
+static tConfItem<int> sg_browserDefaultSortConf("BROWSER_DEFAULT_SORT", sg_browserDefaultSort, sg_browserDefaultSortValueMap);
 
 nServerInfo::PrimaryKey getDefaultSort()
 {
@@ -1125,7 +1132,7 @@ bool gServerFilterMenuItem::Event(SDL_Event &event)
 
     bool update = prev_filter_string != *content;
     prev_filter_string = *content;
-
+/*
     switch (event.key.keysym.sym)
     {
     case (SDLK_ESCAPE):
@@ -1147,7 +1154,7 @@ bool gServerFilterMenuItem::Event(SDL_Event &event)
     default:
         break;
     }
-
+*/
     if (update)
     {
         (static_cast<gServerMenu *>(menu))->Update();

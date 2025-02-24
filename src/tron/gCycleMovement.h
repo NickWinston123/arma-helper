@@ -244,16 +244,16 @@ protected:
 
 public:
     REAL lastTurnAttemptTime;
-    REAL lastTurnAttemptDir;
+    int  lastTurnAttemptDir;
     REAL lastTurnTime;
     REAL lastTurnSysTime;
     REAL turnIgnoreTime;
-    REAL lastTurnDir; // 0 = NONE, -1 = left, 1 = right
-    REAL blockTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
-    REAL forceTurn; // 0 = NONE, -1 = LEFT, 1 = RIGHT
-    REAL lastBlockedTurn;
+    int  lastTurnDir; // 0 = NONE, -1 = left, 1 = right
+    int  blockTurn;   // 0 = NONE, -1 = LEFT, 1 = RIGHT, 2 = BOTH
+    int  forceTurn;   // 0 = NONE, -1 = LEFT, 1 = RIGHT
+    int  lastBlockedTurn;
     REAL lastBotTurnTime;
-    REAL lastBotTurnDir;
+    int  lastBotTurnDir;
     REAL localCurrentTime;
     // room for accessors
 public:

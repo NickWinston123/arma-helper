@@ -35,8 +35,6 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperSensorRangeConf = HelperCommand::tConfItem("HELPER_CONF_SENSOR_RANGE", sg_helperSensorRange);
     bool sg_helperSensorLightUsageMode = false;
     static tConfItem<bool> sg_helperSensorLightUsageModeConf = HelperCommand::tConfItem("HELPER_CONF_SENSOR_LIGHT_USAGE_MODE", sg_helperSensorLightUsageMode);
-    bool sg_helperSensorDiagonalMode = false;
-    static tConfItem<bool> sg_helperSensorDiagonalModeConf = HelperCommand::tConfItem("HELPER_CONF_SENSOR_DIAGONAL_MODE", sg_helperSensorDiagonalMode);
 
     bool sg_helperDebug = false;
     static tConfItem<bool> sg_helperDebugConf = HelperCommand::tConfItem("HELPER_DEBUG", sg_helperDebug);
@@ -212,8 +210,10 @@ namespace helperConfig
 }
 
 // HUD ITEMS
-static gHelperHudItemRef<bool> sg_helperSmartTurningH("Smart Turning", sg_helperSmartTurning);
-static gHelperHudItemRef<bool> sg_pathHelperH("Path Helper", sg_pathHelper);
+static gHelperHudItemRef<bool> sg_helperSmartTurningH("Status", sg_helperSmartTurning, "Smart Turning");
+static gHelperHudItemRef<bool> sg_helperSmartTurningFrontBotH("Front Bot", sg_helperSmartTurningFrontBot, "Smart Turning");
+
+static gHelperHudItemRef<bool> sg_pathHelperH("Status", sg_pathHelper, "Path Helper");
 
 static gHelperHudItem<eCoord> ownerPosH("Owner Pos", eCoord(0, 0));
 static gHelperHudItem<eCoord> ownerDirH("Owner Dir", eCoord(0, 0));
@@ -221,15 +221,15 @@ static gHelperHudItem<eCoord> ownerDirH("Owner Dir", eCoord(0, 0));
 static gHelperHudItem<eCoord> tailPosH("Tail Pos", eCoord(0, 0));
 static gHelperHudItem<eCoord> tailDirH("Tail Dir", eCoord(0, 0));
 
-static gHelperHudItemRef<bool> sg_helperDetectCutH("Detect Cut", sg_helperDetectCut);
+static gHelperHudItemRef<bool> sg_helperDetectCutH("Status", sg_helperDetectCut, "Detect Cut");
 static gHelperHudItem<tColoredString> detectCutdebugH("Detect Cut Debug", tColoredString("None"), "Detect Cut");
 
 static gHelperHudItem<tColoredString> closestEnemyH("Closest Enemy", tColoredString("None"), "Detect Cut");
-static gHelperHudItem<tColoredString> cutTurnDirectionH("Cut Turn Dir", tColoredString("0xdd0000None"), "Detect Cut");
+static gHelperHudItem<tColoredString> cutTurnDirectionH("Cut Turn Dir", tColoredString("None"), "Detect Cut");
 
-static gHelperHudItem<tColoredString> helperDebugH("Debug", tColoredString("0xdd0000None"));
+static gHelperHudItem<tColoredString> helperDebugH("Debug", tColoredString("None"));
 
-static gHelperHudItemRef<bool> sg_helperShowHitH("Show Hit", sg_helperShowHit);
+static gHelperHudItemRef<bool> sg_helperShowHitH("Status", sg_helperShowHit, "Show Hit");
 static gHelperHudItem<REAL> sg_helperShowHitFrontDistH("Show Hit Front Dist", 1000, "Show Hit");
 
 static gHelperHudItem<REAL> sg_helperActivateTimeH("Active Time", 0);
@@ -240,17 +240,21 @@ static gHelperHudItem<REAL> sg_helperGameTimeH("Game Time", 0);
 // Returns: a pointer to the gSmartTurningCornerData instance for the given direction
 gSmartTurningCornerData &gHelper::getCorner(int dir)
 {
-    findCorners(data_stored);
     switch (dir)
     {
-    case LEFT:
-        return data_stored.leftCorner;
-        break;
-    case RIGHT:
-        return data_stored.rightCorner;
-        break;
-    default:
-        return data_stored.leftCorner;
+        case RIGHT:
+        {
+            std::shared_ptr<gHelperSensor> right = data_stored.sensors.getSensor(RIGHT);
+            data_stored.rightCorner.findCorner(right, *this);
+            return data_stored.rightCorner;
+        }
+        case LEFT:
+        default:
+        {
+            std::shared_ptr<gHelperSensor> left = data_stored.sensors.getSensor(LEFT);
+            data_stored.leftCorner.findCorner(left, *this);
+            return data_stored.leftCorner;
+        }
     }
 }
 
@@ -345,10 +349,9 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     if (sg_helperHud)
         closestEnemyH << (enemy->Player()->GetColoredName());
 
-    // canCutUs: Can the enemy either turn left or right and over turn our cycle? or continue to drive in their current direction and cut our cycle
-    // canCutEnemy: Can the owner turn left or right and over turn the enemy? or continue to drive forward in our current direction and cut the enemy cycle
-    // bool canCutUs, canCutEnemy;
-
+    // enemyData.canCutUs: Can the enemy either turn left or right and over turn our cycle? or continue to drive in their current direction and cut our cycle
+    // enemyData.canCutEnemy: Can the owner turn left or right and over turn the enemy? or continue to drive forward in our current direction and cut the enemy cycle
+    
     // Get the position and direction of the enemy cycle
     eCoord enemyPos = enemy->Position();
     eCoord enemyDir = enemy->Direction();
@@ -429,7 +432,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
     // and then he turns left or right.
     relEnemyPos.x -= enemydist;
 
-    enemyData.canCutUs    = relEnemyPos.y * enemySpeed >  relEnemyPos.x * ourSpeed;   // right ahead of us (and faster)
+    enemyData.canCutUs    = relEnemyPos.y * enemySpeed >  relEnemyPos.x * ourSpeed;   // enemy is ahead of us (and faster)
     enemyData.canCutEnemy = relEnemyPos.y * ourSpeed   < -relEnemyPos.x * enemySpeed;
 
     if (enemyData.canCutUs)
@@ -721,7 +724,7 @@ void gHelper::showTailTracer(gHelperData &data)
 // Output: None.
 void gHelper::findCorners(gHelperData &data)
 {
-    std::shared_ptr<gHelperSensor> left = data.sensors.getSensor(LEFT);
+    std::shared_ptr<gHelperSensor> left  = data.sensors.getSensor(LEFT);
     std::shared_ptr<gHelperSensor> right = data.sensors.getSensor(RIGHT);
     // Find the left corner
     data.leftCorner.findCorner(left, *this);
@@ -827,7 +830,7 @@ void gHelper::showHit(gHelperData &data)
         drawDebugLinesFromPosition(ownerPos);
         // fall through
     case 0:
-        // draw debug lines from the front before hit position in the left and right directions
+        // draw debug lines from the front hit position in the left and right directions
         drawDebugLinesFromPosition(frontBeforeHit);
         break;
     case 1:
@@ -844,11 +847,11 @@ void gHelper::showHit(gHelperData &data)
 //
 // Parameters:
 //   currentPos: The current position of the cycle.
-//   initDir: The initial direction of the sensor.
-//   timeout: The duration for which the lines will be displayed.
-//   data: The data structure that holds all the helper data.
-//   recursion: The number of times the function will recurse to visualize multiple sensor hits.
-//   sensorDir: The direction of the sensors, either left or right.
+//   initDir:    The initial direction of the sensor.
+//   timeout:    The duration for which the lines will be displayed.
+//   data:       The data structure that holds all the helper data.
+//   recursion:  The number of times the function will recurse to visualize multiple sensor hits.
+//   sensorDir:  The direction of the sensors, either left or right.
 void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout, gHelperData &data, int recursion, int sensorDir, bool firstRun)
 {
     // If the recursion limit is reached, exit the function.
@@ -871,7 +874,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
 
     // Check if the hit distance is greater than a certain value.
     bool open = hitDistance > data.ownerData.turnSpeedFactorF() * sg_showHitDataFreeRange;
-    bool other = false;
+    bool neitherCanCut = false;
 
     if (firstRun && sg_helperDetectCut)
     {
@@ -883,7 +886,17 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
             open = open && (enemyData.canCutEnemy || sensorDir != enemyData.enemySide);
 
             if (!open && !enemyData.canCutUs && sensorDir == enemyData.enemySide)
-                other = true;
+                neitherCanCut = true;
+
+            if (sg_helperHud)
+            {
+                if (open)
+                    cutTurnDirectionH << (enemyData.enemySide == LEFT ? tColoredString("Left") : tColoredString("Right"));
+                else if (neitherCanCut)
+                    cutTurnDirectionH << tColoredString("None");
+                else 
+                    cutTurnDirectionH << (enemyData.enemySide == RIGHT ? tColoredString("Left") : tColoredString("Right"));
+            }
         }
     }
 
@@ -896,17 +909,17 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
     // Draw a green line if the hit distance is greater than the specified value, indicating that the path is clear.
     if (open)
     {
-        drawDebugLine(tColor(0, 1, 0));
+        drawDebugLine(tColor(0, 1, 0)); // green
     }
     // Gray line - special case when enemy cant cut us and we cant cut them
-    else if (other)
+    else if (neitherCanCut)
     {
-        drawDebugLine(tColor(.4, .4, .4));
+        drawDebugLine(tColor(.4, .4, .4)); // gray
     }
     // Draw a red line if the hit distance is smaller than the specified value, indicating an obstacle in the way.
     else
     {
-        drawDebugLine(tColor(1, 0, 0));
+        drawDebugLine(tColor(1, 0, 0)); // red
     }
 
     // Recursively call the function to visualize multiple sensor hits.
@@ -1001,7 +1014,7 @@ void gHelper::Activate()
         start = tRealSysTimeFloat();
 
         tColoredString debug;
-        debug << "gCycles: " << eGameObject::number_of_gCycles << "\n";
+        debug << "\ngCycles: " << eGameObject::number_of_gCycles << "\n";
         debug << "Walls: "   << sg_netPlayerWalls.Len() << "\n";
         debug << "eGameObjects: " << eGrid::CurrentGrid()->gameObjects.Len() << "\n";
 

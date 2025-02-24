@@ -22,11 +22,22 @@ namespace helperConfig
     static tConfItem<REAL> sg_helperHudSizeC = HelperCommand::tConfItem("HELPER_HUD_SIZE", sg_helperHudSize);
     tString sg_helperHudIgnoreList = tString("");
     static tConfItem<tString> sg_helperHudIgnoreListConf = HelperCommand::tConfItem("HELPER_HUD_IGNORE_LIST", sg_helperHudIgnoreList);
+
+    tString sg_helperHudColorHeader("0xff0033"); // Red for labels
+    static tConfItem<tString> sg_helperHudColorHeaderConf = HelperCommand::tConfItem("HELPER_HUD_COLOR_LABEL", sg_helperHudColorHeader);
+    tString sg_helperHudColorItem("0xeeffff");   // White for values
+    static tConfItem<tString> sg_helperHudColorItemConf = HelperCommand::tConfItem("HELPER_HUD_COLOR_VALUES", sg_helperHudColorItem);
+    tString sg_helperHudColorMain("0x00dd00");   // Green for enabled
+    static tConfItem<tString> sg_helperHudColorMainConf = HelperCommand::tConfItem("HELPER_HUD_COLOR_ENABLED", sg_helperHudColorMain);
+    tString sg_helperHudColorError("0xdd0000");  // Red for disabled
+    static tConfItem<tString> sg_helperHudColorErrorConf = HelperCommand::tConfItem("HELPER_HUD_COLOR_DISABLED", sg_helperHudColorError);
 }
+tThemedText gHelperHudBase::theme(sg_helperHudColorHeader, sg_helperHudColorMain, sg_helperHudColorItem, sg_helperHudColorError);
 
 using namespace helperConfig;
 
 static std::map<std::string, gHelperHudBase *> *st_confMap = 0;
+
 gHelperHudBase::gHelperHudMap &gHelperHudBase::GetHelperHudMap()
 {
     if (!st_confMap)
@@ -36,15 +47,20 @@ gHelperHudBase::gHelperHudMap &gHelperHudBase::GetHelperHudMap()
 }
 
 gHelperHudBase::gHelperHudBase(int id_, std::string label_, std::string parent_)
+    : id(id_)
+    , label(label_)         
+    , parent(parent_)       
 {
-    std::map<std::string, gHelperHudBase *> &hudMap = gHelperHudBase::GetHelperHudMap();
+    auto &hudMap = gHelperHudBase::GetHelperHudMap();
 
-    if (hudMap.find(label_) != hudMap.end())
-        tERR_ERROR_INT("Two gHelperHudBase with the same name " << label_ << "!");
+    std::string compositeKey = parent_ + "||" + label_;
 
-    hudMap[label_] = this;
-    parent = parent_;
+    if (hudMap.find(compositeKey) != hudMap.end())
+        tERR_ERROR_INT("Duplicate HUD item with parent+label = " << compositeKey);
+
+    hudMap[compositeKey] = this;
 }
+
 
 void gHelperHudBase::Render()
 {
@@ -54,34 +70,53 @@ void gHelperHudBase::Render()
     std::map<std::string, std::vector<gHelperHudBase *>> hudMap;
     gHelperHudMap &items = gHelperHudBase::GetHelperHudMap();
 
-    // First, populate the hudMap with all items and their parent relationships
-    for (auto iter = items.begin(); iter != items.end(); iter++)
+    for (auto &kv : items)
     {
-        gHelperHudBase *item = iter->second;
+        gHelperHudBase *item = kv.second;
 
-        std::string parent = item->getParent();
-
-        if (!sg_helperHudIgnoreList.empty() && tIsInList(sg_helperHudIgnoreList, item->getLabelStr()))
+        if (!sg_helperHudIgnoreList.empty() 
+            && tIsInList(sg_helperHudIgnoreList, item->getLabelStr()))
             continue;
 
-        if (hudMap.find(parent) == hudMap.end())
-            hudMap[parent] = std::vector<gHelperHudBase *>();
-
-        hudMap[parent].push_back(item);
+        std::string parentName = item->getParent();
+        hudMap[parentName].push_back(item);
     }
 
-    rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, sg_helperHudY, .15 * sg_helperHudSize, .3 * sg_helperHudSize);
-
-    // Next, iterate through the hudMap and display parent items first, followed by their child items
-    for (auto iter = hudMap.begin(); iter != hudMap.end(); iter++)
+    for (auto &kv : hudMap)
     {
-        if (iter->first != "")
-            hudDebug << iter->first << ":\n";
+        auto &vec = kv.second; 
 
-        for (auto item : iter->second)
+        std::sort(vec.begin(), vec.end(),
+        [](gHelperHudBase *a, gHelperHudBase *b)
+        {
+            bool aIsStatus = (a->getLabel() == "Status");
+            bool bIsStatus = (b->getLabel() == "Status");
+
+            if (aIsStatus && !bIsStatus) 
+                return true;
+            if (bIsStatus && !aIsStatus) 
+                return false;
+                
+            return a->getLabel() < b->getLabel();
+        });
+    }
+
+    rTextField hudDebug(sg_helperHudX - .15 * sg_helperHudSize / 2.0, 
+                        sg_helperHudY, 
+                        .15 * sg_helperHudSize, 
+                        .3 * sg_helperHudSize);
+
+   
+    for (auto &kv : hudMap)
+    {
+        const std::string &parent = kv.first;
+        if (!parent.empty())
+            hudDebug << "0xRESETT" << parent << ":\n";
+
+        for (auto item : kv.second)
         {
             gTextCache<tString> cache;
-            if (!(cache.Call(item->getValue(), item->getLastValue())))
+            if (!cache.Call(item->getValue(), item->getLastValue()))
             {
                 rDisplayListFiller filler(cache.list_);
                 hudDebug << item->displayString();

@@ -54,10 +54,10 @@ namespace helperConfig
 
 }
 
-gHelperHudItem<tColoredString> zoneDebugH("Zone Debug", tColoredString("None"));
-gHelperHudItem<tColoredString> zoneInfoH("Zone Info", tColoredString("None"));
+static gHelperHudItemRef<bool> sg_helperSmartTurningH("Status", sg_zoneHelper, "Zone Helper");
+static gHelperHudItem<tColoredString> zoneDebugH("Zone Debug", tColoredString("None"), "Zone Helper");
+static gHelperHudItem<tColoredString> zoneInfoH("Zone Info", tColoredString("None"), "Zone Helper");
 
-gHelperHudItem<REAL> zoneHitH("Zone Hit", 0);
 
 void debugZone(gZone *zone, tColor color, REAL timeout)
 {
@@ -131,17 +131,17 @@ eCoord gZoneHelper::closestCorner(gZone *zone)
 
     // Define the 4 corners
     eCoord corner[4];
-    corner[0] = eCoord(center.x - (radius), center.y + (radius));
-    corner[1] = eCoord(center.x + (radius), center.y + (radius));
-    corner[2] = eCoord(center.x + (radius), center.y - (radius));
-    corner[3] = eCoord(center.x - (radius), center.y - (radius));
+           corner[0] = eCoord(center.x - (radius), center.y + (radius));
+           corner[1] = eCoord(center.x + (radius), center.y + (radius));
+           corner[2] = eCoord(center.x + (radius), center.y - (radius));
+           corner[3] = eCoord(center.x - (radius), center.y - (radius));
 
     // Calculate the difference between each corner and the owner's position
     REAL positionDifference[4];
-    positionDifference[0] = st_GetDifference(corner[0], ourPos);
-    positionDifference[1] = st_GetDifference(corner[1], ourPos);
-    positionDifference[2] = st_GetDifference(corner[2], ourPos);
-    positionDifference[3] = st_GetDifference(corner[3], ourPos);
+         positionDifference[0] = st_GetDifference(corner[0], ourPos);
+         positionDifference[1] = st_GetDifference(corner[1], ourPos);
+         positionDifference[2] = st_GetDifference(corner[2], ourPos);
+         positionDifference[3] = st_GetDifference(corner[3], ourPos);
 
     // Find the index of the minimum difference
     int minIndex = std::min_element(positionDifference, positionDifference + 4) - positionDifference;

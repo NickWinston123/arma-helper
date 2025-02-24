@@ -4,6 +4,7 @@
 #include "gHelperSensor.h"
 #include "../gHelperVar.h"
 #include "../gHelperUtilities.h"
+#include "../gHelperHud.h"
 #include "../../gAINavigator.h"
 using namespace helperConfig;
 
@@ -70,6 +71,9 @@ namespace helperConfig
     // static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
 
 };
+
+static gHelperHudItem<tColoredString> sg_helperSmartTurningBlockedTurnH("Blocked Turn", tColoredString("None"), "Smart Turning");
+static gHelperHudItem<tColoredString> sg_helperSmartTurningModeH("Mode", tColoredString("None"), "Smart Turning");
 
 // SmartTurning
 gSmartTurning::gSmartTurning(gHelper &helper, gCycle &owner)
@@ -262,13 +266,13 @@ void gSmartTurning::smartTurningOpposite(gHelperData &data)
         return;
     }
 
-SKIP_FORCETURN:
-{
-    // Set the force turn to NONE
-    this->forceTurn = NONE;
-    // Return from the function
-    return;
-}
+    SKIP_FORCETURN:
+    {
+        // Set the force turn to NONE
+        this->forceTurn = NONE;
+        // Return from the function
+        return;
+    }
 }
 
 /**
@@ -280,6 +284,27 @@ SKIP_FORCETURN:
 void gSmartTurning::smartTurningSurvive()
 {
     smartTurningSurvive(helper_.data_stored);
+}
+
+tColoredString gSmartTurning::getBlockedTurnString()
+{
+    tColoredString output;
+    switch (this->blockTurn)
+    {
+    case LEFT:
+        output << "LEFT";
+        break;
+    case RIGHT:
+        output << "RIGHT";
+        break;
+    case BOTH:
+        output << "BOTH";
+        break;
+    default:
+        output << "NONE";
+    }
+
+    return output;
 }
 
 void gSmartTurning::smartTurningSurvive(gHelperData &data)
@@ -316,6 +341,8 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
     {
         gHelperUtility::Debug("SMART TURNING SURVIVE", "BLOCKING BOTH TURNS");
         this->blockTurn = BOTH;
+        if (sg_helperHud)
+            sg_helperSmartTurningBlockedTurnH << getBlockedTurnString();
         return;
     }
 
@@ -328,6 +355,8 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
             gHelperUtility::Debug("SMART TURNING SURVIVE", std::string(surviveData.debug));
 
         this->blockTurn = LEFT;
+        if (sg_helperHud)
+            sg_helperSmartTurningBlockedTurnH << getBlockedTurnString();
         return;
     }
 
@@ -339,11 +368,14 @@ void gSmartTurning::smartTurningSurvive(gHelperData &data)
         if (debug)
             gHelperUtility::Debug("SMART TURNING SURVIVE", std::string(surviveData.debug));
 
+        if (sg_helperHud)
+            sg_helperSmartTurningBlockedTurnH << getBlockedTurnString();
+
         this->blockTurn = RIGHT;
         return;
     }
 
-UN_BLOCKTURN:
+    UN_BLOCKTURN:
     // Unblock the turns if the player can survive a turn.
     if (this->blockTurn != NONE)
     {
@@ -354,6 +386,9 @@ UN_BLOCKTURN:
 
         // Set the blockTurn to NONE to indicate that the player can now turn in either direction.
         this->blockTurn = NONE;
+
+        if (sg_helperHud)
+            sg_helperSmartTurningBlockedTurnH << getBlockedTurnString();
     }
 
     // Check if the smartTurningSurviveTrace is enabled and call the function if it is.
@@ -483,28 +518,42 @@ void gSmartTurning::smartTurningFrontBot(gHelperData &data)
     }
 }
 
+tColoredString gSmartTurning::ModeString()
+{
+    tColoredString mode;
+    if (sg_helperSmartTurningSurvive)
+        mode << "Survive";
+    else if (sg_helperSmartTurningOpposite)
+        mode << "Opposite";
+    else if (sg_helperSmartTurningPlan)
+        mode << "Plan";
+    else
+        mode << "None";
+    return mode;
+   
+}
 void gSmartTurning::Activate(gHelperData &data)
 {
     if (sg_helperSmartTurningSurvive)
     {
-        sg_helperSmartTurningOpposite = 0;
-        sg_helperSmartTurningPlan = 0;
+        sg_helperSmartTurningOpposite = sg_helperSmartTurningPlan = 0;
         smartTurningSurvive(data);
     }
 
     if (sg_helperSmartTurningOpposite)
     {
-        sg_helperSmartTurningSurvive = 0;
-        sg_helperSmartTurningPlan = 0;
+        sg_helperSmartTurningSurvive = sg_helperSmartTurningPlan = 0;
         smartTurningOpposite(data);
     }
 
     if (sg_helperSmartTurningPlan)
     {
-        sg_helperSmartTurningSurvive = 0;
-        sg_helperSmartTurningOpposite = 0;
+        sg_helperSmartTurningSurvive = sg_helperSmartTurningOpposite = 0;
         smartTurningPlan(data);
     }
+    
+    if (sg_helperHud)
+        sg_helperSmartTurningModeH << ModeString();
 
     // if (sg_helperSmartTurningFollowTail)
     //     followTail(data);

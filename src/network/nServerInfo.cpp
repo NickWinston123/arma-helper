@@ -450,9 +450,14 @@ void nServerInfo::Sort( PrimaryKey key )
                 else if ( ascend->ping < prev->ping )
                     compare = 1;
                 break;
-            case KEY_USERS:
-                compare = ascend->users - prev->users;
-                break;
+            case KEY_USERS:            
+                if (ascendUnreachable && !previousUnreachable)
+                    compare = -1;
+                else if (!ascendUnreachable && previousUnreachable)
+                    compare = 1;
+                else
+                    compare = ascend->users - prev->users;
+                break;     
             case KEY_SCORE:
                 if ( previousUnreachable )
                     compare ++;
@@ -462,7 +467,7 @@ void nServerInfo::Sort( PrimaryKey key )
                     compare = 1;
                 else if ( ascend->score < prev->score )
                     compare = -1;
-                break;
+                break;       
             case KEY_FAVORITE:
                 if ( gServerFavorites::IsFavorite(ascend) && !gServerFavorites::IsFavorite(prev))
                     compare = 1;

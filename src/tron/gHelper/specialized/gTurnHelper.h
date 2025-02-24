@@ -11,16 +11,23 @@ class Sensor;
 
 struct gSurviveData
 {
-    bool canSurviveLeftTurn = true;
+    bool canSurviveLeftTurn  = true;
     bool canSurviveRightTurn = true;
-    bool canTurnLeftRubber = true;
-    bool canTurnRightRubber = true;
-    bool canTurnLeftSpace = true;
-    bool canTurnRightSpace = true;
+    bool canTurnLeftRubber   = true;
+    bool canTurnRightRubber  = true;
+    bool canTurnLeftSpace    = true;
+    bool canTurnRightSpace   = true;
     bool trapped;
     bool closedIn;
     bool blockedBySelf;
     bool exist;
+
+    int blockedDir       = NONE;
+    REAL rubberFactor    = 0;
+    REAL turnFactor      = 0;
+    REAL freeSpaceFactor = 0;
+    REAL closedInFactor  = 0;
+
     tString debug = tString("");
 
     gSurviveData() : exist(true){};
@@ -53,6 +60,8 @@ public:
                                 REAL freeSpaceFactor = 0,
                                 bool driveStraight   = false,
                                 bool debug           = false);
+
+    gSurviveData canSurviveTurnDebug(gSurviveData &surviveData, REAL leftHit, REAL rightHit);
 
     // convert uActionPlayer to DIR
     static int ActToTurn(uActionPlayer *action);

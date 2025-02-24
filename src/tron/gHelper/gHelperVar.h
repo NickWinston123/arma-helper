@@ -13,9 +13,6 @@ enum turnDirection
     BOTH = 2
 };
 
-static float lastHelperDebugMessageTimeStamp;
-static std::string lastHelperDebugMessage = "", lastHelperDebugSender = "";
-
 namespace helperConfig
 {
     extern tString sghk;
@@ -29,7 +26,6 @@ namespace helperConfig
     extern REAL sg_helperSensorRange;
     extern bool sg_helperSensorsZoneDetection;
     extern bool sg_helperSensorLightUsageMode;
-    extern bool sg_helperSensorDiagonalMode;
 
     extern bool sg_helperDebug;
     extern bool sg_helperDebugSpamFilter;
@@ -72,7 +68,6 @@ namespace helperConfig
     extern REAL sg_helperSmartDelayValue;
 
     extern bool sg_helperAutoBrake;
-    // extern bool sg_helperAutoBrakeDeplete ;
     extern REAL sg_helperAutoBrakeMin;
     extern REAL sg_helperAutoBrakeMax;
     extern REAL sg_helperAutoBrakeRandomness;

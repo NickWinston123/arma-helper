@@ -4,6 +4,7 @@
 #include "gHelperSensor.h"
 #include "../gHelperVar.h"
 #include "../gHelperUtilities.h"
+#include "../gHelperHud.h"
 #include "gPathHelper.h"
 
 using namespace helperConfig;
@@ -21,8 +22,8 @@ static tConfItem<REAL> sg_pathHelperShowTurnAheadC = HelperCommand::tConfItem("H
 
 int helperConfig::sg_pathHelperMode = 0;
 std::vector<std::pair<std::string, std::string>> sg_pathHelperModeValueMap = {
-    {"0", "AUTO"}, 
-    {"1", "TAIL"}, 
+    {"0", "AUTO"},
+    {"1", "TAIL"},
     {"2", "ENEMY"},
     {"3", "CORNER"}
 };
@@ -35,6 +36,9 @@ REAL helperConfig::se_pathBrightness = 1;
 static tConfItem<REAL> se_pathBrightnessC = HelperCommand::tConfItem("HELPER_SELF_PATH_BRIGHTNESS", helperConfig::se_pathBrightness);
 REAL helperConfig::sg_pathHelperUpdateDistance = 1;
 static tConfItem<REAL> sg_pathHelperUpdateDistanceC = HelperCommand::tConfItem("HELPER_SELF_PATH_UPDATE_DISTANCE", helperConfig::sg_pathHelperUpdateDistance);
+
+static gHelperHudItem<tColoredString> sg_pathHelperModeH("Mode", tColoredString("None"), "Path Helper");
+static gHelperHudItem<REAL> sg_pathHelperDistanceH("Distance", 1000, "Path Helper");
 
 gPathHelper::gPathHelper(gHelper &helper, gCycle &owner)
     : helper_(helper),
@@ -228,7 +232,7 @@ void gPathHelper::RenderTurn(gHelperData &data)
         { // we have passed it. Make a turn towards it.
             int lr;
             REAL side = (target - pos) * owner_.Direction();
-            
+
             std::shared_ptr<gHelperSensor> left = std::make_shared<gHelperSensor>(&owner_, owner_.Position(), LEFT);
             left->detect(sg_helperSensorRange);
 
@@ -253,12 +257,38 @@ void gPathHelper::RenderTurn(gHelperData &data)
     }
 }
 
-bool gPathHelper::DistanceCheck(gHelperData &data)
+REAL gPathHelper::DistanceToTarget()
 {
     eCoord difference = target - lastPos;
-    REAL distance = difference.Norm();
-    // con << distance << " > " << sg_pathHelperUpdateDistance << " \n";
-    return distance >= sg_pathHelperUpdateDistance;
+    return difference.Norm();
+}
+
+bool gPathHelper::DistanceCheck(gHelperData &data)
+{
+    return DistanceToTarget() >= sg_pathHelperUpdateDistance;
+}
+
+tColoredString gPathHelper::ModeString()
+{
+    tColoredString mode;
+    switch (sg_pathHelperMode)
+    {
+    case AUTO:
+        mode << "Auto";
+        break;
+    case TAIL:
+        mode << "Tail";
+        break;
+    case ENEMY:
+        mode << "Enemy";
+        break;
+    case CORNER:
+        mode << "Corner";
+        break;
+    default:
+        mode << "Auto";
+    }
+    return mode;
 }
 
 void gPathHelper::FindPath(gHelperData &data)
@@ -275,49 +305,6 @@ void gPathHelper::FindPath(gHelperData &data)
         pathUpdatedTime = helper_.CurrentTime();
         lastPos = target;
 
-        /*
-        if (!path_.Valid())
-        {
-            return;
-        }
-
-        path_.Proceed();
-
-        bool goon = path_.Proceed();
-        bool nogood = false;
-
-        do
-        {
-            if (goon)
-                goon = path_.GoBack();
-            else
-                goon = true;
-
-            eCoord pos = path_.CurrentPosition() + path_.CurrentOffset() * 0.1f;
-            eCoord opos = owner_.Position();
-            eCoord odir = pos - opos;
-
-            REAL forward = eCoord::F(odir, owner_.Direction());
-            if (forward < 0)
-            {
-                forward = 0;
-            }
-            eCoord intermediate = opos + owner_.Direction() * forward;
-
-            gSensor p(&owner_, opos, intermediate - opos);
-            p.detect(.99f);
-            nogood = p.ehit;
-
-            if (!nogood)
-            {
-                gSensor p(&owner_, intermediate, pos - intermediate);
-                p.detect(.99f);
-                nogood = p.ehit;
-            }
-
-        } while (goon && nogood);
-
-        */
         if (sg_helperDebug)
         {
             tString debugUpdateStr;
@@ -327,29 +314,12 @@ void gPathHelper::FindPath(gHelperData &data)
 
             tString debugModeStr("Current Mode: ");
 
-            switch (sg_pathHelperMode)
-            {
-            case AUTO:  
-                debugModeStr << "Auto";
-                break;
-            case TAIL:
-                debugModeStr << "Tail";
-                break;
-            case ENEMY:
-                debugModeStr << "Enemy";
-                break;
-            case CORNER:
-                debugModeStr << "Corner";
-                break;
-            default:
-                debugModeStr << "Auto";
-                return;
-            }
+            debugModeStr << ModeString();
 
             gHelperUtility::Debug("FindPath", debugModeStr.stdString(), debugUpdateStr, false);
         }
     }
-    else 
+    else
     {
         gHelperUtility::Debug("FindPath", "Missing targetCurrentFace");
     }
@@ -373,6 +343,11 @@ void gPathHelper::Activate(gHelperData &orig_data)
     if (sg_pathHelperShowTurn)
         RenderTurn(orig_data);
 
+    if (sg_helperHud) {
+        sg_pathHelperModeH     << ModeString();
+        sg_pathHelperDistanceH << DistanceToTarget();
+    }
+
     bool success = false;
     switch (sg_pathHelperMode)
     {
@@ -390,7 +365,6 @@ void gPathHelper::Activate(gHelperData &orig_data)
         break;
     default:
         success = autoMode(orig_data);
-        return;
     }
 
     if (!success)

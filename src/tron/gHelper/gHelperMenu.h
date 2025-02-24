@@ -148,7 +148,6 @@ void helperAutoBrakeMenu()
 {
     uMenu helperAutoBrakeMenu("Auto Brake");
 
-    // uMenuItemToggle autoBrakeDeplete(&helperAutoBrakeMenu, "Auto Brake Deplete", "Toggle auto brake deplete on/off - when on, will try to keep brake down", sg_helperAutoBrakeDeplete);
     uMenuItemReal autoBrakeMin(&helperAutoBrakeMenu, "Auto Brake Min", "Minimum value that needs to be reached before un braking", sg_helperAutoBrakeMin, -0.1, 1, 0.05);
     uMenuItemReal autoBrakeMax(&helperAutoBrakeMenu, "Auto Brake Max", "Maximum value that can be reached before braking", sg_helperAutoBrakeMax, 0, 1.1, 0.05);
     uMenuItemToggle autoBrake(&helperAutoBrakeMenu, "Auto Brake", "Toggle auto brake on/off", sg_helperAutoBrake);

@@ -5245,7 +5245,6 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
 
     if (sg_playerSpamProtectionWatch)
     {
-
         bool ableToChat = canChat();
         bool ableToChatCommonPrefix = canChatCommonPrefix(s_orig);
 
@@ -5393,7 +5392,10 @@ static void ConsoleSay_conf(std::istream &s)
     case nSERVER:
 #endif
     {
-        ePlayerNetID *me = sn_consoleUser()->netPlayer;
+        ePlayerNetID *me;
+        
+        if (sn_consoleUser() && sn_consoleUser()->netPlayer)
+            me = sn_consoleUser()->netPlayer;
 
         if (!me)
             me = se_GetLocalPlayer();
@@ -5422,7 +5424,10 @@ static void ConsoleSay_conf(std::istream &s)
 #endif
     default:
     {
-        ePlayerNetID *me = sn_consoleUser()->netPlayer;
+        ePlayerNetID *me;
+        
+        if (sn_consoleUser() && sn_consoleUser()->netPlayer)
+            me = sn_consoleUser()->netPlayer;
 
         if (!me)
             me = se_GetLocalPlayer();
@@ -6315,6 +6320,12 @@ static nSettingItem<bool> se_allowControlDuringChatConf("ALLOW_CONTROL_DURING_CH
 
 uActionPlayer se_toggleSpectator("TOGGLE_SPECTATOR", -7);
 
+static bool se_instantChatsEnabled = true;
+static tConfItem<bool> se_instantChatsEnabledConf("INSTANT_CHAT_ENABLED", se_instantChatsEnabled);
+
+static bool se_instantChatsCommandsOnly = false;
+static tConfItem<bool> se_instantChatsCommandsOnlyConf("INSTANT_CHAT_COMMANDS_ONLY", se_instantChatsCommandsOnly);
+
 bool ePlayer::Act(uAction *act, REAL x)
 {
     eGameObject *object = NULL;
@@ -6351,51 +6362,59 @@ bool ePlayer::Act(uAction *act, REAL x)
         {
             int i;
             uActionPlayer *pact = reinterpret_cast<uActionPlayer *>(act);
-            for (i = MAX_INSTANT_CHAT - 1; i >= 0; i--)
+            
+            if (se_instantChatsEnabled)
             {
-                uActionPlayer *pcompare = se_instantChatAction[i];
-                if (pact == pcompare && x >= 0)
+                for (i = MAX_INSTANT_CHAT - 1; i >= 0; i--)
                 {
-                    for (int j = se_PlayerNetIDs.Len() - 1; j >= 0; j--)
+                    if (se_instantChatsCommandsOnly && instantChatString[i][0] != '/') 
+                        continue;
+                
+                    uActionPlayer *pcompare = se_instantChatAction[i];
+
+                    if (pact == pcompare && x >= 0)
                     {
-                        if (se_PlayerNetIDs(j)->pID == ID())
+                        for (int j = se_PlayerNetIDs.Len() - 1; j >= 0; j--)
                         {
-                            tString say = instantChatString[i];
-                            bool sendImmediately = true;
-                            if (say.Len() > 2 && say[say.Len() - 2] == '\\')
+                            if (se_PlayerNetIDs(j)->pID == ID())
                             {
-                                // cut away trailing slash and note for later
-                                // that the message should not be sent immediately.
-                                say = say.SubStr(0, say.Len() - 2);
-                                sendImmediately = false;
-                            }
+                                tString say = instantChatString[i];
+                                bool sendImmediately = true;
+                                if (say.Len() > 2 && say[say.Len() - 2] == '\\')
+                                {
+                                    // cut away trailing slash and note for later
+                                    // that the message should not be sent immediately.
+                                    say = say.SubStr(0, say.Len() - 2);
+                                    sendImmediately = false;
+                                }
 
-                            if (se_chatter == this)
-                            {
-                                if (!se_displayScoresDuringChat)
-                                    se_BlockScores = true;
+                                if (se_chatter == this)
+                                {
+                                    if (!se_displayScoresDuringChat)
+                                        se_BlockScores = true;
+                                    else
+                                        se_BlockScores = false;
+
+                                    // a chat is already active, insert the chat string
+                                    throw eChatInsertionCommand(say);
+                                }
                                 else
+                                {
+                                    if (sendImmediately)
+                                    {
+                                        // fire out chat string immediately
+                                        se_PlayerNetIDs(j)->Chat(say);
+                                    }
+                                    else
+                                    {
+                                        // chat with instant chat string as template
+                                        chat(this, say);
+                                    }
+
                                     se_BlockScores = false;
-
-                                // a chat is already active, insert the chat string
-                                throw eChatInsertionCommand(say);
-                            }
-                            else
-                            {
-                                if (sendImmediately)
-                                {
-                                    // fire out chat string immediately
-                                    se_PlayerNetIDs(j)->Chat(say);
                                 }
-                                else
-                                {
-                                    // chat with instant chat string as template
-                                    chat(this, say);
-                                }
-
-                                se_BlockScores = false;
+                                return true;
                             }
-                            return true;
                         }
                     }
                 }
@@ -10083,15 +10102,15 @@ static int ticksPerColor = 100;
 
 
 std::vector<std::pair<std::string, std::string>> crossfadePresetsValueVector = {
-    {"1", "Fade between Red -> Purple -> Green -> Orange -> Blue"},
-    {"2", "Fade between Red -> Green -> Blue"},
-    {"3", "A smooth gradient between shades of blue"},
-    {"4", "A rainbow cycle with smooth transitions"},
-    {"5", "A gradient between warm and cold colors"},
-    {"6", "Pastel colors cycling"},
-    {"7", "A gradient of purple shades"},
-    {"8", "Neon colors cycling"},
-    {"9", "A gradient of green shades"},
+    {"1",  "Fade between Red -> Purple -> Green -> Orange -> Blue"},
+    {"2",  "Fade between Red -> Green -> Blue"},
+    {"3",  "A smooth gradient between shades of blue"},
+    {"4",  "A rainbow cycle with smooth transitions"},
+    {"5",  "A gradient between warm and cold colors"},
+    {"6",  "Pastel colors cycling"},
+    {"7",  "A gradient of purple shades"},
+    {"8",  "Neon colors cycling"},
+    {"9",  "A gradient of green shades"},
     {"10", "A gradient between red and blue"},
     {"11", "Monochrome cycling"},
     {"12", "Ocean colors cycling"},

@@ -624,7 +624,6 @@ public:
                                 tOutput o;
                                 o.SetTemplateParameter(1, title);
                                 o.SetTemplateParameter(2,  getFormatedValueMapValue(tString::ConvertToTString(*target)));
-
                                 o.SetTemplateParameter(3,  getFormatedValueMapValue(tString::ConvertToTString(dummy)));
                                 o << "$config_value_changed";
                                 con << o;
@@ -858,8 +857,8 @@ class TempConfItemManager
 
 };
 
-void SymLinkedCommandsLoader();
-bool SymLinkedCommandRunnertStr(tString &input);
-void SymLinkedCommandRunner(std::istream& input);
+void CommandShortcutLoader();
+bool CommandShortcutRunnerStr(tString &input);
+void CommandShortcutRunner(std::istream& input);
 #endif
 

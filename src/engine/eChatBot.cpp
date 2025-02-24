@@ -2389,9 +2389,9 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, b
         }
         else if (eventTrigger)
             gHelperUtility::Debug("eChatBot", "No trigger set for '" + inputMessage.stdString() + "' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
-        else if (bot.Messager()->Params().abortOutput && bot.Messager()->Params().matchFound)
+        else if (bot.Messager()->Params().matchFound)
             gHelperUtility::Debug("eChatBot", "Aborting output..");
-        else if (!bot.Messager()->Params().matchFound)
+        else 
             gHelperUtility::Debug("eChatBot", "No match found..");
 
         // If function, no need for multiple players
@@ -3092,9 +3092,8 @@ static void ListChatTriggers(std::istream &s)
             for (const auto &response : responses)
             {
                 if (!combinedResponses.empty())
-                {
                     combinedResponses += ";";
-                }
+                    
                 combinedResponses += response;
             }
 

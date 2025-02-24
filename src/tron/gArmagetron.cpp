@@ -710,7 +710,7 @@ int main(int argc, char **argv)
 
         st_LoadConfig();
         LoadChatCommandConfCommands();
-        SymLinkedCommandsLoader();
+        CommandShortcutLoader();
 
         if (sn_updateVersionOverrideValue >= 0)
         {

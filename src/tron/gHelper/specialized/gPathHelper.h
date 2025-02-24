@@ -35,6 +35,9 @@ public:
 
     void Activate(gHelperData &data);
 
+    tColoredString ModeString();
+    REAL DistanceToTarget();
+
     static gPathHelper &Get(gHelper &helper, gCycle &owner);
 
 private:

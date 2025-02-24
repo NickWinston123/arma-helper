@@ -298,10 +298,8 @@ bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<t
         return true;
     }
 
-    if (SymLinkedCommandRunnertStr(commandNameUpper))
-        return true;
-
-    return false;
+    sn_consoleUser(player);
+    return CommandShortcutRunnerStr(commandNameUpper);
 }
 
 bool MsgCommand::execute(tString args)
@@ -363,6 +361,7 @@ bool ConsoleCommand::execute(tString args)
     }
     else
     {
+        sn_consoleUser(player);
         std::stringstream s(static_cast<char const *>(args));
         tConfItemBase::LoadAll(s);
     }

@@ -49,6 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tron/gHelper/gHelperUtilities.h"
 #include <vector>
 #include <string.h>
+#include "eChatCommands.h"
 
 #ifndef WIN32
 #include <signal.h>
@@ -1475,7 +1476,7 @@ void tConfItemBase::DocAll()
     undocumented << "##############################################################################\n"
                  << "#                                UNDOCUMENTED                                #\n"
                  << "##############################################################################\n";
-        
+
     for(tConfItemMap::iterator iter = confmap.begin(); iter != confmap.end() ; ++iter)
     {
         tConfItemBase * ci = (*iter).second;
@@ -1484,7 +1485,7 @@ void tConfItemBase::DocAll()
         tString line;
         line << ci->title;
         line.SetPos( 30, false );
-        
+
         tString undocumentedHelpStr;
 
         undocumentedHelpStr << line.ToLower().StripWhitespace() << "_help";
@@ -1499,11 +1500,14 @@ void tConfItemBase::DocAll()
         }
     }
     tString output;
-    output << documented 
+    output << documented
            << "\n\n\n\n"
            << undocumented;
 
-    fileManager.Write(output);
+    if (fileManager.Write(output))
+        con << "config_all.cfg generated and placed in the var directory.\n";
+    else 
+        con << "Failed to generate config_all.cfg.\n";
 }
 
 static void sg_ListAllCommandsSplitByDocumented(std::istream &s)
@@ -2385,230 +2389,270 @@ void TempConfItemManager::DeleteConfitem(const tString& command)
 }
 
 
-tString se_symLinkedCommands("");
-static tConfItem<tString> se_symLinkedCommandsConf("SYM_LINKED_COMMANDS_STORED_COMMAND_STR", se_symLinkedCommands);
-static TempConfItemManager *symLinkedConfItems = NULL;
-std::unordered_map<tString, tString> symLinkedCommands;
+tString se_commandShortCutStorageFile("commandShortcut.txt");
+static tConfItem<tString> se_commandShortCutStorageFileConf("COMMAND_SHORTCUT_STORAGE_FILE", se_commandShortCutStorageFile);
 
-bool SymLinkedCommandRunnerCore(tString commandStr)
+void RemoveCommandShortcut(const tString &cmd);
+
+static TempConfItemManager *cmdShortcutsConfItems = NULL;
+std::unordered_map<tString, tString> se_commandShortcuts;
+
+static bool SaveCommandShortcutsToFile()
 {
-    if (symLinkedCommands.find(commandStr) != symLinkedCommands.end())
-    {
-        tString action = symLinkedCommands[commandStr];
+    FileManager fileManager(se_commandShortCutStorageFile, tDirectories::Config());
+    fileManager.Clear(false);
 
+    int i = 0;
+    int total = se_commandShortcuts.size();
+
+    tString allCmds;
+    for (auto &kv : se_commandShortcuts)
+    {
+        allCmds << kv.first 
+                << "," 
+                << kv.second;
+        
+        i++;
+        if (i < total)
+            allCmds << "\n";
+    }
+
+    fileManager.Write(allCmds);
+
+    if (se_commandShortcuts.size() > 0)
+        con << "Saved " 
+            << se_commandShortcuts.size() 
+            << " command shortcut(s) to file.\n";
+    return true;
+}
+
+bool CommandShortcutRunnerCore(tString commandStr, tString addtlInput)
+{
+    if (se_commandShortcuts.find(commandStr) != se_commandShortcuts.end())
+    {
+        tString action = se_commandShortcuts[commandStr];
+        action << " " << addtlInput;
         tCurrentAccessLevel level(tAccessLevel_Owner, true);
         std::stringstream s(action.stdString());
         tConfItemBase::LoadAll(s);
         return true;
     }
+
     return false;
 }
 
-void SymLinkedCommandRunner(std::istream& input)
+void CommandShortcutRunner(std::istream& input)
 {
-    tString commandStr;
-    commandStr.ReadLine(input, true);
-    SymLinkedCommandRunnerCore(commandStr);
+    tString addtlInput;
+    addtlInput.ReadLine(input, true);
+    CommandShortcutRunnerCore(tConfItemBase::lastLoadCommandName, addtlInput);
 }
 
-bool SymLinkedCommandRunnertStr(tString &input)
+bool CommandShortcutRunnerStr(tString &input)
 {
-    return SymLinkedCommandRunnerCore(input);
+    tArray<tString> parts = input.Split(" ");
+    if (parts.Len() == 0) 
+        return false;
+
+    tString commandStr = parts[0];
+
+    tString addtlInput;
+    for (int i = 1; i < parts.Len(); i++)
+    {
+        if (!addtlInput.empty()) 
+            addtlInput << " ";
+        addtlInput << parts[i];
+    }
+
+    return CommandShortcutRunnerCore(commandStr, addtlInput);
 }
 
-void AddSymLinkedCommand(const tString& originalCommand, const tString& action)
+void AddCommandShortcut(const tString &originalCommand, const tString &action)
 {
+    if (originalCommand.empty() || action.empty())
+    {
+        con << "For adding a command shortcut, you must provide both command name and the command to be executed.\n";
+        return;
+    }
+
     tString command(originalCommand.ToUpper());
 
-    if(symLinkedCommands.find(command) != symLinkedCommands.end())
+    if (command[0] == '/') 
     {
-        con << "Command " << command << " already exists. Updating the action...\n";
-
-        tArray<tString> entries = se_symLinkedCommands.Split(";");
-        se_symLinkedCommands.Clear();
-        for (int i = 0; i < entries.Len(); ++i)
+        auto commandFactories = CommandFactory();
+        auto chatcmdFactory   = commandFactories.find(command.ToLower());
+        if (chatcmdFactory != commandFactories.end())
         {
-            tArray<tString> entry = entries[i].Split(",");
-            if (entry.Len() == 2)
-            {
-                tString storedCommand = entry[0].TrimWhitespace().ToUpper();
-                if (storedCommand != command)
-                {
-                    if (!se_symLinkedCommands.empty())
-                        se_symLinkedCommands += ";";
-                    se_symLinkedCommands << entries[i];
-                }
-            }
-        }
-
-        if (symLinkedConfItems)
-            symLinkedConfItems->DeleteConfitem(tString(command));
-    }
-    else if (!se_symLinkedCommands.empty())
-    {
-        se_symLinkedCommands += ";";
-    }
-
-    symLinkedCommands[command] = action;
-    tString replacedAct(action);
-    tString processedAction = replacedAct.Replace("\n", "\\\n");
-    se_symLinkedCommands << command << "," << processedAction;
-
-    if (symLinkedConfItems == nullptr)
-    {
-        symLinkedConfItems = new TempConfItemManager();
-    }
-    symLinkedConfItems->StoreConfitem(new tConfItemFunc(tString(command), &SymLinkedCommandRunner));
-}
-
-
-void RemoveSymLinkedCommand(const tString& command)
-{
-    tString upperCommand(command.ToUpper());
-
-    symLinkedCommands.erase(upperCommand);
-
-    tArray<tString> entries = se_symLinkedCommands.Split(";");
-    se_symLinkedCommands.Clear();
-    for (int i = 0; i < entries.Len(); ++i)
-    {
-        tArray<tString> entry = entries[i].Split(",");
-        if (entry.Len() == 2)
-        {
-            tString storedCommand = entry[0].TrimWhitespace().ToUpper();
-            if (storedCommand != upperCommand)
-            {
-                if (!se_symLinkedCommands.empty())
-                    se_symLinkedCommands += ";";
-                se_symLinkedCommands << entries[i];
-            }
+            con << "There is already a chat command with the name '" << command << "'.\n";
+            return;
         }
     }
 
-    if (symLinkedConfItems)
-        symLinkedConfItems->DeleteConfitem(tString(upperCommand));
+    if (se_commandShortcuts.find(command) != se_commandShortcuts.end())
+        RemoveCommandShortcut(command);
+
+    se_commandShortcuts[command] = action;
+
+    if (!cmdShortcutsConfItems)
+        cmdShortcutsConfItems = new TempConfItemManager();
+
+    cmdShortcutsConfItems->StoreConfitem(new tConfItemFunc(command, &CommandShortcutRunner));
+
+    SaveCommandShortcutsToFile();
+
+    con << "Added command shortcut: '" 
+        << command 
+        << "' -> '" 
+        << action 
+        << "'\n";
 }
 
-void ClearSymLinkedCommands()
+void RemoveCommandShortcut(const tString &cmd)
 {
-    symLinkedCommands.clear();
-    se_symLinkedCommands.Clear();
-    symLinkedConfItems->DeleteConfitems();
+    tString upperCmd(cmd.ToUpper());
+    auto it = se_commandShortcuts.find(upperCmd);
+    if (it == se_commandShortcuts.end())
+    {
+        con << "No command shortcut found for: '" 
+            << upperCmd 
+            << "'\n";
+        return;
+    }
+
+    se_commandShortcuts.erase(it);
+
+    if (cmdShortcutsConfItems)
+        cmdShortcutsConfItems->DeleteConfitem(upperCmd);
+
+    SaveCommandShortcutsToFile();
+
+    con << "Removed command shortcut for: '" 
+        << upperCmd 
+        << "'\n";
 }
-static void SymLinkCommandManager(std::istream &s)
+
+void ClearCommandShortcut()
+{
+    se_commandShortcuts.clear();
+
+    if (cmdShortcutsConfItems)
+        cmdShortcutsConfItems->DeleteConfitems();
+
+    FileManager fileManager(se_commandShortCutStorageFile, tDirectories::Config());
+    fileManager.Clear(false);
+
+    con << "Cleared all command shortcuts.\n";
+}
+
+void ListCommandShortcutCommands()
+{
+    con << "List of command shortcuts:\n";
+
+    if (se_commandShortcuts.empty())
+    {
+        con << " No command shortcuts found.\n";
+        return;
+    }
+
+    int count = 0;
+    for (const auto& pair : se_commandShortcuts)
+    {
+        count++;
+        tString thisAction(pair.second);
+        thisAction = thisAction.Replace("\n","\\n");
+        con << " " 
+            << count 
+            << ") " 
+            << pair.first 
+            << " -> " 
+            << thisAction 
+            << "\n";
+    }
+}
+
+static void ComandShortcutManager(std::istream &s)
 {
     tString params;
     params.ReadLine(s, true);
 
     if (params.empty())
     {
-        con << "Usage for adding symbolic link: SYM_LINK_MANAGE ADD <commandName> <command to be executed>\n";
-        con << "Usage for removing symbolic link: SYM_LINK_MANAGE REMOVE <commandName>\n";
-        con << "Usage for listing all symbolic links: SYM_LINK_MANAGE LIST\n";
+        con << "Usage for adding command shortcuts:        COMMAND_SHORTCUT_MANAGER ADD <commandName> <command to be executed>\n"
+            << "Usage for removing command shortcuts:      COMMAND_SHORTCUT_MANAGER REMOVE <commandName>\n"
+            << "Usage for listing all command shortcuts:   COMMAND_SHORTCUT_MANAGER LIST\n"
+            << "Usage for clearing all command shortcuts:  COMMAND_SHORTCUT_MANAGER CLEAR\n"
+            << "Command shortcuts beginning with '/' can be used in both chat and the console.\n";
 
-        con << "List of symbolic links:\n";
-        for (const auto& pair : symLinkedCommands)
-        {
-            con << pair.first << " -> " << pair.second << "\n";
-        }
+        ListCommandShortcutCommands();
         return;
     }
 
     int pos = 0;
-    tString action = params.ExtractNonBlankSubString(pos).TrimWhitespace();
+    tString action = params.ExtractNonBlankSubString(pos).TrimWhitespace().ToLower();
 
-    if (action.ToLower() == "add")
+    if (action == "add")
     {
-        tString commandName = params.ExtractNonBlankSubString(pos).TrimWhitespace().ToUpper();
+        tString commandName      = params.ExtractNonBlankSubString(pos).TrimWhitespace().ToUpper();
         tString commandToExecute = params.SubStr(pos).TrimWhitespace();
-
-        if (commandName.empty() || commandToExecute.empty())
-        {
-            con << "For adding a symbolic link, please provide both commandName and the command to be executed.\n";
-            return;
-        }
-
-        AddSymLinkedCommand(commandName, commandToExecute);
-        con << "Added symbolic link: '" << commandName << "' -> '" << commandToExecute.Replace("\n","\\n") << "'\n";
+        AddCommandShortcut(commandName, commandToExecute);
     }
-    else if (action.ToLower() == "remove")
+    else if (action == "remove")
     {
         tString commandName = params.ExtractNonBlankSubString(pos).TrimWhitespace().ToUpper();
-
-        if (symLinkedCommands.find(commandName) == symLinkedCommands.end())
-        {
-            con << "No symbolic link found for: '" << commandName << "'\n";
-            return;
-        }
-        RemoveSymLinkedCommand(commandName);
-        con << "Removed symbolic link for: '" << commandName << "'\n";
+        RemoveCommandShortcut(commandName);
     }
-    else if (action.ToLower() == "list")
+    else if (action == "list")
     {
-        if (symLinkedCommands.empty())
-        {
-            con << "No symbolic links found.\n";
-            return;
-        }
-
-        con << "List of symbolic links:\n";
-        for (const auto& pair : symLinkedCommands)
-        {
-            tString thisAction(pair.second);
-            thisAction = thisAction.Replace("\n","\\n");
-            con << pair.first << " -> " << thisAction << "\n";
-        }
+        ListCommandShortcutCommands();
     }
-    else if (action.ToLower() == "clear")
+    else if (action == "clear")
     {
-        ClearSymLinkedCommands();
-        con << "Cleared all symbolic links.\n";
+        ClearCommandShortcut();
     }
     else
     {
-        con << "Unknown action: '" << action << "'. Valid actions are ADD, REMOVE, CLEAR, LIST.\n";
+        con << "Unknown action: '" 
+            << action 
+            << "'. Valid actions are ADD, REMOVE, LIST, CLEAR.\n";
     }
 }
-static tConfItemFunc SymLinkCommandManagerConf("SYM_LINK_MANAGE", &SymLinkCommandManager);
+static tConfItemFunc ComandShortcutManagerConf("COMMAND_SHORTCUT_MANAGER", &ComandShortcutManager);
 
-void SymLinkedCommandsLoader()
+void CommandShortcutLoader()
 {
-    if (symLinkedConfItems == nullptr)
-        symLinkedConfItems = new TempConfItemManager();
+    if (!cmdShortcutsConfItems)
+        cmdShortcutsConfItems = new TempConfItemManager();
+    cmdShortcutsConfItems->DeleteConfitems();
 
-    if (!symLinkedConfItems)
-        return;
+    se_commandShortcuts.clear();
 
-    symLinkedConfItems->DeleteConfitems();
+    FileManager fileManager(se_commandShortCutStorageFile, tDirectories::Config());
+    tArray<tString> lines = fileManager.Load();
 
-    if (se_symLinkedCommands.empty())
-        return;
-
-    tArray<tString> symLinkedEntries = se_symLinkedCommands.Split(";");
-
-    for (int i = 0; i < symLinkedEntries.Len(); ++i)
+    for (int i = 0; i < lines.Len(); i++)
     {
-        tArray<tString> entry = symLinkedEntries[i].Split(",");
-        if (entry.Len() == 2)
+        tString line = lines[i].TrimWhitespace();
+        // "COMMAND,ACTION"
+        tArray<tString> parts = line.Split(",");
+        if (parts.Len() == 2)
         {
-            tString action = entry[1].TrimWhitespace();
-            tString command = entry[0].TrimWhitespace().ToUpper();
+            tString cmd    = parts[0].ToUpper().TrimWhitespace();
+            tString action = parts[1].TrimWhitespace();
 
-            if(symLinkedCommands.find(command) == symLinkedCommands.end())
-            {
-                symLinkedCommands[command] = action;
-
-                symLinkedConfItems->StoreConfitem(new tConfItemFunc(tString(command), &SymLinkedCommandRunner));
-            }
-            else
-            {
-                con << "DUPLICATE COMMAND AT INDEX " << i << ": " << command << ". Skipping...\n";
-            }
+            se_commandShortcuts[cmd] = action;
+            cmdShortcutsConfItems->StoreConfitem(new tConfItemFunc(cmd, &CommandShortcutRunner));
         }
         else
         {
-            con << "MALFORMED INDEX AT " << i << ": " << symLinkedEntries[i] << "\n";
+            con << "Malformed command shortcut line: '" 
+                << line 
+                << "'\n";
         }
     }
+
+    con << "Loaded " 
+        << se_commandShortcuts.size() 
+        << " command shortcut commands.\n";
 }
+
 

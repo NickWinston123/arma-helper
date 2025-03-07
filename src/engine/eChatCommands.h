@@ -19,42 +19,9 @@ extern tString se_chatCommandsThemeMain;
 extern tString se_chatCommandsThemeItem;
 extern tString se_chatCommandsThemeError;
 
-extern tString se_consoleCommand;
-extern tString se_colorsCommand;
-extern tString se_infoCommand;
-extern tString se_rgbCommand;
-extern tString se_colorVarFile;
-extern tString se_browserCommand;
-extern tString se_speakCommand;
-extern tString se_rebuildCommand;
-extern tString se_watchCommand;
-extern tString se_activeStatusCommand;
-extern tString se_reverseCommand;
-extern tString se_spectateCommand;
-extern tString se_joinCommand;
-extern tString se_searchCommand;
 extern tString se_nameSpeakCommand;
 extern int se_nameSpeakCommandInterval;
-extern tString se_respawnCommand;
-extern tString se_rebuildGridCommand;
-extern tString se_saveConfigCommand;
-extern tString se_replyCommand;
-extern tString se_nicknameCommand;
-extern tString se_statsCommand;
-extern tString se_reconnectCommand;
-extern tString se_calculateCommand;
-extern tString se_updateCommand;
-extern tString se_encryptCommand;
 extern bool se_encryptCommandWatch;
-extern bool se_encryptCommandWatchFeedback;
-extern int se_encryptCommandWatchValidateWindow;
-extern int se_encryptCommandLength;
-extern tString se_encryptCommandPrefix;
-extern tString se_voteCommand;
-extern tString se_renameCommand;
-extern tString se_leaveCommand;
-extern tString se_quitCommand;
-extern int se_quitCommandTime;
 
 
 class eChatCommand

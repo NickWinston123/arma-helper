@@ -343,6 +343,7 @@
 		<Unit filename="src/ui/uInputQueue.h" />
 		<Unit filename="src/ui/uMenu.cpp" />
 		<Unit filename="src/ui/uMenu.h" />
+		<Unit filename="src/ui/uDynamicMenu.h" />
 		<Unit filename="src/win32/config.h" />
 		<Unit filename="src/win32/dirent.c">
 			<Option compilerVar="CC" />

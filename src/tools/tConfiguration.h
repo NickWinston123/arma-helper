@@ -267,15 +267,17 @@ public:
     tConfItemBase(const char *title, const std::vector<std::pair<std::string, std::string>>& initValueMap = {});
 
     virtual ~tConfItemBase();
-    const std::vector<std::pair<std::string, std::string>>& GetValueMap() const {
+    const std::vector<std::pair<std::string, std::string>>& GetValueMap() const 
+    {
         return valueMap;
     }
 
-    std::string GetValueMapValueForKey(const std::string& key) const {
-        for (const auto& pair : valueMap) {
-            if (pair.first == key) {
+    std::string GetValueMapValueForKey(const std::string& key) const 
+    {
+        for (const auto& pair : valueMap) 
+        {
+            if (pair.first == key) 
                 return pair.second;
-            }
         }
         return "";
     }
@@ -288,37 +290,36 @@ public:
     tString getFormatedValueMapValue(std::string key)
     {
         tString val;
+        val << key;
+
         tString keyValue;
         keyValue << GetValueMapValueForKey(key);
         if (!keyValue.empty())
         {
-            val << key
-                << " ("
+            val << " ("
                 << keyValue
                 << ")";
-        }
-        else
-        {
-            val << key;
         }
 
         return val;
     }
 
-    void PrintValueMap(std::string currentVal = "") const {
+    void PrintValueMap(std::string currentVal = "") const 
+    {
         tString printedMap;
-        for (const auto& pair : valueMap) {
-            if (!currentVal.empty() && pair.first == currentVal) {
+        for (const auto& pair : valueMap) 
+        {
+            if (!currentVal.empty() && pair.first == currentVal) 
                 printedMap << "* " << pair.first << ": " << pair.second << "\n";
-            } else {
+            else
                 printedMap << pair.first << ": " << pair.second << "\n";
-            }
         }
 
         con << printedMap;
     }
 
-    void SetValueMap(const std::vector<std::pair<std::string, std::string>>& newValueMap) {
+    void SetValueMap(const std::vector<std::pair<std::string, std::string>>& newValueMap) 
+    {
         valueMap = newValueMap;
     }
 
@@ -349,7 +350,7 @@ public:
     static tConfItemBase *GetConfigItem(tString const &name);
     static tConfItemBase *GetConfigItem(std::string const &name);
     static void SetAllAccessLevel(int newLevel);
-
+    static void FindConfigItems(const tString &word, std::deque<tString> &results);
     static void DownloadSettings_Go(nMessage &m);
     static void DownloadConfig_Go(nMessage &m);
     static void DownloadSettings_To(int peer);
@@ -599,7 +600,8 @@ public:
                 o << "$config_error_read";
                 con << o;
 
-                if (!GetValueMap().empty()) {
+                if (!GetValueMap().empty()) 
+                {
                     con << "Recommended values from value map: \n";
                     PrintValueMap(tString::ConvertToTString(*target).stdString());
                 }

@@ -230,7 +230,7 @@ void gPathHelper::RenderTurn(gHelperData &data)
         }
         else
         { // we have passed it. Make a turn towards it.
-            int lr;
+            int lr = 0;
             REAL side = (target - pos) * owner_.Direction();
 
             std::shared_ptr<gHelperSensor> left = std::make_shared<gHelperSensor>(&owner_, owner_.Position(), LEFT);

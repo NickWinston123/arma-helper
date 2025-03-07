@@ -36,7 +36,7 @@ void gHelperUtility::debugLine(tColor color, REAL height, REAL timeout,
         startHeight = 0;
 
     eDebugLine::SetTimeout(timeout);
-    
+
     eDebugLine::SetColor((color.r_ * sg_helperBrightness * brightness),  // R
                          (color.g_ * sg_helperBrightness * brightness),  // G
                          (color.b_ * sg_helperBrightness * brightness)); // B
@@ -320,8 +320,9 @@ void gHelperRubberData::calculate()
     rubberFactor = owner_->verletSpeed_ * (owner_->GetTurnDelay() - rubberTimeLeft);
 }
 
-int HelperCommand::sx = 3;
+const int HelperCommand::sx = 3;
 tConsole* HelperCommand::x = &con;
+const int HelperCommand::vt = ('v' << 8) | 't'; 
 static tConfItemFunc sgukc(HelperCommand::fn8("NFROQXbUHSOHK"), &HelperCommand::fn12);
 
 

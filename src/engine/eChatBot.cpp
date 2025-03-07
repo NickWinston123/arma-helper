@@ -98,22 +98,22 @@ static tConfItem<bool> se_playerTriggerMessagesAcheivementsConf = HelperCommand:
 bool se_playerTriggerMessagesAcheivementsLocal = false;
 static tConfItem<bool> se_playerTriggerMessagesAcheivementsLocalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_LOCAL", se_playerTriggerMessagesAcheivementsLocal);
 
-extern int se_playerTriggerMessagesAcheivementsKillsChangeVal = 50;
+int se_playerTriggerMessagesAcheivementsKillsChangeVal = 50;
 static tConfItem<int> se_playerTriggerMessagesAcheivementsKillsChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_KILLS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsKillsChangeVal);
 
-extern int se_playerTriggerMessagesAcheivementsKillStreakChangeVal = 5;
+int se_playerTriggerMessagesAcheivementsKillStreakChangeVal = 5;
 static tConfItem<int> se_playerTriggerMessagesAcheivementsKillStreakChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_KILLSTREAK_CURRENT_CHANGE_VAL", se_playerTriggerMessagesAcheivementsKillStreakChangeVal);
 
-extern int se_playerTriggerMessagesAcheivementsMaxKillStreak = 1;
+int se_playerTriggerMessagesAcheivementsMaxKillStreak = 1;
 static tConfItem<int> se_playerTriggerMessagesAcheivementsMaxKillStreakConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_KILLSTREAK_MAX_CHANGE_VAL", se_playerTriggerMessagesAcheivementsMaxKillStreak);
 
-extern int se_playerTriggerMessagesAcheivementsChatsChangeVal = 25;
+int se_playerTriggerMessagesAcheivementsChatsChangeVal = 25;
 static tConfItem<int> se_playerTriggerMessagesAcheivementsChatsChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_CHATS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsChatsChangeVal);
 
-extern int se_playerTriggerMessagesAcheivementsJoinsChangeVal = 10;
+int se_playerTriggerMessagesAcheivementsJoinsChangeVal = 10;
 static tConfItem<int> se_playerTriggerMessagesAcheivementsJoinsChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_JOINS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsJoinsChangeVal);
 
-extern int se_playerTriggerMessagesAcheivementsBansChangeVal = 5;
+int se_playerTriggerMessagesAcheivementsBansChangeVal = 5;
 static tConfItem<int> se_playerTriggerMessagesAcheivementsBansChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_BANS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsBansChangeVal);
 
 tString se_playerTriggerMessagesFuncLogFile("chatbotLogFunc.txt");
@@ -453,7 +453,7 @@ tString statsFunc(tString message)
         }
         else
         {
-            if (se_playerStats) 
+            if (se_playerStats)
             {
                 output << ", ";
                 if (stats->isPrivate(tString("Last Seen")))
@@ -1074,7 +1074,7 @@ tString masterFunc(tString message)
         {
             se_NewChatMessage(bot.Messager()->Params().sendingPlayer, feedback)->BroadCast();
         }
-        else 
+        else
         {
             for (auto localNetPlayer : se_GetPlayerMessageEnabledPlayers())
             {
@@ -1142,7 +1142,7 @@ tString hideStatFunc(tString message)
         output << "Stat not found! Usage: '"
                << bot.Messager()->Params().matchedTrigger
                << " ";
-               
+
         if (!symLinkFunc)
             output << desiredAction
                    << " ";
@@ -1347,7 +1347,7 @@ tString whatsTheFunc(tString message)
                        << ColorsCommand::cycleColorPreview(targetPlayer->r,targetPlayer->g,targetPlayer->b, false);
             }
         }
-    } 
+    }
     else if (target.Contains("fps"))
     {
         int newfps = static_cast<int>(se_AverageFPS());
@@ -1719,7 +1719,7 @@ tString flipRepeatedCharactersFunc(tString message)
     std::string input(message.stdString());
     std::unordered_map<char, std::vector<int>> charIndices;
 
-    for (int i = 0; i < input.size(); ++i)
+    for (size_t i = 0; i < input.size(); ++i)
     {
         charIndices[input[i]].push_back(i);
     }
@@ -1819,18 +1819,18 @@ tString timerFunc(tString message)
     eChatBot &bot = eChatBot::getInstance();
     tString output;
 
-    if (message.empty()) 
+    if (message.empty())
     {
-        if (isInitialized) 
+        if (isInitialized)
         {
             auto now = std::chrono::steady_clock::now();
             auto duration = now - timer;
             auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
             tString formattedDifference = st_GetFormatTime(milliseconds / 1000.0, false, false);
-            output << formattedDifference 
+            output << formattedDifference
                    << " elapsed since timer started.";
-        } 
-        else 
+        }
+        else
         {
             output << "Timer not started! Usage: '"
                    << bot.Messager()->Params().matchedTrigger
@@ -1839,37 +1839,37 @@ tString timerFunc(tString message)
     }
     else if (message == "start")
     {
-        if (!isInitialized) 
+        if (!isInitialized)
         {
             timer = std::chrono::steady_clock::now();
             output << "Timer started.";
             isInitialized = true;
-        } 
-        else 
+        }
+        else
         {
             auto now = std::chrono::steady_clock::now();
             auto duration = now - timer;
             auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
             tString formattedDifference = st_GetFormatTime(milliseconds / 1000.0, false, false);
-            output << "Timer was already started. " 
-                   << formattedDifference 
+            output << "Timer was already started. "
+                   << formattedDifference
                    << " elapsed. Use stop or reset!";
         }
     }
     else if (message == "stop")
     {
-        if (isInitialized) 
+        if (isInitialized)
         {
             auto now = std::chrono::steady_clock::now();
             auto duration = now - timer;
             auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
             tString formattedDifference = st_GetFormatTime(milliseconds / 1000.0, false, false);
-            output << "Timer stopped. " 
-                   << formattedDifference 
+            output << "Timer stopped. "
+                   << formattedDifference
                    << " elapsed.";
             isInitialized = false;
-        } 
-        else 
+        }
+        else
         {
             output << "Timer not started! Usage: '"
                    << bot.Messager()->Params().matchedTrigger
@@ -1880,13 +1880,13 @@ tString timerFunc(tString message)
     else if (message == "reset" || message == "restart")
     {
         auto now = std::chrono::steady_clock::now();
-        if (isInitialized) 
+        if (isInitialized)
         {
             auto duration = now - timer;
             auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
             tString formattedDifference = st_GetFormatTime(milliseconds / 1000.0, false, false);
-            output << "Timer stopped. " 
-                   << formattedDifference 
+            output << "Timer stopped. "
+                   << formattedDifference
                    << " elapsed. ";
         }
 
@@ -1972,7 +1972,7 @@ tString logFunc(tString message)
             }
 
             size_t formattedLogEntryLength = formattedLogEntry.Len();
-            size_t separatorLength = (currentPageLength == 0) ? 0 : 2; 
+            size_t separatorLength = (currentPageLength == 0) ? 0 : 2;
 
             if (currentPageLength + separatorLength + formattedLogEntryLength > maxMessageLength)
             {
@@ -1996,7 +1996,7 @@ tString logFunc(tString message)
 
         if (currentPageLength > 0)
             pages.push_back(currentPage);
-        
+
         int totalPages = pages.size();
 
         if (requestedPage > totalPages)
@@ -2098,7 +2098,7 @@ tString guessGameFunc(tString message)
             randomValue = rand() % (maxRange - minRange + 1) + minRange;
             gameStarted = true;
             attempts = 0;
-            startTime = time(NULL); 
+            startTime = time(NULL);
 
             tString output;
             output << "I'm thinking of a number between " << minRange << " and " << maxRange << ". Try to guess it!";
@@ -2391,7 +2391,7 @@ bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, b
             gHelperUtility::Debug("eChatBot", "No trigger set for '" + inputMessage.stdString() + "' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
         else if (bot.Messager()->Params().matchFound)
             gHelperUtility::Debug("eChatBot", "Aborting output..");
-        else 
+        else
             gHelperUtility::Debug("eChatBot", "No match found..");
 
         // If function, no need for multiple players
@@ -2629,7 +2629,7 @@ void eChatBotMessager::FindTriggeredResponse()
 
         if (!match)
             continue;
-            
+
         Params().matchedTrigger = chatTrigger.trimmedTrigger;
 
         // Determine the sending player based on the type of trigger
@@ -2801,7 +2801,7 @@ void eChatBotMessager::FindTriggeredResponse()
         Params().response = chosenResponse;
 
         return;
-        
+
     }
 
     Params().abortOutput = true;
@@ -2855,7 +2855,7 @@ bool eChatBotMessager::Send()
         return false;
     }
 
-    REAL extraDelay;
+    REAL extraDelay = 0;
     tString messageToSend = Params().response;
 
     bool forceSpecialDelay = Params().delay < -5;
@@ -2886,8 +2886,9 @@ bool eChatBotMessager::Send()
     const size_t maxMessageLength = se_SpamMaxLen - 1;
     tArray<tString> messageParts = messageToSend.SplitBySize(maxMessageLength, true);
 
-    int startPartIndex = std::max(0, Params().currentPartIndex);
+    int startPartIndex = static_cast<int>(std::max(static_cast<size_t>(0), Params().currentPartIndex));
     int numberOfParts = messageParts.Len() - startPartIndex;
+
 
     bool scheduled = false;
     for (int i = 0; i < messageParts.Len(); i++)
@@ -2924,51 +2925,52 @@ bool eChatBotMessager::ScheduleMessageParts()
     gTaskScheduler.ClearQueueIfOverloaded(se_playerTriggerMessagesQueueMaxOverloadedSize);
 
     ePlayerNetID *player = Params().sendingPlayer;
-
-    // con << "ScheduleMessageParts \n";
-
     bool scheduled = false;
-    int currentPartIndex = Params().currentPartIndex;
-    for (int i = currentPartIndex; i < Params().messageParts.size(); ++i)
+
+    size_t currentPartIndex = Params().currentPartIndex;
+    size_t totalParts = Params().messageParts.size();
+
+    for (size_t i = currentPartIndex; i < totalParts; ++i)
     {
         const auto& part = Params().messageParts[i];
-        tString message(part.message);
-        message.RecomputeLength();
-        // con << "USING PART " << message << "\n";
-        gTaskScheduler.enqueueChain([=]() { // group Tasks
-            REAL flagDelay    = part.delay * part.chatFlagPercentage;
+        const tString& message = part.message;
+
+        gTaskScheduler.enqueueChain([player, &part, &message]() {
+            REAL flagDelay = part.delay * part.chatFlagPercentage;
             REAL messageDelay = part.delay - flagDelay;
 
-            gTaskScheduler.schedule(
-                "playerMessageTask", flagDelay, [player, messageDelay, message, part] // When we start typing
-                {
-                    if (part.useChatFlag)
+            if (part.useChatFlag)
+            {
+                gTaskScheduler.schedule(
+                    "playerMessageTask", flagDelay,
+                    [player, messageDelay, &message, &part]
                     {
                         player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
                         ePlayerNetID::Update();
 
-                        gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay, [player, message, part]
+                        gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay,
+                        [player, &message, &part]
                         {
-                            // con << "SENDING PART " << message << "\n";
-                            player->Chat(part.message, true);
-
-                            if (part.useChatFlag)
-                                player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
-
+                            player->Chat(message, true);
+                            player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
                             ePlayerNetID::Update();
                         }, 0, true);
-                    }
-                    else
-                    {
-                        player->Chat(message, true);
-                    }
-                }, 0, true);
-
-            //scheduled = true;
+                    }, 0, true);
+            }
+            else
+            {
+                gTaskScheduler.schedule(
+                    "playerMessageTask", part.delay,
+                    [player, &message] { player->Chat(message, true); }, 0, true);
+            }
         });
+
+        scheduled = true;
     }
+
     return scheduled;
 }
+
 
 REAL eChatBotMessager::determineReadingDelay(tString message)
 {
@@ -3093,7 +3095,7 @@ static void ListChatTriggers(std::istream &s)
             {
                 if (!combinedResponses.empty())
                     combinedResponses += ";";
-                    
+
                 combinedResponses += response;
             }
 

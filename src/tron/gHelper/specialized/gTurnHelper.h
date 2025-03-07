@@ -61,7 +61,7 @@ public:
                                 bool driveStraight   = false,
                                 bool debug           = false);
 
-    gSurviveData canSurviveTurnDebug(gSurviveData &surviveData, REAL leftHit, REAL rightHit);
+    void canSurviveTurnDebug(gSurviveData &surviveData, REAL leftHit, REAL rightHit);
 
     // convert uActionPlayer to DIR
     static int ActToTurn(uActionPlayer *action);
@@ -79,10 +79,6 @@ public:
     // solve the turn required to escape the situation based on chatbot logic
     // returns a pointer to the gTurnData object that stores the turn data
     gTurnData &getTurn();
-
-    // solve the turn required to escape the situation based on AIBase logic
-    // returns a pointer to the gTurnData object that stores the turn data
-    gTurnData &getTurnAIBase(){};
 
 private:
     // pointer to the gTurnData object that stores the turn data

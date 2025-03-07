@@ -183,105 +183,77 @@ void LoadChatCommandConfCommands()
     }
 }
 
+template<typename... Pairs>
+void registerCommands(std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> &commandFactories, Pairs&&... pairs)
+{
+    (commandFactories.emplace(pairs.first.ToLower(), pairs.second), ...);
+}
 std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> CommandFactory()
 {
     std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> commandFactories;
 
-    auto addCommand = [&commandFactories](const tString &commandName, auto commandFunc)
-    {
-        commandFactories.emplace(commandName.ToLower(), commandFunc);
-    };
+    registerCommands(
+        commandFactories,
+        std::make_pair(se_consoleCommand, []      { return std::make_unique<ConsoleCommand>(); }),
+        std::make_pair(se_colorsCommand, []       { return std::make_unique<ColorsCommand>(); }),
+        std::make_pair(se_infoCommand, []         { return std::make_unique<listPlayerInfoCommand>(); }),
+        std::make_pair(se_rgbCommand, []          { return std::make_unique<RgbCommand>(); }),
+        std::make_pair(se_browserCommand, []      { return std::make_unique<BrowserCommand>(); }),
+        std::make_pair(se_speakCommand, []        { return std::make_unique<SpeakCommand>(); }),
+        std::make_pair(se_watchCommand, []        { return std::make_unique<WatchCommand>(); }),
+        std::make_pair(se_activeStatusCommand, [] { return std::make_unique<ActiveStatusCommand>(); }),
+        std::make_pair(se_reverseCommand, []      { return std::make_unique<ReverseCommand>(); }),
+        std::make_pair(se_spectateCommand, []     { return std::make_unique<SpectateCommand>(); }),
+        std::make_pair(se_joinCommand, []         { return std::make_unique<JoinCommand>(); }),
+        std::make_pair(se_searchCommand, []       { return std::make_unique<SearchCommand>(); }),
+        std::make_pair(se_respawnCommand, []      { return std::make_unique<RespawnCommand>(); }),
+        std::make_pair(se_saveConfigCommand, []   { return std::make_unique<SaveConfigCommand>(); }),
+        std::make_pair(se_replyCommand, []        { return std::make_unique<ReplyCommand>(); }),
+        std::make_pair(se_nicknameCommand, []     { return std::make_unique<NicknameCommand>(); }),
+        std::make_pair(se_statsCommand, []        { return std::make_unique<StatsCommand>(); }),
+        std::make_pair(se_reconnectCommand, []    { return std::make_unique<ReconnectCommand>(); }),
+        std::make_pair(se_calculateCommand, []    { return std::make_unique<CalculateCommand>(); }),
+        std::make_pair(se_updateCommand, []       { return std::make_unique<UpdateCommand>(); }),
+        std::make_pair(se_voteCommand, []         { return std::make_unique<VoteCommand>(); }),
+        std::make_pair(se_renameCommand, []       { return std::make_unique<RenameCommand>(); }),
+        std::make_pair(se_leaveCommand, []        { return std::make_unique<LeaveCommand>(); }),
+        std::make_pair(se_quitCommand, []         { return std::make_unique<QuitCommand>(); }),
+        std::make_pair(se_bookmarksCommand, []    { return std::make_unique<BookmarksCommand>(); }),
+        std::make_pair(tString("/msg"), []        { return std::make_unique<MsgCommand>(); })
+    );
 
-    commandFactories.emplace("/msg", []()
-                             { return std::make_unique<MsgCommand>(); });
-    addCommand(se_consoleCommand, []()
-               { return std::make_unique<ConsoleCommand>(); });
-    addCommand(se_colorsCommand, []()
-               { return std::make_unique<ColorsCommand>(); });
-    addCommand(se_infoCommand, []()
-               { return std::make_unique<listPlayerInfoCommand>(); });
-    addCommand(se_rgbCommand, []()
-               { return std::make_unique<RgbCommand>(); });
-    addCommand(se_browserCommand, []()
-               { return std::make_unique<BrowserCommand>(); });
-    addCommand(se_speakCommand, []()
-               { return std::make_unique<SpeakCommand>(); });
     if (helperConfig::sghuk)
-        addCommand(se_rebuildCommand, []()
-               { return std::make_unique<RebuildCommand>(); });
-    addCommand(se_watchCommand, []()
-               { return std::make_unique<WatchCommand>(); });
-    addCommand(se_activeStatusCommand, []()
-               { return std::make_unique<ActiveStatusCommand>(); });
-    addCommand(se_reverseCommand, []()
-               { return std::make_unique<ReverseCommand>(); });
-    addCommand(se_spectateCommand, []()
-               { return std::make_unique<SpectateCommand>(); });
-    addCommand(se_joinCommand, []()
-               { return std::make_unique<JoinCommand>(); });
-    addCommand(se_searchCommand, []()
-               { return std::make_unique<SearchCommand>(); });
-    if (helperConfig::sghuk)
-        addCommand(se_nameSpeakCommand, []()
-               { return std::make_unique<NameSpeakCommand>(); });
-    addCommand(se_respawnCommand, []()
-               { return std::make_unique<RespawnCommand>(); });
-    if (helperConfig::sghuk)
-        addCommand(se_rebuildGridCommand, []()
-                { return std::make_unique<RebuildGridCommand>(); });
-    addCommand(se_saveConfigCommand, []()
-               { return std::make_unique<SaveConfigCommand>(); });
-    addCommand(se_replyCommand, []()
-               { return std::make_unique<ReplyCommand>(); });
-    addCommand(se_nicknameCommand, []()
-               { return std::make_unique<NicknameCommand>(); });
-    addCommand(se_statsCommand, []()
-               { return std::make_unique<StatsCommand>(); });
-    addCommand(se_reconnectCommand, []()
-               { return std::make_unique<ReconnectCommand>(); });
-    addCommand(se_calculateCommand, []()
-               { return std::make_unique<CalculateCommand>(); });
-    addCommand(se_updateCommand, []()
-               { return std::make_unique<UpdateCommand>(); });
-    if (helperConfig::sghuk)
-        addCommand(se_encryptCommand, []()
-               { return std::make_unique<EncryptCommand>(); });
-    addCommand(se_voteCommand, []()
-               { return std::make_unique<VoteCommand>(); });
-    addCommand(se_renameCommand, []()
-               { return std::make_unique<RenameCommand>(); });
-    addCommand(se_leaveCommand, []()
-               { return std::make_unique<LeaveCommand>(); });
-    addCommand(se_quitCommand, []()
-               { return std::make_unique<QuitCommand>(); });
-    addCommand(se_bookmarksCommand, []()
-               { return std::make_unique<BookmarksCommand>(); });
+    {
+        registerCommands(
+            commandFactories,
+            std::make_pair(se_rebuildCommand, []     { return std::make_unique<RebuildCommand>(); }),
+            std::make_pair(se_nameSpeakCommand, []   { return std::make_unique<NameSpeakCommand>(); }),
+            std::make_pair(se_rebuildGridCommand, [] { return std::make_unique<RebuildGridCommand>(); }),
+            std::make_pair(se_encryptCommand, []     { return std::make_unique<EncryptCommand>(); })
+        );
+    }
 
     return commandFactories;
 }
 
+
 bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> &commandFactories)
 {
+    if (!player || args.empty()) return false;
 
-    if (player == nullptr)
-        return false;
-
-    // Trim whitespace from the command
     args = args.TrimWhitespace();
-
-    // Split command into commandName and arguments
     int spaceIndex = args.StrPos(" ");
-    spaceIndex = (spaceIndex == -1) ? args.Len() : spaceIndex;
-
-    tString commandName = args.SubStr(0, spaceIndex);
-    tString arguments = args.SubStr(spaceIndex + 1);
-    tString commandNameUpper(commandName.ToUpper());
+    
+    // Split command into commandName and arguments
+    tString commandName = (spaceIndex == -1) ? args : args.SubStr(0, spaceIndex);
+    tString arguments = (spaceIndex == -1) ? tString() : args.SubStr(spaceIndex + 1);
+    tString commandNameLower = commandName.ToLower();
 
     // Find and execute the chat command
-    auto chatcmdFactory = commandFactories.find(commandName.ToLower());
-    if (chatcmdFactory != commandFactories.end())
+    auto it = commandFactories.find(commandNameLower);
+    if (it != commandFactories.end())
     {
-        auto chatcmd = chatcmdFactory->second();
+        std::unique_ptr<eChatCommand> chatcmd = it->second();
 
         try
         {
@@ -289,17 +261,19 @@ bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<t
         }
         catch (const std::exception &e)
         {
-            con << "There was an error executing the command: " << commandName << ": "
-                << e.what()
+            con << "Error executing command '" 
+                << commandName 
+                << "': " 
+                << e.what() 
                 << "\n";
             return false;
         }
-
         return true;
     }
 
     sn_consoleUser(player);
-    return CommandShortcutRunnerStr(commandNameUpper);
+    tToUpper(commandName);
+    return CommandShortcutRunnerStr(commandName);
 }
 
 bool MsgCommand::execute(tString args)

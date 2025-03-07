@@ -153,6 +153,7 @@ const tConfiguration* tConfiguration::GetConfiguration() {
  * The old stuff follows
  ************************************************************************/
 
+
 bool           tConfItemBase::printChange=true;
 bool           tConfItemBase::printErrors=true;
 
@@ -766,6 +767,16 @@ std::deque<tString> tConfItemBase::GetCommands(){
     return ret;
 }
 
+void tConfItemBase::FindConfigItems(const tString &word, std::deque<tString> &results)
+{
+    tConfItemBase::tConfItemMap const &itemsMap = tConfItemBase::GetConfItemMap();
+    for (const auto &entry : itemsMap)
+    {
+        tConfItemBase *item = entry.second;
+        if (item->GetTitle().StartsWith(word) && item->allowedChange())
+            results.push_back(item->GetTitle());
+    }
+}
 
 tString tConfItemBase::FindConfigItem(tString name,int pos)
 {
@@ -1506,7 +1517,7 @@ void tConfItemBase::DocAll()
 
     if (fileManager.Write(output))
         con << "config_all.cfg generated and placed in the var directory.\n";
-    else 
+    else
         con << "Failed to generate config_all.cfg.\n";
 }
 
@@ -2408,20 +2419,18 @@ static bool SaveCommandShortcutsToFile()
     tString allCmds;
     for (auto &kv : se_commandShortcuts)
     {
-        allCmds << kv.first 
-                << "," 
+        allCmds << kv.first
+                << ","
                 << kv.second;
-        
+
         i++;
         if (i < total)
             allCmds << "\n";
     }
 
-    fileManager.Write(allCmds);
-
-    if (se_commandShortcuts.size() > 0)
-        con << "Saved " 
-            << se_commandShortcuts.size() 
+    if (fileManager.Write(allCmds) && se_commandShortcuts.size() > 0)
+        con << "Saved "
+            << se_commandShortcuts.size()
             << " command shortcut(s) to file.\n";
     return true;
 }
@@ -2451,7 +2460,7 @@ void CommandShortcutRunner(std::istream& input)
 bool CommandShortcutRunnerStr(tString &input)
 {
     tArray<tString> parts = input.Split(" ");
-    if (parts.Len() == 0) 
+    if (parts.Len() == 0)
         return false;
 
     tString commandStr = parts[0];
@@ -2459,7 +2468,7 @@ bool CommandShortcutRunnerStr(tString &input)
     tString addtlInput;
     for (int i = 1; i < parts.Len(); i++)
     {
-        if (!addtlInput.empty()) 
+        if (!addtlInput.empty())
             addtlInput << " ";
         addtlInput << parts[i];
     }
@@ -2477,7 +2486,7 @@ void AddCommandShortcut(const tString &originalCommand, const tString &action)
 
     tString command(originalCommand.ToUpper());
 
-    if (command[0] == '/') 
+    if (command[0] == '/')
     {
         auto commandFactories = CommandFactory();
         auto chatcmdFactory   = commandFactories.find(command.ToLower());
@@ -2500,10 +2509,10 @@ void AddCommandShortcut(const tString &originalCommand, const tString &action)
 
     SaveCommandShortcutsToFile();
 
-    con << "Added command shortcut: '" 
-        << command 
-        << "' -> '" 
-        << action 
+    con << "Added command shortcut: '"
+        << command
+        << "' -> '"
+        << action
         << "'\n";
 }
 
@@ -2513,8 +2522,8 @@ void RemoveCommandShortcut(const tString &cmd)
     auto it = se_commandShortcuts.find(upperCmd);
     if (it == se_commandShortcuts.end())
     {
-        con << "No command shortcut found for: '" 
-            << upperCmd 
+        con << "No command shortcut found for: '"
+            << upperCmd
             << "'\n";
         return;
     }
@@ -2526,8 +2535,8 @@ void RemoveCommandShortcut(const tString &cmd)
 
     SaveCommandShortcutsToFile();
 
-    con << "Removed command shortcut for: '" 
-        << upperCmd 
+    con << "Removed command shortcut for: '"
+        << upperCmd
         << "'\n";
 }
 
@@ -2557,15 +2566,14 @@ void ListCommandShortcutCommands()
     int count = 0;
     for (const auto& pair : se_commandShortcuts)
     {
-        count++;
         tString thisAction(pair.second);
         thisAction = thisAction.Replace("\n","\\n");
-        con << " " 
-            << count 
-            << ") " 
-            << pair.first 
-            << " -> " 
-            << thisAction 
+        con << " "
+            << ++count
+            << ") "
+            << pair.first
+            << " -> "
+            << thisAction
             << "\n";
     }
 }
@@ -2611,8 +2619,8 @@ static void ComandShortcutManager(std::istream &s)
     }
     else
     {
-        con << "Unknown action: '" 
-            << action 
+        con << "Unknown action: '"
+            << action
             << "'. Valid actions are ADD, REMOVE, LIST, CLEAR.\n";
     }
 }
@@ -2632,7 +2640,6 @@ void CommandShortcutLoader()
     for (int i = 0; i < lines.Len(); i++)
     {
         tString line = lines[i].TrimWhitespace();
-        // "COMMAND,ACTION"
         tArray<tString> parts = line.Split(",");
         if (parts.Len() == 2)
         {
@@ -2644,14 +2651,14 @@ void CommandShortcutLoader()
         }
         else
         {
-            con << "Malformed command shortcut line: '" 
-                << line 
+            con << "Malformed command shortcut line: '"
+                << line
                 << "'\n";
         }
     }
 
-    con << "Loaded " 
-        << se_commandShortcuts.size() 
+    con << "Loaded "
+        << se_commandShortcuts.size()
         << " command shortcut commands.\n";
 }
 

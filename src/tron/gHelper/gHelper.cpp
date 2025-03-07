@@ -28,7 +28,7 @@ namespace helperConfig
     bool sg_helperCurrentTimeLocal = true; // Determines if the helper uses its own internal clock or the games to sync actions
     static tConfItem<bool> sg_helperCurrentTimeLocalConf = HelperCommand::tConfItem("HELPER_CONF_CURRENT_TIME_LOCAL", sg_helperCurrentTimeLocal);
     REAL sg_helperBrightness = 1;
-    static tConfItem<REAL> sg_helperBrightnessConf = HelperCommand::tConfItem("HELPER_CONF_BRIGHTESS", sg_helperBrightness);
+    static tConfItem<REAL> sg_helperBrightnessConf = HelperCommand::tConfItem("HELPER_CONF_BRIGHTNESS", sg_helperBrightness);
     bool sg_helperSensorsZoneDetection = false;
     static tConfItem<bool> sg_helperSensorsZoneDetectionC = HelperCommand::tConfItem("HELPER_CONF_SENSORS_ZONE_DETECTION", sg_helperSensorsZoneDetection);
     REAL sg_helperSensorRange = 1000;
@@ -351,7 +351,7 @@ void gHelper::detectCut(gHelperData &data, int detectionRange)
 
     // enemyData.canCutUs: Can the enemy either turn left or right and over turn our cycle? or continue to drive in their current direction and cut our cycle
     // enemyData.canCutEnemy: Can the owner turn left or right and over turn the enemy? or continue to drive forward in our current direction and cut the enemy cycle
-    
+
     // Get the position and direction of the enemy cycle
     eCoord enemyPos = enemy->Position();
     eCoord enemyDir = enemy->Direction();
@@ -894,7 +894,7 @@ void gHelper::showHitDebugLines(eCoord currentPos, eCoord initDir, REAL timeout,
                     cutTurnDirectionH << (enemyData.enemySide == LEFT ? tColoredString("Left") : tColoredString("Right"));
                 else if (neitherCanCut)
                     cutTurnDirectionH << tColoredString("None");
-                else 
+                else
                     cutTurnDirectionH << (enemyData.enemySide == RIGHT ? tColoredString("Left") : tColoredString("Right"));
             }
         }
@@ -933,10 +933,11 @@ bool gHelper::aliveCheck()
     return &owner_ && owner_.Grid() && owner_.Alive();
 }
 
+// Initialize to a large value
 REAL gHelper::traceSensorDistance[2] = {1E+30, 1E+30};
 void gHelper::trace(gHelperData &data, int dir)
 {
-    static bool locked = false;
+    thread_local bool locked = false;
 
     if (locked)
         return;
@@ -954,8 +955,6 @@ void gHelper::trace(gHelperData &data, int dir)
 
     REAL hitDistance = sensor->hit;
 
-    // Initialize to a large value
-    // static float traceSensorDistance[2] = {1E+30, 1E+30};
     static bool initialized[2] = {false, false};
 
     int index = (dir == LEFT) ? 0 : 1;
@@ -978,9 +977,9 @@ void gHelper::trace(gHelperData &data, int dir)
 
         if (sg_helperTraceDelay > 0)
         {
-            gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index, &locked]
+            gTaskScheduler.schedule("trace", sg_helperTraceDelay, [this, dir, index]
             {
-                locked = false;
+                locked = false; 
                 this->owner_.ActTurnBot(dir);
                 traceSensorDistance[index] = 1E+30;
             });
@@ -1000,14 +999,13 @@ void gHelper::trace(gHelperData &data, int dir)
     }
 }
 
-
 #include "../gWall.h"
 void gHelper::Activate()
 {
     if (!helperConfig::sghuk || !aliveCheck())
         return;
 
-    REAL start;
+    REAL start = 0;
 
     if (sg_helperHud)
     {
@@ -1103,4 +1101,3 @@ gHelper &gHelper::Get(gCycle &cycle)
 gHelper::~gHelper()
 {
 }
-

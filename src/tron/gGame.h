@@ -431,9 +431,10 @@ public:
 
 
     // Remove a task
-    void remove(const std::string& id)
+    void remove(const std::string &id)
     {
-        if (tasksMap.count(id) > 0) {
+        if (tasksMap.count(id) > 0)
+        {
             tasksMap.erase(id);
             rebuildQueue();
         }
@@ -442,23 +443,26 @@ public:
     // Remove all tasks
     void clear()
     {
-        while (!tasksQueue.empty()) {
+        while (!tasksQueue.empty())
+        {
             tasksQueue.pop();
         }
         tasksMap.clear();
 
-        while (!taskChains.empty()) {
+        while (!taskChains.empty())
+        {
             taskChains.pop();
         }
 
-        for (auto& taskQueuePair : pendingTasks) {
-            while (!taskQueuePair.second.empty()) {
+        for (auto &taskQueuePair : pendingTasks)
+        {
+            while (!taskQueuePair.second.empty())
+            {
                 taskQueuePair.second.pop();
             }
         }
         pendingTasks.clear();
     }
-
 
     std::unordered_map<std::string, DelayedTask> getTasks() const
     {
@@ -474,12 +478,11 @@ private:
     std::queue<std::function<void()>> taskChains;
     void rebuildQueue()
     {
-        while (!tasksQueue.empty()) {
+        while (!tasksQueue.empty()) 
             tasksQueue.pop();
-        }
-        for (const auto& taskPair : tasksMap) {
+
+        for (const auto& taskPair : tasksMap) 
             tasksQueue.push(taskPair.second);
-        }
     }
 };
 

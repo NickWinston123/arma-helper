@@ -4386,3 +4386,200 @@ zone_wall_boundary_help               Values <= 0 is the boundary limit in which
 log_turns_help            If set to 1, this setting will log the spawned time, death time and the positions of which players move to in the file ./var/log_turns/<name>.txt
 log_turns_timestamp_help  If set to 1, [TIME-STAMP] <message> will be sent to all the players logging file in ./var/log_turns/<name>.txt
 log_turns_winner_help     If set to 1, spawned and finished position, direction when a player enters a win zone or a target zone for the first time to the file ./var/log_turns/winner/<name>.txt
+
+# HELPER
+helper_help                                 Enables or disables the helper functionality entirely.
+helper_enabled_player_help                  Determines which player the helper applies to.
+
+# HELPER_CONF
+helper_conf_current_time_local_help         Determines if the helper uses its internal clock (true) or synchronizes with the game's clock (false).
+helper_conf_brightness_help                 Adjusts the brightness of helper visuals globally.
+helper_conf_sensors_zone_detection_help     Enables or disables zone detection for helper sensors.
+helper_conf_sensor_light_usage_mode_help    Toggles lightweight sensor calculation mode.
+helper_conf_sensor_range_help               Sets the detection range for helper sensors.
+
+# HELPER_DEBUG
+helper_debug_help                           Enables or disables debug mode for helper features.
+helper_debug_spam_protection_interval_help  Interval (in seconds) to prevent spamming debug messages.
+helper_debug_max_length_hold_duration_help  Maximum duration debug visualizations remain visible.
+helper_debug_log_help                       Enables logging debug messages to a file.
+helper_debug_log_file_help                  Path and filename where debug logs are saved.
+helper_debug_spam_filter_help               Enables filtering to reduce redundant debug messages.
+helper_debug_ignore_list_help               Comma-separated list of debug message categories to ignore.
+helper_debug_timestamp_help                 Adds timestamps to debug messages.
+helper_debug_color_header_help              Sets the debug message header color.
+helper_debug_color_main_help                Sets the color for enabled debug features.
+helper_debug_color_error_help               Sets the color for disabled or error debug features.
+helper_debug_color_item_help                Sets the color for debug message items or values.
+
+# HELPER_ZONE
+helper_zone_help                            Enables or disables zone helper features.
+helper_zone_show_help                       Toggles visual rendering of zones.
+helper_zone_show_owner_only_help            Displays only zones owned by the player's team.
+helper_zone_info_help                       Enables display of detailed zone information.
+helper_zone_info_only_owned_zones_help      Shows detailed info only for zones owned by the player's team.
+helper_zone_show_height_help                Sets the height for zone visualizations.
+helper_zone_show_radius_bonus_help          Extra radius added visually to displayed zones.
+helper_zone_show_enemy_red_help             Colors enemy zones red.
+helper_zone_tracer_help                     Toggles visual tracers to zones.
+helper_zone_tracer_closest_corner_help      Traces only to the closest corner of the zone.
+helper_zone_tracer_timeout_mult_help        Adjusts timeout multiplier for zone tracers.
+helper_zone_tracer_brightness_help          Sets brightness for zone tracers.
+helper_zone_tracer_height_help              Height of zone tracer visualization.
+
+# HELPER_ENEMY
+helper_enemy_detect_cut_help                Enables detection of determing if you or an enemy can over take and cut off one another.
+helper_enemy_detect_cut_direction_comparison_margin_help  Direction margin factor for enemy cut detection sensitivity.
+helper_enemy_detect_cut_detection_range_help        Detection range that a enemy player must be within to start detecting for enemy cut attempts.
+helper_enemy_detect_cut_timeout_help        Timeout period for enemy cut detection logic.
+helper_enemy_detect_cut_height_help         Visualization height for enemy cut detection events.
+helper_enemy_detect_cut_reaction_time_help  Delay before reacting to enemy cut detection.
+helper_enemy_show_tail_help                 Shows visual traces of enemy trails.
+helper_enemy_show_tail_height_help          Height of enemy tail visualization.
+helper_enemy_show_tail_distance_mult_help   Multiplier for enemy tail display distance.
+helper_enemy_show_tail_timeout_mult_help    Timeout multiplier for enemy tail visualization.
+helper_enemy_show_tail_brightness_help      Adjusts brightness of enemy tail visualization.
+helper_enemy_tracers_help                   Enables visual tracing of enemy paths.
+helper_enemy_tracers_height_help            Sets enemy tracer visualization height.
+helper_enemy_tracers_detection_range_help   Detection range for enemy tracers.
+helper_enemy_tracers_speed_mult_help        Speed multiplier for enemy tracers.
+helper_enemy_tracers_passthrough_help       Controls passthrough visualization of enemy tracers.
+helper_enemy_tracers_delay_mult_help        Multiplier for tracer delay logic.
+helper_enemy_tracers_timeout_help           Timeout for enemy tracers visualization.
+helper_enemy_tracers_brightness_help        Sets brightness for enemy tracers.
+
+# HELPER_SELF
+helper_self_auto_brake_help                 Enables auto-braking logic for the player.
+helper_self_auto_brake_min_help             Minimum threshold to activate auto-braking.
+helper_self_auto_brake_max_help             Maximum threshold for auto-braking activation.
+helper_self_auto_brake_randomness_help      Randomness added to auto brake thresholds.
+helper_self_show_tail_help                  Visual display of the player's own tail.
+helper_self_show_tail_height_help           Height for the player's tail visualization.
+helper_self_show_tail_passthrough_help      Controls visualization for the player's tail passthrough.
+helper_self_show_tail_timeout_help          Timeout for tail visualization of the player.
+helper_self_show_tail_tracer_help           Visualization of tracers along your tail for reference.
+helper_self_show_tail_tracer_height_help    Sets height of self tail tracers.
+helper_self_show_tail_tracer_brightness_help    Brightness for tail tracers visualization.
+helper_self_show_tail_tracer_distance_mult_help Multiplier affecting tail tracer distance.
+helper_self_show_tail_tracer_timeout_mult_help Timeout multiplier for tail tracer visuals.
+helper_self_show_tail_tracer_extrapolate_distance_help  Additional extrapolated distance for tail tracers.
+helper_self_trace_left_help                 Determines if tracing walls to the left is enabled.
+helper_self_trace_right_help                Determines if tracing walls to the right is enabled.
+helper_self_trace_range_help                Sets sensor range for left/right trace detection.
+helper_self_trace_delay_help                Delay for updating trace sensor visuals.
+helper_self_smart_delay_help                Intelligently delays actions based on current situation.
+helper_self_smart_delay_value_help          Specifies delay duration for smart delay logic.
+helper_self_simple_bot_help                 Enables simple automated turning bot.
+helper_self_simple_bot_space_help           Activation space required for simple bot turns.
+helper_self_simple_bot_rubber_help          Rubber threshold activating simple bot behavior.
+helper_self_simple_bot_turns_help           Number of turns allowed by the simple bot.
+
+# HELPER_SELF_PATH
+helper_self_path_help                       Enables or disables path-helper visualization.
+helper_self_path_render_help                Toggles rendering of path visualization.
+helper_self_path_render_turn_help           Enables visual indicators for upcoming turns.
+helper_self_path_render_turn_act_help       Enables visual indication of actual turns taken.
+helper_self_path_render_turn_ahead_help     Distance ahead for path-helper turn indicators.
+helper_self_path_mode_help                  Defines path-helper  mode (AUTO, TAIL, ENEMY, CORNER).
+helper_self_path_auto_close_distance_help   Distance at which automatic closing behavior activates.
+helper_self_path_brightness_help            Sets brightness for path visualization.
+helper_self_path_render_height_help         Height of path visualization.
+helper_self_path_update_distance_help       Distance threshold for updating path visualization.
+
+# HELPER_SMART_TURNING
+helper_smart_turning_help                   Enables smart turning logic optimizing turns and survival.
+helper_smart_turning_survive_help           Activates survival-focused smart turning features.
+helper_smart_turning_disable_while_closed_in_help   Disables smart turning when trapped or enclosed.
+helper_smart_turning_disable_while_blocked_by_self_help  Disables smart turning when blocked by player's own trail.
+helper_smart_turning_closed_in_mult_help    Multiplier determining sensitivity to being enclosed.
+helper_smart_turning_auto_trace_help        Automatically activates tracing behavior under certain conditions.
+helper_smart_turning_auto_trace_distance_help   Distance at which automatic trace activates.
+helper_smart_turning_front_bot_help         Enables smart logic to handle front bot interactions.
+helper_smart_turning_front_bot_disable_time_help  Time interval to temporarily disable front bot logic after activation.
+helper_smart_turning_opposite_help          Enables smart turning in the opposite direction when blocked.
+helper_smart_turning_space_help             Space requirement for activating smart turning logic.
+helper_smart_turning_plan_help              Enables planned turning maneuvers for optimal paths.
+helper_smart_turning_survive_debug_help     Enables detailed debugging information for survival-focused smart turning logic.
+
+# HELPER_CAN_SURVIVE
+helper_can_survive_turn_debug_lines_show_close_factor_help    Visualizes close factor calculations for survival logic.
+helper_can_survive_turn_debug_lines_show_rubber_factor_help    Visualizes rubber factor in survival calculations.
+helper_can_survive_turn_debug_lines_show_space_factor_help     Shows space-related factors in survival logic debug lines.
+
+# HELPER_SELF_RUBBER_RATIO_BRAKE
+helper_self_rubber_ratio_brake_help                            Enables braking based on the player's rubber ratio.
+helper_self_rubber_ratio_brake_difference_help                 Threshold difference for activating rubber ratio braking.
+helper_self_rubber_ratio_brake_ratio_help                      Ratio of rubber usage to braking force.
+
+# HELPER_SELF_SHOW_CORNERS
+helper_self_show_corners_help                                  Toggles visual indicators for corners encountered by the player.
+helper_self_show_corners_boundary_help                         Distance around corners where indicators become visible.
+helper_self_show_corners_boundary_passed_help                  Boundary distance for corners you've passed to remain visible.
+helper_self_show_corners_height_help                           Height at which corner indicators are displayed.
+helper_self_show_corners_passed_help                           Toggles visualization for corners you've already passed.
+helper_self_show_corners_passed_range_help                     Distance range behind the player where passed corners remain visible.
+helper_self_show_corners_timeout_help                          Time before corner indicators fade after passing.
+
+# HELPER_SELF_SHOW_HIT
+helper_self_show_hit_help                                      Visualizes potential collision points for the player.
+helper_self_show_hit_brightness_help                           Brightness of collision indicators.
+helper_self_show_hit_enable_while_not_straight_help            Enables collision visualization even when player isn't driving straight.
+helper_self_show_hit_front_line_help                           Toggles the display of the collision indicator directly ahead of the player.
+helper_self_show_hit_front_line_color_help                     Sets the color of the front collision line indicator.
+helper_self_show_hit_front_line_height_help                    Height of the visual indicator for frontal collisions.
+helper_self_show_hit_height_front_help                         Visualization height at the front collision area.
+helper_self_show_hit_height_sides_help                         Visualization height at the side collision areas.
+helper_self_show_hit_mode_help                                 Selects the starting point mode for collision visualization.
+helper_self_show_hit_open_range_help                           Free range around collision indicators showing clear paths.
+helper_self_show_hit_range_help                                Maximum detection range for collision indicators.
+helper_self_show_hit_side_lines_help                           Number of side lines displayed for potential collisions.
+helper_self_show_hit_timeout_help                              Duration before collision indicators disappear.
+
+# HELPER_SELF_TAIL 
+helper_self_tail_help                                          Enables visualization of the player's own tail.
+helper_self_tail_brightness_help                               Brightness of player's tail visualization.
+helper_self_tail_delay_help                                    Delay before tail visualization appears after movement.
+helper_self_tail_grid_size_help                                Grid size interval for tail visualization markers.
+helper_self_tail_height_help                                   Visualization height for the player's tail.
+helper_self_tail_update_distance_help                          Distance interval between updates of tail visualization.
+helper_self_tail_update_time_help                              Time interval between tail visualization updates.
+
+# HELPER_HUD
+helper_hud_help                             Enables or disables the helper HUD entirely.
+helper_hud_color_disabled_help              Sets the color for disabled elements displayed in the HUD.
+helper_hud_color_enabled_help               Sets the color for enabled elements displayed in the HUD.
+helper_hud_color_label_help                 Sets the color for labels shown in the HUD.
+helper_hud_color_values_help                Sets the color for the HUD values.
+helper_hud_size_help                        Adjusts the overall size (scale) of the helper HUD.
+helper_hud_locx_help                        Horizontal (X-axis) position of the helper HUD.
+helper_hud_locy_help                        Vertical (Y-axis) position of the helper HUD.
+
+# HUD Additional
+helper_hud_freeze_help                      Freezes HUD updates, preventing changes temporarily.
+helper_hud_ignore_list_help                 Comma-separated list of HUD elements or categories to ignore.
+
+# HELPER_MENU
+helper_menu_help                            Enables or disables the dynamic helper configuration menu.
+helper_menu_categories_help                 Comma-separated list defining categories shown in the dynamic helper menu.
+helper_menu_color_disabled_help             Color used for displaying disabled settings in the menu.
+helper_menu_color_enabled_help              Color used for enabled settings in the menu.
+helper_menu_color_label_help                Color used for labels in the helper menu.
+helper_menu_color_values_help               Color for values shown next to labels in the helper menu.
+helper_menu_launch_help                     Opens or relaunches the helper settings menu dynamically.
+helper_menu_value_locx_help                 Adjusts horizontal positioning for setting values within the menu.
+
+# HELPER_SMART_TURNING_FRONT_BOT
+helper_smart_turning_front_bot_rubber_help          Rubber threshold at which the Front Bot activates smart turning.
+helper_smart_turning_front_bot_space_help           Minimum free space required ahead to trigger front bot logic.
+helper_smart_turning_front_bot_think_range_help    Defines the look-ahead range for the Front Bot to evaluate obstacles.
+helper_smart_turning_front_bot_turn_once_help      Determines if the Front Bot performs a single turn action per event.
+
+# HELPER_SMART_TURNING_SURVIVE_TRACE
+helper_smart_turning_survive_trace_help             Toggles trace visualization for smart survival turning.
+helper_smart_turning_survive_trace_active_time_help Duration for which the survive trace feature remains active after activation.
+helper_smart_turning_survive_trace_close_factor_help Factor influencing when survival trace triggers based on proximity.
+helper_smart_turning_survive_trace_turn_once_help  Limits the survive trace logic to a single corrective turn per activation.
+helper_smart_turning_survive_trace_turn_time_help  Defines the reaction time delay when survive trace logic is triggered.
+
+# HELPER_UNLOCK
+helper_unlock_help   Unlocks or enables the helper features and settings.

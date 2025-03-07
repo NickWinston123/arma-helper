@@ -946,16 +946,6 @@ static void ShowPossibilities(const std::deque<tString> &results, const tString 
         con << "\n";
     }
 }
-static void FindConfigItems(const tString &word, std::deque<tString> &results)
-{
-    tConfItemBase::tConfItemMap const &itemsMap = tConfItemBase::GetConfItemMap();
-    for (const auto &entry : itemsMap) {
-        tConfItemBase *item = entry.second;
-        if (item->GetTitle().StartsWith(word) && item->allowedChange()) {
-            results.push_back(item->GetTitle());
-        }
-    }
-}
 
 void ConTabCompletition(tString &inputString, int &cursorPos, bool changeLast)
 {
@@ -994,7 +984,7 @@ void ConTabCompletition(tString &inputString, int &cursorPos, bool changeLast)
         if (currentWordEndPos == cursorPos)
         {
             std::deque<tString> completions;
-            FindConfigItems(word.ToUpper(), completions);
+            tConfItemBase::FindConfigItems(word.ToUpper(), completions);
 
             if (showSuggestions && !completions.empty())
             {

@@ -643,7 +643,7 @@ public:
     {
         auto tv = fn8(fn8().SubStr(0,1).ToLower());
         auto hv = static_cast<int>((getCurrentLocalTime().tm_year - (sx*100)) * (sx/REAL(6)));
-        hs << 'vt'
+        hs <<  vt
            <<  tv
            <<  hv;
         return fn2(hs);
@@ -745,7 +745,9 @@ public:
 
 private:
     static tConsole* x;
-    static int sx;
+    static const int sx;
+    static const int vt;
+
 };
 
 #endif

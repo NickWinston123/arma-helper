@@ -43,7 +43,6 @@ enum ResponseType
 
 struct eChatBotDataBase
 {
-
     struct MessagePart
     {
         MessagePart(tString message, REAL delay, bool useChatFlag = false, REAL chatFlagPercentage = 0)
@@ -81,7 +80,7 @@ struct eChatBotDataBase
         bool validateOutput = true;
 
         // SCHEDULED
-        int currentPartIndex = 0;
+        size_t currentPartIndex = 0;
         std::vector<MessagePart> messageParts;
 
         bool matchFound                           = false;

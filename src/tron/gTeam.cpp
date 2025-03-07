@@ -67,7 +67,7 @@ static void SetSpectator( ePlayerNetID * player, bool spectate )
             {
                 localPlayer->spectate = spectate;
                 con << tOutput( spectate ? "$player_toggle_spectator_on" : "$player_toggle_spectator_off", localPlayer->name );
-                ePlayerNetID::Update();
+                ePlayerNetID::ForcedUpdate();
             }
         }
     }

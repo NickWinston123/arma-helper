@@ -42,6 +42,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rSysdep.h"
 #include "rFont.h"
 #include "uMenu.h"
+#include "uDynamicMenu.h"
+
 #include "nConfig.h"
 #include "rScreen.h"
 #include "rViewport.h"
@@ -1336,8 +1338,8 @@ static void sg_RemoveDelayedCmd(std::istream &s)
         return;
     }
 
-    con << "Removing delay command ( " 
-        << command 
+    con << "Removing delay command ( "
+        << command
         << " )\n";
     gTaskScheduler.remove(command);
     gTaskIDs.erase(it);
@@ -3301,18 +3303,18 @@ void restrictionTimeCheck(bool ingame)
     {
         tString message;
                 message << "You are not allowed to play within this time slot because of GAME_RESTRICT_PLAY_TIME. "
-                        << "(Current time within set block time: " 
-                        << sg_RestrictPlayTimeStartTime 
-                        << ":00 - " 
-                        << sg_RestrictPlayTimeEndTime 
+                        << "(Current time within set block time: "
+                        << sg_RestrictPlayTimeStartTime
+                        << ":00 - "
+                        << sg_RestrictPlayTimeEndTime
                         << ":00)";
 
         if (ingame && sg_RestrictPlayTimeStartTimeWarnings <= sg_RestrictPlayTimeStartTimeWarningsCap)
-            con << message 
-                << "(" 
-                << sg_RestrictPlayTimeStartTimeWarnings 
-                << "/" 
-                << sg_RestrictPlayTimeStartTimeWarningsCap 
+            con << message
+                << "("
+                << sg_RestrictPlayTimeStartTimeWarnings
+                << "/"
+                << sg_RestrictPlayTimeStartTimeWarningsCap
                 << ")"
                 << "\n";
         else
@@ -3523,13 +3525,22 @@ void MainMenu(bool ingame)
 
 #ifndef DEDICATED
 
+    uMenuItemFunction dm(&MainMenu,
+                         "Dynamic Menu",
+                         "Dynamic Menu Settings",
+                         LaunchDynamicMenu);
+
+    if (!su_dynamicMenu)
+        MainMenu.RemoveItem(&dm);
+
     uMenuItemFunction hm(&MainMenu,
                          "Helper Menu",
                          "Helper Menu Settings",
-                         helperMenu);
+                         helperDynamicMenu);
 
     if (!helperConfig::sghuk || !helperConfig::sg_helperMenuEnabled)
         MainMenu.RemoveItem(&hm);
+    
 
 #endif
 
@@ -5940,7 +5951,7 @@ bool gGame::GameLoop(bool input)
                     tConfItemBase::LoadAll(s);
                 }
             }
-            
+
             if (sg_commandWatchClear)
                 fileManager.Clear(sg_commandWatchFeedback);
         }
@@ -7137,6 +7148,7 @@ bool ConnectToLastServerFromStr()
 
     return false;
 }
+
 bool ConnectToLastServer()
 {
     if (!ConnectToLastServerFromStr())
@@ -7144,6 +7156,7 @@ bool ConnectToLastServer()
         con << "Last server not set!\n";
         return false;
     }
+    return true;
 }
 
 static void ConnectToLastServer(std::istream &s)

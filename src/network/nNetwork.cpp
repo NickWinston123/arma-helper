@@ -801,26 +801,26 @@ void ack_handler(nMessage &m){
 
     while (!m.End())
     {
-        sn_Connections[m.SenderID()].AckReceived();
-
+        
     
         //con << "Got ack:" << ack << ":" << m.SenderID() << '\n';
-        if (sg_ackDelay <= 0) {
-            unsigned short ack;
-        m.Read(ack);
-            nWaitForAck::Ackt(ack,m.SenderID());
-        
-        }
-        else {
-
-        gTaskScheduler.schedule("ackDelay", sg_ackDelay, [&m]
+        if (sg_ackDelay <= 0) 
         {
+            sn_Connections[m.SenderID()].AckReceived();
             unsigned short ack;
             m.Read(ack);
             nWaitForAck::Ackt(ack,m.SenderID());
-        });
-
-
+        
+        }
+        else 
+        {
+            gTaskScheduler.schedule("ackDelay", sg_ackDelay, [&m]
+            {
+                sn_Connections[m.SenderID()].AckReceived();
+                unsigned short ack;
+                m.Read(ack);
+                nWaitForAck::Ackt(ack,m.SenderID());
+            });
         }
     }
 }

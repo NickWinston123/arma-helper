@@ -42,7 +42,7 @@ public:
     bool seen_this_session          = false;
     bool in_game                    = false; // current team?
     std::string nickname            = "";
-    
+
     int times_banned                = 0;
     bool banned_a_player_this_round = false;
     int bans_given                  = 0;
@@ -74,13 +74,13 @@ public:
     // Database
     bool deleted                    = false;
 
-    void Reset() 
+    void Reset()
     {
         // Player
         r = 0; g = 0; b = 0;
         name = "";
         total_messages = 0;
-        total_play_time = 0.0; 
+        total_play_time = 0.0;
         total_spec_time = 0.0;
         times_joined = 0;
         last_seen = 0;
@@ -382,7 +382,7 @@ public:
             std::set<std::string> uniquePrivateStats(privated_stats.begin(), privated_stats.end());
             for (const auto &player : playersToConsolidate)
                 uniquePrivateStats.insert(player.privated_stats.begin(), player.privated_stats.end());
-            
+
             privated_stats.assign(uniquePrivateStats.begin(), uniquePrivateStats.end());
         }
     }
@@ -406,7 +406,7 @@ public:
 
         tString result;
         result << "Available stats are: ";
-        int count = 0;
+        size_t count = 0;
         for (const auto &name : displayFields)
         {
             result << name;
@@ -484,7 +484,7 @@ public:
     {
         if (!se_playerTriggerMessages || !se_playerTriggerMessagesAcheivements)
             return false;
-            
+
         bool stored = false;
         tString response;
         REAL delay = 0.0;
@@ -642,7 +642,7 @@ public:
     {
         tString name;
 
-        if (player) 
+        if (player)
         {
             if (shouldEnforceLocalName(player))
                 name << getEnforcedLocalName(player);
@@ -735,13 +735,13 @@ public:
         stats.is_local = player->isLocal();
         stats.in_server = true;
 
-        if (!stats.seen_this_session) 
+        if (!stats.seen_this_session)
         {
             stats.thisSession().Reset();
             stats.seen_this_session = true;
             players_record_this_session++;
-        } 
-        else 
+        }
+        else
         {
             stats.thisSession().last_seen = stats.last_seen;
             stats.thisSession().human = stats.human;
@@ -751,7 +751,7 @@ public:
 
         stats.times_joined++;
         stats.in_game = player->CurrentTeam() != nullptr;
-        
+
         ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::JOINS);
     }
 
@@ -765,7 +765,7 @@ public:
 
         oldStats.name_history.push_back(player->GetName().stdString());
         newStats.name_history.push_back(player->lastName.stdString());
-        
+
         newStats.thisSession().name_history.push_back(player->lastName.stdString());
         playerLeft(oldStats);
         playerInit(newStats, player);
@@ -791,8 +791,8 @@ public:
 
         if  (lastDeathTime > 0.005 && lastDeathTime < se_playerStatsRageQuitTime)
         {
-            stats.rage_quits++;         
-                
+            stats.rage_quits++;
+
             if (se_playerTriggerMessages && se_playerTriggerMessagesRageQuits)
             {
                 static const tString valDelim = tString("$val1");
@@ -813,8 +813,8 @@ public:
 
                 bot.Messager()->Send();
             }
-            
-   
+
+
         }
     }
 
@@ -862,7 +862,7 @@ public:
     {
         PlayerData &stats = getStats(player);
         PlayerDataBase &statsThisSession = stats.thisSession();
-        
+
         stats.deaths++;
         statsThisSession.deaths++;
 
@@ -987,7 +987,7 @@ public:
         deleteState.confirmationKey << (rand() % 10) << (rand() % 10) << (rand() % 10);
         output << "Please enter the key: " << deleteState.confirmationKey << " to confirm deletion of stats for ";
 
-        for (size_t i = 0; i < deleteState.additionalPlayers.Len(); ++i)
+        for (int i = 0; i < deleteState.additionalPlayers.Len(); ++i)
         {
             output << deleteState.additionalPlayers[i];
             if (i < deleteState.additionalPlayers.Len() - 1)
@@ -1110,7 +1110,7 @@ public:
                     TableDefinition<PlayerData>::PrimaryKey pk;
                     pk.columnName = "name";
                     pk.getValueFunc = [](const PlayerData &object) -> std::string {
-                        return object.name.stdString(); 
+                        return object.name.stdString();
                     };
                     return pk;
                 }(),
@@ -1128,15 +1128,15 @@ public:
     {
         std::vector<PlayerData> playerDataVec;
         time_t currentTime = time(NULL);
-        const time_t seventyTwoHoursInSeconds = 72 * 60 * 60; 
+        const time_t seventyTwoHoursInSeconds = 72 * 60 * 60;
 
         for (auto& pair : ePlayerStats::GetPlayerStatsMap())
         {
             PlayerData &stats = pair.second;
-            
+
             if (currentTime - stats.last_seen > seventyTwoHoursInSeconds)
                 stats.nickname = "";
-                
+
             stats.name = pair.first;
             if (stats.rounds_played >= 1 || stats.total_spec_time >= 100)
                 playerDataVec.push_back(stats);

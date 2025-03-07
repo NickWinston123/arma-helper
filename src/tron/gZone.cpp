@@ -10225,7 +10225,7 @@ static void sg_CollapseAll(std::istream &s)
         {
             Zone->Vanish(0.5);
             Zone->RequestSync();
-            #ifdef DEDICATED
+            #ifndef DEDICATED
             Zone->helperDestroyed_ = true;
             #endif
         }

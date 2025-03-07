@@ -77,8 +77,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "eChatCommands.h"
 #include "eChatBot.h"
 
-#define HDEBUG gHelperUtility::stream()
-
 int se_lastSaidMaxEntries = 8;
 
 bool se_forceJoinTeam = false;
@@ -1887,7 +1885,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         int privateMessageMsgPos = -1;
         for (auto localNetPlayer : se_GetLocalPlayers())
         {
-            if (!sentToEnabledPlayer) 
+            if (!sentToEnabledPlayer)
             {
                 tString possiblePrivateMessageStr;
                 possiblePrivateMessageStr << p->GetName()
@@ -5161,15 +5159,15 @@ tString ePlayerNetID::nextSpeakTimePrefixCommonPrefix = tString("");
 
 bool ePlayerNetID::canChat()
 {
-    // gHelperUtility::stream() << "COMPARING " << nextSpeakTime << " vs " << tSysTimeFloat() << "\n";
-    // gHelperUtility::stream() << "Can chat: " << (nextSpeakTime <= tSysTimeFloat()) << "\n";
+    // HDEBUG << "COMPARING " << nextSpeakTime << " vs " << tSysTimeFloat() << "\n";
+    // HDEBUG << "Can chat: " << (nextSpeakTime <= tSysTimeFloat()) << "\n";
     return nextSpeakTime <= tSysTimeFloat();
 }
 
 bool ePlayerNetID::canChatCommonPrefix(tString message)
 {
-    // gHelperUtility::stream() << "COMPARING " << nextSpeakTimePrefix << " vs " << tSysTimeFloat() << "\n";
-    // gHelperUtility::stream() << "canChatCommonPrefix: " << (nextSpeakTime <= tSysTimeFloat()) << "\n";
+    // HDEBUG << "COMPARING " << nextSpeakTimePrefix << " vs " << tSysTimeFloat() << "\n";
+    // HDEBUG << "canChatCommonPrefix: " << (nextSpeakTime <= tSysTimeFloat()) << "\n";
     return nextSpeakTimePrefix <= tSysTimeFloat() || !message.StartsWith(nextSpeakTimePrefixCommonPrefix);
 }
 
@@ -5191,7 +5189,6 @@ bool ePlayerNetID::canChatWithMsg(tString message)
             << nextSpeakTimePrefix - tSysTimeFloat()
             << tThemedTextBase.ErrorColor()
             << " seconds. Do not use this prefix!\n";
-        return ableToChatCommonPrefix;
     }
 
     if (!ableToChat)
@@ -5203,10 +5200,9 @@ bool ePlayerNetID::canChatWithMsg(tString message)
             << nextSpeakTime - tSysTimeFloat()
             << tThemedTextBase.ErrorColor()
             << " seconds. Do not try to chat!\n";
-        return ableToChat;
     }
 
-    return true;
+    return ableToChatCommonPrefix && ableToChat;
 }
 
 void ePlayerNetID::setNextSpeakTime(REAL seconds)
@@ -5220,7 +5216,7 @@ void ePlayerNetID::setNextSpeakTimeCommonPrefix(tString commonPrefix, REAL secon
 {
     // con << "SECONDS " << seconds << "\n";
     nextSpeakTimePrefixCommonPrefix = commonPrefix;
-    // gHelperUtility::stream() << " nextSpeakTimePrefixCommonPrefix = '" << nextSpeakTimePrefixCommonPrefix << "'\n";
+    // HDEBUG << " nextSpeakTimePrefixCommonPrefix = '" << nextSpeakTimePrefixCommonPrefix << "'\n";
 
     nextSpeakTimePrefix = tSysTimeFloat() + seconds + sg_playerSpamProtectionWatchExtraAdd;
     // con << "nextupdatetime " << nextSpeakTime << "\n";
@@ -5316,8 +5312,7 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
     {
         se_BroadcastChat(this, s);
 
-        // falling through on purpose
-        // break;
+        [[fallthrough]];
     }
     default:
     {
@@ -5392,8 +5387,8 @@ static void ConsoleSay_conf(std::istream &s)
     case nSERVER:
 #endif
     {
-        ePlayerNetID *me;
-        
+        ePlayerNetID *me = nullptr;
+
         if (sn_consoleUser() && sn_consoleUser()->netPlayer)
             me = sn_consoleUser()->netPlayer;
 
@@ -5424,8 +5419,8 @@ static void ConsoleSay_conf(std::istream &s)
 #endif
     default:
     {
-        ePlayerNetID *me;
-        
+        ePlayerNetID *me = nullptr;
+
         if (sn_consoleUser() && sn_consoleUser()->netPlayer)
             me = sn_consoleUser()->netPlayer;
 
@@ -6090,13 +6085,13 @@ tString randomNameSteal()
     {
         index2 = index1;
     }
-    
+
     ePlayerNetID* p2 = nonLocalPlayers[index2];
 
     tString name1 = p1->GetName();
     tString name2 = p2->GetName();
 
-    int len1 = name1.Len() - 1; 
+    int len1 = name1.Len() - 1;
     int len2 = name2.Len() - 1;
 
     len1 = std::max(len1, 0);
@@ -6111,7 +6106,7 @@ tString randomNameSteal()
         effectiveMax1 = len1;
     }
 
-    int randomCut1 = randomizer.Get(effectiveMin1, effectiveMax1 + 1); 
+    int randomCut1 = randomizer.Get(effectiveMin1, effectiveMax1 + 1);
 
     int effectiveMin2 = std::min(number1, len2);
     int effectiveMax2 = std::min(number2, len2);
@@ -6122,7 +6117,7 @@ tString randomNameSteal()
         effectiveMax2 = len2;
     }
 
-    int randomCut2 = randomizer.Get(effectiveMin2, effectiveMax2 + 1); 
+    int randomCut2 = randomizer.Get(effectiveMin2, effectiveMax2 + 1);
 
     randomCut1 = std::max(randomCut1, 1);
     randomCut2 = std::max(randomCut2, 1);
@@ -6161,7 +6156,7 @@ tString randomNameSmart()
         randomStr += vowels[rand() % vowels.size()];
     }
 
-    while (randomStr.size() < length - 2)
+    while (randomStr.size() < static_cast<size_t>(length - 2))
     {
         if (rand() % 2)
         {
@@ -6175,7 +6170,7 @@ tString randomNameSmart()
         }
     }
 
-    if (randomStr.size() < length && !randomStr.empty())
+    if (randomStr.size() < static_cast<size_t>(length) && !randomStr.empty())
     {
         char lastChar = randomStr.back();
         if (vowels.find(lastChar) != std::string::npos)
@@ -6184,14 +6179,15 @@ tString randomNameSmart()
             randomStr += vowels[rand() % vowels.size()];
     }
 
-    while (randomStr.size() < length)
+    while (randomStr.size() < static_cast<size_t>(length))
         randomStr += vowels[rand() % vowels.size()];
 
-    while (randomStr.size() > length)
+    while (randomStr.size() > static_cast<size_t>(length))
         randomStr.pop_back();
 
     return tString(randomStr);
 }
+
 
 tString playerIDName()
 {
@@ -6362,14 +6358,14 @@ bool ePlayer::Act(uAction *act, REAL x)
         {
             int i;
             uActionPlayer *pact = reinterpret_cast<uActionPlayer *>(act);
-            
+
             if (se_instantChatsEnabled)
             {
                 for (i = MAX_INSTANT_CHAT - 1; i >= 0; i--)
                 {
-                    if (se_instantChatsCommandsOnly && instantChatString[i][0] != '/') 
+                    if (se_instantChatsCommandsOnly && instantChatString[i][0] != '/')
                         continue;
-                
+
                     uActionPlayer *pcompare = se_instantChatAction[i];
 
                     if (pact == pcompare && x >= 0)
@@ -6460,7 +6456,7 @@ bool ePlayer::PlayerIsInGame(int p)
 
 bool ePlayer::PlayerIsInGame(ePlayerNetID *p)
 {
-    ePlayer::PlayerIsInGame(p->pID);
+    return ePlayer::PlayerIsInGame(p->pID);
 }
 
 // veto function for tooltips that require a controllable game object
@@ -9147,10 +9143,12 @@ void se_SaveToChatLog(tOutput const &out)
                         }
                     }
                 }
-            } else if (se_chatLogNoDataClearLocal) {
+            }
+            else if (se_chatLogNoDataClearLocal)
+            {
 
-                for (auto localNetPlayer : se_GetLocalPlayers()) {
-
+                for (auto localNetPlayer : se_GetLocalPlayers())
+                {
                     std::string nameToReplace = (localNetPlayer->GetName().stdString() + ": ");
                     // con << "Name to replace: '" << nameToReplace << "'\n";
 
@@ -10188,7 +10186,7 @@ static bool loadCrossfadePresetValidation(size_t selection)
 {
     size_t numPresets = presets.size();
 
-    if (selection < 0)
+    if (selection == 0)
     {
         con << "Preset must be 1 and above.\n";
         return false;
@@ -12012,6 +12010,15 @@ void ePlayerNetID::CreateNewTeam()
     {
         return;
     }
+
+    #ifndef DEDICATED
+    ePlayer *local_p = ePlayer::NetToLocalPlayer(this);
+    if (local_p)
+    {
+        local_p->spectate = false;
+        spectating_ = false;
+    }
+    #endif
 
     if (!eTeam::NewTeamAllowed() ||
         (bool(currentTeam) && (currentTeam->NumHumanPlayers() == 1)) ||
@@ -14309,7 +14316,7 @@ static void se_TimebotAction(eTimebotAction action, ePlayerNetID *player, char c
         {
             sn_KickUser(player->Owner(), m, se_timebotKickSeverity);
         }
-        // no break on purpose.
+        [[fallthrough]];
     case eTimebotAction_NotifyEveryone:
         sn_ConsoleOut(m);
         break;

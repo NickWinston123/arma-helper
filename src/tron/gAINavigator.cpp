@@ -322,19 +322,10 @@ REAL gAINavigator::Path::Take(CycleController &controller, gCycle &cycle, REAL m
         {
             return driveOn = cycle.GetNextTurn(turn) - cycle.LastTime();
         }
+        if (sg_helperDebug && sg_navigatorDebugShowTurn)
+            gHelperUtility::Debug("gAINavigator Turn", std::string("Taking turn: ") + (turn == LEFT ? "LEFT" : "RIGHT"), false);
 
-        // if (turnDelay > 0)
-        // {
-        //     REAL localTurn = turn; // make a copy of turn
-        //     // con << "schedule turn " << localTurn << " for cycle " << cycle.Owner() << " with id " 
-        //     //     << "gAINavigatorTurn" + std::to_string(cycle.Owner()) << " with delay " << turnDelay << "\n";
-        //     gTaskScheduler.schedule("gAINavigatorTurn" + std::to_string(cycle.Owner()), turnDelay, [localTurn, &cycle]()
-        //     { 
-        //         //con << "EXECUTING TURN\n";
-        //         cycle.Turn(localTurn);
-        //     });
-        // }
-        // else
+            
         controller.Turn(cycle, turn);
     }
 
@@ -479,6 +470,7 @@ gAINavigator::PathEvaluator::~PathEvaluator() {}
 
 gAINavigator::TailChaseEvaluator::TailChaseEvaluator(gCycle &cycle) : cycle_(cycle)
 {
+    this->name = "TailChaseEvaluator";
 }
 
 void gAINavigator::TailChaseEvaluator::Evaluate(gAINavigator::Path const &path, gAINavigator::PathEvaluation &evaluation) const
@@ -546,8 +538,14 @@ void gAINavigator::SuicideEvaluator::SetEmergency(bool emergency)
     emergency_ = emergency;
 }
 
-gAINavigator::SuicideEvaluator::SuicideEvaluator(gCycle &cycle) : cycle_(cycle), timeFrame_(cycle.GetTurnDelay()) {}
-gAINavigator::SuicideEvaluator::SuicideEvaluator(gCycle &cycle, REAL timeFrame) : cycle_(cycle), timeFrame_(timeFrame) {}
+gAINavigator::SuicideEvaluator::SuicideEvaluator(gCycle &cycle) : cycle_(cycle), timeFrame_(cycle.GetTurnDelay()) 
+{
+    this->name = "SuicideEvaluator";
+}
+gAINavigator::SuicideEvaluator::SuicideEvaluator(gCycle &cycle, REAL timeFrame) : cycle_(cycle), timeFrame_(timeFrame) 
+{
+    this->name = "SuicideEvaluator";
+}
 gAINavigator::SuicideEvaluator::~SuicideEvaluator() {}
 
 //!@param path        the path to evaluate
@@ -571,10 +569,14 @@ gAINavigator::TrapEvaluator::TrapEvaluator(gCycle &cycle)
     : cycle_(cycle)
 {
     space_ = .25 * cycle.ThisWallsLength();
+    this->name = "TrapEvaluator";
 }
 
 gAINavigator::TrapEvaluator::TrapEvaluator(gCycle &cycle, REAL space)
-    : cycle_(cycle), space_(space) {}
+    : cycle_(cycle), space_(space) 
+    {
+        this->name = "TrapEvaluator";
+    }
 gAINavigator::TrapEvaluator::~TrapEvaluator() {}
 
 void gAINavigator::RandomEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
@@ -591,11 +593,23 @@ void gAINavigator::RandomEvaluator::Evaluate(Path const &path, PathEvaluation &e
     evaluation.score = (randomizer.Get() * 100) + randomDeviation;
 }
 
-gAINavigator::RandomEvaluator::RandomEvaluator(gCycle &cycle) : cycle_(cycle) {}
-gAINavigator::RandomEvaluator::~RandomEvaluator() {}
+gAINavigator::RandomEvaluator::RandomEvaluator(gCycle &cycle) : cycle_(cycle) 
+{
+    this->name = "RandomEvaluator";
+}
+gAINavigator::RandomEvaluator::~RandomEvaluator() 
+{
+    this->name = "RandomEvaluator";
+}
 
-gAINavigator::CowardEvaluator::CowardEvaluator(gCycle &cycle) : cycle_(cycle) {}
-gAINavigator::CowardEvaluator::~CowardEvaluator() {}
+gAINavigator::CowardEvaluator::CowardEvaluator(gCycle &cycle) : cycle_(cycle) 
+{
+    this->name = "CowardEvaluator";
+}
+gAINavigator::CowardEvaluator::~CowardEvaluator() 
+{
+    this->name = "CowardEvaluator";
+}
 
 void gAINavigator::CowardEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
@@ -620,7 +634,10 @@ void gAINavigator::CowardEvaluator::Evaluate(Path const &path, PathEvaluation &e
     }
 }
 
-gAINavigator::TunnelEvaluator::TunnelEvaluator(gCycle &cycle) : cycle_(cycle) {}
+gAINavigator::TunnelEvaluator::TunnelEvaluator(gCycle &cycle) : cycle_(cycle) 
+{
+    this->name = "TunnelEvaluator";
+}
 gAINavigator::TunnelEvaluator::~TunnelEvaluator() {}
 
 void gAINavigator::TunnelEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
@@ -648,11 +665,13 @@ gAINavigator::SpaceEvaluator::SpaceEvaluator(gCycle &cycle)
     {
         referenceDistance_ = cycle.GetDistance() + cycle.Speed() * 5;
     }
+    this->name = "SpaceEvaluator";
 }
 
 gAINavigator::SpaceEvaluator::SpaceEvaluator(REAL referenceDistance)
     : referenceDistance_(referenceDistance)
 {
+    this->name = "SpaceEvaluator";
 }
 
 void gAINavigator::SpaceEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
@@ -707,11 +726,13 @@ void gAINavigator::RubberEvaluator::Evaluate(Path const &path, PathEvaluation &e
 gAINavigator::RubberEvaluator::RubberEvaluator(gCycle &cycle)
 {
     Init(cycle, cycle.GetTurnDelay());
+    this->name = "RubberEvaluator";
 }
 
 gAINavigator::RubberEvaluator::RubberEvaluator(gCycle &cycle, REAL maxTime)
 {
     Init(cycle, maxTime);
+    this->name = "RubberEvaluator";
 }
 
 gAINavigator::RubberEvaluator::~RubberEvaluator()
@@ -756,6 +777,7 @@ void gAINavigator::FollowEvaluator::followTail()
 gAINavigator::FollowEvaluator::FollowEvaluator(gCycle &cycle)
     : cycle_(cycle), blocker_(0), blockedBySelf_(false)
 {
+    this->name = "FollowEvaluator";
     ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle);
 
     if (!local_p)
@@ -983,17 +1005,14 @@ bool gAINavigator::FollowEvaluator::targetZone()
 {
     gZone *closestZone = gZoneHelper::findClosestZone(&cycle_);
 
-
-    if (closestZone)
-        gHelperUtility::Debug("TargetZone",
-                            "Inside Zone?",booleanToString(closestZone->isInside(&cycle_)));
-
     if (closestZone && !closestZone->isInside(&cycle_))
     {
         // SetTarget(closestZone);
         SetTarget(closestZone->Position(), eCoord(0,0)); // + object->Lag()
         return true;
     }
+    else if (closestZone)
+        gHelperUtility::Debug("TargetZone","Inside Zone");
 
     return false;
 }
@@ -1183,7 +1202,6 @@ void gAINavigator::FollowEvaluator::Evaluate(gAINavigator::Path const &path, gAI
     }
 
     evaluation.score = 50 * f + 50;
-    // con << "toTarget_: "<< toTarget_ << "\n";
 }
 
 //!@param evaluator  evaluator doing the core work
@@ -1193,9 +1211,11 @@ void gAINavigator::EvaluationManager::Evaluate(PathEvaluator const &evaluator, B
     REAL bestScore = -HUGE;
     REAL bestDistance = HUGE;
 
+
     for (int i = paths_.GetPathCount() - 1; i >= 0; --i)
     {
-        PathEvaluation &store = evaluations_[i];
+        PathEvaluation &store = evaluations_[i]; 
+
         if (store.veto)
         {
             continue;
@@ -1209,29 +1229,38 @@ void gAINavigator::EvaluationManager::Evaluate(PathEvaluator const &evaluator, B
         //     continue;
 
         evaluation.score = evaluation.score * scale + offset;
-
+        REAL previousScore = store.score;
+        REAL delta = 0;
+        
         // update stored evaluation
         switch (mode)
         {
         case BLEND_ADD:
             store.score += evaluation.score;
+            delta = evaluation.score;
             break;
         case BLEND_MULT:
             store.score *= evaluation.score;
+            delta = store.score - previousScore;
             break;
         case BLEND_MAX:
             if (evaluation.score > store.score)
             {
+                delta = evaluation.score - store.score;
                 store.score = evaluation.score;
             }
             break;
         case BLEND_MIN:
             if (evaluation.score < store.score)
             {
+                delta = store.score - evaluation.score;
                 store.score = evaluation.score;
             }
             break;
         }
+        
+        if (delta > 0)
+            store.contributionMap[evaluator.name] += delta;        
 
         if (evaluation.nextThought < store.nextThought)
         {
@@ -1272,6 +1301,8 @@ void gAINavigator::EvaluationManager::Evaluate(PathEvaluator const &evaluator, B
     //     }
 }
 
+//! used to separate two batches of evaluation. The first batch is used purely
+//! to check each path for unfavorable conditions and veto certain paths. 
 //! reset scores, but don't forget veto
 void gAINavigator::EvaluationManager::Reset()
 {
@@ -1288,7 +1319,47 @@ REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle
 {
     if (bestPath_ >= 0)
     {
-        REAL thisMaxStep = evaluations_[bestPath_].nextThought;
+        const PathEvaluation &chosenEval = evaluations_[bestPath_];
+
+        if ((sg_navigatorDebugTrackEvaluation))
+        {
+            std::vector<std::pair<std::string, REAL>> sortedContribs(
+                chosenEval.contributionMap.begin(), chosenEval.contributionMap.end());
+        
+            std::sort(sortedContribs.begin(), sortedContribs.end(),
+                      [](const auto& a, const auto& b) {
+                          return b.second < a.second; 
+                      });
+        
+            std::ostringstream contribs;
+            bool first = true;
+            for (const auto& [name, score] : sortedContribs)
+            {
+                if (!first)
+                    contribs << ", ";
+                first = false;
+        
+                contribs << name;
+                if (sg_navigatorDebugTrackEvaluationShowScore)
+                {
+                    contribs << " (";
+                    if (score < 0.1)
+                        contribs << score; 
+                    else if (score < 1.0)
+                        contribs << std::fixed << std::setprecision(2) << score;
+                    else if (score < 10.0)
+                        contribs << std::fixed << std::setprecision(1) << score;
+                    else
+                        contribs << std::fixed << std::setprecision(0) << score;
+                    contribs << ")";
+                }
+            }
+            controller.contributionStr = contribs.str();
+            if (sg_helperDebug)
+                gHelperUtility::Debug("gAINavigator Finish", "Contributing evaluators: " + contribs.str());
+        }        
+
+        REAL thisMaxStep = chosenEval.nextThought;
         if (maxStep > thisMaxStep)
         {
             maxStep = thisMaxStep;
@@ -1747,7 +1818,7 @@ void gAINavigator::UpdatePaths()
 void displayTurn(int dir, int numberOfTurns, std::string reason)
 {
     // Log the direction of the turn made
-    gHelperUtility::Debug("SMART TURNING FRONT BOT",
+    gHelperUtility::Debug("gAINavigator Think",
                           std::to_string(numberOfTurns) + " Turn(s) made: " +
                           std::string(dir == LEFT ? "LEFT" : "RIGHT") + ", Reason: " + (reason));
 }

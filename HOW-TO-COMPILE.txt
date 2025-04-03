@@ -1,0 +1,36 @@
+============================
+=  BUILD INSTRUCTIONS     =
+============================
+
+### WINDOWS ###
+(To be added)
+
+---
+
+### UBUNTU / DEBIAN ###
+
+1. Clone the repository:
+   bzr branch lp:~nickwinston123/armagetronad/0.2.9-sty+ct+ap-arma-helper armagetronad
+
+2. Install dependencies:
+   sudo apt-get install bison make automake g++ python3 \
+   libxml2-dev libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev \
+   libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libfreetype6-dev \
+   libftgl-dev libglew-dev libpng-dev libboost-dev libprotobuf-dev \
+   protobuf-compiler libboost-thread-dev libzthread-dev automake \
+   autoconf libsqlite3-dev xclip
+
+3. Run bootstrap (only required on first build):
+   cd armagetronad
+   ./bootstrap.sh
+   cd ..
+
+4. Build:
+   mkdir build
+   cd build
+   # Running configure is required only on first build or if you change environment, dependencies, or after running bootstrap.sh
+   ../armagetronad/configure
+   make # OR: make install
+
+5. Run:
+   ./src/armagetronad_main

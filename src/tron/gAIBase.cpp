@@ -889,7 +889,7 @@ public:
         if (sides[1].otherCycle == sides[0].otherCycle && sides[0].otherCycle)
             hit = true;
 
-#ifdef DEBUGLINE
+#ifdef DEBUG
         if (Hit())
         {
             eDebugLine::SetColor(1, 1, 1);

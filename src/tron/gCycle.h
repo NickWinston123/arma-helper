@@ -61,6 +61,9 @@ extern tString sg_smarterBotEnabledPlayers;
 extern bool sg_smarterBotTeam, sg_smarterBotTeamOwner, sg_smarterBotAFKCheck, sg_predictDeath;
 extern REAL sg_smarterBotAFKCheckTime;
 extern bool sg_smarterBotAFKCheckIfChatting;
+extern bool sg_navigatorDebugTrackEvaluationShowScore,
+            sg_navigatorDebugShowTurn,
+            sg_navigatorDebugTrackEvaluation;
 
 typedef enum
 {

@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef ArmageTron_SENSOR_H
 #define ArmageTron_SENSOR_H
 
-#include "..\src\tron\gZone.h"
+#include "../tron/gZone.h"
 #include "eGameObject.h"
 #include "eTess2.h"
 //#include "eGrid.h"

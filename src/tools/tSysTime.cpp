@@ -468,6 +468,13 @@ struct tm getCurrentLocalTime()
     return thisTime;
 }
 
+std::string getTimeZone(const struct tm& timeInfo)
+{
+    char timeZone[64];
+    strftime(timeZone, sizeof(timeZone), "%Z", &timeInfo);
+    return timeZone;
+}
+
 std::string getTimeStringBase(struct tm &thisTime, bool showTime24hour)
 {
     static int lastTime = 0;

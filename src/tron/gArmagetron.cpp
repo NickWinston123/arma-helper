@@ -709,6 +709,7 @@ int main(int argc, char **argv)
         tLocale::Load("languages.txt");
 
         st_LoadConfig();
+
         LoadChatCommandConfCommands();
         CommandShortcutLoader();
 
@@ -716,7 +717,6 @@ int main(int argc, char **argv)
         {
             updateVersionOverride(sn_updateVersionOverrideValue);
         }
-
 
         if (sn_bannedWatch)
             FileManager(tString("banned.txt"),tDirectories::Var()).Clear();
@@ -741,7 +741,7 @@ int main(int argc, char **argv)
         }
         if (tConfigMigration::SavedBefore(sn_configurationSavedInVersion, sn_programVersion))
             sn_configurationSavedInVersion = sn_programVersion;
-        
+
         // record and play back the recording debug level
         tRecorderSyncBase::GetDebugLevelPlayback();
 
@@ -905,7 +905,7 @@ int main(int argc, char **argv)
 
                     if (tryConnectLastServer)
                         ConnectToLastServer();
-                
+
                     MainMenu();
 
                     // remove all players

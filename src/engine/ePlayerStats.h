@@ -120,12 +120,17 @@ public:
     using StatInfo = std::pair<std::string, PlayerDataBase::StatFunction>;
     static std::map<std::string, StatInfo> valueMap;
 
-    tString rgbString()
+    tString rgbString( bool cyclePreview = false )
     {
         tString output;
         output << "("
-               << r << ", " << g << ", " << b
+               << r << ", " 
+               << g << ", " 
+               << b
                << ")";
+        if (cyclePreview)
+            output << " " 
+                   << ColorsCommand::cycleColorPreview(r,g,b, false);
         return output;
     }
 
@@ -482,7 +487,7 @@ public:
 
     static bool performAction(PlayerData &stats, AcheivementsTypes type)
     {
-        if (!se_playerTriggerMessages || !se_playerTriggerMessagesAcheivements)
+        if (!se_playerMessageTriggers || !se_playerMessageTriggersAcheivements)
             return false;
 
         bool stored = false;
@@ -514,7 +519,7 @@ public:
             stats.acheivement_history.push_back(response.stdString());
             stored = true;
 
-            if ((se_playerTriggerMessages && se_playerTriggerMessagesAcheivements) && (!stats.is_local || se_playerTriggerMessagesAcheivementsLocal))
+            if ((se_playerMessageTriggers && se_playerMessageTriggersAcheivements) && (!stats.is_local || se_playerMessageTriggersAcheivementsLocal))
             {
                 bot.Messager()->SetOutputParams(response, delay);
                 bot.Messager()->Send();
@@ -531,17 +536,17 @@ private:
         int maxKillStreak = stats.max_kill_streak;
 
         handleAchievement(bot, stats, playerName,
-                          currentKills, se_playerTriggerMessagesAcheivementsKillsChangeVal, "$acheivements_kills",
+                          currentKills, se_playerMessageTriggersAcheivementsKillsChangeVal, "$acheivements_kills",
                           response, delay);
 
         handleAchievement(bot, stats, playerName,
-                          currentKillStreak, se_playerTriggerMessagesAcheivementsKillStreakChangeVal, "$acheivements_current_killstreak",
+                          currentKillStreak, se_playerMessageTriggersAcheivementsKillStreakChangeVal, "$acheivements_current_killstreak",
                           response, delay);
 
         if (maxKillStreak > 1 && stats.new_max_kill_streak)
         {
             handleAchievement(bot, stats, playerName,
-                              maxKillStreak, se_playerTriggerMessagesAcheivementsMaxKillStreak, "$acheivements_max_killstreak",
+                              maxKillStreak, se_playerMessageTriggersAcheivementsMaxKillStreak, "$acheivements_max_killstreak",
                               response, delay);
         }
     }
@@ -549,21 +554,21 @@ private:
     static void handleChats(eChatBot &bot, const PlayerData &stats, const tString &playerName, tString &response, REAL &delay)
     {
         handleAchievement(bot, stats, playerName,
-                          stats.total_messages, se_playerTriggerMessagesAcheivementsChatsChangeVal, "$acheivements_chats",
+                          stats.total_messages, se_playerMessageTriggersAcheivementsChatsChangeVal, "$acheivements_chats",
                           response, delay);
     }
 
     static void handleJoins(eChatBot &bot, const PlayerData &stats, const tString &playerName, tString &response, REAL &delay)
     {
         handleAchievement(bot, stats, playerName,
-                          stats.times_joined, se_playerTriggerMessagesAcheivementsJoinsChangeVal, "$acheivements_joins",
+                          stats.times_joined, se_playerMessageTriggersAcheivementsJoinsChangeVal, "$acheivements_joins",
                           response, delay);
     }
 
     static void handleBans(eChatBot &bot, const PlayerData &stats, const tString &playerName, tString &response, REAL &delay)
     {
         handleAchievement(bot, stats, playerName,
-                          stats.times_banned, se_playerTriggerMessagesAcheivementsBansChangeVal, "$acheivements_bans",
+                          stats.times_banned, se_playerMessageTriggersAcheivementsBansChangeVal, "$acheivements_bans",
                           response, delay);
     }
 
@@ -589,7 +594,7 @@ private:
 
     static void findResponse(eChatBot &bot, tString playerName, tString trigger, tString value)
     {
-        if (!se_playerTriggerMessages)
+        if (!se_playerMessageTriggers)
             return;
 
         static const tString valDelim = tString("$val1");
@@ -705,9 +710,10 @@ public:
         if (!matchedPlayers.empty())
         {
             std::sort(matchedPlayers.begin(), matchedPlayers.end(),
-                    [](const auto &a, const auto &b) {
-                        return a.second.last_seen > b.second.last_seen;
-                    });
+                [](const std::pair<tString, PlayerData> &a, const std::pair<tString, PlayerData> &b) {
+                    return a.second.last_seen > b.second.last_seen;
+                });
+
 
             return playerStatsMap[matchedPlayers.front().first];
         }
@@ -793,7 +799,7 @@ public:
         {
             stats.rage_quits++;
 
-            if (se_playerTriggerMessages && se_playerTriggerMessagesRageQuits)
+            if (se_playerMessageTriggers && se_playerMessageTriggersRageQuits)
             {
                 static const tString valDelim = tString("$val1");
 

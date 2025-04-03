@@ -11,169 +11,6 @@
 #include "tConfiguration.h"
 #include "nConfig.h"
 
-class uMenuItemToggleThemed : public uMenuItemToggle
-{
-public:
-    uMenuItemToggleThemed(uMenu *menu,
-                          const char *title,
-                          const char *help,
-                          bool &target,
-                          tThemedText &theTheme,
-                          REAL valueLocX)
-        : uMenuItemToggle(menu, "", help, target),
-          customTitle(title),
-          targetPtr(&target),
-          menutheme(theTheme),
-          locX(valueLocX)
-    {
-    }
-
-    virtual void Render(REAL x, REAL y, REAL alpha = 1, bool selected = false) override
-    {
-        bool currentValue = *targetPtr;
-
-        tString themedLabel = menutheme.HeaderColor() + customTitle;
-        tString themedValue = currentValue
-                                  ? (menutheme.MainColor() + tString("Enabled"))
-                                  : (menutheme.ErrorColor() + tString("Disabled"));
-
-        DisplayText(x, y, themedLabel.c_str(), selected, alpha, 1);
-        DisplayText(x + locX, y, themedValue.c_str(), selected, alpha, -1);
-    }
-
-private:
-    tString customTitle;
-    bool *targetPtr;
-    tThemedText &menutheme;
-    REAL locX;
-};
-
-class uMenuItemIntThemed : public uMenuItemInt
-{
-public:
-    uMenuItemIntThemed(uMenu *menu,
-                       const char *title,
-                       const char *help,
-                       int &target,
-                       int minVal,
-                       int maxVal,
-                       int stepVal,
-                       tThemedText &theTheme,
-                       REAL valueLocX)
-        : uMenuItemInt(menu, "", help, target, minVal, maxVal, stepVal),
-          customTitle(title),
-          targetPtr(&target),
-          menutheme(theTheme),
-          locX(valueLocX)
-    {
-    }
-
-    virtual void Render(REAL x, REAL y, REAL alpha = 1, bool selected = false) override
-    {
-        tString themedLabel = menutheme.HeaderColor() + customTitle;
-
-        tString valueStr;
-        valueStr << *targetPtr;
-        tString themedValue = menutheme.ItemColor() + valueStr;
-
-        DisplayText(x, y, themedLabel.c_str(), selected, alpha, 1);
-        DisplayText(x + locX, y, themedValue.c_str(), selected, alpha, -1);
-    }
-
-private:
-    tString customTitle;
-    int *targetPtr;
-    tThemedText &menutheme;
-    REAL locX;
-};
-
-class uMenuItemRealThemed : public uMenuItemReal
-{
-public:
-    uMenuItemRealThemed(uMenu *menu,
-                        const char *title,
-                        const char *help,
-                        REAL &target,
-                        REAL minVal,
-                        REAL maxVal,
-                        REAL stepVal,
-                        tThemedText &theTheme,
-                        REAL valueLocX)
-        : uMenuItemReal(menu, "", help, target, minVal, maxVal, stepVal),
-          customTitle(title),
-          targetPtr(&target),
-          menutheme(theTheme),
-          locX(valueLocX)
-    {
-    }
-
-    virtual void Render(REAL x, REAL y, REAL alpha = 1, bool selected = false) override
-    {
-        tString themedLabel = menutheme.HeaderColor() + customTitle;
-
-        tString valueStr;
-        valueStr << *targetPtr;
-        tString themedValue = menutheme.ItemColor() + valueStr;
-
-        DisplayText(x, y, themedLabel.c_str(), selected, alpha, 1);
-        DisplayText(x + locX, y, themedValue.c_str(), selected, alpha, -1);
-    }
-
-private:
-    tString customTitle;
-    REAL *targetPtr;
-    tThemedText &menutheme;
-    REAL locX;
-};
-
-class uMenuItemStringThemed : public uMenuItemString
-{
-public:
-    uMenuItemStringThemed(uMenu *menu,
-                          const char *title,
-                          const char *help,
-                          tString &target,
-                          tThemedText &theTheme,
-                          REAL valueLocX,
-                          int maxLength = 1024)
-        : uMenuItemString(menu, tString(""), help, target, maxLength),
-          customTitle(title),
-          menutheme(theTheme),
-          locX(valueLocX)
-    {
-    }
-
-    virtual void Render(REAL x, REAL y, REAL alpha = 1, bool selected = false) override
-    {
-    #ifndef DEDICATED
-        static int counter = 0;
-        counter++;
-
-        int cmode = 0;
-        if (selected)
-        {
-            cmode = 1;
-            if (counter & 32)
-                cmode = 2;
-        }
-
-        rTextField::ColorMode currentColorMode = colorMode_;
-        if (currentColorMode == rTextField::COLOR_SHOW && !selected)
-            currentColorMode = rTextField::COLOR_USE;
-
-        tString themedLabel = menutheme.HeaderColor() + customTitle;
-
-        DisplayText(x, y, themedLabel.c_str(), selected, alpha, 1);
-        DisplayText(x + locX, y, &((*content)[0]), selected, alpha, -1,
-                    cmode, cursorPos, currentColorMode);
-    #endif
-    }
-
-private:
-    tString customTitle;
-    tThemedText &menutheme;
-    REAL locX;
-};
 
 namespace uDynamicMenu
 {
@@ -197,10 +34,12 @@ namespace uDynamicMenu
                                  const tString &settingTitle,
                                  tConfItemBase *confItem,
                                  tThemedText &menutheme,
-                                 REAL valueLocX)
+                                 REAL &valueLocX)
     {
         tString helpText;
-        helpText << "$" << settingTitle << "_help";
+        helpText << "$"
+                 << settingTitle
+                 << "_help";
         tToLower(helpText);
 
         if (auto *boolItem = dynamic_cast<tConfItem<bool> *>(confItem))
@@ -247,7 +86,9 @@ namespace uDynamicMenu
                                     const tString &rootMenuName,
                                     const tString &categoryList,
                                     tThemedText &menutheme,
-                                    REAL valueLocX)
+                                    REAL &valueLocX,
+                                    tConfItem<tString> *categoryConf = nullptr)
+
     {
         for (auto &it : menuRegistry)
             delete it.second;
@@ -264,7 +105,7 @@ namespace uDynamicMenu
                 headPrefixes.push_back(token);
         }
 
-        if (headPrefixes.empty())
+        if (headPrefixes.empty()) // all commands
         {
             const auto &itemsMap = tConfItemBase::GetConfItemMap();
             std::vector<tString> allTitles;
@@ -286,16 +127,14 @@ namespace uDynamicMenu
             {
                 tConfItemBase *confItem = tConfItemBase::GetConfigItem(confTitle);
                 if (confItem)
-                {
                     uDynamicMenu::AddSettingToMenu(*rootMenu,
                                                    confTitle,
                                                    confItem,
                                                    menutheme,
                                                    valueLocX);
-                }
             }
         }
-        else
+        else // specific command categories
         {
             std::reverse(headPrefixes.begin(), headPrefixes.end());
 
@@ -325,28 +164,32 @@ namespace uDynamicMenu
             }
         }
 
+        if (categoryConf)
+            uDynamicMenu::AddSettingToMenu(*rootMenu, categoryConf->GetTitle(), categoryConf, menutheme, valueLocX);
+
         rootMenu->Enter();
     }
 
 }
 
 bool su_dynamicMenu = true;
-static tConfItem<bool> su_dynamicMenuConf = HelperCommand::tConfItem("DYNAMIC_MENU", su_dynamicMenu);
+static tConfItem<bool> su_dynamicMenuConf("DYNAMIC_MENU", su_dynamicMenu);
 
 REAL su_dynamicMenuValueLocX = 0.02;
-static tConfItem<REAL> su_dynamicMenuValueLocXConf = HelperCommand::tConfItem("DYNAMIC_MENU_VALUE_LOCX", su_dynamicMenuValueLocX);
+static tConfItem<REAL> su_dynamicMenuValueLocXConf("DYNAMIC_MENU_VALUE_LOCX", su_dynamicMenuValueLocX);
 
 tString su_dynamicMenuColorHeader("0xffffff"); // White for labels
-static tConfItem<tString> su_dynamicMenuColorHeaderConf = HelperCommand::tConfItem("DYNAMIC_MENU_COLOR_LABEL", su_dynamicMenuColorHeader);
-tString su_dynamicMenuColorItem("0xaaaaaa"); // Light Gray for values
-static tConfItem<tString> su_dynamicMenuColorItemConf = HelperCommand::tConfItem("DYNAMIC_MENU_COLOR_VALUES", su_dynamicMenuColorItem);
-tString su_dynamicMenuColorMain("0x00dd00"); // Green for enabled
-static tConfItem<tString> su_dynamicMenuColorMainConf = HelperCommand::tConfItem("DYNAMIC_MENU_COLOR_ENABLED", su_dynamicMenuColorMain);
-tString su_dynamicMenuColorError("0xdd0000"); // Red for disabled
-static tConfItem<tString> su_dynamicMenuColorErrorConf = HelperCommand::tConfItem("DYNAMIC_MENU_COLOR_DISABLED", su_dynamicMenuColorError);
+static tConfItem<tString> su_dynamicMenuColorHeaderConf("DYNAMIC_MENU_COLOR_LABEL", su_dynamicMenuColorHeader);
+tString su_dynamicMenuColorItem("0xaaaaaa");   // Light Gray for values
+static tConfItem<tString> su_dynamicMenuColorItemConf("DYNAMIC_MENU_COLOR_VALUES", su_dynamicMenuColorItem);
+tString su_dynamicMenuColorMain("0x00dd00");   // Green for enabled
+static tConfItem<tString> su_dynamicMenuColorMainConf("DYNAMIC_MENU_COLOR_ENABLED", su_dynamicMenuColorMain);
+tString su_dynamicMenuColorError("0xdd0000");  // Red for disabled
+static tConfItem<tString> su_dynamicMenuColorErrorConf("DYNAMIC_MENU_COLOR_DISABLED", su_dynamicMenuColorError);
 
 tString su_dynamicMenuCategories("");
-static tConfItem<tString> su_dynamicMenuCategoriesConf = HelperCommand::tConfItem("DYNAMIC_MENU_CATEGORIES", su_dynamicMenuCategories);
+static tConfItem<tString> su_dynamicMenuCategoriesConf("DYNAMIC_MENU_CATEGORIES", su_dynamicMenuCategories);
+
 
 tThemedText dynamicMenuTheme(su_dynamicMenuColorHeader, su_dynamicMenuColorMain, su_dynamicMenuColorItem, su_dynamicMenuColorError);
 
@@ -360,13 +203,14 @@ void LaunchDynamicMenu()
                                       menuName,
                                       su_dynamicMenuCategories,
                                       dynamicMenuTheme,
-                                      su_dynamicMenuValueLocX);
+                                      su_dynamicMenuValueLocX,
+                                      &su_dynamicMenuCategoriesConf);
 }
 
 void LaunchDynamicMenuPub(std::istream &s)
 {
     LaunchDynamicMenu();
 }
-static tConfItemFunc dynamicMenuConf = HelperCommand::tConfItemFunc("DYNAMIC_MENU_LAUNCH", &LaunchDynamicMenuPub);
+static tConfItemFunc dynamicMenuConf = tConfItemFunc("DYNAMIC_MENU_LAUNCH", &LaunchDynamicMenuPub);
 
 #endif // U_DYNAMIC_MENU_H

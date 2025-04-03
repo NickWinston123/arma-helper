@@ -836,13 +836,15 @@ void tConfItemBase::WriteAllToFile()
             //  fetch the value set for this setting.
             ci->FetchVal(value);
 
-            mess << ci->title << " ";
+            mess << ci->title 
+                 << " ";
 
             mess.SetPos( sim_maxlen+2, false );
-            mess << value << " ";
-            mess << " # ";
-            mess << help;
-            mess << "\n";
+            mess << value 
+                 << " "
+                 << " # "
+                 << help
+                 << "\n";
 
             w << mess;
             /*w << "| " << ci->title << " || " << value << " || " << help << "\n";
@@ -885,15 +887,15 @@ void tConfItemBase::WriteAllLevelsToFile()
 
             tString mess;
 
-            mess << "ACCESS_LEVEL ";
-            mess << ci->title << " ";
+            mess << "ACCESS_LEVEL "
+                 << ci->title 
+                 << " "
+                 << ci->requiredLevel;
 
-            //mess.SetPos( sim_maxlen+2, false );
-            mess << ci->requiredLevel;
             mess.SetPos( sim_maxlen+5, false );
-            mess << " # ";
-            mess << help;
-            mess << "\n";
+            mess << " # "
+                 << help
+                 << "\n";
 
             w << mess;
         }
@@ -1631,6 +1633,7 @@ static bool Load( const tPath& path, const char* filename )
         return false;
     }
 }
+
 
 // flag indicating whether settings were read from a playback
 static bool st_settingsFromRecording = false;

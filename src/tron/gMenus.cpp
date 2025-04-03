@@ -630,8 +630,8 @@ void sg_ConfigMenu()
     menu.Enter();
 }
 
-//extern bool png_screenshot;		// from rSysdep.cpp
-//static tConfItem<bool> pns("PNG_SCREENSHOT",png_screenshot);
+//extern bool screenshot_png;		// from rSysdep.cpp
+//static tConfItem<bool> pns("PNG_SCREENSHOT",screenshot_png);
 
 static uMenuItemToggle  t32b
 (&screen_menu_detail,"$detail_text_truecolor_text",
@@ -1233,13 +1233,12 @@ extern void Render(int);
 
 
 
-REAL sg_playerColorMenuMax = 32;
+REAL sg_playerColorMenuMax = 99999999;
 static tConfItem< REAL > sg_playerColorMenuMaxConf("PLAYER_COLOR_MENU_MAX",sg_playerColorMenuMax);
 
-static rFileTexture r_wallPreview(rTextureGroups::TEX_WALL, "textures/dir_wall.png", 1, 0, 1);
 
 static rFileTexture r_cyclePreview(rTextureGroups::TEX_WALL, "textures/cycle_preview.png", 1, 0, 1);
-static rFileTexture r_wheelPreview(rTextureGroups::TEX_WALL, "textures/cycle_wheel.png", 1, 0, 1);
+static rFileTexture r_wallPreview(rTextureGroups::TEX_WALL, "textures/dir_wall.png", 1, 0, 1);
 
 class ArmageTron_color_menuitem:public uMenuItemInt{
 protected:
@@ -1256,155 +1255,74 @@ public:
     ~ArmageTron_color_menuitem(){}
 
     virtual REAL SpaceRight(){return .2;}
+virtual void RenderBackground()
+{
+#ifndef DEDICATED
+    uMenuItem::RenderBackground();
+    if (!sr_glOut) 
+        return;
 
-    enum Slot
-    {
-        SLOT_CUSTOM = 0,
-        SLOT_BODY = 1,
-        SLOT_WHEEL = 2,
-        SLOT_MAX = 3
-    };
+    REAL r = rgb[0] / 15.0f;
+    REAL g = rgb[1] / 15.0f;
+    REAL b = rgb[2] / 15.0f;
 
-    // loads a specific texture from a specific folder
-    static rSurface *LoadTextureSafe2(Slot slot, int mp)
-    {
-        static std::unique_ptr<rSurface> cache[SLOT_MAX][2];
-        std::unique_ptr<rSurface> &surface = cache[slot][mp];
-        if (surface.get() == NULL)
-        {
-            static char const *names[SLOT_MAX] = {"bike.png", "cycle_body.png", "cycle_wheel.png"};
-            char const *name = names[slot];
+    REAL cycleR = r, cycleG = g, cycleB = b;
 
-            char const *folder = mp ? "moviepack" : "textures";
-            tString file = tString(folder) + "/" + name;
+    se_MakeColorValid(r, g, b, 1.0f);
+    while (cycleR > 1.f) cycleR -= 1.f;
+    while (cycleG > 1.f) cycleG -= 1.f;
+    while (cycleB > 1.f) cycleB -= 1.f;
 
-            surface.reset(tNEW(rSurface(file)));
-        }
+    RenderEnd();
 
-        if (surface->GetSurface())
-            return surface.get();
-        else
-            return NULL;
-    }
+    //
+    // PREVIEW BOXES
+    //
+    glColor3f(cycleR, cycleG, cycleB);
+    glRectf(0.8f, -0.8f, 0.98f, -0.98f); // Cycle color box
 
-    // load one texture from the prefered folder (or the other one as fallback)
-    gTextureCycle *LoadTextureSafe(Slot slot, bool wheel)
-    {
-        rSurface *surface = LoadTextureSafe2(slot, 0);
-        if (!surface)
-            surface = LoadTextureSafe2(slot, 1);
+    glColor3f(r, g, b);
+    glRectf(-0.8f, -0.8f, -0.98f, -0.98f); // Tail color box
 
-        if (surface)
-            return tNEW(gTextureCycle)(*surface, gRealColor(rgb[0],rgb[1],rgb[2]), 0, 0, wheel);
+    REAL tailOffset = -0.128f;
+    // END PREVIEW BOX
 
-        return NULL;
-    }
+    // CYCLE & TAIL IMAGE W/ COLOR
 
-    // load textures from the specified folder (or the other one) and the format the model has just been read for
-    bool LoadTextures()
-    {
-        if (!bodyTex)
-            bodyTex = LoadTextureSafe(SLOT_BODY, false);
-        if (!wheelTex)
-            wheelTex = LoadTextureSafe(SLOT_WHEEL, true);
+    // tail
+    glColor3f(r, g, b);
+    r_wallPreview.Select();
 
-        return bodyTex && wheelTex;
-    }
+    BeginQuads();
+        TexCoord(0,0); Vertex(-0.78f, -0.715f + tailOffset);
+        TexCoord(0,1); Vertex(-0.78f, -0.852f + tailOffset);
+        TexCoord(4,1); Vertex( 0.50f, -0.852f + tailOffset);
+        TexCoord(4,0); Vertex( 0.50f, -0.715f + tailOffset);
+    RenderEnd();
 
-    // loads a model, checking before if the file exists
-    static rModel *LoadModelSafe(char const *filename)
-    {
-        return rModel::GetModel(filename);
-    }
+    BeginQuads();
+        TexCoord(0,0); Vertex(-0.78f, -0.713f + tailOffset);
+        TexCoord(0,1); Vertex(-0.78f, -0.715f + tailOffset);
+        TexCoord(1,1); Vertex( 0.50f, -0.715f + tailOffset);
+        TexCoord(1,0); Vertex( 0.50f, -0.713f + tailOffset);
+    RenderEnd();
 
-    virtual void RenderBackground()
-    {
-    #ifndef DEDICATED
-        uMenuItem::RenderBackground();
+    //cycle
+    REAL cycleOffset = -0.15;
 
-        if (!sr_glOut)
-            return;
+    glColor3f(cycleR, cycleG, cycleB);
+    r_cyclePreview.Select();
 
-        REAL r = rgb[0]/15.0;
-        REAL g = rgb[1]/15.0;
-        REAL b = rgb[2]/15.0;
+    BeginQuads();
+        TexCoord(0,0); Vertex(-0.43f + 1.23f, -0.59f + cycleOffset);
+        TexCoord(0,1); Vertex(-0.43f + 1.23f, -0.95f + cycleOffset);
+        TexCoord(1,1); Vertex(-0.80f + 1.23f, -0.95f + cycleOffset);
+        TexCoord(1,0); Vertex(-0.80f + 1.23f, -0.59f + cycleOffset);
+    RenderEnd();
 
-        REAL cycleR = r, cycleG = g, cycleB = b;
+#endif
+}
 
-        se_MakeColorValid(r, g, b, 1.0f);
-        while( cycleR > 1.f ) cycleR -= 1.f;
-        while( cycleG > 1.f ) cycleG -= 1.f;
-        while( cycleB > 1.f ) cycleB -= 1.f;
-
-        RenderEnd();
-
-        // PREVIEW BOXES
-        //Cycle Color
-        glColor3f(cycleR, cycleG, cycleB);
-        glRectf(.8,-.8,.98,-.98);
-
-
-        //Tail Color
-        glColor3f(r, g, b);
-        glRectf(-.8,-.8,-.98,-.98);
-
-        // END PREVIEW BOX
-
-        // CYCLE & TAIL IMAGE W/ COLOR
-
-        // tail
-        glColor3f(r, g, b);
-
-        r_wallPreview.Select();
-
-        BeginQuads();
-        TexCoord(0,0);
-        Vertex(-.78, -.715);
-
-        TexCoord(0,1);
-        Vertex(-.78, -.852);
-
-        TexCoord(4,1);
-        Vertex(.5, -.852);
-
-        TexCoord(4,0);
-        Vertex(.5, -.715);
-        RenderEnd();
-
-        BeginQuads();
-        TexCoord(0,0);
-        Vertex(-.78, -.715);
-
-        TexCoord(0,1);
-        Vertex(-.78, -.713);
-
-        TexCoord(1,1);
-        Vertex(.5, -.713);
-
-        TexCoord(1,0);
-        Vertex(.5, -.715);
-        RenderEnd();
-
-        //cycle
-        glColor3f(cycleR, cycleG, cycleB);
-        r_cyclePreview.Select();
-
-        BeginQuads();
-        TexCoord(0,0);
-        Vertex(-.43 + 1.23, -.59);
-
-        TexCoord(0,1);
-        Vertex(-.43 + 1.23, -.95);
-
-        TexCoord(1,1);
-        Vertex(-.8 + 1.23, -.95);
-
-        TexCoord(1,0);
-        Vertex(-.8 + 1.23, -.59);
-        RenderEnd();
-
-    #endif
-    }
 
     rModel  *bodyModel, *frontModel, *rearModel;  // cycle models
     gTextureCycle *wheelTex, *bodyTex;
@@ -1748,6 +1666,12 @@ static bool screenshot_func(REAL x){
 
     return true;
 }
+
+static void sr_screenshot(std::istream &s)
+{
+    sr_screenshotIsPlanned=true;
+}
+static tConfItemFunc sr_screenshotConf("SCREENSHOT", &sr_screenshot);
 
 
 static bool toggle_fullscreen_func( REAL x )

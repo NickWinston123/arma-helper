@@ -845,7 +845,7 @@ setting_legacy_behavior_visual_help   Default legacy behavior for settings that 
 #********************************************
 #********************************************
 
-png_screenshot_help      Store screenshots as PNG files, not BMP files.
+screenshot_png_help      Store screenshots as PNG files, not BMP files.
 white_sparks_help        Draw sparks in white (instead of cycle colors).
 keep_window_active_help  Keeps rendering active when the program window loses input focus.
 

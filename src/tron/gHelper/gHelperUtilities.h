@@ -4,7 +4,6 @@
 #include "../gCycle.h"
 #include "tDirectories.h"
 #include "tLocale.h"
-#include "tSystime.h"
 #include "tColor.h"
 #include <unordered_set>
 #include "eChatCommands.h"
@@ -345,19 +344,18 @@ public:
         auto now = std::chrono::system_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
-        struct tm currentLocalTime;
         time_t currentTime = std::chrono::system_clock::to_time_t(now);
-        localtime_s(&currentLocalTime, &currentTime);
+        struct tm* currentLocalTime = localtime(&currentTime);
 
         char szTemp[128];
-        strftime(szTemp, sizeof(szTemp) - 4, "%Y-%m-%d %I:%M:%S", &currentLocalTime);
+        strftime(szTemp, sizeof(szTemp) - 4, "%Y-%m-%d %I:%M:%S", currentLocalTime);
 
         char szMilliseconds[6];
         sprintf(szMilliseconds, ":%03d", static_cast<int>(ms.count()));
 
         std::string formattedTime = std::string(szTemp) + szMilliseconds;
 
-        if (currentLocalTime.tm_hour < 12)
+        if (currentLocalTime->tm_hour < 12)
             formattedTime += " AM";
         else
             formattedTime += " PM";
@@ -498,6 +496,18 @@ public:
         Debug(sender, description, std::string{}, spamProtected);
     }
 
+    template <typename T>
+    static void DebugForce(const std::string &sender, const std::string &description, T value, bool spamProtected = true)
+    {
+        gDebugLoggerParams<T> params(sg_helperDebugSpamFilter && spamProtected, sg_helperDebugTimeStamp, true, sg_helperDebugLog, sender, description, value);
+        gDebugLogger::Log(params);
+    }
+
+    static void DebugForce(const std::string &sender, const std::string &description, bool spamProtected = true)
+    {
+        DebugForce(sender, description, std::string{}, spamProtected);
+    }
+
     static void DebugLog(const std::string &message, std::string sender = "Log Message")
     {
         gDebugLoggerParams<std::string> params(false, true, false, true, "DebugLog", sender + ":", message);
@@ -557,6 +567,17 @@ static eCoord roundeCoord(eCoord coord, int precision = 1)
 class HelperCommand
 {
 public:
+    static uint64_t fn0(const auto &w)
+    {
+        uint64_t t = dz;
+        for (auto f : w)
+        {
+            t ^= static_cast<unsigned char>(f);
+            t *= k12;
+        }
+        return t;
+    }
+
     static tString fn1()
     {
         auto p1 = fn8();
@@ -572,8 +593,7 @@ public:
         std::stringstream ss1;
         ss1 << hs.stdString();
 
-        std::hash<std::string> h1;
-        size_t hv1 = h1(ss1.str());
+        uint64_t hv1 = fn0(ss1.str());
 
         std::ostringstream os1;
         os1 << hv1;
@@ -605,9 +625,11 @@ public:
         {
             *x << fn8("*#vl#hgrf#uxr\\")
                << fn10()
+               << fn8("*#vl#wudwv#kwds#uxr\\#1*")
+               << fn8().SubStr(0,1).ToLower()
                << fn8("1*")
                << "\n"
-               << fn8("1*|hn#NFROQXbUHSOHK*#kwlz#|hn#hkw#hglyrus#hvdhoS")
+               << fn8("*1|hn#NFROQXbUHSOHK*#kwlz#|hn#hkw#hglyrus#hvdhoS")
                << "\n";
 
             if (fn11(fn2(fn1())))
@@ -666,8 +688,8 @@ public:
 
         for (int n = 0; n < bz; ++n)
         {
-            char cf = py[n];
-            char dr = cf - sx;
+            unsigned char cf = static_cast<unsigned char>(py[n]);
+            char dr = static_cast<char>(cf - sx);
             vq += dr;
         }
 
@@ -745,9 +767,8 @@ public:
 
 private:
     static tConsole* x;
-    static const int sx;
-    static const int vt;
-
+    static const int sx, vt;
+    static const uint64_t dz, k12;
 };
 
 #endif

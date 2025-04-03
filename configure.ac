@@ -318,19 +318,14 @@ dnl test $DEBUGLEVEL -ge 3 && enable_memmanager=yes
 test $DEBUGLEVEL -ge 4 && CXXFLAGS="$CXXFLAGS -DDEBUG_EXPENSIVE"
 test $DEBUGLEVEL -ge 5 && CXXFLAGS="$CXXFLAGS -DMEM_DEB"
 
-dnl oddly, this macro needs to be called once unconditionally, or automake borks up.
-dnl pick C++11 standard if we can
-AX_CXXFLAGS_GCC_OPTION(-std=c++11)
+AX_CXXFLAGS_GCC_OPTION(-std=c++17)
 if test -z "`echo $CXXFLAGS | grep "\-std="`"; then
-  dnl maybe it is the future and c++11 is deprecated? C++14 should work, too
   AX_CXXFLAGS_GCC_OPTION(-std=c++14)
   if test -z "`echo $CXXFLAGS | grep "\-std="`"; then
-	dnl still nothing? Maybe this one:
-	AX_CXXFLAGS_GCC_OPTION(-std=c++17)
-	if test -z "`echo $CXXFLAGS | grep "\-std="`"; then
-	  dnl last call: pre-c++11 standard. Works on mingw, so why not here?
-	  AX_CXXFLAGS_GCC_OPTION(-std=c++0x)
-	fi
+    AX_CXXFLAGS_GCC_OPTION(-std=c++11)
+    if test -z "`echo $CXXFLAGS | grep "\-std="`"; then
+      AX_CXXFLAGS_GCC_OPTION(-std=c++0x)
+    fi
   fi
 fi
 

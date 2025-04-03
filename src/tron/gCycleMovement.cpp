@@ -3441,15 +3441,11 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
 
         // Ignored turns
         if (currentTime < this->turnIgnoreTime)
-        {
             ignoreTurn = true;
-        }
 
         // Blocked turns
         if (this->blockTurn == dir || this->blockTurn == 2)
-        {
             ignoreTurn = true;
-        }
 
         // Don't turn
         if (ignoreTurn)
@@ -3463,9 +3459,7 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
         }
 
         if (this->forceTurn != 0)
-        {
             dir = this->forceTurn;
-        }
     }
 
     if (turns == 0)
@@ -3559,7 +3553,7 @@ bool gCycleMovement::DoTurn(int dir, bool botTurn = false)
         if (playerIsMe)
             this->lastTurnSysTime = tSysTimeFloat();
 
-        if (helperSmartTurning && !botTurn && playerIsMe)
+        if (!botTurn && playerIsMe)
         {
             this->lastTurnTime = currentTime;
             this->lastTurnDir = dir;

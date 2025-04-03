@@ -11,32 +11,52 @@
 #include <stack>
 #include <queue>
 
-bool se_playerTriggerMessages = false;
-static tConfItem<bool> se_playerTriggerMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS", se_playerTriggerMessages);
-
-bool se_playerTriggerMessagesResendSilencedMessages = false;
-static tConfItem<bool> se_playerTriggerMessagesResendSilencedMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES", se_playerTriggerMessagesResendSilencedMessages);
-
-int se_playerTriggerMessagesQueueMaxOverloadedSize = 10;
-static tConfItem<int> se_playerTriggerMessagesQueueMaxOverloadedSizeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_QUEUE_OVERLOADED_MAX_SIZE", se_playerTriggerMessagesQueueMaxOverloadedSize);
-
-tString se_playerTriggerMessagesFile("chattriggers.txt");
-static tConfItem<tString> se_playerTriggerMessagesFileConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FILE", se_playerTriggerMessagesFile);
-
-bool se_playerTriggerMessagesReactToSelf = false;
-static tConfItem<bool> se_playerTriggerMessagesReactToSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerTriggerMessagesReactToSelf);
-
-bool se_playerTriggerMessagesReactToLocal = false;
-static tConfItem<bool> se_playerTriggerMessagesReactToLocalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_REACT_TO_LOCAL", se_playerTriggerMessagesReactToLocal);
-
-static tString se_playerTriggerMessagesKillVerifiedTriggers = tString("wd,nice,wp,gj,$diedother,annoying,n1");
-static tConfItem<tString> se_playerTriggerMessagesKillVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_KILLED_VERIFIED_TRIGGERS", se_playerTriggerMessagesKillVerifiedTriggers);
-
-static tString se_playerTriggerMessagesDiedByVerifiedTriggers("$died");
-static tConfItem<tString> se_playerTriggerMessagesDiedByVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DIED_BY_VERIFIED_TRIGGERS", se_playerTriggerMessagesDiedByVerifiedTriggers);
-
+bool se_playerMessageTriggers = false;
+static tConfItem<bool> se_playerMessageTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS", se_playerMessageTriggers);
 tString se_playerMessageEnabledPlayers = tString("");
 static tConfItem<tString> se_playerMessageEnabledPlayersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_ENABLED_PLAYERS", se_playerMessageEnabledPlayers);
+
+tString se_playerMessageTriggersFile("chattriggers.txt");
+static tConfItem<tString> se_playerMessageTriggersFileConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FILE", se_playerMessageTriggersFile);
+
+REAL se_playerMessageTriggersSpamMaxlen = 300;
+static tConfItem<REAL> se_playerMessageTriggersSpamMaxlenConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SPAM_MAXLEN", se_playerMessageTriggersSpamMaxlen);
+
+static bool se_playerMessageTriggersChatFunctionsOnly = false;
+static tConfItem<bool> se_playerMessageTriggersChatFunctionsOnlyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_FUNCTIONS_ONLY", se_playerMessageTriggersChatFunctionsOnly);
+
+bool se_playerMessageTriggersResendSilencedMessages = false;
+static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES", se_playerMessageTriggersResendSilencedMessages);
+bool se_playerMessageTriggersResendSilencedMessagesPrefixAmount = 3;
+static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesPrefixAmountConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES_PREFIX_AMOUNT", se_playerMessageTriggersResendSilencedMessagesPrefixAmount);
+tString se_playerMessageTriggersResendSilencedMessagesPrefixList = tString("!@#$%^&*()_+=-|");
+static tConfItem<tString> se_playerMessageTriggersResendSilencedMessagesPrefixListConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES_PREFIX_LIST", se_playerMessageTriggersResendSilencedMessagesPrefixList);
+
+bool se_playerMessageTriggerScheduleMultiple = true;
+static tConfItem<bool> se_playerMessageTriggerScheduleMultipleConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SCHEDULE_MULTIPLE", se_playerMessageTriggerScheduleMultiple);
+
+bool se_playerMessageTriggersResendSilencedMessagesExtraDelay = 0;
+static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesExtraDelayConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES_EXTRA_DELAY", se_playerMessageTriggersResendSilencedMessagesExtraDelay);
+
+int se_playerMessageTriggersQueueMaxOverloadedSize = 10;
+static tConfItem<int> se_playerMessageTriggersQueueMaxOverloadedSizeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_QUEUE_OVERLOADED_MAX_SIZE", se_playerMessageTriggersQueueMaxOverloadedSize);
+
+bool se_playerMessageTriggersReactToSelf = false;
+static tConfItem<bool> se_playerMessageTriggersReactToSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_REACT_TO_SELF", se_playerMessageTriggersReactToSelf);
+
+bool se_playerMessageTriggersReactToLocal = false;
+static tConfItem<bool> se_playerMessageTriggersReactToLocalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_REACT_TO_LOCAL", se_playerMessageTriggersReactToLocal);
+
+static tString se_playerMessageTriggersKillVerifiedTriggers = tString("wd,nice,wp,gj,$diedother,annoying,n1");
+static tConfItem<tString> se_playerMessageTriggersKillVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_KILLED_VERIFIED_TRIGGERS", se_playerMessageTriggersKillVerifiedTriggers);
+
+static tString se_playerMessageTriggersDiedByVerifiedTriggers("$died");
+static tConfItem<tString> se_playerMessageTriggersDiedByVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DIED_BY_VERIFIED_TRIGGERS", se_playerMessageTriggersDiedByVerifiedTriggers);
+
+static tString se_playerMessageTriggersJoinedRecentlyVerifiedTriggers("wb");
+static tConfItem<tString> se_playerMessageTriggersJoinedRecentlyVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_JOINED_RECENTLY_VERIFIED_TRIGGERS", se_playerMessageTriggersJoinedRecentlyVerifiedTriggers);
+static REAL se_playerMessageTriggersJoinedRecentlyWaitTime = 5;
+static tConfItem<REAL> se_playerMessageTriggersJoinedRecentlyWaitTimeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_JOINED_RECENTLY_WAIT_TIME", se_playerMessageTriggersJoinedRecentlyWaitTime);
 
 static REAL se_playerMessageDelayRandMult = 0;
 static tConfItem<REAL> se_playerMessageDelayRandMultConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DELAY_RANDOM_MULT", se_playerMessageDelayRandMult);
@@ -80,48 +100,42 @@ static int se_playerMessageTriggersChatSearchMaxResults = 10;
 static tConfItem<int> se_playerMessageTriggersChatSearchMaxResultsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHAT_SEARCH_MAX_RESULTS", se_playerMessageTriggersChatSearchMaxResults);
 
 
-REAL se_playerTriggerMessagesSpamMaxlen = 300;
-static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SPAM_MAXLEN", se_playerTriggerMessagesSpamMaxlen);
 
-REAL se_playerTriggerMessagesSpamMaxlenPartAdd = 0.5;
-static tConfItem<REAL> se_playerTriggerMessagesSpamMaxlenPartAddConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DELAY_SPAM_MAXLEN_NEGATIVE_PART_ADD", se_playerTriggerMessagesSpamMaxlenPartAdd);
 
-static bool se_playerMessageTriggersChatFunctionsOnly = false;
-static tConfItem<bool> se_playerMessageTriggersChatFunctionsOnlyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_CHAT_FUNCTIONS_ONLY", se_playerMessageTriggersChatFunctionsOnly);
+bool se_playerMessageTriggersRageQuits = false;
+static tConfItem<bool> se_playerMessageTriggersRageQuitsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_RAGE_QUITS", se_playerMessageTriggersRageQuits);
 
-bool se_playerTriggerMessagesRageQuits = false;
-static tConfItem<bool> se_playerTriggerMessagesRageQuitsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_RAGE_QUITS", se_playerTriggerMessagesRageQuits);
+bool se_playerMessageTriggersAcheivements = false;
+static tConfItem<bool> se_playerMessageTriggersAcheivementsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS", se_playerMessageTriggersAcheivements);
 
-bool se_playerTriggerMessagesAcheivements = false;
-static tConfItem<bool> se_playerTriggerMessagesAcheivementsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS", se_playerTriggerMessagesAcheivements);
+bool se_playerMessageTriggersAcheivementsLocal = false;
+static tConfItem<bool> se_playerMessageTriggersAcheivementsLocalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_LOCAL", se_playerMessageTriggersAcheivementsLocal);
 
-bool se_playerTriggerMessagesAcheivementsLocal = false;
-static tConfItem<bool> se_playerTriggerMessagesAcheivementsLocalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_LOCAL", se_playerTriggerMessagesAcheivementsLocal);
+int se_playerMessageTriggersAcheivementsKillsChangeVal = 50;
+static tConfItem<int> se_playerMessageTriggersAcheivementsKillsChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_KILLS_CHANGE_VAL", se_playerMessageTriggersAcheivementsKillsChangeVal);
 
-int se_playerTriggerMessagesAcheivementsKillsChangeVal = 50;
-static tConfItem<int> se_playerTriggerMessagesAcheivementsKillsChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_KILLS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsKillsChangeVal);
+int se_playerMessageTriggersAcheivementsKillStreakChangeVal = 5;
+static tConfItem<int> se_playerMessageTriggersAcheivementsKillStreakChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_KILLSTREAK_CURRENT_CHANGE_VAL", se_playerMessageTriggersAcheivementsKillStreakChangeVal);
 
-int se_playerTriggerMessagesAcheivementsKillStreakChangeVal = 5;
-static tConfItem<int> se_playerTriggerMessagesAcheivementsKillStreakChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_KILLSTREAK_CURRENT_CHANGE_VAL", se_playerTriggerMessagesAcheivementsKillStreakChangeVal);
+int se_playerMessageTriggersAcheivementsMaxKillStreak = 1;
+static tConfItem<int> se_playerMessageTriggersAcheivementsMaxKillStreakConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_KILLSTREAK_MAX_CHANGE_VAL", se_playerMessageTriggersAcheivementsMaxKillStreak);
 
-int se_playerTriggerMessagesAcheivementsMaxKillStreak = 1;
-static tConfItem<int> se_playerTriggerMessagesAcheivementsMaxKillStreakConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_KILLSTREAK_MAX_CHANGE_VAL", se_playerTriggerMessagesAcheivementsMaxKillStreak);
+int se_playerMessageTriggersAcheivementsChatsChangeVal = 25;
+static tConfItem<int> se_playerMessageTriggersAcheivementsChatsChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_CHATS_CHANGE_VAL", se_playerMessageTriggersAcheivementsChatsChangeVal);
 
-int se_playerTriggerMessagesAcheivementsChatsChangeVal = 25;
-static tConfItem<int> se_playerTriggerMessagesAcheivementsChatsChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_CHATS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsChatsChangeVal);
+int se_playerMessageTriggersAcheivementsJoinsChangeVal = 10;
+static tConfItem<int> se_playerMessageTriggersAcheivementsJoinsChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_JOINS_CHANGE_VAL", se_playerMessageTriggersAcheivementsJoinsChangeVal);
 
-int se_playerTriggerMessagesAcheivementsJoinsChangeVal = 10;
-static tConfItem<int> se_playerTriggerMessagesAcheivementsJoinsChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_JOINS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsJoinsChangeVal);
+int se_playerMessageTriggersAcheivementsBansChangeVal = 5;
+static tConfItem<int> se_playerMessageTriggersAcheivementsBansChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_BANS_CHANGE_VAL", se_playerMessageTriggersAcheivementsBansChangeVal);
 
-int se_playerTriggerMessagesAcheivementsBansChangeVal = 5;
-static tConfItem<int> se_playerTriggerMessagesAcheivementsBansChangeValConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ACHEIVEMENTS_BANS_CHANGE_VAL", se_playerTriggerMessagesAcheivementsBansChangeVal);
+tString se_playerMessageTriggersFuncLogFile("chatbotLogFunc.txt");
+static tConfItem<tString> se_playerMessageTriggersFuncLogFileConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_LOG_FILE", se_playerMessageTriggersFuncLogFile);
 
-tString se_playerTriggerMessagesFuncLogFile("chatbotLogFunc.txt");
-static tConfItem<tString> se_playerTriggerMessagesFuncLogFileConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_LOG_FILE", se_playerTriggerMessagesFuncLogFile);
+int se_playerMessageTriggersGuessGameGiveupAnnounceInterval = 10;
+static tConfItem<int> se_playerMessageTriggersGuessGameGiveupAnnounceIntervalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_GUESS_GAME_GIVEUP_ANNOUNCE_INTERVAL", se_playerMessageTriggersGuessGameGiveupAnnounceInterval);
 
-int se_playerTriggerMessagesGuessGameGiveupAnnounceInterval = 10;
-static tConfItem<int> se_playerTriggerMessagesGuessGameGiveupAnnounceIntervalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_GUESS_GAME_GIVEUP_ANNOUNCE_INTERVAL", se_playerTriggerMessagesGuessGameGiveupAnnounceInterval);
-
+eMessageTracker eChatbotMessages;
 
 std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers()
 {
@@ -169,67 +183,69 @@ tString numberAdderFunc(tString message)
 {
     std::string input(message.stdString());
 
-
     input.erase(std::remove_if(input.begin(), input.end(), ::isspace), input.end());
 
-    if (input.empty()) {
+    if (input.empty())
         return tString("Invalid input");
-    }
 
     bool isNegative = false;
     size_t idx = 0;
-    if (input[0] == '-') {
+    if (input[0] == '-')
+    {
         isNegative = true;
         idx = 1;
     }
 
     std::string intPart, fracPart;
-    while (idx < input.size() && input[idx] != '.') {
-        if (!std::isdigit(input[idx])) {
+    while (idx < input.size() && input[idx] != '.')
+    {
+        if (!std::isdigit(input[idx]))
             return tString("Invalid input");
-        }
         intPart += input[idx++];
     }
-    if (idx < input.size() && input[idx] == '.') {
+    if (idx < input.size() && input[idx] == '.')
+    {
         idx++;
-        while (idx < input.size()) {
-            if (!std::isdigit(input[idx])) {
+        while (idx < input.size())
+        {
+            if (!std::isdigit(input[idx]))
                 return tString("Invalid input");
-            }
             fracPart += input[idx++];
         }
     }
 
-    while (intPart.size() > 1 && intPart[0] == '0') {
+    while (intPart.size() > 1 && intPart[0] == '0')
         intPart.erase(0, 1);
-    }
-    if (intPart.empty()) {
-        intPart = "0";
-    }
 
-    while (fracPart.size() > 1 && fracPart.back() == '0') {
+    if (intPart.empty())
+        intPart = "0";
+
+
+    while (fracPart.size() > 1 && fracPart.back() == '0')
         fracPart.pop_back();
-    }
 
     bool originalIsNegativeZero = isNegative && intPart == "0" && (fracPart.empty() || fracPart == "0");
 
     int adderValue = se_playerMessageTriggersFuncAdderVal;
 
     int carry;
-    if (originalIsNegativeZero) {
+    if (originalIsNegativeZero)
+    {
         carry = adderValue;
         isNegative = false;
-    } else {
-        carry = isNegative ? -adderValue : adderValue;
     }
+    else
+        carry = isNegative ? -adderValue : adderValue;
 
-    for (int i = fracPart.size() - 1; i >= 0; i--) {
+    for (int i = fracPart.size() - 1; i >= 0; i--)
+    {
         int digit = fracPart[i] - '0';
         int sum = digit + carry;
 
         carry = sum / 10;
         sum = sum % 10;
-        if (sum < 0) {
+        if (sum < 0)
+        {
             sum += 10;
             carry -= 1;
         }
@@ -237,13 +253,15 @@ tString numberAdderFunc(tString message)
         fracPart[i] = '0' + sum;
     }
 
-    for (int i = intPart.size() - 1; i >= 0; i--) {
+    for (int i = intPart.size() - 1; i >= 0; i--)
+    {
         int digit = intPart[i] - '0';
         int sum = digit + carry;
 
         carry = sum / 10;
         sum = sum % 10;
-        if (sum < 0) {
+        if (sum < 0)
+        {
             sum += 10;
             carry -= 1;
         }
@@ -251,35 +269,34 @@ tString numberAdderFunc(tString message)
         intPart[i] = '0' + sum;
     }
 
-
-    while (carry != 0) {
+    while (carry != 0)
+    {
         int sum = carry % 10;
-        if (sum < 0) {
+        if (sum < 0)
+        {
             sum += 10;
             carry = (carry / 10) - 1;
-        } else {
+        }
+        else
+        {
             carry = carry / 10;
         }
         intPart = char('0' + sum) + intPart;
     }
 
-    while (intPart.size() > 1 && intPart[0] == '0') {
+    while (intPart.size() > 1 && intPart[0] == '0')
         intPart.erase(0, 1);
-    }
 
-    while (fracPart.size() > 1 && fracPart.back() == '0') {
+    while (fracPart.size() > 1 && fracPart.back() == '0')
         fracPart.pop_back();
-    }
 
-    if (intPart == "0" && fracPart.empty()) {
+    if (intPart == "0" && fracPart.empty())
         isNegative = false;
-    }
 
     std::string result = isNegative ? "-" : "";
     result += intPart;
-    if (!fracPart.empty()) {
+    if (!fracPart.empty())
         result += '.' + fracPart;
-    }
 
     return tString(result);
 }
@@ -338,13 +355,9 @@ tString numberCalcFunc(tString message)
     if (lastNonZero != std::string::npos)
     {
         if (str[lastNonZero] == '.')
-        {
             str.erase(lastNonZero, str.length() - lastNonZero);
-        }
         else
-        {
             str.erase(lastNonZero + 1, str.length() - lastNonZero - 1);
-        }
     }
 
     tString answer(str);
@@ -370,7 +383,8 @@ tString reverseFunc(tString message)
 tString statsFunc(tString message)
 {
     tString output;
-    std::vector<std::pair<tString, tString>> statLabels = {
+    static std::vector<std::pair<tString, tString>> statLabels =
+    {
         {tString("RGB"), tString("RGB")},
         {tString("Play Time"), tString("Play Time")},
         {tString("Spectate Time"), tString("Spec Time")},
@@ -444,7 +458,9 @@ tString statsFunc(tString message)
                 tString formattedDifference = st_GetFormatTime(difference, false, false);
                 output << "Joined: "
                     << getTimeStringBase(statsTargetPlayer->createTime_)
-                    << " EST ("
+                    << " "
+                    << getTimeZone(getCurrentLocalTime())
+                    << " ("
                     << formattedDifference
                     << "), ";
             }
@@ -891,9 +907,7 @@ tString exactStatFunc(tString message)
     statLabel = PlayerData::getAnyLabel(stat);
 
     if (statLabel.empty() && stat == "last_active")
-    {
         statLabel = "Last Active";
-    }
 
     if (statLabel.empty())
     {
@@ -909,9 +923,7 @@ tString exactStatFunc(tString message)
     playerName = message.SubStr(pos+1).TrimWhitespace();
 
     if (playerName.empty())
-    {
         statsTargetPlayer = bot.Messager()->Params().triggeredBy;
-    }
 
     if (!statsTargetPlayer)
         statsTargetPlayer = ePlayerNetID::GetPlayerByName(playerName, false);
@@ -979,27 +991,7 @@ tString exactStatFunc(tString message)
         }
         else if (statLabel == "RGB")
         {
-            statValue << stats.rgbString();
-
-            if (!bot.Messager()->Params().pentalized_for_last_message)
-            {
-                int r,g,b;
-                if (statsTargetPlayer)
-                {
-                    r = statsTargetPlayer->r;
-                    g = statsTargetPlayer->g;
-                    b = statsTargetPlayer->g;
-                }
-                else
-                {
-                    r = stats.r;
-                    g = stats.g;
-                    b = stats.b;
-                }
-
-                statValue << " "
-                          << ColorsCommand::cycleColorPreview(r, g, b, false);
-            }
+            statValue << stats.rgbString(!bot.Messager()->Params().pentalized_for_last_message);
             showCurrentSessionVal = false;
         }
         else if (statLabel == "Last Active")
@@ -1071,9 +1063,7 @@ tString masterFunc(tString message)
 
 
         if (bot.Messager()->Params().sendingPlayer)
-        {
             se_NewChatMessage(bot.Messager()->Params().sendingPlayer, feedback)->BroadCast();
-        }
         else
         {
             for (auto localNetPlayer : se_GetPlayerMessageEnabledPlayers())
@@ -1198,16 +1188,18 @@ tString hideStatFunc(tString message)
     return output;
 }
 
+tString extractFuncName(const tString &response)
+{
+    int openParen = response.StrPos("(");
+    if (response.StartsWith("$") && openParen != -1 && response.EndsWith(")"))
+        return response.SubStr(0, openParen);
+    return response;
+}
+
+
 tString whatsTheFunc(tString message)
 {
     tString output;
-
-    if (!se_playerStats)
-    {
-        output << "PlayerStats not initialized. PlayerStats are disabled!\n";
-        return output;
-    }
-
     tString target = message.TrimWhitespace();
 
     if (target.Contains("score"))
@@ -1239,7 +1231,8 @@ tString whatsTheFunc(tString message)
         {
             struct tm created = targetPlayer->createTime_;
             output << getTimeStringBase(created)
-                   << " EST";
+                   << " "
+                   << getTimeZone(created);
         }
     }
     else if (target.Contains("been_here_for"))
@@ -1251,7 +1244,7 @@ tString whatsTheFunc(tString message)
         {
             if (se_GetLocalPlayer()->createdTime() <= targetPlayer->createdTime())
             {
-                output << "you joined before me";
+                output << "You joined before I did.";
             }
             else
             {
@@ -1273,6 +1266,12 @@ tString whatsTheFunc(tString message)
     }
     else if (target.Contains("players_today"))
     {
+        if (!se_playerStats)
+        {
+            output << "PlayerStats not initialized. PlayerStats are disabled!\n";
+            return output;
+        }
+
         time_t startOfDay = getStartTimeOfDay();
 
         int number_of_players = 0;
@@ -1282,10 +1281,20 @@ tString whatsTheFunc(tString message)
                 number_of_players++;
         }
 
-        output << "Number of players since 12:00AM EST: " << number_of_players << "\n";
+        output << "Number of players since 12:00AM "
+               << getTimeZone(getCurrentLocalTime())
+               << ": "
+               << number_of_players
+               << "\n";
     }
     else if (target.Contains("players_this_hour"))
     {
+        if (!se_playerStats)
+        {
+            output << "PlayerStats not initialized. PlayerStats are disabled!\n";
+            return output;
+        }
+
         time_t startOfHour = getStartOfCurrentHour();
 
         int number_of_players = 0;
@@ -1295,7 +1304,9 @@ tString whatsTheFunc(tString message)
                 number_of_players++;
         }
 
-        output << "Number of players since start of this hour: " << number_of_players << "\n";
+        output << "Number of players since start of this hour: "
+               << number_of_players
+               << "\n";
     }
     else if (target.Contains("times_banned_today"))
     {
@@ -1312,14 +1323,15 @@ tString whatsTheFunc(tString message)
     else if (target.Contains("last_time_banned"))
     {
         eChatBotStats &stats = eChatBot::getInstance().Stats();
-        struct tm lastTimeBanned;
+        struct tm* lastTimeBanned;
 
         time_t now = time(NULL);
         double lastBanned = difftime(now, stats.last_banned);
 
-        localtime_s(&lastTimeBanned, &stats.last_banned);
-        output << getTimeStringBase(lastTimeBanned)
-               << " EST"
+        lastTimeBanned = localtime(&stats.last_banned);
+        output << getTimeStringBase(*lastTimeBanned)
+               << " "
+               << getTimeZone(*lastTimeBanned)
                << " ("
                << st_GetFormatTime(lastBanned, false, false)
                << " ago)";
@@ -1328,7 +1340,8 @@ tString whatsTheFunc(tString message)
     {
         struct tm now = getCurrentLocalTime();
         output << getTimeStringBase(now)
-               << " EST";
+               << " "
+               << getTimeZone(now);
     }
     else if (target.Contains("my_color"))
     {
@@ -1337,22 +1350,92 @@ tString whatsTheFunc(tString message)
 
         if (targetPlayer)
         {
-            PlayerData *stats = &ePlayerStats::getStats(targetPlayer);
-            if (stats)
+            output << targetPlayer->GetName()
+                   << ": ";
+
+            if (se_playerStats)
             {
-                output << targetPlayer->GetName()
-                       << ": "
-                       << stats->rgbString()
-                       << " "
-                       << ColorsCommand::cycleColorPreview(targetPlayer->r,targetPlayer->g,targetPlayer->b, false);
+                PlayerData *stats = &ePlayerStats::getStats(targetPlayer);
+                if (stats)
+                    output << stats->rgbString(!bot.Messager()->Params().pentalized_for_last_message);
             }
+            else
+            {
+                output << "("
+                       << targetPlayer->r << ", "
+                       << targetPlayer->g << ", "
+                       << targetPlayer->b
+                       << ")";
+                if (!bot.Messager()->Params().pentalized_for_last_message)
+                    output << " "
+                           << ColorsCommand::cycleColorPreview(targetPlayer->r,targetPlayer->g,targetPlayer->b, false);
+            }
+
         }
     }
     else if (target.Contains("fps"))
     {
         int newfps = static_cast<int>(se_AverageFPS());
+        output << "Current FPS: "
+               << newfps;
+    }
+    else if (target.Contains("commands"))
+    {
+        eChatBot &bot = eChatBot::getInstance();
+        std::set<tString> uniqueTriggers;
 
-        output << "Current FPS: " << newfps;
+        for (const auto &chatTrigger : bot.data.chatTriggers)
+        {
+            for (const auto &response : chatTrigger.responses)
+            {
+                tString funcName = extractFuncName(response);
+                if (bot.data.functions->functionMap.count(funcName))
+                {
+                    uniqueTriggers.insert(chatTrigger.trigger);
+                    break;
+                }
+            }
+        }
+
+        if (uniqueTriggers.empty())
+        {
+            output << "No triggers found for registered commands.\n";
+        }
+        else
+        {
+            output << "Triggers for available commands: ";
+            bool first = true;
+            for (const auto &trigger : uniqueTriggers)
+            {
+                if (!first)
+                    output << ", ";
+                output << trigger;
+                first = false;
+            }
+        }
+    }
+    else if (target.Contains("smarter_bot_contribution"))
+    {
+        if (!sg_navigatorDebugTrackEvaluation)
+        {
+            output << "NAVIGATOR_DEBUG_SHOW_EVALUATION is not enabled!\n";
+            return output;
+        }
+
+        tArray<tString> players = se_playerMessageEnabledPlayers.Split(",");
+        for (int i = 0; i < players.Len(); i++)
+        {
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
+            if (!local_p)
+                continue;
+
+            ePlayerNetID *netPlayer = local_p->netPlayer;
+            if (!netPlayer || !netPlayer->CurrentTeam())
+                continue;
+
+            output << local_p->sg_smarterBotContributionStr;
+            break;
+        }
     }
 
     return output;
@@ -1493,7 +1576,8 @@ tString sayOutLoudFunc(tString message)
     // Force public message
     bot.Messager()->Params().preAppend = "";
 
-    output << "> " << message;
+    output << "> "
+           << message;
 
     return output;
 }
@@ -1728,9 +1812,7 @@ tString flipRepeatedCharactersFunc(tString message)
     for (const auto &pair : charIndices)
     {
         if (pair.second.size() > 1)
-        {
             indicesToSwap.insert(indicesToSwap.end(), pair.second.begin(), pair.second.end());
-        }
     }
 
     std::sort(indicesToSwap.begin(), indicesToSwap.end());
@@ -1738,9 +1820,7 @@ tString flipRepeatedCharactersFunc(tString message)
     for (size_t i = 0; i < indicesToSwap.size(); i += 2)
     {
         if (i + 1 < indicesToSwap.size())
-        {
             std::swap(input[indicesToSwap[i]], input[indicesToSwap[i + 1]]);
-        }
     }
 
     return tString(input);
@@ -1759,9 +1839,8 @@ tString banFunc(tString message)
 
     ePlayerNetID *statsTargetPlayer = triggeredBy->lastDiedByPlayerBanFunc;
 
-    if (triggeredBy->lastBannedPlayerTime != 0 && tSysTimeFloat() - triggeredBy->lastBannedPlayerTime < 5) {
+    if (triggeredBy->lastBannedPlayerTime != 0 && tSysTimeFloat() - triggeredBy->lastBannedPlayerTime < 5)
         return output;
-    }
 
     if (!statsTargetPlayer || ((tSysTimeFloat() - triggeredBy->lastDiedByTime) > se_playerMessageBanFuncWaitTime )  )
         return output;
@@ -1912,7 +1991,7 @@ tString logFunc(tString message)
     if (!triggeredBy)
         return tString("No player context available.");
 
-    FileManager fileManager(se_playerTriggerMessagesFuncLogFile, tDirectories::Var());
+    FileManager fileManager(se_playerMessageTriggersFuncLogFile, tDirectories::Var());
 
     message = message.TrimWhitespace();
 
@@ -1960,9 +2039,7 @@ tString logFunc(tString message)
                 tString logMessage = logParts[2];
 
                 for (int j = 3; j < logParts.Len(); ++j)
-                {
                     logMessage << "," << logParts[j];
-                }
 
                 formattedLogEntry << timeStr << " " << playerName << ": " << logMessage.TrimWhitespace();
             }
@@ -2006,7 +2083,12 @@ tString logFunc(tString message)
             requestedPage = 1;
 
         tString output;
-        output << "Logs (" << requestedPage << "/" << totalPages << "): " << pages[requestedPage - 1];
+        output << "Logs ("
+               << requestedPage
+               << "/"
+               << totalPages
+               << "): "
+               << pages[requestedPage - 1];
 
         return output;
     }
@@ -2021,7 +2103,11 @@ tString logFunc(tString message)
         tString timeStr = st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S]");
 
         tString logEntry;
-        logEntry << timeStr << "," << playerName << "," << logMessage.TrimWhitespace();
+        logEntry << timeStr
+                 << ","
+                 << playerName
+                 << ","
+                 << logMessage.TrimWhitespace();
 
         fileManager.Write(logEntry);
         return tString("Message logged.");
@@ -2101,7 +2187,11 @@ tString guessGameFunc(tString message)
             startTime = time(NULL);
 
             tString output;
-            output << "I'm thinking of a number between " << minRange << " and " << maxRange << ". Try to guess it!";
+            output << "I'm thinking of a number between "
+                   << minRange
+                   << " and "
+                   << maxRange
+                   << ". Try to guess it!";
             return output;
         }
         else
@@ -2153,7 +2243,11 @@ tString guessGameFunc(tString message)
         if (!command.isNumber())
         {
             tString output;
-            output << "Invalid input. Please enter a number between " << minRange << " and " << maxRange << ".";
+            output << "Invalid input. Please enter a number between "
+                   << minRange
+                   << " and "
+                   << maxRange
+                   << ".";
             return output;
         }
 
@@ -2162,7 +2256,11 @@ tString guessGameFunc(tString message)
         if (guess < minRange || guess > maxRange)
         {
             tString output;
-            output << "Your guess is out of range. Please enter a number between " << minRange << " and " << maxRange << ".";
+            output << "Your guess is out of range. Please enter a number between "
+                   << minRange
+                   << " and "
+                   << maxRange
+                   << ".";
             return output;
         }
 
@@ -2172,11 +2270,15 @@ tString guessGameFunc(tString message)
 
         if (guess < randomValue)
         {
-            output << "Too low! Attempts: " << attempts << ".";
+            output << "Too low! Attempts: "
+                   << attempts
+                   << ".";
         }
         else if (guess > randomValue)
         {
-            output << "Too high! Attempts: " << attempts << ".";
+            output << "Too high! Attempts: "
+                   << attempts
+                   << ".";
         }
         else
         {
@@ -2184,11 +2286,16 @@ tString guessGameFunc(tString message)
             int elapsedTime = static_cast<int>(difftime(endTime, startTime));
 
             tString successMessage;
-            successMessage << "Congratulations, " << player->GetName()
-                           << "! You guessed the number in " << attempts << " attempt";
+            successMessage << "Congratulations, "
+                           << player->GetName()
+                           << "! You guessed the number in "
+                           << attempts
+                           << " attempt";
             if (attempts != 1)
                 successMessage << "s";
-            successMessage << " and " << elapsedTime << " second";
+            successMessage << " and "
+                           << elapsedTime
+                           << " second";
             if (elapsedTime != 1)
                 successMessage << "s";
             successMessage << "!";
@@ -2196,8 +2303,8 @@ tString guessGameFunc(tString message)
             return successMessage;
         }
 
-        if (se_playerTriggerMessagesGuessGameGiveupAnnounceInterval > 0 &&
-            attempts % se_playerTriggerMessagesGuessGameGiveupAnnounceInterval == 0)
+        if (se_playerMessageTriggersGuessGameGiveupAnnounceInterval > 0 &&
+            attempts % se_playerMessageTriggersGuessGameGiveupAnnounceInterval == 0)
         {
             output << " Try again or type '"
                    << bot.Messager()->Params().matchedTrigger
@@ -2280,7 +2387,7 @@ void eChatBot::InitChatFunctions()
 void eChatBot::LoadChatTriggers()
 {
     gHelperUtility::Debug("eChatBot","Loading chat triggers...");
-    FileManager fileManager(se_playerTriggerMessagesFile, tDirectories::Var());
+    FileManager fileManager(se_playerMessageTriggersFile, tDirectories::Var());
     tArray<tString> lines = fileManager.Load();
 
     data.chatTriggers.clear();
@@ -2454,9 +2561,7 @@ bool containsMath( tString input, bool exact)
         {
             digitsCount++;
             if (i > 0 && input(i - 1) == '-' && !negativeSign)
-            {
                 operatorsCount++;
-            }
         }
         else if (c == '+' || c == '*' || c == '/' || c == '^')
         {
@@ -2466,9 +2571,7 @@ bool containsMath( tString input, bool exact)
         {
             negativeSign = true;
             if (i > 0 && std::isdigit(static_cast<unsigned char>(input(i - 1))))
-            {
                 operatorsCount++;
-            }
         }
         else if (exact)
         {
@@ -2630,6 +2733,15 @@ void eChatBotMessager::FindTriggeredResponse()
         if (!match)
             continue;
 
+        if (tIsInList(se_playerMessageTriggersJoinedRecentlyVerifiedTriggers, trigger))
+        {
+            if (Params().sendingPlayer == nullptr)
+                continue;
+
+            if (tSysTimeFloat() - Params().sendingPlayer->createdTime() > se_playerMessageTriggersJoinedRecentlyWaitTime)
+                continue;
+        }
+
         Params().matchedTrigger = chatTrigger.trimmedTrigger;
 
         // Determine the sending player based on the type of trigger
@@ -2637,14 +2749,14 @@ void eChatBotMessager::FindTriggeredResponse()
         {
             if (potentialSender == nullptr)
             {
-                if (tIsInList(se_playerTriggerMessagesDiedByVerifiedTriggers, trigger))
+                if (tIsInList(se_playerMessageTriggersDiedByVerifiedTriggers, trigger))
                 {
                     if (Params().triggeredBy->lastKilledPlayer == nullptr || !Params().triggeredBy->lastKilledPlayer->isLocal())
                         continue;
                     else
                         potentialSender = Params().triggeredBy->lastKilledPlayer;
                 }
-                else if (tIsInList(se_playerTriggerMessagesKillVerifiedTriggers, trigger))
+                else if (tIsInList(se_playerMessageTriggersKillVerifiedTriggers, trigger))
                 {
                     if (Params().triggeredBy->lastDiedByPlayer == nullptr || !Params().triggeredBy->lastDiedByPlayer->isLocal())
                         continue;
@@ -2677,10 +2789,11 @@ void eChatBotMessager::FindTriggeredResponse()
         tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
         chosenResponse         = chosenResponse.Replace("$p1", sanitizedTriggeredByName);
 
-        if (Params().sendingPlayer) {
+        if (Params().sendingPlayer)
+        {
             chosenResponse.RecomputeLength();
             tString ourName = Params().sendingPlayer->GetName();
-            chosenResponse = chosenResponse.Replace("$p0", ourName);
+            chosenResponse  = chosenResponse.Replace("$p0", ourName);
         }
 
         int dollarPos = 0;
@@ -2694,7 +2807,7 @@ void eChatBotMessager::FindTriggeredResponse()
                 continue;
             }
 
-            int openParenPos = chosenResponse.StrPos(dollarPos + 1, "(");
+            int openParenPos  = chosenResponse.StrPos(dollarPos + 1, "(");
             int closeParenPos = -1;
 
             tString functionName;
@@ -2705,7 +2818,7 @@ void eChatBotMessager::FindTriggeredResponse()
                 closeParenPos = chosenResponse.StrPos(openParenPos + 1, ")");
                 if (closeParenPos != -1)
                 {
-                    functionName = chosenResponse.SubStr(dollarPos, openParenPos - dollarPos).TrimWhitespace();
+                    functionName  = chosenResponse.SubStr(dollarPos, openParenPos - dollarPos).TrimWhitespace();
                     functionInput = chosenResponse.SubStr(openParenPos + 1, closeParenPos - openParenPos - 1);
                 }
             }
@@ -2807,22 +2920,102 @@ void eChatBotMessager::FindTriggeredResponse()
     Params().abortOutput = true;
 }
 
-bool eChatBotMessager::ResendMessage(tString blockedMessage)
+void eChatBot::SilencedAction()
 {
+    if (sg_helperDebug)
+        gHelperUtility::Debug("eChatBot", "Last message was silenced.");
 
-    if (Params().pentalized_for_last_message)
-        Params().delay += 3;
+    eChatBot &bot = eChatBot::getInstance();
+    auto &messenger = *bot.Messager();
+    auto &tracker = eChatbotMessages;
 
-    if (Params().pentalized_for_last_message_prefix)
+    bool ableToChat = ePlayerNetID::canChat();
+    bool ableToChatCommonPrefix = ePlayerNetID::canChatCommonPrefix(messenger.Params().response);
+    bool canChat = (ableToChat && ableToChatCommonPrefix);
+
+    messenger.Params().pentalized_for_last_message = !ableToChat;
+    messenger.Params().pentalized_for_last_message_prefix = !ableToChatCommonPrefix;
+
+    if (sg_helperDebug)
+        gHelperUtility::Debug("eChatBot", "Clearing all playerMessageTask from the TaskScheduler.");
+    gTaskScheduler.removeTasksWithPrefix("playerMessageTask");
+    std::vector<eChatBotData::MessagePart> partsToBeResent;
+    partsToBeResent.reserve(messenger.Params().messageParts.size());
+
+    size_t totalParts = messenger.Params().messageParts.size();
+    for (size_t i = messenger.Params().currentPartIndex; i < totalParts; ++i)
     {
-        tString prefix;
-        prefix << randomStr("!@#$%^&*()_+=-",3)
-                << "| ";
-        addPrefix(Params().response, prefix);
+        auto &part = messenger.Params().messageParts[i];
+
+        bool found = false;
+        for (auto it = tracker.incomingMessages.rbegin(); it != tracker.incomingMessages.rend(); ++it)
+        {
+            if (it->StartsWith(part.message))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+            partsToBeResent.push_back(part);
+        else
+            messenger.Params().currentPartIndex = i + 1;
     }
 
-    return Send();
+    if (partsToBeResent.empty())
+        return;
+
+    REAL penaltyDelay = 0.0;
+    if (messenger.Params().pentalized_for_last_message)
+    {
+        penaltyDelay = ((ePlayerNetID::nextSpeakTime - tSysTimeFloat()) * 1.1)
+                       + se_playerMessageTriggersResendSilencedMessagesExtraDelay;
+    }
+
+    REAL perPartSpacing = 0.2f;
+
+    for (size_t j = 0; j < partsToBeResent.size(); j++)
+    {
+        auto &p = partsToBeResent[j];
+
+        if (messenger.Params().pentalized_for_last_message_prefix)
+        {
+            tString randomPrefix;
+            randomPrefix << randomStr(se_playerMessageTriggersResendSilencedMessagesPrefixList.stdString(),
+                                      se_playerMessageTriggersResendSilencedMessagesPrefixAmount)
+                         << " ";
+
+            p.message = randomPrefix + p.message;
+        }
+
+        if (p.delay <= 0)
+            p.delay = penaltyDelay + (j * perPartSpacing);
+        else
+            p.delay += penaltyDelay + (j * perPartSpacing);
+    }
+
+
+    messenger.Params().messageParts = partsToBeResent;
+    messenger.Params().currentPartIndex = 0;
+
+    if (sg_helperDebug)
+    {
+        tString debugMsg("Parts to be sent: ");
+
+        for (size_t j = 0; j < partsToBeResent.size(); ++j)
+        {
+            if (j > 0)
+                debugMsg << ", ";
+            debugMsg << partsToBeResent[j].message;
+        }
+
+        gHelperUtility::Debug("eChatBot", debugMsg.stdString());
+    }
+
+    messenger.ScheduleMessageParts();
 }
+
 bool eChatBotMessager::Send()
 {
     if (!helperConfig::sghuk)
@@ -2832,25 +3025,16 @@ bool eChatBotMessager::Send()
     {
         gHelperUtility::Debug("eChatBot","No sending player set. Attemping to set one");
 
-        tArray<tString> players = se_playerMessageEnabledPlayers.Split(",");
-
-        for (int i = 0; i < players.Len(); i++)
+        for (auto localNetPlayer : se_GetPlayerMessageEnabledPlayers())
         {
-            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
-            if (!local_p)
-                continue;
-
-            ePlayerNetID *netPlayer = local_p->netPlayer;
-            if (!netPlayer)
-                continue;
-
-            Params().sendingPlayer = netPlayer;
+            Params().sendingPlayer = localNetPlayer;
             break;
         }
 
     }
 
-    if ((!Params().sendingPlayer) || (!tIsEnabledForPlayer(se_playerMessageEnabledPlayers, Params().sendingPlayer->pID + 1))) {
+    if ((!Params().sendingPlayer) || (!tIsEnabledForPlayer(se_playerMessageEnabledPlayers, Params().sendingPlayer->pID + 1)))
+    {
         gHelperUtility::Debug("eChatBot","No sending player set. Aborting");
         return false;
     }
@@ -2863,13 +3047,13 @@ bool eChatBotMessager::Send()
     REAL totalDelay = 0.0;
     int messageLength = messageToSend.Len();
 
-    if (messageLength > se_playerTriggerMessagesSpamMaxlen)
+    if (messageLength > se_playerMessageTriggersSpamMaxlen)
     {
         gHelperUtility::Debug("eChatBot","messageToSend cut because length > " +
-                                                     std::to_string(se_playerTriggerMessagesSpamMaxlen) +
+                                                     std::to_string(se_playerMessageTriggersSpamMaxlen) +
                                                      " Length: " +
                                                      std::to_string(messageLength));
-        messageToSend = messageToSend.SubStr(0, se_playerTriggerMessagesSpamMaxlen);
+        messageToSend = messageToSend.SubStr(0, se_playerMessageTriggersSpamMaxlen);
     }
 
     if (se_playerMessageSmartDelay)
@@ -2922,9 +3106,13 @@ bool eChatBotMessager::Send()
 
 bool eChatBotMessager::ScheduleMessageParts()
 {
-    gTaskScheduler.ClearQueueIfOverloaded(se_playerTriggerMessagesQueueMaxOverloadedSize);
+    gTaskScheduler.ClearQueueIfOverloaded(se_playerMessageTriggersQueueMaxOverloadedSize);
 
     ePlayerNetID *player = Params().sendingPlayer;
+
+    if (!player)
+        return false;
+
     bool scheduled = false;
 
     size_t currentPartIndex = Params().currentPartIndex;
@@ -2935,33 +3123,45 @@ bool eChatBotMessager::ScheduleMessageParts()
         const auto& part = Params().messageParts[i];
         const tString& message = part.message;
 
-        gTaskScheduler.enqueueChain([player, &part, &message]() {
+        std::string baseId = "playerMessageTask";
+        std::string taskId = baseId;
+
+        if (se_playerMessageTriggerScheduleMultiple)
+            taskId += "_" + std::to_string(player->ID()) + "_" + std::to_string(i) + "_" + std::to_string(tSysTimeFloat());
+
+        gTaskScheduler.enqueueChain([player, part, message, taskId]()
+        {
             REAL flagDelay = part.delay * part.chatFlagPercentage;
             REAL messageDelay = part.delay - flagDelay;
 
             if (part.useChatFlag)
             {
                 gTaskScheduler.schedule(
-                    "playerMessageTask", flagDelay,
-                    [player, messageDelay, &message, &part]
+                    taskId, flagDelay,
+                    [player, messageDelay, message, taskId]()
                     {
                         player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
                         ePlayerNetID::Update();
 
-                        gTaskScheduler.schedule("playerMessageSetChatFlagFalse", messageDelay,
-                        [player, &message, &part]
-                        {
-                            player->Chat(message, true);
-                            player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
-                            ePlayerNetID::Update();
-                        }, 0, true);
+                        std::string followUpId = taskId + "_end";
+
+                        gTaskScheduler.schedule(followUpId, messageDelay,
+                            [player, message]()
+                            {
+                                player->Chat(message, true);
+                                player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
+                                ePlayerNetID::Update();
+                            }, 0, true);
                     }, 0, true);
             }
             else
             {
                 gTaskScheduler.schedule(
-                    "playerMessageTask", part.delay,
-                    [player, &message] { player->Chat(message, true); }, 0, true);
+                    taskId, part.delay,
+                    [player, message]()
+                    {
+                        player->Chat(message, true);
+                    }, 0, true);
             }
         });
 
@@ -3022,7 +3222,7 @@ static void AddChatTrigger(std::istream &s)
     std::vector<tString> responses(responsesArray.begin(), responsesArray.end());
 
     eChatBot &bot = eChatBot::getInstance();
-    FileManager fileManager(se_playerTriggerMessagesFile, tDirectories::Var());
+    FileManager fileManager(se_playerMessageTriggersFile, tDirectories::Var());
 
     tString lineToWrite = parts[0] + "," + parts[1] + "," + parts[2] + "," + parts[3];
     fileManager.Write(lineToWrite);
@@ -3038,16 +3238,18 @@ static void AddChatTrigger(std::istream &s)
         }
 
         eChatBotData::ChatTrigger chatTrigger;
-        chatTrigger.trigger = trigger;
-        chatTrigger.responses = responses;
+        chatTrigger.trigger    = trigger;
+        chatTrigger.responses  = responses;
         chatTrigger.extraDelay = extraDelay;
-        chatTrigger.exact = exact;
+        chatTrigger.exact      = exact;
 
         bot.data.chatTriggers.push_back(chatTrigger);
     }
 
-    con << "Trigger, Response, Extra Delay, Exact?\n";
-    con << "Added: " << params << "\n";
+    con << "Trigger, Response, Extra Delay, Exact?\n"
+        << "Added: "
+        << params
+        << "\n";
 }
 
 static void RemoveChatTrigger(std::istream &s)
@@ -3061,12 +3263,15 @@ static void RemoveChatTrigger(std::istream &s)
         return;
     }
 
-    FileManager fileManager(se_playerTriggerMessagesFile, tDirectories::Var());
+    FileManager fileManager(se_playerMessageTriggersFile, tDirectories::Var());
 
     int lineNumber = atoi(params.c_str()) - 1;
 
     if (fileManager.Clear(lineNumber))
-        con << "Removed line " << lineNumber + 1 << "\n";
+        con << "Removed line "
+            << lineNumber + 1
+            << "\n";
+
     eChatBot &bot = eChatBot::getInstance();
     bot.data.chatTriggers.clear();
     bot.LoadChatTriggers();
@@ -3076,10 +3281,10 @@ static void ListChatTriggers(std::istream &s)
 {
     eChatBot &chatBot = eChatBot::getInstance();
 
-    if (se_playerTriggerMessages && !chatBot.data.chatTriggers.empty())
+    if (se_playerMessageTriggers && !chatBot.data.chatTriggers.empty())
     {
-        con << "Listing all loaded chat triggers:\n";
-        con << "Line) Trigger, Response, Extra Delay, Exact?\n";
+        con << "Listing all loaded chat triggers:\n"
+            << "Line) Trigger, Response, Extra Delay, Exact?\n";
 
         int i = 1;
         for (const auto &chatTrigger : chatBot.data.chatTriggers)
@@ -3110,7 +3315,7 @@ static void ListChatTriggers(std::istream &s)
     }
     else
     {
-        FileManager fileManager(se_playerTriggerMessagesFile, tDirectories::Var());
+        FileManager fileManager(se_playerMessageTriggersFile, tDirectories::Var());
         tArray<tString> lines = fileManager.Load();
 
         con << "Chat triggers not loaded. Reading from file:\n"
@@ -3126,19 +3331,23 @@ static void ListChatTriggers(std::istream &s)
                 continue;
             }
 
-            con << i + 1 << ") "
-                << parts[0] << ", " << parts[1] << ", " << parts[2] << ", "
-                << (parts[3] == "1" ? "Yes" : "No") << "\n";
+            con << i + 1    << ") "
+                << parts[0] << ", "
+                << parts[1] << ", "
+                << parts[2] << ", "
+                << (parts[3] == "1" ? "Yes" : "No")
+                << "\n";
         }
     }
 }
 
 static void ClearChatTriggers(std::istream &s)
 {
-    FileManager fileManager(se_playerTriggerMessagesFile, tDirectories::Var());
+    FileManager fileManager(se_playerMessageTriggersFile, tDirectories::Var());
     eChatBot &bot = eChatBot::getInstance();
     fileManager.Clear();
     bot.data.chatTriggers.clear();
+
     con << "All chat triggers have been cleared.\n";
 }
 
@@ -3270,3 +3479,37 @@ eChatBotData & eChatBotMessager::Data()
 {
     return *data;
 }
+
+
+static void PlayerMessageTriggersInput(std::istream &s)
+{
+    bool eventTrigger = false;
+    tString inputMessage;
+    ePlayer *conUser = sn_consoleUser();
+
+    if (!conUser)
+    {
+        gHelperUtility::DebugForce("eChatBot","No console user found..");
+        return;
+    }
+
+    ePlayerNetID *triggeredBy = conUser->netPlayer;
+    eChatBot &bot = eChatBot::getInstance();
+    bot.LoadChatTriggers();
+
+    inputMessage.ReadLine(s, true);
+    gHelperUtility::DebugForce("eChatBot","Received Input: ", inputMessage);
+
+    bot.Messager()->ResetParams();
+    bot.Messager()->SetInputParams(triggeredBy, inputMessage, eventTrigger);
+
+    bot.Messager()->FindTriggeredResponse();
+
+    if (!bot.Messager()->Params().abortOutput)
+        gHelperUtility::DebugForce("eChatBot","Received Output:", bot.Messager()->Params().response);
+    else if (bot.Messager()->Params().matchFound)
+        gHelperUtility::DebugForce("eChatBot", "Aborting output..");
+    else
+        gHelperUtility::DebugForce("eChatBot", "No match found..");
+}
+static tConfItemFunc PlayerMessageTriggersInput_conf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_INPUT", &PlayerMessageTriggersInput);

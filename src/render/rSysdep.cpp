@@ -249,8 +249,8 @@ void  rSysDep::ExitGL(){
 
 bool sr_screenshotIsPlanned=false;
 
-static bool png_screenshot=true;
-static tConfItem<bool> pns("PNG_SCREENSHOT",png_screenshot);
+static bool screenshot_png=true;
+static tConfItem<bool> pns("SCREENSHOT_PNG",screenshot_png);
 #ifndef DEDICATED
 
 static void SDL_SavePNG(SDL_Surface *image, tString filename){
@@ -302,7 +302,7 @@ static void SDL_SavePNG(SDL_Surface *image, tString filename){
 }
 #endif
 
-static void make_screenshot( bool save )
+static void make_screenshot(bool save)
 {
 #ifndef DEDICATED
     // screenshot count
@@ -341,7 +341,7 @@ if( save )
         // generate filename
         tString fileName("screenshot_");
         fileName << number;
-        if(png_screenshot)
+        if(screenshot_png)
             fileName << ".png";
         else
             fileName << ".bmp";
@@ -358,7 +358,7 @@ if( save )
 if( save )
 {
         // save image
-        if(png_screenshot)
+        if(screenshot_png)
             SDL_SavePNG(image, tDirectories::Screenshot().GetWritePath( fileName ));
         else
             SDL_SaveBMP(temp, tDirectories::Screenshot().GetWritePath( fileName ) );
@@ -681,9 +681,9 @@ void rSysDep::SwapGL(){
     if( !sr_screenshotIsPlanned && ( sr_brightness > 1.01 || sr_brightness < 0.99 ) )
     {
         float brightness = sr_brightness;
-        
+
         brightness_hack:
-        
+
         if( sr_brightness > 1 )
         {
             glBlendFunc( GL_DST_COLOR, GL_ONE );
@@ -698,14 +698,14 @@ void rSysDep::SwapGL(){
         glBegin(GL_QUADS);
         glVertex2d(-1, -1); glVertex2d(-1, 1); glVertex2d(1, 1); glVertex2d(1, -1);
         glEnd();
-        
+
         if( brightness > 1 )
         {
             brightness -= 1;
             goto brightness_hack;
         }
     }
-    
+
     rPerFrameTask::DoPerFrameTasks();
 
     // unlock the mutex while waiting for the swap operation to finish
@@ -784,24 +784,24 @@ void rSysDep::SwapGL(){
     {
         /*
         static int FPS, now_time, last_time = 0;
-        
+
         now_time = SDL_GetTicks();
         FPS = 1000 / sr_maxFPS;
-        
+
         if( now_time < last_time + FPS )
             SDL_Delay( last_time + FPS - now_time );
-        
+
         last_time = SDL_GetTicks();
         */
-        
+
         static double FPS, now_time, last_time = 0;
-        
+
         now_time = tRealSysTimeFloat();
         FPS = 1.0 / sr_maxFPS;
-        
+
         if( now_time < last_time + FPS )
             SDL_Delay( round( 1000 * ( last_time + FPS - now_time ) ) );
-        
+
         last_time = tRealSysTimeFloat();
     }
 

@@ -243,7 +243,7 @@ bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<t
 
     args = args.TrimWhitespace();
     int spaceIndex = args.StrPos(" ");
-    
+
     // Split command into commandName and arguments
     tString commandName = (spaceIndex == -1) ? args : args.SubStr(0, spaceIndex);
     tString arguments = (spaceIndex == -1) ? tString() : args.SubStr(spaceIndex + 1);
@@ -261,10 +261,10 @@ bool LocalChatCommands(ePlayer *player, tString args, const std::unordered_map<t
         }
         catch (const std::exception &e)
         {
-            con << "Error executing command '" 
-                << commandName 
-                << "': " 
-                << e.what() 
+            con << "Error executing command '"
+                << commandName
+                << "': "
+                << e.what()
                 << "\n";
             return false;
         }
@@ -637,6 +637,11 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
                  << tThemedTextBase.ItemColor()
                  << pCycle->Lag()
                  << tThemedTextBase.MainColor()
+                 << ")\n"
+                 << " Last turn time: "
+                 << st_GetFormatTime(tSysTimeFloat() - pCycle->lastTurnTime, true)
+                 << " ("
+                 << pCycle->lastTurnTime
                  << ")\n";
 
         if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
@@ -723,16 +728,14 @@ bool RgbCommand::execute(tString args)
 
     if (!local_p)
         return false;
-    
+
     if (args.empty())
     {
         con << CommandLabel()
             << tOutput("$player_colors_current_text");
-            
+
         for (auto localNetPlayer : se_GetLocalPlayers())
-        {
             con << ColorsCommand::gatherPlayerColor(localNetPlayer) << "\n";
-        }
     }
     else
     {
@@ -754,13 +757,14 @@ bool RgbCommand::execute(tString args)
                 con << CommandLabel()
                     << ErrorColor()
                     << tOutput("$player_colors_changed_usage_error");
+                return true;
             }
             targetPlayer = nullptr;
             removeSecondElement = true;
         }
 
         oldColor = tColor(local_p->rgb[0], local_p->rgb[1], local_p->rgb[2]);
-        oldMode = ColorsCommand::localPlayerMode(local_p);
+        oldMode  = ColorsCommand::localPlayerMode(local_p);
 
         command = commandArgs[0];
 
@@ -996,9 +1000,7 @@ bool RgbCommand::execute(tString args)
                 << tOutput("$player_colors_cleared", se_colorVarFile);
             return true;
         }
-        // Not really checking if the strings passed parameters are numbers,
-        // but if someone did /rgb asd asd asd it would just make it 0 0 0.
-        else if (commandArgs.Len() == 3) // Apply color to player who sent command
+        else if (commandArgs.Len() == 3)
         {
             correctParameters = true;
             local_p->rgb[0] = atoi(commandArgs[0]); // r
@@ -1127,7 +1129,7 @@ bool RebuildCommand::execute(tString args)
 bool WatchCommand::execute(tString args)
 {
     ePlayer *localPlayer = player;
-    if (!localPlayer || !localPlayer->cam)
+    if (!localPlayer)
         return false;
 
     // Extract the target player name from the input string
@@ -1243,78 +1245,138 @@ bool ReverseCommand::execute(tString args)
 
 bool SpectateCommand::execute(tString args)
 {
-    if (helperConfig::sghuk)
-    {
-        tString id;
-        tRemoveFromList(se_disableCreateSpecific, player->ID() + 1);
-        se_forceJoinTeam = false;
-    }
-
     ePlayer *local_p = player;
+
+    if (!args.empty() && args.isNumber())
+    {
+        ePlayer *lp = ePlayer::PlayerConfig(atoi(args) - 1);
+        if (lp && lp->netPlayer)
+        {
+            local_p = lp;
+        }
+        else
+        {
+            con << CommandLabel()   
+                << ErrorColor()
+                << "No local / net player for ID '"
+                << ItemColor()
+                << args
+                << ErrorColor()
+                << "'\n";
+            return true;
+        }
+    }
 
     if (!local_p)
         return false;
-        
+
+    if (helperConfig::sghuk)
+    {
+        tString id;
+        tRemoveFromList(se_disableCreateSpecific, local_p->ID() + 1);
+        se_forceJoinTeam = false;
+    }
+
     bool spectating = local_p->spectate;
 
     if (!spectating)
     {
         con << CommandLabel()
-            << "Spectating player '" << player->name << "'...\n";
+            << "Spectating player '"
+            << local_p->Name()
+            << "'...\n";
+
         local_p->spectate = true;
-        if (netPlayer)
+
+        ePlayerNetID *net_p = local_p->netPlayer;
+        if (net_p)
         {
-
             if (helperConfig::sghuk && se_spectateCommandInstant)
-                netPlayer->Clear(local_p);
+                net_p->Clear(local_p);
 
-            netPlayer->ForcedUpdate();
+            ePlayerNetID::ForcedUpdate();
         }
     }
     else
     {
         con << CommandLabel()
             << ErrorColor()
-            << "You are already spectating\n";
-
+            << local_p->Name()
+            << " is already spectating\n";
     }
+
     return true;
 }
 
 bool JoinCommand::execute(tString args)
 {
+    ePlayer *local_p = player;
+
+    if (!args.empty() && args.isNumber())
+    {
+        ePlayer *lp = ePlayer::PlayerConfig(atoi(args) - 1);
+        if (lp && lp->netPlayer)
+        {
+            lp = local_p;
+        }
+        else
+        {
+            con << CommandLabel()
+                << ErrorColor()
+                << "No local / net player for ID '"
+                << ItemColor()
+                << args
+                << ErrorColor()
+                << "'\n";
+            return true;
+        }
+    }
+
+    if (!local_p)
+        return false;
+
     bool unspectate = true;
 
     if (helperConfig::sghuk)
     {
         tString id;
-        tRemoveFromList(se_disableCreateSpecific,player->ID()+1);
-        if (se_disableCreate && player->spectate)
+        tRemoveFromList(se_disableCreateSpecific, local_p->ID()+1);
+        if (se_disableCreate && local_p->spectate)
             unspectate = false;
         se_disableCreate = 0;
     }
 
+    ePlayerNetID *net_p = local_p->netPlayer;
+
     if (unspectate)
     {
-        if (!netPlayer || player->spectate) {
+        if (!net_p || local_p->spectate) {
             con << CommandLabel()
-                << "No longer spectating...\n";
-            player->spectate = false;
+                << ItemColor()
+                << local_p->Name()
+                << MainColor()
+                << "is no longer spectating...\n";
+            local_p->spectate = false;
         }
     }
-    if (netPlayer && !bool(netPlayer->CurrentTeam()))
+    
+    if (net_p && !bool(net_p->CurrentTeam()))
     {
         con << CommandLabel()
-            << "Joining the game...\n";
+            << ItemColor()
+            << local_p->Name()
+            << MainColor()
+            << " is joining the game...\n";
 
-        netPlayer->CreateNewTeamWish();
-        netPlayer->ForcedUpdate();
+        net_p->CreateNewTeamWish();
+        net_p->ForcedUpdate();
     }
-    else if (netPlayer)
+    else if (net_p)
     {
         con << CommandLabel()
             << ErrorColor()
-            << "Already joined the game\n";
+            << local_p->Name()
+            << " already joined the game\n";
 
     }
     return true;
@@ -1618,7 +1680,17 @@ bool NameSpeakCommand::execute(tString args)
     {
         con << CommandLabel()
             << ErrorColor()
-            << "Usage: " << se_nameSpeakCommand << " <name> <message>\n";
+            << "Usage: " << se_nameSpeakCommand << " <message>\n";
+        return true;
+    }
+
+    if (se_disableCreate)
+    {
+        con << CommandLabel()
+            << ErrorColor()
+            << "DISABLE_CREATE is enabled. "
+            << "No usable players!\n";
+
         return true;
     }
 
@@ -1669,17 +1741,42 @@ bool NameSpeakCommand::execute(tString args)
 
 bool RespawnCommand::execute(tString args)
 {
-    gCycle *cycle = netPlayer->NetPlayerToCycle();
+    ePlayerNetID *net_p = netPlayer;
+
+    if (!args.empty() && args.isNumber())
+    {
+        ePlayer *local_p = ePlayer::PlayerConfig(atoi(args) - 1);
+        if (local_p && local_p->netPlayer)
+        {
+            net_p = local_p->netPlayer;
+        }
+        else
+        {
+            con << CommandLabel()
+                << ErrorColor()
+                << "No local / net player for ID '"
+                << ItemColor()
+                << args
+                << ErrorColor()
+                << "'\n";
+            return true;
+        }
+    }
+
+    gCycle *cycle = net_p->NetPlayerToCycle();
 
     if (!cycle || !cycle->Alive()) {
         con << CommandLabel()
-            << "Respawning player '" << netPlayer->GetName() << "'\n";
-        netPlayer->RespawnPlayer(true);
+            << "Respawning player '"
+            << net_p->GetName()
+            << "'\n";
+        net_p->RespawnPlayer(true);
     }
     else
         con << CommandLabel()
             << ErrorColor()
-            << "You are already alive!\n";
+            << net_p->GetName()
+            << " is already alive!\n";
 
     return true;
 }
@@ -1691,7 +1788,9 @@ bool RebuildGridCommand::execute(tString args)
     {
         con << CommandLabel()
             << ErrorColor()
-            << "Usage: " << se_rebuildCommand << " <#state>\n";
+            << "Usage: "
+            << se_rebuildCommand
+            << " <#state>\n";
     }
     else if (gGame::CurrentGame())
         gGame::CurrentGame()->RebuildGrid(atoi(passedString[1]));
@@ -1792,7 +1891,6 @@ bool NicknameCommand::execute(tString args)
 
 bool StatsCommand::execute(tString args)
 {
-
     nServerInfoBase *connectedServer = CurrentServer();
     if (connectedServer)
         con << CommandLabel()
@@ -2151,8 +2249,9 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
         messageToSend << "/msg " << player->GetName().Filter() << " " << feedback << "\n";
         for (auto localNetPlayer : se_GetLocalPlayers())
         {
+            eChatbotMessages.AddOutgoingMessage(feedback);
             se_NewChatMessage(localNetPlayer, messageToSend)->BroadCast();
-            break;            
+            break;
         }
     }
 

@@ -95,6 +95,7 @@ public:
         virtual void Turn(gCycle &cycle, int dir) = 0;     //!< turns a cycle. dir < 0 turns left.
         virtual void Brake(gCycle &cycle, bool brake) = 0; //!< brakes a cycle
         virtual ~CycleController();
+        std::string contributionStr = "";
     };
 
     //! use direct control
@@ -197,6 +198,8 @@ public:
         bool veto;        //!< was this path vetoed?
         REAL score;       //!< score of the path. 0: pointless suicide, 100: pretty good.
         REAL nextThought; //!< seconds to next thought
+        std::map<std::string, REAL> contributionMap;
+
 
         PathEvaluation();
     };
@@ -208,6 +211,8 @@ public:
         //! evaluate a path.
         virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const = 0;
         virtual ~PathEvaluator();
+
+        std::string name = "PathEvaluator";
 
         //! turns a value between 0 and infinity, where 1 would be an expected value, into a value
         //! between 0 and 100
@@ -487,10 +492,10 @@ public:
 
     REAL Think(REAL currentTime, REAL minStep);
     void Activate(REAL currentTime);
-    REAL annoyanceCheck();
+    REAL annoyanceCheck(REAL currentTime);
     bool afkQuitCheck();
     bool chattingSmartDisable();
-    
+
     static gSmarterBot &Get(gCycle *cycle);
     ~gSmarterBot();
 };

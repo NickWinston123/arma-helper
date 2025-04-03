@@ -11,28 +11,30 @@
 #include "sqlite3.h"
 #include "tDatabase.h"
 
-extern bool se_playerTriggerMessages;
-extern tString se_playerTriggerMessagesFile, se_playerMessageEnabledPlayers;
+extern tString se_playerMessageTriggersFile,
+               se_playerMessageEnabledPlayers;
 
-extern bool se_playerTriggerMessagesReactToSelf, se_playerTriggerMessagesReactToLocal;
-extern bool se_playerTriggerMessagesResendSilencedMessages;
+extern bool se_playerMessageTriggers,
+            se_playerMessageTriggersReactToSelf,
+            se_playerMessageTriggersReactToLocal,
+            se_playerMessageTriggersResendSilencedMessages,
+            se_playerMessageTriggersRageQuits,
+            se_playerMessageTriggersAcheivements,
+            se_playerMessageTriggersAcheivementsLocal;
 
-extern bool se_playerTriggerMessagesRageQuits;
-
-extern bool se_playerTriggerMessagesAcheivements;
-extern bool se_playerTriggerMessagesAcheivementsLocal;
-extern int se_playerTriggerMessagesAcheivementsKillsChangeVal;
-extern int se_playerTriggerMessagesAcheivementsKillStreakChangeVal;
-extern int se_playerTriggerMessagesAcheivementsMaxKillStreak;
-extern int se_playerTriggerMessagesAcheivementsChatsChangeVal;
-extern int se_playerTriggerMessagesAcheivementsJoinsChangeVal;
-extern int se_playerTriggerMessagesAcheivementsBansChangeVal;
+extern int se_playerMessageTriggersAcheivementsKillsChangeVal,
+           se_playerMessageTriggersAcheivementsKillStreakChangeVal,
+           se_playerMessageTriggersAcheivementsMaxKillStreak,
+           se_playerMessageTriggersAcheivementsChatsChangeVal,
+           se_playerMessageTriggersAcheivementsJoinsChangeVal,
+           se_playerMessageTriggersAcheivementsBansChangeVal;
 
 std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers();
 
 struct eChatBotStats;
 class eChatBotData;
 
+extern eMessageTracker eChatbotMessages;
 
 enum ResponseType
 {
@@ -74,7 +76,7 @@ struct eChatBotDataBase
         tString      matchedTrigger;
         ResponseType triggerType;
         ePlayerNetID *sendingPlayer;
-        
+
         bool useChatFlag    = true;
 
         bool validateOutput = true;
@@ -133,7 +135,7 @@ typedef tString (*ChatFunction)(tString);
 
 class eChatBotFunctions
 {
-public:  
+public:
     eChatBotFunctions(eChatBotData *data): data(data) {}
 
     void RegisterFunction(const tString &name, ChatFunction func)
@@ -164,14 +166,14 @@ public:
     {
         return *data;
     }
-    
-    eChatBotData *data;    
+
+    eChatBotData *data;
     std::map<tString, ChatFunction> functionMap;
 };
 
 class eChatBotMessager
 {
-public:  
+public:
     eChatBotMessager(eChatBotData *data): data(data) {}
 
     void SetInputParams(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger, tString preAppend = tString(""));
@@ -182,10 +184,10 @@ public:
     void FindTriggeredResponse();
 
     bool Send();
-    bool ResendMessage(tString blockedMessage);
-    
+    bool ResendMessage(tString blockedMessage = tString(""));
+
     bool ScheduleMessageParts();
-    
+
     REAL determineReadingDelay(tString message);
     REAL calculateResponseSmartDelay(tString response, REAL wpm);
 
@@ -195,7 +197,7 @@ public:
 
     eChatBotData &Data();
 
-    eChatBotData *data;    
+    eChatBotData *data;
 };
 
 class eChatBotData : public eChatBotDataBase
@@ -255,6 +257,8 @@ public:
         return instance;
     }
 
+    static void SilencedAction();
+
     void InitChatFunctions();
 
     void LoadChatTriggers();
@@ -303,7 +307,7 @@ public:
     }
 
     static bool InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger = false, tString preAppend = tString(""));
-    
+
     bool ShouldAnalyze();
 };
 

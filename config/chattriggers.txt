@@ -43,6 +43,8 @@ $search;!search,$searchfunc,-9999,0
 !st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
 $show;!show,$hidestatfunc(unprivate),-999,0
 $slap,$unvalidatedsayfunc(/admin slap $p1 0),-9999,0
+#$spec,$unvalidatedsayfunc(/spec),-999,0
+$join,$unvalidatedsayfunc(/join),-999,0
 !s;$s,$statsfunc,-9999,0
 !st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
 !hn;!hidden;$hn;$hidden,$exactstatfunc(hide),-999,0
@@ -59,6 +61,8 @@ $log,$logfunc(store),-9999,0
 $msg,$unvalidatedsayfunc(/msg),-999,0
 $rps,$rpsgamefunc,-999,0
 $guess,$guessgamefunc,-999,0
+$com,$whatsthefunc(commands),-999,0
+$eval,$whatsthefunc(smarter_bot_contribution),-999,0
 
 $,$sayfunc,-9999,0
 >,$sayoutloudfunc,-999,0
@@ -101,7 +105,6 @@ players this,$whatsthefunc(players_this_hour),-999,0
 i join;join time,you joined at $whatsthefunc(joined_time) $p1,-999,0
 here for;long have i;i been here,about $whatsthefunc(been_here_for) $p1,-999,0
 the score,$whatsthefunc(score),-999,0
-
 my color;my rgb,$whatsthefunc(my_color),-999,0
 ban,$banfunc,-9999,0
 
@@ -124,8 +127,8 @@ o/,\o,0,0
 bots ,dont think so $p1..;um where and who?,0,0
 bots,dont think so $p1..;um where and who?,0,1
 robot,beep boop $p1;beep you are $p1,0,0
-bot ; a bot; bot;bot ;a bot ,no $p1 im just $p0;$p1 are you?;thats a negative $p1;$p1 is a bot;what $p1;is that what you are $p1;ok enough of that $p1,0,0    
-bot; bot,no $p1;$p1 are you?;thats a negative $p1;$p1 is a bot;what $p1;is that what you are $p1;ok enough of that $p1,0,1
+bot;bot ; a bot; bot;bot ;a bot ,no $p1 im just $p0;$p1 are you?;thats a negative $p1;$p1 is a bot;what $p1;is that what you are $p1;ok enough of that $p1,0,0
+bot,no $p1;$p1 are you?;thats a negative $p1;$p1 is a bot;what $p1;is that what you are $p1;ok enough of that $p1,0,1
 no cap;og ;fax;facts,og $p1;no lie $p1;true $p1;no printer $p1,0,0
 cold;cool,icy;below 0;always;2 cool;so cool,0,0
 sry;srry;sorry,nws $p1;its cool $p1;all good $p1;no worries $p1;dont stress it $p1,0,0
@@ -133,6 +136,7 @@ test ; test,test $p1?,0,0
 test,test $p1?,0,1
 here every,yeah $p1;for sure $p1,0,0
 $rename,new name i see $p1 eh?;interesting $p1;nice name $p1;i like the new name $p1,0,1
+$renameself,$p0 is a good name i guess;i like this name better;i wanted this name anyways;aahh i like this new name,0,1
 train,choo chooo,0,0
 avoid explain,no please explain;i need an explaination,0,0
 entertain,yes,0,0
@@ -141,9 +145,9 @@ party,lets do it $p1;yay;alwayss $p1,0,0
 explain,yes continue;yes please do;yeah do it,0,0
 $p0 train,yes,0,0
 meet,yeah i will be there;im coming;lets go,0,0
-bb ;g2g ;cu ;gtg ;cya ;bbl ,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu later $p1!,0,0
+see ya;bb ;g2g ;cu ;gtg ;cya ;bbl ,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu later $p1!,0,0
 bb;g2g;cu;gtg;cya;bbl,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu later $p1!,0,1
- gn;gn ; good night,good night!!,0,0
+gn;gn ; good night,good night!!,0,0
 gn; good night,good night!!,0,1
 gm;gz;ghz;gg,gg;GG,0,1
 good game; gm; gz; ghz; gg;gm ;gz ;ghz ;gg ,gg;GG,0,0
@@ -164,7 +168,7 @@ pong,ping,0,1
 bib,bob bib,0,0
 ss,ss,0,1
 gf,gf,0,1
- gf;gf ,gf,0,0
+gf;gf ,gf,0,0
 easy;ez,too easy $p1,0,1
 nelg,is a noob!!!!!,0,1
 ur name;your name,my name is $p0;its $p0,0,0
@@ -172,18 +176,19 @@ yaaa,yaaaa;yaaaaa;yaaaaaaaa,0,0
 ve heard,from who $p1;is that right $p1,0,0
 name,its $p1,0,0
 kach,kachOW;KAHCHOW;kachOWW,0,0
-are you thinking,not much $p1;actually a lot $p1 its pretty complex;idk $p1 u tell me;let me think about it $p1,0,0
+what is;are you thinking,not much $p1;actually a lot $p1 its pretty complex;idk $p1 u tell me;let me think about it $p1,0,0
 what are you,a noob!!!!!,0,0
 HIY;helo,o/;\o,0,0
 noice,tyy,0,0
 law;police,oh no,0,0
 gj,ty,0,0
 aaa,!!!,0,1
- rq;rq ,imagine;never that,0,0
+rq;rq ,imagine;never that,0,0
 rq,imagine;never that,0,1
 good job,ty!,0,0
 butt,lol,0,0
 hello;hey;hi,o/;\o,0,1
+wb,ty $p1;thanks $p1!!!;glad to be back $p1,0,0
 who,?,0,0
 hmm,hmmmm;mmmm,0,0
 hm,hmmmm;mmmm,0,1
@@ -303,7 +308,7 @@ smol,how smol?;how smol huh;huh $p1 how smol is that?;but how smol;how smol tho?
 soon,how soon?;how soon huh;huh $p1 how soon is that?;but how soon;how soon tho??;how soon exactly;how soon $p1;how soon $p1 pls,0,0
 long,how long?;how long huh;huh $p1 how long is that?;but how long;how long tho??;how long exactly;how long $p1;how long $p1 pls,0,0
 wait,waiting..;ok will be here $p1,0,0
- AI;AI ,nope;dont think so;nah,0,0
+AI;AI ,nope;dont think so;nah,0,0
 AI,nope;dont think so;nah,0,1
 whats,um idk?;wdym $p1;what $p1 idk;idk $p1,0,0
 why;what,huh?;huh $p1;idk;umm idk?;what $p1,0,0
@@ -365,6 +370,8 @@ left us,why did he do it $p1?;i know $p1;its going to be ok $p1,0,0
 $p0,what are you saying here $p1;huh whats that $p1?;um $p1 what;i dont know $p1;um huh $p1 what??,0,0
 am new;im new,WELCOME $p1 im $p0,0,0
 discord,join the tron discord at discord.gg/dcpaauj,-999,0
+pls,ty,0,1
+so good,not so bad yourself $p1;think so $p1?;too kind $p1,0,0
 //
 // Functions
 //

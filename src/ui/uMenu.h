@@ -655,5 +655,170 @@ public:
 inline void uMenu::AddItem(uMenuItem* item)     { items.Add(item, item->idnum); }
 inline void uMenu::RemoveItem(uMenuItem* item)  { items.Remove(item, item->idnum); }
 
+
+class uMenuItemToggleThemed : public uMenuItemToggle
+{
+public:
+    uMenuItemToggleThemed(uMenu *menu,
+                          const char *title,
+                          const char *help,
+                          bool &target,
+                          tThemedText &theTheme,
+                          REAL &valueLocX)
+        : uMenuItemToggle(menu, "", help, target),
+          customTitle(title),
+          targetPtr(&target),
+          menutheme(theTheme),
+          locX(valueLocX)
+    {
+    }
+
+    virtual void Render(REAL x, REAL y, REAL alpha = 1, bool selected = false) override
+    {
+        bool currentValue = *targetPtr;
+
+        tString themedLabel = menutheme.HeaderColor() + customTitle;
+        tString themedValue = currentValue
+                                  ? (menutheme.MainColor() + tString("Enabled"))
+                                  : (menutheme.ErrorColor() + tString("Disabled"));
+
+        DisplayText(x, y, themedLabel.c_str(), selected, alpha, 1);
+        DisplayText(x + locX, y, themedValue.c_str(), selected, alpha, -1);
+    }
+
+private:
+    tString customTitle;
+    bool *targetPtr;
+    tThemedText &menutheme;
+    REAL &locX;
+};
+
+class uMenuItemIntThemed : public uMenuItemInt
+{
+public:
+    uMenuItemIntThemed(uMenu *menu,
+                       const char *title,
+                       const char *help,
+                       int &target,
+                       int minVal,
+                       int maxVal,
+                       int stepVal,
+                       tThemedText &theTheme,
+                       REAL &valueLocX)
+        : uMenuItemInt(menu, "", help, target, minVal, maxVal, stepVal),
+          customTitle(title),
+          targetPtr(&target),
+          menutheme(theTheme),
+          locX(valueLocX)
+    {
+    }
+
+    virtual void Render(REAL x, REAL y, REAL alpha = 1, bool selected = false) override
+    {
+        tString themedLabel = menutheme.HeaderColor() + customTitle;
+
+        tString valueStr;
+        valueStr << *targetPtr;
+        tString themedValue = menutheme.ItemColor() + valueStr;
+
+        DisplayText(x, y, themedLabel.c_str(), selected, alpha, 1);
+        DisplayText(x + locX, y, themedValue.c_str(), selected, alpha, -1);
+    }
+
+private:
+    tString customTitle;
+    int *targetPtr;
+    tThemedText &menutheme;
+    REAL &locX;
+};
+
+class uMenuItemRealThemed : public uMenuItemReal
+{
+public:
+    uMenuItemRealThemed(uMenu *menu,
+                        const char *title,
+                        const char *help,
+                        REAL &target,
+                        REAL minVal,
+                        REAL maxVal,
+                        REAL stepVal,
+                        tThemedText &theTheme,
+                        REAL &valueLocX)
+        : uMenuItemReal(menu, "", help, target, minVal, maxVal, stepVal),
+          customTitle(title),
+          targetPtr(&target),
+          menutheme(theTheme),
+          locX(valueLocX)
+    {
+    }
+
+    virtual void Render(REAL x, REAL y, REAL alpha = 1, bool selected = false) override
+    {
+        tString themedLabel = menutheme.HeaderColor() + customTitle;
+
+        tString valueStr;
+        valueStr << *targetPtr;
+        tString themedValue = menutheme.ItemColor() + valueStr;
+
+        DisplayText(x, y, themedLabel.c_str(), selected, alpha, 1);
+        DisplayText(x + locX, y, themedValue.c_str(), selected, alpha, -1);
+    }
+
+private:
+    tString customTitle;
+    REAL *targetPtr;
+    tThemedText &menutheme;
+    REAL &locX;
+};
+
+class uMenuItemStringThemed : public uMenuItemString
+{
+public:
+    uMenuItemStringThemed(uMenu *menu,
+                          const char *title,
+                          const char *help,
+                          tString &target,
+                          tThemedText &theTheme,
+                          REAL &valueLocX,
+                          int maxLength = 1024)
+        : uMenuItemString(menu, tString(""), help, target, maxLength),
+          customTitle(title),
+          menutheme(theTheme),
+          locX(valueLocX)
+    {
+    }
+
+    virtual void Render(REAL x, REAL y, REAL alpha = 1, bool selected = false) override
+    {
+    #ifndef DEDICATED
+        static int counter = 0;
+        counter++;
+
+        int cmode = 0;
+        if (selected)
+        {
+            cmode = 1;
+            if (counter & 32)
+                cmode = 2;
+        }
+
+        rTextField::ColorMode currentColorMode = colorMode_;
+        if (currentColorMode == rTextField::COLOR_SHOW && !selected)
+            currentColorMode = rTextField::COLOR_USE;
+
+        tString themedLabel = menutheme.HeaderColor() + customTitle;
+
+        DisplayText(x, y, themedLabel.c_str(), selected, alpha, 1);
+        DisplayText(x + locX, y, &((*content)[0]), selected, alpha, -1,
+                    cmode, cursorPos, currentColorMode);
+    #endif
+    }
+
+private:
+    tString customTitle;
+    tThemedText &menutheme;
+    REAL &locX;
+};
+
 #endif
 

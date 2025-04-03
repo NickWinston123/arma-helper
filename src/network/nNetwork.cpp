@@ -801,18 +801,18 @@ void ack_handler(nMessage &m){
 
     while (!m.End())
     {
-        
-    
+
+
         //con << "Got ack:" << ack << ":" << m.SenderID() << '\n';
-        if (sg_ackDelay <= 0) 
+        if (sg_ackDelay <= 0)
         {
             sn_Connections[m.SenderID()].AckReceived();
             unsigned short ack;
             m.Read(ack);
             nWaitForAck::Ackt(ack,m.SenderID());
-        
+
         }
-        else 
+        else
         {
             gTaskScheduler.schedule("ackDelay", sg_ackDelay, [&m]
             {
@@ -3581,7 +3581,6 @@ bool validateSuspended()
         if (localnetp && !localp->spectate && !localnetp->CurrentTeam())
             return true;
     }
-
     return false;
 }
 
@@ -3595,7 +3594,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
         if (sg_playerSilencedWatch)
         {
-            if (s.Contains(tString("silenced by the server administrator.")) && MessageTracker::CheckIfSilenced())
+            if (s.Contains(tString("silenced by the server administrator.")) && playerMessages.CheckIfSilenced())
             {
                 gHelperUtility::Debug("PlayerSilencedWatch","Player was silenced.");
                 sn_quitAction(true, sg_playerSilencedWatchQuit);
@@ -3620,11 +3619,11 @@ static void sn_ConsoleOut_handler(nMessage &m)
             {
                 gHelperUtility::Debug("UnableToRenameWatch","Unable to rename.");
                 if (sn_playerUnableToRenameWatchRebuild)
-                    ePlayerNetID::CompleteRebuild();                
+                    ePlayerNetID::CompleteRebuild();
             }
         }
 
-        if (sg_playerSpamProtectionWatch)
+        if (sg_playerSpamProtectionWatch || (se_playerMessageTriggers && se_playerMessageTriggersResendSilencedMessages))
         {
             tString input = (sg_playerSpamProtectionWatchSearchString.empty() ? tString("silenced for the next ") : sg_playerSpamProtectionWatchSearchString);
 
@@ -3632,18 +3631,14 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
             if (startIdx != -1)
             {
-                int startPos = startIdx + input.Len() - 1; 
-                
+                int startPos = startIdx + input.Len() - 1;
+
                 while (startPos < s.Len() && s(startPos) == ' ')
-                {
                     startPos++;
-                }
 
                 int endIdx = startPos;
                 while (endIdx < s.Len() && !isblank(s(endIdx)) && s(endIdx) != '\n')
-                {
                     endIdx++;
-                }
 
                 int len = endIdx - startPos;
 
@@ -3651,14 +3646,18 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
                 std::istringstream stream(secondsStr.stdString());
                 REAL seconds;
-                if (stream >> seconds) {
+                if (stream >> seconds)
+                {
                     ePlayerNetID::setNextSpeakTime(seconds);
-                    gHelperUtility::Debug("SpamProtectionWatch","Silenced detected. Next speak time for " + std::to_string(seconds + sg_playerSpamProtectionWatchExtraAdd) + " seconds");
-                } else {
-                    gHelperUtility::Debug("SpamProtectionWatch","Silence detected. Failed to determine number of seconds.");
+                    gHelperUtility::Debug("SpamProtectionWatch", "Silenced detected. Next speak time for " +
+                                                                 std::to_string(seconds + sg_playerSpamProtectionWatchExtraAdd) +
+                                                                 " seconds");
+                    if (se_playerMessageTriggers && se_playerMessageTriggersResendSilencedMessages)
+                        eChatBot::SilencedAction();
                 }
+                else
+                    gHelperUtility::Debug("SpamProtectionWatch", "Silence detected. Failed to determine number of seconds.");
             }
-
 
             input = (sg_playerSpamProtectionWatchCommonPrefixSearchString.empty() ? tString("your messages have a common prefix: ") : sg_playerSpamProtectionWatchCommonPrefixSearchString);
 
@@ -3666,18 +3665,14 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
             if (startIdx != -1)
             {
-                int startPos = startIdx + input.Len() - 1; 
+                int startPos = startIdx + input.Len() - 1;
 
                 while (startPos < s.Len() && s(startPos) == ' ')
-                {
                     startPos++;
-                }
 
                 int endIdx = s.StrPos(startPos, "\nSPAM PROTECTION:");
                 if (endIdx == -1)
-                {
-                    endIdx = s.Len(); 
-                }
+                    endIdx = s.Len();
 
                 int len = endIdx - startPos;
 
@@ -3686,15 +3681,11 @@ static void sn_ConsoleOut_handler(nMessage &m)
                 int secondsStartIdx = endIdx + strlen("\nSPAM PROTECTION: messages with this prefix will be allowed again in ");
 
                 while (secondsStartIdx < s.Len() && s(secondsStartIdx) == ' ')
-                {
                     secondsStartIdx++;
-                }
 
                 int secondsEndIdx = secondsStartIdx;
                 while (secondsEndIdx < s.Len() && !isblank(s(secondsEndIdx)) && s(secondsEndIdx) != '\n')
-                {
                     secondsEndIdx++;
-                }
 
                 int secondsLen = secondsEndIdx - secondsStartIdx;
 
@@ -3705,10 +3696,16 @@ static void sn_ConsoleOut_handler(nMessage &m)
                 if (stream >> seconds)
                 {
                     ePlayerNetID::setNextSpeakTimeCommonPrefix(prefix, seconds);
-                    gHelperUtility::Debug("SpamProtectionWatch","Common prefix detected: " + prefix.stdString() + ", Common Prefix Silence Set for " + std::to_string(seconds + sg_playerSpamProtectionWatchExtraAdd) + " seconds");
-                } else {
-                    gHelperUtility::Debug("SpamProtectionWatch","Common prefix detected. Failed to determine number of seconds.");
+                    gHelperUtility::Debug("SpamProtectionWatch", "Common prefix detected: " +
+                                                                 prefix.stdString() +
+                                                                 ", Common Prefix Silence Set for " +
+                                                                 std::to_string(seconds + sg_playerSpamProtectionWatchExtraAdd) +
+                                                                 " seconds");
+                    if (se_playerMessageTriggers && se_playerMessageTriggersResendSilencedMessages)
+                        eChatBot::SilencedAction();
                 }
+                else
+                    gHelperUtility::Debug("SpamProtectionWatch", "Common prefix detected. Failed to determine number of seconds.");
             }
 
             input = (sg_playerSpamProtectionWatchRepeatSearchString.empty() ? tString("you already said: ") : sg_playerSpamProtectionWatchRepeatSearchString);
@@ -3720,27 +3717,29 @@ static void sn_ConsoleOut_handler(nMessage &m)
                 int startPos = startIdx + input.Len() - 1;
 
                 while (startPos < s.Len() && s(startPos) == ' ')
-                {
                     startPos++;
-                }
 
                 int endIdx = s.StrPos(startPos, "\n");
                 if (endIdx == -1)
-                {
-                    endIdx = s.Len(); 
-                }
+                    endIdx = s.Len();
 
                 int len = endIdx - startPos;
 
                 tString repeatedMessage = s.SubStr(startPos, len);
 
-                REAL seconds = sg_playerSpamProtectionWatchRepeatWaitTime; 
+                REAL seconds = sg_playerSpamProtectionWatchRepeatWaitTime;
                 ePlayerNetID::setNextSpeakTimeCommonPrefix(repeatedMessage, seconds);
-                gHelperUtility::Debug("SpamProtectionWatch","Repeated Message Detected: '" + repeatedMessage.stdString() + "', Silence Set for " + std::to_string(seconds+sg_playerSpamProtectionWatchExtraAdd) + " seconds");
+                gHelperUtility::Debug("SpamProtectionWatch", "Repeated Message Detected: '" +
+                                                             repeatedMessage.stdString() +
+                                                             "', Silence Set for " +
+                                                             std::to_string(seconds+sg_playerSpamProtectionWatchExtraAdd) +
+                                                             " seconds");
+                if (se_playerMessageTriggers && se_playerMessageTriggersResendSilencedMessages)
+                    eChatBot::SilencedAction();
             }
         }
 
-        if ((se_playerTriggerMessages && sg_playerMessageMatchWinner) || se_playerStats)
+        if ((se_playerMessageTriggers && sg_playerMessageMatchWinner) || se_playerStats)
         {
             if (s.Contains("Overall Winner:"))
             {
@@ -3752,7 +3751,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
                 if (se_playerStats)
                     ePlayerStats::updateStatsMatchEnd(potentialWinner);
 
-                if (se_playerTriggerMessages && sg_playerMessageMatchWinner)
+                if (se_playerMessageTriggers && sg_playerMessageMatchWinner)
                     eChatBot::InitiateAction(potentialWinner, isLocal ? tString("$matchwinnerself") : tString("$matchwinner"), true);
             }
         }
@@ -3857,7 +3856,7 @@ static void client_cen_handler(nMessage &m)
         m >> s;
         con.CenterDisplay(s);
 
-        if (se_playerTriggerMessages && sg_playerMessageMatchWinner || se_playerStats)
+        if (se_playerMessageTriggers && sg_playerMessageMatchWinner || se_playerStats)
         {
             if (s.Contains("Winner:"))
             {
@@ -5991,19 +5990,19 @@ void sn_quitAction(bool save, bool quit, tString message)
         time_t startOfDay = getStartTimeOfDay();
 
         if (stats.last_banned < startOfDay)
-            stats.times_banned_today = 0; 
+            stats.times_banned_today = 0;
 
-        stats.last_banned = time(nullptr); 
+        stats.last_banned = time(nullptr);
         stats.times_banned++;
-        stats.times_banned_today++; 
+        stats.times_banned_today++;
 
-        if (se_playerWatchAutoRandomName) 
+        if (se_playerWatchAutoRandomName)
         {
             gHelperUtility::Debug("quitAction","Forcing random name.");
             forceRandomRename = true;
         }
     }
-    
+
     if (save)
         st_SaveConfig();
 
@@ -6014,7 +6013,7 @@ void sn_quitAction(bool save, bool quit, tString message)
             uMenu::quickexit = uMenu::QuickExit_Total;
         });
     }
-    
+
 }
 
 void sn_bannedWatchAction(tString reason)

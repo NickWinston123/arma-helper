@@ -75,6 +75,9 @@ extern bool sg_RequestedDisconnection, sg_connectToLastServerFromMenu;
 extern bool sg_connectToLastServerOnStart;
 extern tString sg_lastServerStr;
 
+extern REAL sg_timestepMax;
+extern int sg_timestepMaxCount,
+           sg_timestepStepCount;
 typedef enum
 {
     gFINISH_EXPRESS,
@@ -462,6 +465,47 @@ public:
             }
         }
         pendingTasks.clear();
+    }
+
+    void removeTasksWithPrefix(const std::string &prefix)
+    {
+        std::vector<std::string> idsToRemove;
+        idsToRemove.reserve(tasksMap.size());
+
+        for (auto const &pair : tasksMap)
+        {
+            if (pair.first.rfind(prefix, 0) == 0) 
+            {
+                idsToRemove.push_back(pair.first);
+            }
+        }
+
+        for (auto &id : idsToRemove)
+            tasksMap.erase(id);
+
+        std::vector<std::string> pendingKeysToDelete;
+        for (auto &kv : pendingTasks)
+        {
+            if (kv.first.rfind(prefix, 0) == 0)
+                pendingKeysToDelete.push_back(kv.first);
+            else
+            {
+                std::queue<DelayedTask> newQueue;
+                while (!kv.second.empty())
+                {
+                    auto t = kv.second.front();
+                    kv.second.pop();
+                    if (t.id.rfind(prefix, 0) != 0)
+                        newQueue.push(t);
+                }
+                kv.second = std::move(newQueue);
+            }
+        }
+
+        for (auto &key : pendingKeysToDelete)
+            pendingTasks.erase(key);
+
+        rebuildQueue();
     }
 
     std::unordered_map<std::string, DelayedTask> getTasks() const

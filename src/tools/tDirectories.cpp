@@ -1757,12 +1757,11 @@ bool FileManager::Backup()
     // Get the current date and time
     auto now = std::chrono::system_clock::now();
     auto time_t_now = std::chrono::system_clock::to_time_t(now);
-    tm local_tm;
-    localtime_s(&local_tm, &time_t_now);
+    struct tm* local_tm = localtime(&time_t_now); 
 
     // Create a timestamp string
     std::stringstream ss;
-    ss << std::put_time(&local_tm, "%m-%d-%Y");
+    ss << std::put_time(local_tm, "%m-%d-%Y");
 
     // Create backup file name
     tString backupFileName = fileName + "-" + tString(ss.str());
@@ -1787,15 +1786,16 @@ bool FileManager::Backup()
         }
     }
 
-
     backupFile.close();
 
     if (backedup)
         con << tOutput("$file_manager_created_backup", backupFileName);
     else
         con << tOutput("$file_manager_error_creating_backup", fileName);
+
     return backedup;
 }
+
 
 bool FileManager::Clear(bool output)
 {

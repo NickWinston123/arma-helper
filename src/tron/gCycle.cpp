@@ -345,64 +345,59 @@ static tConfItem<bool> sg_smarterBotAlwaysActiveConf = HelperCommand::tConfItem(
 
 bool sg_smarterBotAFKCheck = false;
 static tConfItem<bool> sg_smarterBotAFKCheckConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK", sg_smarterBotAFKCheck);
-
 REAL sg_smarterBotAFKCheckTime = 8;
 static tConfItem<REAL> sg_smarterBotAFKCheckTimeConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_TIME", sg_smarterBotAFKCheckTime);
 bool sg_smarterBotAFKCheckIfChatting = true;
 static tConfItem<bool> sg_smarterBotAFKCheckIfChattingConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_IF_CHATTING", sg_smarterBotAFKCheckIfChatting);
-
 bool sg_smarterBotAFKCheckIfActive = true;
 static tConfItem<bool> sg_smarterBotAFKCheckIfActiveConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_IF_ACTIVE", sg_smarterBotAFKCheckIfActive);
 REAL sg_smarterBotAFKCheckIfActiveTime = 5;
 static tConfItem<REAL> sg_smarterBotAFKCheckIfActiveTimeConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_IF_ACTIVE_TIME", sg_smarterBotAFKCheckIfActiveTime);
-
 bool sg_smarterBotAFKCheckQuit = false;
 static tConfItem<bool> sg_smarterBotAFKCheckQuitConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_QUIT", sg_smarterBotAFKCheckQuit);
-
 REAL sg_smarterBotAFKCheckQuitTime = 300;
 static tConfItem<REAL> sg_smarterBotAFKCheckQuitTimeConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_QUIT_TIME", sg_smarterBotAFKCheckQuitTime);
+bool sg_smarterBotManagerReset = false;
+static tConfItem<bool> sg_smarterBotManagerResetConf = HelperCommand::tConfItem("SMARTER_BOT_MANAGER_RESET", sg_smarterBotManagerReset);
+
+bool sg_navigatorDebugTrackEvaluation = false;
+static tConfItem<bool> sg_navigatorDebugTrackEvaluationConf = HelperCommand::tConfItem("NAVIGATOR_DEBUG_TRACK_EVALUATION", sg_navigatorDebugTrackEvaluation);
+bool sg_navigatorDebugTrackEvaluationShowScore = false;
+static tConfItem<bool> sg_navigatorDebugTrackEvaluationShowScoreConf = HelperCommand::tConfItem("NAVIGATOR_DEBUG_TRACK_EVALUATION_SCORE", sg_navigatorDebugTrackEvaluationShowScore);
+bool sg_navigatorDebugShowTurn = false;
+static tConfItem<bool> sg_navigatorDebugShowTurnConf = HelperCommand::tConfItem("NAVIGATOR_DEBUG_SHOW_TURN", sg_navigatorDebugShowTurn);
 
 static REAL sg_lastTimeHackMult = 0;
 static tConfItem<REAL> sg_lastTimeHackMultConf = HelperCommand::tConfItem("CYCLE_LAST_TIME_HACK_ADD", sg_lastTimeHackMult);
 
 static bool sg_localBot = false;
 static tConfItem<bool> sg_localBotConf = HelperCommand::tConfItem("LOCAL_BOT", sg_localBot);
+static bool sg_localBotEnabledWhileChatting = true;
+static tConfItem<bool> sg_localBotEnabledWhileChattingConf = HelperCommand::tConfItem("LOCAL_BOT_ENABLED_WHILE_CHATTING", sg_localBotEnabledWhileChatting);
+tString sg_localBotEnableForPlayers("1,2,3,4");
+static tConfItem<tString> sg_localBotEnableForPlayersConf = HelperCommand::tConfItem("LOCAL_BOT_ENABLED_PLAYERS", sg_localBotEnableForPlayers);
+static bool sg_localBotAlwaysActive = false;
+static tConfItem<bool> sg_localBotAlwaysActiveConf = HelperCommand::tConfItem("LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive);
+static bool sg_localBotBrake = true;
+static tConfItem<bool> sg_localBotBrakeConf = HelperCommand::tConfItem("LOCAL_BOT_BRAKE", sg_localBotBrake);
+static REAL sg_localBotNewWallBlindness = 0;
+static tConfItem<REAL> sg_localBotNewWallBlindnessConf = HelperCommand::tConfItem("LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness);
+static REAL sg_localBotMinTimestep = 0;
+static tConfItem<REAL> sg_localBotMinTimestepConf = HelperCommand::tConfItem("LOCAL_BOT_MIN_TIMESTEP", sg_localBotMinTimestep);
+static REAL sg_localBotDelay = 0;
+static tConfItem<REAL> sg_localBotDelayConf = HelperCommand::tConfItem("LOCAL_BOT_DELAY", sg_localBotDelay);
+static REAL sg_localBotRange = 10;
+static tConfItem<REAL> sg_localBotRangeConf = HelperCommand::tConfItem("LOCAL_BOT_RANGE", sg_localBotRange);
+static REAL sg_localBotDecay = 0;
+static tConfItem<REAL> sg_localBotDecayConf = HelperCommand::tConfItem("LOCAL_BOT_DECAY", sg_localBotDecay);
+static REAL sg_localBotEnemyPenalty = 0;
+static tConfItem<REAL> sg_localBotEnemyPenaltyConf = HelperCommand::tConfItem("LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty);
 
 static bool sg_botActivationDualMode = false;
 static tConfItem<bool> sg_botActivationDualModeConf = HelperCommand::tConfItem("BOT_ACTIVATION_DUAL_MODE", sg_botActivationDualMode);
 
-static bool sg_localBotEnabledWhileChatting = true;
-static tConfItem<bool> sg_localBotEnabledWhileChattingConf = HelperCommand::tConfItem("LOCAL_BOT_ENABLED_WHILE_CHATTING", sg_localBotEnabledWhileChatting);
-
 static bool sg_smarterBotEnabledWhileChatting = true;
 static tConfItem<bool> sg_smarterBotEnabledWhileChattingConf = HelperCommand::tConfItem("SMARTER_BOT_ENABLED_WHILE_CHATTING", sg_smarterBotEnabledWhileChatting);
-
-tString sg_localBotEnableForPlayers("1,2,3,4");
-static tConfItem<tString> sg_localBotEnableForPlayersConf = HelperCommand::tConfItem("LOCAL_BOT_ENABLED_PLAYERS", sg_localBotEnableForPlayers);
-
-static bool sg_localBotAlwaysActive = false;
-static tConfItem<bool> sg_localBotAlwaysActiveConf = HelperCommand::tConfItem("LOCAL_BOT_ALWAYS_ACTIVE", sg_localBotAlwaysActive);
-
-static bool sg_localBotBrake = true;
-static tConfItem<bool> sg_localBotBrakeConf = HelperCommand::tConfItem("LOCAL_BOT_BRAKE", sg_localBotBrake);
-
-static REAL sg_localBotNewWallBlindness = 0;
-static tConfItem<REAL> sg_localBotNewWallBlindnessConf = HelperCommand::tConfItem("LOCAL_BOT_NEW_WALL_BLINDNESS", sg_localBotNewWallBlindness);
-
-static REAL sg_localBotMinTimestep = 0;
-static tConfItem<REAL> sg_localBotMinTimestepConf = HelperCommand::tConfItem("LOCAL_BOT_MIN_TIMESTEP", sg_localBotMinTimestep);
-
-static REAL sg_localBotDelay = 0;
-static tConfItem<REAL> sg_localBotDelayConf = HelperCommand::tConfItem("LOCAL_BOT_DELAY", sg_localBotDelay);
-
-static REAL sg_localBotRange = 10;
-static tConfItem<REAL> sg_localBotRangeConf = HelperCommand::tConfItem("LOCAL_BOT_RANGE", sg_localBotRange);
-
-static REAL sg_localBotDecay = 0;
-static tConfItem<REAL> sg_localBotDecayConf = HelperCommand::tConfItem("LOCAL_BOT_DECAY", sg_localBotDecay);
-
-static REAL sg_localBotEnemyPenalty = 0;
-static tConfItem<REAL> sg_localBotEnemyPenaltyConf = HelperCommand::tConfItem("LOCAL_BOT_ENEMY_PENALTY", sg_localBotEnemyPenalty);
 
 #ifdef DEBUGCHATBOT
 typedef tSettingItem<REAL> gChatBotSetting;
@@ -413,7 +408,7 @@ typedef nSettingItem<bool> gChatBotSwitch;
 #endif
 
 tString sg_chatBotEnabledForPlayers = tString("1,2,3,4");
-static tConfItem<tString> sg_chatBotEnabledForPlayersConf("CHATBOT_ENALED_PLAYERS", sg_chatBotEnabledForPlayers);
+static tConfItem<tString> sg_chatBotEnabledForPlayersConf("CHATBOT_ENABLED_PLAYERS", sg_chatBotEnabledForPlayers);
 
 bool sg_chatBotAlwaysActive = false;
 static gChatBotSwitch sg_chatBotAlwaysActiveConf("CHATBOT_ALWAYS_ACTIVE", sg_chatBotAlwaysActive);
@@ -1212,7 +1207,6 @@ static void gSmarterBotReset(std::istream &s)
         verifyAndSet(confname);
     }
 }
-
 static tConfItemFunc gSmarterBotResetConf = HelperCommand::tConfItemFunc("SMARTER_BOT_RESET", &gSmarterBotReset);
 
 
@@ -1253,55 +1247,113 @@ void displayDeathReason(std::string reason)
         << "\n";
 }
 
-REAL gSmarterBot::annoyanceCheck()
+REAL gSmarterBot::annoyanceCheck(REAL currentTime)
 {
     if (!owner_ || !owner_->Alive() || se_GameTime() < 5)
         return 0.0;
 
-    int totalPlayerCount     = 0; // Total Players
-    int alivePlayerCount     = 0; // Alive Players
-    int totalChattingPlayers = 0; // Total Chatting Players
-    int totalLocalPlayers    = 0; // Total Local Players
-    int totalActivePlayers   = 0; // Total Active Players (Not Chatting and LastActivity > sg_smarterBotAFKCheckIfActiveTime)
+    int totalPlayerCount     = 0;
+    int alivePlayerCount     = 0;
+    int totalChattingPlayers = 0;
+    int totalLocalPlayers    = 0;
+    int totalActivePlayers   = 0;
+    int realTotalPlayerCount = 0;
 
     for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
     {
-        auto cycle           = dynamic_cast<gCycle*>(se_PlayerNetIDs[i]->Object());
-        bool isJoiningPlayer = se_PlayerNetIDs[i]->CurrentTeam();
-        bool isHuman         = se_PlayerNetIDs[i]->IsHuman();
-        bool isNotOwner      = se_PlayerNetIDs[i]->pID != owner_->Player()->pID;
+        auto player = se_PlayerNetIDs[i];
+        auto cycle  = dynamic_cast<gCycle*>(player->Object());
+
+        bool isJoiningPlayer = player->CurrentTeam();
+        bool isHuman         = player->IsHuman();
+        bool isNotOwner      = player->pID != owner_->Player()->pID;
 
         if (isJoiningPlayer && isHuman && isNotOwner)
         {
             totalPlayerCount++;
-                
-            if (cycle && cycle->Alive())
+
+            bool isAlive           = (cycle && cycle->Alive());
+            bool isLocal           = player->isLocal();
+            bool isChattingTooLong = player->ChattingTime() > sg_smarterBotAFKCheckTime;
+            bool recentlyActive    = player->LastActivity() < sg_smarterBotAFKCheckIfActiveTime;
+            bool joinedRecently    = (tSysTimeFloat() - player->createdTime()) < se_GameTime();
+            bool turnedThisRound   = (cycle && cycle->lastTurnTime > 0) || (!cycle && player->lastTurnTime > 0);
+            bool isActive          = joinedRecently || ((recentlyActive || turnedThisRound) && !isChattingTooLong);
+
+            if (isAlive)
             {
-                if (se_PlayerNetIDs[i]->ChattingTime() > sg_smarterBotAFKCheckTime) 
-                    totalChattingPlayers++;
-
-                if (se_PlayerNetIDs[i]->isLocal())
-                    totalLocalPlayers++;
-
-                if (se_PlayerNetIDs[i]->LastActivity() < sg_smarterBotAFKCheckIfActiveTime 
-                    ) // &&se_PlayerNetIDs[i]->ChattingTime() <= sg_smarterBotAFKCheckTime)
-                    totalActivePlayers++;
-
                 alivePlayerCount++;
+                if (isChattingTooLong)
+                    totalChattingPlayers++;
+                if (isLocal)
+                    totalLocalPlayers++;
+                if (isActive)
+                    totalActivePlayers++;
+            }
+            else
+            {
+                if (turnedThisRound && !isChattingTooLong)
+                    totalActivePlayers++;
+            }
+
+            if (sg_helperDebug)
+            {
+                std::string status = player->GetColoredName().stdString() + "0xRESETT: ";
+
+                if (isAlive)
+                    status += "Alive. ";
+                else
+                    status += "Dead. ";
+
+                if (isLocal)
+                    status += "Local. ";
+                if (isChattingTooLong)
+                    status += "Chatting too long. ";
+
+                if (turnedThisRound)
+                    status += "Turned this round. ";
+
+                if (recentlyActive)
+                    status += "Recent activity. ";
+
+                if (joinedRecently)
+                    status += "Joined recently. ";
+
+                if (isActive)
+                    status += "Classified as ACTIVE.";
+                else
+                    status += "Classified as INACTIVE.";
+
+                gHelperUtility::Debug("SmarterBot AFK CHECK", status);
             }
         }
     }
-    
+
+    realTotalPlayerCount = totalPlayerCount;
+
     if (sg_smarterBotAFKCheckIfActive)
+        totalPlayerCount  = totalActivePlayers;
+
+    if (sg_helperDebug)
     {
-        alivePlayerCount = totalActivePlayers;
-        totalPlayerCount = totalActivePlayers;
+        gHelperUtility::Debug("SmarterBot AFK CHECK", std::string(sg_smarterBotAFKCheckIfActive
+                              ? "Using totalActivePlayers instead of total count. "
+                              : "") + 
+                              "Total: "      + std::to_string(totalPlayerCount) + " (" + std::to_string(realTotalPlayerCount) + ")" +
+                              ", Alive: "    + std::to_string(alivePlayerCount) +
+                              ", Chatting: " + std::to_string(totalChattingPlayers) +
+                              ", Local: "    + std::to_string(totalLocalPlayers) +
+                              ", Active: "   + std::to_string(totalActivePlayers));
     }
 
     if (totalPlayerCount > 1 && alivePlayerCount >= 1)
     {
-        if (totalLocalPlayers == alivePlayerCount)
+        if ((totalLocalPlayers == alivePlayerCount) || (totalPlayerCount > 2 && alivePlayerCount - 1 == totalLocalPlayers ))
         {
+            if (sg_helperDebug)
+            {
+                
+            }
             displayDeathReason("All players are local players.");
             return sg_smarterBotAFKCheckTime;
         }
@@ -1310,17 +1362,18 @@ REAL gSmarterBot::annoyanceCheck()
             displayDeathReason("You were the last player alive.");
             return sg_smarterBotAFKCheckTime;
         }
-        else if (alivePlayerCount == 1 && totalChattingPlayers == alivePlayerCount) 
+        else if (alivePlayerCount == 1 && totalChattingPlayers == alivePlayerCount)
         {
             displayDeathReason("The alive player is chatting for too long.");
             return sg_smarterBotAFKCheckTime;
         }
-        else if (totalLocalPlayers >= 1 && totalChattingPlayers > 1) 
+        else if (totalLocalPlayers >= 1 && totalChattingPlayers > 1)
         {
             displayDeathReason("More than one local player and the alive player is chatting for too long.");
             return sg_smarterBotAFKCheckTime;
         }
     }
+
     return 0.0;
 }
 
@@ -1357,39 +1410,7 @@ REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
 {
     if (!local_player)
         return 5;
-
-    if (sg_smarterBotChattingSmartDisable && chattingSmartDisable())
-        return 0;
-
-    REAL time = tSysTimeFloat();
-
-    if (sg_smarterBotAFKCheckQuit && nextAFKQuitCheck_ < time) 
-    {
-        if (afkQuitCheck())
-            return 5;
-        else
-            nextAFKQuitCheck_ = time + sg_smarterBotAFKCheckQuitTime;
-    }
     
-    if (sg_smarterBotAFKCheck && nextAFKCheck_ < time)
-    {
-        REAL nextTime = annoyanceCheck();
-        if (nextTime != 0)
-        {
-            for (int i = 0; i < 4; i++)
-                owner_->Turn(1);
-
-            owner_->smartBotSuicide = true;
-            nextAFKCheck_ = time + nextTime;
-            return 5;
-        }
-        else
-        {
-            nextAFKCheck_ = time + sg_smarterBotAFKCheckTime;
-        }
-    }
-    
-
     UpdatePaths();
     EvaluationManager manager(GetPaths());
     switch (local_player->sg_smarterBotState)
@@ -1449,9 +1470,9 @@ REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
     {
         manager.Evaluate(SuicideEvaluator(*Owner()), 4);
         manager.Evaluate(TrapEvaluator(*Owner()), 12);
+        manager.Reset();
         manager.Evaluate(TunnelEvaluator(*Owner()), 2);
         manager.Evaluate(PlanEvaluator(), 1);
-        manager.Reset();
         break;
     }
     case 8:
@@ -1469,8 +1490,8 @@ REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
         break;
     }
     }
-
-    manager.Reset();
+    if (sg_smarterBotManagerReset)
+        manager.Reset();
 
     if (local_player->sg_smarterBotSurviveEval > 0)
         manager.Evaluate(SuicideEvaluator(*Owner()), local_player->sg_smarterBotSurviveEval);
@@ -1513,7 +1534,9 @@ REAL gSmarterBot::Think(REAL currentTime, REAL minStep)
     }
 
     CycleControllerAction controller;
-    return manager.Finish(controller, *Owner(), minStep, turnDelay);
+    REAL nextThink = manager.Finish(controller, *Owner(), minStep, turnDelay);
+    local_player->sg_smarterBotContributionStr = tString(controller.contributionStr);
+    return nextThink;
 }
 
 void gSmarterBot::Activate(REAL currentTime)
@@ -1521,16 +1544,50 @@ void gSmarterBot::Activate(REAL currentTime)
     if (!local_player || !helperConfig::sghuk)
         return;
     
-    if (local_player->sg_smarterBotThink)
-        gAINavigator::Activate(currentTime, 0);
-
+        
     if (nextChatAI_ <= se_GameTime())
     {
+        if (sg_smarterBotAFKCheck && nextAFKCheck_ < tSysTimeFloat())
+        {
+            REAL nextTime = annoyanceCheck(currentTime);
+            if (nextTime != 0)
+            {
+                for (int i = 0; i < 4; i++)
+                    owner_->Turn(1);
+    
+                owner_->smartBotSuicide = true;
+                nextAFKCheck_ = tSysTimeFloat() + nextTime;
+                nextChatAI_   = se_GameTime() + 5;
+                return;
+            }
+            else
+            {
+                nextAFKCheck_ = tSysTimeFloat() + sg_smarterBotAFKCheckTime;
+            }
+        }
+
+        if (sg_smarterBotChattingSmartDisable && chattingSmartDisable())
+            return;
+
+        if (sg_smarterBotAFKCheckQuit && nextAFKQuitCheck_ < tSysTimeFloat()) 
+        {
+            if (afkQuitCheck()) 
+            {
+                nextChatAI_   = se_GameTime() + 5;
+                return;
+            }
+            else
+                nextAFKQuitCheck_ = tSysTimeFloat() + sg_smarterBotAFKCheckQuitTime;
+        }
+
+        if (local_player->sg_smarterBotThink)
+            gAINavigator::Activate(currentTime, 0);
+
         REAL nextThought = Think(currentTime,0);
         nextChatAI_ = (nextThought * local_player->sg_smarterBotNextThinkMult) + se_GameTime();
+
     }
 }
-
 
 static void sg_ArchiveCoord(eCoord &coord, int level)
 {
@@ -2956,6 +3013,7 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos, const eCoord &d, ePlayerNetID *p)
 
     if (Player())
     {
+        Player()->lastTurnTime = -999;
         Player()->lastKilledPlayer = nullptr;
         Player()->lastDiedByPlayer = nullptr;
         Player()->lastBannedPlayerTime = 0;
@@ -4714,10 +4772,12 @@ bool gCycle::DoTurn(int d, bool botTurn = false)
                     racer->SetSafe(racer_safe);
             }
             //  RACE HACK END
-
-            tString logTurnPos;
-            logTurnPos << pos.x << " " << pos.y << " " << dirDrive.x << " " << dirDrive.y;
-            LogPlayersCycleTurns(this, logTurnPos);
+            if (sg_LogTurns) 
+            {
+                tString logTurnPos;
+                logTurnPos << pos.x << " " << pos.y << " " << dirDrive.x << " " << dirDrive.y;
+                LogPlayersCycleTurns(this, logTurnPos);
+            }
 
             if (sg_playerGridPosOnTurn && Player())
             {
@@ -5043,9 +5103,12 @@ void gCycle::Kill()
 
             if (Player())
             {
-                tString logTurnsMsg;
-                logTurnsMsg << "death " << MapPosition().x << " " << MapPosition().y << " " << Direction().x << " " << Direction().y;
-                LogPlayersCycleTurns(this, logTurnsMsg);
+                if (sg_LogTurns)
+                {
+                    tString logTurnsMsg;
+                    logTurnsMsg << "death " << MapPosition().x << " " << MapPosition().y << " " << Direction().x << " " << Direction().y;
+                    LogPlayersCycleTurns(this, logTurnsMsg);
+                }
 
                 se_cycleDestroyedWriter << Player()->GetUserName() << MapPosition().x << MapPosition().y << Direction().x << Direction().y;
                 if (Team())
@@ -6418,6 +6481,7 @@ gCycle::gCycle(nMessage &m)
 
     if (Player())
     {
+        Player()->lastTurnTime = -999;
         Player()->lastKilledPlayer = nullptr;
         Player()->lastDiedByPlayer = nullptr;
         Player()->lastBannedPlayerTime = 0;
@@ -6802,8 +6866,8 @@ static tConfItem<bool> sg_playerMessageDeathSelfBotSuicideConf = HelperCommand::
 bool sg_playerMessageDeathOther = false;
 static tConfItem<bool> sg_playerMessageDeathOtherConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_OTHER", sg_playerMessageDeathOther);
 
-bool se_playerTriggerMessagesZoneVerify = false;
-static tConfItem<bool> se_playerTriggerMessagesZoneVerifyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_ZONE_VERIFY", se_playerTriggerMessagesZoneVerify);
+bool se_playerMessageTriggersZoneVerify = false;
+static tConfItem<bool> se_playerMessageTriggersZoneVerifyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_ZONE_VERIFY", se_playerMessageTriggersZoneVerify);
 void gCycle::ReadSync(nMessage &m)
 {
     // data from sync message
@@ -6899,8 +6963,14 @@ void gCycle::ReadSync(nMessage &m)
         // eDebugLine::Draw( lastSyncMessage_.pos, 1.5, lastSyncMessage_.pos, 5.0 );
         return;
     }
-
-    if ( sync.turns != 0 && (lastSyncMessage_.turns != sync.turns || lastSyncMessage_.braking != sync.braking ))
+    
+    if (Player())
+    {
+        if (sync.turns != 1 && lastSyncMessage_.turns != sync.turns && !Player()->IsChatting()) 
+            Player()->lastTurnTime = lastTurnTime = tSysTimeFloat();
+    }
+        
+    if ( sync.turns != 1 && (lastSyncMessage_.turns != sync.turns || lastSyncMessage_.braking != sync.braking ))
         lastActTime = tSysTimeFloat();
 
     if ( sync.alive == 0 && sync.alive != lastSyncMessage_.alive) 
@@ -6951,29 +7021,29 @@ void gCycle::ReadSync(nMessage &m)
         }
 
         if (se_playerStats)
-        {
             ePlayerStats::addDeath(Player());
-        }
 
-        if (se_playerTriggerMessages && (sg_playerMessageDeathSelf || sg_playerMessageDeathOther))
+        if (se_playerMessageTriggers && (sg_playerMessageDeathSelf || sg_playerMessageDeathOther))
         {
             bool zoneSpawnedRecently = false;
 
-            if (se_playerTriggerMessagesZoneVerify)
+            if (se_playerMessageTriggersZoneVerify)
             {
                 gZone *lastCreatedZone = gZone::GetLastCreatedZone();
                 zoneSpawnedRecently = lastCreatedZone && lastCreatedZone->actualCreateTime_ >= tSysTimeFloat() - 5;
             }
 
-            if (Player()) {
-                if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently){
+            if (Player())
+            {
+                if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently)
+                {
                     if (!smartBotSuicide)
-                        eChatBot::InitiateAction(killer,tString("$died"),true);
+                        eChatBot::InitiateAction(killer, tString("$died"), true);
                     else if (sg_playerMessageDeathSelfBotSuicide)
-                        eChatBot::InitiateAction(killer,tString("$diedbotsui"),true);
+                        eChatBot::InitiateAction(killer, tString("$diedbotsui"), true);
                 }
                 else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
-                    eChatBot::InitiateAction(killer,tString("$diedother"),true);
+                    eChatBot::InitiateAction(killer, tString("$diedother"), true);
             }
         }
 
@@ -8370,7 +8440,7 @@ static void sg_FLIP(std::istream &s)
     gCycle *gFirstPlayer = dynamic_cast<gCycle *>(firstPlayer->Object());
     gCycle *gSecondPlayer = dynamic_cast<gCycle *>(secondPlayer->Object());
 
-    if (!gFirstPlayer && gFirstPlayer->Alive() || !gSecondPlayer && gSecondPlayer->Alive())
+    if (gFirstPlayer && !gFirstPlayer->Alive() || gSecondPlayer && !gSecondPlayer->Alive())
         return;
 
     eCoord secondPlayerNewPos, SecondPlayerNewDir, firstPlayerNewPos, secondPlayerNewDir;

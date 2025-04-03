@@ -619,7 +619,7 @@ void gServerMenu::Render(REAL y,
         tColoredString text;
         if (tColoredString::RemoveColors(servername).Len() > 1)
         {
-            text << servername << "0xRESETT";
+            text << tColoredString::EscapeBadColors(servername) << "0xRESETT";
         }
         else
             text << tOutput("$network_master_unknown");

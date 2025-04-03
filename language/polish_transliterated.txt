@@ -679,7 +679,7 @@ setting_legacy_behavior_visual_help Domyslne zachowanie wobec starszych klientow
 #********************************************
 #********************************************
 
-png_screenshot_help           Zapisuj zdjecia jako pliki PNG, a nie BMP.
+screenshot_png_help           Zapisuj zdjecia jako pliki PNG, a nie BMP.
 white_sparks_help             Rysuj iskry na bialo (zamiast w kolorze cyklu).
 keep_window_active_help       Nadal wyswietlaj gre, gdy okno gry straci kursor (trzymaj zawsze na wierzchu).
 

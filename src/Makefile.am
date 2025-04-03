@@ -1,6 +1,9 @@
 # include $(top_srcdir)/Makefile.paths
 SUBDIRS = first doc thirdparty
 
+languagedir = $(datadir)/armagetronad/language
+language_DATA = $(wildcard $(srcdir)/language/*.txt)
+
 # target directory
 gamesdir=${bindir}
 
@@ -87,7 +90,11 @@ libengine_a_SOURCES=engine/eAdvWall.cpp engine/eAdvWall.h engine/eAuthentication
 	engine/eRectangle.cpp engine/eRectangle.h\
 	engine/eLagCompensation.cpp engine/eLagCompensation.h\
 	engine/eChat.cpp engine/eChat.h\
-    engine/eBannedWords.cpp engine/eBannedWords.h
+	engine/eChatCommands.cpp engine/eChatCommands.h\
+    engine/eBannedWords.cpp engine/eBannedWords.h\
+	engine/eChatBot.cpp engine/eChatBot.h\
+	engine/ePlayerStats.cpp engine/ePlayerStats.h
+
 
 if MACOSX
 # put extra Objective C files here, like so:
@@ -104,7 +111,7 @@ librender_a_SOURCES=${render_extra} render/rConsole.cpp render/rConsoleGraph.cpp
 	render/rTexture.cpp render/rTexture.h render/rViewport.cpp render/rViewport.h
 
 libtron_a_SOURCES=tron/gAIBase.cpp tron/gAIBase.h tron/gAICharacter.cpp tron/gAICharacter.h tron/gArena.cpp tron/gArena.h\
-	tron/gArmagetron.cpp tron/gCamera.cpp tron/gCamera.h tron/gCycle.cpp tron/gCycle.h tron/gHelper.cpp tron/gHelper.h tron/gCycleMovement.cpp\
+	tron/gArmagetron.cpp tron/gCamera.cpp tron/gCamera.h tron/gCycle.cpp tron/gCycle.h tron/gCycleMovement.cpp\
 	tron/gCycleMovement.h tron/gExplosion.cpp tron/gExplosion.h tron/gGame.cpp tron/gGame.h\
 	tron/gHud.cpp tron/gHud.h tron/gLanguageMenu.cpp tron/gLanguageMenu.h tron/gLogo.cpp tron/gLogo.h\
 	tron/gMenus.cpp tron/gMenus.h tron/gParser.cpp tron/gParser.h tron/gParticles.cpp tron/gParticles.h\
@@ -114,11 +121,23 @@ libtron_a_SOURCES=tron/gAIBase.cpp tron/gAIBase.h tron/gAICharacter.cpp tron/gAI
 	tron/gSvgOutput.h tron/gSvgOutput.cpp\
 	tron/gFriends.h tron/gFriends.cpp\
 	tron/gServerFavorites.h tron/gServerFavorites.cpp\
-  tron/gRotation.h tron/gRotation.cpp\
-  tron/gHudMap.cpp tron/gHudMap.h\
-  tron/gRace.h tron/gRace.cpp
+	tron/gRotation.h tron/gRotation.cpp\
+	tron/gHudMap.cpp tron/gHudMap.h\
+	tron/gRace.h tron/gRace.cpp\
+	tron/gTutorial.h tron/gTutorial.cpp\
+	tron/gAINavigator.h tron/gAINavigator.cpp\
+	tron/gHelper/gHelper.cpp \
+    tron/gHelper/gHelperHud.cpp \
+    tron/gHelper/gHelperUtilities.cpp \
+    tron/gHelper/specialized/gHelperSensor.cpp \
+    tron/gHelper/specialized/gPathHelper.cpp \
+    tron/gHelper/specialized/gSmartTurning.cpp \
+    tron/gHelper/specialized/gTailHelper.cpp \
+    tron/gHelper/specialized/gTurnHelper.cpp \
+    tron/gHelper/specialized/gZoneHelper.cpp
 
-libui_a_SOURCES=ui/uInput.cpp ui/uInput.h ui/uInputQueue.cpp ui/uInputQueue.h ui/uMenu.cpp ui/uMenu.h
+
+libui_a_SOURCES=ui/uInput.cpp ui/uInput.h ui/uInputQueue.cpp ui/uInputQueue.h ui/uMenu.cpp ui/uMenu.h ui/uDynamicMenu.h
 endif
 
 # library include dependency structure. Watch out, don't create circular include dependencies.
@@ -127,12 +146,14 @@ endif
 #AM_CXXFLAGS= $(BINRELOC_CFLAGS)
 
 libtools_a_CPPFLAGS = -iquote @srcdir@/thirdparty/binreloc
-libtools_a_CXXFLAGS  =$(AM_CXXFLAGS)  -iquote @srcdir@/tools
-libnetwork_a_CXXFLAGS=$(libtools_a_CXXFLAGS)  -iquote @srcdir@/network
-librender_a_CXXFLAGS =$(libtools_a_CXXFLAGS)  -iquote @srcdir@/render
-libui_a_CXXFLAGS     =$(librender_a_CXXFLAGS) -iquote @srcdir@/ui
+libtools_a_CXXFLAGS = $(AM_CXXFLAGS) -iquote @srcdir@/tools -iquote @srcdir@/network -iquote @srcdir@/engine -iquote @srcdir@/render -iquote @srcdir@/ui
+
+libnetwork_a_CXXFLAGS=$(libtools_a_CXXFLAGS)  -iquote @srcdir@/network -iquote @srcdir@/engine -iquote @srcdir@/ui
+librender_a_CXXFLAGS =$(libtools_a_CXXFLAGS)  -iquote @srcdir@/render -iquote @srcdir@/network
+libui_a_CXXFLAGS     =$(librender_a_CXXFLAGS) -iquote @srcdir@/ui -iquote @srcdir@/network
 libengine_a_CXXFLAGS =$(libui_a_CXXFLAGS)     -iquote @srcdir@/network -iquote @srcdir@/engine 
 libtron_a_CXXFLAGS   =$(libengine_a_CXXFLAGS) -iquote @srcdir@/thirdparty/particles -iquote @srcdir@/tron 
+AM_CPPFLAGS = -I$(srcdir)/render
 
 # core engine files can get compiled with optimization turned on for more painless debugging
 # on weak computers
@@ -174,11 +195,11 @@ endif
 
 armagetronad_main_SOURCES = tron/gFloor.cpp
 armagetronad_main_CXXFLAGS =$(libtron_a_CXXFLAGS)
-armagetronad_main_LDADD=libtron.a libenginecore.a libengine.a libnetwork.a libui.a librender.a libtools.a
+armagetronad_main_LDADD=libtron.a libenginecore.a libengine.a libnetwork.a libui.a librender.a libtools.a -lsqlite3
 
 armagetronad_main_master_SOURCES = network/master.cpp
 armagetronad_main_master_CXXFLAGS =$(libtron_a_CXXFLAGS)
-armagetronad_main_master_LDADD=libnetwork.a libtools.a
+armagetronad_main_master_LDADD=libnetwork.a libtools.a -lsqlite3
 endif
 
 ## Note: tron/gFloor.cpp is not referenced from the outside, but required anyway. So it can't be put into

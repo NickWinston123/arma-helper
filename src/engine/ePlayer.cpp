@@ -1426,6 +1426,8 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
                                        playerRandomColorNameStartMode));
 
     // SMARTER BOT
+
+    sg_smarterBotContributionStr = tString("");
     // sg_smarterBotThink
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_THINK";
@@ -1867,7 +1869,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
     {
 
         if (sg_playerSilencedWatch && p->isLocal())
-            MessageTracker::AddIncomingMessage(message);
+            playerMessages.AddIncomingMessage(message);
 
         tColoredString actualMessage(message);
         tString colorlessMessage(tColoredString::RemoveColors(message));
@@ -1937,17 +1939,17 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             ePlayerStats::addMessage(p, colorlessMessage.SubStr(nameLength).TrimWhitespace());
         }
 
-        if (se_playerTriggerMessages && se_playerMessageTriggersChat &&
+        if (se_playerMessageTriggers && se_playerMessageTriggersChat &&
             (p->pID == -1 ||
-            se_playerTriggerMessagesReactToSelf  && tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1) ||
-            se_playerTriggerMessagesReactToLocal && !tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1)) && !encyptedMessage)
+            se_playerMessageTriggersReactToSelf  && tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1) ||
+            se_playerMessageTriggersReactToLocal && !tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1)) && !encyptedMessage)
         {
             tString params(colorlessMessage);
             tString preAppend;
             bool initiate             = true;
             bool preAppended          = false;
             bool validPrivateMessage  = privateMessage && ourPlayer;
-
+            
             if (validPrivateMessage)
             {
                 if (se_playerMessageTriggersChatPrivateMsgs && sentToEnabledPlayer)
@@ -1975,7 +1977,10 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
                               << " ";
             }
 
-            if (initiate)
+            if (p->isLocal() && tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1))
+                eChatbotMessages.AddIncomingMessage(params);
+            
+            if (initiate) 
                 eChatBot::InitiateAction(p, params, false, preAppend);
         }
 
@@ -5159,15 +5164,11 @@ tString ePlayerNetID::nextSpeakTimePrefixCommonPrefix = tString("");
 
 bool ePlayerNetID::canChat()
 {
-    // HDEBUG << "COMPARING " << nextSpeakTime << " vs " << tSysTimeFloat() << "\n";
-    // HDEBUG << "Can chat: " << (nextSpeakTime <= tSysTimeFloat()) << "\n";
     return nextSpeakTime <= tSysTimeFloat();
 }
 
 bool ePlayerNetID::canChatCommonPrefix(tString message)
 {
-    // HDEBUG << "COMPARING " << nextSpeakTimePrefix << " vs " << tSysTimeFloat() << "\n";
-    // HDEBUG << "canChatCommonPrefix: " << (nextSpeakTime <= tSysTimeFloat()) << "\n";
     return nextSpeakTimePrefix <= tSysTimeFloat() || !message.StartsWith(nextSpeakTimePrefixCommonPrefix);
 }
 
@@ -5207,19 +5208,13 @@ bool ePlayerNetID::canChatWithMsg(tString message)
 
 void ePlayerNetID::setNextSpeakTime(REAL seconds)
 {
-    // con << "SECONDS " << seconds << "\n";
     nextSpeakTime = tSysTimeFloat() + seconds + sg_playerSpamProtectionWatchExtraAdd;
-    // con << "nextupdatetime " << nextSpeakTime << "\n";
 }
 
 void ePlayerNetID::setNextSpeakTimeCommonPrefix(tString commonPrefix, REAL seconds)
 {
-    // con << "SECONDS " << seconds << "\n";
     nextSpeakTimePrefixCommonPrefix = commonPrefix;
-    // HDEBUG << " nextSpeakTimePrefixCommonPrefix = '" << nextSpeakTimePrefixCommonPrefix << "'\n";
-
     nextSpeakTimePrefix = tSysTimeFloat() + seconds + sg_playerSpamProtectionWatchExtraAdd;
-    // con << "nextupdatetime " << nextSpeakTime << "\n";
 }
 
 bool sg_playerSilencedWatch = false;
@@ -5228,7 +5223,6 @@ bool sg_playerSilencedWatchQuit = false;
 static tConfItem<bool> sg_playerSilencedWatchQuitConf("PLAYER_WATCH_SILENCED_QUIT", sg_playerSilencedWatchQuit);
 bool sn_playerSilencedWatchQuitWaitForAvoidPlayers = false;
 static tConfItem<bool> sn_playerSilencedWatchQuitWaitForAvoidPlayersConf("PLAYER_WATCH_SILENCED_QUIT_WAIT_FOR_AVOID_PLAYERS", sn_playerSilencedWatchQuitWaitForAvoidPlayers);
-
 
 void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
 {
@@ -5239,58 +5233,17 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
     if (se_enableChatCommands && s_orig.StartsWith("/") && LocalChatCommands(ePlayer::NetToLocalPlayer(this), s_orig))
         return;
 
-    if (sg_playerSpamProtectionWatch)
-    {
-        bool ableToChat = canChat();
-        bool ableToChatCommonPrefix = canChatCommonPrefix(s_orig);
-
-        bool canChat = (ableToChat && ableToChatCommonPrefix);
-
-        if (!ableToChatCommonPrefix)
-        {
-            con << tThemedTextBase.LabelText("SpamProtectionWatch")
-                << tThemedTextBase.ErrorColor()
-                << "You can not use the common prefix '"
-                << tThemedTextBase.ItemColor()
-                << nextSpeakTimePrefixCommonPrefix
-                << tThemedTextBase.ErrorColor()
-                << "' for "
-                << tThemedTextBase.ItemColor()
-                << nextSpeakTimePrefix - tSysTimeFloat()
-                << tThemedTextBase.ErrorColor()
-                << " seconds. Do not use this prefix!\n";
-        }
-        else if (!ableToChat)
-        {
-            con << tThemedTextBase.LabelText("SpamProtectionWatch")
-                << tThemedTextBase.ErrorColor()
-                << "You are silenced for "
-                << tThemedTextBase.ItemColor()
-                << nextSpeakTime - tSysTimeFloat()
-                << tThemedTextBase.ErrorColor()
-                << " seconds. Do not try to chat!\n";
-        }
-
-        if (se_playerTriggerMessages && chatBotMessage)
-        {
-            eChatBot &bot = eChatBot::getInstance();
-
-            bot.Messager()->Params().pentalized_for_last_message = !ableToChat;
-            bot.Messager()->Params().pentalized_for_last_message_prefix = !ableToChatCommonPrefix;
-
-             if (se_playerTriggerMessagesResendSilencedMessages && !canChat)
-                bot.Messager()->ResendMessage(s_orig);
-        }
-
-        if (!canChat)
-            return;
-    }
+    if (sg_playerSpamProtectionWatch && !canChatWithMsg(s_orig))
+        return;
 
     s = s.SubStr(0, se_SpamMaxLen - 1);
     s.RecomputeLength();
 
     if (sg_playerSilencedWatch)
-        MessageTracker::AddOutgoingMessage(s);
+        playerMessages.AddOutgoingMessage(s);
+
+    if (se_playerMessageTriggers && chatBotMessage)
+        eChatbotMessages.AddOutgoingMessage(s);
 
 #endif // if not dedicated
 
@@ -6724,6 +6677,9 @@ static tConfItem<bool> se_playerMessageRejoinConf = HelperCommand::tConfItem("PL
 static bool se_playerMessageRename = false;
 static tConfItem<bool> se_playerMessageRenameConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_RENAME", se_playerMessageRename);
 
+static bool se_playerMessageRenameSelf = false;
+static tConfItem<bool> se_playerMessageRenameSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_RENAME_SELF", se_playerMessageRenameSelf);
+
 ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                teamListID(-1),
                                                timeCreated_(tSysTimeFloat()),
@@ -7302,7 +7258,7 @@ static void player_removed_from_game_handler(nMessage &m)
     {
         if (!p->removedFromGame)
         {
-            if (se_playerTriggerMessages && se_playerMessageLeave && !p->departedByChatBot)
+            if (se_playerMessageTriggers && se_playerMessageLeave && !p->departedByChatBot)
             {
                 eChatBot::InitiateAction(p, tString( p->IsHuman() ? "$left" : "$leftbot" ), true);
                 p->departedByChatBot = true;
@@ -8351,7 +8307,7 @@ void ePlayerNetID::WriteSync(nMessage &m)
 
     if (nameFirstSync && tSysTimeFloat() - createdTime() >= se_playerMessageJoinWaitTime)
     {
-        if (se_playerTriggerMessages && se_playerMessageJoin)
+        if (se_playerMessageTriggers && se_playerMessageJoin)
             eChatBot::InitiateAction(this, tString("$join"), true);
 
         nameFirstSync = false;
@@ -8830,7 +8786,7 @@ void ePlayerNetID::ReadSync(nMessage &m)
             {
                 if (spectating_) // player is now spectating
                 {
-                    if (se_playerTriggerMessages && se_playerMessageSpecEnter && !acknowledgeEnterSpectatorByChatbot)
+                    if (se_playerMessageTriggers && se_playerMessageSpecEnter && !acknowledgeEnterSpectatorByChatbot)
                     {
                         eChatBot::InitiateAction(this, tString("$enterspec"), true);
                         acknowledgeEnterSpectatorByChatbot = true;
@@ -8839,7 +8795,7 @@ void ePlayerNetID::ReadSync(nMessage &m)
                 }
                 else // player is no longer spectating
                 {
-                    if (se_playerTriggerMessages && se_playerMessageSpecLeft && !acknowledgeLeftSpectatorByChatbot)
+                    if (se_playerMessageTriggers && se_playerMessageSpecLeft && !acknowledgeLeftSpectatorByChatbot)
                     {
                         eChatBot::InitiateAction(this, tString("$leftspec"), true);
                         acknowledgeLeftSpectatorByChatbot = true;
@@ -9834,10 +9790,7 @@ void ePlayerNetID::OnlineStatsLadderLog()
 void ePlayerNetID::ClearAll()
 {
     for (int i = MAX_PLAYERS - 1; i >= 0; i--)
-    {
-        ePlayer *local_p = ePlayer::PlayerConfig(i);
-        Clear(local_p);
-    }
+        Clear(ePlayer::PlayerConfig(i));
 }
 
 void ePlayerNetID::Clear(ePlayer *local_p)
@@ -10912,8 +10865,9 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
         if (nameSpeakWords.Empty())
             nameSpeakCheck = false;
-
-    }
+    } 
+    else 
+        forceCreatePlayer = -1;
 
     playerUpdateIteration++;
 #endif // DEDICATED
@@ -13291,7 +13245,7 @@ void ePlayerNetID::UpdateName(void)
 
         if (!nameFirstSync)
         {
-            if (!isLocal() && sn_GetNetState() == nCLIENT && nameChange && se_playerTriggerMessages && se_playerMessageRename)
+            if (!isLocal() && sn_GetNetState() == nCLIENT && nameChange && se_playerMessageTriggers && se_playerMessageRename)
                 eChatBot::InitiateAction(this,tString("$rename"),true);
         }
     }
@@ -13304,7 +13258,7 @@ void ePlayerNetID::UpdateName(void)
         bool nameEmpty = GetName().empty();
         if (nameFirstSync && !isLocal() && !nameEmpty)
         {
-            if (se_playerTriggerMessages)
+            if (se_playerMessageTriggers)
             {
                 if (se_playerStats && se_playerMessageRejoin && ePlayerStats::getStatsForAnalysis(GetName()).seen_this_session)
                     eChatBot::InitiateAction(this, tString(IsHuman() ? "$rejoin" : "$rejoinbot"), true);
@@ -13331,17 +13285,6 @@ void ePlayerNetID::UpdateName(void)
             nameFirstSync = false;
         }
 
-        // if (!nameEmpty && !CurrentTeam() && se_playerStats)
-        // {
-        //     PlayerData & stats = ePlayerStats::getStats(this);
-
-        //     if (r != stats.r || g != stats.g || b != stats.b)
-        //     {
-        //         stats.r = r;
-        //         stats.g = g;
-        //         stats.b = b;
-        //     }
-        // }
     }
 #ifdef KRAWALL_SERVER
     // take the user name to be the authenticated name
@@ -14831,15 +14774,3 @@ void ePlayerNetID::RespawnPlayer(bool local)
         cycle->updateColor();
     }
 }
-
-std::deque<tString> MessageTracker::outgoingMessages;
-std::deque<tString> MessageTracker::incomingMessages;
-const size_t MessageTracker::maxSize = 4;
-
-
-static void se_checkSilenced(std::istream &s)
-{
-    con << "SILENCED? " << MessageTracker::CheckIfSilenced() << "\n";
-}
-
-static tConfItemFunc se_checkSilencedC("CHECKSILENCED", &se_checkSilenced);

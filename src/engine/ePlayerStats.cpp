@@ -1,9 +1,8 @@
 #include "tDatabase.h"
 #include "ePlayerStats.h"
 #include "ePlayer.h"
-#include "eChatbot.h"
 #include "eChatCommands.h"
-#include "eChatbot.h"
+#include "eChatBot.h"
 
 #include "sqlite3.h"
 
@@ -70,7 +69,7 @@ bool ePlayerStats::saveStatsToDB()
 
     sqlite3_close(db);
 
-    if (se_playerTriggerMessages && se_playerMessageTriggersStatsSave)
+    if (se_playerMessageTriggers && se_playerMessageTriggersStatsSave)
         eChatBot::InitiateAction(nullptr, tString("$statssaved"), true);
     return true;
 }

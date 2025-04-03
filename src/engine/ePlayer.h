@@ -218,6 +218,9 @@ public:
     REAL sg_smarterBotTurnRandMult;
     int sg_smarterBotState;
 
+    tString sg_smarterBotContributionStr;
+
+
 
     eCamMode startCamera;
     bool     allowCam[10];
@@ -385,6 +388,7 @@ public:
     ePlayerNetID * lastDiedByPlayerBanFunc = nullptr;
     REAL lastDiedByTime = 0;
     REAL lastBannedPlayerTime = 0;
+    REAL lastTurnTime = -999;
 
     ePlayerNetID * lastMessagedPlayer;
     ePlayerNetID * lastMessagedByPlayer;
@@ -719,6 +723,8 @@ public:
     tString         chatBotNickname;
     tColoredString  coloredName_;           //!< this player's name, cleared by the server. Use this for onscreen screen display.
     tString         name_;                  //!< this player's name without colors.
+    bool lastNameDoesntMatch,
+         nameDoesntMatch;
 private:
 
 #ifdef KRAWALL_SERVER
@@ -1066,46 +1072,50 @@ static ePlayer * se_chatterPlanned=NULL;
 static ePlayer * se_chatter =NULL;
 static tString se_say;
 
-class MessageTracker
+class eMessageTracker
 {
-private:
-    static std::deque<tString> outgoingMessages;
-    static std::deque<tString> incomingMessages;
-    static const size_t maxSize;
+public:
+    std::deque<tString> outgoingMessages;
+    std::deque<tString> incomingMessages;
+    size_t maxSize;
 
 public:
-    static void AddOutgoingMessage(const tString& msg)
+    explicit eMessageTracker(size_t maxSizeVal = 5)
+        : maxSize(maxSizeVal)
+    {
+    }
+
+    void AddOutgoingMessage(const tString &msg)
     {
         if (outgoingMessages.size() >= maxSize)
             outgoingMessages.pop_front();
-
         outgoingMessages.push_back(msg);
     }
 
-    static void AddIncomingMessage(const tString& msg)
+    void AddIncomingMessage(const tString &msg)
     {
         if (incomingMessages.size() >= maxSize)
             incomingMessages.pop_front();
-
         incomingMessages.push_back(msg);
     }
 
-    static bool CheckIfSilenced()
+    bool CheckIfSilenced() const
     {
-        if (!outgoingMessages.empty())
-        {
-            const tString lastOutgoing = outgoingMessages.back();
-            for (auto it = incomingMessages.rbegin(); it != incomingMessages.rend(); ++it)
-            {
-                tString msg = *it;
+        if (outgoingMessages.empty())
+            return false;
 
-                if (msg.StartsWith(lastOutgoing))
-                    return false;
-            }
-            return true;
+        const tString lastOutgoing = outgoingMessages.back();
+        for (auto it = incomingMessages.rbegin(); it != incomingMessages.rend(); ++it)
+        {
+            if (it->StartsWith(lastOutgoing))
+                return false;
         }
-        return false;
+        return true;
     }
 };
+
+
+static eMessageTracker playerMessages;
+
 
 #endif

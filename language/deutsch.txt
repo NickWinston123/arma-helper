@@ -702,7 +702,7 @@ setting_legacy_behavior_visual_help Bestimmt das Verhalten gegen�ber �lteren
 #********************************************
 #********************************************
 
-png_screenshot_help           Speichert Schnappsch�sse als PNG, nicht BMP.
+screenshot_png_help           Speichert Schnappsch�sse als PNG, nicht BMP.
 white_sparks_help             Zeichnet Funken in wei�, nicht in der Farbe der Vehikel.
 keep_window_active_help       Auch wenn das Fenster nicht mehr aktiv ist, soll die Bilddarstellung nicht abbrechen.
 

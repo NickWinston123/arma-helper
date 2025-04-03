@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "nConfig.h"
 #include "eTeam.h"
 #include "../tron/gCycle.h"
+#include "../tron/gGame.h"
 
 #include <map>
 
@@ -703,7 +704,7 @@ bool eGameObject::Act(uActionPlayer *,REAL){return false;}
 
 
 bool sn_forceInteractWith = false;
-static tConfItem<bool> sn_forceInteractWithConf("SIMULATE_INTERACT_WITH", sn_forceInteractWith);
+static tConfItem<bool> sn_forceInteractWithConf("TIMESTEP_SIMULATE_INTERACT_WITH", sn_forceInteractWith);
 
 bool eGameObject::TimestepThis(REAL currentTime,eGameObject *c){
 #ifdef DEBUG
@@ -719,12 +720,12 @@ bool eGameObject::TimestepThis(REAL currentTime,eGameObject *c){
         maxstep=.1;
 
     int number_of_steps=int(fabs((currentTime-c->lastTime)/maxstep));
-    if (number_of_steps<1)
-        number_of_steps=1;
-    if ( number_of_steps > 10 )
-    {
-        number_of_steps = 10;
-    }
+    if (number_of_steps < 1)
+        number_of_steps = 1;
+    if (number_of_steps > sg_timestepMaxCount)
+        number_of_steps = sg_timestepMaxCount;
+    if (sg_timestepStepCount != 0)
+        number_of_steps = sg_timestepStepCount;
 
     REAL lastTime=c->lastTime;
 
@@ -749,6 +750,7 @@ bool eGameObject::TimestepThis(REAL currentTime,eGameObject *c){
         if ( 2 * c->lastTime < timeThisStep + lastTime )
             break;
     }
+
     for(int timeout = 10; timeout >= 0 && c->urgentSimulationRequested_; --timeout )
     {
         // simulate on while events are pending

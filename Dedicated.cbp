@@ -58,6 +58,7 @@
 			<Add directory="../winlibs/libxml2/include" />
 			<Add directory="../winlibs/iconv/include" />
 			<Add directory="../winlibs/ZThread/include" />
+			<Add directory="../winlibs/sqlite" />
 			<Add directory="../winlibs/libxml++/include" />
 		</Compiler>
 		<Linker>

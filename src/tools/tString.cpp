@@ -2417,39 +2417,33 @@ tString intTotString( int number )
 //!
 // *******************************************************************************************
 //! check whether item is in a comma or whitespace separated list
-bool tIsInList( tString const & list_, tString const & item )
+bool tIsInList(const tString &list, const tString &item)
 {
-    tString list = list_;
+    int pos = 0;
 
-    while( list != "" )
+    while (pos < list.Len())
     {
-        // find the item
-        int pos = list.StrPos( item );
+        while (pos < list.Len() && list[pos] == ',')
+            pos++;
 
-        // no traditional match? shoot.
-        if ( pos < 0 )
-        {
-            return false;
-        }
+        if (pos >= list.Len())
+            break;
 
-        // check whether the match is a true list match
-        if (
-            ( pos == 0 || list[pos-1] == ',' || isblank(list[pos-1]) )
-            &&
-            ( pos + item.Len() >= list.Len() || list[pos+item.Len()-1] == ',' || isblank(list[pos+item.Len()-1]) )
-            )
-        {
+        int start = pos;
+
+        while (pos < list.Len() && list[pos] != ',')
+            pos++;
+
+        int len = pos - start;
+        tString token = list.SubStr(start, len);
+
+        if (token == item)
             return true;
-        }
-        else
-        {
-            // no? truncate the list and go on.
-            list = list.SubStr( pos + 1 );
-        }
     }
 
     return false;
 }
+
 
 bool tIsInList(tString const &list_, int number)
 {
@@ -2461,122 +2455,100 @@ bool tIsEnabledForPlayer(const tString &list_, int playerID)
     if (list_.empty())
         return false;
 
-    if (list_ == "*")
-        return true;
-
     tString playerIDStr(std::to_string(playerID));
+    bool allowByWildcard = false;
+    bool explicitlyAllowed = false;
+    bool explicitlyDenied = false;
 
-    if (list_.StartsWith("*"))
+    int pos = 0;
+    while (pos < list_.Len())
     {
+        while (pos < list_.Len() && list_[pos] == ',')
+            pos++;
 
-        int pos = 1; 
-        while (pos < list_.Len())
+        if (pos >= list_.Len())
+            break;
+
+        bool isNegation = false;
+        if (list_[pos] == '!')
         {
-           
-            while (pos < list_.Len() && list_[pos] == ',')
-                pos++;
-
-            if (pos >= list_.Len())
-                break;
-
-         
-            bool isNegation = false;
-            if (list_[pos] == '!')
-            {
-                isNegation = true;
-                pos++;
-            }
-
-            int start = pos;
-            while (pos < list_.Len() && list_[pos] != ',')
-                pos++;
-            tString token = list_.SubStr(start, pos - start);
-
-            if (token == playerIDStr)
-            {
-                if (isNegation)
-                    return false; 
-                else
-                    return true; 
-            }
+            isNegation = true;
+            pos++;
         }
-        return true; 
-    }
-    else
-    {
-        int pos = 0;
-        while (pos < list_.Len())
+
+        int start = pos;
+        while (pos < list_.Len() && list_[pos] != ',')
+            pos++;
+
+        tString token = list_.SubStr(start, pos - start);
+
+        if (token == "*")
         {
-        
-            while (pos < list_.Len() && list_[pos] == ',')
-                pos++;
-
-            if (pos >= list_.Len())
-                break;
-
-           
-            bool isNegation = false;
-            if (list_[pos] == '!')
-            {
-                isNegation = true;
-                pos++;
-            }
-
-           
-            int start = pos;
-            while (pos < list_.Len() && list_[pos] != ',')
-                pos++;
-            tString token = list_.SubStr(start, pos - start);
-
-            if (token == playerIDStr)
-            {
-                if (isNegation)
-                    return false; 
-                else
-                    return true; 
-            }
+            allowByWildcard = true;
         }
-        return false; 
+        else if (token == playerIDStr)
+        {
+            if (isNegation)
+                explicitlyDenied = true;
+            else
+                explicitlyAllowed = true;
+        }
     }
+
+    if (explicitlyDenied)
+        return false;
+    if (explicitlyAllowed)
+        return true;
+    if (allowByWildcard)
+        return true;
+    return false;
 }
 
 
-bool tRemoveFromList(tString &list, const tString &item) {
+
+bool tRemoveFromList(tString &list, const tString &item)
+{
     bool itemRemoved = false;
     int pos = 0;
-
     tString newList;
 
-    while (pos < list.Len()) {
+    while (pos < list.Len())
+    {
         int foundPos = list.StrPos(pos, item);
-        if (foundPos == -1) {
+        if (foundPos == -1)
+        {
             newList += list.SubStr(pos);
             break;
         }
-        bool isStart = (foundPos == 0 || list[foundPos - 1] == ',' || isblank(list[foundPos - 1]));
-        bool isEnd = (foundPos + item.Len() >= list.Len() || list[foundPos + item.Len()] == ',' || isblank(list[foundPos + item.Len()]));
 
-        if (isStart && isEnd) {
-            if (foundPos > 0) {
-                newList += list.SubStr(pos, foundPos - pos); 
+        bool isStart = (foundPos == 0 || list[foundPos - 1] == ',');
+        bool isEnd = (foundPos + item.Len() == list.Len() || list[foundPos + item.Len()] == ',');
+
+        if (isStart && isEnd)
+        {
+            if (foundPos > pos)
+            {
+                newList += list.SubStr(pos, foundPos - pos);
             }
+
             pos = foundPos + item.Len();
-            
-            if (pos < list.Len() && list[pos] == ',') {
+            if (pos < list.Len() && list[pos] == ',')
                 pos++;
-            }
+
             itemRemoved = true;
-        } else {
-            
+        }
+        else
+        {
             newList += list.SubStr(pos, foundPos - pos + item.Len());
             pos = foundPos + item.Len();
         }
     }
 
-   
-    if (itemRemoved) {
+    while (!newList.empty() && newList[newList.Len() - 1] == ',')
+        newList = newList.SubStr(0, newList.Len() - 1);
+
+    if (itemRemoved)
         list = newList;
-    }
 
     return itemRemoved;
 }
@@ -3065,63 +3037,87 @@ tArray<tString> st_explode(tString delimiter, tString ret)
 //!
 // **********************************************************************
 
-tString tString::Replace(tString old_word, tString new_word)
+tString tString::Replace(const tString &old_word, const tString &new_word)
 {
-    std::string source = this->stdString();
-    std::string oldStr = old_word.stdString();
-    std::string newStr = new_word.stdString();
 
-    size_t pos = 0;
-    while((pos = source.find(oldStr, pos)) != std::string::npos)
+    if (old_word.empty())
+        return *this;
+
+    tString result;
+    result.Clear();
+
+    int i = 0;
+    int sourceLen = this->Len() - 1;
+    int oldLen    = old_word.Len() - 1;
+
+    while (i < sourceLen)
     {
-        source.replace(pos, oldStr.length(), newStr);
-        pos += newStr.length();
+        if ((i + oldLen <= sourceLen) &&
+            SubStr(i, oldLen) == old_word)
+        {
+            result += new_word;
+            i += oldLen;
+        }
+        else
+        {
+            result += (*this)(i);
+            i++;
+        }
     }
 
-    return tString(source);
+    return result;
 }
-
-
 
 tString tString::Replace(const char *old_word, const char *new_word)
 {
     return Replace(tString(old_word), tString(new_word));
 }
 
-size_t findCaseInsensitive(const std::string &strHaystack, const std::string &strNeedle)
+bool tString::MatchesAtIgnoreCase(int startPos, const tString &pattern) const
 {
-    auto it = std::search(
-        strHaystack.begin(), strHaystack.end(),
-        strNeedle.begin(),   strNeedle.end(),
-        [](char ch1, char ch2) -> bool { return std::tolower(ch1) == std::tolower(ch2); }
-    );
-
-    if (it != strHaystack.end())
-        return it - strHaystack.begin();
-    else
-        return std::string::npos;
+    int patternLen = pattern.Len() - 1;
+    for (int i = 0; i < patternLen; i++)
+    {
+        if (std::tolower((*this)(startPos + i)) != std::tolower(pattern(i)))
+            return false;
+    }
+    return true;
 }
 
-tString tString::ReplaceInsensitive(tString old_word, tString new_word)
+tString tString::ReplaceInsensitive(const tString &old_word, const tString &new_word)
 {
-    std::string source = this->stdString();
-    std::string oldStr = old_word.stdString();
-    std::string newStr = new_word.stdString();
+    if (old_word.empty())
+        return *this;
 
-    size_t pos = 0;
-    while ((pos = findCaseInsensitive(source, oldStr)) != std::string::npos)
+    tString result;
+    result.Clear();
+
+    int i         = 0;
+    int sourceLen = this->Len() - 1;
+    int oldLen    = old_word.Len() - 1;
+
+    while (i < sourceLen)
     {
-        source.replace(pos, oldStr.length(), newStr);
-        pos += newStr.length();
+        if ((i + oldLen <= sourceLen) && MatchesAtIgnoreCase(i, old_word))
+        {
+            result += new_word;
+            i      += oldLen;
+        }
+        else
+        {
+            result += (*this)(i);
+            i++;
+        }
     }
 
-    return tString(source.c_str());
+    return result;
 }
 
 tString tString::ReplaceInsensitive(const char *old_word, const char *new_word)
 {
     return ReplaceInsensitive(tString(old_word), tString(new_word));
 }
+
 
 // **********************************************************************
 // *
@@ -3132,31 +3128,31 @@ tString tString::ReplaceInsensitive(const char *old_word, const char *new_word)
 //!    @return     Returns true if string contains numeric values
 //!
 // **********************************************************************
-bool tString::IsNumeric()
-{
-    tString ret(*this);
-    tString numericValues("012456789ef.-+");
+#include <cctype>
+#include <cstdlib>
 
-    //  return false when string is blank
-    if (ret.Filter() == "")
+bool tString::IsNumeric() const
+{
+    if (this->empty())
         return false;
 
-    for(int i = 0; i < ret.Len(); i++)
-    {
-        bool found = false;
-        //  return false if current character in string is not a number
-        for(int id = 0; id < numericValues.Len(); id++)
-        {
-            if (ret.ToLower()[i] == numericValues[id])
-                found = true;
-        }
+    const char *ptr = this->operator const char*();
+    if (!ptr)
+        return false;
 
-        if (!found) return false;
-    }
+    char *endPtr = nullptr;
+    std::strtod(ptr, &endPtr);
 
-    //  looks like everything worked out. Good!
-    return true;
+    if (endPtr == ptr)
+        return false;
+
+    while (*endPtr != '\0' && std::isspace(static_cast<unsigned char>(*endPtr)))
+        ++endPtr;
+
+
+    return (*endPtr == '\0');
 }
+
 
 // **********************************************************************
 // *
@@ -3210,51 +3206,6 @@ tString htmlentities(tString str)
     return ret;
 }
 
-
-size_t tString::Find(char ch, size_t start_pos) const {
-    std::string this_str(*this); // Convert tString to std::string
-    size_t pos = this_str.find(ch, start_pos);
-    return pos;
-}
-
-tString& tString::Insert(size_t pos, const tString& str) {
-    std::string this_str(*this); // Convert tString to std::string
-    std::string insert_str(str); // Convert tString str to std::string
-    this_str.insert(pos, insert_str);
-    *this = tString(this_str.c_str()); // Assign the modified std::string back to tString
-    return *this;
-}
-
-size_t tString::FindFirstOf(char ch, size_t start_pos) const {
-    std::string this_str(*this); // Convert tString to std::string
-    size_t pos = this_str.find_first_of(ch, start_pos);
-    return pos;
-}
-
-size_t tString::FindLastOf(char ch, size_t start_pos) const {
-    std::string this_str(*this); // Convert tString to std::string
-    size_t pos = this_str.find_last_of(ch, start_pos);
-    return pos;
-}
-
-size_t tString::FindStr(const tString& substring, size_t start_pos) const {
-    std::string this_str(*this); // Convert tString to std::string
-    std::string search_str(substring); // Convert tString substring to std::string
-    size_t found_pos = this_str.find(search_str, start_pos);
-    return found_pos;
-}
-
-tString& tString::Erase(size_t pos, size_t len) {
-    std::string this_str(*this); // Convert tString to std::string
-    this_str.erase(pos, len);
-    *this = tString(this_str); // Assign the modified std::string back to tString
-    return *this;
-}
-
-
-
-
-
 char tString::at(size_t pos) const {
     if (pos < Len()) {
         return (*this)(pos);
@@ -3262,16 +3213,6 @@ char tString::at(size_t pos) const {
         throw std::out_of_range("tString::At: position out of range");
     }
 }
-
-
-char* tString::Begin() {
-    return &(*this)(0);
-}
-
-const char* tString::Begin() const {
-    return &(*this)(0);
-}
-
 
 std::string tString::stdString() const {
     std::string str(*this);
@@ -3296,19 +3237,23 @@ static void sg_copyToClipboard(std::istream &s)
 
 static tConfItemFunc sg_copyToClipboardConf("COPY_TO_CLIPBOARD", &sg_copyToClipboard);
 
+#include <string>
+
+#ifndef WIN32
+#include <cstdlib>
+#endif
+
 bool copyToClipboard(tString contents)
 {
     int contentsPos = contents.StrPos("\n");
     if (contentsPos != -1)
-    {
-        contents = tColoredString::RemoveColors(contents); // Remove newline character
-    }
+        contents = tColoredString::RemoveColors(contents);
 
-    #ifdef MACOSX
-        return false;
-    #endif
+#ifdef MACOSX
+    return false;
+#endif
 
-    #ifdef WIN32
+#ifdef WIN32
     if (OpenClipboard(0))
     {
         EmptyClipboard();
@@ -3322,46 +3267,46 @@ bool copyToClipboard(tString contents)
         CloseClipboard();
         return true;
     }
-    #else
-    std::string cmd = "echo -n " + contents + " | xclip -selection clipboard";
-    if (system(cmd.c_str()) == 0)
+#else
+    if (system("which xclip > /dev/null 2>&1") != 0)
     {
-        return true;
+        con << "xclip is not installed!\n";
+        return false;
     }
-    #endif
+
+    std::string cmd = "echo -n \"" + contents.stdString() + "\" | xclip -selection clipboard";
+    if (system(cmd.c_str()) == 0)
+        return true;
+#endif
 
     return false;
 }
 
 bool pasteFromClipboard(tString *content, int& cursorPos)
 {
-    #ifdef MACOSX
-        return false;
-    #endif
+#ifdef MACOSX
+    return false;
+#endif
 
 #ifndef WIN32
-        std::unique_ptr<FILE, decltype(&pclose)> clip(popen("xclip -selection clipboard -o", "r"), pclose);
-        if( clip )
-#else
-        if (OpenClipboard(0))
-#endif
+    if (system("which xclip > /dev/null 2>&1") != 0)
+    {
+        con << "xclip is not installed!\n";
+        return false;
+    }
+
+    std::unique_ptr<FILE, decltype(&pclose)> clip(popen("xclip -selection clipboard -o", "r"), pclose);
+    if (clip)
+    {
+        tString cData;
+        char buf[128];
+        while (std::fgets(buf, sizeof(buf), clip.get()))
         {
-    #ifdef WIN32
-            HANDLE hClipboardData = GetClipboardData(CF_TEXT);
-            char *pchData = (char*)GlobalLock(hClipboardData);
-            tString cData(pchData);
-    #else
-            tString cData;
-            char buf[128];
-            while( std::fgets(buf, 128, clip.get()) )
-            {
-                cData << buf;
-            }
+            cData << buf;
+        }
 
-            cData = st_UTF8ToLatin1( cData );
-    #endif
+        cData = st_UTF8ToLatin1(cData);
 
-        // replace newlines with spaces
         for (int i = 0; i < cData.Len(); ++i)
         {
             if (cData(i) == '\n' || cData(i) == '\r')
@@ -3372,16 +3317,47 @@ bool pasteFromClipboard(tString *content, int& cursorPos)
         tString aContent = oContent.SubStr(0, cursorPos);
         tString bContent = oContent.SubStr(cursorPos);
 
-        tString nContent = aContent + cData + bContent;
-
-        *content = nContent;
+        *content = aContent + cData + bContent;
         cursorPos += cData.Len() - 1;
-
-        GlobalUnlock(hClipboardData);
-        CloseClipboard();
 
         return true;
     }
+#else // WIN32
+    if (OpenClipboard(0))
+    {
+        HANDLE hClipboardData = GetClipboardData(CF_TEXT);
+        if (hClipboardData)
+        {
+            char *pchData = (char*)GlobalLock(hClipboardData);
+            if (pchData)
+            {
+                tString cData(pchData);
+
+                // Replace newlines with spaces
+                for (int i = 0; i < cData.Len(); ++i)
+                {
+                    if (cData(i) == '\n' || cData(i) == '\r')
+                        cData(i) = ' ';
+                }
+
+                tString oContent(*content);
+                tString aContent = oContent.SubStr(0, cursorPos);
+                tString bContent = oContent.SubStr(cursorPos);
+
+                tString nContent = aContent + cData + bContent;
+
+                *content = nContent;
+                cursorPos += cData.Len() - 1;
+
+                GlobalUnlock(hClipboardData);
+                CloseClipboard();
+                return true;
+            }
+        }
+
+        CloseClipboard();
+    }
+#endif
 
     return false;
 }

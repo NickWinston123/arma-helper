@@ -121,11 +121,7 @@ public:
     int StrPos( int start, const tString &tofind ) const; //!< Get the position of a substring within this string.
     int StrPos( const char * tofind ) const;        //!< Get the position of a substring within this string.
     int StrPos( int start, const char * tofind ) const; //!< Get the position of a substring within this string.
-    size_t Find(char ch, size_t start_pos)  const; //!< Get the position of a substring within this string.
-    size_t FindStr(const tString& substring, size_t start_pos = 0) const;
-    tString& Erase(size_t pos, size_t len = std::string::npos);
-    char* Begin(); // Add this line for the Begin function
-    const char* Begin() const; // Add this line for the const version of Begin function
+
     std::string stdString()  const;
 
     tString& Insert(size_t pos, const tString& str);
@@ -145,7 +141,7 @@ public:
     REAL toReal( const REAL pos) const;
     REAL toReal() const;
 
-    bool IsNumeric();
+    bool IsNumeric() const;
 
     //! confirms whether the tofind exists within the current string
     bool Contains(tString tofind);
@@ -208,9 +204,10 @@ public:
     tArray<tString> Split(const char *del_word);
     tArray<tString> SplitBySize(int size, bool fullWords = false);
 
-    tString Replace(tString old_word, tString new_word);
+    bool MatchesAtIgnoreCase(int startPos, const tString &pattern) const;
+    tString Replace(const tString &old_word, const tString &new_word);
     tString Replace(const char *old_word, const char *new_word);
-    tString ReplaceInsensitive(tString old_word, tString new_word);
+    tString ReplaceInsensitive(const tString &old_word, const tString &new_word);
     tString ReplaceInsensitive(const char *old_word, const char *new_word);
 
     tString ExtractNonBlankSubString( int &pos, int numWordsToSkip = 0) const; //!< Extract non blank char sequence starting at pos

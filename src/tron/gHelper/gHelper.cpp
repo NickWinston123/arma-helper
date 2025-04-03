@@ -592,7 +592,8 @@ void gHelper::enemyTracers(gHelperData &data)
     }
 }
 
-eCoord extrapolate(const eCoord &currentPos, const eCoord &direction, REAL distance) {
+eCoord extrapolate(const eCoord &currentPos, const eCoord &direction, REAL distance) 
+{
     eCoord normalizedDirection = direction.GetNormalized();
     return currentPos + normalizedDirection * distance;
 }

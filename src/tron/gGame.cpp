@@ -3327,7 +3327,7 @@ void restrictionTimeCheck(bool ingame)
 
 void InitHelperItems(bool ingame)
 {
-    if (HelperCommand::fn6() && se_playerTriggerMessages)
+    if (HelperCommand::fn6() && se_playerMessageTriggers)
     {
         eChatBot &bot = eChatBot::getInstance();
 
@@ -4804,9 +4804,11 @@ static void sg_RespawnAll(eGrid *grid, gArena &arena, bool respawn_all)
 #endif
 
 REAL sg_timestepMax = .2;
-static tSettingItem<REAL> sg_timestepMaxConf("TIMESTEP_MAX", sg_timestepMax);
+static tConfItem<REAL> sg_timestepMaxConf("TIMESTEP_MAX", sg_timestepMax);
 int sg_timestepMaxCount = 10;
-static tSettingItem<int> sg_timestepMaxCountConf("TIMESTEP_MAX_COUNT", sg_timestepMaxCount);
+static tConfItem<int> sg_timestepMaxCountConf("TIMESTEP_MAX_COUNT", sg_timestepMaxCount);
+int sg_timestepStepCount = 0;
+static tConfItem<int> sg_timestepStepCountConf("TIMESTEP_STEP_COUNT", sg_timestepStepCount);
 
 void gGame::Timestep(REAL time, bool cam)
 {
@@ -4839,9 +4841,9 @@ void gGame::Timestep(REAL time, bool cam)
     if (number_of_steps < 1)
         number_of_steps = 1;
     if (number_of_steps > sg_timestepMaxCount)
-    {
         number_of_steps = sg_timestepMaxCount;
-    }
+    if (sg_timestepStepCount != 0)
+        number_of_steps = sg_timestepStepCount;
 
     // chop
     for (int i = 1; i <= number_of_steps; i++)

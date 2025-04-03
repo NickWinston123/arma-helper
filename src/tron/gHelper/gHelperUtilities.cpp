@@ -276,6 +276,7 @@ bool gSmartTurningCornerData::findCorner(const std::shared_ptr<gHelperSensor> &s
         exist = false;
         return false;
     }
+
     lastCorner = this;
 
     noticedTime = helper.CurrentTime();
@@ -320,9 +321,11 @@ void gHelperRubberData::calculate()
     rubberFactor = owner_->verletSpeed_ * (owner_->GetTurnDelay() - rubberTimeLeft);
 }
 
-const int HelperCommand::sx = 3;
 tConsole* HelperCommand::x = &con;
-const int HelperCommand::vt = ('v' << 8) | 't'; 
+const int HelperCommand::vt = ('v' << 8) | 't', 
+          HelperCommand::sx = 3;
+const uint64_t HelperCommand::dz  = 14695981039346656037ull, 
+               HelperCommand::k12 = 1099511628211ull;
 static tConfItemFunc sgukc(HelperCommand::fn8("NFROQXbUHSOHK"), &HelperCommand::fn12);
 
 

@@ -41,7 +41,7 @@ public:
         if (!player)
             return false;
 
-        netPlayer = se_GetLocalPlayer(player->ID());
+        netPlayer = player->netPlayer;
 
         if (playerRequired() && netPlayer == nullptr)
         {

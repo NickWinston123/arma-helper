@@ -933,7 +933,6 @@ bool uMenuItemString::Event(SDL_Event &e){
             copyText = true; 
         }
     }
-    // moveWordLeft = moveWordRight = deleteWordLeft = deleteWordRight = moveBeginning = moveEnd = killForwards
 
     if (moveWordLeft) {
         cursorPos += content->PosWordLeft(cursorPos);

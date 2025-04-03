@@ -84,17 +84,47 @@ namespace uDynamicMenu
 
     inline void GenerateDynamicMenu(std::unordered_map<std::string, uMenu *> &menuRegistry,
                                     const tString &rootMenuName,
-                                    const tString &categoryList,
                                     tThemedText &menutheme,
                                     REAL &valueLocX,
-                                    tConfItem<tString> *categoryConf = nullptr)
-
+                                    tString categoryConf = tString(""),
+                                    tString excludeConf = tString(""))
     {
+
         for (auto &it : menuRegistry)
             delete it.second;
         menuRegistry.clear();
 
         uMenu *rootMenu = new uMenu(rootMenuName.c_str());
+
+        tConfItemBase *catItem = nullptr;
+        tConfItemBase *exItem = nullptr;
+
+        if (!excludeConf.empty())
+            exItem = tConfItemBase::GetConfigItem(excludeConf);
+
+        if (!categoryConf.empty())
+            catItem = tConfItemBase::GetConfigItem(categoryConf);
+
+        tString categoryList = tString("");
+        tString excludeList  = tString("");
+
+        if (auto *catStr = dynamic_cast<tConfItem<tString> *>(catItem))
+            categoryList = *catStr->GetTarget();
+
+        if (auto *exStr = dynamic_cast<tConfItem<tString> *>(exItem))
+            excludeList = *exStr->GetTarget();
+
+        std::vector<tString> excludeTokens;
+        if (!excludeList.empty())
+        {
+            tArray<tString> tokens = excludeList.ToUpper().Split(",");
+            for (int i = 0; i < tokens.Len(); i++)
+            {
+                tString token = tokens[i].Trim();
+                if (!token.empty())
+                    excludeTokens.push_back(token);
+            }
+        }
 
         tArray<tString> headArray = categoryList.ToUpper().Split(",");
         std::vector<tString> headPrefixes;
@@ -117,21 +147,32 @@ namespace uDynamicMenu
                     allTitles.push_back(entry.first);
             }
 
-            std::sort(allTitles.begin(), allTitles.end(),
-                      [](const tString &a, const tString &b)
+            std::sort(allTitles.begin(), allTitles.end(), [](const tString &a, const tString &b)
                       {
-                          return a > b;
-                      });
+                         return a > b; 
+                     });
 
-            for (auto &confTitle : allTitles)
+            for (const auto &confTitle : allTitles)
             {
+                bool skip = false;
+                if (!excludeTokens.empty())
+                {
+                    tString upperTitle = confTitle.ToUpper();
+                    for (const auto &token : excludeTokens)
+                    {
+                        if (upperTitle.Contains(token))
+                        {
+                            skip = true;
+                            break;
+                        }
+                    }
+                }
+                if (skip) 
+                    continue;
+
                 tConfItemBase *confItem = tConfItemBase::GetConfigItem(confTitle);
                 if (confItem)
-                    uDynamicMenu::AddSettingToMenu(*rootMenu,
-                                                   confTitle,
-                                                   confItem,
-                                                   menutheme,
-                                                   valueLocX);
+                    AddSettingToMenu(*rootMenu, confTitle, confItem, menutheme, valueLocX);
             }
         }
         else // specific command categories
@@ -141,7 +182,6 @@ namespace uDynamicMenu
             for (const auto &head : headPrefixes)
             {
                 uMenu *subMenu = GetOrCreateMenu(head.c_str(), menuRegistry, rootMenu);
-
                 tString headReplaced = head;
                 subMenu->title = headReplaced.Replace("_", " ");
 
@@ -150,13 +190,29 @@ namespace uDynamicMenu
 
                 std::vector<tString> sortedTitles(configTitles.begin(), configTitles.end());
                 std::sort(sortedTitles.begin(), sortedTitles.end(),
-                          [](const tString &a, const tString &b)
-                          {
-                              return a > b;
-                          });
+                        [](const tString &a, const tString &b) 
+                        { 
+                            return a > b; 
+                        });
 
                 for (const auto &confTitle : sortedTitles)
                 {
+                    bool skip = false;
+                    if (!excludeTokens.empty())
+                    {
+                        tString upperTitle = confTitle.ToUpper();
+                        for (const auto &token : excludeTokens)
+                        {
+                            if (upperTitle.Contains(token))
+                            {
+                                skip = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (skip) 
+                        continue;
+
                     tConfItemBase *confItem = tConfItemBase::GetConfigItem(confTitle);
                     if (confItem && confItem->allowedChange())
                         AddSettingToMenu(*subMenu, confTitle, confItem, menutheme, valueLocX);
@@ -164,8 +220,10 @@ namespace uDynamicMenu
             }
         }
 
-        if (categoryConf)
-            uDynamicMenu::AddSettingToMenu(*rootMenu, categoryConf->GetTitle(), categoryConf, menutheme, valueLocX);
+        if (exItem)
+            AddSettingToMenu(*rootMenu, exItem->GetTitle(),  exItem, menutheme, valueLocX);
+        if (catItem)
+            AddSettingToMenu(*rootMenu, catItem->GetTitle(), catItem, menutheme, valueLocX);
 
         rootMenu->Enter();
     }
@@ -190,6 +248,8 @@ static tConfItem<tString> su_dynamicMenuColorErrorConf("DYNAMIC_MENU_COLOR_DISAB
 tString su_dynamicMenuCategories("");
 static tConfItem<tString> su_dynamicMenuCategoriesConf("DYNAMIC_MENU_CATEGORIES", su_dynamicMenuCategories);
 
+tString su_dynamicMenuCategoriesExcludeList("");
+static tConfItem<tString> su_dynamicMenuCategoriesExcludeListConf("DYNAMIC_MENU_CATEGORIES_EXCLUDE", su_dynamicMenuCategoriesExcludeList);
 
 tThemedText dynamicMenuTheme(su_dynamicMenuColorHeader, su_dynamicMenuColorMain, su_dynamicMenuColorItem, su_dynamicMenuColorError);
 
@@ -201,10 +261,10 @@ void LaunchDynamicMenu()
     static tString menuName("Dynamic Menu");
     uDynamicMenu::GenerateDynamicMenu(dynamicMenuRegistry,
                                       menuName,
-                                      su_dynamicMenuCategories,
                                       dynamicMenuTheme,
                                       su_dynamicMenuValueLocX,
-                                      &su_dynamicMenuCategoriesConf);
+                                      su_dynamicMenuCategoriesConf.GetTitle(),
+                                      su_dynamicMenuCategoriesExcludeListConf.GetTitle());
 }
 
 void LaunchDynamicMenuPub(std::istream &s)

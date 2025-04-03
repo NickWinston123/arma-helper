@@ -69,7 +69,7 @@ protected:
     REAL YPos(int num);
 public:
     static bool          wrap;
-
+    
     // different quick exit types
     enum QuickExit
     {

@@ -3550,10 +3550,10 @@ static nConsoleFilter sn_consoleFilter;
 #endif
 
 static bool sg_playerMessageMatchWinner = false;
-static tConfItem<bool> sg_playerMessageMatchWinnerConf("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER", sg_playerMessageMatchWinner);
+static tConfItem<bool> sg_playerMessageMatchWinnerConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER", sg_playerMessageMatchWinner);
 
 static bool sg_playerMessageMatchWinnerSelf = false;
-static tConfItem<bool> sg_playerMessageMatchWinnerSelfConf("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER_SELF", sg_playerMessageMatchWinnerSelf);
+static tConfItem<bool> sg_playerMessageMatchWinnerSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER_SELF", sg_playerMessageMatchWinnerSelf);
 
 bool sg_playerSpamProtectionWatch = false;
 static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WATCH", sg_playerSpamProtectionWatch);

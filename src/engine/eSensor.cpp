@@ -163,6 +163,7 @@ void eSensor::detect(REAL range){
         return;
     }
 
+    #ifdef DEBUG
     if (hit < range)
     {
         eDebugLine::SetColor  (0, 1, 1);
@@ -176,6 +177,7 @@ void eSensor::detect(REAL range){
         eDebugLine::SetColor  (1, 0, 0);
         eDebugLine::Draw(start, .5, pos, .5);
     }
+    #endif
 
 }
 

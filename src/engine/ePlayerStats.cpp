@@ -22,7 +22,7 @@ tString se_playerStatsDataBaseFile("stats.db");
 static tConfItem<tString> se_playerStatsDataBaseFileConf("PLAYER_STATS_DB_FILE", se_playerStatsDataBaseFile);
 
 bool se_playerMessageTriggersStatsSave = false;
-static tConfItem<bool> se_playerMessageTriggersStatsSaveConf("PLAYER_MESSAGE_TRIGGER_STATS_SAVED", se_playerMessageTriggersStatsSave);
+static tConfItem<bool> se_playerMessageTriggersStatsSaveConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_STATS_SAVED", se_playerMessageTriggersStatsSave);
 
 bool se_playerStatsLocalForcedName = false;
 static tConfItem<bool> se_playerStatsLocalForcedNameConf("PLAYER_STATS_LOCAL_FORCED_NAME", se_playerStatsLocalForcedName);

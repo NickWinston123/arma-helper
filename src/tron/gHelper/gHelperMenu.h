@@ -35,9 +35,9 @@ void helperDynamicMenu()
     static tString menuName("Helper Settings");
     uDynamicMenu::GenerateDynamicMenu(menuRegistry,
                                       menuName,
-                                      sg_helperMenuCategories,
                                       menutheme,
-                                      sg_helperMenuValueLocX);
+                                      sg_helperMenuValueLocX,
+                                      sg_helperMenuCategoriesConf.GetTitle());
 }
 
 void helperMenuDynPub(std::istream &s)

@@ -76,6 +76,7 @@ void gSensor::detect(REAL range, bool render)
     {
         return;
     }
+    #ifdef DEBUG
     if (hit < range)
     {
         eDebugLine::SetTimeout(0.01);
@@ -90,6 +91,7 @@ void gSensor::detect(REAL range, bool render)
         eDebugLine::SetColor(1, 0, 0);
         eDebugLine::Draw(start_, .5, pos, .5);
     }
+    #endif
 }
 
 void gSensor::PassEdge(const eWall *ww, REAL time, REAL a, int r)

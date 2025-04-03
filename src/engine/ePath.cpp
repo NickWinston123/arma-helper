@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include "nConfig.h"
-bool se_renderPath = 1;
+bool se_renderPath = false;
 static tConfItem<bool> se_renderPathC("PATH_RENDER", se_renderPath);
 
 REAL se_pathTargetHeight = 2;

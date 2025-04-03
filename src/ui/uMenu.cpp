@@ -146,6 +146,28 @@ bool uMenu::MenuActive()
 static rNoAutoDisplayAtNewlineCallback su_noNewline( uMenu::MenuActive );
 // static rSmallConsoleCallback su_smallConsole( su_InMenu );
 
+template <typename T>
+T clamp(const T& v, const T& lo, const T& hi)
+{
+    return (v < lo) ? lo : (v > hi) ? hi : v;
+}
+
+
+static bool su_menuScrollProgress = true;
+static tConfItem<bool> su_menuScrollProgressConf("MENU_SCROLL_PROGRESS", su_menuScrollProgress);
+
+static bool su_menuScrollProgressShowMarker = true;
+static tConfItem<bool> su_menuScrollProgressShowMarkerConf("MENU_SCROLL_PROGRESS_SHOW_MARKER", su_menuScrollProgressShowMarker);
+
+int su_menuScrollProgressSide = 2;
+std::vector<std::pair<std::string, std::string>> su_menuScrollProgressSideMap = {
+    {"0", "OFF"},
+    {"1", "LEFT"},
+    {"2", "RIGHT"},
+    {"3", "BOTH"}
+};
+static tConfItem<int> su_menuScrollProgressSideConf("MENU_SCROLL_PROGRESS_SIDE", su_menuScrollProgressSide, su_menuScrollProgressSideMap);
+
 void uMenu::OnEnter(){
 #ifndef DEDICATED
     bool localRepeat = false;
@@ -362,7 +384,77 @@ void uMenu::OnEnter(){
                 arrow(.9,menuBot+.1,-1,.05);
             if (YPos(menuentries-1)>menuTop && (int(tSysTimeFloat())+1)%2)
                 arrow(.9,menuTop,1,.05);
-
+            
+            if (su_menuScrollProgress && sr_glOut && menuentries > 0)
+            {
+                float visibleHeight = menuTop - menuBot;
+                float totalHeight = fabsf(YPos(0) - YPos(menuentries - 1));
+            
+                if (totalHeight > visibleHeight)
+                {
+                    float scrollSizeRatio = clamp(visibleHeight / totalHeight, 0.01f, 1.0f);
+                    float scrollProgress = (float)selected / std::max(1, menuentries - 1);
+                    scrollProgress = clamp(scrollProgress, 0.0f, 1.0f);
+                    scrollProgress = 1.0f - scrollProgress;
+            
+                    float barHeight = scrollSizeRatio * visibleHeight;
+                    float barTopY = menuTop - scrollProgress * (visibleHeight - barHeight);
+                    float barBotY = barTopY - barHeight;
+            
+                    const float barWidth = 0.01f;
+                    const float borderSize = 0.01f;
+            
+                    glDisable(GL_TEXTURE_2D);
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                    glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+            
+                    auto drawBarAtX = [&](float barX)
+                    {
+                        // scroll bar
+                        BeginQuads();
+                            glVertex2f(barX, barTopY - borderSize);
+                            glVertex2f(barX + barWidth, barTopY - borderSize);
+                            glVertex2f(barX + barWidth, barBotY + borderSize);
+                            glVertex2f(barX, barBotY + borderSize);
+                        RenderEnd();
+            
+                        if (su_menuScrollProgressShowMarker)
+                        {
+                            const float markerHeight = 0.015f;
+                            // top marker
+                            BeginQuads();
+                                glVertex2f(barX, menuTop - markerHeight);
+                                glVertex2f(barX + barWidth, menuTop - markerHeight);
+                                glVertex2f(barX + barWidth, menuTop);
+                                glVertex2f(barX, menuTop);
+                            RenderEnd();
+                
+                            // bottom marker
+                            BeginQuads();
+                                glVertex2f(barX, menuBot);
+                                glVertex2f(barX + barWidth, menuBot);
+                                glVertex2f(barX + barWidth, menuBot + markerHeight);
+                                glVertex2f(barX, menuBot + markerHeight);
+                            RenderEnd();
+                        }
+                    };
+            
+                    switch (su_menuScrollProgressSide)
+                    {
+                        case 1: drawBarAtX(-0.98f); 
+                                break;
+                        case 2: drawBarAtX(0.97f); 
+                                break;
+                        case 3: drawBarAtX(-0.98f); 
+                                drawBarAtX(0.97f); 
+                                break;
+                        default: 
+                            break;
+                    }
+                }
+            }
+            
             REAL helpAlpha = tSysTimeFloat()-lastkey-timeout;
             if( helpAlpha > 1 )
             {

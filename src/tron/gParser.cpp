@@ -43,11 +43,13 @@ static REAL sr_renderRimLinesHeight = 5;
 static tConfItem<REAL> sr_renderRimLinesHeightConf( "RENDER_RIM_LINES_HEIGHT", sr_renderRimLinesHeight );
 
 void debugRim(tColor color, REAL height, REAL timeout,
-              eCoord start,eCoord end, REAL brightness) {
+              eCoord start,eCoord end, REAL brightness) 
+{
     REAL startHeight = height;
-    if (start == end) {
+
+    if (start == end) 
         startHeight = 0;
-    }
+
     eDebugLine::SetTimeout(timeout);
     eDebugLine::SetColor(color.r_ * sg_helperBrightness * brightness, color.g_ * sg_helperBrightness * brightness, color.b_ * sg_helperBrightness* brightness);
     eDebugLine::Draw(start, startHeight, end, height);

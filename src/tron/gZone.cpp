@@ -584,8 +584,8 @@ gZone::gZone(eGrid *grid, const eCoord &pos, bool dynamicCreation, bool delayCre
     : eNetGameObject(grid, pos, eCoord(0, 0), NULL, true), rotation_(1, 0), lastCoord_(0), nextUpdate_(-1)
 {
 
-    if(sg_helperDebug)
-        gHelperUtility::Debug("gZone::gZone(grid)", "Creation Event");
+    // if(sg_helperDebug)
+    //     gHelperUtility::Debug("gZone::gZone(grid)", "Creation Event");
 
 #ifdef DEBUG
     con << "GOT CREATION EVENT gZone 1"
@@ -731,8 +731,8 @@ gZone::gZone(nMessage &m)
 
     // if (player)
     //     gHelperUtility::Debug("gZone::gZone(nMessage &m)", "Got player:",player->GetName(), false);
-    if(sg_helperDebug)
-        gHelperUtility::Debug("gZone::gZone(nMessage &m)", "Owned?",booleanToString(Owned() || Owner() > 0), false);
+    // if(sg_helperDebug)
+    //     gHelperUtility::Debug("gZone::gZone(nMessage &m)", "Owned?",booleanToString(Owned() || Owner() > 0), false);
 #ifdef DEBUG
     con << "GOT CREATION EVENT gZone 2"
         << "\n";
@@ -917,9 +917,9 @@ void gZone::ReadSync(nMessage &m)
         SetVelocity(eCoord());
     }
 
-    if (Owned() || Owner() > 0){
-        gHelperUtility::Debug("gZone::ReadSync", "Owned ZONE, resizeRequested_?", booleanToString(resizeRequested_), false);
-    }
+    // if (Owned() || Owner() > 0){
+    //     gHelperUtility::Debug("gZone::ReadSync", "Owned ZONE, resizeRequested_?", booleanToString(resizeRequested_), false);
+    // }
 
     // read rotation speed
     if (!m.End())
@@ -1363,9 +1363,9 @@ bool gZone::Timestep(REAL time)
 
     bool doRequestSync = false;
 
-    if (Owned() || Owner() > 0){
-        gHelperUtility::Debug("gZone::Timestep", "Owned ZONE, resizeRequested_?", booleanToString(resizeRequested_), false);
-    }
+    // if (Owned() || Owner() > 0){
+    //     gHelperUtility::Debug("gZone::Timestep", "Owned ZONE, resizeRequested_?", booleanToString(resizeRequested_), false);
+    // }
     // resize
     if (resizeRequested_)
     {
@@ -2453,9 +2453,9 @@ void gZone::Render(const eCamera *cam)
     //  FilterZoneColor();
 
 
-    if (Owned() || Owner() > 0){
-        gHelperUtility::Debug("gZone::Timestep", "Owned ZONE, resizeRequested_?", booleanToString(resizeRequested_), false);
-    }
+    // if (Owned() || Owner() > 0){
+    //     gHelperUtility::Debug("gZone::Timestep", "Owned ZONE, resizeRequested_?", booleanToString(resizeRequested_), false);
+    // }
 
     ModelMatrix();
     glPushMatrix();

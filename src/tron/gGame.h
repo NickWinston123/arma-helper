@@ -58,7 +58,10 @@ class gParser;
 
 extern nServerInfoBase *getSeverFromStr(tString input);
 extern void InitHelperItems(bool ingame = false);
+extern void CommandWatchLoader();
 
+extern bool sg_commandWatch, sg_commandWatchClear, sg_commandWatchFeedback;
+extern tString sg_commandWatchFile;
 typedef enum
 {
     gFREESTYLE,
@@ -359,17 +362,22 @@ public:
         return true;
     }
 
-    void ClearQueueIfOverloaded(int size) 
+    void ClearQueueIfOverloaded(int size, const std::string& baseId = "")
     {
         int totalSize = tasksQueue.size();
-        for (const auto& pendingTask : pendingTasks) 
+        for (const auto& pendingTask : pendingTasks)
             totalSize += pendingTask.second.size();
-        
+    
         totalSize += taskChains.size();
-
-        if (totalSize > size) 
-            clear(); 
-    }
+    
+        if (totalSize > size)
+        {
+            if (!baseId.empty())
+                removeTasksWithPrefix(baseId);
+            else
+                clear();
+        }
+    }    
 
 
     void enqueueChain(const std::function<void()>& chain)

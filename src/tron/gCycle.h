@@ -288,6 +288,7 @@ public:
     REAL lastDeathTime;
     ePlayerNetID *netPlayer_;
 
+    REAL lastSync;
     static void TacticalPositioning(REAL time); // tactical positioning
     enum TacticalPosition
     {

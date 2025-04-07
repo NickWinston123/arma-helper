@@ -127,6 +127,41 @@ static tConfItemLine sn_sbtip("SERVER_IP", net_hostip);
 
 void sn_DisconnectUserNoWarn(int i, const tOutput& reason, nServerInfoBase * redirectTo = 0 );
 
+
+tString sn_ourRealIPS = tString("");
+static tConfItem<tString> sn_ourRealIPSConf("OUR_REAL_IPS", sn_ourRealIPS);
+
+tString sn_disallowJoinWithIP = tString("");
+static tConfItem<tString> sn_disallowJoinWithIPConf("DISALLOW_JOIN_WITH_IP", sn_disallowJoinWithIP);
+
+bool sn_bannedWatch = false;
+static tConfItem<bool> sn_bannedWatchConf("PLAYER_WATCH_BANNED", sn_bannedWatch);
+tString sn_bannedWatchStr = tString("");
+static tConfItem<tString> sn_bannedWatchStrConf("PLAYER_WATCH_BANNED_STRING", sn_bannedWatchStr);
+bool sn_bannedWatchQuit = false;
+static tConfItem<bool> sn_bannedWatchQuitConf("PLAYER_WATCH_BANNED_QUIT", sn_bannedWatchQuit);
+REAL sn_bannedWatchQuitTime = 5;
+static tConfItem<REAL> sn_bannedWatchQuitTimeConf("PLAYER_WATCH_BANNED_QUIT_TIME", sn_bannedWatchQuitTime);
+
+bool sn_loginDenalWatch = false;
+static tConfItem<bool> sn_loginDenalWatchConf("PLAYER_WATCH_LOGIN_DENIAL", sn_loginDenalWatch);
+bool sn_loginDenalWatchQuit = false;
+static tConfItem<bool> sn_loginDenalWatchQuitConf("PLAYER_WATCH_LOGIN_DENIAL_QUIT", sn_loginDenalWatchQuit);
+tString sn_loginDenalWatchStr = tString("");
+static tConfItem<tString> sn_loginDenalWatchStrConf("PLAYER_WATCH_LOGIN_DENIAL_STRINGS", sn_loginDenalWatchStr);
+
+bool sn_playerUnableToRenameWatch = false;
+static tConfItem<bool> sn_playerUnableToRenameWatchConf("PLAYER_WATCH_RENAME", sn_playerUnableToRenameWatch);
+bool sn_playerUnableToRenameWatchRebuild = true;
+static tConfItem<bool> sn_playerUnableToRenameWatchRebuildConf("PLAYER_WATCH_RENAME_REBUILD", sn_playerUnableToRenameWatchRebuild);
+
+bool sn_playerSuspendWatch = false;
+static tConfItem<bool> sn_playerSuspendWatchConf("PLAYER_WATCH_SUSPENDED", sn_playerSuspendWatch);
+bool sn_playerSuspendWatchQuit = false;
+static tConfItem<bool> sn_playerSuspendWatchQuitConf("PLAYER_WATCH_SUSPENDED_QUIT", sn_playerSuspendWatchQuit);
+bool sn_playerSuspendWatchQuitWaitForAvoidPlayers = false;
+static tConfItem<bool> sn_playerSuspendWatchQuitWaitForAvoidPlayersConf("PLAYER_WATCH_SUSPENDED_QUIT_WAIT_FOR_AVOID_PLAYERS", sn_playerSuspendWatchQuitWaitForAvoidPlayers);
+
 int sn_defaultDelay=10000;
 
 //! pause a bit, abort pause on network activity
@@ -1681,8 +1716,33 @@ void login_deny_handler(nMessage &m){
         sn_DenyReason = tOutput( "$network_kill_unknown" );
     }
 
-    if (sn_networkErrorQuit)
-        sn_quitAction(true, true, sn_DenyReason);
+    if (sn_bannedWatch)
+    {
+        gHelperUtility::Debug("PLAYER_WATCH_BANNED", "Got login denial.. Reason:", sn_DenyReason);
+        tString checkReason;
+        checkReason << (sn_bannedWatchStr.empty()? "You are banned" : sn_bannedWatchStr);
+
+        if (sn_DenyReason.Contains(checkReason))
+        {
+            gHelperUtility::Debug("PLAYER_WATCH_BANNED", "Ban detected.");
+            sn_quitAction(true, sn_bannedWatchQuit, sn_DenyReason);
+        }
+    }
+
+    if (sn_loginDenalWatch && !sn_loginDenalWatchStr.empty())
+    {
+        tArray<tString> denialChecks = sn_loginDenalWatchStr.Split(",");
+
+        for (int i = 0; i < denialChecks.Len(); i++)
+        {
+            if (sn_DenyReason.Contains(denialChecks[i]))
+            {
+                gHelperUtility::Debug("PLAYER_WATCH_LOGIN_DENIAL", "Login Denial detected and found a match within '" + sn_loginDenalWatchStr.stdString() + "'.");
+                sn_quitAction(true, sn_loginDenalWatchQuit, sn_DenyReason);
+                break;
+            }
+        }
+    }
 
     if ( !m.End() )
     {
@@ -1752,33 +1812,10 @@ void first_fill_ids();
 // from nServerInfo.cpp
 extern bool sn_AcceptingFromMaster;
 
-static tString sn_disallowJoinWithIP = tString("");
-static tConfItem<tString> sn_disallowJoinWithIPConf("DISALLOW_JOIN_WITH_IP",sn_disallowJoinWithIP);
-
 
 #ifndef DEDICATED
 static bool sn_showOwnIP = false;
-static tConfItem<bool> sn_showOwnIPConf("SHOW_OWN_IP",sn_showOwnIP);
-
-bool sn_bannedWatch = false;
-static tConfItem<bool> sn_bannedWatchConf("PLAYER_WATCH_BANNED",sn_bannedWatch);
-bool sn_bannedWatchQuit = false;
-static tConfItem<bool> sn_bannedWatchQuitConf("PLAYER_WATCH_BANNED_QUIT",sn_bannedWatchQuit);
-REAL sn_bannedWatchQuitTime = 5;
-static tConfItem<REAL> sn_bannedWatchQuitTimeConf("PLAYER_WATCH_BANNED_QUIT_TIME",sn_bannedWatchQuitTime);
-
-bool sn_playerUnableToRenameWatch = false;
-static tConfItem<bool> sn_playerUnableToRenameWatchConf("PLAYER_WATCH_RENAME",sn_playerUnableToRenameWatch);
-bool sn_playerUnableToRenameWatchRebuild = true;
-static tConfItem<bool> sn_playerUnableToRenameWatchRebuildConf("PLAYER_WATCH_RENAME_REBUILD",sn_playerUnableToRenameWatchRebuild);
-
-bool sn_playerSuspendWatch = false;
-static tConfItem<bool> sn_playerSuspendWatchConf("PLAYER_WATCH_SUSPENDED",sn_playerSuspendWatch);
-bool sn_playerSuspendWatchQuit = false;
-static tConfItem<bool> sn_playerSuspendWatchQuitConf("PLAYER_WATCH_SUSPENDED_QUIT",sn_playerSuspendWatchQuit);
-bool sn_playerSuspendWatchQuitWaitForAvoidPlayers = false;
-static tConfItem<bool> sn_playerSuspendWatchQuitWaitForAvoidPlayersConf("PLAYER_WATCH_SUSPENDED_QUIT_WAIT_FOR_AVOID_PLAYERS",sn_playerSuspendWatchQuitWaitForAvoidPlayers);
-
+static tConfItem<bool> sn_showOwnIPConf("SHOW_OWN_IP", sn_showOwnIP);
 #else
 static constexpr bool sn_showOwnIP = true;
 #endif
@@ -3594,10 +3631,10 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
         if (sg_playerSilencedWatch)
         {
-            if (s.Contains(tString("silenced by the server administrator.")) && playerMessages.CheckIfSilenced())
+            if (s.Contains(tString("silenced by the server administrator.")) && (ePlayerMessages.CheckIfSilenced())) 
             {
-                gHelperUtility::Debug("PlayerSilencedWatch","Player was silenced.");
-                sn_quitAction(true, sg_playerSilencedWatchQuit);
+                gHelperUtility::Debug("PLAYER_WATCH_SILENCED","Player was silenced.");
+                sn_quitAction(true, sg_playerSilencedWatchQuit,"Player was silenced.");
             }
         }
 
@@ -3605,11 +3642,22 @@ static void sn_ConsoleOut_handler(nMessage &m)
         {
             if (s.Contains(tString("suspended from playing for the next")) && validateSuspended())
             {
-                gHelperUtility::Debug("PlayerSuspendWatch","Player was suspended.");
-                if (!sn_playerSuspendWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame())
-                    sn_quitAction(true, sn_playerSuspendWatchQuit);
+                gHelperUtility::Debug("PLAYER_WATCH_SUSPENDED","Player was suspended.");
+                bool canQuit = !sn_playerSuspendWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame();
+                if (canQuit)
+                {
+                    sn_quitAction(true, sn_playerSuspendWatchQuit, "Player was suspended.");
+                }
                 else if (se_playerWatchAutoRandomName)
+                {
+                    gHelperUtility::Debug("PLAYER_WATCH_SUSPENDED","Setting forceRandomRename to true..");
                     forceRandomRename = true;
+                }
+
+                if (!canQuit)
+                {
+                    gHelperUtility::Debug("PLAYER_WATCH_SUSPENDED","Waiting for avoid players to leave (" + se_avoidPlayerWatchList.stdString() + ")..");
+                }
             }
         }
 
@@ -3617,9 +3665,12 @@ static void sn_ConsoleOut_handler(nMessage &m)
         {
             if (s.Contains(tString("not allowed to rename to ")))
             {
-                gHelperUtility::Debug("UnableToRenameWatch","Unable to rename.");
+                gHelperUtility::Debug("PLAYER_WATCH_RENAME","Unable to rename.");
                 if (sn_playerUnableToRenameWatchRebuild)
+                {
+                    gHelperUtility::Debug("PLAYER_WATCH_RENAME","Running a complete rebuild.");
                     ePlayerNetID::CompleteRebuild();
+                }
             }
         }
 
@@ -3732,7 +3783,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
                 gHelperUtility::Debug("SpamProtectionWatch", "Repeated Message Detected: '" +
                                                              repeatedMessage.stdString() +
                                                              "', Silence Set for " +
-                                                             std::to_string(seconds+sg_playerSpamProtectionWatchExtraAdd) +
+                                                             std::to_string(seconds + sg_playerSpamProtectionWatchExtraAdd) +
                                                              " seconds");
                 if (se_playerMessageTriggers && se_playerMessageTriggersResendSilencedMessages)
                     eChatBot::SilencedAction();
@@ -5976,10 +6027,15 @@ std::vector<unsigned short> nMessage::nMessageToDataVector(nMessage& msg) {
     return data;
 }
 
+void sn_quitAction(bool save, bool quit, std::string message)
+{
+    sn_quitAction(save, quit, tString(message));
+}
+
 #include "../tron/gGame.h"
 void sn_quitAction(bool save, bool quit, tString message)
 {
-    gHelperUtility::Debug("quitAction","Action initiated.");
+    gHelperUtility::Debug("sn_quitAction", "Action initiated. Save:" + std::to_string(save) + " Quit:" + std::to_string(quit) + " Reason:", message);
 
     FileManager(tString("banned.txt"), tDirectories::Var()).Write(message);
 
@@ -5998,7 +6054,7 @@ void sn_quitAction(bool save, bool quit, tString message)
 
         if (se_playerWatchAutoRandomName)
         {
-            gHelperUtility::Debug("quitAction","Forcing random name.");
+            gHelperUtility::Debug("sn_quitAction", "Forcing random name.");
             forceRandomRename = true;
         }
     }
@@ -6006,14 +6062,14 @@ void sn_quitAction(bool save, bool quit, tString message)
     if (save)
         st_SaveConfig();
 
-    if (quit) {
-        gHelperUtility::Debug("quitAction","Scheduling quit for " + std::to_string(sn_bannedWatchQuitTime) + " seconds.");
+    if (quit)
+    {
+        gHelperUtility::Debug("sn_quitAction", "Scheduling quit for " + std::to_string(sn_bannedWatchQuitTime) + " seconds.");
         gTaskScheduler.schedule("bannedWatchQuit", sn_bannedWatchQuitTime, []
-        {
-            uMenu::quickexit = uMenu::QuickExit_Total;
-        });
+                                {
+                                  uMenu::quickexit = uMenu::QuickExit_Total;
+                                });
     }
-
 }
 
 void sn_bannedWatchAction(tString reason)
@@ -6023,6 +6079,8 @@ void sn_bannedWatchAction(tString reason)
 
 static void sn_bannedCMD(std::istream &s)
 {
-    sn_bannedWatchAction();
+    tString reason;
+    reason.ReadLine(s, true);
+    sn_bannedWatchAction(reason);
 }
-static tConfItemFunc sn_bannedCMDConf("BANNED",&sn_bannedCMD);
+static tConfItemFunc sn_bannedCMDConf("BANNED", &sn_bannedCMD);

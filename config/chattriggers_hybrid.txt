@@ -1,0 +1,144 @@
+// SORTED BY PRIORITY - HIGHEST TO LOWEST (TOP TO BOTTOM)
+//
+// Functions
+//
+
+// SORTED BY PRIORITY - HIGHEST TO LOWEST (TOP TO BOTTOM)
+//
+// Functions
+//
+$consolidate,$consolidatestatsfunc,-999,0
+$delete,$statsdeletefunc,-999,0
+$$,$masterfunc,-9999,0
+!help;$help,Avail commands !estat (exact stats) - !stats (general stats) - !kd (kills/deaths) - !lb (leaderboard) - !nick (nickname) - !seen - !rgb - !flip - !roll,-9999,0
+!estat;$estat;!es;$es,$exactstatfunc,-9999,0
+!names;$names,$exactstatfunc(name_history),-999,0
+!pt;$pt;$playt;!playt,$exactstatfunc(play_time),-999,0
+!cks;$cks;!ks;$ks;$killsteak;!killsteak,$leaderboardfunc(kill_streak),-999,0
+!lhks;$lhks;!lmks;$lmks,$leaderboardfunc(max_kill_streak),-999,0
+!hks;$hks;!mks;$mks;$maxkillsteak;!maxkills;!maxkillsteak;$maxkills,$exactstatfunc(max_kill_streak),-999,0
+!dice;$dice;!ro;$ro;!roll;$roll,1;2;3;4;5;6;7;8;9;10,0,0
+!flip;$flip,heads;tails,0,0
+$lbans;!lbans,$leaderboardfunc(bans),-9999,0
+!kills;$kills,$exactstatfunc(kills),-999,0
+!leaderboard;!lb;$lb;$leaderboard,$leaderboardfunc,-9999,0
+!kdnow;$kdnow;!kdn;$kdn,$KDfunc(now),-9999,0
+!kd;$kd,$KDfunc(total),-9999,0
+!nicknames;$nicknames;!nicks;$nicks,$leaderboardfunc(nick),-9999,0
+!nick;$nick,$nicknamefunc,-9999,0
+!rqs;$rqs,$leaderboardfunc(rq),-999,0
+!rq;$rq,$exactstatfunc(rq),-999,0
+!rev;$rev,$revfunc,-9999,0
+$bans;!bans,$exactstatfunc(bans),-9999,0
+!lls;$lls;!lseen;$lseen,$leaderboardfunc(seen),-999,0
+!who;!w;$who;$w,$leaderboardfunc(seen),-999,0
+$fastest;$speed,$leaderboardfunc(speed),-9999,0
+!chats;$chats;!chat;$chat,$chatscrollsearchfunc,-999,0
+$deaths,$leaderboardfunc(deaths),-9999,0
+$seen;!seen;$ls;!ls;$lastseen;!lastseen,$exactstatfunc(seen),-999,0
+$active;!active;$la;!la;$lastactive;!lastactive,$exactstatfunc(last_active),-999,0
+$lkillswhiledead;$lkwd;!lkillswhiledead;!lkwd,$leaderboardfunc(kills_while_dead),-999,0
+$killswhiledead;$kwd;!killswhiledead;!kwd,$exactstatfunc(kills_while_dead),-999,0
+$lpt;!lpt;$lplayt;!lplayt,$leaderboardfunc(play_time),-999,0
+$bsd;$color;!color;$rgb;!rgb,$exactstatfunc(rgb),-999,0
+$timesjoined;!timesjoined;$tj;!tj,$exactstatfunc(times_joined),-999,0
+$ltimesjoined;!ltimesjoined;$ltj;!ltj,$leaderboardfunc(times_joined),-999,0
+$search;!search,$searchfunc,-9999,0
+!stats;$stats;!stat;$stat,$statsfunc,-9999,0
+!st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
+$show;!show,$hidestatfunc(unprivate),-999,0
+$slap,$unvalidatedsayfunc(/admin slap $p1 0),-9999,0
+!s;$s,$statsfunc,-9999,0
+!st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
+!hn;!hidden;$hn;$hidden,$exactstatfunc(hide),-999,0
+$pr;!pr;!hide;$hide;$h ;!h ,$hidestatfunc(private),-999,0
+!uh;$uh;!upr;$upr;!unhide;$unhide,$hidestatfunc(unprivate),-999,0
+$rebuild,$unvalidatedsayfunc(/rebuild),-999,0
+$me,$unvalidatedsayfunc(/me),-999,0
+$ah;!ah,$exactstatfunc(ah),-999,0
+!8b;$8b;!8ball;$8ball,Yes;No;Maybe;Ask again later;Definitely;Without a doubt;Cannot predict now;My sources say no;Outlook good;Very doubtful;Signs point to yes;Don't count on it;Reply hazy try again;It is certain;Concentrate and ask again;Outlook not so good;Yes - definitely;Better not tell you now;Most likely;My reply is no,-999,0
+!timer;$timer,$timerfunc,-999,0
+$fps;!fps,$whatsthefunc(fps),-999,0
+$logs,$logfunc(list),-9999,0
+$log,$logfunc(store),-9999,0
+$msg,$unvalidatedsayfunc(/msg),-999,0
+$rps,$rpsgamefunc,-999,0
+$guess,$guessgamefunc,-999,0
+$com,$whatsthefunc(commands),-999,0
+$eval,$whatsthefunc(evaluation),-999,0
+$ip,$whatsthefunc(ip_address),-999,0
+$params,$encryptedunvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params ),-9999,0
+$,$sayfunc,-9999,0
+>,$sayoutloudfunc,-999,0
+
+batmoo,gothic city hero,0,1
+nice;wd;wp;g1;w1,ty,0,0
+gm;gz;ghz;gg,gg;GG,0,1
+good game; gm; gz; ghz; gg;gm ;gz ;ghz ;gg ,gg;GG,0,0
+dumb;idiot,$p1 dont say that;relax $p1;ok $p1 enough of that,0,0
+ur name;your name,my name is $p0;its $p0,0,0
+name,its $p1,0,0
+//
+// Events
+//
+
+$math,$numbcalcfunc,-9999,0
+$number,$numbadderfunc,-9999,1
+
+//
+// Functions
+//
+bans today,$whatsthefunc(times_banned_today),-999,0
+times ban,$whatsthefunc(times_banned),-999,0
+ban time;last ban;time ban,$whatsthefunc(last_time_banned),-999,0
+the time,where i am its $whatsthefunc(time) $p1;$whatsthefunc(time) here $p1;currently $whatsthefunc(time) here $p1,-999,0
+game time,game time is $whatsthefunc(game_time);currently $whatsthefunc(game_time) $p1;$whatsthefunc(game_time) is the game time $p1,-999,0
+current server,$whatsthefunc(current_server),-999,0
+srvr,$whatsthefunc(current_server),-999,0
+players today,$whatsthefunc(players_today),-999,0
+players this,$whatsthefunc(players_this_hour),-999,0
+i join;join time,you joined at $whatsthefunc(joined_time) $p1,-999,0
+here for;long have i;i been here,about $whatsthefunc(been_here_for) $p1,-999,0
+the score,$whatsthefunc(score),-999,0
+what color;my color;my rgb,$whatsthefunc(my_color),-999,0
+ban,$banfunc,-9999,0
+
+//
+// Acheivements
+//
+$acheivements_chats,$p1 you have now chatted $val1 times!;that was your $val1 chat $p1!,-999,0
+$acheivements_current_killstreak,$p1 is on a $val1 kill streak!,-999,0
+$acheivements_max_killstreak,$p1 just set a new max kill streak - $val1 kills!,-999,0
+$acheivements_kills,$p1 now has $val1 kills!,-999,0
+$acheivements_joins,$p1 has joined $val1 times!,-999,0
+$acheivements_bans,$p1 has been banned $val1 times!,-999,0
+
+
+//
+// Events
+//
+$banned,youre banned $p1!!!!!!!!!!!! you really want to test me?;youre banned $p1!!!!!!!!!!!! i could make you disappear!;youre banned $p1!!!!!!!!!!!! you dont know who youre dealing with!;youre banned $p1!!!!!!!!!!!! this can go one of two ways and you wont like the other!;youre banned $p1!!!!!!!!!!!! think carefully about your next move!;youre banned $p1!!!!!!!!!!!! you wont win this fight!;youre banned $p1!!!!!!!!!!!! i have the power to ruin your life!;youre banned $p1!!!!!!!!!!!! youre playing a dangerous game!,-9999,0
+$alreadybanned,$p1 is already banned;we already got $p1;$p1 was banned already,-9999,0
+$died,$unvalidatedsayfunc(/rgb random),-99999,1
+#$died,wd;gj;WD,0,1
+$diedother,gg;easy;nice try noob,0,1
+$diedbotsuicide,i did that,-9999,1
+$math,$numbcalcfunc,-9999,0
+$number,$numbadderfunc,-9999,1
+$enter,hey $p1;hi $p1;hello $p1;o/ $p1;hi $p1!;hia $p1,0,1
+$rejoin,hey $p1 its good to see you again!;$p1 welcome back!!;welcome back $p1;good to see you again $p1;wb $p1;hey wb $p1!;wb $p1,0,0
+$join,;hey all!;heyy all;hi all!;hey;heyy;hi!,0,1
+$left,noo;rip;aw,0,1
+$matchwinner,gg nice $p1;gg wp $p1;gm good one $p1,0,0
+$matchwinnerself,gg;gg wp all;gm,0,0
+$leftspec,welcome to the grid $p1;its time $p1;lets get it $p1,0,1
+$enterspec,the grid needs you $p1;come back $p1;noo come back $p1;$p1 where did you go?;where did $p1 go;where did you go $p1,0,1
+#$statssaved,Stats saved..,-999,1
+$ragequit,+1 rq for $p1 (left $val1 seconds after death),-9999,0
+$rename,new name i see $p1 eh?;interesting $p1;nice name $p1;i like the new name $p1,0,1
+
+//
+// Functions
+//
+
+$repeatedchars,$fliprepeatedcharsfunc,-9999,1

@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <map>
 #include <deque>
 #include <functional>
+#include <unordered_map>
 
 // Define this to disable compiling the new interface
 #define NEW_CONFIGURATION_NO_COMPILE
@@ -862,5 +863,25 @@ class TempConfItemManager
 void CommandShortcutLoader();
 bool CommandShortcutRunnerStr(tString &input);
 void CommandShortcutRunner(std::istream& input);
+
+
+extern tString se_variableStorageFile;
+struct VariableEntry {
+    tString type;
+    tString defaultValue;
+};
+
+extern std::unordered_map<tString, VariableEntry> se_variables;
+
+extern TempConfItemManager *variableConfItems;
+
+void VariableCreatorAddVariable(const tString &type, const tString &varName, const tString &defaultValue);
+bool SaveVariableCreatorVariablesToFile();
+void VariableCreatorLoader();
+void RemoveVariableCreatorVariable(const tString &varName);
+void ListVariableCreatorVariables();
+void ClearVariableCreatorVariables();
+void VariableCreatorCommand(std::istream &s);
+
 #endif
 

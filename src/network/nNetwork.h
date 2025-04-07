@@ -48,6 +48,8 @@ extern nBasicNetworkSystem sn_BasicNetworkSystem;
 extern bool roundWinnerProcessed;
 
 extern int sn_updateVersionOverrideValue;
+extern tString sn_ourRealIPS;
+extern tString sn_disallowJoinWithIP;
 
 void updateVersionOverride(int version);
 
@@ -57,7 +59,9 @@ class tOutput;
 
 void sn_bannedWatchAction(tString message = tString("banned"));
 void sn_quitAction(bool save = true, bool quit = true, tString message = tString("banned"));
+void sn_quitAction(bool save = true, bool quit = true, std::string message = "");
 extern bool sn_bannedWatch;
+extern tString sn_bannedWatchStr;
 extern bool sn_bannedWatchQuit;
 typedef double nTimeAbsolute;				// typedef for absolute time variables in network code
 typedef double nTimeRolling;				// typedef for time variables in network code that don't have to measure large time differences

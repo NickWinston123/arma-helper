@@ -1868,9 +1868,6 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
     if (p && !p->IsSilenced() && se_enableChat)
     {
 
-        if (sg_playerSilencedWatch && p->isLocal())
-            playerMessages.AddIncomingMessage(message);
-
         tColoredString actualMessage(message);
         tString colorlessMessage(tColoredString::RemoveColors(message));
 
@@ -1939,37 +1936,41 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             ePlayerStats::addMessage(p, colorlessMessage.SubStr(nameLength).TrimWhitespace());
         }
 
+
+        tString params(colorlessMessage);
+        tString preAppend;
+        bool initiate             = true;
+        bool preAppended          = false;
+        bool validPrivateMessage  = privateMessage && ourPlayer;
+
+        if (validPrivateMessage)
+        {
+            if (se_playerMessageTriggersChatPrivateMsgs && sentToEnabledPlayer)
+            {
+                preAppend << "/msg "
+                        << p->GetName().Filter()
+                        << " ";
+                preAppended = true;
+                params = privateMessageParams;
+            }
+            else
+            {
+                initiate = false;
+            }
+        }
+        else
+        {
+            params = params.SubStr(nameLength);
+        }
+
+        if (p->isLocal())
+            ePlayerMessages.AddIncomingMessage(params);
+
         if (se_playerMessageTriggers && se_playerMessageTriggersChat &&
             (p->pID == -1 ||
             se_playerMessageTriggersReactToSelf  && tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1) ||
             se_playerMessageTriggersReactToLocal && !tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1)) && !encyptedMessage)
         {
-            tString params(colorlessMessage);
-            tString preAppend;
-            bool initiate             = true;
-            bool preAppended          = false;
-            bool validPrivateMessage  = privateMessage && ourPlayer;
-            
-            if (validPrivateMessage)
-            {
-                if (se_playerMessageTriggersChatPrivateMsgs && sentToEnabledPlayer)
-                {
-                    preAppend << "/msg "
-                            << p->GetName().Filter()
-                            << " ";
-                    preAppended = true;
-                    params = privateMessageParams;
-                }
-                else
-                {
-                    initiate = false;
-                }
-            }
-            else
-            {
-                params = params.SubStr(nameLength);
-            }
-
             if (!preAppended && se_playerMessageTriggersChatAlwaysSendMsg)
             {
                     preAppend << "/msg "
@@ -1977,10 +1978,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
                               << " ";
             }
 
-            if (p->isLocal() && tIsEnabledForPlayer(se_playerMessageEnabledPlayers, p->pID+1))
-                eChatbotMessages.AddIncomingMessage(params);
-            
-            if (initiate) 
+            if (initiate)
                 eChatBot::InitiateAction(p, params, false, preAppend);
         }
 
@@ -5239,11 +5237,7 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
     s = s.SubStr(0, se_SpamMaxLen - 1);
     s.RecomputeLength();
 
-    if (sg_playerSilencedWatch)
-        playerMessages.AddOutgoingMessage(s);
-
-    if (se_playerMessageTriggers && chatBotMessage)
-        eChatbotMessages.AddOutgoingMessage(s);
+    ePlayerMessages.AddOutgoingMessage(s);
 
 #endif // if not dedicated
 
@@ -8721,9 +8715,16 @@ void ePlayerNetID::ReadSync(nMessage &m)
                     // automatically removed player from currentTeam
                     newCurrentTeam->AddPlayerDirty(this);
                     newCurrentTeam->UpdateProperties();
+                    lastTeamCreateTime = tSysTimeFloat();
+
+                    if (se_playerMessageTriggers && se_playerMessageSpecLeft && !oldTeam && (tSysTimeFloat() - createdTime()) > se_GameTime())
+                        eChatBot::InitiateAction(this, tString("$leftspec"), true);
                 }
                 else
                 {
+                    if (se_playerMessageTriggers && se_playerMessageSpecEnter)
+                        eChatBot::InitiateAction(this, tString("$enterspec"), true);
+
                     currentTeam->RemovePlayer(this);
                 }
             }
@@ -8749,6 +8750,7 @@ void ePlayerNetID::ReadSync(nMessage &m)
 
     if (!m.End())
     {
+        con << "team name update\n";
         m >> teamnameNew;
 
         if (lastTeamName <= lastTeamNameSync || teamnameSync != teamnameNew)
@@ -9036,7 +9038,7 @@ void sg_storeChatLogNoDataContent(std::istream &s)
 
 }
 
-static tConfItemFunc sg_storeChatLogNoDataContentConf("STORE_CHAT_LOG_NO_DATA", &sg_storeChatLogNoDataContent);
+static tConfItemFunc sg_storeChatLogNoDataContentConf("CHAT_LOG_NO_DATA_INPUT", &sg_storeChatLogNoDataContent);
 
 
 void se_SaveToChatLog(tOutput const &out)
@@ -9051,7 +9053,6 @@ void se_SaveToChatLog(tOutput const &out)
             se_chatWriter.write();
         }
 
-
         if (se_chatLog)
         {
             FileManager fileManager(tString("chatlog.txt"), tDirectories::Log());
@@ -9064,22 +9065,18 @@ void se_SaveToChatLog(tOutput const &out)
         if (se_chatLogNoData)
         {
             FileManager fileManager(tString("chatlognodata.txt"), tDirectories::Log());
-            // con << "Line Before: '" << colStr << "'\n";
             std::string finalLine = tColoredString::RemoveColors(tColoredString::RemoveBadColors(colStr)).stdString();
-            // con << "Line After removing colors: '" << finalLine << "'\n";
 
             if (se_chatLogNoDataClearNames)
             {
                 for (int i = 1; i < se_PlayerNetIDs.Len(); i++)
                 {
                     std::string nameToReplace = (se_PlayerNetIDs[i]->GetName().stdString() + ": ");
-                    // con << "Name to replace: '" << nameToReplace << "'\n";
 
                     if (!se_PlayerNetIDs[i]->isLocal() || !se_chatLogNoDataClearLocal)
                     {
 
                         size_t startPos = finalLine.find(nameToReplace);
-                        // con << "Non Local, Got startPos: '" << startPos << "'\n";
                         while (startPos != std::string::npos)
                         {
                             finalLine.replace(startPos, nameToReplace.length(), "");
@@ -9090,10 +9087,8 @@ void se_SaveToChatLog(tOutput const &out)
                     {
                         size_t startPos = finalLine.find(nameToReplace);
 
-                        // con << "Local, Got startPos: '" << startPos << "'\n";
                         if (startPos != std::string::npos)
                         {
-
                             finalLine.clear();
                             break;
                         }
@@ -9102,15 +9097,22 @@ void se_SaveToChatLog(tOutput const &out)
             }
             else if (se_chatLogNoDataClearLocal)
             {
-
                 for (auto localNetPlayer : se_GetLocalPlayers())
                 {
                     std::string nameToReplace = (localNetPlayer->GetName().stdString() + ": ");
-                    // con << "Name to replace: '" << nameToReplace << "'\n";
+                    std::string msgToReplace  = (localNetPlayer->GetName().stdString() + " --> ");
 
-                    size_t startPos = finalLine.find(nameToReplace);
-                    // con << "Local, Got startPos: '" << startPos << "'\n";
-                    if (startPos != std::string::npos)
+                    size_t namePos = finalLine.find(nameToReplace);
+                    bool isPrivateMsg = finalLine.find(" --> " + nameToReplace) != std::string::npos;
+
+                    if ((namePos != std::string::npos && !isPrivateMsg) || finalLine.find(msgToReplace) != std::string::npos)
+                    {
+                        finalLine.clear();
+                        break;
+                    }
+
+
+                    if (finalLine.find(msgToReplace) != std::string::npos)
                     {
                         finalLine.clear();
                         break;
@@ -9118,7 +9120,6 @@ void se_SaveToChatLog(tOutput const &out)
                 }
             }
 
-            // con << "WRITING LINE TO FILE : '" << finalLine << "'\n";
             if (!finalLine.empty())
                 fileManager.Write(tString(finalLine));
         }
@@ -10865,8 +10866,8 @@ void ePlayerNetID::Update(ePlayer* updatePlayer)
 
         if (nameSpeakWords.Empty())
             nameSpeakCheck = false;
-    } 
-    else 
+    }
+    else
         forceCreatePlayer = -1;
 
     playerUpdateIteration++;
@@ -14774,3 +14775,50 @@ void ePlayerNetID::RespawnPlayer(bool local)
         cycle->updateColor();
     }
 }
+
+void eMessageTracker::AddOutgoingMessage(const tString &msg)
+{
+    if (outgoingMessages.size() >= maxSize)
+        outgoingMessages.pop_front();
+    gHelperUtility::Debug("eMessageTracker", name, "- Adding outgoing message: " + msg.stdString());
+
+    outgoingMessages.push_back(msg);
+}
+
+void eMessageTracker::AddIncomingMessage(const tString &msg)
+{
+    if (incomingMessages.size() >= maxSize)
+        incomingMessages.pop_front();
+    gHelperUtility::Debug("eMessageTracker", name, "- Adding incoming message: " + msg.stdString());
+    incomingMessages.push_back(msg);
+}
+
+bool eMessageTracker::CheckIfSilenced()
+{
+    if (outgoingMessages.empty())
+    {
+        gHelperUtility::Debug("eMessageTracker", name, "- No outgoing messages. Cannot be silenced.");
+        return false;
+    }
+
+    const tString lastOutgoing = outgoingMessages.back();
+    gHelperUtility::Debug("eMessageTracker", name, "- Last outgoing: " + lastOutgoing.stdString());
+
+    int index = 0;
+    for (auto it = incomingMessages.rbegin(); it != incomingMessages.rend(); ++it, ++index)
+    {
+        gHelperUtility::Debug("eMessageTracker", name, "- Checking incoming[" + std::to_string(index) + "]: " + it->stdString());
+
+        if (it->StartsWith(lastOutgoing))
+        {
+            gHelperUtility::Debug("eMessageTracker", name, "- Matched incoming message. Not silenced.");
+            return false;
+        }
+    }
+
+    gHelperUtility::Debug("eMessageTracker", name, "- No incoming message matched last outgoing. Likely silenced.");
+    return true;
+}
+
+
+extern eMessageTracker ePlayerMessages("ePlayerMessages");

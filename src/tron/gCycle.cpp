@@ -347,6 +347,8 @@ bool sg_smarterBotAFKCheck = false;
 static tConfItem<bool> sg_smarterBotAFKCheckConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK", sg_smarterBotAFKCheck);
 REAL sg_smarterBotAFKCheckTime = 8;
 static tConfItem<REAL> sg_smarterBotAFKCheckTimeConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_TIME", sg_smarterBotAFKCheckTime);
+REAL sg_smarterBotAFKCheckCreatedTeamTimeMult = 1.5;
+static tConfItem<REAL> sg_smarterBotAFKCheckCreatedTeamTimeMultConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_CREATED_TEAM_TIME_MULT", sg_smarterBotAFKCheckCreatedTeamTimeMult);
 bool sg_smarterBotAFKCheckIfChatting = true;
 static tConfItem<bool> sg_smarterBotAFKCheckIfChattingConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_IF_CHATTING", sg_smarterBotAFKCheckIfChatting);
 bool sg_smarterBotAFKCheckIfActive = true;
@@ -1272,13 +1274,14 @@ REAL gSmarterBot::annoyanceCheck(REAL currentTime)
         {
             totalPlayerCount++;
 
-            bool isAlive           = (cycle && cycle->Alive());
-            bool isLocal           = player->isLocal();
-            bool isChattingTooLong = player->ChattingTime() > sg_smarterBotAFKCheckTime;
-            bool recentlyActive    = player->LastActivity() < sg_smarterBotAFKCheckIfActiveTime;
-            bool joinedRecently    = (tSysTimeFloat() - player->createdTime()) < se_GameTime();
-            bool turnedThisRound   = (cycle && cycle->lastTurnTime > 0) || (!cycle && player->lastTurnTime > 0);
-            bool isActive          = joinedRecently || ((recentlyActive || turnedThisRound) && !isChattingTooLong);
+            bool isAlive             = (cycle && cycle->Alive());
+            bool isLocal             = player->isLocal();
+            bool isChattingTooLong   = player->ChattingTime() > sg_smarterBotAFKCheckTime;
+            bool recentlyActive      = player->LastActivity() < sg_smarterBotAFKCheckIfActiveTime;
+            bool joinedRecently      = (tSysTimeFloat() - player->createdTime()) < se_GameTime();
+            bool turnedThisRound     = (cycle && cycle->lastTurnTime > 0) || (!cycle && player->lastTurnTime > 0);
+            bool createdTeamRecently = player->lastTeamCreateTime > 0 && tSysTimeFloat() - player->lastTeamCreateTime < (sg_smarterBotAFKCheckTime*sg_smarterBotAFKCheckCreatedTeamTimeMult);
+            bool isActive            = createdTeamRecently || joinedRecently || ((recentlyActive || turnedThisRound) && !isChattingTooLong);
 
             if (isAlive)
             {
@@ -1292,7 +1295,7 @@ REAL gSmarterBot::annoyanceCheck(REAL currentTime)
             }
             else
             {
-                if (turnedThisRound && !isChattingTooLong)
+                if (isActive)
                     totalActivePlayers++;
             }
 
@@ -1318,6 +1321,9 @@ REAL gSmarterBot::annoyanceCheck(REAL currentTime)
 
                 if (joinedRecently)
                     status += "Joined recently. ";
+
+                if (createdTeamRecently)
+                    status += "Created team recently. ";
 
                 if (isActive)
                     status += "Classified as ACTIVE.";
@@ -1400,7 +1406,7 @@ bool gSmarterBot::afkQuitCheck()
     
     if (timeSinceLastTurn > sg_smarterBotAFKCheckQuitTime)
     {
-        sn_quitAction(true, true);
+        sn_quitAction(true, true, "gSmarterBot::afkQuitCheck");
         return true;
     }
     return false;
@@ -2973,6 +2979,7 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos, const eCoord &d, ePlayerNetID *p)
 {
     eGameObject::number_of_gCycles++;
 
+    
     se_cycleCreatedWriter << p->GetLogName() << this->MapPosition().x << this->MapPosition().y << this->Direction().x << this->Direction().y;
     if (p->CurrentTeam())
         se_cycleCreatedWriter << Team()->Name().Filter();
@@ -3019,6 +3026,8 @@ gCycle::gCycle(eGrid *grid, const eCoord &pos, const eCoord &d, ePlayerNetID *p)
         Player()->lastBannedPlayerTime = 0;
 
     }
+    
+    lastSync = tSysTimeFloat();
 }
 
 gCycle::~gCycle()
@@ -6489,6 +6498,8 @@ gCycle::gCycle(nMessage &m)
     if (se_playerStats)
         ePlayerStats::setColor(Player(),Player()->r,Player()->g,Player()->b);
     }
+    
+    lastSync = tSysTimeFloat();
 }
 void gCycle::WriteCreate(nMessage &m)
 {
@@ -6503,6 +6514,8 @@ static nVersionFeature sg_verletIntegration(7);
 void gCycle::WriteSync(nMessage &m)
 {
     //	eNetGameObject::WriteSync(m);
+
+    lastSync = tSysTimeFloat();
 
     if (SyncedUser() == Owner())
     {
@@ -7008,7 +7021,7 @@ void gCycle::ReadSync(nMessage &m)
     {
         ePlayerNetID *killer = GetPlayerHuntedBy();
 
-        if (killer)
+        if (Player() && killer)
         {
             killer->lastKilledPlayer             = Player();
             Player()->lastDiedByPlayer           = killer;
@@ -7020,7 +7033,7 @@ void gCycle::ReadSync(nMessage &m)
 
         }
 
-        if (se_playerStats)
+        if (se_playerStats && Player())
             ePlayerStats::addDeath(Player());
 
         if (se_playerMessageTriggers && (sg_playerMessageDeathSelf || sg_playerMessageDeathOther))

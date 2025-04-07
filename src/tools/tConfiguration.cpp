@@ -836,11 +836,11 @@ void tConfItemBase::WriteAllToFile()
             //  fetch the value set for this setting.
             ci->FetchVal(value);
 
-            mess << ci->title 
+            mess << ci->title
                  << " ";
 
             mess.SetPos( sim_maxlen+2, false );
-            mess << value 
+            mess << value
                  << " "
                  << " # "
                  << help
@@ -888,7 +888,7 @@ void tConfItemBase::WriteAllLevelsToFile()
             tString mess;
 
             mess << "ACCESS_LEVEL "
-                 << ci->title 
+                 << ci->title
                  << " "
                  << ci->requiredLevel;
 
@@ -2592,11 +2592,13 @@ static void ComandShortcutManager(std::istream &s)
             << "Usage for removing command shortcuts:      COMMAND_SHORTCUT_MANAGER REMOVE <commandName>\n"
             << "Usage for listing all command shortcuts:   COMMAND_SHORTCUT_MANAGER LIST\n"
             << "Usage for clearing all command shortcuts:  COMMAND_SHORTCUT_MANAGER CLEAR\n"
-            << "Command shortcuts beginning with '/' can be used in both chat and the console.\n";
-
+            << "Special note:                              Commands beginning with '/' can be used in both chat and console.\n"
+            << "Example:                                   COMMAND_SHORTCUT_MANAGER ADD /zoom CAMERA_ZOOM 0.5\n"
+            << "\nCurrent shortcuts:\n";
+    
         ListCommandShortcutCommands();
         return;
-    }
+    }    
 
     int pos = 0;
     tString action = params.ExtractNonBlankSubString(pos).TrimWhitespace().ToLower();
@@ -2666,3 +2668,208 @@ void CommandShortcutLoader()
 }
 
 
+// VARIABLE CREATOR
+tString se_variableStorageFile("variableStorage.txt");
+static tConfItem<tString> se_variableStorageFileConf("VARIABLE_STORAGE_FILE", se_variableStorageFile);
+
+std::unordered_map<tString, VariableEntry> se_variables;
+TempConfItemManager *variableConfItems = nullptr;
+
+void VariableCreatorAddVariable(const tString &type, const tString &varName, const tString &defaultValue)
+{
+    tString command = varName.ToUpper();
+    if (tConfItemBase::GetConfigItem(command))
+    {
+        con << "Variable " << command << " already exists.\n";
+        return;
+    }
+    
+    if (!variableConfItems)
+        variableConfItems = new TempConfItemManager();
+
+    if (type == "tString")
+    {
+        tString *newVar = new tString(defaultValue);
+        tConfItem<tString> *newConfItem = new tConfItem<tString>(command, *newVar);
+        variableConfItems->StoreConfitem(newConfItem);
+    }
+    else if (type == "int")
+    {
+        int defaultInt = std::atoi(defaultValue.c_str());
+        int *newVar = new int(defaultInt);
+        tConfItem<int> *newConfItem = new tConfItem<int>(command, *newVar);
+        variableConfItems->StoreConfitem(newConfItem);
+    }
+    else if (type == "REAL")
+    {
+        REAL defaultReal = static_cast<REAL>(std::atof(defaultValue.c_str()));
+        REAL *newVar = new REAL(defaultReal);
+        tConfItem<REAL> *newConfItem = new tConfItem<REAL>(command, *newVar);
+        variableConfItems->StoreConfitem(newConfItem);
+    }
+    else if (type == "bool")
+    {
+        bool boolVal = (defaultValue == "1" || defaultValue.ToLower() == "true");
+        bool *newVar = new bool(boolVal);
+        tConfItem<bool> *newConfItem = new tConfItem<bool>(command, *newVar);
+        variableConfItems->StoreConfitem(newConfItem);
+    }
+    else
+    {
+        con << "Unsupported type: " << type << "\n";
+        return;
+    }
+    con << "Added variable " << command << " of type " << type
+        << " with default value of " << defaultValue << ".\n";
+}
+
+bool SaveVariableCreatorVariablesToFile()
+{
+    FileManager fileManager(se_variableStorageFile, tDirectories::Config());
+    fileManager.Clear(false);
+    tString allVars;
+    int count = 0;
+    int total = se_variables.size();
+    for (auto &kv : se_variables)
+    {
+        allVars << kv.first << "," << kv.second.type << "," << kv.second.defaultValue;
+        count++;
+        if (count < total)
+            allVars << "\n";
+    }
+    if (fileManager.Write(allVars) && total > 0)
+        con << "Saved " << total << " variable(s) to file.\n";
+    return true;
+}
+
+void VariableCreatorLoader()
+{
+    FileManager fileManager(se_variableStorageFile, tDirectories::Config());
+    tArray<tString> lines = fileManager.Load();
+    for (int i = 0; i < lines.Len(); i++)
+    {
+        tString line = lines[i].TrimWhitespace();
+        if (line.empty()) continue;
+        tArray<tString> parts = line.Split(",");
+        if (parts.Len() == 3)
+        {
+            tString varName = parts[0].ToUpper().TrimWhitespace();
+            tString type = parts[1].TrimWhitespace();
+            tString defaultValue = parts[2].TrimWhitespace();
+            se_variables[varName] = { type, defaultValue };
+            VariableCreatorAddVariable(type, varName, defaultValue);
+        }
+        else
+        {
+            con << "Malformed variable line: '" << line << "'\n";
+        }
+    }
+    con << "Loaded " << se_variables.size() << " variable(s) from file.\n";
+}
+
+void RemoveVariableCreatorVariable(const tString &varName)
+{
+    tString command = varName.ToUpper();
+    if (!tConfItemBase::GetConfigItem(command))
+    {
+        con << "Variable " << command << " does not exist.\n";
+        return;
+    }
+    se_variables.erase(command);
+    if (variableConfItems)
+        variableConfItems->DeleteConfitem(command);
+    SaveVariableCreatorVariablesToFile();
+    con << "Removed variable " << command << ".\n";
+}
+
+void ListVariableCreatorVariables()
+{
+    con << "List of created variables:\n";
+    if (se_variables.empty())
+    {
+        con << "  No variables found.\n";
+        return;
+    }
+    int count = 0;
+    for (auto &entry : se_variables)
+    {
+        con << " " << ++count << ") " << entry.first << " (" << entry.second.type
+            << ") -> default: " << entry.second.defaultValue << "\n";
+    }
+}
+
+void ClearVariableCreatorVariables()
+{
+    se_variables.clear();
+    if (variableConfItems)
+        variableConfItems->DeleteConfitems();
+    FileManager fileManager(se_variableStorageFile, tDirectories::Config());
+    fileManager.Clear(false);
+    con << "Cleared all variables.\n";
+}
+
+void VariableCreatorCommand(std::istream &s)
+{
+    tString params;
+    params.ReadLine(s, true);
+
+    if (params.empty())
+    {
+        con << "Usage for adding config variables:         VARIABLE_CREATOR_MANAGER ADD <type> <variableName> [defaultValue]\n"
+            << "Usage for removing config variables:       VARIABLE_CREATOR_MANAGER REMOVE <variableName>\n"
+            << "Usage for listing all config variables:    VARIABLE_CREATOR_MANAGER LIST\n"
+            << "Usage for clearing all config variables:   VARIABLE_CREATOR_MANAGER CLEAR\n"
+            << "Valid types:                               tString, int, REAL, bool\n"
+            << "Example:                                   VARIABLE_CREATOR_MANAGER ADD tString MY_VAR Hello\n"
+            << "\nCurrent variables:\n";
+
+        ListVariableCreatorVariables();
+        return;
+    }
+
+    int pos = 0;
+    tString action = params.ExtractNonBlankSubString(pos).TrimWhitespace().ToLower();
+
+    if (action == "add")
+    {
+        tString type     = params.ExtractNonBlankSubString(pos).TrimWhitespace();
+        tString varName  = params.ExtractNonBlankSubString(pos).TrimWhitespace();
+        tString defaultValue = params.SubStr(pos).TrimWhitespace();
+
+        if (type.empty() || varName.empty())
+        {
+            con << "Usage: ADD <type> <variableName> [defaultValue]\n";
+            return;
+        }
+
+        se_variables[varName.ToUpper()] = { type, defaultValue };
+        VariableCreatorAddVariable(type, varName, defaultValue);
+        SaveVariableCreatorVariablesToFile();
+    }
+    else if (action == "remove")
+    {
+        tString varName = params.ExtractNonBlankSubString(pos).TrimWhitespace().ToUpper();
+
+        if (varName.empty())
+        {
+            con << "Usage: REMOVE <variableName>\n";
+            return;
+        }
+
+        RemoveVariableCreatorVariable(varName);
+    }
+    else if (action == "list")
+    {
+        ListVariableCreatorVariables();
+    }
+    else if (action == "clear")
+    {
+        ClearVariableCreatorVariables();
+    }
+    else
+    {
+        con << "Unknown action: '" << action
+            << "'. Valid actions are ADD, REMOVE, LIST, CLEAR.\n";
+    }
+}
+static tConfItemFunc VariableCreatorConf("VARIABLE_CREATOR_MANAGER", &VariableCreatorCommand);

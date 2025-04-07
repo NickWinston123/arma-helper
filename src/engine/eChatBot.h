@@ -34,8 +34,6 @@ std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers();
 struct eChatBotStats;
 class eChatBotData;
 
-extern eMessageTracker eChatbotMessages;
-
 enum ResponseType
 {
     NORMAL,

@@ -600,12 +600,31 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
              << tThemedTextBase.MainColor()
              << ")\n";
 
+    if (p->isLocal())
+    {
+        listInfo << " IP: "
+                << tThemedTextBase.ItemColor()
+                << sn_GetMyAddress()
+                << ")\n";
+    }
+
     listInfo << " Created: "
              << tThemedTextBase.ItemColor() << getTimeStringBase(p->createTime_)
              << tThemedTextBase.MainColor() << "\n"
+             << " Team Created time: "
+             << st_GetFormatTime(tSysTimeFloat() - p->lastTeamCreateTime, true)
+             << " ("
+             << p->lastTeamCreateTime
+             << ")\n"
              << " Last Activity: "
              << tThemedTextBase.ItemColor() << st_GetFormatTime(p->LastActivity(), true)
              << tThemedTextBase.MainColor() << "\n";
+
+             listInfo << " Last turn time: "
+                      << st_GetFormatTime(tSysTimeFloat() - p->lastTurnTime, true)
+                      << " ("
+                      << p->lastTurnTime
+                      << ")\n";
 
     if (p->ChattingTime() > 0)
         listInfo << " Chatting For: "
@@ -637,11 +656,6 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
                  << tThemedTextBase.ItemColor()
                  << pCycle->Lag()
                  << tThemedTextBase.MainColor()
-                 << ")\n"
-                 << " Last turn time: "
-                 << st_GetFormatTime(tSysTimeFloat() - pCycle->lastTurnTime, true)
-                 << " ("
-                 << pCycle->lastTurnTime
                  << ")\n";
 
         if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
@@ -1069,7 +1083,30 @@ bool SpeakCommand::execute(tString args)
     int pos = 0;
     tString PlayerStr = args.ExtractNonBlankSubString(pos);
 
-    ePlayerNetID *targetPlayer = ePlayerNetID::FindPlayerByName(PlayerStr);
+    ePlayerNetID *targetPlayer = nullptr;
+
+    if (!PlayerStr.empty() && PlayerStr.isNumber())
+    {
+        int id = atoi(PlayerStr) - 1;
+        ePlayer *p = ePlayer::PlayerConfig(id);
+        if (p && p->netPlayer)
+            targetPlayer = p->netPlayer;
+        else
+        {
+            con << CommandLabel()
+                << ErrorColor()
+                << "No local/net player for ID '"
+                << ItemColor()
+                << PlayerStr
+                << ErrorColor()
+                << "'\n";
+            return true;
+        }
+    }
+    else
+    {
+        targetPlayer = ePlayerNetID::FindPlayerByName(PlayerStr);
+    }
 
     REAL delay = se_speakCommandDelay;
     bool flag = delay > 0;
@@ -1082,18 +1119,25 @@ bool SpeakCommand::execute(tString args)
             delay = flag = 0;
 
         if (delay > 0)
+        {
             con << CommandLabel()
                 << "Sending message with delay: '"
                 << ItemColor()
                 << delay
                 << HeaderColor() << "'\n";
+        }
+
         targetPlayer->Chat(chatString);
+
         // eChatBot::scheduleMessageTask(targetPlayer, chatString, flag, delay, delay * 0.5);
     }
     else if (targetPlayer && !targetPlayer->isLocal())
+    {
         con << CommandLabel()
             << ErrorColor()
             << "Not a local player.\n";
+    }
+
     return true;
 }
 
@@ -1256,7 +1300,7 @@ bool SpectateCommand::execute(tString args)
         }
         else
         {
-            con << CommandLabel()   
+            con << CommandLabel()
                 << ErrorColor()
                 << "No local / net player for ID '"
                 << ItemColor()
@@ -1359,7 +1403,7 @@ bool JoinCommand::execute(tString args)
             local_p->spectate = false;
         }
     }
-    
+
     if (net_p && !bool(net_p->CurrentTeam()))
     {
         con << CommandLabel()
@@ -2249,7 +2293,7 @@ bool EncryptCommand::handleEncryptCommandAction(ePlayerNetID *player, tString me
         messageToSend << "/msg " << player->GetName().Filter() << " " << feedback << "\n";
         for (auto localNetPlayer : se_GetLocalPlayers())
         {
-            eChatbotMessages.AddOutgoingMessage(feedback);
+            ePlayerMessages.AddOutgoingMessage(feedback);
             se_NewChatMessage(localNetPlayer, messageToSend)->BroadCast();
             break;
         }

@@ -389,6 +389,7 @@ public:
     REAL lastDiedByTime = 0;
     REAL lastBannedPlayerTime = 0;
     REAL lastTurnTime = -999;
+    REAL lastTeamCreateTime = -999;
 
     ePlayerNetID * lastMessagedPlayer;
     ePlayerNetID * lastMessagedByPlayer;
@@ -1078,44 +1079,23 @@ public:
     std::deque<tString> outgoingMessages;
     std::deque<tString> incomingMessages;
     size_t maxSize;
+    std::string name;
 
 public:
-    explicit eMessageTracker(size_t maxSizeVal = 5)
-        : maxSize(maxSizeVal)
+    explicit eMessageTracker(std::string name = "", size_t maxSizeVal = 5)
+        : maxSize(maxSizeVal), name(name)
     {
     }
 
-    void AddOutgoingMessage(const tString &msg)
-    {
-        if (outgoingMessages.size() >= maxSize)
-            outgoingMessages.pop_front();
-        outgoingMessages.push_back(msg);
-    }
+    void AddOutgoingMessage(const tString &msg);
 
-    void AddIncomingMessage(const tString &msg)
-    {
-        if (incomingMessages.size() >= maxSize)
-            incomingMessages.pop_front();
-        incomingMessages.push_back(msg);
-    }
+    void AddIncomingMessage(const tString &msg);
 
-    bool CheckIfSilenced() const
-    {
-        if (outgoingMessages.empty())
-            return false;
-
-        const tString lastOutgoing = outgoingMessages.back();
-        for (auto it = incomingMessages.rbegin(); it != incomingMessages.rend(); ++it)
-        {
-            if (it->StartsWith(lastOutgoing))
-                return false;
-        }
-        return true;
-    }
+    bool CheckIfSilenced();
+    
 };
 
-
-static eMessageTracker playerMessages;
+extern eMessageTracker ePlayerMessages;
 
 
 #endif

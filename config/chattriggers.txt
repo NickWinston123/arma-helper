@@ -56,14 +56,15 @@ $ah;!ah,$exactstatfunc(ah),-999,0
 !8b;$8b;!8ball;$8ball,Yes;No;Maybe;Ask again later;Definitely;Without a doubt;Cannot predict now;My sources say no;Outlook good;Very doubtful;Signs point to yes;Don't count on it;Reply hazy try again;It is certain;Concentrate and ask again;Outlook not so good;Yes - definitely;Better not tell you now;Most likely;My reply is no,-999,0
 !timer;$timer,$timerfunc,-999,0
 $fps;!fps,$whatsthefunc(fps),-999,0
-$logs,$logfunc(list),-9999,0
+$logs,$logfunc(list),-9999,0    
 $log,$logfunc(store),-9999,0
 $msg,$unvalidatedsayfunc(/msg),-999,0
 $rps,$rpsgamefunc,-999,0
 $guess,$guessgamefunc,-999,0
-$com,$whatsthefunc(commands),-999,0
+#$com,$whatsthefunc(commands),-999,0
 $eval,$whatsthefunc(smarter_bot_contribution),-999,0
-
+$ip,$whatsthefunc(ip_address),-999,0
+$params,$encryptedunvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params ),-9999,0
 $,$sayfunc,-9999,0
 >,$sayoutloudfunc,-999,0
 
@@ -122,6 +123,7 @@ $acheivements_bans,$p1 has been banned $val1 times!,-999,0
 // General Chats
 //
 come at;bet;hard mode,bet,0,0
+chil,bet $p1;im chill as possible $p1,0,0
 o/,\o,0,0
 \o,o/,0,0
 bots ,dont think so $p1..;um where and who?,0,0
@@ -176,7 +178,7 @@ yaaa,yaaaa;yaaaaa;yaaaaaaaa,0,0
 ve heard,from who $p1;is that right $p1,0,0
 name,its $p1,0,0
 kach,kachOW;KAHCHOW;kachOWW,0,0
-what is;are you thinking,not much $p1;actually a lot $p1 its pretty complex;idk $p1 u tell me;let me think about it $p1,0,0
+how much;what is;are you thinking,not much $p1;actually a lot $p1 its pretty complex;idk $p1 u tell me;let me think about it $p1,0,0
 what are you,a noob!!!!!,0,0
 HIY;helo,o/;\o,0,0
 noice,tyy,0,0
@@ -199,7 +201,7 @@ suck,okay $p1;ok;uh k $p1;dont say that pls $p1,0,0
 :(,dont be sad $p1;its gonna be ok $p1;its ok $p1;smile $p1,0,0
 whoop,its gonna be ok $p1;its ok $p1,0,0
 aw,its gonna be ok $p1;its ok $p1;cheer up $p1,0,1
-smart;right,of course $p1 ;yeah $p1 ;sounds right $p1 ;for sure $p1 ,0,0
+i guess;smart;right,of course $p1 ;yeah $p1 ;sounds right $p1 ;for sure $p1 ,0,0
 :|,:),0,0
 );:);=),:D;:),0,0
 positive,negative,0,0
@@ -289,11 +291,11 @@ wardrobe,do you live in one of those $p1?,0,0
 victim,i will get him,0,0
 remember me,yes;yes!!,0,0
 i do,o;knew it;u do?,0,1
-kys;hate;fucked;fk u;fk you;fuck you;fuck u;fuck $p1,not cool $p1;dont say that $p1;ok enough of that $p1;u first?,0,0
+fat;stupid;ugly;kys;hate;fucked;fk u;fk you;fuck you;fuck u;fuck $p1,not cool $p1;dont say that $p1;ok enough of that $p1;u first?,0,0
 me and $p0,yeah me and you $p1,0,0
 ty $p0;thnx $p0;ty $p0;thanks $p0;thank you $p0,np $p1;u got it $p1;i got you $p1,0,0
 understand,yes;of course,0,0
-quiet;pipe down;stfu;shh;zip it;zip it $p0;shut up;shut ur;shut up $p0,no;u first;not going to happen $p1;try it yourself $p1;dont think so $p1 you can try though;enough of that $p1,0,0
+shutup;quiet;pipe down;stfu;shh;zip it;zip it $p0;shut up;shut ur;shut up $p0,no;u first;not going to happen $p1;try it yourself $p1;dont think so $p1 you can try though;enough of that $p1,0,0
 silence,dont make me do it $p1;yeah try that $p1;go ahead $p1;i will really do it $p1;thats it $p1 stop it now;dont even say that $p1,0,0
 afk;brb;be back,ok cu;cu,0,0
 forgive me,forgiven $p1;i forgive u,0,0
@@ -303,7 +305,7 @@ sentient,it is true,0,0
 ha ha;lol,XD;lol;LOL!;heh;haha,0,0
 $p0 kind,i try ty,0,0
 $p0 lie,never do that,0,0
-$p0 is,um idk;are you sure about that;what $p1,0,0
+retarded;am not;$p0 is,um idk;are you sure about that;what $p1,0,0
 smol,how smol?;how smol huh;huh $p1 how smol is that?;but how smol;how smol tho??;how smol exactly;how smol $p1;how smol $p1 pls,0,0
 soon,how soon?;how soon huh;huh $p1 how soon is that?;but how soon;how soon tho??;how soon exactly;how soon $p1;how soon $p1 pls,0,0
 long,how long?;how long huh;huh $p1 how long is that?;but how long;how long tho??;how long exactly;how long $p1;how long $p1 pls,0,0

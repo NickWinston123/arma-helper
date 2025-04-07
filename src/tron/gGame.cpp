@@ -179,20 +179,31 @@ static tString sg_mapOnChangeInclude("");
 static tSettingItem<tString> sg_mapOnChangeIncludeConf("MAP_ONCHANGE_INCLUDE", sg_mapOnChangeInclude);
 
 
-static tString sg_commandWatchFile("commands.txt");
+tString sg_commandWatchFile("commands.txt");
 static tConfItem<tString> sg_commandWatchFileConf("COMMAND_WATCH_FILE", sg_commandWatchFile);
 
-static bool sg_commandWatch = false;
+bool sg_commandWatch = false;
 static tConfItem<bool> sg_commandWatchConf("COMMAND_WATCH", sg_commandWatch);
 
-static bool sg_commandWatchClear = true;
+bool sg_commandWatchClear = true;
 static tConfItem<bool> sg_commandWatchClearConf("COMMAND_WATCH_CLEAR", sg_commandWatchClear);
 
-static bool sg_commandWatchFeedback = false;
+bool sg_commandWatchFeedback = false;
 static tConfItem<bool> sg_commandWatchFeedbackConf("COMMAND_WATCH_FEEDBACK", sg_commandWatchFeedback);
 
 static REAL sg_commandWatchCheckTime = 3;
 static tConfItem<REAL> sg_commandWatchCheckTimeConf("COMMAND_WATCH_CHECK_TIME", sg_commandWatchCheckTime);
+
+static bool sg_playerWatchServerConnectedWatch = false;
+static tConfItem<bool> sg_playerWatchServerConnectedWatchConf("PLAYER_WATCH_SERVER_CONNECTED", sg_playerWatchServerConnectedWatch);
+static bool sg_playerWatchServerConnectedWatchQuit = false;
+static tConfItem<bool> sg_playerWatchServerConnectedWatchQuitConf("PLAYER_WATCH_SERVER_CONNECTED_QUIT", sg_playerWatchServerConnectedWatchQuit);
+static REAL sg_playerWatchServerConnectedWatchQuitTime = 600;
+static tConfItem<REAL> sg_playerWatchServerConnectedWatchQuitTimeConf("PLAYER_WATCH_SERVER_CONNECTED_QUIT_TIME", sg_playerWatchServerConnectedWatchQuitTime);
+static REAL sg_playerWatchServerConnectedWatchTime = 60;
+static tConfItem<REAL> sg_playerWatchServerConnectedWatchTimeConf("PLAYER_WATCH_SERVER_CONNECTED_TIME", sg_playerWatchServerConnectedWatchTime);
+
+
 
 void LoadMap(tString mapName)
 {
@@ -2525,6 +2536,9 @@ bool sg_RequestedDisconnection = false;
 bool sn_networkErrorQuit = false;
 static tConfItem<bool> sn_networkErrorQuitConf("NETWORK_ERROR_QUIT",sn_networkErrorQuit);
 
+REAL sn_networkErrorMaxTimeout = 20;
+static tConfItem<REAL> sn_networkErrorMaxTimeoutConf("NETWORK_ERROR_MAX_TIMEOUT", sn_networkErrorMaxTimeout);
+
 static bool sg_NetworkError(const tOutput &title, const tOutput &message, REAL timeout)
 {
     tOutput message2(message);
@@ -2548,7 +2562,14 @@ static bool sg_NetworkError(const tOutput &title, const tOutput &message, REAL t
 #endif
 
     if (sn_networkErrorQuit)
-        uMenu::quickexit = uMenu::QuickExit_Total;
+    {
+        tString reason;
+        reason << message;
+        sn_quitAction(true, true, reason);
+    }
+
+    if (timeout > sn_networkErrorMaxTimeout)
+        timeout = sn_networkErrorMaxTimeout;
 
     return tConsole::Message(title, message2, timeout);
 }
@@ -2672,6 +2693,46 @@ bool ConnectToServerCore(nServerInfoBase *server)
         con << o;
         error = server->Connect();
 
+        if (sg_playerWatchServerConnectedWatch)
+        {
+            gTaskScheduler.schedule(
+                "connectedToServerCheck",
+                sg_playerWatchServerConnectedWatchTime, // initial delay
+                [] {
+                    for (auto localnetp : se_GetLocalPlayers())
+                    {
+                        if (localnetp && !se_disableCreate && !tIsInList(se_disableCreateSpecific, localnetp->pID + 1))
+                        {
+                            ePlayer *localp = ePlayer::NetToLocalPlayer(localnetp);
+                            gCycle * cycle = localnetp->NetPlayerToCycle();
+
+                            REAL playerLastSync = tSysTimeFloat() - localnetp->lastSync;
+                            REAL cycleLastSync  = localnetp->CurrentTeam() && localnetp->lastTurnTime > 0 ? tSysTimeFloat() - localnetp->lastTurnTime : 0;
+                            
+                            tString playerSyncTime;
+                            tString cycleSyncTime;
+                            playerSyncTime = tString(std::to_string(playerLastSync)) + " seconds ago.";
+                            cycleSyncTime  = tString(std::to_string(cycleLastSync))  + " seconds ago.";
+
+                            tString msg = localnetp->GetName() +
+                                          tString(" last sync time: Player: ") +
+                                          playerSyncTime + ", Cycle: " + cycleSyncTime +
+                                          " seconds ago.";
+
+                            gHelperUtility::Debug("PLAYER_WATCH_SERVER_CONNECTED", msg.c_str());
+                            if (playerLastSync > sg_playerWatchServerConnectedWatchQuitTime || cycleLastSync > sg_playerWatchServerConnectedWatchQuitTime)
+                            {
+                                gHelperUtility::Debug("PLAYER_WATCH_SERVER_CONNECTED", "Not syncing detected.");
+                                    sn_quitAction(true, sg_playerWatchServerConnectedWatchQuit, "Not syncing detected.");
+                            }
+
+                        }
+                    }
+                },
+                sg_playerWatchServerConnectedWatchTime // interval for repeating
+            );
+        }
+
         switch (error)
         {
         case nABORT:
@@ -2730,6 +2791,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
 
     bool ret = true;
     setCurrentServer(nullptr);
+    gTaskScheduler.removeTasksWithPrefix("connectedToServerCheck");
 
     sn_SetNetState(nSTANDALONE);
 
@@ -3540,7 +3602,7 @@ void MainMenu(bool ingame)
 
     if (!helperConfig::sghuk || !helperConfig::sg_helperMenuEnabled)
         MainMenu.RemoveItem(&hm);
-    
+
 
 #endif
 
@@ -5913,12 +5975,37 @@ static tConfItem<REAL> sg_forceClockDelayConf = HelperCommand::tConfItem("FORCE_
 
 // static rPerFrameTask updateTasks(&update_task_scheduler);
 
-bool gGame::GameLoop(bool input)
+void CommandWatchLoader()
 {
+    FileManager fileManager(sg_commandWatchFile, tDirectories::Var());
 
-    if (sg_forceGamePause)
-        se_PauseGameTimer();
+    auto lines = fileManager.Load();
 
+    if (lines.Len() >= 1)
+    {
+        for (auto line : lines)
+        {
+            if (line.Len() > 0)
+            {
+                if (sg_commandWatchFeedback)
+                    gHelperUtility::DebugForce("COMMAND_WATCH","Loading line: ", line);
+
+                sn_consoleUser(ePlayer::NetToLocalPlayer(se_GetLocalPlayer()));
+
+                tCurrentAccessLevel level(tAccessLevel_Owner, true);
+                std::stringstream s(static_cast<char const *>(line));
+                tConfItemBase::LoadAll(s);
+            }
+        }
+
+        if (sg_commandWatchClear)
+            fileManager.Clear(sg_commandWatchFeedback);
+    }
+}
+
+
+static void sg_updateScheduler()
+{
     if (se_watchActiveStatus)
     {
         gTaskScheduler.schedule("watchPlayerStatus", se_watchActiveStatusTime, []
@@ -5931,45 +6018,14 @@ bool gGame::GameLoop(bool input)
 
     if (sg_commandWatch && tSysTimeFloat() > next_command_watch_check_time)
     {
-        FileManager fileManager(sg_commandWatchFile, tDirectories::Var());
-
         next_command_watch_check_time = tSysTimeFloat() + sg_commandWatchCheckTime;
-
-        auto lines = fileManager.Load();
-
-        if (lines.Len() >= 1)
-        {
-            for (auto line : lines)
-            {
-                if (line.Len() > 0)
-                {
-                    if (sg_commandWatchFeedback)
-                        con << tThemedTextBase.LabelText("COMMAND WATCH") << "Loading line '" << line << "'\n";
-
-                    sn_consoleUser(ePlayer::NetToLocalPlayer(se_GetLocalPlayer()));
-
-                    tCurrentAccessLevel level(tAccessLevel_Owner, true);
-                    std::stringstream s(static_cast<char const *>(line));
-                    tConfItemBase::LoadAll(s);
-                }
-            }
-
-            if (sg_commandWatchClear)
-                fileManager.Clear(sg_commandWatchFeedback);
-        }
+        CommandWatchLoader();
     }
 
     if (sg_forcePlayerUpdate || sg_forceSyncAll || sg_forcePlayerRebuild || ePlayerNetID::nameSpeakForceUpdate)
     {
         gTaskScheduler.schedule("forcedUpdate", sg_forceClockDelay, []
         {
-            // if (sg_forcePlayerUpdate) {
-            //     tArray<tString> playerIDs = sg_forcePlayerUpdateEnabledPlayers.Split(",");
-            //     for (int i = 0; i < playerIDs.Len(); i++)
-            //     {
-            //         ePlayerNetID::ForcedUpdate(playerIDs[i].toInt());
-            //     }
-            // }
             if (sg_forcePlayerUpdate || ePlayerNetID::nameSpeakForceUpdate)
                 ePlayerNetID::ForcedUpdate();
 
@@ -5982,6 +6038,14 @@ bool gGame::GameLoop(bool input)
     }
 
     gTaskScheduler.update();
+}
+
+static rPerFrameTask sg_updateSchedulerC(&sg_updateScheduler);
+
+bool gGame::GameLoop(bool input)
+{
+    if (sg_forceGamePause)
+        se_PauseGameTimer();
 
     nNetState netstate = sn_GetNetState();
 

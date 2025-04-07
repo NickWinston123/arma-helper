@@ -708,10 +708,16 @@ int main(int argc, char **argv)
         // tERR_MESSAGE( "Loading configuration." );
         tLocale::Load("languages.txt");
 
+        VariableCreatorLoader();
+
         st_LoadConfig();
 
+        if (sg_commandWatch)
+            CommandWatchLoader();
+        
         LoadChatCommandConfCommands();
         CommandShortcutLoader();
+
 
         if (sn_updateVersionOverrideValue >= 0)
         {
@@ -902,7 +908,7 @@ int main(int argc, char **argv)
                     sn_bigBrotherString = renderer_identification + "VER=" + sn_programVersion + "\n\n";
 
                     InitHelperItems();
-
+                   
                     if (tryConnectLastServer)
                         ConnectToLastServer();
 
@@ -932,6 +938,8 @@ int main(int argc, char **argv)
                 // std::cout << "exit\n";
 
                 st_SaveConfig();
+
+                SaveVariableCreatorVariablesToFile();
 
                 uMenuItemStringWithHistory::SaveHistoryToFile(se_consoleHistoryFileName,se_consoleHistory);
                 uMenuItemStringWithHistory::SaveHistoryToFile(se_chatHistoryFileName,se_chatHistory);

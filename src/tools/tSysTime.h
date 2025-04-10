@@ -44,4 +44,6 @@ time_t getDifferenceInSeconds(struct tm date1, struct tm date2) ;
 time_t getStartTimeOfDay();
 time_t getStartOfCurrentHour();
 
+ double getSteadyTime();
+
 #endif

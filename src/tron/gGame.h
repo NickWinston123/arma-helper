@@ -60,7 +60,14 @@ extern nServerInfoBase *getSeverFromStr(tString input);
 extern void InitHelperItems(bool ingame = false);
 extern void CommandWatchLoader();
 
-extern bool sg_commandWatch, sg_commandWatchClear, sg_commandWatchFeedback;
+extern double sg_failedToConnectTime;
+
+extern void sg_scheduleDisconnectedFromServerCheckCheck();
+
+extern bool sg_playerWatchServerDisconnectedWatch, sg_playerWatchServerDisconnectedWatchQuit;
+extern REAL sg_playerWatchServerDisconnectedWatchQuitTime, sg_playerWatchServerDisconnectedWatchTime;
+
+extern bool sg_commandWatch, sg_commandWatchClear, sg_commandWatchFeedback, sg_failedToConnect;
 extern tString sg_commandWatchFile;
 typedef enum
 {
@@ -332,7 +339,6 @@ struct DelayedTask
     }
 };
 
-
 class TaskScheduler
 {
 public:
@@ -362,14 +368,14 @@ public:
         return true;
     }
 
-    void ClearQueueIfOverloaded(int size, const std::string& baseId = "")
+    void ClearQueueIfOverloaded(int size, const std::string &baseId = "")
     {
         int totalSize = tasksQueue.size();
-        for (const auto& pendingTask : pendingTasks)
+        for (const auto &pendingTask : pendingTasks)
             totalSize += pendingTask.second.size();
-    
+
         totalSize += taskChains.size();
-    
+
         if (totalSize > size)
         {
             if (!baseId.empty())
@@ -377,16 +383,26 @@ public:
             else
                 clear();
         }
-    }    
+    }
 
-
-    void enqueueChain(const std::function<void()>& chain)
+    void enqueueChain(const std::function<void()> &chain)
     {
         taskChains.push(chain);
     }
 
-    bool isTaskScheduled(const std::string& id) const {
+    bool isTaskScheduled(const std::string &id) const
+    {
         return tasksMap.count(id) > 0;
+    }
+
+    bool taskNeedsUpdate(const std::string &id, REAL delayInSeconds, REAL interval) const
+    {
+        auto it = tasksMap.find(id);
+        if (it == tasksMap.end())
+            return false;
+
+        const DelayedTask &existing = it->second;
+        return existing.originalDelay != delayInSeconds || existing.interval != interval;
     }
 
     // Check and execute due tasks
@@ -402,7 +418,7 @@ public:
             task.task();
 
             // Handle repeating tasks or queued tasks
-            if(pendingTasks.count(task.id) > 0 && !pendingTasks[task.id].empty())
+            if (pendingTasks.count(task.id) > 0 && !pendingTasks[task.id].empty())
             {
                 DelayedTask nextTask = pendingTasks[task.id].front();
                 pendingTasks[task.id].pop();
@@ -412,10 +428,10 @@ public:
                 tasksQueue.push(nextTask);
                 tasksMap[nextTask.id] = nextTask;
 
-                if(pendingTasks[task.id].empty())
+                if (pendingTasks[task.id].empty())
                     pendingTasks.erase(task.id);
             }
-            else if(task.interval > 0)
+            else if (task.interval > 0)
             {
                 task.dueTime += task.interval;
                 tasksQueue.push(task);
@@ -439,7 +455,6 @@ public:
             taskChain();
         }
     }
-
 
     // Remove a task
     void remove(const std::string &id)
@@ -482,7 +497,7 @@ public:
 
         for (auto const &pair : tasksMap)
         {
-            if (pair.first.rfind(prefix, 0) == 0) 
+            if (pair.first.rfind(prefix, 0) == 0)
             {
                 idsToRemove.push_back(pair.first);
             }
@@ -521,7 +536,6 @@ public:
         return tasksMap;
     }
 
-
 private:
     std::priority_queue<DelayedTask> tasksQueue;
     std::unordered_map<std::string, DelayedTask> tasksMap;
@@ -530,10 +544,10 @@ private:
     std::queue<std::function<void()>> taskChains;
     void rebuildQueue()
     {
-        while (!tasksQueue.empty()) 
+        while (!tasksQueue.empty())
             tasksQueue.pop();
 
-        for (const auto& taskPair : tasksMap) 
+        for (const auto &taskPair : tasksMap)
             tasksQueue.push(taskPair.second);
     }
 };

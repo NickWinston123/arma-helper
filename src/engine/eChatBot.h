@@ -20,7 +20,8 @@ extern bool se_playerMessageTriggers,
             se_playerMessageTriggersResendSilencedMessages,
             se_playerMessageTriggersRageQuits,
             se_playerMessageTriggersAcheivements,
-            se_playerMessageTriggersAcheivementsLocal;
+            se_playerMessageTriggersAcheivementsLocal,
+            se_playerMessageTriggersClearOnSilence;
 
 extern int se_playerMessageTriggersAcheivementsKillsChangeVal,
            se_playerMessageTriggersAcheivementsKillStreakChangeVal,

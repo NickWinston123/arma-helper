@@ -21,6 +21,8 @@ static tConfItem<tString> se_playerMessageTriggersFileConf = HelperCommand::tCon
 
 REAL se_playerMessageTriggersSpamMaxlen = 300;
 static tConfItem<REAL> se_playerMessageTriggersSpamMaxlenConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SPAM_MAXLEN", se_playerMessageTriggersSpamMaxlen);
+REAL se_playerMessageTriggersDelayForNegativeParts = 1;
+static tConfItem<REAL> se_playerMessageTriggersDelayForNegativePartsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DELAY_FOR_NEGATIVE_DELAY_PARTS", se_playerMessageTriggersDelayForNegativeParts);
 
 tString se_playerMessageTriggersIgnorePhrases = tString("");
 static tConfItem<tString> se_playerMessageTriggersIgnorePhrasesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_IGNORE_PHRASES", se_playerMessageTriggersIgnorePhrases);
@@ -33,11 +35,13 @@ static bool se_playerMessageTriggersChatFunctionsOnly = false;
 static tConfItem<bool> se_playerMessageTriggersChatFunctionsOnlyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNCTIONS_ONLY", se_playerMessageTriggersChatFunctionsOnly);
 
 bool se_playerMessageTriggersResendSilencedMessages = false;
-static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES", se_playerMessageTriggersResendSilencedMessages);
+static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES", se_playerMessageTriggersResendSilencedMessages);
 bool se_playerMessageTriggersResendSilencedMessagesPrefixAmount = 3;
-static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesPrefixAmountConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES_PREFIX_AMOUNT", se_playerMessageTriggersResendSilencedMessagesPrefixAmount);
+static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesPrefixAmountConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES_PREFIX_AMOUNT", se_playerMessageTriggersResendSilencedMessagesPrefixAmount);
 tString se_playerMessageTriggersResendSilencedMessagesPrefixList = tString("!@#$%^&*()_+=-|");
-static tConfItem<tString> se_playerMessageTriggersResendSilencedMessagesPrefixListConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES_PREFIX_LIST", se_playerMessageTriggersResendSilencedMessagesPrefixList);
+static tConfItem<tString> se_playerMessageTriggersResendSilencedMessagesPrefixListConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES_PREFIX_LIST", se_playerMessageTriggersResendSilencedMessagesPrefixList);
+bool se_playerMessageTriggersClearOnSilence = true;
+static tConfItem<bool> se_playerMessageTriggersClearOnSilenceConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_CLEAR_ON_SILENCE", se_playerMessageTriggersClearOnSilence);
 
 bool se_playerMessageTriggerScheduleMultiple = true;
 static tConfItem<bool> se_playerMessageTriggerScheduleMultipleConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SCHEDULE_MULTIPLE", se_playerMessageTriggerScheduleMultiple);
@@ -3058,7 +3062,7 @@ void eChatBot::SilencedAction()
     REAL penaltyDelay = 0.0;
     if (messenger.Params().pentalized_for_last_message)
     {
-        penaltyDelay = ((ePlayerNetID::nextSpeakTime - tSysTimeFloat()) * 1.1)
+        penaltyDelay = ((ePlayerNetID::nextSpeakTime - getSteadyTime()) * 1.1)
                        + se_playerMessageTriggersResendSilencedMessagesExtraDelay;
     }
 
@@ -3175,7 +3179,18 @@ bool eChatBotMessager::Send()
         if (!Params().preAppend.empty())
             partToSend = Params().preAppend + partToSend;
 
-        REAL delayForPart = totalDelay/numberOfParts;
+        REAL delayForPart;
+        if (forceSpecialDelay)
+        {
+            if (i == 0)
+                delayForPart = 0.0;
+            else
+                delayForPart = se_playerMessageTriggersDelayForNegativeParts; 
+        }
+        else
+            delayForPart = (numberOfParts > 0)
+                               ? (totalDelay / numberOfParts)
+                               : totalDelay;
 
         eChatBotData::MessagePart part(partToSend, delayForPart,
                                        !forceSpecialDelay && se_playerMessageTriggersChatFlag,
@@ -3194,12 +3209,11 @@ bool eChatBotMessager::Send()
 }
 
 bool eChatBotMessager::ScheduleMessageParts()
-{    
+{
     std::string baseId = "playerMessageTask";
     gTaskScheduler.ClearQueueIfOverloaded(se_playerMessageTriggersQueueMaxOverloadedSize, baseId);
 
-    ePlayerNetID *player = Params().sendingPlayer;
-
+    ePlayerNetID* player = Params().sendingPlayer;
     if (!player)
         return false;
 
@@ -3207,6 +3221,10 @@ bool eChatBotMessager::ScheduleMessageParts()
 
     size_t currentPartIndex = Params().currentPartIndex;
     size_t totalParts = Params().messageParts.size();
+    if (totalParts == 0)
+        return false;
+
+    REAL cumulativeDelay = 0.0;
 
     for (size_t i = currentPartIndex; i < totalParts; ++i)
     {
@@ -3214,45 +3232,65 @@ bool eChatBotMessager::ScheduleMessageParts()
         const tString& message = part.message;
 
         std::string taskId = baseId;
-
         if (se_playerMessageTriggerScheduleMultiple)
-            taskId += "_" + std::to_string(player->ID()) + "_" + std::to_string(i) + "_" + std::to_string(tSysTimeFloat());
+            taskId += "_" + std::to_string(player->ID()) + "_" + std::to_string(i)
+                      + "_" + std::to_string(tSysTimeFloat());
 
-        gTaskScheduler.enqueueChain([player, part, message, taskId]()
-        {
-            REAL flagDelay = part.delay * part.chatFlagPercentage;
-            REAL messageDelay = part.delay - flagDelay;
-
-            if (part.useChatFlag)
+        gTaskScheduler.schedule(
+            taskId, 
+            cumulativeDelay, 
+            [player, part, message, taskId]()
             {
-                gTaskScheduler.schedule(
-                    taskId, flagDelay,
-                    [player, messageDelay, message, taskId]()
-                    {
-                        player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
-                        ePlayerNetID::Update();
+                REAL flagDelay    = part.delay * part.chatFlagPercentage;
+                REAL messageDelay = part.delay - flagDelay;
 
-                        std::string followUpId = taskId + "_end";
+                if (part.useChatFlag)
+                {
+                    gTaskScheduler.schedule(
+                        taskId + "_flag", 
+                        flagDelay,
+                        [player, messageDelay, message, taskId]()
+                        {
+                            player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, true);
+                            ePlayerNetID::Update();
 
-                        gTaskScheduler.schedule(followUpId, messageDelay,
-                            [player, message]()
-                            {
-                                player->Chat(message, true);
-                                player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
-                                ePlayerNetID::Update();
-                            }, 0, true);
-                    }, 0, true);
-            }
-            else
-            {
-                gTaskScheduler.schedule(
-                    taskId, part.delay,
-                    [player, message]()
-                    {
-                        player->Chat(message, true);
-                    }, 0, true);
-            }
-        });
+                            std::string followUpId = taskId + "_end";
+                            gTaskScheduler.schedule(
+                                followUpId, 
+                                messageDelay,
+                                [player, message]()
+                                {
+                                    player->Chat(message, true);
+                                    player->SetChatting(ePlayerNetID::ChatFlags::ChatFlags_Chat, false);
+                                    ePlayerNetID::Update();
+                                },
+                                0,
+                                true // once
+                            );
+                        },
+                        0,
+                        true // once
+                    );
+                }
+                else
+                {
+                    gTaskScheduler.schedule(
+                        taskId + "_msg",
+                        part.delay,
+                        [player, message]()
+                        {
+                            player->Chat(message, true);
+                        },
+                        0,
+                        true // once
+                    );
+                }
+            },
+            0,  // repeats
+            true // run once
+        );
+
+        cumulativeDelay += part.delay;
 
         scheduled = true;
     }

@@ -1731,11 +1731,13 @@ void login_deny_handler(nMessage &m){
 
     if (sn_loginDenalWatch && !sn_loginDenalWatchStr.empty())
     {
-        tArray<tString> denialChecks = sn_loginDenalWatchStr.Split(",");
+        tString sn_DenyReasonLower = sn_DenyReason.ToLower();
+
+        tArray<tString> denialChecks = sn_loginDenalWatchStr.ToLower().Split(",");
 
         for (int i = 0; i < denialChecks.Len(); i++)
         {
-            if (sn_DenyReason.Contains(denialChecks[i]))
+            if (sn_DenyReasonLower.Contains(denialChecks[i]))
             {
                 gHelperUtility::Debug("PLAYER_WATCH_LOGIN_DENIAL", "Login Denial detected and found a match within '" + sn_loginDenalWatchStr.stdString() + "'.");
                 sn_quitAction(true, sn_loginDenalWatchQuit, sn_DenyReason);

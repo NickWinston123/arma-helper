@@ -347,8 +347,6 @@ bool sg_smarterBotAFKCheck = false;
 static tConfItem<bool> sg_smarterBotAFKCheckConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK", sg_smarterBotAFKCheck);
 REAL sg_smarterBotAFKCheckTime = 8;
 static tConfItem<REAL> sg_smarterBotAFKCheckTimeConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_TIME", sg_smarterBotAFKCheckTime);
-REAL sg_smarterBotAFKCheckCreatedTeamTimeMult = 1.5;
-static tConfItem<REAL> sg_smarterBotAFKCheckCreatedTeamTimeMultConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_CREATED_TEAM_TIME_MULT", sg_smarterBotAFKCheckCreatedTeamTimeMult);
 bool sg_smarterBotAFKCheckIfChatting = true;
 static tConfItem<bool> sg_smarterBotAFKCheckIfChattingConf = HelperCommand::tConfItem("SMARTER_BOT_AFK_CHECK_IF_CHATTING", sg_smarterBotAFKCheckIfChatting);
 bool sg_smarterBotAFKCheckIfActive = true;
@@ -1280,7 +1278,7 @@ REAL gSmarterBot::annoyanceCheck(REAL currentTime)
             bool recentlyActive      = player->LastActivity() < sg_smarterBotAFKCheckIfActiveTime;
             bool joinedRecently      = (tSysTimeFloat() - player->createdTime()) < se_GameTime();
             bool turnedThisRound     = (cycle && cycle->lastTurnTime > 0) || (!cycle && player->lastTurnTime > 0);
-            bool createdTeamRecently = player->lastTeamCreateTime > 0 && tSysTimeFloat() - player->lastTeamCreateTime < (sg_smarterBotAFKCheckTime*sg_smarterBotAFKCheckCreatedTeamTimeMult);
+            bool createdTeamRecently = player->lastTeamCreateTime > 0 && tSysTimeFloat() - player->lastTeamCreateTime < se_GameTime();
             bool isActive            = createdTeamRecently || joinedRecently || ((recentlyActive || turnedThisRound) && !isChattingTooLong);
 
             if (isAlive)

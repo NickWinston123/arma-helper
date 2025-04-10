@@ -369,9 +369,9 @@ public:
     static int nameSpeakPlayerID;
     static int playerUpdateIteration;
 
-    static REAL nextSpeakTimePrefix;
+    static double nextSpeakTimePrefix;
     static tString nextSpeakTimePrefixCommonPrefix;
-    static REAL nextSpeakTime;
+    static double nextSpeakTime;
 
     tString lastSentName;
     

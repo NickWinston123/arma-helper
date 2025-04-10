@@ -912,6 +912,10 @@ int main(int argc, char **argv)
                     if (tryConnectLastServer)
                         ConnectToLastServer();
 
+                                        
+                    if (sg_playerWatchServerDisconnectedWatch)
+                        sg_scheduleDisconnectedFromServerCheckCheck();
+                
                     MainMenu();
 
                     // remove all players

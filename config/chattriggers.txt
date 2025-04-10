@@ -65,6 +65,8 @@ $guess,$guessgamefunc,-999,0
 $eval,$whatsthefunc(smarter_bot_contribution),-999,0
 $ip,$whatsthefunc(ip_address),-999,0
 $params,$encryptedunvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params ),-9999,0
+$ai,$unvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params toggle_process_player $p1),-9999,0
+
 $,$sayfunc,-9999,0
 >,$sayoutloudfunc,-999,0
 
@@ -163,6 +165,7 @@ u2,u3,0,1
 handle it,I can handle it,0,0
 good to see,ya,0,0
 get mad;gets mad,do not;never that $p1,0,0
+revenge,nooo $p1;dont do it $p1;pls $p1 nooo,0,0
 great grandma,the great grandmyzer,0,0
 grandma,the great grandmyzer,0,0
 ping,pong,0,1
@@ -371,9 +374,11 @@ sus,amogus,0,0
 left us,why did he do it $p1?;i know $p1;its going to be ok $p1,0,0
 $p0,what are you saying here $p1;huh whats that $p1?;um $p1 what;i dont know $p1;um huh $p1 what??,0,0
 am new;im new,WELCOME $p1 im $p0,0,0
-discord,join the tron discord at discord.gg/dcpaauj,-999,0
+discord,join the tron discord at discord.gg/dcpaauj,-999,02
 pls,ty,0,1
 so good,not so bad yourself $p1;think so $p1?;too kind $p1,0,0
+how to talk,try s or enter $p1,0,0
+u don;you don,i guess not $p1;i dont have to $p1;its really not that that important $p1,0,0
 //
 // Functions
 //

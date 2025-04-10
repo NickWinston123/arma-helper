@@ -33,6 +33,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tConfiguration.h"
 #include "tLocale.h"
 
+#include <chrono>
+double getSteadyTime()
+{
+    using namespace std::chrono;
+    static const auto start = steady_clock::now(); 
+    const auto now = steady_clock::now();
+
+    return duration_cast<duration<double>>(now - start).count();
+}
+
 //! time structure
 struct tTime
 {

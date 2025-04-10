@@ -123,13 +123,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 TaskScheduler gTaskScheduler;
 
 
-static void taskSchedulerClear(std::istream &s)
-{
-    gTaskScheduler.clear();
-}
-static tConfItemFunc taskSchedulerClear_conf = HelperCommand::tConfItemFunc("TASK_SCHEDULER_CLEAR", &taskSchedulerClear);
-
-
 tCONFIG_ENUM(gGameType);
 tCONFIG_ENUM(gFinishType);
 
@@ -202,6 +195,15 @@ static REAL sg_playerWatchServerConnectedWatchQuitTime = 600;
 static tConfItem<REAL> sg_playerWatchServerConnectedWatchQuitTimeConf("PLAYER_WATCH_SERVER_CONNECTED_QUIT_TIME", sg_playerWatchServerConnectedWatchQuitTime);
 static REAL sg_playerWatchServerConnectedWatchTime = 60;
 static tConfItem<REAL> sg_playerWatchServerConnectedWatchTimeConf("PLAYER_WATCH_SERVER_CONNECTED_TIME", sg_playerWatchServerConnectedWatchTime);
+
+bool sg_playerWatchServerDisconnectedWatch = false;
+static tConfItem<bool> sg_playerWatchServerDisconnectedWatchConf("PLAYER_WATCH_SERVER_DISCONNECTED", sg_playerWatchServerDisconnectedWatch);
+bool sg_playerWatchServerDisconnectedWatchQuit = false;
+static tConfItem<bool> sg_playerWatchServerDisconnectedWatchQuitConf("PLAYER_WATCH_SERVER_DISCONNECTED_QUIT", sg_playerWatchServerDisconnectedWatchQuit);
+REAL sg_playerWatchServerDisconnectedWatchQuitTime = 300;
+static tConfItem<REAL> sg_playerWatchServerDisconnectedWatchQuitTimeConf("PLAYER_WATCH_SERVER_DISCONNECTED_QUIT_TIME", sg_playerWatchServerDisconnectedWatchQuitTime);
+REAL sg_playerWatchServerDisconnectedWatchTime = 500;
+static tConfItem<REAL> sg_playerWatchServerDisconnectedWatchTimeConf("PLAYER_WATCH_SERVER_DISCONNECTED_TIME", sg_playerWatchServerDisconnectedWatchTime);
 
 
 
@@ -1313,16 +1315,21 @@ static ladder highscore_ladder("ladder.txt",
 // ***   delayed commands
 // *************************
 std::vector<std::string> gTaskIDs;
+std::string delayCommandsBaseID = "delayCommand_";
 
 static void sg_ClearDelayedCmd(std::istream &s)
 {
     for (const auto &taskID : gTaskIDs)
     {
-        con << "Cleared task '" << taskID << "'\n";
-        gTaskScheduler.remove(taskID);
+        if (taskID.rfind(delayCommandsBaseID, 0) == 0)
+        {
+            con << "Cleared delayed command task '" << taskID << "'\n";
+            gTaskScheduler.remove(taskID);
+        }
     }
-    gTaskIDs.clear();
+    gTaskIDs.clear(); 
 }
+
 static tConfItemFunc sg_ClearDelayedCmd_conf("DELAY_COMMAND_CLEAR", &sg_ClearDelayedCmd);
 
 static void sg_RemoveDelayedCmd(std::istream &s)
@@ -1342,33 +1349,59 @@ static void sg_RemoveDelayedCmd(std::istream &s)
     }
 
     // Check if the command is in the list
-    auto it = std::find(gTaskIDs.begin(), gTaskIDs.end(), command);
+    std::string fullTaskID = delayCommandsBaseID + command;
+    auto it = std::find(gTaskIDs.begin(), gTaskIDs.end(), fullTaskID);
     if (it == gTaskIDs.end())
     {
-        con << "Error: No such delay command ( " << command << " ) found\n";
+        con << "Error: No such delayed command ( " << command << " ) found\n";
         return;
     }
-
-    con << "Removing delay command ( "
-        << command
-        << " )\n";
-    gTaskScheduler.remove(command);
+    
+    con << "Removing delayed command ( " << command << " )\n";
+    gTaskScheduler.remove(fullTaskID);
     gTaskIDs.erase(it);
+    
 }
 static tConfItemFunc sg_RemoveDelayedCmd_conf("DELAY_COMMAND_REMOVE", &sg_RemoveDelayedCmd);
 
 static void sg_ListDelayedCmd(std::istream &s)
 {
     auto tasks = gTaskScheduler.getTasks();
-    con << "Number of delayed commands: " << tasks.size() << "\n";
+    int count = 0;
+
     for (const auto &task : tasks)
     {
-        con << "Command: "      << task.first           << "\n"
+        if (task.first.rfind(delayCommandsBaseID, 0) == 0)
+        {
+            con << "Command: " << task.first << "\n"
+                << "  - Due Time: " << task.second.dueTime << "\n"
+                << "  - Interval: " << task.second.interval << "\n";
+            count++;
+        }
+    }
+    con << "Total delayed commands: " << count << "\n";
+}
+
+static tConfItemFunc sg_ListDelayedCmd_conf("DELAY_COMMAND_LIST", &sg_ListDelayedCmd);
+
+static void sg_taskSchedulerList(std::istream &s)
+{
+    auto tasks = gTaskScheduler.getTasks();
+    con << "Number of scheduled tasks: " << tasks.size() << "\n";
+    for (const auto &task : tasks)
+    {
+        con << "Task: "      << task.first           << "\n"
             << "  - Due Time: " << task.second.dueTime  << "\n"
             << "  - Interval: " << task.second.interval << "\n";
     }
 }
-static tConfItemFunc sg_ListDelayedCmd_conf("DELAY_COMMAND_LIST", &sg_ListDelayedCmd);
+static tConfItemFunc sg_taskSchedulerList_conf("TASK_SCHEDULER_LIST", &sg_taskSchedulerList);
+
+static void taskSchedulerClear(std::istream &s)
+{
+    gTaskScheduler.clear();
+}
+static tConfItemFunc taskSchedulerClear_conf = HelperCommand::tConfItemFunc("TASK_SCHEDULER_CLEAR", &taskSchedulerClear);
 
 static void sg_AddDelayedCmd(std::istream &s)
 {
@@ -1426,15 +1459,16 @@ static void sg_AddDelayedCmd(std::istream &s)
 
     if (requiredAccessLevel)
     {
-        gTaskScheduler.schedule(
-            cmd_name, delay, [cmd_name]()
-            {
+        std::string taskID = delayCommandsBaseID + cmd_name;
+
+        gTaskScheduler.schedule(taskID, delay, [cmd_name]() {
             tCurrentAccessLevel elevator(tAccessLevel_Owner, true);
             std::stringstream st(cmd_name);
-            tConfItemBase::LoadAll(st); },
-            interval);
-
-        gTaskIDs.push_back(cmd_name);
+            tConfItemBase::LoadAll(st);
+        }, interval);
+        
+        gTaskIDs.push_back(taskID);
+        
 
         tOutput msg;
         msg.SetTemplateParameter(1, cmd_name.c_str());
@@ -2638,6 +2672,9 @@ nServerInfoBase *CurrentServer()
      return connectedServer;
 }
 
+bool sg_failedToConnect = false;
+double sg_failedToConnectTime = 0;
+
 // return code: false if there was an error or abort
 bool ConnectToServerCore(nServerInfoBase *server)
 {
@@ -2691,6 +2728,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
         o.SetTemplateParameter(1, server->GetName());
         o << "$network_connecting_to_server";
         con << o;
+        sg_failedToConnect = false;
         error = server->Connect();
 
         if (sg_playerWatchServerConnectedWatch)
@@ -2708,7 +2746,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
 
                             REAL playerLastSync = tSysTimeFloat() - localnetp->lastSync;
                             REAL cycleLastSync  = localnetp->CurrentTeam() && localnetp->lastTurnTime > 0 ? tSysTimeFloat() - localnetp->lastTurnTime : 0;
-                            
+
                             tString playerSyncTime;
                             tString cycleSyncTime;
                             playerSyncTime = tString(std::to_string(playerLastSync)) + " seconds ago.";
@@ -2736,16 +2774,24 @@ bool ConnectToServerCore(nServerInfoBase *server)
         switch (error)
         {
         case nABORT:
+            sg_failedToConnect = true;
+            sg_failedToConnectTime = getSteadyTime();
             return false;
             break;
         case nOK:
+            sg_failedToConnect = false;
+            sg_failedToConnectTime = 0;
             break;
         case nTIMEOUT:
+            sg_failedToConnect = true;
+            sg_failedToConnectTime = getSteadyTime();
             sg_NetworkError("$network_message_timeout_title", "$network_message_timeout_inter", 20);
             return false;
             break;
 
         case nDENIED:
+            sg_failedToConnect = true;
+            sg_failedToConnectTime = getSteadyTime();
             sg_NetworkError("$network_message_denied_title", sn_DenyReason.Len() > 2 ? "$network_message_denied_inter2" : "$network_message_denied_inter", 20);
             return false;
             break;
@@ -2814,6 +2860,9 @@ bool ConnectToServerCore(nServerInfoBase *server)
                                   "$network_message_lostconn_inter", 20);
             break;
         }
+
+        sg_failedToConnect = true;
+        sg_failedToConnectTime = getSteadyTime();
 
         if (sg_autoReconect)
         {
@@ -5949,31 +5998,23 @@ static uActionTooltip ingamemenuTooltip(ingamemenu, 1);
 static eLadderLogWriter sg_gameTimeWriter("GAME_TIME", true);
 
 static bool sg_forceGamePause = false;
-static tSettingItem<bool> sg_forceGamePauseConf = HelperCommand::tSettingItem("FORCE_GAME_PAUSE", sg_forceGamePause);
+static tConfItem<bool> sg_forceGamePauseConf = HelperCommand::tConfItem("FORCE_GAME_PAUSE", sg_forceGamePause);
 
 bool sg_forcePlayerUpdate = false;
-static tSettingItem<bool> sg_forcePlayerUpdateConf = HelperCommand::tSettingItem("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
+static tConfItem<bool> sg_forcePlayerUpdateConf = HelperCommand::tConfItem("FORCE_PLAYER_UPDATE", sg_forcePlayerUpdate);
 
 tString sg_forcePlayerUpdateEnabledPlayers("*");
 static tConfItem<tString> sg_forcePlayerUpdateEnabledPlayersConf = HelperCommand::tConfItem("FORCE_PLAYER_UPDATE_ENABLED_PLAYERS", sg_forcePlayerUpdateEnabledPlayers);
 
 static bool sg_forcePlayerRebuild = false;
-static tSettingItem<bool> sg_forcePlayerRebuildConf = HelperCommand::tSettingItem("FORCE_PLAYER_ZREBUILD", sg_forcePlayerRebuild);
+static tConfItem<bool> sg_forcePlayerRebuildConf = HelperCommand::tConfItem("FORCE_PLAYER_ZREBUILD", sg_forcePlayerRebuild);
 
 static bool sg_forceSyncAll = false;
-static tSettingItem<bool> sg_forceSyncAllConf = HelperCommand::tSettingItem("FORCE_SYNC_ALL", sg_forceSyncAll);
+static tConfItem<bool> sg_forceSyncAllConf = HelperCommand::tConfItem("FORCE_SYNC_ALL", sg_forceSyncAll);
 
 static REAL sg_forceClockDelay = 0.5;
 static tConfItem<REAL> sg_forceClockDelayConf = HelperCommand::tConfItem("FORCE_CLOCK_DELAY", sg_forceClockDelay);
 
-
-// static void update_task_scheduler()
-// {
-//     con << "UPDATING\n";
-//     gTaskScheduler.update();
-// }
-
-// static rPerFrameTask updateTasks(&update_task_scheduler);
 
 void CommandWatchLoader()
 {
@@ -6047,6 +6088,9 @@ bool gGame::GameLoop(bool input)
     if (sg_forceGamePause)
         se_PauseGameTimer();
 
+    if (sg_playerWatchServerDisconnectedWatch)
+        sg_scheduleDisconnectedFromServerCheckCheck();
+        
     nNetState netstate = sn_GetNetState();
 
 #ifdef DEBUG
@@ -7197,20 +7241,14 @@ bool ConnectToLastServerFromStr()
     {
         bool isMatch = serverInfo->GetConnectionName() == serverBase->GetConnectionName() && serverInfo->GetPort() == serverBase->GetPort();
         if (isMatch)
-        {
             break;
-        }
         serverInfo = serverInfo->Next();
     }
 
     if (serverInfo)
-    {
         ConnectToServer(serverInfo);
-    }
     else
-    {
         ConnectToServer(serverBase);
-    }
 
     return false;
 }
@@ -7231,6 +7269,59 @@ static void ConnectToLastServer(std::istream &s)
 }
 
 static tConfItemFunc ReloadChatTriggers_conf("RECONNECT_TO_LAST_SERVER", &ConnectToLastServer);
+
+void sg_DisconnectedFromServerCheck()
+{
+    tString debug;
+
+    debug << "Curent Server? " << bool(CurrentServer() != nullptr) << ", "
+          << "Failed to connect? " << sg_failedToConnect << ", "
+          << "Failed to connect time? " << sg_failedToConnectTime;
+
+
+    gHelperUtility::Debug("sg_DisconnectedFromServer", debug.stdString());
+
+    if (!CurrentServer() && sg_failedToConnect && sg_failedToConnectTime > sg_playerWatchServerDisconnectedWatchQuitTime)
+        sn_quitAction(true, sg_playerWatchServerDisconnectedWatchQuit, "Not in a game.. " + debug.stdString());
+
+}
+
+void sg_DisconnectedFromServer(std::istream &s)
+{
+    sg_DisconnectedFromServerCheck();
+}
+
+static tConfItemFunc sg_DisconnectedFromServerConfItemFunc("PLAYER_WATCH_SERVER_DISCONNECTED_CHECK", sg_DisconnectedFromServer);
+
+void sg_scheduleDisconnectedFromServerCheckCheck()
+{
+    if (sg_playerWatchServerDisconnectedWatch)
+    {
+        const std::string taskId = "sg_DisconnectedFromServerCheck";
+        const REAL newDelay = sg_playerWatchServerDisconnectedWatchTime;
+        const REAL newInterval = sg_playerWatchServerDisconnectedWatchTime;
+
+        if (gTaskScheduler.isTaskScheduled(taskId))
+        {
+            if (gTaskScheduler.taskNeedsUpdate(taskId, newDelay, newInterval))
+                gTaskScheduler.remove(taskId);
+            else
+                return;
+        } 
+        else 
+            gHelperUtility::Debug("sg_DisconnectedFromServer", "Scheduling sg_DisconnectedFromServerCheck");
+
+        gTaskScheduler.schedule(
+            taskId,
+            newDelay,
+            [] {
+                sg_DisconnectedFromServerCheck();
+            },
+            newInterval
+        );
+    }
+}
+
 
 nServerInfoBase * getSeverFromStr(tString input)
 {

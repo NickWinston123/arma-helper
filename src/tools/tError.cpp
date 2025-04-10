@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
+
 ***************************************************************************
 
 */
@@ -34,6 +34,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 #include "tError.h"
 #include "tString.h"
+#include "tDirectories.h"
+#include "tConfiguration.h"
 
 #ifdef DEBUG
 tLevel st_debugLevel[2]={static_cast<tLevel>(DEBUG),static_cast<tLevel>(DEBUG)};
@@ -75,11 +77,22 @@ void st_PresentMessage( const char* caption, const char *message )
 
 #include <windows.h>
 
+static bool sg_showErrorMessageBox = true;
+static tConfItem<bool> sg_showErrorMessageBoxConf("ERROR_SHOW_MESSAGE_BOX", sg_showErrorMessageBox);
+
 void st_PresentError( const char* caption, const char *message )
 {
     std::cerr << message;
 
-#ifdef DEBUG	
+    FileManager fileManager(tString("crashLog.txt"), tDirectories::Log());
+    fileManager.Write(tString(message));
+
+    if (!sg_showErrorMessageBox)
+    {
+        exit(-1);
+    }
+
+#ifdef DEBUG
     int result = MessageBox (NULL, message , caption, MB_RETRYCANCEL);
 #else
 int result = MessageBox (NULL, message , caption, MB_OK);

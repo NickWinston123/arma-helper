@@ -326,9 +326,12 @@ public:
     }
     bool execute(tString args) override;
 
+    static tString process(tString args, bool showErrors = true);
     static tString preprocess(const tString &input);
 
     static std::queue<tString> infixToPostfix(const tString &infix);
+
+    static bool isNumericToken(const std::string& token);
 };
 
 class UpdateCommand : public eChatCommand

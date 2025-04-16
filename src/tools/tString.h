@@ -202,6 +202,7 @@ public:
     //  splits string intoarrays
     tArray<tString> Split(tString del_word);
     tArray<tString> Split(const char *del_word);
+    tArray<tString> SplitForPlayers();
     tArray<tString> SplitBySize(int size, bool fullWords = false);
 
     bool MatchesAtIgnoreCase(int startPos, const tString &pattern) const;

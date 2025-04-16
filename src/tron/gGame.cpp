@@ -2656,7 +2656,7 @@ tString sg_lastServerStr("");
 static tConfItem<tString> sg_lastServerStrConf = HelperCommand::tConfItem("LAST_SERVER", sg_lastServerStr);
 
 bool sg_connectToLastServerOnStart = false;
-static tConfItem<bool> sg_connectToLastServerOnStartConf = HelperCommand::tConfItem("RECONNECT_TO_LAST_SERVER_ON_START", sg_connectToLastServerOnStart);
+static tConfItem<bool> sg_connectToLastServerOnStartConf = HelperCommand::tConfItem("RECONNECT_TO_LAST_SERVER_FROM_START", sg_connectToLastServerOnStart);
 
 bool sg_connectToLastServerFromMenu = false;
 static tConfItem<bool> sg_connectToLastServerFromMenuConf = HelperCommand::tConfItem("RECONNECT_TO_LAST_SERVER_FROM_MENU", sg_connectToLastServerFromMenu);
@@ -2754,8 +2754,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
 
                             tString msg = localnetp->GetName() +
                                           tString(" last sync time: Player: ") +
-                                          playerSyncTime + ", Cycle: " + cycleSyncTime +
-                                          " seconds ago.";
+                                          playerSyncTime + ", Cycle: " + cycleSyncTime;
 
                             gHelperUtility::Debug("PLAYER_WATCH_SERVER_CONNECTED", msg.c_str());
                             if (playerLastSync > sg_playerWatchServerConnectedWatchQuitTime || cycleLastSync > sg_playerWatchServerConnectedWatchQuitTime)

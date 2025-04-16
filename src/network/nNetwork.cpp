@@ -134,6 +134,9 @@ static tConfItem<tString> sn_ourRealIPSConf("OUR_REAL_IPS", sn_ourRealIPS);
 tString sn_disallowJoinWithIP = tString("");
 static tConfItem<tString> sn_disallowJoinWithIPConf("DISALLOW_JOIN_WITH_IP", sn_disallowJoinWithIP);
 
+bool se_playerMessageTriggersBannedAction = false;
+static tConfItem<bool> se_playerMessageTriggersBannedActionConf("PLAYER_MESSAGE_TRIGGER_BANNED_ACTION", se_playerMessageTriggersBannedAction);
+
 bool sn_bannedWatch = false;
 static tConfItem<bool> sn_bannedWatchConf("PLAYER_WATCH_BANNED", sn_bannedWatch);
 tString sn_bannedWatchStr = tString("");
@@ -6060,6 +6063,9 @@ void sn_quitAction(bool save, bool quit, tString message)
             forceRandomRename = true;
         }
     }
+
+    if (se_playerMessageTriggers && se_playerMessageTriggersBannedAction) 
+        eChatBot::findResponse(eChatBot::getInstance(), tString(""), tString("$bannedaction"), message, true);
 
     if (save)
         st_SaveConfig();

@@ -34,6 +34,9 @@ static tConfItem<tString> se_playerMessageTriggersIgnorePhrasesEndsWithConf = He
 static bool se_playerMessageTriggersChatFunctionsOnly = false;
 static tConfItem<bool> se_playerMessageTriggersChatFunctionsOnlyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNCTIONS_ONLY", se_playerMessageTriggersChatFunctionsOnly);
 
+bool se_playerMessageTriggersSpamProtectionCheck = false;
+static tConfItem<bool> se_playerMessageTriggersSpamProtectionCheckConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SPAM_PROTECTION_CHECK", se_playerMessageTriggersSpamProtectionCheck);
+
 bool se_playerMessageTriggersResendSilencedMessages = false;
 static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES", se_playerMessageTriggersResendSilencedMessages);
 bool se_playerMessageTriggersResendSilencedMessagesPrefixAmount = 3;
@@ -42,12 +45,13 @@ tString se_playerMessageTriggersResendSilencedMessagesPrefixList = tString("!@#$
 static tConfItem<tString> se_playerMessageTriggersResendSilencedMessagesPrefixListConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES_PREFIX_LIST", se_playerMessageTriggersResendSilencedMessagesPrefixList);
 bool se_playerMessageTriggersClearOnSilence = true;
 static tConfItem<bool> se_playerMessageTriggersClearOnSilenceConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_CLEAR_ON_SILENCE", se_playerMessageTriggersClearOnSilence);
+bool se_playerMessageTriggersResendSilencedMessagesExtraDelay = 0;
+static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesExtraDelayConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES_EXTRA_DELAY", se_playerMessageTriggersResendSilencedMessagesExtraDelay);
+
 
 bool se_playerMessageTriggerScheduleMultiple = true;
 static tConfItem<bool> se_playerMessageTriggerScheduleMultipleConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SCHEDULE_MULTIPLE", se_playerMessageTriggerScheduleMultiple);
 
-bool se_playerMessageTriggersResendSilencedMessagesExtraDelay = 0;
-static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesExtraDelayConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_RESEND_SILENCED_MESSAGES_EXTRA_DELAY", se_playerMessageTriggersResendSilencedMessagesExtraDelay);
 
 int se_playerMessageTriggersQueueMaxOverloadedSize = 10;
 static tConfItem<int> se_playerMessageTriggersQueueMaxOverloadedSizeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_QUEUE_OVERLOADED_MAX_SIZE", se_playerMessageTriggersQueueMaxOverloadedSize);
@@ -149,11 +153,12 @@ static tConfItem<int> se_playerMessageTriggersGuessGameGiveupAnnounceIntervalCon
 std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers()
 {
     std::vector<ePlayerNetID *> enabledPlayers;
-    tArray<tString> players = se_playerMessageEnabledPlayers.Split(",");
+    tArray<tString> players = se_playerMessageEnabledPlayers.SplitForPlayers();
 
     for (int i = 0; i < players.Len(); i++)
     {
-        ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
+        ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
+        
         if (!local_p)
             continue;
 
@@ -313,70 +318,7 @@ tString numberAdderFunc(tString message)
 tString numberCalcFunc(tString message)
 {
     tString args = stripNonOperatorsOrNumbers(message);
-    std::stack<double> values;
-    std::queue<tString> postfix = CalculateCommand::infixToPostfix(CalculateCommand::preprocess(args));
-
-    tString token;
-    while (!postfix.empty())
-    {
-        token = postfix.front();
-        postfix.pop();
-        if (std::isdigit(token[0]))
-        {
-            values.push(std::stod(token.c_str()));
-        }
-        else
-        {
-            if (values.size() < 2)
-                return tString("");
-
-            double rhs = values.top();
-            values.pop();
-            double lhs = values.top();
-            values.pop();
-
-            if (token == "+")
-                values.push(lhs + rhs);
-            else if (token == "-")
-                values.push(lhs - rhs);
-            else if (token == "*")
-                values.push(lhs * rhs);
-            else if (token == "/")
-            {
-                if (rhs == 0)
-                    return tString("");
-
-                values.push(lhs / rhs);
-            }
-            else if (token == "^")
-                values.push(std::pow(lhs, rhs));
-        }
-    }
-
-    if (values.size() != 1)
-        return tString("");
-
-    std::ostringstream strs;
-    strs << std::fixed << std::setprecision(6) << values.top();
-    std::string str = strs.str();
-
-    std::size_t lastNonZero = str.find_last_not_of('0');
-    if (lastNonZero != std::string::npos)
-    {
-        if (str[lastNonZero] == '.')
-            str.erase(lastNonZero, str.length() - lastNonZero);
-        else
-            str.erase(lastNonZero + 1, str.length() - lastNonZero - 1);
-    }
-
-    tString answer(str);
-    if (answer.empty())
-    {
-        eChatBot &bot = eChatBot::getInstance();
-        bot.Messager()->Params().abortOutput = true;
-    }
-
-    return answer;
+    return CalculateCommand::process(args, sg_helperDebug);
 }
 
 tString sayFunc(tString message)
@@ -1441,10 +1383,10 @@ tString whatsTheFunc(tString message)
             return output;
         }
 
-        tArray<tString> players = se_playerMessageEnabledPlayers.Split(",");
+        tArray<tString> players = se_playerMessageEnabledPlayers.SplitForPlayers();
         for (int i = 0; i < players.Len(); i++)
         {
-            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
             if (!local_p)
                 continue;
 
@@ -2494,11 +2436,11 @@ void eChatBot::LoadChatTriggers()
 
 bool eChatBot::ShouldAnalyze()
 {
-    tArray<tString> players = se_playerMessageEnabledPlayers.Split(",");
+    tArray<tString> players = se_playerMessageEnabledPlayers.SplitForPlayers();
 
     for (int i = 0; i < players.Len(); i++)
     {
-        ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[0]) - 1);
+        ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
         if (!local_p)
             continue;
 
@@ -2509,6 +2451,27 @@ bool eChatBot::ShouldAnalyze()
         return true;
     }
     return false;
+}
+
+void eChatBot::findResponse(eChatBot &bot, tString playerName, tString trigger, tString value, bool send)
+{
+    if (!se_playerMessageTriggers)
+        return;
+
+    static const tString valDelim = tString("$val1");
+
+    bot.Messager()->ResetParams();
+    bot.Messager()->Params().triggeredByName = playerName;
+    bot.Messager()->SetInputParams(nullptr, trigger, true);
+    bot.Messager()->FindTriggeredResponse();
+
+    if (!bot.Messager()->Params().response.empty())
+        bot.Messager()->Params().response = bot.Messager()->Params().response.Replace(valDelim, value);
+    else
+        gHelperUtility::Debug("eChatBot", "No trigger set for '" + trigger.stdString() + "' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
+
+    if (send && !bot.Messager()->Params().response.empty())
+        bot.Messager()->Send();
 }
 
 bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger, tString preAppend)
@@ -2594,44 +2557,67 @@ bool containsRepeatedCharacters(tString message, bool exact)
     }
 }
 
-bool containsMath( tString input, bool exact)
+bool containsMath(tString input, bool exact)
 {
-    int digitsCount = 0;
-    int operatorsCount = 0;
-    bool negativeSign = false;
-
     input = stripNonOperatorsOrNumbers(input);
 
-    for (int i = 0; i < input.Len(); ++i)
+    int i = 0;
+    int step = 0; // 0 = expecting first number, 1 = operator, 2 = second number
+
+    while (i < input.Len())
     {
-        char c = input(i);
+        while (i < input.Len() && isblank(input(i)))
+            ++i;
 
-        if (c == '\0')
-            continue;
+        if (i < input.Len() && (input(i) == '-' || input(i) == '+'))
+            ++i;
 
-        if (std::isdigit(static_cast<unsigned char>(c)))
+        int numberStart = i;
+        bool hasDigits = false;
+        bool hasDot = false;
+
+        while (i < input.Len())
         {
-            digitsCount++;
-            if (i > 0 && input(i - 1) == '-' && !negativeSign)
-                operatorsCount++;
+            char c = input(i);
+            if (std::isdigit(c))
+            {
+                hasDigits = true;
+                ++i;
+            }
+            else if (c == '.' && !hasDot)
+            {
+                hasDot = true;
+                ++i;
+            }
+            else break;
         }
-        else if (c == '+' || c == '*' || c == '/' || c == '^')
+
+        if (hasDigits)
         {
-            operatorsCount++;
-        }
-        else if (c == '-')
-        {
-            negativeSign = true;
-            if (i > 0 && std::isdigit(static_cast<unsigned char>(input(i - 1))))
-                operatorsCount++;
+            tString token = input.SubStr(numberStart, i - numberStart);
+
+            if (step == 0)
+                step = 1; 
+            else if (step == 2)
+                return true; 
         }
         else if (exact)
-        {
             return false;
-        }
 
-        if (digitsCount >= 2 && operatorsCount >= 1)
+        while (i < input.Len() && isblank(input(i)))
+            ++i;
+
+        if (step == 1 && i < input.Len() &&
+            (input(i) == '+' || input(i) == '-' || input(i) == '*' ||
+             input(i) == '/' || input(i) == '^'))
+        {
+            ++i;
+            step = 2;
+        }
+        else if (step == 2 && i < input.Len() && std::isdigit(input(i)))
             return true;
+        else
+            ++i;
     }
 
     return false;
@@ -2643,11 +2629,10 @@ tString stripNonOperatorsOrNumbers(const tString &input)
     for (int i = 0; i < input.Len(); ++i)
     {
         char c = input(i);
-
         if (c == '\0')
             continue;
-
-        if (std::isdigit(static_cast<unsigned char>(c)) || (c == '+' || c == '-' || c == '.' || c == '*' || c == '/' || c == '^'))
+        if (std::isdigit(static_cast<unsigned char>(c)) ||
+            (c == '+' || c == '-' || c == '.' || c == '*' || c == '/' || c == '^'))
             result += c;
     }
     return result;
@@ -2883,6 +2868,9 @@ void eChatBotMessager::FindTriggeredResponse()
         tString chosenResponse = possibleResponses[rand() % possibleResponses.size()];
         chosenResponse         = chosenResponse.Replace("$p1", sanitizedTriggeredByName);
 
+        if (Params().triggeredBy)
+            chosenResponse         = chosenResponse.Replace("$p2", Params().triggeredBy->GetName());
+        
         if (Params().sendingPlayer)
         {
             chosenResponse.RecomputeLength();
@@ -3109,6 +3097,26 @@ void eChatBot::SilencedAction()
     messenger.ScheduleMessageParts();
 }
 
+REAL SpamProtectionDelayForMsg(const tString &msg)
+{
+    if (ePlayerNetID::canChatWithMsg(msg))
+        return 0.0f;
+
+    const REAL now  = getSteadyTime(); 
+    REAL       wait = 0.0f;
+
+    if (ePlayerNetID::nextSpeakTime > now)
+        wait = std::max<REAL>(wait, ePlayerNetID::nextSpeakTime - now);
+
+    if (msg.StartsWith(ePlayerNetID::nextSpeakTimePrefixCommonPrefix) &&
+        ePlayerNetID::nextSpeakTimePrefix > now)
+        wait = std::max<REAL>(wait,
+                              ePlayerNetID::nextSpeakTimePrefix - now);
+
+    return std::max<REAL>(wait, 0.0f);
+}
+
+
 bool eChatBotMessager::Send()
 {
     if (!helperConfig::sghuk)
@@ -3117,40 +3125,40 @@ bool eChatBotMessager::Send()
     if (!Params().sendingPlayer)
     {
         gHelperUtility::Debug("eChatBot","No sending player set. Attemping to set one");
-
-        for (auto localNetPlayer : se_GetPlayerMessageEnabledPlayers())
+        for (auto *localNetPlayer : se_GetPlayerMessageEnabledPlayers())
         {
             Params().sendingPlayer = localNetPlayer;
             break;
         }
-
     }
 
-    if ((!Params().sendingPlayer) || (!tIsEnabledForPlayer(se_playerMessageEnabledPlayers, Params().sendingPlayer->pID + 1)))
+    if (!Params().sendingPlayer ||
+        !tIsEnabledForPlayer(se_playerMessageEnabledPlayers,
+                             Params().sendingPlayer->pID + 1))
     {
-        gHelperUtility::Debug("eChatBot","No sending player set. Aborting");
+        gHelperUtility::Debug("eChatBot", "No sending player set. Aborting");
         return false;
     }
 
-    REAL extraDelay = 0;
     tString messageToSend = Params().response;
+    bool  forceSpecialDelay = (Params().delay < -5);
 
-    bool forceSpecialDelay = Params().delay < -5;
-
-    REAL totalDelay = 0.0;
-    int messageLength = messageToSend.Len();
-
-    if (messageLength > se_playerMessageTriggersSpamMaxlen)
+    if (messageToSend.Len() > se_playerMessageTriggersSpamMaxlen)
     {
-        gHelperUtility::Debug("eChatBot","messageToSend cut because length > " +
-                                                     std::to_string(se_playerMessageTriggersSpamMaxlen) +
-                                                     " Length: " +
-                                                     std::to_string(messageLength));
+        gHelperUtility::Debug("eChatBot",
+                              "messageToSend cut because length > " +
+                                  std::to_string(se_playerMessageTriggersSpamMaxlen) +
+                                  " Length: " +
+                                  std::to_string(messageToSend.Len()));
         messageToSend = messageToSend.SubStr(0, se_playerMessageTriggersSpamMaxlen);
     }
 
+    REAL extraDelay = 0.0;
+
     if (se_playerMessageSmartDelay)
-        extraDelay += calculateResponseSmartDelay(messageToSend, se_playerMessageSmartDelayTypingWPM) + se_playerMessageSmartDelayReactionTime;
+        extraDelay += calculateResponseSmartDelay(messageToSend,
+                                                  se_playerMessageSmartDelayTypingWPM)
+                    + se_playerMessageSmartDelayReactionTime;
 
     if (se_playerMessageDelay > 0)
         extraDelay += se_playerMessageDelay;
@@ -3158,43 +3166,52 @@ bool eChatBotMessager::Send()
     if (se_playerMessageDelayRandMult > 0)
         extraDelay += (REAL)rand() / RAND_MAX * se_playerMessageDelayRandMult;
 
-    totalDelay = Params().delay + extraDelay;
+    const REAL totalDelay = Params().delay + extraDelay;
 
     const size_t maxMessageLength = se_SpamMaxLen - 1;
-    tArray<tString> messageParts = messageToSend.SplitBySize(maxMessageLength, true);
+    tArray<tString> messageParts =
+        messageToSend.SplitBySize(maxMessageLength, true);
 
-    int startPartIndex = static_cast<int>(std::max(static_cast<size_t>(0), Params().currentPartIndex));
-    int numberOfParts = messageParts.Len() - startPartIndex;
+    const int   startPartIndex = std::max(0, (int)Params().currentPartIndex);
+    const int   numberOfParts  = messageParts.Len() - startPartIndex;
+    const bool  applySpamCheck = se_playerMessageTriggersSpamProtectionCheck;
 
+    REAL spamDelay = 0.0;
+    if (applySpamCheck)
+        spamDelay = std::max(SpamProtectionDelayForMsg(messageToSend), 0.0f);
 
     bool scheduled = false;
-    for (int i = 0; i < messageParts.Len(); i++)
-    {
-        tString partToSend = messageParts[i];
-        partToSend.RecomputeLength();
 
-        if (messageParts.Len() > 1)
-            gHelperUtility::Debug("eChatBot","partToSend", partToSend);
+    for (int i = 0; i < messageParts.Len(); ++i)
+    {
+        tString partText = messageParts[i];
+        partText.RecomputeLength();
 
         if (!Params().preAppend.empty())
-            partToSend = Params().preAppend + partToSend;
+            partText = Params().preAppend + partText;
 
-        REAL delayForPart;
+        REAL delayForPart = 0.0;
+
         if (forceSpecialDelay)
         {
-            if (i == 0)
-                delayForPart = 0.0;
-            else
-                delayForPart = se_playerMessageTriggersDelayForNegativeParts; 
+            delayForPart = (i == 0) ? 0.0
+                                    : se_playerMessageTriggersDelayForNegativeParts;
         }
         else
+        {
             delayForPart = (numberOfParts > 0)
                                ? (totalDelay / numberOfParts)
                                : totalDelay;
+        }
 
-        eChatBotData::MessagePart part(partToSend, delayForPart,
-                                       !forceSpecialDelay && se_playerMessageTriggersChatFlag,
-                                       se_playerMessageTriggersChatFlagStartMult);
+        if (i == 0 && spamDelay > 0.0)
+            delayForPart += spamDelay;
+
+        eChatBotData::MessagePart part(
+            partText,
+            delayForPart,
+            !forceSpecialDelay && se_playerMessageTriggersChatFlag,
+            se_playerMessageTriggersChatFlagStartMult);
 
         Params().messageParts.push_back(part);
         scheduled = true;
@@ -3204,7 +3221,6 @@ bool eChatBotMessager::Send()
         Stats().total_messages_sent++;
 
     ScheduleMessageParts();
-
     return scheduled;
 }
 

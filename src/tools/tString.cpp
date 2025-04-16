@@ -2941,6 +2941,68 @@ tArray<tString> tString::SplitBySize(int size, bool fullWords)
     return arrayString;
 }
 
+tArray<tString> tString::SplitForPlayers()
+{
+    tArray<tString> enabledPlayers;
+
+    if (this->empty())
+        return enabledPlayers;
+
+    bool wildcard = false;
+    std::set<int> include;
+    std::set<int> exclude;
+
+    int pos = 0;
+    while (pos < this->Len())
+    {
+        while (pos < this->Len() && (*this)[pos] == ',')
+            pos++;
+
+        if (pos >= this->Len())
+            break;
+
+        bool isNegation = false;
+        if ((*this)[pos] == '!')
+        {
+            isNegation = true;
+            pos++;
+        }
+
+        int start = pos;
+        while (pos < this->Len() && (*this)[pos] != ',')
+            pos++;
+
+        tString token = this->SubStr(start, pos - start);
+
+        if (token == "*")
+        {
+            wildcard = true;
+        }
+        else
+        {
+            int pid = atoi(token.c_str());
+            if (pid >= 1 && pid <= MAX_PLAYERS)
+            {
+                if (isNegation)
+                    exclude.insert(pid);
+                else
+                    include.insert(pid);
+            }
+        }
+    }
+
+    for (int pid = 1; pid <= MAX_PLAYERS; pid++)
+    {
+        if (exclude.count(pid))
+            continue;
+
+        if (include.count(pid) || wildcard)
+            enabledPlayers[enabledPlayers.Len()] = tString(std::to_string(pid).c_str());
+    }
+
+    return enabledPlayers;
+}
+
 
 // **********************************************************************
 // *

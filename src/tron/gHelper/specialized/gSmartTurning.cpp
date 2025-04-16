@@ -64,11 +64,13 @@ namespace helperConfig
     static tConfItem<bool> sg_helperSmartTurningPlanConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_PLAN", sg_helperSmartTurningPlan);
 
     bool sg_helperSmartTurningFollowTail = false;
-    // static tConfItem<bool> sg_helperSmartTurningFollowTailConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
+    static tConfItem<bool> sg_helperSmartTurningFollowTailConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
     REAL sg_helperSmartTurningFollowTailDelayMult = 1;
-    // static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
+    static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
     REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
-    // static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
+    static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
+    REAL sg_helperSmartTurningFollowTailCloseMult = 3;
+    static tConfItem<REAL> sg_helperSmartTurningFollowTailCloseMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_CLOSE_MULT", sg_helperSmartTurningFollowTailCloseMult);
 
 };
 
@@ -144,87 +146,68 @@ void gSmartTurning::smartTurningPlan(gHelperData &data)
  *
  * @param data A reference to a gHelperData object that contains information about the cycle and the game state.
  */
+
 void gSmartTurning::followTail(gHelperData &data)
 {
-    // If the cycle is not alive, or the tail is not moving, or the tail is not close to the cycle, return
-    if (!helper_.aliveCheck() || !owner_.tailMoving ||
-        (!gHelperUtility::isClose(&owner_, owner_.tailPos, data.ownerData.turnSpeedFactorF() * 3)))
+
+    if (!helper_.aliveCheck() ||
+        !owner_.tailMoving ||
+        !gHelperUtility::isClose(&owner_, owner_.tailPos,
+                                 data.ownerData.turnSpeedFactorF() *
+                                     sg_helperSmartTurningFollowTailCloseMult))
         return;
 
-    // Calculate the delay between turning actions
-    REAL delay = data.ownerData.turnSpeedFactorF() * sg_helperSmartTurningFollowTailDelayMult;
+    const REAL rawDelay = data.ownerData.turnSpeedFactorF() *
+                          sg_helperSmartTurningFollowTailDelayMult;
+    constexpr REAL MIN_DELAY = 0.10f;
+    const REAL delay = std::max(rawDelay, MIN_DELAY);
 
-    // Check if the cycle is driving straight
-    // bool drivingStraight = helper_.drivingStraight();
-
-    // Check if the cycle can survive turning left or right
-
-    gSurviveData surviveData = helper_.turnHelper->canSurviveTurn(data, sg_helperSmartTurningFollowTailFreeSpaceMult, false, sg_helperDebug && sg_helperSmartTurningSurviveDebug);
-    if (!surviveData.exist)
-        return;
-    // If the cycle is closed in or blocked by itself, return
-    if (surviveData.closedIn || surviveData.blockedBySelf)
+    if (helper_.CurrentTime() < lastTailTurnTime + delay)
         return;
 
-    // Calculate the direction from the cycle to the tail
-    eCoord directionToTail = owner_.tailPos - owner_.pos;
-    directionToTail.Normalize();
-    int turnDirection = NONE;
-    // Determine if the tail is in front of or behind the cycle
-    if (directionToTail * owner_.dir < 0)
-    {
-        // The tail is behind the cycle, turn towards it
+    gSurviveData sv = helper_.turnHelper->canSurviveTurn(data,
+                                                        sg_helperSmartTurningFollowTailFreeSpaceMult,
+                                                        false,
+                                                        sg_helperDebug && sg_helperSmartTurningSurviveDebug);
+    if (!sv.exist || sv.closedIn || sv.blockedBySelf)
+        return;
 
-        // Check if there are walls to the left or right of the cycle
-        gHelperSensor leftSensor(&owner_, owner_.pos, owner_.dir.Turn(0, 1));
-        leftSensor.detect(sg_helperSensorRange);
-        gHelperSensor rightSensor(&owner_, owner_.pos, owner_.dir.Turn(0, -1));
-        rightSensor.detect(sg_helperSensorRange);
+    const eCoord vTail = (owner_.tailPos - owner_.pos).GetNormalized();
+    const REAL dot = eCoord::F(vTail, owner_.dir);
+    const REAL cross = vTail * owner_.dir;
 
-        // Check if the tail is to the right or left of the cycle
-        if (directionToTail * owner_.dir > 0 && surviveData.canSurviveRightTurn && rightSensor.hit > .999999)
-            turnDirection = RIGHT;
-        else if (surviveData.canSurviveLeftTurn && leftSensor.hit > .999999)
-            turnDirection = LEFT;
+    constexpr REAL FRONT_TOL = 0.5f;
+    if (dot > FRONT_TOL)
+        return;
 
-        if (turnDirection == NONE)
-            return;
-    }
+    int desiredTurn = NONE;
+    if (cross > 0 && sv.canSurviveLeftTurn)
+        desiredTurn = LEFT;
+    else if (cross < 0 && sv.canSurviveRightTurn)
+        desiredTurn = RIGHT;
     else
-    {
-        // The tail is in front of the cycle, stay on current path
-
-        // The tail is directly in front of or behind the cycle
-        // Stay on current path
-    }
-
-    // Check if the cycle has turned recently
-    bool turnedRecently = !(lastTailTurnTime < 0) && owner_.lastTurnTime + delay > helper_.CurrentTime();
-
-    // Check if the cycle is ready to turn again
-    bool readyToTurn = helper_.CurrentTime() > lastTailTurnTime + delay;
-
-    // If the cycle has not turned recently or if the cycle is not ready to turn, return
-    if (!readyToTurn)
-    {
         return;
+
+    if (!helper_.turnHelper->canSurviveTurnSpecific(
+            data,
+            desiredTurn,
+            sg_helperSmartTurningFollowTailFreeSpaceMult))
+        return;
+
+    if (sg_helperDebug && sg_helperSmartTurningFollowTail)
+    {
+        static int frame = 0;
+        tString dbg;
+        dbg << "f=" << frame++
+            << " dot=" << customRound(dot, 2)
+            << " crs=" << customRound(cross, 2)
+            << " ok?=" << (desiredTurn == LEFT ? sv.canSurviveLeftTurn : sv.canSurviveRightTurn)
+            << " dt=" << customRound(helper_.CurrentTime() - lastTailTurnTime, 2);
+        gHelperUtility::DebugForce("FOLLOW_TAIL", dbg.stdString(), false);
     }
 
-    // If the turn direction is LEFT and the cycle can survive a left turn,
-    // turn the cycle left and update the last tail turn time
-    if (surviveData.canSurviveRightTurn && turnDirection == LEFT)
-    {
-        owner_.ActTurnBot(LEFT);
-        lastTailTurnTime = helper_.CurrentTime();
-    }
-
-    // If the turn direction is RIGHT and the cycle can survive a right turn,
-    // turn the cycle right and update the last tail turn time
-    if (surviveData.canSurviveLeftTurn && turnDirection == RIGHT)
-    {
-        owner_.ActTurnBot(RIGHT);
-        lastTailTurnTime = helper_.CurrentTime();
-    }
+    owner_.ActTurnBot(desiredTurn);
+    lastTailTurnTime = helper_.CurrentTime();
 }
 
 void gSmartTurning::smartTurningOpposite(gHelperData &data)
@@ -530,7 +513,7 @@ tColoredString gSmartTurning::ModeString()
     else
         mode << "None";
     return mode;
-   
+
 }
 void gSmartTurning::Activate(gHelperData &data)
 {
@@ -551,12 +534,12 @@ void gSmartTurning::Activate(gHelperData &data)
         sg_helperSmartTurningSurvive = sg_helperSmartTurningOpposite = 0;
         smartTurningPlan(data);
     }
-    
+
     if (sg_helperHud)
         sg_helperSmartTurningModeH << ModeString();
 
-    // if (sg_helperSmartTurningFollowTail)
-    //     followTail(data);
+     if (sg_helperSmartTurningFollowTail)
+         followTail(data);
 
     if (sg_helperSmartTurningFrontBot)
         smartTurningFrontBot(data);

@@ -1080,64 +1080,74 @@ bool BrowserCommand::execute(tString args)
 
 bool SpeakCommand::execute(tString args)
 {
-    int pos = 0;
-    tString PlayerStr = args.ExtractNonBlankSubString(pos);
-
+    int      pos        = 0;
+    tString  playerStr  = args.ExtractNonBlankSubString(pos);
     ePlayerNetID *targetPlayer = nullptr;
 
-    if (!PlayerStr.empty() && PlayerStr.isNumber())
+    if (!playerStr.empty() && playerStr.isNumber())
     {
-        int id = atoi(PlayerStr) - 1;
+        int id = atoi(playerStr) - 1;
         ePlayer *p = ePlayer::PlayerConfig(id);
         if (p && p->netPlayer)
             targetPlayer = p->netPlayer;
         else
         {
-            con << CommandLabel()
-                << ErrorColor()
-                << "No local/net player for ID '"
-                << ItemColor()
-                << PlayerStr
-                << ErrorColor()
-                << "'\n";
+            con << CommandLabel() << ErrorColor()
+                << "No local/net player for ID '" << ItemColor()
+                << playerStr << ErrorColor() << "'\n";
             return true;
         }
     }
-    else
+    else    
     {
-        targetPlayer = ePlayerNetID::FindPlayerByName(PlayerStr);
+        targetPlayer = ePlayerNetID::FindPlayerByName(playerStr);
     }
 
-    REAL delay = se_speakCommandDelay;
-    bool flag = delay > 0;
-
-    if (targetPlayer && targetPlayer->isLocal())
+    if (!targetPlayer)
     {
-        tString chatString = args.SubStr(pos + 1);
-
-        if (chatString.StartsWith("/"))
-            delay = flag = 0;
-
-        if (delay > 0)
-        {
-            con << CommandLabel()
-                << "Sending message with delay: '"
-                << ItemColor()
-                << delay
-                << HeaderColor() << "'\n";
-        }
-
-        targetPlayer->Chat(chatString);
-
-        // eChatBot::scheduleMessageTask(targetPlayer, chatString, flag, delay, delay * 0.5);
-    }
-    else if (targetPlayer && !targetPlayer->isLocal())
-    {
-        con << CommandLabel()
-            << ErrorColor()
-            << "Not a local player.\n";
+        con << CommandLabel() << ErrorColor()
+            << "Player not found.\n";
+        return true;
     }
 
+    tString chatString = args.SubStr(pos + 1).TrimWhitespace();
+    if (chatString.empty())
+        return true;                   
+
+    REAL delay      = se_speakCommandDelay;   
+    bool useChatFlg = (delay > 0);
+
+    if (se_playerMessageTriggersSpamProtectionCheck)
+        delay += std::max<REAL>(SpamProtectionDelayForMsg(chatString), 0.0f);
+    else if (!ePlayerNetID::canChatWithMsg(chatString))
+    {
+        con << CommandLabel() << ErrorColor()
+            << "You’re still silenced – enable "
+            << "PLAYER_MESSAGE_TRIGGERS_SPAM_PROTECTION_CHECK "
+            << "or wait.\n";
+        return true;
+    }
+
+
+    if (!targetPlayer->isLocal())
+    {
+        con << CommandLabel() << ErrorColor()
+            << "Target is not a local player.\n";
+        return true;
+    }
+
+    eChatBot &bot = eChatBot::getInstance();
+    bot.Messager()->ResetParams();                   
+    bot.Messager()->SetInputParams(targetPlayer, chatString, false);
+    bot.Messager()->Params().response       = chatString;
+    bot.Messager()->Params().sendingPlayer  = targetPlayer;
+    bot.Messager()->Params().messageParts   =
+    {
+        { chatString, delay, useChatFlg }
+    };
+    bot.Messager()->Params().currentPartIndex = 0;
+
+    bot.Messager()->ScheduleMessageParts();
     return true;
 }
 
@@ -1399,7 +1409,7 @@ bool JoinCommand::execute(tString args)
                 << ItemColor()
                 << local_p->Name()
                 << MainColor()
-                << "is no longer spectating...\n";
+                << " is no longer spectating...\n";
             local_p->spectate = false;
         }
     }
@@ -2009,11 +2019,61 @@ bool ReconnectCommand::execute(tString args)
 
 #include <stack>
 #include <queue>
+
+bool CalculateCommand::isNumericToken(const std::string& token)
+{
+    if (token.empty())
+        return false;
+
+    size_t i = 0;
+    bool hasDecimal = false;
+
+    if (token[i] == '-' || token[i] == '+')
+        ++i;
+
+    bool hasDigit = false;
+
+    for (; i < token.size(); ++i)
+    {
+        if (std::isdigit(token[i]))
+        {
+            hasDigit = true;
+        }
+        else if (token[i] == '.' && !hasDecimal)
+        {
+            hasDecimal = true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    return hasDigit;
+}
 bool CalculateCommand::execute(tString args)
 {
-    con << CommandLabel()
-        << "Performing calculation: '" << ItemColor()
-        << args << MainColor() << "'\n";
+    con << CommandLabel() 
+        << "Performing calculation: '" 
+        << ItemColor() 
+        << args 
+        << MainColor() 
+        << "'\n";
+
+    tString result = CalculateCommand::process(args);
+
+    if (result.empty())
+        return true;
+
+    con << MainColor() << "Result: '" << ItemColor() << result
+        << MainColor() << "'\n";
+
+    return true;
+}
+
+
+tString CalculateCommand::process(tString args, bool showErrors)
+{
     std::stack<double> values;
     std::queue<tString> postfix = infixToPostfix(preprocess(args));
 
@@ -2022,50 +2082,48 @@ bool CalculateCommand::execute(tString args)
     {
         token = postfix.front();
         postfix.pop();
-        if (std::isdigit(token[0]))
+
+        std::string tokenStr = token.c_str();
+
+        if (isNumericToken(tokenStr))
         {
-            values.push(std::stod(token.c_str()));
+            double val = std::stod(tokenStr);
+            values.push(val);
         }
         else
         {
             if (values.size() < 2)
             {
-                con << ErrorColor()
-                    << "Error: Not enough values for operation\n";
-                return false;
+                if (showErrors)
+                    con << tThemedTextBase.ErrorColor() << "Error: Not enough values for operation\n";
+                return tString("");
             }
 
-            double rhs = values.top();
-            values.pop();
-            double lhs = values.top();
-            values.pop();
+            double rhs = values.top(); values.pop();
+            double lhs = values.top(); values.pop();
 
-            if (token == "+")
-                values.push(lhs + rhs);
-            else if (token == "-")
-                values.push(lhs - rhs);
-            else if (token == "*")
-                values.push(lhs * rhs);
+            if (token == "+") values.push(lhs + rhs);
+            else if (token == "-") values.push(lhs - rhs);
+            else if (token == "*") values.push(lhs * rhs);
             else if (token == "/")
             {
                 if (rhs == 0)
                 {
-                    con << ErrorColor()
-                        << "Error: Division by zero\n";
-                    return false;
+                    if (showErrors)
+                        con << tThemedTextBase.ErrorColor() << "Error: Division by zero\n";
+                    return tString("");
                 }
                 values.push(lhs / rhs);
             }
-            else if (token == "^")
-                values.push(std::pow(lhs, rhs));
+            else if (token == "^") values.push(std::pow(lhs, rhs));
         }
     }
 
     if (values.size() != 1)
     {
-        con << ErrorColor()
-            << "Error: Too many values\n";
-        return false;
+        if (showErrors)
+            con << tThemedTextBase.ErrorColor() << "Error: Too many values\n";
+        return tString("");
     }
 
     std::ostringstream strs;
@@ -2076,36 +2134,67 @@ bool CalculateCommand::execute(tString args)
     if (lastNonZero != std::string::npos)
     {
         if (str[lastNonZero] == '.')
-            str.erase(lastNonZero, str.length() - lastNonZero);
+            str.erase(lastNonZero);
         else
-            str.erase(lastNonZero + 1, str.length() - lastNonZero - 1);
+            str.erase(lastNonZero + 1);
     }
 
-con << MainColor()
-    << "Result: '" << ItemColor()
-    << str
-    << MainColor() << "'\n";
-
-    return true;
+    return tString(str);
 }
-
 tString CalculateCommand::preprocess(const tString &input)
 {
     std::string str(input.c_str());
     std::string processed;
-    for (char &ch : str)
+    bool lastWasOperator = true;
+
+    for (size_t i = 0; i < str.size(); ++i)
     {
-        if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^')
+        char ch = str[i];
+
+        if (std::isspace(ch))
+            continue;
+
+        if ((ch == '+' || ch == '-') && lastWasOperator)
+        {
+            processed += ch;
+            ++i;
+
+            bool decimalSeen = false;
+            while (i < str.size() && (std::isdigit(str[i]) || (str[i] == '.' && !decimalSeen)))
+            {
+                if (str[i] == '.')
+                    decimalSeen = true;
+                processed += str[i++];
+            }
+            processed += ' ';
+            --i;
+            lastWasOperator = false;
+        }
+        else if (ch == '*' || ch == '/' || ch == '^' || ch == '+' || ch == '-')
         {
             processed += ' ';
             processed += ch;
             processed += ' ';
+            lastWasOperator = true;
         }
         else
         {
+            bool decimalSeen = (ch == '.');
             processed += ch;
+
+            while (i + 1 < str.size() && (std::isdigit(str[i + 1]) || (!decimalSeen && str[i + 1] == '.')))
+            {
+                ++i;
+                if (str[i] == '.')
+                    decimalSeen = true;
+                processed += str[i];
+            }
+
+            processed += ' ';
+            lastWasOperator = false;
         }
     }
+
     return tString(processed.c_str());
 }
 
@@ -2126,18 +2215,18 @@ std::queue<tString> CalculateCommand::infixToPostfix(const tString &infix)
     while (tokens >> token)
     {
         tString tToken(token.c_str());
-        if (std::isdigit(tToken[0]))
+        if (isNumericToken(token))
         {
             queue.push(tToken);
         }
-        else if (tToken == "+" || tToken == "-" || tToken == "*" || tToken == "/" || tToken == "^")
+        else if (tToken == "+" || tToken == "-" || tToken == "*" || 
+                 tToken == "/" || tToken == "^")
         {
             while (!stack.empty() && prec[tToken[0]] <= prec[stack.top()[0]])
             {
                 queue.push(stack.top());
                 stack.pop();
             }
-
             stack.push(tToken);
         }
     }
@@ -2147,9 +2236,9 @@ std::queue<tString> CalculateCommand::infixToPostfix(const tString &infix)
         queue.push(stack.top());
         stack.pop();
     }
-
     return queue;
 }
+
 
 bool UpdateCommand::execute(tString args)
 {

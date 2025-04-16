@@ -44,7 +44,7 @@ $search;!search,$searchfunc,-9999,0
 $show;!show,$hidestatfunc(unprivate),-999,0
 $slap,$unvalidatedsayfunc(/admin slap $p1 0),-9999,0
 #$spec,$unvalidatedsayfunc(/spec),-999,0
-$join,$unvalidatedsayfunc(/join),-999,0
+#$join,$unvalidatedsayfunc(/join),-999,0
 !s;$s,$statsfunc,-9999,0
 !st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
 !hn;!hidden;$hn;$hidden,$exactstatfunc(hide),-999,0
@@ -61,11 +61,11 @@ $log,$logfunc(store),-9999,0
 $msg,$unvalidatedsayfunc(/msg),-999,0
 $rps,$rpsgamefunc,-999,0
 $guess,$guessgamefunc,-999,0
-#$com,$whatsthefunc(commands),-999,0
+$com,$whatsthefunc(commands),-999,0
 $eval,$whatsthefunc(smarter_bot_contribution),-999,0
 $ip,$whatsthefunc(ip_address),-999,0
 $params,$encryptedunvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params ),-9999,0
-$ai,$unvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params toggle_process_player $p1),-9999,0
+$ai,$unvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params toggle_process_player $p2),-9999,0
 
 $,$sayfunc,-9999,0
 >,$sayoutloudfunc,-999,0
@@ -73,6 +73,7 @@ $,$sayfunc,-9999,0
 //
 // Events
 //
+$bannedaction,Ban detected.. Reason: $val1,-99999,1
 #$banned,on it $p1 youre done;youre done for $p1;its over $p1,-9999,1
 $banned,youre banned $p1!!!!!!!!!!!! you really want to test me?;youre banned $p1!!!!!!!!!!!! i could make you disappear!;youre banned $p1!!!!!!!!!!!! you dont know who youre dealing with!;youre banned $p1!!!!!!!!!!!! this can go one of two ways and you wont like the other!;youre banned $p1!!!!!!!!!!!! think carefully about your next move!;youre banned $p1!!!!!!!!!!!! you wont win this fight!;youre banned $p1!!!!!!!!!!!! i have the power to ruin your life!;youre banned $p1!!!!!!!!!!!! youre playing a dangerous game!,-9999,0
 $alreadybanned,$p1 is already banned;we already got $p1;$p1 was banned already,-9999,0
@@ -151,10 +152,11 @@ $p0 train,yes,0,0
 meet,yeah i will be there;im coming;lets go,0,0
 see ya;bb ;g2g ;cu ;gtg ;cya ;bbl ,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu later $p1!,0,0
 bb;g2g;cu;gtg;cya;bbl,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu later $p1!,0,1
-gn;gn ; good night,good night!!,0,0
+ gn;gn ; good night,good night!!,0,0
 gn; good night,good night!!,0,1
 gm;gz;ghz;gg,gg;GG,0,1
 good game; gm; gz; ghz; gg;gm ;gz ;ghz ;gg ,gg;GG,0,0
+real name,its $p2,0,0
 real,yes,0,0
 how are you,doing pretty well $p1 how about you?;good as always $p1 and you? :d;great $p1!! how about you?,0,0
 worthless,doesnt add up $p1;dont think so;nah;k,0,0

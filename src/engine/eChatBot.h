@@ -21,7 +21,8 @@ extern bool se_playerMessageTriggers,
             se_playerMessageTriggersRageQuits,
             se_playerMessageTriggersAcheivements,
             se_playerMessageTriggersAcheivementsLocal,
-            se_playerMessageTriggersClearOnSilence;
+            se_playerMessageTriggersClearOnSilence,
+            se_playerMessageTriggersSpamProtectionCheck;
 
 extern int se_playerMessageTriggersAcheivementsKillsChangeVal,
            se_playerMessageTriggersAcheivementsKillStreakChangeVal,
@@ -29,6 +30,9 @@ extern int se_playerMessageTriggersAcheivementsKillsChangeVal,
            se_playerMessageTriggersAcheivementsChatsChangeVal,
            se_playerMessageTriggersAcheivementsJoinsChangeVal,
            se_playerMessageTriggersAcheivementsBansChangeVal;
+
+           
+extern REAL SpamProtectionDelayForMsg(const tString &msg);
 
 std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers();
 
@@ -307,6 +311,8 @@ public:
 
     static bool InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger = false, tString preAppend = tString(""));
 
+    static void findResponse(eChatBot &bot, tString playerName, tString trigger, tString value, bool send = false);
+    
     bool ShouldAnalyze();
 };
 

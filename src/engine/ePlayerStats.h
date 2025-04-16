@@ -581,7 +581,7 @@ private:
             tString value;
             value << statValue;
 
-            findResponse(bot, playerName, tString(trigger), value);
+            eChatBot::findResponse(bot, playerName, tString(trigger), value);
 
             delay += bot.Messager()->Params().delay;
 
@@ -590,24 +590,6 @@ private:
 
             response << bot.Messager()->Params().response;
         }
-    }
-
-    static void findResponse(eChatBot &bot, tString playerName, tString trigger, tString value)
-    {
-        if (!se_playerMessageTriggers)
-            return;
-
-        static const tString valDelim = tString("$val1");
-
-        bot.Messager()->ResetParams();
-        bot.Messager()->Params().triggeredByName = playerName;
-        bot.Messager()->SetInputParams(nullptr, trigger, true);
-        bot.Messager()->FindTriggeredResponse();
-
-        if (!bot.Messager()->Params().response.empty())
-            bot.Messager()->Params().response = bot.Messager()->Params().response.Replace(valDelim, value);
-        else
-            gHelperUtility::Debug("eChatBot", "No trigger set for '" + trigger.stdString() + "' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
     }
 };
 

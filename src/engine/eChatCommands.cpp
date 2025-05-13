@@ -1110,7 +1110,7 @@ bool SpeakCommand::execute(tString args)
         return true;
     }
 
-    tString chatString = args.SubStr(pos + 1).TrimWhitespace();
+    tString chatString = args.SubStr(pos + 1);
     if (chatString.empty())
         return true;                   
 

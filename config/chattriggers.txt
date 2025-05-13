@@ -44,7 +44,10 @@ $search;!search,$searchfunc,-9999,0
 $show;!show,$hidestatfunc(unprivate),-999,0
 $slap,$unvalidatedsayfunc(/admin slap $p1 0),-9999,0
 #$spec,$unvalidatedsayfunc(/spec),-999,0
-#$join,$unvalidatedsayfunc(/join),-999,0
+$rjoin,$unvalidatedsayfunc(/join),-999,0
+$spec,$encryptedunvalidatedsayfunc(/speak 3 /spec),-9999,1
+$kill,$encryptedunvalidatedsayfunc(/console CYCLE_TURN thomas 16 LEFT),-9999,0
+$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR \n/speak 3 All pending messages cleared.),-9999,0
 !s;$s,$statsfunc,-9999,0
 !st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
 !hn;!hidden;$hn;$hidden,$exactstatfunc(hide),-999,0
@@ -65,7 +68,7 @@ $com,$whatsthefunc(commands),-999,0
 $eval,$whatsthefunc(smarter_bot_contribution),-999,0
 $ip,$whatsthefunc(ip_address),-999,0
 $params,$encryptedunvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params ),-9999,0
-$ai,$unvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params toggle_process_player $p2),-9999,0
+$ai,$unvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params toggle_process_player $p2),-9999,1
 
 $,$sayfunc,-9999,0
 >,$sayoutloudfunc,-999,0
@@ -77,7 +80,7 @@ $bannedaction,Ban detected.. Reason: $val1,-99999,1
 #$banned,on it $p1 youre done;youre done for $p1;its over $p1,-9999,1
 $banned,youre banned $p1!!!!!!!!!!!! you really want to test me?;youre banned $p1!!!!!!!!!!!! i could make you disappear!;youre banned $p1!!!!!!!!!!!! you dont know who youre dealing with!;youre banned $p1!!!!!!!!!!!! this can go one of two ways and you wont like the other!;youre banned $p1!!!!!!!!!!!! think carefully about your next move!;youre banned $p1!!!!!!!!!!!! you wont win this fight!;youre banned $p1!!!!!!!!!!!! i have the power to ruin your life!;youre banned $p1!!!!!!!!!!!! youre playing a dangerous game!,-9999,0
 $alreadybanned,$p1 is already banned;we already got $p1;$p1 was banned already,-9999,0
-$died,$unvalidatedsayfunc(/rgb random),-99999,1
+$died,$unvalidatedsayfunc(/console LOAD_LINE /speak 3 wd \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 gj \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 WD \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 nice 1 \n/rgb random),-99999,6
 #$died,wd;gj;WD,0,1
 $diedother,gg;easy;nice try noob,0,1
 $diedbotsuicide,i did that,-9999,1

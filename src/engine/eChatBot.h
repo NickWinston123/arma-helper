@@ -22,7 +22,8 @@ extern bool se_playerMessageTriggers,
             se_playerMessageTriggersAcheivements,
             se_playerMessageTriggersAcheivementsLocal,
             se_playerMessageTriggersClearOnSilence,
-            se_playerMessageTriggersSpamProtectionCheck;
+            se_playerMessageTriggersSpamProtectionCheck,
+            se_playerMessageTriggersContextBuilder;
 
 extern int se_playerMessageTriggersAcheivementsKillsChangeVal,
            se_playerMessageTriggersAcheivementsKillStreakChangeVal,
@@ -31,7 +32,7 @@ extern int se_playerMessageTriggersAcheivementsKillsChangeVal,
            se_playerMessageTriggersAcheivementsJoinsChangeVal,
            se_playerMessageTriggersAcheivementsBansChangeVal;
 
-           
+
 extern REAL SpamProtectionDelayForMsg(const tString &msg);
 
 std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers();
@@ -211,6 +212,31 @@ public:
         functions = new eChatBotFunctions(this);
         messager  = new eChatBotMessager(this);
     }
+    void StoreContextItem(const tString &item);
+
+    tString ExtractAdditionalContextItems(const char *newLabel = nullptr, const char *newKey = nullptr);
+
+    tString ExtractContext(bool clearContext = true)
+    {
+        tString combinedContext;
+
+        for (const auto &item : contextItems)
+        {
+            if (!combinedContext.empty())
+                combinedContext << " | ";
+            combinedContext << item;
+        }
+
+        if (clearContext)
+            contextItems.clear();
+
+        return combinedContext;
+    }
+
+    void ClearContext()
+    {
+        contextItems.clear();
+    }
 
     struct ChatTrigger {
         tString trigger;
@@ -224,7 +250,9 @@ public:
         bool isSpecialTrigger;
     };
 
+    std::vector<tString> contextItems;
     std::vector<ChatTrigger> chatTriggers;
+
 
     TempConfItemManager *chatBotCommandConfItems;
 
@@ -312,7 +340,7 @@ public:
     static bool InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger = false, tString preAppend = tString(""));
 
     static void findResponse(eChatBot &bot, tString playerName, tString trigger, tString value, bool send = false);
-    
+
     bool ShouldAnalyze();
 };
 

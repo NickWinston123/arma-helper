@@ -478,6 +478,14 @@ public:
             // move towards the beginning of a wall
             lrSuggestion_ = -lr;
 
+            if (sg_gSensorsZoneDetection)
+            {
+                gZoneHelper::zoneIntersects(this);
+    
+                if (type == gSENSOR_ZONE)
+                    type == gSENSOR_ENEMY;
+            }
+            
             // con << "type: " << type << "\n";
             switch (type)
             {
@@ -8451,7 +8459,7 @@ static void sg_FLIP(std::istream &s)
     gCycle *gFirstPlayer = dynamic_cast<gCycle *>(firstPlayer->Object());
     gCycle *gSecondPlayer = dynamic_cast<gCycle *>(secondPlayer->Object());
 
-    if (gFirstPlayer && !gFirstPlayer->Alive() || gSecondPlayer && !gSecondPlayer->Alive())
+    if (((!gFirstPlayer || !gFirstPlayer->Alive()) || (!gSecondPlayer || !gSecondPlayer->Alive())))
         return;
 
     eCoord secondPlayerNewPos, SecondPlayerNewDir, firstPlayerNewPos, secondPlayerNewDir;

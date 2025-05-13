@@ -758,6 +758,15 @@ public:
         playerLeft(oldStats);
         playerInit(newStats, player);
         setColor(player);
+
+        if (se_playerMessageTriggersContextBuilder)
+        {
+            tString context;
+            context << player->lastName
+                    << " renamed to "
+                    << player->GetName();
+            eChatBot::getInstance().data.StoreContextItem(context);
+        }
     }
 
     static void playerJoined(ePlayerNetID * player)
@@ -800,10 +809,24 @@ public:
                     gHelperUtility::Debug("eChatBot", "No trigger set for '$ragequit' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
 
                 bot.Messager()->Send();
+
+                if (se_playerMessageTriggersContextBuilder && !bot.Messager()->Params().response.empty())
+                {
+                    eChatBot &bot = eChatBot::getInstance();
+                    eChatBot::getInstance().data.StoreContextItem(bot.Messager()->Params().response);
+                }
             }
-
-
+        } 
+        else if (se_playerMessageTriggersContextBuilder)
+        {
+            eChatBot &bot = eChatBot::getInstance();
+            tString context;
+            context << bot.Messager()->Params().triggeredByName
+                    << " left the server.";
+            eChatBot::getInstance().data.StoreContextItem(context);
         }
+
+        
     }
 
     static void playerLeft(PlayerData &stats)
@@ -844,6 +867,16 @@ public:
         }
 
         ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::KILLS);
+        
+        if (se_playerMessageTriggersContextBuilder)
+        {
+            eChatBot &bot = eChatBot::getInstance();
+            tString context;
+            context << player->GetName()
+                    << " core dumped "
+                    << (player->lastKilledPlayer ? player->lastKilledPlayer->GetName() : "unknown");
+            eChatBot::getInstance().data.StoreContextItem(context);
+        }
     }
 
     static void addDeath(ePlayerNetID *player)
@@ -860,6 +893,15 @@ public:
         stats.alive = false;
 
         statsThisSession.alive = false;
+        if (se_playerMessageTriggersContextBuilder)
+        {
+            eChatBot &bot = eChatBot::getInstance();
+            tString context;
+            context << player->GetName()
+                    << " was core dumped by "
+                    << (player->lastDiedByPlayer ? player->lastDiedByPlayer->GetName() : "unknown");
+            eChatBot::getInstance().data.StoreContextItem(context);
+        }
     }
 
     static void setColor(ePlayerNetID * player, int r, int g, int b)
@@ -908,6 +950,17 @@ public:
         stats.total_messages++;
         statsThisSession.total_messages++;
         ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::CHATS);
+
+        if (se_playerMessageTriggersContextBuilder)
+        {
+            eChatBot &bot = eChatBot::getInstance();
+            tString context;
+            context << player->GetName()
+                    << " said: '"
+                    << message
+                    << "'";
+            eChatBot::getInstance().data.StoreContextItem(context);
+        }
     }
 
     static tString deletePlayerStats(tString input)

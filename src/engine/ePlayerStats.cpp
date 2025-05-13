@@ -101,6 +101,16 @@ void ePlayerStats::updateStatsMatchEnd(ePlayerNetID *matchWinner)
             statsThisSession.matches_played++;
         }
     }
+
+        if (se_playerMessageTriggersContextBuilder)
+        {
+            eChatBot &bot = eChatBot::getInstance();
+            tString context;
+            context << matchWinner->GetName()
+                    << " won the match.";
+
+            eChatBot::getInstance().data.StoreContextItem(context);
+        }
 }
 
 void ePlayerStats::updateStatsRoundEnd()
@@ -124,6 +134,14 @@ void ePlayerStats::updateStatsRoundEnd()
                 {
                     stats.round_wins++;
                     statsThisSession.round_wins++;
+
+                    if (se_playerMessageTriggersContextBuilder)
+                    {
+                        eChatBot &bot = eChatBot::getInstance();
+                        tString context;
+                        context << currentPlayer->GetName() << " won the round.";
+                        eChatBot::getInstance().data.StoreContextItem(context);
+                    }
                 }
                 else
                 {
@@ -162,6 +180,14 @@ void ePlayerStats::updateStatsRoundStart()
             statsThisSession.alive = true;
             stats.banned_a_player_this_round = false;
         }
+    }
+
+    if (se_playerMessageTriggersContextBuilder)
+    {
+        eChatBot &bot = eChatBot::getInstance();
+        tString context;
+        context << "Round started. " << bot.data.ExtractAdditionalContextItems();
+        eChatBot::getInstance().data.StoreContextItem(context);
     }
 }
 

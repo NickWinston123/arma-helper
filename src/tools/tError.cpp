@@ -84,11 +84,11 @@ void st_PresentError( const char* caption, const char *message )
 {
     std::cerr << message;
 
-    FileManager fileManager(tString("crashLog.txt"), tDirectories::Log());
-    fileManager.Write(tString(message));
-
+    
     if (!sg_showErrorMessageBox)
     {
+        FileManager fileManager(tString("crashLog.txt"), tDirectories::Log());
+        fileManager.Write(tString(message));
         exit(-1);
     }
 

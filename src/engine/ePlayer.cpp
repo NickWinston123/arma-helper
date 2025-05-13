@@ -8814,6 +8814,15 @@ void ePlayerNetID::ReadSync(nMessage &m)
                         eChatBot::InitiateAction(this, tString("$enterspec"), true);
                         acknowledgeEnterSpectatorByChatbot = true;
                         acknowledgeLeftSpectatorByChatbot = false;
+
+                        if (se_playerMessageTriggersContextBuilder)
+                        {
+                            eChatBot &bot = eChatBot::getInstance();
+                            tString context;
+                            context << GetName()
+                                    << " is now spectating.";
+                            eChatBot::getInstance().data.StoreContextItem(context);
+                        }
                     }
                 }
                 else // player is no longer spectating
@@ -8823,6 +8832,15 @@ void ePlayerNetID::ReadSync(nMessage &m)
                         eChatBot::InitiateAction(this, tString("$leftspec"), true);
                         acknowledgeLeftSpectatorByChatbot = true;
                         acknowledgeEnterSpectatorByChatbot = false;
+
+                        if (se_playerMessageTriggersContextBuilder)
+                        {
+                            eChatBot &bot = eChatBot::getInstance();
+                            tString context;
+                            context << GetName()
+                                    << " is no longer spectating.";
+                            eChatBot::getInstance().data.StoreContextItem(context);
+                        }
                     }
                 }
             }
@@ -9087,6 +9105,7 @@ void se_SaveToChatLog(tOutput const &out)
         {
             FileManager fileManager(tString("chatlognodata.txt"), tDirectories::Log());
             std::string finalLine = tColoredString::RemoveColors(tColoredString::RemoveBadColors(colStr)).stdString();
+
 
             if (se_chatLogNoDataClearNames)
             {
@@ -13250,6 +13269,7 @@ void ePlayerNetID::UpdateName(void)
             name_    = newName;
             if (se_playerStats)
                 ePlayerStats::playerRenamed(this);
+
         }
         // copy it to the name, removing colors of course
         name_ = newName;
@@ -13280,18 +13300,36 @@ void ePlayerNetID::UpdateName(void)
         bool nameEmpty = GetName().empty();
         if (nameFirstSync && !isLocal() && !nameEmpty)
         {
+            bool enter, rejoin;
             if (se_playerMessageTriggers)
             {
                 if (se_playerStats && se_playerMessageRejoin && ePlayerStats::getStatsForAnalysis(GetName()).seen_this_session)
+                {
                     eChatBot::InitiateAction(this, tString(IsHuman() ? "$rejoin" : "$rejoinbot"), true);
+                    rejoin = true;
+                }
                 else if (se_playerMessageEnter)
+                {
+                    enter = true;
                     eChatBot::InitiateAction(this, tString(IsHuman() ? "$enter" : "$enterbot"), true);
+                }
 
                 greetedByChatBot = true;
             }
 
             if (se_playerStats)
                 ePlayerStats::playerJoined(this);
+
+            if (se_playerMessageTriggersContextBuilder )
+            {
+                eChatBot &bot = eChatBot::getInstance();
+                tString context;
+                context << GetName()
+                        << " "
+                        << (rejoin ? "rejoined" : enter ? "entered" : "joined")
+                        << " the server.";
+                eChatBot::getInstance().data.StoreContextItem(context);
+            }
 
             if (se_avoidPlayerWatch)
             {

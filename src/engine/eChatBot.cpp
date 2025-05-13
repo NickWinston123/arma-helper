@@ -5,6 +5,7 @@
 #include "../tron/gGame.h"
 #include "../tron/gMenus.h"
 #include "tDatabase.h"
+#include "tRandom.h"
 
 #include "eChatCommands.h"
 
@@ -49,6 +50,18 @@ bool se_playerMessageTriggersResendSilencedMessagesExtraDelay = 0;
 static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesExtraDelayConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES_EXTRA_DELAY", se_playerMessageTriggersResendSilencedMessagesExtraDelay);
 
 
+bool se_playerMessageTriggersContextBuilder = false;
+static tConfItem<bool> se_playerMessageTriggersContextBuilderConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CONTEXT_BUILDER", se_playerMessageTriggersContextBuilder);
+bool se_playerMessageTriggersContextBuilderStore = true;
+static tConfItem<bool> se_playerMessageTriggersContextBuilderStoreConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CONTEXT_BUILDER_STORE", se_playerMessageTriggersContextBuilderStore);
+tString se_playerMessageTriggersContextBuilderStoreFileName("contextbuilder.txt");
+static tConfItem<tString> se_playerMessageTriggersContextBuilderStoreFileNameConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CONTEXT_BUILDER_STORE_FILE_NAME", se_playerMessageTriggersContextBuilderStoreFileName);
+bool se_playerMessageTriggersContextBuilderStoreTimestamp = true;
+static tConfItem<bool> se_playerMessageTriggersContextBuilderStoreTimestampConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CONTEXT_BUILDER_STORE_TIMESTAMP", se_playerMessageTriggersContextBuilderStoreTimestamp);
+bool se_playerMessageTriggersContextBuilderAdditionalContext = false;
+static tConfItem<bool> se_playerMessageTriggersContextBuilderAdditionalContextConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CONTEXT_BUILDER_ADDITIONAL_CONTEXT_EVERY_MESSAGE", se_playerMessageTriggersContextBuilderAdditionalContext);
+
+
 bool se_playerMessageTriggerScheduleMultiple = true;
 static tConfItem<bool> se_playerMessageTriggerScheduleMultipleConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SCHEDULE_MULTIPLE", se_playerMessageTriggerScheduleMultiple);
 
@@ -70,7 +83,7 @@ static tConfItem<tString> se_playerMessageTriggersDiedByVerifiedTriggersConf = H
 
 static tString se_playerMessageTriggersJoinedRecentlyVerifiedTriggers("wb");
 static tConfItem<tString> se_playerMessageTriggersJoinedRecentlyVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_JOINED_RECENTLY_VERIFIED_TRIGGERS", se_playerMessageTriggersJoinedRecentlyVerifiedTriggers);
-static REAL se_playerMessageTriggersJoinedRecentlyWaitTime = 5;
+static REAL se_playerMessageTriggersJoinedRecentlyWaitTime = 40;
 static tConfItem<REAL> se_playerMessageTriggersJoinedRecentlyWaitTimeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_JOINED_RECENTLY_WAIT_TIME", se_playerMessageTriggersJoinedRecentlyWaitTime);
 
 static REAL se_playerMessageDelayRandMult = 0;
@@ -115,6 +128,10 @@ static int se_playerMessageTriggersChatSearchMaxResults = 10;
 static tConfItem<int> se_playerMessageTriggersChatSearchMaxResultsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHAT_SEARCH_MAX_RESULTS", se_playerMessageTriggersChatSearchMaxResults);
 
 
+static tString se_playerMessageTriggersChatChanceTriggers = tString("");
+static tConfItem<tString> se_playerMessageTriggersChatChanceTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHANCE_COMMANDS", se_playerMessageTriggersChatChanceTriggers);
+static REAL se_playerMessageTriggersChatChanceTriggersThreshhold = 0.5;
+static tConfItem<REAL> se_playerMessageTriggersChatChanceTriggersThreshholdConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHANCE_COMMANDS_THRESHOLD", se_playerMessageTriggersChatChanceTriggersThreshhold);
 
 
 bool se_playerMessageTriggersRageQuits = false;
@@ -158,7 +175,7 @@ std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers()
     for (int i = 0; i < players.Len(); i++)
     {
         ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
-        
+
         if (!local_p)
             continue;
 
@@ -386,7 +403,7 @@ tString statsFunc(tString message)
                     if (stats->in_server)
                         statValue << " (" << stats->thisSession().getSpecTimeStr() << ")";
                     output << label << ": " << statValue << ", ";
-                }                
+                }
                 else if (key == "RGB")
                 {
                     output << label << ": " << (stats->rgbString()) << ", ";
@@ -920,8 +937,10 @@ tString exactStatFunc(tString message)
         else if (statLabel == "Last Seen")
         {
             statValue << stats.getLastSeenAgoStr(true);
-            if (stats.in_server)
-                currentSessionStatValue << stats.thisSession().getLastSeenAgoStr(true);
+            if (stats.in_server && statsTargetPlayer)
+                statValue << " | "
+                          << "Last Active: "
+                          << st_GetFormatTime(statsTargetPlayer->LastActivity(), false);
         }
         else if (statLabel == "Times Banned")
         {
@@ -962,12 +981,14 @@ tString exactStatFunc(tString message)
         else
             statValue << stats.getAnyValue(stat.TrimWhitespace());
 
-        if (showCurrentSessionVal && stats.in_server && stat != "last_active")
+        if (showCurrentSessionVal && stats.in_server && stat != "last_active" && stat != "seen")
         {
             if (currentSessionStatValue.empty())
                 currentSessionStatValue << stats.thisSession().getAnyValue(stat.TrimWhitespace());
 
-            statValue << " | This session: ("
+            statValue << " | "
+                      << "This session: "
+                      << "("
                       << currentSessionStatValue
                       << ")";
         }
@@ -987,7 +1008,7 @@ tString exactStatFunc(tString message)
 
     if (!statValue.empty() || statLabel == "Chats" || statLabel == "Hidden Stats")
     {
-        if (statLabel == "Chats") 
+        if (statLabel == "Chats")
             output << output.SubStr(0, se_SpamMaxLen - 1);
         else
             output << statValue;
@@ -1416,6 +1437,34 @@ tString whatsTheFunc(tString message)
             else
                 output << ipAddr;
         }
+    } 
+    else if (target.Contains("player_count"))
+    {
+        int count = 0;
+        for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+        {
+            if (se_PlayerNetIDs[i])
+                count++;
+        }
+
+        output << count;
+    }
+    else if (target.Contains("spectator_count"))
+    {
+        int count = 0;
+        tString spectators;
+        for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
+        {
+            if (se_PlayerNetIDs[i] && !se_PlayerNetIDs[i]->CurrentTeam()) {
+                count++;
+                spectators << se_PlayerNetIDs[i]->GetName() << ", ";
+            }
+        }
+
+        if (!spectators.empty() && spectators.EndsWith(", "))
+            spectators.RemoveSubStr(spectators.Len() - 2, 2);
+            
+        output << count << " (" << spectators << ")";
     }
 
     return output;
@@ -1838,6 +1887,10 @@ tString banFunc(tString message)
         bot.Messager()->FindTriggeredResponse();
         bot.Messager()->Params().sendingPlayer = sendingPlayer;
 
+        if (bot.Messager()->Params().response.empty())
+            gHelperUtility::Debug("eChatBot", "No trigger set for '$alreadybanned' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
+
+
         return bot.Messager()->Params().response;
     }
     else
@@ -1879,6 +1932,7 @@ tString encryptedUnvalidatedSayFunc(tString message)
         return tString("You are not verified");
 
     bot.Messager()->Params().validateOutput = false;
+    bot.Messager()->Params().preAppend = tString("");
 
     return message;
 }
@@ -2597,9 +2651,9 @@ bool containsMath(tString input, bool exact)
             tString token = input.SubStr(numberStart, i - numberStart);
 
             if (step == 0)
-                step = 1; 
+                step = 1;
             else if (step == 2)
-                return true; 
+                return true;
         }
         else if (exact)
             return false;
@@ -2821,6 +2875,25 @@ void eChatBotMessager::FindTriggeredResponse()
                 continue;
         }
 
+        
+        if (tIsInList(se_playerMessageTriggersChatChanceTriggers, trigger))
+        {
+            tRandomizer &randomizer = tRandomizer::GetInstance();
+            REAL roll = randomizer.Get();
+            gHelperUtility::Debug("ChanceTrigger", "Roll", roll);
+
+            if (roll > se_playerMessageTriggersChatChanceTriggersThreshhold)
+            {
+
+                if (sg_helperDebug)
+                    gHelperUtility::Debug("ChanceTrigger", "Skipped trigger due to roll",
+                                          tString(trigger) << " (" << roll << " > " << se_playerMessageTriggersChatChanceTriggersThreshhold << ")");
+                return;
+            }
+        }
+        
+
+
         Params().matchedTrigger = chatTrigger.trimmedTrigger;
 
         // Determine the sending player based on the type of trigger
@@ -2870,7 +2943,7 @@ void eChatBotMessager::FindTriggeredResponse()
 
         if (Params().triggeredBy)
             chosenResponse         = chosenResponse.Replace("$p2", Params().triggeredBy->GetName());
-        
+
         if (Params().sendingPlayer)
         {
             chosenResponse.RecomputeLength();
@@ -3102,7 +3175,7 @@ REAL SpamProtectionDelayForMsg(const tString &msg)
     if (ePlayerNetID::canChatWithMsg(msg))
         return 0.0f;
 
-    const REAL now  = getSteadyTime(); 
+    const REAL now  = getSteadyTime();
     REAL       wait = 0.0f;
 
     if (ePlayerNetID::nextSpeakTime > now)
@@ -3253,8 +3326,8 @@ bool eChatBotMessager::ScheduleMessageParts()
                       + "_" + std::to_string(tSysTimeFloat());
 
         gTaskScheduler.schedule(
-            taskId, 
-            cumulativeDelay, 
+            taskId,
+            cumulativeDelay,
             [player, part, message, taskId]()
             {
                 REAL flagDelay    = part.delay * part.chatFlagPercentage;
@@ -3263,7 +3336,7 @@ bool eChatBotMessager::ScheduleMessageParts()
                 if (part.useChatFlag)
                 {
                     gTaskScheduler.schedule(
-                        taskId + "_flag", 
+                        taskId + "_flag",
                         flagDelay,
                         [player, messageDelay, message, taskId]()
                         {
@@ -3272,7 +3345,7 @@ bool eChatBotMessager::ScheduleMessageParts()
 
                             std::string followUpId = taskId + "_end";
                             gTaskScheduler.schedule(
-                                followUpId, 
+                                followUpId,
                                 messageDelay,
                                 [player, message]()
                                 {
@@ -3569,6 +3642,77 @@ void eChatBot::LoadChatCommandConfCommands()
     }
 }
 
+void eChatBotData::StoreContextItem(const tString &item)
+{
+    if (!item.empty())
+        contextItems.push_back(item);
+
+        
+    if (sg_helperDebug)
+        gHelperUtility::Debug("eChatBotData", "Context item stored: ", item);
+
+
+    if (se_playerMessageTriggersContextBuilderStore)
+    {
+        tString line;
+
+        if (se_playerMessageTriggersContextBuilderAdditionalContext)
+            line << ExtractAdditionalContextItems() << "\n";
+
+        if (se_playerMessageTriggersContextBuilderStoreTimestamp) 
+        {
+            struct tm now = getCurrentLocalTime();
+            line << "["
+                 << getTimeStringBase(now)
+                 << "] ";
+        }
+
+        line << item;
+
+        FileManager fileManager(se_playerMessageTriggersContextBuilderStoreFileName, tDirectories::Var());
+        fileManager.Write(line);
+    }
+}
+
+tString eChatBotData::ExtractAdditionalContextItems(const char *newLabel, const char *newKey)
+{
+    tString addlContext;
+
+    auto store = [this, &addlContext](const char *label, const char *key) {
+        tString context;
+        context << label << ": " << whatsTheFunc(tString(key));
+        if (!context.empty())
+            addlContext << context << " | ";
+    };
+
+    if (newLabel && *newLabel && newKey && *newKey)
+    {
+        store(newLabel, newKey);
+    }
+    else
+    {
+        store("Time", "time");
+        store("Game Time", "game_time");
+        store("Current Server", "current_server");
+        store("Current Score", "score");
+        store("Player Count", "player_count");
+        store("Spectator Count", "spectator_count");
+    }
+
+    return addlContext;
+}
+
+
+static void ViewContextItems(std::istream &s)
+{
+    tString combinedContext;
+        
+    eChatBot &bot = eChatBot::getInstance();
+    con << "Context: " 
+        << bot.data.ExtractContext() 
+        << "\n";
+}
+static tConfItemFunc ViewContextItemsConf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_CONTEXT_BUILDER_VIEW", &ViewContextItems);
 
 const std::vector<ChatBotColumnMapping> eChatBotStats::eChatBotStatsMappings =
 {

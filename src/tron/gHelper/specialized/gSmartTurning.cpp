@@ -65,12 +65,24 @@ namespace helperConfig
 
     bool sg_helperSmartTurningFollowTail = false;
     static tConfItem<bool> sg_helperSmartTurningFollowTailConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL", sg_helperSmartTurningFollowTail);
+    bool sg_helperSmartTurningFollowTailShowCloseFactor = false;
+    static tConfItem<bool> sg_helperSmartTurningFollowTailShowCloseFactorConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_SHOW_CLOSE_FACTOR", sg_helperSmartTurningFollowTailShowCloseFactor);
+    REAL sg_helperSmartTurningFollowTailShowCloseFactorHeight = 1;
+    static tConfItem<REAL> sg_helperSmartTurningFollowTailShowCloseFactorHeightConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_SHOW_CLOSE_FACTOR_HEIGHT", sg_helperSmartTurningFollowTailShowCloseFactorHeight);
+    bool sg_helperSmartTurningFollowTailAllowClosedIn = false;
+    static tConfItem<bool> sg_helperSmartTurningFollowTailAllowClosedInConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_ALLOW_CLOSED_IN", sg_helperSmartTurningFollowTailAllowClosedIn);
     REAL sg_helperSmartTurningFollowTailDelayMult = 1;
     static tConfItem<REAL> sg_helperSmartTurningFollowTailDelayMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_DELAY_MULT", sg_helperSmartTurningFollowTailDelayMult);
     REAL sg_helperSmartTurningFollowTailFreeSpaceMult = 1;
     static tConfItem<REAL> sg_helperSmartTurningFollowTailFreeSpaceMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_FREE_SPACE_MULT", sg_helperSmartTurningFollowTailFreeSpaceMult);
     REAL sg_helperSmartTurningFollowTailCloseMult = 3;
     static tConfItem<REAL> sg_helperSmartTurningFollowTailCloseMultConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_CLOSE_MULT", sg_helperSmartTurningFollowTailCloseMult);
+    REAL sg_helperSmartTurningFollowTailFrontTOL = 0.5;
+    static tConfItem<REAL> sg_helperSmartTurningFollowTailFrontTOLConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_FRONT_TOL", sg_helperSmartTurningFollowTailFrontTOL);
+    REAL sg_helperSmartTurningFollowTailWaitTime = 0.25;
+    static tConfItem<REAL> sg_helperSmartTurningFollowTailWaitTimeConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_WAIT_TIME", sg_helperSmartTurningFollowTailWaitTime);
+    REAL sg_helperSmartTurningFollowTailMinDelay = 0.1;
+    static tConfItem<REAL> sg_helperSmartTurningFollowTailMinDelayConf = HelperCommand::tConfItem("HELPER_SMART_TURNING_FOLLOW_TAIL_MIN_DELAY", sg_helperSmartTurningFollowTailMinDelay);
 
 };
 
@@ -139,6 +151,25 @@ void gSmartTurning::smartTurningPlan(gHelperData &data)
     }
 }
 
+static void showFollowTailCloseFactor(gHelperData &data, bool active = false)
+{
+    gCycle *owner_ = data.ownerData.owner_;
+
+    REAL closeDist = data.ownerData.turnSpeedFactorF() *
+                     sg_helperSmartTurningFollowTailCloseMult;
+
+    REAL visualRadius = closeDist / sqrt(2.0f);
+
+    gHelperUtility::debugBox(
+        active ? tColor(0, 1, 0) : tColor(1, 0, 0),  // green / red
+        owner_->tailPos,
+        visualRadius,
+        data.ownerData.speedFactorF(),
+        sg_helperSmartTurningFollowTailShowCloseFactorHeight
+    );
+
+}
+
 /**
  * This function implements the behavior of following the owner's tail.
  * If the tail is behind the cycle, the cycle will turn towards the tail if there is enough space.
@@ -146,21 +177,31 @@ void gSmartTurning::smartTurningPlan(gHelperData &data)
  *
  * @param data A reference to a gHelperData object that contains information about the cycle and the game state.
  */
-
 void gSmartTurning::followTail(gHelperData &data)
 {
 
-    if (!helper_.aliveCheck() ||
-        !owner_.tailMoving ||
-        !gHelperUtility::isClose(&owner_, owner_.tailPos,
-                                 data.ownerData.turnSpeedFactorF() *
-                                     sg_helperSmartTurningFollowTailCloseMult))
+    if (!helper_.aliveCheck() )
+        return;
+
+    if (!owner_.tailMoving)
+        return;
+
+    bool notClose = !gHelperUtility::isClose(&owner_, owner_.tailPos,
+                                             data.ownerData.turnSpeedFactorF() *
+                                             sg_helperSmartTurningFollowTailCloseMult);
+
+    bool turnedTooRecently = tSysTimeFloat() - owner_.lastTurnSysTime < sg_helperSmartTurningFollowTailWaitTime;
+
+    if (sg_helperSmartTurningFollowTailShowCloseFactor)
+        showFollowTailCloseFactor(data, !(turnedTooRecently || notClose));
+
+    if (turnedTooRecently || notClose)
         return;
 
     const REAL rawDelay = data.ownerData.turnSpeedFactorF() *
                           sg_helperSmartTurningFollowTailDelayMult;
-    constexpr REAL MIN_DELAY = 0.10f;
-    const REAL delay = std::max(rawDelay, MIN_DELAY);
+
+    const REAL delay = std::max(rawDelay, sg_helperSmartTurningFollowTailMinDelay);
 
     if (helper_.CurrentTime() < lastTailTurnTime + delay)
         return;
@@ -169,15 +210,22 @@ void gSmartTurning::followTail(gHelperData &data)
                                                         sg_helperSmartTurningFollowTailFreeSpaceMult,
                                                         false,
                                                         sg_helperDebug && sg_helperSmartTurningSurviveDebug);
-    if (!sv.exist || sv.closedIn || sv.blockedBySelf)
+
+
+    if (!sv.exist || (sv.closedIn && !sg_helperSmartTurningFollowTailAllowClosedIn)) //|| sv.blockedBySelf)
+
+
         return;
+
+
+    if (sg_helperDebug && data.rubberData.rubberUsedRatioF() > .9f)
+        gHelperUtility::Debug("FOLLOW_TAIL", "RUBBER USED ABOVE TRESHOLD" + std::to_string(data.rubberData.rubberUsedRatioF()), false);
 
     const eCoord vTail = (owner_.tailPos - owner_.pos).GetNormalized();
     const REAL dot = eCoord::F(vTail, owner_.dir);
     const REAL cross = vTail * owner_.dir;
 
-    constexpr REAL FRONT_TOL = 0.5f;
-    if (dot > FRONT_TOL)
+    if (dot > sg_helperSmartTurningFollowTailFrontTOL)
         return;
 
     int desiredTurn = NONE;
@@ -186,12 +234,6 @@ void gSmartTurning::followTail(gHelperData &data)
     else if (cross < 0 && sv.canSurviveRightTurn)
         desiredTurn = RIGHT;
     else
-        return;
-
-    if (!helper_.turnHelper->canSurviveTurnSpecific(
-            data,
-            desiredTurn,
-            sg_helperSmartTurningFollowTailFreeSpaceMult))
         return;
 
     if (sg_helperDebug && sg_helperSmartTurningFollowTail)

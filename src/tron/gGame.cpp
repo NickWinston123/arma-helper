@@ -4253,8 +4253,16 @@ void gGame::StateUpdate()
             if (se_playerWatchAutoRandomName)
                 eChatBot::getInstance().roundEndAnalyzeBanStatus();
 
-            if (se_playerStats && roundWinnerProcessed)
-                ePlayerStats::updateStatsRoundEnd();
+            // if (se_playerStats && roundWinnerProcessed)
+            //     ePlayerStats::updateStatsRoundEnd();
+                
+            if (roundWinnerProcessed && se_playerMessageTriggersContextBuilder)
+            {
+                eChatBot &bot = eChatBot::getInstance();
+                tString context;
+                context << "Round ended. " << bot.data.ExtractAdditionalContextItems();
+                eChatBot::getInstance().data.StoreContextItem(context);
+            }
             roundWinnerProcessed = false;
 
             ePlayer::resetPlayerUpdateStatuses();
@@ -7280,7 +7288,7 @@ void sg_DisconnectedFromServerCheck()
 
     gHelperUtility::Debug("sg_DisconnectedFromServer", debug.stdString());
 
-    if (!CurrentServer() && sg_failedToConnect && sg_failedToConnectTime > sg_playerWatchServerDisconnectedWatchQuitTime)
+    if ((!CurrentServer() || sg_failedToConnect) && sg_failedToConnectTime > sg_playerWatchServerDisconnectedWatchQuitTime)
         sn_quitAction(true, sg_playerWatchServerDisconnectedWatchQuit, "Not in a game.. " + debug.stdString());
 
 }

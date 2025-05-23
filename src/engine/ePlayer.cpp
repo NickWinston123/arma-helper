@@ -1221,6 +1221,20 @@ std::vector<std::pair<std::string, std::string>> sg_smarterBotStateValueMap = {
     {"8", "SuicideEval, TrapEval, SpaceEval"},
 };
 
+std::vector<std::pair<std::string, std::string>> sg_smarterBotAutomatorValueMap = {
+    {"SURVIVE", "SURVIVE"},
+    {"RUBBER",  "RUBBER"},
+    {"RANDOM",  "RANDOM"},
+    {"TRAP",    "TRAP"},
+    {"FOLLOW",  "FOLLOW"},
+    {"PLAN",    "PLAN"},
+    {"TAIL",    "TAIL"},
+    {"SPACE",   "SPACE"},
+    {"COWARD",  "COWARD"},
+    {"TUNNEL",  "TUNNEL"},
+    {"SPEED",   "SPEED"}
+};
+
 std::vector<std::pair<std::string, std::string>> colorModeValueVector = {
     {"0", "OFF"},
     {"1", "RANDOM"},
@@ -1228,6 +1242,9 @@ std::vector<std::pair<std::string, std::string>> colorModeValueVector = {
     {"3", "RAINBOW"},
     {"4", "CROSSFADE"}
 };
+
+bool se_disableSavingSpectatorMode = false;
+static tConfItem<bool> se_disableSavingSpectatorModeConf("CONFIG_DISABLE_SAVING_SPECTATOR_MODE", se_disableSavingSpectatorMode);
 
 ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
 {
@@ -1346,7 +1363,10 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     }
 
     confname << "SPECTATOR_MODE_" << id + 1;
-    confItems.StoreConfitem(tNEW(tConfItem<bool>)(confname,
+    if (se_disableSavingSpectatorMode)
+        confItems.StoreConfitem(tNEW(tSettingItem<bool>)(confname, spectate));
+    else
+        confItems.StoreConfitem(tNEW(tConfItem<bool>)(confname,
                                         "$spectator_mode_help",
                                         spectate));
     spectate = false;
@@ -1428,10 +1448,51 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     // SMARTER BOT
 
     sg_smarterBotContributionStr = tString("");
+
     // sg_smarterBotThink
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_THINK";
+    sg_smarterBotThink = false;
     confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotThink));
+
+    // sg_smarterBotAutomator
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id + 1 << "_AUTOMATOR";
+    sg_smarterBotAutomator = false;
+    sg_smarterBotAutomatorLastScore = 0;
+    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotAutomator));
+
+    // sg_smarterBotAutomatorScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_AUTOMATOR_SCALE";
+    sg_smarterBotAutomatorScale = 1;
+    confItems.StoreConfitem(
+        HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotAutomatorScale)
+    );
+
+    // sg_smarterBotAutomatorConfigList
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_AUTOMATOR_CONFIG_LIST";
+    sg_smarterBotAutomatorConfigList = "SURVIVE,TRAP,FOLLOW,TAIL,SPACE,COWARD,TUNNEL,SPEED";
+    confItems.StoreConfitem(
+        HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotAutomatorConfigList, sg_smarterBotAutomatorValueMap)
+    );
+
+    // sg_smarterBotAutomatorRounds
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_AUTOMATOR_ROUNDS";
+    sg_smarterBotAutomatorRounds = 5;
+    confItems.StoreConfitem(
+        HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotAutomatorRounds)
+    );
+
+    // sg_smarterBotAutomatorLogFile
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id+1 << "_AUTOMATOR_LOG_FILE";
+    sg_smarterBotAutomatorLogFile = "smarterbot_scores.txt";
+    confItems.StoreConfitem(
+        HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotAutomatorLogFile)
+    );
 
     // sg_smarterBotRange
     confname.Clear();
@@ -1441,21 +1502,21 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
 
     // sg_smarterBotRandomScale
     confname.Clear();
-    confname << "SMARTER_BOT_" << id + 1 << "_RANDOMNESS";
+    confname << "SMARTER_BOT_" << id + 1 << "_RANDOM";
     sg_smarterBotRandomScale = 0;
     confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotRandomScale));
 
-    // sg_smarterBotRubberEval
+    // sg_smarterBotRubberScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_RUBBER";
-    sg_smarterBotRubberEval = 4;
-    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotRubberEval));
+    sg_smarterBotRubberScale = 4;
+    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotRubberScale));
 
-    // sg_smarterBotSurviveEval
+    // sg_smarterBotSurviveScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_SURVIVE";
-    sg_smarterBotSurviveEval = 100;
-    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotSurviveEval));
+    sg_smarterBotSurviveScale = 100;
+    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotSurviveScale));
 
     // sg_smarterBotTrapScale
     confname.Clear();

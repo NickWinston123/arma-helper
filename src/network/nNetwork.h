@@ -57,6 +57,8 @@ class nMessage;
 class tCrypt;
 class tOutput;
 
+extern bool sn_statsAlreadySavedForBan;
+
 void sn_bannedWatchAction(tString message = tString("banned"));
 void sn_quitAction(bool save = true, bool quit = true, tString message = tString("banned"));
 void sn_quitAction(bool save = true, bool quit = true, std::string message = "");

@@ -941,7 +941,7 @@ int main(int argc, char **argv)
 
                 // std::cout << "exit\n";
 
-                st_SaveConfig();
+                st_SaveConfig(!sn_statsAlreadySavedForBan);
 
                 SaveVariableCreatorVariablesToFile();
 

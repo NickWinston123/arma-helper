@@ -811,7 +811,7 @@ public:
 void st_Include( tString const & file );
 
 void st_LoadConfig();
-void st_SaveConfig();
+void st_SaveConfig(bool saveStats = true);
 void st_LoadUserConfig();
 void st_SaveChangedConfig();
 

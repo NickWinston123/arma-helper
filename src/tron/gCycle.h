@@ -78,6 +78,29 @@ typedef enum
 #include "gHelper/gHelper.h"
 class gSmarterBot;
 
+class gSmarterBotWeightAutomator
+{
+public:
+    gSmarterBotWeightAutomator(ePlayer* p)
+      : player(p),
+        fm(player->sg_smarterBotAutomatorLogFile, tDirectories::Var())
+    {}
+
+    void OnRoundStart();
+    void UpdateStatsLog(REAL finalScore = 0);
+    static REAL CalculateScoreForPlayer(ePlayerNetID* p);
+    static std::vector<std::string> GetOpponentList();
+    static tString GetCurrentWeights(ePlayer *player, tString equalSign = tString("="), tString delim = tString(";"));
+private:
+    ePlayer* player;
+    FileManager fm;
+
+    std::vector<std::string> ParseConfigList();
+
+    void ApplyWeights(const std::map<std::string,REAL>& weights);
+};
+
+
 class eEdge;
 
 // sensor sent out to detect near eWalls

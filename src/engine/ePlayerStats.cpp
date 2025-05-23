@@ -23,12 +23,17 @@ static tConfItem<tString> se_playerStatsDataBaseFileConf("PLAYER_STATS_DB_FILE",
 
 bool se_playerMessageTriggersStatsSave = false;
 static tConfItem<bool> se_playerMessageTriggersStatsSaveConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_STATS_SAVED", se_playerMessageTriggersStatsSave);
+bool se_playerMessageTriggersStatsLoad = false;
+static tConfItem<bool> se_playerMessageTriggersStatsLoadConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_STATS_LOADED", se_playerMessageTriggersStatsLoad);
 
 bool se_playerStatsLocalForcedName = false;
 static tConfItem<bool> se_playerStatsLocalForcedNameConf("PLAYER_STATS_LOCAL_FORCED_NAME", se_playerStatsLocalForcedName);
 
 REAL se_playerStatsRageQuitTime = 3;
 static tConfItem<REAL> se_playerStatsRageQuitTimeConf("PLAYER_STATS_RAGE_QUIT_TIME", se_playerStatsRageQuitTime);
+
+bool se_playerStatsStoreBotMessages = false;
+static tConfItem<bool> se_playerStatsStoreBotMessagesConf("PLAYER_STATS_STORE_BOT_MESSAGES", se_playerStatsStoreBotMessages);
 
 int ePlayerStats::players_record_this_session = 0;
 
@@ -48,8 +53,13 @@ bool ePlayerStats::loadStatsFromDB()
     chatbotStatsAction.Load();
 
     sqlite3_close(db);
+    
+    if (se_playerMessageTriggers && se_playerMessageTriggersStatsLoad)
+        eChatBot::InitiateAction(nullptr, tString("$statsloaded"), true);
+    
+    statsLoaded = true;
 
-    return true;
+    return statsLoaded;
 }
 
 bool ePlayerStats::saveStatsToDB()
@@ -876,3 +886,4 @@ static tConfItemFunc se_playerStatsReload_conf = HelperCommand::tConfItemFunc("P
 
 CommandState ePlayerStats::deleteState;
 CommandState ePlayerStats::consolidateState;
+bool         ePlayerStats::statsLoaded = false;

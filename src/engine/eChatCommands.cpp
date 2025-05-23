@@ -49,6 +49,9 @@ static tConfItem<tString> se_colorVarFileConf("LOCAL_CHAT_COMMAND_RGB_FILE", se_
 tString se_browserCommand("/browser");
 static tConfItem<tString> se_browserCommandConf("LOCAL_CHAT_COMMAND_BROWSER", se_browserCommand);
 
+tString se_speakBotCommand("/speakbot");
+static tConfItem<tString> se_speakBotCommandConf("LOCAL_CHAT_COMMAND_SPEAK_BOT", se_speakBotCommand);
+
 tString se_speakCommand("/speak");
 static tConfItem<tString> se_speakCommandConf("LOCAL_CHAT_COMMAND_SPEAK", se_speakCommand);
 static bool se_speakCommandChatFlag = false;
@@ -200,6 +203,7 @@ std::unordered_map<tString, std::function<std::unique_ptr<eChatCommand>()>> Comm
         std::make_pair(se_rgbCommand, []          { return std::make_unique<RgbCommand>(); }),
         std::make_pair(se_browserCommand, []      { return std::make_unique<BrowserCommand>(); }),
         std::make_pair(se_speakCommand, []        { return std::make_unique<SpeakCommand>(); }),
+        std::make_pair(se_speakBotCommand, []     { return std::make_unique<SpeakBotCommand>(); }),
         std::make_pair(se_watchCommand, []        { return std::make_unique<WatchCommand>(); }),
         std::make_pair(se_activeStatusCommand, [] { return std::make_unique<ActiveStatusCommand>(); }),
         std::make_pair(se_reverseCommand, []      { return std::make_unique<ReverseCommand>(); }),
@@ -1078,10 +1082,10 @@ bool BrowserCommand::execute(tString args)
     return true;
 }
 
-bool SpeakCommand::execute(tString args)
+bool ExecuteSpeakCommand(tString args, bool isBot, eChatCommand *cmd)
 {
-    int      pos        = 0;
-    tString  playerStr  = args.ExtractNonBlankSubString(pos);
+    int pos = 0;
+    tString playerStr = args.ExtractNonBlankSubString(pos);
     ePlayerNetID *targetPlayer = nullptr;
 
     if (!playerStr.empty() && playerStr.isNumber())
@@ -1092,64 +1096,78 @@ bool SpeakCommand::execute(tString args)
             targetPlayer = p->netPlayer;
         else
         {
-            con << CommandLabel() << ErrorColor()
-                << "No local/net player for ID '" << ItemColor()
-                << playerStr << ErrorColor() << "'\n";
+            con << cmd->CommandLabel() << cmd->ErrorColor()
+                << "No local/net player for ID '" << cmd->ItemColor()
+                << playerStr << cmd->ErrorColor() << "'\n";
             return true;
         }
     }
-    else    
+    else
     {
         targetPlayer = ePlayerNetID::FindPlayerByName(playerStr);
     }
 
     if (!targetPlayer)
     {
-        con << CommandLabel() << ErrorColor()
+        con << cmd->CommandLabel() << cmd->ErrorColor()
             << "Player not found.\n";
         return true;
     }
 
     tString chatString = args.SubStr(pos + 1);
     if (chatString.empty())
-        return true;                   
+        return true;
 
-    REAL delay      = se_speakCommandDelay;   
+    REAL delay = se_speakCommandDelay;
     bool useChatFlg = (delay > 0);
 
     if (se_playerMessageTriggersSpamProtectionCheck)
         delay += std::max<REAL>(SpamProtectionDelayForMsg(chatString), 0.0f);
     else if (!ePlayerNetID::canChatWithMsg(chatString))
     {
-        con << CommandLabel() << ErrorColor()
+        con << cmd->CommandLabel() << cmd->ErrorColor()
             << "You’re still silenced – enable "
             << "PLAYER_MESSAGE_TRIGGERS_SPAM_PROTECTION_CHECK "
             << "or wait.\n";
         return true;
     }
 
-
     if (!targetPlayer->isLocal())
     {
-        con << CommandLabel() << ErrorColor()
+        con << cmd->CommandLabel() << cmd->ErrorColor()
             << "Target is not a local player.\n";
         return true;
     }
 
-    eChatBot &bot = eChatBot::getInstance();
-    bot.Messager()->ResetParams();                   
-    bot.Messager()->SetInputParams(targetPlayer, chatString, false);
-    bot.Messager()->Params().response       = chatString;
-    bot.Messager()->Params().sendingPlayer  = targetPlayer;
-    bot.Messager()->Params().messageParts   =
+    if (isBot)
     {
-        { chatString, delay, useChatFlg }
-    };
-    bot.Messager()->Params().currentPartIndex = 0;
+        eChatBot &bot = eChatBot::getInstance();
+        bot.Messager()->ResetParams();
+        bot.Messager()->SetInputParams(targetPlayer, chatString, false);
+        bot.Messager()->Params().response = chatString;
+        bot.Messager()->Params().sendingPlayer = targetPlayer;
+        bot.Messager()->Params().messageParts = {
+            { chatString, delay, useChatFlg }
+        };
+        bot.Messager()->Params().currentPartIndex = 0;
+        bot.Messager()->ScheduleMessageParts();
+    }
+    else
+        targetPlayer->Chat(chatString);
 
-    bot.Messager()->ScheduleMessageParts();
     return true;
 }
+
+bool SpeakCommand::execute(tString args)
+{
+    return ExecuteSpeakCommand(args, false, this);
+}
+
+bool SpeakBotCommand::execute(tString args)
+{
+    return ExecuteSpeakCommand(args, true, this);
+}
+
 
 bool RebuildCommand::execute(tString args)
 {
@@ -1371,7 +1389,7 @@ bool JoinCommand::execute(tString args)
         ePlayer *lp = ePlayer::PlayerConfig(atoi(args) - 1);
         if (lp && lp->netPlayer)
         {
-            lp = local_p;
+            local_p = lp;
         }
         else
         {

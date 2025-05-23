@@ -69,6 +69,8 @@ extern REAL sg_playerWatchServerDisconnectedWatchQuitTime, sg_playerWatchServerD
 
 extern bool sg_commandWatch, sg_commandWatchClear, sg_commandWatchFeedback, sg_failedToConnect;
 extern tString sg_commandWatchFile;
+
+extern bool sg_inGameLoop;
 typedef enum
 {
     gFREESTYLE,
@@ -76,6 +78,7 @@ typedef enum
     gHUMAN_VS_AI
 } gGameType;
 
+extern int roundsStarted;
 extern bool tryConnectLastServer;
 extern bool sg_forcePlayerUpdate;
 extern bool sn_networkErrorQuit;

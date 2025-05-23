@@ -4,9 +4,11 @@
 //
 $consolidate,$consolidatestatsfunc,-999,0
 $delete,$statsdeletefunc,-999,0
-$$,$masterfunc,-9999,0
+$$$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR \n/speak 3 All pending messages cleared.),-9999,0
+$$$;$$,$masterfunc,-9999,0
 !help;$help,Avail commands !estat (exact stats) - !stats (general stats) - !kd (kills/deaths) - !lb (leaderboard) - !nick (nickname) - !seen - !rgb - !flip - !roll,-9999,0
 !estat;$estat;!es;$es,$exactstatfunc,-9999,0
+$nameh;!nameh,$namehistorytrackerfunc,-9999,0
 !names;$names,$exactstatfunc(name_history),-999,0
 !pt;$pt;$playt;!playt,$exactstatfunc(play_time),-999,0
 !cks;$cks;!ks;$ks;$killsteak;!killsteak,$leaderboardfunc(kill_streak),-999,0
@@ -45,9 +47,10 @@ $show;!show,$hidestatfunc(unprivate),-999,0
 $slap,$unvalidatedsayfunc(/admin slap $p1 0),-9999,0
 #$spec,$unvalidatedsayfunc(/spec),-999,0
 $rjoin,$unvalidatedsayfunc(/join),-999,0
-$spec,$encryptedunvalidatedsayfunc(/speak 3 /spec),-9999,1
+$specf,$encryptedunvalidatedsayfunc(/speak 3 /spec),-9999,1
+$py;$python;$spec,$unvalidatedsaynoprefixfunc(/console LOAD_LINE /speak 3 Now spectating for 5 minutes.\n/speak 3 /spec\nDELAY_COMMAND 300 /join 3),-9999,1
 $kill,$encryptedunvalidatedsayfunc(/console CYCLE_TURN thomas 16 LEFT),-9999,0
-$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR \n/speak 3 All pending messages cleared.),-9999,0
+$reset;$$$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR \n/speak 3 All pending messages cleared.),-9999,0
 !s;$s,$statsfunc,-9999,0
 !st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
 !hn;!hidden;$hn;$hidden,$exactstatfunc(hide),-999,0
@@ -65,10 +68,13 @@ $msg,$unvalidatedsayfunc(/msg),-999,0
 $rps,$rpsgamefunc,-999,0
 $guess,$guessgamefunc,-999,0
 $com,$whatsthefunc(commands),-999,0
+$evalweight,$whatsthefunc(automator_weights),-999,0
+$evalscore,$whatsthefunc(automator_score),-999,1
 $eval,$whatsthefunc(smarter_bot_contribution),-999,0
 $ip,$whatsthefunc(ip_address),-999,0
 $params,$encryptedunvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params ),-9999,0
 $ai,$unvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params toggle_process_player $p2),-9999,1
+$addai,$encryptedunvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params toggle_process_player ),-9999,0
 
 $,$sayfunc,-9999,0
 >,$sayoutloudfunc,-999,0
@@ -77,18 +83,20 @@ $,$sayfunc,-9999,0
 // Events
 //
 $bannedaction,Ban detected.. Reason: $val1,-99999,1
+$automatorweightchange,Applied new weights: $val1,-99999,1
+$automatorweightscore,Last score evaluation: $val1,-9999,1
 #$banned,on it $p1 youre done;youre done for $p1;its over $p1,-9999,1
 $banned,youre banned $p1!!!!!!!!!!!! you really want to test me?;youre banned $p1!!!!!!!!!!!! i could make you disappear!;youre banned $p1!!!!!!!!!!!! you dont know who youre dealing with!;youre banned $p1!!!!!!!!!!!! this can go one of two ways and you wont like the other!;youre banned $p1!!!!!!!!!!!! think carefully about your next move!;youre banned $p1!!!!!!!!!!!! you wont win this fight!;youre banned $p1!!!!!!!!!!!! i have the power to ruin your life!;youre banned $p1!!!!!!!!!!!! youre playing a dangerous game!,-9999,0
 $alreadybanned,$p1 is already banned;we already got $p1;$p1 was banned already,-9999,0
-$died,$unvalidatedsayfunc(/console LOAD_LINE /speak 3 wd \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 gj \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 WD \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 nice 1 \n/rgb random),-99999,6
+$died,$unvalidatedsayfunc(/console LOAD_LINE /speak 3 wd \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 gj \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 WD \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 nice 1 \n/rgb random),-3,1
 #$died,wd;gj;WD,0,1
 $diedother,gg;easy;nice try noob,0,1
-$diedbotsuicide,i did that,-9999,1
+$diedbotsui,i did that,-9999,1
 $math,$numbcalcfunc,-9999,0
 $number,$numbadderfunc,-9999,1
 $enter,hey $p1;hi $p1;hello $p1;o/ $p1;hi $p1!;hia $p1,0,1
-$rejoin,hey $p1 its good to see you again!;$p1 welcome back!!;welcome back $p1;good to see you again $p1;wb $p1;hey wb $p1!;wb $p1,0,0
-$join,;hey all!;heyy all;hi all!;hey;heyy;hi!,0,1
+$rejoin,hey $p1 its good to see you again!;$p1 welcome back!!;welcome back $p1;good to see you again $p1;wb $p1;hey wb $p1!;wb $p1,0,1
+$join,hey all!;heyy all;hi all!;hey;heyy;hi!,0,1
 $left,noo;rip;aw,0,1
 $matchwinner,gg nice $p1;gg wp $p1;gm good one $p1,0,0
 $matchwinnerself,gg;gg wp all;gm,0,0
@@ -111,7 +119,7 @@ players today,$whatsthefunc(players_today),-999,0
 players this,$whatsthefunc(players_this_hour),-999,0
 i join;join time,you joined at $whatsthefunc(joined_time) $p1,-999,0
 here for;long have i;i been here,about $whatsthefunc(been_here_for) $p1,-999,0
-the score,$whatsthefunc(score),-999,0
+the score,$whatsthefunc(player_score),-999,0
 my color;my rgb,$whatsthefunc(my_color),-999,0
 ban,$banfunc,-9999,0
 
@@ -158,6 +166,7 @@ bb;g2g;cu;gtg;cya;bbl,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu
  gn;gn ; good night,good night!!,0,0
 gn; good night,good night!!,0,1
 gm;gz;ghz;gg,gg;GG,0,1
+gang,gang fr $p1;gang gang;yeah gang,0,0
 good game; gm; gz; ghz; gg;gm ;gz ;ghz ;gg ,gg;GG,0,0
 real name,its $p2,0,0
 real,yes,0,0
@@ -245,6 +254,7 @@ heh,:p;heh;hehe,0,0
 fun,yes,0,0
 you wont,will too;i will $p1;im going to do it $p1;thats it $p1 its on,0,0
 not $p0,nooo,0,0
+go $p0,yeahhhh lets do it;yessss;doing it gang,0,0
 wow,yeah;what?;wowowowow,0,0
 fu,no,0,1
 pause,play,0,0

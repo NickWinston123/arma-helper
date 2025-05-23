@@ -167,6 +167,10 @@ static tConfItem<tString> se_playerMessageTriggersFuncLogFileConf = HelperComman
 int se_playerMessageTriggersGuessGameGiveupAnnounceInterval = 10;
 static tConfItem<int> se_playerMessageTriggersGuessGameGiveupAnnounceIntervalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_GUESS_GAME_GIVEUP_ANNOUNCE_INTERVAL", se_playerMessageTriggersGuessGameGiveupAnnounceInterval);
 
+tString se_playerMessageEnabledExpedientKeys = tString("$$$,!!!");
+static tConfItem<tString> se_playerMessageEnabledExpedientKeysConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_EXPEDIENT_KEYS", se_playerMessageEnabledExpedientKeys);
+
+
 std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers()
 {
     std::vector<ePlayerNetID *> enabledPlayers;
@@ -859,6 +863,90 @@ tString leaderboardFunc(tString message)
     return result;
 }
 
+tString nameHistoryTrackerFunc(tString message)
+{
+    tString result;
+    tString input = message.TrimWhitespace();
+    eChatBot &bot = eChatBot::getInstance();
+    ePlayerNetID *triggeringPlayer = bot.Messager()->Params().triggeredBy;
+
+    if (!se_playerStats)
+        return tString("PlayerStats not initialized. PlayerStats are disabled!\n");
+
+    if (input.empty())
+    {
+        if (!triggeringPlayer)
+            return tString("No player provided and no trigger context.");
+        input = triggeringPlayer->GetName();
+    }
+    else
+    {
+        ePlayerNetID *player = ePlayerNetID::GetPlayerByName(input, false);
+        if (player)
+            input = player->GetName();
+    }
+
+    std::set<std::string> seen;
+    std::vector<tString> history;
+
+    std::function<void(tString)> trace;
+    trace = [&](tString name)
+    {
+        std::string lowered = name.ToLower().stdString();
+        if (seen.count(lowered))
+            return;
+
+        seen.insert(lowered);
+
+        PlayerData &data = ePlayerStats::getStatsForAnalysis(name);
+        tString canonical = !data.name.empty() ? data.name : name;
+        history.push_back(canonical);
+
+        for (auto it = data.name_history.rbegin(); it != data.name_history.rend(); ++it)
+            trace(tString(*it));
+
+        for (const auto &entry : ePlayerStats::GetPlayerStatsMap())
+        {
+            const PlayerData &other = entry.second;
+            if (other.deleted || other.name_history.empty())
+                continue;
+
+            std::string prev = other.name_history.back();
+            if (tString(prev).ToLower().stdString() == lowered)
+            {
+                tString next = !other.name.empty() ? other.name : entry.first;
+                trace(next);
+            }
+        }
+    };
+
+    trace(input);
+    std::reverse(history.begin(), history.end());
+
+    std::set<std::string> finalSeen;
+    std::vector<tString> orderedNames;
+    for (const tString &name : history)
+    {
+        std::string lowered = name.ToLower().stdString();
+        if (!finalSeen.count(lowered))
+        {
+            finalSeen.insert(lowered);
+            orderedNames.push_back(name);
+        }
+    }
+
+    tString chain;
+    for (size_t i = 0; i < orderedNames.size(); ++i)
+    {
+        if (i > 0)
+            chain << " --> ";
+        chain << orderedNames[i];
+    }
+
+    result << orderedNames.back() << ": Name History - " << chain;
+    return result;
+}
+
 tString exactStatFunc(tString message)
 {
     tString output;
@@ -1178,13 +1266,12 @@ tString extractFuncName(const tString &response)
     return response;
 }
 
-
 tString whatsTheFunc(tString message)
 {
     tString output;
     tString target = message.TrimWhitespace();
 
-    if (target.Contains("score"))
+    if (target.Contains("player_score"))
     {
         ePlayerNetID::SortByScore();
 
@@ -1400,7 +1487,7 @@ tString whatsTheFunc(tString message)
     {
         if (!sg_navigatorDebugTrackEvaluation)
         {
-            output << "NAVIGATOR_DEBUG_SHOW_EVALUATION is not enabled!\n";
+            output << "NAVIGATOR_DEBUG_TRACK_EVALUATION is not enabled!\n";
             return output;
         }
 
@@ -1437,7 +1524,7 @@ tString whatsTheFunc(tString message)
             else
                 output << ipAddr;
         }
-    } 
+    }
     else if (target.Contains("player_count"))
     {
         int count = 0;
@@ -1463,9 +1550,52 @@ tString whatsTheFunc(tString message)
 
         if (!spectators.empty() && spectators.EndsWith(", "))
             spectators.RemoveSubStr(spectators.Len() - 2, 2);
-            
+
         output << count << " (" << spectators << ")";
     }
+    else if (target.Contains("automator_score"))
+    {
+        tArray<tString> players = se_playerMessageEnabledPlayers.SplitForPlayers();
+
+        for (int i = 0; i < players.Len(); i++)
+        {
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
+            if (!local_p)
+                continue;
+
+            ePlayerNetID *netPlayer = local_p->netPlayer;
+            if (!netPlayer || !netPlayer->CurrentTeam())
+                continue;
+
+            if (!tIsEnabledForPlayer(sg_smarterBotEnabledPlayers, netPlayer->pID + 1))
+                continue;
+
+            output << "Current score for " << netPlayer->GetName() << ": " << gSmarterBotWeightAutomator::CalculateScoreForPlayer(netPlayer);
+            break;
+        }
+    }
+    else if (target.Contains("automator_weights"))
+    {
+        tArray<tString> players = se_playerMessageEnabledPlayers.SplitForPlayers();
+
+        for (int i = 0; i < players.Len(); i++)
+        {
+            ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
+            if (!local_p)
+                continue;
+
+            ePlayerNetID *netPlayer = local_p->netPlayer;
+            if (!netPlayer || !netPlayer->CurrentTeam())
+                continue;
+
+            if (!tIsEnabledForPlayer(sg_smarterBotEnabledPlayers, netPlayer->pID + 1))
+                continue;
+
+            output << "Current weights for " << netPlayer->GetName() << ": " << gSmarterBotWeightAutomator::GetCurrentWeights(local_p, tString(": "), tString(", "));
+            break;
+        }
+    }
+
 
     return output;
 }
@@ -1920,6 +2050,15 @@ tString unvalidatedSayFunc(tString message)
 {
     eChatBot &bot = eChatBot::getInstance();
     bot.Messager()->Params().validateOutput = false;
+    return message;
+}
+
+tString unvalidatedsaynoprefixfunc(tString message)
+{
+    eChatBot &bot = eChatBot::getInstance();
+    bot.Messager()->Params().validateOutput = false;
+    bot.Messager()->Params().preAppend = tString("");
+
     return message;
 }
 
@@ -2430,6 +2569,8 @@ void eChatBot::InitChatFunctions()
     Functions()->RegisterFunction("$guessgamefunc", guessGameFunc);
     Functions()->RegisterFunction("$rpsgamefunc", rpsGameFunc);
     Functions()->RegisterFunction("$encryptedunvalidatedsayfunc", encryptedUnvalidatedSayFunc);
+    Functions()->RegisterFunction("$unvalidatedsaynoprefixfunc", unvalidatedsaynoprefixfunc);
+    Functions()->RegisterFunction("$namehistorytrackerfunc", nameHistoryTrackerFunc);
 }
 
 void eChatBot::LoadChatTriggers()
@@ -2472,6 +2613,17 @@ void eChatBot::LoadChatTriggers()
                 chatTrigger.triggerWithoutName = chatTrigger.isChatNameTrigger ? trigger.Replace("$p0", "").TrimWhitespace() : tString("");
 
                 chatTrigger.isSpecialTrigger = trigger.StartsWith("$");
+
+                chatTrigger.isExpedientTrigger = false;
+                tArray<tString> keys = se_playerMessageEnabledExpedientKeys.Split(","); 
+                for (int i = 0; i < keys.Len(); ++i)
+                {
+                    if (trigger.StartsWith(keys[i]))
+                    {
+                        chatTrigger.isExpedientTrigger = true;
+                        break;
+                    }
+                }
 
                 data.chatTriggers.push_back(chatTrigger);
             }
@@ -2875,7 +3027,7 @@ void eChatBotMessager::FindTriggeredResponse()
                 continue;
         }
 
-        
+
         if (tIsInList(se_playerMessageTriggersChatChanceTriggers, trigger))
         {
             tRandomizer &randomizer = tRandomizer::GetInstance();
@@ -2891,10 +3043,9 @@ void eChatBotMessager::FindTriggeredResponse()
                 return;
             }
         }
-        
 
-
-        Params().matchedTrigger = chatTrigger.trimmedTrigger;
+        Params().matchedTrigger     = chatTrigger.trimmedTrigger;
+        Params().isExpedientTrigger = chatTrigger.isExpedientTrigger;
 
         // Determine the sending player based on the type of trigger
         if (Params().triggeredBy != nullptr)
@@ -3211,6 +3362,22 @@ bool eChatBotMessager::Send()
     {
         gHelperUtility::Debug("eChatBot", "No sending player set. Aborting");
         return false;
+    }
+
+    if (Params().isExpedientTrigger)
+    {
+        tString messageToSend = Params().response;
+
+        if (messageToSend.Len() > se_playerMessageTriggersSpamMaxlen)
+            messageToSend = messageToSend.SubStr(0, se_playerMessageTriggersSpamMaxlen);
+
+        if (!Params().preAppend.empty())
+            messageToSend = Params().preAppend + messageToSend;
+
+        Params().sendingPlayer->Chat(messageToSend, true);
+
+        Stats().total_messages_sent++;
+        return true;
     }
 
     tString messageToSend = Params().response;
@@ -3647,7 +3814,7 @@ void eChatBotData::StoreContextItem(const tString &item)
     if (!item.empty())
         contextItems.push_back(item);
 
-        
+
     if (sg_helperDebug)
         gHelperUtility::Debug("eChatBotData", "Context item stored: ", item);
 
@@ -3659,7 +3826,7 @@ void eChatBotData::StoreContextItem(const tString &item)
         if (se_playerMessageTriggersContextBuilderAdditionalContext)
             line << ExtractAdditionalContextItems() << "\n";
 
-        if (se_playerMessageTriggersContextBuilderStoreTimestamp) 
+        if (se_playerMessageTriggersContextBuilderStoreTimestamp)
         {
             struct tm now = getCurrentLocalTime();
             line << "["
@@ -3706,10 +3873,10 @@ tString eChatBotData::ExtractAdditionalContextItems(const char *newLabel, const 
 static void ViewContextItems(std::istream &s)
 {
     tString combinedContext;
-        
+
     eChatBot &bot = eChatBot::getInstance();
-    con << "Context: " 
-        << bot.data.ExtractContext() 
+    con << "Context: "
+        << bot.data.ExtractContext()
         << "\n";
 }
 static tConfItemFunc ViewContextItemsConf = HelperCommand::tConfItemFunc("PLAYER_MESSAGE_TRIGGERS_CONTEXT_BUILDER_VIEW", &ViewContextItems);

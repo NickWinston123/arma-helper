@@ -184,6 +184,13 @@ public:
     bool execute(tString args) override;
 };
 
+class SpeakBotCommand : public eChatCommand
+{
+public:
+    SpeakBotCommand() : eChatCommand("SpeakBotCommand") {}
+    bool execute(tString args) override;
+};
+
 class RebuildCommand : public eChatCommand
 {
 public:

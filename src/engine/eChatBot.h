@@ -72,6 +72,7 @@ struct eChatBotDataBase
         tString      inputMessage;
         tString      triggeredByName;
         bool         eventTrigger;
+        bool         isExpedientTrigger;
         ePlayerNetID *triggeredBy;
 
         //OUTPUT PARAMS
@@ -248,6 +249,7 @@ public:
         bool isChatNameTrigger;
         tString triggerWithoutName;
         bool isSpecialTrigger;
+        bool isExpedientTrigger;
     };
 
     std::vector<tString> contextItems;

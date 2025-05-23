@@ -1704,8 +1704,6 @@ void login_deny_handler(nMessage &m){
         return;
 
 
-    if (se_playerStats)
-        ePlayerStats::saveStatsToDB();
 
     if ( !m.End() )
     {
@@ -6078,7 +6076,11 @@ void sn_quitAction(bool save, bool quit, tString message)
                                   uMenu::quickexit = uMenu::QuickExit_Total;
                                 });
     }
+
+   sn_statsAlreadySavedForBan = save && quit;
 }
+
+bool sn_statsAlreadySavedForBan = false;
 
 void sn_bannedWatchAction(tString reason)
 {

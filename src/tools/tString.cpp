@@ -2504,8 +2504,6 @@ bool tIsEnabledForPlayer(const tString &list_, int playerID)
     return false;
 }
 
-
-
 bool tRemoveFromList(tString &list, const tString &item)
 {
     bool itemRemoved = false;
@@ -2521,20 +2519,20 @@ bool tRemoveFromList(tString &list, const tString &item)
             break;
         }
 
-        bool isStart = (foundPos == 0 || list[foundPos - 1] == ',');
-        bool isEnd = (foundPos + item.Len() == list.Len() || list[foundPos + item.Len()] == ',');
+        bool isStart = (foundPos == 0 || list[foundPos - 1] == ',' || isblank(list[foundPos - 1]));
+        bool isEnd = (foundPos + item.Len() >= list.Len() || list[foundPos + item.Len()] == ',' || isblank(list[foundPos + item.Len()]));
 
         if (isStart && isEnd)
         {
-            if (foundPos > pos)
+            if (foundPos > 0)
             {
                 newList += list.SubStr(pos, foundPos - pos);
             }
-
             pos = foundPos + item.Len();
             if (pos < list.Len() && list[pos] == ',')
+            {
                 pos++;
-
+            }
             itemRemoved = true;
         }
         else
@@ -2544,11 +2542,10 @@ bool tRemoveFromList(tString &list, const tString &item)
         }
     }
 
-    while (!newList.empty() && newList[newList.Len() - 1] == ',')
-        newList = newList.SubStr(0, newList.Len() - 1);
-
     if (itemRemoved)
+    {
         list = newList;
+    }
 
     return itemRemoved;
 }

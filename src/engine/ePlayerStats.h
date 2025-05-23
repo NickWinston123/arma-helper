@@ -21,7 +21,8 @@ std::vector<std::string> deserializeVector(const std::string &str);
 std::string serializeVector(const std::vector<std::string> &vec);
 std::string join(const std::vector<std::string> &vec, const std::string &delimiter);
 
-extern bool se_playerStatsLocalForcedName;
+extern bool se_playerStatsLocalForcedName,
+            se_playerStatsStoreBotMessages;
 
 extern REAL  se_playerStatsRageQuitTime;
 
@@ -124,12 +125,12 @@ public:
     {
         tString output;
         output << "("
-               << r << ", " 
-               << g << ", " 
+               << r << ", "
+               << g << ", "
                << b
                << ")";
         if (cyclePreview)
-            output << " " 
+            output << " "
                    << ColorsCommand::cycleColorPreview(r,g,b, false);
         return output;
     }
@@ -604,6 +605,7 @@ class ePlayerStats
 {
     static CommandState deleteState;
     static CommandState consolidateState;
+    static bool         statsLoaded;
 
     static std::unordered_map<tString, PlayerData> playerStatsMap;
     static int players_record_this_session;
@@ -611,6 +613,12 @@ public:
     static bool shouldEnforceLocalName(ePlayerNetID * player)
     {
         return player && player->isLocal() && se_playerStatsLocalForcedName;
+    }
+
+    static void statsLoadedCheck()
+    {
+        if (!statsWereLoaded())
+            loadStatsFromDB();
     }
 
     static tString getEnforcedLocalName(ePlayerNetID * player)
@@ -745,6 +753,8 @@ public:
 
     static void playerRenamed(ePlayerNetID *player)
     {
+        statsLoadedCheck();
+
         if (shouldEnforceLocalName(player))
             return;
 
@@ -771,6 +781,8 @@ public:
 
     static void playerJoined(ePlayerNetID * player)
     {
+        statsLoadedCheck();
+
         PlayerData &stats = getStats(player);
         playerInit(stats, player);
         setColor(player);
@@ -780,6 +792,8 @@ public:
     {
         if (!player)
             return;
+
+        statsLoadedCheck();
 
         PlayerData &stats = getStats(player);
         playerLeft(stats);
@@ -816,7 +830,7 @@ public:
                     eChatBot::getInstance().data.StoreContextItem(bot.Messager()->Params().response);
                 }
             }
-        } 
+        }
         else if (se_playerMessageTriggersContextBuilder)
         {
             eChatBot &bot = eChatBot::getInstance();
@@ -826,7 +840,7 @@ public:
             eChatBot::getInstance().data.StoreContextItem(context);
         }
 
-        
+
     }
 
     static void playerLeft(PlayerData &stats)
@@ -840,6 +854,8 @@ public:
 
     static void addKill(ePlayerNetID *player)
     {
+        statsLoadedCheck();
+
         PlayerData &stats = getStats(player);
         PlayerDataBase &statsThisSession = stats.thisSession();
 
@@ -867,7 +883,7 @@ public:
         }
 
         ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::KILLS);
-        
+
         if (se_playerMessageTriggersContextBuilder)
         {
             eChatBot &bot = eChatBot::getInstance();
@@ -881,6 +897,8 @@ public:
 
     static void addDeath(ePlayerNetID *player)
     {
+        statsLoadedCheck();
+
         PlayerData &stats = getStats(player);
         PlayerDataBase &statsThisSession = stats.thisSession();
 
@@ -929,6 +947,8 @@ public:
 
     static void addScore(ePlayerNetID * player, int score)
     {
+        statsLoadedCheck();
+
         PlayerData &stats = getStats(player);
         PlayerDataBase &statsThisSession = stats.thisSession();
 
@@ -938,14 +958,18 @@ public:
 
     static void addMessage(ePlayerNetID * player, tString message)
     {
+        statsLoadedCheck();
+
         PlayerData &stats = getStats(player);
         PlayerDataBase &statsThisSession = stats.thisSession();
 
-        if (!message.empty())
+        if ( (!player->isLocal() || !tIsEnabledForPlayer(se_playerMessageEnabledPlayers, player->pID+1) ) || se_playerStatsStoreBotMessages)
         {
-            stats.chat_messages.push_back(message.stdString());
-            statsThisSession.chat_messages.push_back(message.stdString());
-
+            if (!message.empty())
+            {
+                stats.chat_messages.push_back(message.stdString());
+                statsThisSession.chat_messages.push_back(message.stdString());
+            }
         }
         stats.total_messages++;
         statsThisSession.total_messages++;
@@ -965,6 +989,8 @@ public:
 
     static tString deletePlayerStats(tString input)
     {
+        statsLoadedCheck();
+
         tString output;
         input = input.ToLower().TrimWhitespace();
 
@@ -1135,6 +1161,7 @@ public:
     static bool saveStatsToDB();
     static bool reloadStatsFromDB();
 
+    static bool statsWereLoaded() { return statsLoaded; }
 };
 
 using PlayerDataColumnMapping = ColumnMapping<PlayerData>;

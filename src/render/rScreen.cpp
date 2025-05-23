@@ -837,7 +837,8 @@ static bool lowlevel_sr_InitDisplay(){
     lastSuccess=currentScreensetting;
     failed_attempts = 0;
     sr_useDirectX = use_directx_back;
-    st_SaveConfig();
+
+    st_SaveConfig(false);
 #endif
     return true;
 }
@@ -863,7 +864,8 @@ bool sr_InitDisplay(){
 
         // prepare for crash, note failure and save config
         failed_attempts++;
-        st_SaveConfig();
+
+        st_SaveConfig(false);
 
 
 #ifdef MACOSX
@@ -891,8 +893,7 @@ bool sr_InitDisplay(){
             sr_UnlockSDL();
             return true;
         }
-
-        st_SaveConfig();
+        st_SaveConfig(false);
 
         if (lowlevel_sr_InitDisplay())
         {
@@ -905,7 +906,7 @@ bool sr_InitDisplay(){
     }
 
     failed_attempts = 1;
-    st_SaveConfig();
+    st_SaveConfig(false);
 
     tERR_ERROR("\nSorry, played all my cards trying to "
                "initialize your video system.\n"

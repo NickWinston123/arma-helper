@@ -191,10 +191,17 @@ public:
 
     //Smarter bot
     bool sg_smarterBotThink;
+    bool sg_smarterBotAutomator;
+    tString sg_smarterBotAutomatorConfigList;  
+    int     sg_smarterBotAutomatorRounds;      
+    REAL    sg_smarterBotAutomatorLastScore;      
+    tString sg_smarterBotAutomatorLogFile;    
+    REAL    sg_smarterBotAutomatorScale; 
+
     REAL sg_smarterBotRange;
     REAL sg_smarterBotRandomScale;
-    REAL sg_smarterBotRubberEval;
-    REAL sg_smarterBotSurviveEval;
+    REAL sg_smarterBotRubberScale;
+    REAL sg_smarterBotSurviveScale;
     REAL sg_smarterBotTrapScale;
     REAL sg_smarterBotFollowScale;
     bool sg_smarterBotFollowBlockLogic;
@@ -342,6 +349,7 @@ private:
     DangerLevel dangerLevel;
 };
 
+
 // the class that identifies players across the network
 class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class ePlayer;
@@ -360,6 +368,16 @@ public:
         {
         }
     };
+
+    struct tempStats
+    {
+        int kills;
+        int deaths;
+        int suicides;
+    };
+
+    tempStats stats;
+
     bool removedFromGame = false;
     SyncData lastSyncMessage_;
     static tArray<tString> nameSpeakWords;
@@ -374,7 +392,7 @@ public:
     static double nextSpeakTime;
 
     tString lastSentName;
-    
+
     static bool canChat();
     static bool canChatCommonPrefix(tString message);
     static bool canChatWithMsg(tString message);
@@ -1092,7 +1110,7 @@ public:
     void AddIncomingMessage(const tString &msg);
 
     bool CheckIfSilenced();
-    
+
 };
 
 extern eMessageTracker ePlayerMessages;

@@ -166,6 +166,15 @@ namespace helperConfig
     REAL sg_helperTraceDelay = 0.01;
     static tConfItem<REAL> sg_helperTraceDelayConf = HelperCommand::tConfItem("HELPER_SELF_TRACE_DELAY", sg_helperTraceDelay);
 
+    bool sg_helperRubberRebuild = false;
+    tConfItem<bool> sg_helperRubberRebuildConf = HelperCommand::tConfItem("HELPER_SELF_RUBBER_REBUILD", sg_helperRubberRebuild);
+    REAL sg_helperRubberRebuildRubberUsed = 0.97;
+    tConfItem<REAL> sg_helperRubberRebuildRubberUsedConf = HelperCommand::tConfItem("HELPER_SELF_RUBBER_REBUILD_RUBBER_USED", sg_helperRubberRebuildRubberUsed);
+    tString sg_helperRubberRebuildAction = tString("/rebuild");
+    tConfItem<tString> sg_helperRubberRebuildActionConf = HelperCommand::tConfItem("HELPER_SELF_RUBBER_REBUILD_ACTION", sg_helperRubberRebuildAction);
+    REAL sg_helperRubberRebuildRubberTimeout = 0.1;
+    tConfItem<REAL> sg_helperRubberRebuildRubberTimeoutConf = HelperCommand::tConfItem("HELPER_SELF_RUBBER_REBUILD_TIMEOUT", sg_helperRubberRebuildRubberTimeout);
+
     bool sg_helperShowEnemyTail = false;
     static tConfItem<bool> sg_helperShowEnemyTailConf = HelperCommand::tConfItem("HELPER_ENEMY_SHOW_TAIL", sg_helperShowEnemyTail);
     REAL sg_helperShowEnemyTailHeight = 1;
@@ -1000,6 +1009,29 @@ void gHelper::trace(gHelperData &data, int dir)
     }
 }
 
+#include "../gMenus.h"
+
+void gHelper::rubberRebuild(gHelperData &data)
+{
+    static REAL lastCalledTime = getSteadyTime();  
+    REAL currentTime = getSteadyTime();
+    REAL rubberUsed  = data.rubberData.rubberUsedRatioF() + data.ownerData.lagFactorF();
+
+    if ((currentTime - lastCalledTime > sg_helperRubberRebuildRubberTimeout) && (rubberUsed >= sg_helperRubberRebuildRubberUsed))
+    {
+        lastCalledTime = currentTime;
+        sn_consoleUser(ePlayer::NetToLocalPlayer(&player_));
+
+        gTaskScheduler.schedule("rubberRebuild", 0, []
+        {
+            tCurrentAccessLevel level(tAccessLevel_Owner, true);
+            std::stringstream s(static_cast<char const *>(sg_helperRubberRebuildAction));
+            tConfItemBase::LoadAll(s);
+        });        
+    }
+}
+
+
 #include "../gWall.h"
 void gHelper::Activate()
 {
@@ -1013,8 +1045,8 @@ void gHelper::Activate()
         start = tRealSysTimeFloat();
 
         tColoredString debug;
-        debug << "\ngCycles: " << eGameObject::number_of_gCycles << "\n";
-        debug << "Walls: "   << sg_netPlayerWalls.Len() << "\n";
+        debug << "\ngCycles: "    << eGameObject::number_of_gCycles          << "\n";
+        debug << "Walls: "        << sg_netPlayerWalls.Len()                 << "\n";
         debug << "eGameObjects: " << eGrid::CurrentGrid()->gameObjects.Len() << "\n";
 
         helperDebugH       << debug;
@@ -1083,6 +1115,9 @@ void gHelper::Activate()
         trace(data_stored, RIGHT);
     else
         traceSensorDistance[1] = 1E+30;
+
+    if (sg_helperRubberRebuild)
+        rubberRebuild(data_stored);
 
     if (sg_helperHud)
         sg_helperActivateTimeH << (tRealSysTimeFloat() - start);

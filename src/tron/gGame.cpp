@@ -200,9 +200,9 @@ bool sg_playerWatchServerDisconnectedWatch = false;
 static tConfItem<bool> sg_playerWatchServerDisconnectedWatchConf("PLAYER_WATCH_SERVER_DISCONNECTED", sg_playerWatchServerDisconnectedWatch);
 bool sg_playerWatchServerDisconnectedWatchQuit = false;
 static tConfItem<bool> sg_playerWatchServerDisconnectedWatchQuitConf("PLAYER_WATCH_SERVER_DISCONNECTED_QUIT", sg_playerWatchServerDisconnectedWatchQuit);
-REAL sg_playerWatchServerDisconnectedWatchQuitTime = 300;
+REAL sg_playerWatchServerDisconnectedWatchQuitTime = 10;
 static tConfItem<REAL> sg_playerWatchServerDisconnectedWatchQuitTimeConf("PLAYER_WATCH_SERVER_DISCONNECTED_QUIT_TIME", sg_playerWatchServerDisconnectedWatchQuitTime);
-REAL sg_playerWatchServerDisconnectedWatchTime = 500;
+REAL sg_playerWatchServerDisconnectedWatchTime = 60;
 static tConfItem<REAL> sg_playerWatchServerDisconnectedWatchTimeConf("PLAYER_WATCH_SERVER_DISCONNECTED_TIME", sg_playerWatchServerDisconnectedWatchTime);
 
 
@@ -1327,7 +1327,7 @@ static void sg_ClearDelayedCmd(std::istream &s)
             gTaskScheduler.remove(taskID);
         }
     }
-    gTaskIDs.clear(); 
+    gTaskIDs.clear();
 }
 
 static tConfItemFunc sg_ClearDelayedCmd_conf("DELAY_COMMAND_CLEAR", &sg_ClearDelayedCmd);
@@ -1356,11 +1356,11 @@ static void sg_RemoveDelayedCmd(std::istream &s)
         con << "Error: No such delayed command ( " << command << " ) found\n";
         return;
     }
-    
+
     con << "Removing delayed command ( " << command << " )\n";
     gTaskScheduler.remove(fullTaskID);
     gTaskIDs.erase(it);
-    
+
 }
 static tConfItemFunc sg_RemoveDelayedCmd_conf("DELAY_COMMAND_REMOVE", &sg_RemoveDelayedCmd);
 
@@ -1466,9 +1466,9 @@ static void sg_AddDelayedCmd(std::istream &s)
             std::stringstream st(cmd_name);
             tConfItemBase::LoadAll(st);
         }, interval);
-        
+
         gTaskIDs.push_back(taskID);
-        
+
 
         tOutput msg;
         msg.SetTemplateParameter(1, cmd_name.c_str());
@@ -2839,7 +2839,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
     gTaskScheduler.removeTasksWithPrefix("connectedToServerCheck");
 
     sn_SetNetState(nSTANDALONE);
-
+    roundsStarted = 0;
     sg_currentGame = NULL;
     nNetObject::ClearAll();
     ePlayerNetID::ClearAll();
@@ -4218,7 +4218,7 @@ void gGame::RebuildGrid(int requestedState)
 static bool sg_saveConfigOnRoundEnd = false;
 static tConfItem<bool> sg_saveConfigOnRoundEndConf("SAVE_CONFIG_ON_ROUND_END", sg_saveConfigOnRoundEnd);
 
-
+int roundsStarted = 0;
 void gGame::StateUpdate()
 {
 
@@ -4255,7 +4255,7 @@ void gGame::StateUpdate()
 
             // if (se_playerStats && roundWinnerProcessed)
             //     ePlayerStats::updateStatsRoundEnd();
-                
+            roundsStarted++;
             if (roundWinnerProcessed && se_playerMessageTriggersContextBuilder)
             {
                 eChatBot &bot = eChatBot::getInstance();
@@ -6074,14 +6074,17 @@ static void sg_updateScheduler()
     {
         gTaskScheduler.schedule("forcedUpdate", sg_forceClockDelay, []
         {
-            if (sg_forcePlayerUpdate || ePlayerNetID::nameSpeakForceUpdate)
-                ePlayerNetID::ForcedUpdate();
+            if (sg_inGameLoop)
+            {
+                if (sg_forcePlayerUpdate || ePlayerNetID::nameSpeakForceUpdate)
+                    ePlayerNetID::ForcedUpdate();
 
-            if (sg_forcePlayerRebuild)
-                ePlayerNetID::CompleteRebuild();
+                if (sg_forcePlayerRebuild)
+                    ePlayerNetID::CompleteRebuild();
 
-            if (sg_forceSyncAll)
-                nNetObject::SyncAll();
+                if (sg_forceSyncAll)
+                    nNetObject::SyncAll();
+            }
         });
     }
 
@@ -6090,6 +6093,7 @@ static void sg_updateScheduler()
 
 static rPerFrameTask sg_updateSchedulerC(&sg_updateScheduler);
 
+bool sg_inGameLoop = false;
 bool gGame::GameLoop(bool input)
 {
     if (sg_forceGamePause)
@@ -6097,8 +6101,10 @@ bool gGame::GameLoop(bool input)
 
     if (sg_playerWatchServerDisconnectedWatch)
         sg_scheduleDisconnectedFromServerCheckCheck();
-        
+
     nNetState netstate = sn_GetNetState();
+
+    sg_inGameLoop = true;
 
 #ifdef DEBUG
     grid->Check();
@@ -6597,6 +6603,8 @@ void sg_EnterGameCore(nNetState enter_state)
 
     extroPlayer.MakeGlobal();
     extroPlayer.Reset();
+
+    sg_inGameLoop = false;
 
     sg_EnterGameCleanup();
 }
@@ -7314,8 +7322,8 @@ void sg_scheduleDisconnectedFromServerCheckCheck()
                 gTaskScheduler.remove(taskId);
             else
                 return;
-        } 
-        else 
+        }
+        else
             gHelperUtility::Debug("sg_DisconnectedFromServer", "Scheduling sg_DisconnectedFromServerCheck");
 
         gTaskScheduler.schedule(

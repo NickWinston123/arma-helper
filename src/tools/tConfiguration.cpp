@@ -1694,6 +1694,8 @@ static tConfItemFunc st_LoadCustomConfigsConf("LOAD_CUSTOM_CONFIGS", &st_LoadCus
 
 void st_LoadConfig( bool printChange )
 {
+    if (sg_helperDebug)
+        gHelperUtility::Debug("eChatBot","Loading config..");
     // default include files are executed at owner level
     tCurrentAccessLevel level( tAccessLevel_Owner, true );
 
@@ -1816,10 +1818,11 @@ void st_GrabConfigInfo( std::map < tString, bool > * _saved, std::map < tString,
     }
 }
 
-void st_SaveConfig()
+void st_SaveConfig(bool saveStats)
 {
-
-    if (se_playerStats)
+    if (sg_helperDebug)
+        gHelperUtility::Debug("st_SaveConfig","Saving config..");
+    if (se_playerStats && saveStats)
         ePlayerStats::saveStatsToDB();
 
     // don't save while playing back

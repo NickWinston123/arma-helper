@@ -53,10 +53,12 @@ bool ePlayerStats::loadStatsFromDB()
     chatbotStatsAction.Load();
 
     sqlite3_close(db);
-    
+
     if (se_playerMessageTriggers && se_playerMessageTriggersStatsLoad)
         eChatBot::InitiateAction(nullptr, tString("$statsloaded"), true);
-    
+
+    if (!statsLoaded)
+        statsDBCreationDate = tDatabaseUtility::GetDatabaseCreationTime(se_playerStatsDataBaseFile);
     statsLoaded = true;
 
     return statsLoaded;
@@ -64,6 +66,8 @@ bool ePlayerStats::loadStatsFromDB()
 
 bool ePlayerStats::saveStatsToDB()
 {
+    // statsLoadedCheck();
+
     sqlite3 *db = tDatabaseUtility::OpenDatabase(se_playerStatsDataBaseFile);
     if (!db)
         return false;
@@ -203,7 +207,7 @@ void ePlayerStats::updateStatsRoundStart()
 
 bool ePlayerStats::reloadStatsFromDB()
 {
-    if (saveStatsToDB()) 
+    if (saveStatsToDB())
     {
         playerStatsMap.clear(); // clear the current stats
         loadStatsFromDB();      // reload stats from DB
@@ -215,13 +219,11 @@ bool ePlayerStats::reloadStatsFromDB()
 
 std::unordered_map<tString, PlayerData> ePlayerStats::playerStatsMap;
 
-const std::string DELIMITER = "-+H4CK3RM@N5-+";
-
 std::vector<std::string> deserializeVector(const std::string &str)
 {
     std::vector<std::string> vec;
 
-    if (str.find(DELIMITER) == std::string::npos)
+    if (str.find(DB_DELIMITER) == std::string::npos)
     {
         if (!str.empty()) {
             vec.push_back(str);
@@ -231,14 +233,14 @@ std::vector<std::string> deserializeVector(const std::string &str)
 
     std::string::size_type pos = 0;
     std::string::size_type prev = 0;
-    while ((pos = str.find(DELIMITER, prev)) != std::string::npos)
+    while ((pos = str.find(DB_DELIMITER, prev)) != std::string::npos)
     {
         std::string segment = str.substr(prev, pos - prev);
         if (!segment.empty())
         {
             vec.push_back(segment);
         }
-        prev = pos + DELIMITER.length();
+        prev = pos + DB_DELIMITER.length();
     }
 
     std::string lastSegment = str.substr(prev);
@@ -254,13 +256,13 @@ std::string serializeVector(const std::vector<std::string> &vec)
     return std::accumulate(vec.begin(), vec.end(), std::string(),
                            [](const std::string &a, const std::string &b)
                            {
-                               if (b.empty()) 
+                               if (b.empty())
                                  return a;
-                               return a + (a.length() > 0 ? DELIMITER : "") + b;
+                               return a + (a.length() > 0 ? DB_DELIMITER : "") + b;
                            });
 }
 
-
+// stats we let the user see as options
 const std::set<std::string> PlayerData::valueMapdisplayFields =
 {
     "all", "rgb", "chats", "kills", "deaths", "match_wins",
@@ -582,7 +584,7 @@ auto initValueMap = []() {
 };
 
 std::map<std::string, std::pair<std::string, PlayerDataBase::StatFunction>> PlayerDataBase::valueMap = initValueMap();
-std::string joinVector(const std::vector<std::string>& vec) 
+std::string joinVector(const std::vector<std::string>& vec)
 {
     if (vec.empty()) return "";
 
@@ -607,7 +609,9 @@ const std::vector<PlayerDataColumnMapping> ePlayerStatsMappings =
 
         {"matches_played", "INTEGER",
          [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
-         { sqlite3_bind_int(stmt, col++, stats.matches_played); },
+         {
+             sqlite3_bind_int(stmt, col++, stats.matches_played);
+         },
          [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
          { stats.matches_played = sqlite3_column_int(stmt, col++); }},
 
@@ -784,18 +788,19 @@ const std::vector<PlayerDataColumnMapping> ePlayerStatsMappings =
          }},
 
         {"nickname", "TEXT",
-        [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
-        {
-            const char* nicknameCStr = stats.nickname.c_str();
-            sqlite3_bind_text(stmt, col++, nicknameCStr, -1, SQLITE_TRANSIENT);
-        },
-        [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
-        {
-            const unsigned char* text = sqlite3_column_text(stmt, col++);
-            if (text != nullptr) {
-                stats.nickname = reinterpret_cast<const char*>(text);
-            }
-        }},
+         [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+         {
+             const char *nicknameCStr = stats.nickname.c_str();
+             sqlite3_bind_text(stmt, col++, nicknameCStr, -1, SQLITE_TRANSIENT);
+         },
+         [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+         {
+             const unsigned char *text = sqlite3_column_text(stmt, col++);
+             if (text != nullptr)
+             {
+                 stats.nickname = reinterpret_cast<const char *>(text);
+             }
+         }},
 
         {"times_banned", "INTEGER",
          [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
@@ -829,6 +834,45 @@ const std::vector<PlayerDataColumnMapping> ePlayerStatsMappings =
                  stats.acheivement_history = deserializeVector(acheivementHistorySerialized);
              }
          }},
+
+        {"notifications", "TEXT",
+            [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+            {
+                std::string serialized = serializeVector(stats.notifications);
+                sqlite3_bind_text(stmt, col++, serialized.c_str(), -1, SQLITE_TRANSIENT);
+            },
+            [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+            {
+                const char *text = reinterpret_cast<const char *>(sqlite3_column_text(stmt, col++));
+                if (text)
+                    stats.notifications = deserializeVector(text);
+            }
+        },
+
+        {"last_seen_notification_time", "BIGINT",
+            [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+            {
+                sqlite3_bind_int64(stmt, col++, static_cast<sqlite3_int64>(stats.last_seen_notification_time));
+            },
+            [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+            {
+                stats.last_seen_notification_time = static_cast<time_t>(sqlite3_column_int64(stmt, col++));
+            }
+        },
+
+        {"sent_notifications", "TEXT",
+        [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+        {
+            std::string serialized = serializeVector(stats.sent_notifications);
+            sqlite3_bind_text(stmt, col++, serialized.c_str(), -1, SQLITE_TRANSIENT);
+        },
+        [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+        {
+            const char *text = reinterpret_cast<const char *>(sqlite3_column_text(stmt, col++));
+            if (text)
+                stats.sent_notifications = deserializeVector(text);
+        }
+    }
 };
 
 static void se_playerStatsConsolidate(std::istream &s)
@@ -887,3 +931,4 @@ static tConfItemFunc se_playerStatsReload_conf = HelperCommand::tConfItemFunc("P
 CommandState ePlayerStats::deleteState;
 CommandState ePlayerStats::consolidateState;
 bool         ePlayerStats::statsLoaded = false;
+std::chrono::system_clock::time_point ePlayerStats::statsDBCreationDate = std::chrono::system_clock::time_point{};

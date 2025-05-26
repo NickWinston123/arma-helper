@@ -87,7 +87,8 @@ public:
     {}
 
     void OnRoundStart();
-    void UpdateStatsLog(REAL finalScore = 0);
+    void GenerateAndUpdateWeights();
+    void UpdateStatsLog(ePlayer *player);
     static REAL CalculateScoreForPlayer(ePlayerNetID* p);
     static std::vector<std::string> GetOpponentList();
     static tString GetCurrentWeights(ePlayer *player, tString equalSign = tString("="), tString delim = tString(";"));

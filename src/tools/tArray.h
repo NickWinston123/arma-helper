@@ -90,6 +90,8 @@ protected:
             new(reinterpret_cast<T *>(Base())+i) T();
     }
 
+
+
     //! fast data swap with other array
     void Swap( tArray & other )
     {
@@ -116,6 +118,15 @@ public:
             ((reinterpret_cast<T *>(Base()))+i)->~T();
         }
         Delete(MALLOC);
+    }
+
+    void Reverse() {
+        int n = Len();
+        for (int i = 0; i < n / 2; ++i) {
+            T temp = (*this)[i];
+            (*this)[i] = (*this)[n - 1 - i];
+            (*this)[n - 1 - i] = temp;
+        }
     }
 
 protected:

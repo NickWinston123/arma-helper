@@ -2008,13 +2008,25 @@ static void st_InstallSigHupHandler()
 void tConfItemLine::ReadVal(std::istream &s){
     tString dummy;
     dummy.ReadLine(s, true);
-    if(strcmp(dummy,*target)){
-        if (printChange)
-        {
+
+    if (dummy.Filter().empty()) 
+    {
+        tOutput o;
+        o.SetTemplateParameter(1, title);
+        o.SetTemplateParameter(2, *target);
+        o << "$config_message_info"; 
+        con << o;
+        tConfItemBase::lastLoadOutput << o;
+        return;
+    }
+
+    if (strcmp(dummy, *target) != 0) {
+        if (printChange) {
             tColoredString oldval;
             oldval << *target << tColoredString::ColorString(1,1,1);
             tColoredString newval;
             newval << dummy << tColoredString::ColorString(1,1,1);
+
             tOutput o;
             o.SetTemplateParameter(1, title);
             o.SetTemplateParameter(2, oldval);
@@ -2023,11 +2035,10 @@ void tConfItemLine::ReadVal(std::istream &s){
             con << o;
             tConfItemBase::lastLoadOutput << o;
         }
-        *target=dummy;
-        changed=true;
-    }
 
-    *target=dummy;
+        *target = dummy;
+        changed = true;
+    }
 }
 
 

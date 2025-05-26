@@ -12,7 +12,8 @@
 #include "tDatabase.h"
 
 extern tString se_playerMessageTriggersFile,
-               se_playerMessageEnabledPlayers;
+               se_playerMessageEnabledPlayers,
+               se_playerMessageNotificationTrigger;
 
 extern bool se_playerMessageTriggers,
             se_playerMessageTriggersReactToSelf,
@@ -100,13 +101,14 @@ struct eChatBotDataBase
     // DATABASE STATS
     struct eChatBotStatsBase
     {
-        tString name            = tString("hackermans"); // Primary key
-        int total_messages_read = 0;
-        int total_messages_sent = 0;
-        int times_banned        = 0;
-        int times_banned_today  = 0;
-        time_t last_banned      = 0;
-        REAL total_up_time      = 0;
+        tString name                = tString("hackermans"); // Primary key
+        int total_messages_read     = 0;
+        int total_messages_sent     = 0;
+        int times_banned            = 0;
+        int times_banned_today      = 0;
+        time_t  last_banned         = 0;
+        tString last_banned_reason  = tString("");
+        REAL total_up_time          = 0;
     };
 
 };
@@ -341,7 +343,8 @@ public:
 
     static bool InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger = false, tString preAppend = tString(""));
 
-    static void findResponse(eChatBot &bot, tString playerName, tString trigger, tString value, bool send = false);
+    static tString findResponse(eChatBot &bot, tString playerName, tString trigger, tString value, tString valDelim = tString("$val1"), bool send = false);
+    static tString findResponsePlayer(eChatBot &bot, ePlayerNetID* triggeredBy, tString trigger, tString value, tString valDelim = tString("$val1"), bool send = false);
 
     bool ShouldAnalyze();
 };
@@ -387,6 +390,8 @@ public:
             chatBotStats.times_banned_today = 0;
     }
 };
+
+
 
 
 #endif

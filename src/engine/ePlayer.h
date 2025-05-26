@@ -371,9 +371,9 @@ public:
 
     struct tempStats
     {
-        int kills;
-        int deaths;
-        int suicides;
+        int kills    = 0;
+        int deaths   = 0;
+        int suicides = 0;
     };
 
     tempStats stats;

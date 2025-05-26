@@ -391,6 +391,42 @@ public:
 namespace tDatabaseUtility
 {
 
+    static std::chrono::system_clock::time_point GetDatabaseCreationTime(tString databaseFile)
+    {
+        tString databasePath = tDirectories::Var().GetReadPath(databaseFile);
+
+    #ifdef WIN32
+        WIN32_FILE_ATTRIBUTE_DATA fileInfo;
+        if (GetFileAttributesEx(databasePath.c_str(), GetFileExInfoStandard, &fileInfo))
+        {
+            ULONGLONG fileTime = (static_cast<ULONGLONG>(fileInfo.ftCreationTime.dwHighDateTime) << 32) |
+                                fileInfo.ftCreationTime.dwLowDateTime;
+
+            const ULONGLONG EPOCH_DIFF = 116444736000000000ULL;
+            const ULONGLONG HUNDRED_NANOSECONDS_PER_SECOND = 10000000ULL;
+
+            if (fileTime < EPOCH_DIFF)
+                return std::chrono::system_clock::time_point{};  
+
+            ULONGLONG unixTime = (fileTime - EPOCH_DIFF) / HUNDRED_NANOSECONDS_PER_SECOND;
+
+            return std::chrono::system_clock::time_point{std::chrono::seconds(unixTime)};
+        }
+        else
+        {
+            con << "GetFileAttributesEx failed on path: " << databasePath << "\n";
+        }
+    #else
+        struct stat attr;
+        if (stat(databasePath.stdString().c_str(), &attr) == 0)
+        {
+            return std::chrono::system_clock::from_time_t(attr.st_ctime);
+        }
+    #endif
+        return std::chrono::system_clock::time_point{};
+    }
+
+
     static void DebugLog(const std::string &table, const std::string &message, bool utility)
     {
         std::string sender = utility ? "tDatabaseUtility" : ("tDatabase (" + table + ")");

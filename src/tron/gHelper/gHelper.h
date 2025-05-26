@@ -171,9 +171,8 @@ public:
 
     void turningBot(gHelperData &data);
 
-    void traceLeft();
-    void traceRight();
     void trace(gHelperData &data, int dir);
+    
     void rubberRebuild(gHelperData &data);
     /**
      * Activates the helper, setting up necessary data and pointers.

@@ -1387,7 +1387,7 @@ static tConfItemFunc sg_ListDelayedCmd_conf("DELAY_COMMAND_LIST", &sg_ListDelaye
 static void sg_taskSchedulerList(std::istream &s)
 {
     auto tasks = gTaskScheduler.getTasks();
-    con << "Number of scheduled tasks: " << tasks.size() << "\n";
+    con << "["<< tSysTimeFloat() << "] " << "Number of scheduled tasks: " << tasks.size() << "\n";
     for (const auto &task : tasks)
     {
         con << "Task: "      << task.first           << "\n"
@@ -1399,7 +1399,28 @@ static tConfItemFunc sg_taskSchedulerList_conf("TASK_SCHEDULER_LIST", &sg_taskSc
 
 static void taskSchedulerClear(std::istream &s)
 {
-    gTaskScheduler.clear();
+    tString params;
+    tString output;
+    params.ReadLine(s, true);
+
+    if (params.empty())
+    {
+        sg_taskSchedulerList(s);
+        output << "Please specify a task prefix or use '*' to clear all tasks\n";
+    }
+    else if (params == "*")
+    {
+        output << "Cleared all scheduled tasks\n";
+        gTaskScheduler.clear();
+    }
+    else 
+    {
+        output << "Cleared all scheduled tasks with prefix '" << params << "'\n";
+        gTaskScheduler.removeTasksWithPrefix(params.stdString()); 
+    }
+    tConfItemBase::lastLoadOutput = output;
+    con << output;
+
 }
 static tConfItemFunc taskSchedulerClear_conf = HelperCommand::tConfItemFunc("TASK_SCHEDULER_CLEAR", &taskSchedulerClear);
 
@@ -7389,3 +7410,252 @@ static void se_connectToServer(std::istream &s)
 }
 
 static tConfItemFunc se_connectToServer_conf("CONNECT_TO_SERVER", &se_connectToServer);
+
+tString sg_reminderFuncStorageFile("reminders.txt");
+static tConfItem<tString> sg_reminderFuncStorageFileConf = HelperCommand::tConfItem("REMINDER_STORAGE_FILE", sg_reminderFuncStorageFile);
+
+
+const tString ReminderFunc::fileName = tString(sg_reminderFuncStorageFile);
+std::vector<ReminderFunc::Reminder> ReminderFunc::reminders;
+
+void ReminderFunc::Load()
+{
+    FileManager file(fileName, tDirectories::Var());
+    reminders.clear();
+
+    for (const auto &line : file.Load())
+    {
+        std::istringstream ss(line.stdString());
+        std::string id, command;
+        double triggerAt;
+        int repeatInt;
+
+        ss >> id >> std::quoted(command) >> triggerAt >> repeatInt;
+
+        if (!id.empty() && !command.empty() && triggerAt > 0)
+        {
+            reminders.push_back({id, command, triggerAt, repeatInt != 0});
+            gHelperUtility::Debug("ReminderFunc", "Loaded: " + id + " | triggerAt = " + std::to_string(triggerAt));
+        }
+    }
+}
+
+void ReminderFunc::Save()
+{
+    FileManager file(fileName, tDirectories::Var());
+    file.Clear(false); 
+
+    std::unordered_set<std::string> seenIDs;
+    std::ostringstream content;
+
+    for (const auto &r : reminders)
+    {
+        if (!seenIDs.insert(r.id).second)
+            continue; 
+
+        content << r.id << " " << std::quoted(r.command) << " "
+                << r.triggerAt << " " << (r.repeat ? 1 : 0) << "\n";
+
+        gHelperUtility::Debug("ReminderFunc", "Saved: " + r.id + " | triggerAt = " + std::to_string(r.triggerAt));
+    }
+
+    file.Write(tString(content.str()), std::ios::out, false);
+}
+
+void ReminderFunc::AddReminder(const std::string &id, const std::string &command, REAL delay, bool repeat)
+{
+    RemoveReminder(id);
+
+    double nowWall = std::chrono::duration_cast<std::chrono::seconds>(
+                         std::chrono::system_clock::now().time_since_epoch())
+                         .count();
+    double triggerAt = nowWall + delay;
+
+    reminders.push_back({id, command, triggerAt, repeat});
+    Save();
+
+    gHelperUtility::Debug("ReminderFunc", "Scheduled new reminder: " + id + " in " + std::to_string((int)delay) + "s");
+
+    gTaskScheduler.schedule(id, delay, [id, command, repeat]()
+                            {
+        gHelperUtility::Debug("ReminderFunc", "Reminder triggered: " + id);
+
+        sn_consoleUser(ePlayer::NetToLocalPlayer(se_GetLocalPlayer()));
+        tCurrentAccessLevel level(tAccessLevel_Owner, true);
+
+        std::stringstream ss(command);
+        tConfItemBase::LoadAll(ss);
+
+        if (!repeat) 
+        {
+            ReminderFunc::RemoveReminder(id);
+            gHelperUtility::Debug("ReminderFunc", "Removed one-time reminder: " + id);
+        } 
+    }, repeat ? delay : 0);
+}
+
+void ReminderFunc::RemoveReminder(const std::string &id)
+{
+    size_t before = reminders.size();
+
+    reminders.erase(std::remove_if(reminders.begin(), reminders.end(),
+                                   [&](const Reminder &r)
+                                   { return r.id == id; }),
+                    reminders.end());
+
+    if (reminders.size() == before)
+        gHelperUtility::Debug("ReminderFunc", "RemoveReminder: no match found for ID: " + id);
+
+    gTaskScheduler.remove(id);
+    Save();
+}
+
+void ReminderFunc::ScheduleAll()
+{
+    double nowWall = std::chrono::duration_cast<std::chrono::seconds>(
+                         std::chrono::system_clock::now().time_since_epoch())
+                         .count();
+
+    for (const auto &r : reminders)
+    {
+        double delay = r.triggerAt - nowWall;
+
+        if (!r.repeat && delay <= 0)
+        {
+            gHelperUtility::Debug("ReminderFunc", "Skipping expired one-time reminder: " + r.id);
+            continue;
+        }
+
+        delay = std::max(0.0, delay);
+
+        gHelperUtility::Debug("ReminderFunc", "Scheduling: " + r.id + " | in " + std::to_string((int)delay) + "s");
+
+        gTaskScheduler.schedule(r.id, delay, [id = r.id, cmd = r.command, repeat = r.repeat]()
+                                {
+            gHelperUtility::Debug("ReminderFunc", "Reminder triggered: " + id);
+
+            sn_consoleUser(ePlayer::NetToLocalPlayer(se_GetLocalPlayer()));
+            tCurrentAccessLevel level(tAccessLevel_Owner, true);
+
+            std::stringstream ss(cmd);
+            tConfItemBase::LoadAll(ss);
+
+            if (!repeat) 
+            {
+                ReminderFunc::RemoveReminder(id);
+                gHelperUtility::Debug("ReminderFunc", "Removed one-time reminder: " + id);
+            } 
+        }, r.repeat ? delay : 0);
+    }
+}
+
+static void sg_ReminderManager(std::istream &s)
+{
+    std::string subcommand;
+    s >> subcommand;
+
+    if (subcommand == "add")
+    {
+        std::string id, intervalStr, word, command;
+        bool repeat = true;
+
+        s >> id >> intervalStr;
+        while (s >> word)
+        {
+            if (word == "--once")
+                repeat = false;
+            else
+                command += word + " ";
+        }
+
+        command.erase(0, command.find_first_not_of(' '));
+        if (id.empty() || intervalStr.empty() || command.empty())
+        {
+            con << "Usage: REMINDER_MANAGER add <id> <delay> [--once] <command>\n"
+                << "Example: REMINDER_MANAGER add drink1 45m --once /speak 3 stay hydrated!\n";
+            return;
+        }
+
+        REAL multiplier = 1;
+        char suffix = intervalStr.back();
+        if (suffix == 'm')
+            multiplier = 60;
+        else if (suffix == 'h')
+            multiplier = 3600;
+        else if (suffix == 's')
+            multiplier = 1;
+        else if (!isdigit(suffix))
+        {
+            con << "Invalid delay format. Use e.g. 5s, 10m, 1h\n";
+            return;
+        }
+
+        std::string numeric = intervalStr;
+        if (!isdigit(suffix))
+            numeric.pop_back();
+
+        REAL delay = std::stof(numeric) * multiplier;
+        if (delay <= 0)
+        {
+            con << "Delay must be greater than 0.\n";
+            return;
+        }
+
+        ReminderFunc::AddReminder(id, command, delay, repeat);
+
+        con << "Reminder scheduled: [" << id << "] ";
+        con << (repeat ? "every " : "in ") << delay << "s\n -> " << command << "\n";
+    }
+    else if (subcommand == "delete")
+    {
+        std::string id;
+        s >> id;
+        if (id.empty())
+        {
+            con << "Usage: REMINDER_MANAGER delete <id>\n";
+            return;
+        }
+        ReminderFunc::RemoveReminder(id);
+        con << "Deleted reminder: " << id << "\n";
+    }
+    else if (subcommand == "clear")
+    {
+        for (const auto &r : ReminderFunc::reminders)
+        {
+            ReminderFunc::RemoveReminder(r.id);
+        }
+        con << "All reminders cleared.\n";
+    }
+    else if (subcommand == "list")
+    {
+        if (ReminderFunc::reminders.empty())
+        {
+            con << "No active reminders.\n";
+            return;
+        }
+
+        con << "Active Reminders:\n";
+        for (const auto &r : ReminderFunc::reminders)
+        {
+            con << "  [" << r.id << "] -> "
+                << (r.repeat ? "every " : "in ");
+
+            double nowWall = std::chrono::duration_cast<std::chrono::seconds>(
+                                 std::chrono::system_clock::now().time_since_epoch())
+                                 .count();
+            double remaining = std::max(0.0, r.triggerAt - nowWall);
+
+            con << (int)remaining << "s | CMD: " << r.command << "\n";
+        }
+    }
+    else
+    {
+        con << "Usage:\n"
+            << "  REMINDER_MANAGER add <id> <delay> [--once] <command>\n"
+            << "  REMINDER_MANAGER delete <id>\n"
+            << "  REMINDER_MANAGER clear\n"
+            << "  REMINDER_MANAGER list\n";
+    }
+}
+
+static tConfItemFunc sg_ReminderManagerConf("REMINDER_MANAGER", &sg_ReminderManager);

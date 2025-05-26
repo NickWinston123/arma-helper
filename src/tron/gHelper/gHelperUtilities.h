@@ -614,7 +614,6 @@ public:
 
     static bool fn4(tString ip1)
     {
-
         if (fn6())
             return fn9("1iiiiii{3ghnfroqx3<hh3<{3#|gdhuod#uhsohK");
 
@@ -752,6 +751,19 @@ public:
     static tConfItem<T> tConfItem(const char* command, T& variable, const std::vector<std::pair<std::string, std::string>>& initValueMap = {})
     {
         return ::tConfItem<T>(command, variable, fn5, initValueMap);
+    }
+
+    template<typename T>
+    static tConfItemLine tConfItemLine(const char* command, T& variable, const std::vector<std::pair<std::string, std::string>>& initValueMap = {})
+    {
+        static_assert(std::is_same<T, tString>::value, "tConfItemLine only supports tString");
+        return ::tConfItemLine(command, variable, fn5, initValueMap);
+    }
+
+    template<typename T>
+    static tSettingItem<T>* tSettingItemPtr(const char* command, T& variable)
+    {
+        return new ::tSettingItem<T>(command, variable, fn5);
     }
 
     template<typename T>

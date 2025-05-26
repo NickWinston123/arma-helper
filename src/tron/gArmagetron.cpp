@@ -735,6 +735,10 @@ int main(int argc, char **argv)
         if (se_playerStats)
             ePlayerStats::loadStatsFromDB();
 
+
+        ReminderFunc::Load();
+        ReminderFunc::ScheduleAll();
+
         // migrate user configuration from previous versions
         if (sn_configurationSavedInVersion != sn_programVersion)
         {

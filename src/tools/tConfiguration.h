@@ -44,6 +44,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <functional>
 #include <unordered_map>
 
+template<typename T>
+using ShouldChangeFunc = bool (*)(const T &);
+
+
 // Define this to disable compiling the new interface
 #define NEW_CONFIGURATION_NO_COMPILE
 
@@ -268,16 +272,16 @@ public:
     tConfItemBase(const char *title, const std::vector<std::pair<std::string, std::string>>& initValueMap = {});
 
     virtual ~tConfItemBase();
-    const std::vector<std::pair<std::string, std::string>>& GetValueMap() const 
+    const std::vector<std::pair<std::string, std::string>>& GetValueMap() const
     {
         return valueMap;
     }
 
-    std::string GetValueMapValueForKey(const std::string& key) const 
+    std::string GetValueMapValueForKey(const std::string& key) const
     {
-        for (const auto& pair : valueMap) 
+        for (const auto& pair : valueMap)
         {
-            if (pair.first == key) 
+            if (pair.first == key)
                 return pair.second;
         }
         return "";
@@ -305,12 +309,12 @@ public:
         return val;
     }
 
-    void PrintValueMap(std::string currentVal = "") const 
+    void PrintValueMap(std::string currentVal = "") const
     {
         tString printedMap;
-        for (const auto& pair : valueMap) 
+        for (const auto& pair : valueMap)
         {
-            if (!currentVal.empty() && pair.first == currentVal) 
+            if (!currentVal.empty() && pair.first == currentVal)
                 printedMap << "* " << pair.first << ": " << pair.second << "\n";
             else
                 printedMap << pair.first << ": " << pair.second << "\n";
@@ -319,7 +323,7 @@ public:
         con << printedMap;
     }
 
-    void SetValueMap(const std::vector<std::pair<std::string, std::string>>& newValueMap) 
+    void SetValueMap(const std::vector<std::pair<std::string, std::string>>& newValueMap)
     {
         valueMap = newValueMap;
     }
@@ -601,7 +605,7 @@ public:
                 o << "$config_error_read";
                 con << o;
 
-                if (!GetValueMap().empty()) 
+                if (!GetValueMap().empty())
                 {
                     con << "Recommended values from value map: \n";
                     PrintValueMap(tString::ConvertToTString(*target).stdString());
@@ -713,13 +717,23 @@ class tConfItemLine:public tConfItem<tString>, virtual public tConfItemBase{
 private:
     tString defaultValue;
 public:
-    tConfItemLine(const char *title,const char *help,tString &s)//, const tString &defaultVal)
-            :tConfItemBase(title,help),tConfItem<tString>(title,help,s),defaultValue(s){}
+    tConfItemLine(const char *title, tString &s)
+        : tConfItemBase(title), tConfItem<tString>(title, s), defaultValue(s) {}
+
+    tConfItemLine(const char *title, tString &s, ShouldChangeFunc<tString> f)
+        : tConfItemBase(title), tConfItem<tString>(title, s, f), defaultValue(s) {}
+
+    tConfItemLine(const char *title, tString &s, ShouldChangeFunc<tString> f, const std::vector<std::pair<std::string, std::string>>& initValueMap)
+        : tConfItemBase(title, initValueMap), tConfItem<tString>(title, s, f, initValueMap), defaultValue(s) {}
+
+    tConfItemLine(const char *title, const char *help, tString &s)
+        : tConfItemBase(title, help), tConfItem<tString>(title, help, s), defaultValue(s) {}
+
+    tConfItemLine(const char *title, const char *help, tString &s, ShouldChangeFunc<tString> f, const std::vector<std::pair<std::string, std::string>>& initValueMap)
+        : tConfItemBase(title, help, initValueMap), tConfItem<tString>(title, s, f, initValueMap), defaultValue(s) {}
+
 
     virtual ~tConfItemLine(){}
-
-    tConfItemLine(const char *title, tString &s)//, const tString &defaultVal)
-            :tConfItemBase(title),tConfItem<tString>(title,s),defaultValue(s){}
 
     virtual void ReadVal(std::istream &s);
     virtual void WriteVal(std::ostream &s);

@@ -1829,6 +1829,63 @@ void FileManager::CheckAndClearFileBySize(REAL maxFileSizeMB)
     con << msg;
 }
 
+#include <chrono>
+#include <ctime>
+
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <sys/stat.h>
+#endif
+
+std::chrono::system_clock::time_point FileManager::GetCreationDateTimePoint()
+{
+#ifdef WIN32
+    tString fullPath = path.GetReadPath(fileName);
+    HANDLE hFile = CreateFile(fullPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return std::chrono::system_clock::time_point{};
+
+    FILETIME ftCreate;
+    if (!GetFileTime(hFile, &ftCreate, nullptr, nullptr))
+    {
+        CloseHandle(hFile);
+        return std::chrono::system_clock::time_point{};
+    }
+    CloseHandle(hFile);
+
+    ULARGE_INTEGER ull;
+    ull.LowPart = ftCreate.dwLowDateTime;
+    ull.HighPart = ftCreate.dwHighDateTime;
+
+    auto windowsEpochDiff = 116444736000000000ULL; 
+    auto ticksSinceUnixEpoch = ull.QuadPart - windowsEpochDiff;
+    auto seconds = ticksSinceUnixEpoch / 10000000ULL; 
+    return std::chrono::system_clock::time_point{std::chrono::seconds(seconds)};
+
+#else
+    struct stat attr;
+    std::string fullPath = path.GetReadPath(fileName).stdString();
+    if (stat(fullPath.c_str(), &attr) != 0)
+        return std::chrono::system_clock::time_point{};
+
+    return std::chrono::system_clock::from_time_t(attr.st_ctime);
+#endif
+}
+
+tString FileManager::GetCreationDateString()
+{
+    auto tp = GetCreationDateTimePoint();
+    if (tp.time_since_epoch().count() == 0)
+        return tString("Unavailable");
+
+    std::time_t time = std::chrono::system_clock::to_time_t(tp);
+    struct tm *local_tm = std::localtime(&time);
+    char buffer[64];
+    std::strftime(buffer, sizeof(buffer), "%m-%d-%Y %H:%M:%S", local_tm);
+    return tString(buffer);
+}
+
 static void fileClear(std::istream &s)
 {
     tString fileName;

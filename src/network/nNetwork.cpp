@@ -3598,17 +3598,27 @@ static tConfItem<bool> sg_playerMessageMatchWinnerSelfConf = HelperCommand::tCon
 bool sg_playerSpamProtectionWatch = false;
 static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WATCH", sg_playerSpamProtectionWatch);
 
-static tString sg_playerSpamProtectionWatchSearchString("");
-static tConfItem<tString> sg_playerSpamProtectionWatchSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_SEARCH_STRING", sg_playerSpamProtectionWatchSearchString);
+static tString sg_playerSpamProtectionWatchSearchString("silenced for the next ");
+static tConfItemLine sg_playerSpamProtectionWatchSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_SEARCH_STRING", sg_playerSpamProtectionWatchSearchString);
 
-static tString sg_playerSpamProtectionWatchCommonPrefixSearchString("");
-static tConfItem<tString> sg_playerSpamProtectionWatchCommonPrefixSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_COMMON_PREFIX_SEARCH_STRING", sg_playerSpamProtectionWatchCommonPrefixSearchString);
+static tString sg_playerSpamProtectionWatchCommonPrefixSearchString("your messages have a common prefix: ");
+static tConfItemLine sg_playerSpamProtectionWatchCommonPrefixSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_COMMON_PREFIX_SEARCH_STRING", sg_playerSpamProtectionWatchCommonPrefixSearchString);
 
-static tString sg_playerSpamProtectionWatchRepeatSearchString("");
-static tConfItem<tString> sg_playerSpamProtectionWatchRepeatSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_REPEAT_SEARCH_STRING", sg_playerSpamProtectionWatchRepeatSearchString);
+static tString sg_playerSpamProtectionWatchRepeatSearchString("you already said: ");
+static tConfItemLine sg_playerSpamProtectionWatchRepeatSearchStringConf("CHAT_SPAM_PROTECTION_WATCH_REPEAT_SEARCH_STRING", sg_playerSpamProtectionWatchRepeatSearchString);
 
 static REAL sg_playerSpamProtectionWatchRepeatWaitTime = 0;
 static tConfItem<REAL> sg_playerSpamProtectionWatchRepeatWaitTimeConf("CHAT_SPAM_PROTECTION_WATCH_REPEAT_WAIT_TIME", sg_playerSpamProtectionWatchRepeatWaitTime);
+
+static tString sg_playerSilencedWatchSearchString("silenced by the server administrator.");
+static tConfItemLine sg_playerSilencedWatchSearchStringConf = HelperCommand::tConfItemLine("PLAYER_WATCH_SILENCED_SEARCH_STRING", sg_playerSilencedWatchSearchString);
+
+static tString sn_playerSuspendWatchSearchString("suspended from playing for the next");
+static tConfItemLine sn_playerSuspendWatchSearchStringConf = HelperCommand::tConfItemLine("PLAYER_WATCH_SUSPENDED_SEARCH_STRING", sn_playerSuspendWatchSearchString);
+
+static tString sn_playerUnableToRenameWatchSearchString("not allowed to rename to ");
+static tConfItemLine sn_playerUnableToRenameWatchSearchStringConf = HelperCommand::tConfItemLine("PLAYER_WATCH_RENAME_SEARCH_STRING", sn_playerUnableToRenameWatchSearchString);
+
 
 static bool currentlySuspended = false;
 static bool currentlySilenced = false;
@@ -3634,7 +3644,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
         if (sg_playerSilencedWatch)
         {
-            if (s.Contains(tString("silenced by the server administrator.")) && (ePlayerMessages.CheckIfSilenced())) 
+            if (s.Contains(sg_playerSilencedWatchSearchString) && (ePlayerMessages.CheckIfSilenced())) 
             {
                 gHelperUtility::Debug("PLAYER_WATCH_SILENCED","Player was silenced.");
                 sn_quitAction(true, sg_playerSilencedWatchQuit,"Player was silenced.");
@@ -3643,7 +3653,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
         if (sn_playerSuspendWatch)
         {
-            if (s.Contains(tString("suspended from playing for the next")) && validateSuspended())
+            if (s.Contains(sn_playerSuspendWatchSearchString) && validateSuspended())
             {
                 gHelperUtility::Debug("PLAYER_WATCH_SUSPENDED","Player was suspended.");
                 bool canQuit = !sn_playerSuspendWatchQuitWaitForAvoidPlayers || !avoidPlayerInGame();
@@ -3666,7 +3676,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
         if (sn_playerUnableToRenameWatch)
         {
-            if (s.Contains(tString("not allowed to rename to ")))
+            if (s.Contains(sn_playerUnableToRenameWatchSearchString))
             {
                 gHelperUtility::Debug("PLAYER_WATCH_RENAME","Unable to rename.");
                 if (sn_playerUnableToRenameWatchRebuild)
@@ -3679,7 +3689,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
 
         if (sg_playerSpamProtectionWatch || (se_playerMessageTriggers && se_playerMessageTriggersResendSilencedMessages))
         {
-            tString input = (sg_playerSpamProtectionWatchSearchString.empty() ? tString("silenced for the next ") : sg_playerSpamProtectionWatchSearchString);
+            tString input = sg_playerSpamProtectionWatchSearchString;
 
             int startIdx = s.StrPos(input);
 
@@ -3713,7 +3723,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
                     gHelperUtility::Debug("SpamProtectionWatch", "Silence detected. Failed to determine number of seconds.");
             }
 
-            input = (sg_playerSpamProtectionWatchCommonPrefixSearchString.empty() ? tString("your messages have a common prefix: ") : sg_playerSpamProtectionWatchCommonPrefixSearchString);
+            input = sg_playerSpamProtectionWatchCommonPrefixSearchString;
 
             startIdx = s.StrPos(input);
 
@@ -3762,7 +3772,7 @@ static void sn_ConsoleOut_handler(nMessage &m)
                     gHelperUtility::Debug("SpamProtectionWatch", "Common prefix detected. Failed to determine number of seconds.");
             }
 
-            input = (sg_playerSpamProtectionWatchRepeatSearchString.empty() ? tString("you already said: ") : sg_playerSpamProtectionWatchRepeatSearchString);
+            input = sg_playerSpamProtectionWatchRepeatSearchString;
 
             startIdx = s.StrPos(input);
 
@@ -6052,6 +6062,7 @@ void sn_quitAction(bool save, bool quit, tString message)
             stats.times_banned_today = 0;
 
         stats.last_banned = time(nullptr);
+        stats.last_banned_reason = message;
         stats.times_banned++;
         stats.times_banned_today++;
 
@@ -6063,7 +6074,7 @@ void sn_quitAction(bool save, bool quit, tString message)
     }
 
     if (se_playerMessageTriggers && se_playerMessageTriggersBannedAction) 
-        eChatBot::findResponse(eChatBot::getInstance(), tString(""), tString("$bannedaction"), message, true);
+        eChatBot::findResponse(eChatBot::getInstance(), tString(""), tString("$bannedaction"), message, tString(""), true);
 
     if (save)
         st_SaveConfig();

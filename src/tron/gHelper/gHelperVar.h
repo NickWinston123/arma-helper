@@ -6,11 +6,11 @@
 
 enum turnDirection
 {
-    NONE = 0,
-    LEFT = -1,
+    NONE  = 0,
+    LEFT  = -1,
     FRONT = 0,
     RIGHT = 1,
-    BOTH = 2
+    BOTH  = 2
 };
 
 namespace helperConfig
@@ -39,8 +39,8 @@ namespace helperConfig
     extern bool sg_helperSmartTurning;
 
     extern bool sg_helperSmartTurningFrontBot;
-    extern REAL sg_helperSmartTurningFrontBotThinkRange;
     extern bool sg_helperSmartTurningFrontBotTurnOnce;
+    extern REAL sg_helperSmartTurningFrontBotThinkRange;
     extern REAL sg_helperSmartTurningFrontBotActivationRubber;
     extern REAL sg_helperSmartTurningFrontBotActivationSpace;
     extern REAL sg_helperSmartTurningFrontBotDisableTime;

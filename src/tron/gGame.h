@@ -557,4 +557,25 @@ private:
 
 // Global instance of the task scheduler
 extern TaskScheduler gTaskScheduler;
+
+
+class ReminderFunc {
+public:
+    struct Reminder {
+        std::string id;
+        std::string command;
+        double triggerAt; 
+        bool repeat;
+    };
+
+    static void Load();
+    static void Save();
+    static void AddReminder(const std::string& id, const std::string& command, REAL interval, bool repeat);
+    static void RemoveReminder(const std::string& id);
+    static void ScheduleAll();
+
+    static std::vector<Reminder> reminders;
+    static const tString fileName;
+};
+
 #endif

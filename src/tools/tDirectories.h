@@ -116,6 +116,7 @@ public:
 };
 
 #include "tConsole.h"
+#include <chrono>
 
 class FileManager
 {
@@ -146,6 +147,8 @@ public:
     int NumberOfLines();
     bool Backup();
     void CheckAndClearFileBySize(REAL maxFileSizeMB);
+    std::chrono::system_clock::time_point GetCreationDateTimePoint();
+    tString GetCreationDateString();
 
 private:
     const tPath &path;

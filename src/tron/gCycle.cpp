@@ -1262,47 +1262,78 @@ void gSmarterBotWeightAutomator::ApplyWeights(const std::map<std::string, REAL>&
     if (sg_playerMessageAutomatorWeightChange)
     {
         debugOutput << "(" << roundsStarted << " rounds)";
-        eChatBot::findResponse(eChatBot::getInstance(), tString(""), tString("$automatorweightchange"), debugOutput, true);
+        eChatBot::findResponse(eChatBot::getInstance(), tString(""), tString("$automatorweightchange"), debugOutput, tString(""), true);
     }
 }
 
-void gSmarterBotWeightAutomator::OnRoundStart()
+void gSmarterBotWeightAutomator::GenerateAndUpdateWeights()
 {
-    if ((roundsStarted % player->sg_smarterBotAutomatorRounds) == 0)
-    {
-        REAL score = player->sg_smarterBotAutomatorLastScore = CalculateScoreForPlayer(player->netPlayer);
-        UpdateStatsLog(score);
 
-        if (sg_playerMessageAutomatorWeightScoreChange)
-        {
-            tString scoreStr;
-            scoreStr << score;
-            eChatBot::findResponse(eChatBot::getInstance(), tString(""), tString("$automatorweightscore"), scoreStr, true);
-        }
+    REAL score = player->sg_smarterBotAutomatorLastScore = CalculateScoreForPlayer(player->netPlayer);
+    UpdateStatsLog(player);
+
+    if (sg_playerMessageAutomatorWeightScoreChange)
+    {
+        tString scoreStr;
+        scoreStr << score;
+        eChatBot::findResponse(eChatBot::getInstance(), tString(""), tString("$automatorweightscore"), scoreStr, tString(""), true);
     }
 
     // Update weights
     auto evals = ParseConfigList();
-    if ((roundsStarted % player->sg_smarterBotAutomatorRounds) == 0)
+
+    if (sg_helperDebug)
+        gHelperUtility::Debug("gSmarterBotWeightAutomator", "Round Start: " + std::to_string(roundsStarted));
+
+    std::map<std::string, REAL> generatedWeights;
+
+    REAL scale = player->sg_smarterBotAutomatorScale;
+    tRandomizer &random = tRandomizer::GetInstance();
+
+    for (const std::string &evalName : evals)
     {
-        if (sg_helperDebug)
-            gHelperUtility::Debug("gSmarterBotWeightAutomator", "Round Start: " + std::to_string(roundsStarted));
-
-        std::map<std::string, REAL> generatedWeights;
-
-        REAL scale = player->sg_smarterBotAutomatorScale;
-        tRandomizer &random = tRandomizer::GetInstance();
-
-        for (const std::string &evalName : evals)
-        {
-            REAL weight = random.Get() * scale;
-            generatedWeights[evalName] = weight;
-        }
-
-        ApplyWeights(generatedWeights);
-
-
+        REAL weight = random.Get() * scale;
+        generatedWeights[evalName] = weight;
     }
+
+    ApplyWeights(generatedWeights);
+}
+
+bool sg_smarterBotAutomatorGenerateWeightsEnabledWhenAutomatorDisabled = false;
+static tConfItem<bool> sg_smarterBotAutomatorGenerateWeightsEnabledWhenAutomatorDisabledConf = HelperCommand::tConfItem("SMARTER_BOT_AUTOMATOR_GENERATE_WEIGHTS_ENABLED_WHEN_AUTOMATOR_DISABLED", sg_smarterBotAutomatorGenerateWeightsEnabledWhenAutomatorDisabled);
+
+
+static void GenerateAndUpdateWeights(std::istream &s)
+{
+    con << "Generating and updating weights...\n";
+    bool found = false;
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        ePlayer *local_p = ePlayer::PlayerConfig(i);
+
+        if (!local_p || !local_p->netPlayer)
+            continue;
+
+        if (!sg_smarterBotAutomatorGenerateWeightsEnabledWhenAutomatorDisabled && !local_p->sg_smarterBotAutomator)
+            continue;
+
+        if (!local_p->netPlayer->CurrentTeam())
+            continue;
+
+        gSmarterBotWeightAutomator automator(local_p);
+        automator.GenerateAndUpdateWeights();
+        found = true;
+    }
+    if (!found)
+        con << "No players found.\n";
+}
+static tConfItemFunc GenerateAndUpdateWeights_conf = HelperCommand::tConfItemFunc("SMARTER_BOT_AUTOMATOR_GENERATE_WEIGHTS", &GenerateAndUpdateWeights);
+
+
+void gSmarterBotWeightAutomator::OnRoundStart()
+{
+    if ((roundsStarted % player->sg_smarterBotAutomatorRounds) == 0)
+        GenerateAndUpdateWeights();
 }
 
 tString gSmarterBotWeightAutomator::GetCurrentWeights(ePlayer *player, tString equalSign, tString delim)
@@ -1340,15 +1371,37 @@ tString gSmarterBotWeightAutomator::GetCurrentWeights(ePlayer *player, tString e
     return weights;
 }
 
-void gSmarterBotWeightAutomator::UpdateStatsLog(float finalScore)
+void gSmarterBotWeightAutomator::UpdateStatsLog(ePlayer *player)
 {
     if (sg_helperDebug)
         gHelperUtility::Debug("gSmarterBotWeightAutomator", "Logging for Round: " + std::to_string(roundsStarted));
 
+    ePlayerNetID *net_p = player->netPlayer;
+    if (!net_p)
+        return;
+    
     std::stringstream line;
-    line << "Round=" << roundsStarted << ",";
-    line << GetCurrentWeights(player);
-    line << ",Score=" << finalScore << ",";
+    line << "Round=" 
+         << roundsStarted 
+         << ","
+         << GetCurrentWeights(player)
+         << ",Score=" 
+         << CalculateScoreForPlayer(net_p) 
+         << ",";
+
+    int kills    = net_p->stats.kills;
+    int deaths   = net_p->stats.deaths;
+    int suicides = net_p->stats.suicides;
+    
+    line << "Kills="    
+         << kills    
+         << ","
+         << "Deaths="   
+         << deaths   
+         << ","
+         << "Suicides=" 
+         << suicides 
+         << ",";
 
     for (auto &o : GetOpponentList())
         line << o << "|";
@@ -1358,12 +1411,10 @@ void gSmarterBotWeightAutomator::UpdateStatsLog(float finalScore)
 
     fm.Write(tString(line.str()));
 
-    if (player->netPlayer)
-    {
-        player->netPlayer->stats.kills = 0;
-        player->netPlayer->stats.deaths = 0;
-        player->netPlayer->stats.suicides = 0;
-    }
+    net_p->stats.kills = 0;
+    net_p->stats.deaths = 0;
+    net_p->stats.suicides = 0;
+
 }
 
 
@@ -7289,12 +7340,15 @@ void gCycle::ReadSync(nMessage &m)
             Player()->lastDiedByPlayerBanFunc    = killer;
             Player()->lastDiedByTime             = tSysTimeFloat();
 
-            if (Player()->isLocal() && killer == Player())
-                Player()->stats.suicides++;
-            else if (killer->isLocal())
-                killer->stats.kills++;
-            else
-                Player()->stats.deaths++;
+            if (!smartBotSuicide) 
+            {
+                if (Player()->isLocal() && killer == Player())
+                    Player()->stats.suicides++;
+                else if (killer->isLocal())
+                    killer->stats.kills++;
+                else
+                    Player()->stats.deaths++;
+            }
 
             if (se_playerStats)
                 ePlayerStats::addKill(killer);

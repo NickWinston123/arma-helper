@@ -15,6 +15,8 @@
 #include "eTimer.h"
 #include "eChatBot.h"
 
+const std::string DB_DELIMITER = "-+H4CK3RM@N5-+";
+
 extern bool se_playerStats, se_playerStatsLog;
 
 std::vector<std::string> deserializeVector(const std::string &str);
@@ -32,27 +34,32 @@ public:
     // Player
     int r,g,b;
     tString name;
-    int total_messages              = 0;
-    REAL total_play_time            = 0;
-    REAL total_spec_time            = 0;
-    int times_joined                = 0;
-    time_t last_seen                = 0;
-    bool is_local                   = false;
-    bool human                      = true;
-    bool in_server                  = false;
-    bool seen_this_session          = false;
-    bool in_game                    = false; // current team?
-    std::string nickname            = "";
+    int total_messages                 = 0;
+    REAL total_play_time               = 0;
+    REAL total_spec_time               = 0;
+    int times_joined                   = 0;
+    time_t last_seen                   = 0;
+    time_t last_seen_notification_time = 0;
+    bool is_local                      = false;
+    bool human                         = true;
+    bool in_server                     = false;
+    bool seen_this_session             = false;
+    bool in_game                       = false; // current team?
+    std::string nickname               = "";
 
-    int times_banned                = 0;
-    bool banned_a_player_this_round = false;
-    int bans_given                  = 0;
-    int rage_quits                  = 0;
+    int times_banned                   = 0;
+    bool banned_a_player_this_round    = false;
+    int bans_given                     = 0;
+    int rage_quits                     = 0;
 
     std::vector<std::string> chat_messages;
     std::vector<std::string> privated_stats;
     std::vector<std::string> name_history;
     std::vector<std::string> acheivement_history;
+    std::vector<std::string> notifications;
+    std::vector<std::string> sent_notifications;
+
+
 
 
     // Cycle
@@ -606,7 +613,7 @@ class ePlayerStats
     static CommandState deleteState;
     static CommandState consolidateState;
     static bool         statsLoaded;
-
+    static std::chrono::system_clock::time_point statsDBCreationDate;
     static std::unordered_map<tString, PlayerData> playerStatsMap;
     static int players_record_this_session;
 public:
@@ -615,6 +622,7 @@ public:
         return player && player->isLocal() && se_playerStatsLocalForcedName;
     }
 
+    static std::chrono::system_clock::time_point getStatsDBCreationDate() { return statsDBCreationDate; }
     static void statsLoadedCheck()
     {
         if (!statsWereLoaded())
@@ -749,6 +757,24 @@ public:
         stats.in_game = player->CurrentTeam() != nullptr;
 
         ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::JOINS);
+
+        if (!stats.notifications.empty())
+        {
+            time_t latest = 0;
+
+            const std::string& lastNote = stats.notifications.back();
+            tArray<tString> parts = tString(lastNote).Split(tString(DB_DELIMITER));
+
+            if (parts.Len() >= 3)
+            {
+                try {
+                    latest = std::stoll(parts[2].stdString());
+                } catch (...) {}
+            }
+
+            if (latest > stats.last_seen_notification_time && player->Owner())
+                eChatBot::findResponsePlayer(eChatBot::getInstance(), player, se_playerMessageNotificationTrigger, tString(""), tString(""), true);
+        }
     }
 
     static void playerRenamed(ePlayerNetID *player)

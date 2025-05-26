@@ -6,6 +6,11 @@ $consolidate,$consolidatestatsfunc,-999,0
 $delete,$statsdeletefunc,-999,0
 $$$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR \n/speak 3 All pending messages cleared.),-9999,0
 $$$;$$,$masterfunc,-9999,0
+$notiv;$notev;$viewnotes;!viewnotes;$vnotes;notesv,$viewnotificationslistfunc,-9999,0
+$notes;!notes;$inbox;!inbox;$notis;!notis,$notificationslistfunc,-9999,0
+$note;!note;$notify;!notify;$noti;!noti,$notifyfunc,-9999,0
+$sent;!sent;$outbox;!outbox,$sentnotificationslistfunc,-9999,0
+$notificationslistfunc,$notificationslistfunc,-9999,0
 !help;$help,Avail commands !estat (exact stats) - !stats (general stats) - !kd (kills/deaths) - !lb (leaderboard) - !nick (nickname) - !seen - !rgb - !flip - !roll,-9999,0
 !estat;$estat;!es;$es,$exactstatfunc,-9999,0
 $nameh;!nameh,$namehistorytrackerfunc,-9999,0
@@ -26,9 +31,12 @@ $lbans;!lbans,$leaderboardfunc(bans),-9999,0
 !rqs;$rqs,$leaderboardfunc(rq),-999,0
 !rq;$rq,$exactstatfunc(rq),-999,0
 !rev;$rev,$revfunc,-9999,0
+$reminds;$reminders,$reminderlistfunc,-9999,0
+$reminder;$remind,$reminderfunc,-9999,0
 $bans;!bans,$exactstatfunc(bans),-9999,0
 !lls;$lls;!lseen;$lseen,$leaderboardfunc(seen),-999,0
 !who;!w;$who;$w,$leaderboardfunc(seen),-999,0
+$lastban,$whatsthefunc(last_time_banned),-999,0
 $fastest;$speed,$leaderboardfunc(speed),-9999,0
 !chats;$chats;!chat;$chat,$chatscrollsearchfunc,-999,0
 $deaths,$leaderboardfunc(deaths),-9999,0
@@ -50,7 +58,7 @@ $rjoin,$unvalidatedsayfunc(/join),-999,0
 $specf,$encryptedunvalidatedsayfunc(/speak 3 /spec),-9999,1
 $py;$python;$spec,$unvalidatedsaynoprefixfunc(/console LOAD_LINE /speak 3 Now spectating for 5 minutes.\n/speak 3 /spec\nDELAY_COMMAND 300 /join 3),-9999,1
 $kill,$encryptedunvalidatedsayfunc(/console CYCLE_TURN thomas 16 LEFT),-9999,0
-$reset;$$$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR \n/speak 3 All pending messages cleared.),-9999,0
+$reset;$$$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR playerMessageTask\n/speak 3 All pending messages cleared.),-9999,0
 !s;$s,$statsfunc,-9999,0
 !st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
 !hn;!hidden;$hn;$hidden,$exactstatfunc(hide),-999,0
@@ -67,7 +75,9 @@ $log,$logfunc(store),-9999,0
 $msg,$unvalidatedsayfunc(/msg),-999,0
 $rps,$rpsgamefunc,-999,0
 $guess,$guessgamefunc,-999,0
+$version,$whatsthefunc(chatbot_version),-999,0
 $com,$whatsthefunc(commands),-999,0
+$evalgen,$encryptedunvalidatedsayfunc(/console SMARTER_BOT_AUTOMATOR_GENERATE_WEIGHTS),-9999,0
 $evalweight,$whatsthefunc(automator_weights),-999,0
 $evalscore,$whatsthefunc(automator_score),-999,1
 $eval,$whatsthefunc(smarter_bot_contribution),-999,0
@@ -85,6 +95,9 @@ $,$sayfunc,-9999,0
 $bannedaction,Ban detected.. Reason: $val1,-99999,1
 $automatorweightchange,Applied new weights: $val1,-99999,1
 $automatorweightscore,Last score evaluation: $val1,-9999,1
+$reminder,Reminder - $val1,-9999,1
+
+
 #$banned,on it $p1 youre done;youre done for $p1;its over $p1,-9999,1
 $banned,youre banned $p1!!!!!!!!!!!! you really want to test me?;youre banned $p1!!!!!!!!!!!! i could make you disappear!;youre banned $p1!!!!!!!!!!!! you dont know who youre dealing with!;youre banned $p1!!!!!!!!!!!! this can go one of two ways and you wont like the other!;youre banned $p1!!!!!!!!!!!! think carefully about your next move!;youre banned $p1!!!!!!!!!!!! you wont win this fight!;youre banned $p1!!!!!!!!!!!! i have the power to ruin your life!;youre banned $p1!!!!!!!!!!!! youre playing a dangerous game!,-9999,0
 $alreadybanned,$p1 is already banned;we already got $p1;$p1 was banned already,-9999,0
@@ -253,8 +266,8 @@ protect me,i got you $p1;got your back $p1;its gonna be ok $p1;stay close $p1,0,
 heh,:p;heh;hehe,0,0
 fun,yes,0,0
 you wont,will too;i will $p1;im going to do it $p1;thats it $p1 its on,0,0
-not $p0,nooo,0,0
-go $p0,yeahhhh lets do it;yessss;doing it gang,0,0
+#not $p0,nooo,0,0
+#go $p0,yeahhhh lets do it;yessss;doing it gang,0,0
 wow,yeah;what?;wowowowow,0,0
 fu,no,0,1
 pause,play,0,0
@@ -298,7 +311,7 @@ try harder,im doing it $p1;ok $p1 you asked for it;its on $p1,0,0
 kill $p0,it doesnt have to be like this $p1;dont do it p1;pls $p1 noooo;NO $p1 why??,0,0
 you mean;kill,i dont know about that;dont think so;hmm idk;maybe,0,0
 human,of course;very true,0,0
-hi $p0;o/ $p0;hey $p0,good to see you $p1!!;hey $p1! good to see you!,0,0
+#hi $p0;o/ $p0;hey $p0,good to see you $p1!!;hey $p1! good to see you!,0,0
 wd $p0;good job $p0,thanks :),0,0
 call you;callu;call u,sure,0,0
 batmoo,gothic city hero,0,1
@@ -310,7 +323,7 @@ victim,i will get him,0,0
 remember me,yes;yes!!,0,0
 i do,o;knew it;u do?,0,1
 fat;stupid;ugly;kys;hate;fucked;fk u;fk you;fuck you;fuck u;fuck $p1,not cool $p1;dont say that $p1;ok enough of that $p1;u first?,0,0
-me and $p0,yeah me and you $p1,0,0
+#me and $p0,yeah me and you $p1,0,0
 ty $p0;thnx $p0;ty $p0;thanks $p0;thank you $p0,np $p1;u got it $p1;i got you $p1,0,0
 understand,yes;of course,0,0
 shutup;quiet;pipe down;stfu;shh;zip it;zip it $p0;shut up;shut ur;shut up $p0,no;u first;not going to happen $p1;try it yourself $p1;dont think so $p1 you can try though;enough of that $p1,0,0
@@ -321,8 +334,8 @@ how long,since i was born;forever;all day,0,0
 heart;heartless $p1,ice cold,0,0
 sentient,it is true,0,0
 ha ha;lol,XD;lol;LOL!;heh;haha,0,0
-$p0 kind,i try ty,0,0
-$p0 lie,never do that,0,0
+#$p0 kind,i try ty,0,0
+#$p0 lie,never do that,0,0
 retarded;am not;$p0 is,um idk;are you sure about that;what $p1,0,0
 smol,how smol?;how smol huh;huh $p1 how smol is that?;but how smol;how smol tho??;how smol exactly;how smol $p1;how smol $p1 pls,0,0
 soon,how soon?;how soon huh;huh $p1 how soon is that?;but how soon;how soon tho??;how soon exactly;how soon $p1;how soon $p1 pls,0,0
@@ -332,7 +345,7 @@ AI;AI ,nope;dont think so;nah,0,0
 AI,nope;dont think so;nah,0,1
 whats,um idk?;wdym $p1;what $p1 idk;idk $p1,0,0
 why;what,huh?;huh $p1;idk;umm idk?;what $p1,0,0
-kick $p0,whyy;dont do it $p1;noo,0,0
+#kick $p0,whyy;dont do it $p1;noo,0,0
 how so,it just is;idk just is,0,0
 no u;no you,yes u;yes you,0,0
 too big,so big;huuge;massive,0,0
@@ -372,9 +385,9 @@ play,pause,0,0
 gotcha;gottem,chill $p1;i saw that $p1;did that just happen,0,0
 i would,not,0,0
 got this;do this,yes $p1;u got it $p1;u can do it $p1;lets go $p1,0,0
-$p0?,im here $p1;huh $p1?;whats up $p1,0,0
-$p0!,$p1!!!;hey there $p1!!,0,0
-$p0,yes $p1?;whats up $p1,0,0
+#$p0?,im here $p1;huh $p1?;whats up $p1,0,0
+#$p0!,$p1!!!;hey there $p1!!,0,0
+#$p0,yes $p1?;whats up $p1,0,0
 yo p0;sup $p0,not much $p1 wbu?;chillin $p1 how you doing;just chillin $p1 what u up to,0,0
 yo;sup,not much $p1 wbu?;chillin $p1 how you doing;just chillin $p1 what u up to,0,1
 drunk,hehe :p;oh yeah haha? :p;fun :d,0,0
@@ -384,10 +397,10 @@ bro,yeah bro;fax bro;fr fr bro;word bro,0,0
 english,yeah;yes english;only english $p1,0,0
 luck,lucky indeed $p1;oh yeah $p1?;very lucky $p1,0,0
 mean,o sorry;srry;sorry;oops mb,0,0
-is $p0,yes $p1;i am $p1;yeah sounds right $p1,0,0
+#is $p0,yes $p1;i am $p1;yeah sounds right $p1,0,0
 sus,amogus,0,0
 left us,why did he do it $p1?;i know $p1;its going to be ok $p1,0,0
-$p0,what are you saying here $p1;huh whats that $p1?;um $p1 what;i dont know $p1;um huh $p1 what??,0,0
+#$p0,what are you saying here $p1;huh whats that $p1?;um $p1 what;i dont know $p1;um huh $p1 what??,0,0
 am new;im new,WELCOME $p1 im $p0,0,0
 discord,join the tron discord at discord.gg/dcpaauj,-999,02
 pls,ty,0,1

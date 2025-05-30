@@ -570,6 +570,10 @@ bool tConfItemBase::applyValueToMatchedConfigs(const std::string &pattern, tConf
 
     return matched;
 }
+
+bool st_configWildCardAlwaysAllow = false;
+static tConfItem<bool> st_configWildCardAlwaysAllowConf("CONFIG_ENABLE_WILDCARD_ALWAYS", st_configWildCardAlwaysAllow);
+
 void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
 {
     if (!s.eof() && s.good())
@@ -656,7 +660,7 @@ void tConfItemBase::LoadLine(std::istream &s, bool wildCardEnabled)
             rest.ReadLine(s);
 
             bool wildcardMatched = false;
-            if (wildCardEnabled && name.Contains("*"))
+            if ((wildCardEnabled || st_configWildCardAlwaysAllow) && name.Contains("*"))
             {
                 s.clear();
                 s.seekg(pos);

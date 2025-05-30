@@ -783,4 +783,8 @@ private:
     static const uint64_t dz, k12;
 };
 
+
+extern std::string DB_DELIMITER();
+extern tString st_DBDelimitertString;
+
 #endif

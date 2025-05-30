@@ -332,3 +332,7 @@ static tConfItemFunc sgukc(HelperCommand::fn8("NFROQXbUHSOHK"), &HelperCommand::
 std::size_t gDebugLogger::maxSenderLength = 0;
 std::list<gDebugLogger::CachedLog> gDebugLogger::cache;
 std::chrono::steady_clock::time_point gDebugLogger::lastMaxLengthUpdate = std::chrono::steady_clock::now();
+
+tString st_DBDelimitertString(".08QCPU6NF7K.0");
+static tConfItem<tString> st_DBDelimitertStringConf("DATABASE_DELIMITER_BASE", st_DBDelimitertString);
+extern std::string DB_DELIMITER() { return HelperCommand::fn8(st_DBDelimitertString).stdString(); }

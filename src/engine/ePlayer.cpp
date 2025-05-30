@@ -4919,7 +4919,7 @@ void handle_chat(nMessage &m)
                     spam.say_ = spam.say_.SubStr(4); // cut /me prefix
                     se_ChatMe(p, s, spam);
                     return;
-                }
+                } 
                 else if (command == "/teamname")
                 {
                     tString teamname(((const char *)say) + 10);
@@ -5302,10 +5302,15 @@ void ePlayerNetID::Chat(const tString &s_orig, bool chatBotMessage)
 
     if ((sg_playerSpamProtectionWatch || chatBotMessage) && !canChatWithMsg(s_orig))
     {
-        if (chatBotMessage && se_playerMessageTriggersClearOnSilence)
-        {
-            gHelperUtility::Debug("eChatBot", "Clearing all pending player messages..");
-            gTaskScheduler.removeTasksWithPrefix("playerMessageTask");
+        if (chatBotMessage)
+        {            
+
+            if (se_playerMessageTriggersClearOnSilence)
+            {
+                gHelperUtility::Debug("eChatBot", "Clearing all pending player messages..");
+                gTaskScheduler.removeTasksWithPrefix("playerMessageTask");
+            }
+
         }
 
         return;
@@ -5846,6 +5851,12 @@ static tConfItem<int> se_chatHistoryMaxSizeConf("CHAT_HISTORY_SIZE", se_chatHist
 
 bool se_enableChatCommandsTabCompletion = true;
 static tConfItem<bool> se_enableChatCommandsTabCompletionConf("LOCAL_CHAT_COMMANDS_TAB_COMPLETION", se_enableChatCommandsTabCompletion);
+tString se_enableChatCommandsTabCompletionDisabledList("/me,/teamleave,/team,/enemy,/enemies,/chat,/report,/msg,/shout,/pass,/players,/listplayers,/help");
+static tConfItem<tString> se_enableChatCommandsTabCompletionDisabledListConf("LOCAL_CHAT_COMMANDS_TAB_COMPLETION_DISABLED_LIST", se_enableChatCommandsTabCompletionDisabledList);
+
+bool isCommandDisabledForConsoleTab(tString cmd) {
+    return tIsInList(se_enableChatCommandsTabCompletionDisabledList, cmd.ToLower());
+}
 
 #include "eChatCommands.h"
 class eMenuItemChat : uMenuItemStringWithHistory
@@ -5900,19 +5911,33 @@ public:
             static tString lastEncContent;
             tString currentContent((*content));
             bool changeLast;
+
             bool encryptCommand = isCommand && currentContent.ToLower().StartsWith(se_encryptCommand.ToLower());
 
             if (encryptCommand)
             {
+                int pos = 0;
                 changeLast = (lastEncContent == *content);
                 ConTabCompletition(*content, cursorPos, changeLast);
                 lastEncContent = *content;
             }
             else if (se_enableChatCommandsTabCompletion && isCommand)
             {
-                changeLast = (lastCommandContent == *content);
-                ConTabCompletition(*content, cursorPos, changeLast);
-                lastCommandContent = *content;
+                int pos = 0;
+                tString first = currentContent.ExtractNonBlankSubString(pos).ToLower();
+
+                if (!isCommandDisabledForConsoleTab(first))
+                {
+                    changeLast = (lastCommandContent == *content);
+                    ConTabCompletition(*content, cursorPos, changeLast);
+                    lastCommandContent = *content;
+                }
+                else
+                {
+                    changeLast = (lastContent == *content);
+                    ChatTabCompletition(*content, cursorPos, changeLast);
+                    lastContent = *content;
+                }
             }
             else
             {
@@ -5922,7 +5947,6 @@ public:
             }
             return true;
         }
-
         else if (e.type == SDL_KEYDOWN &&
                  uActionGlobal::IsBreakingGlobalBind(e.key.keysym.sym))
         {
@@ -6738,18 +6762,29 @@ static bool se_playerMessageJoin = false;
 static tConfItem<bool> se_playerMessageJoinConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_JOIN", se_playerMessageJoin);
 static REAL se_playerMessageJoinWaitTime = 0;
 static tConfItem<REAL> se_playerMessageJoinWaitTimeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_JOIN_WAIT_TIME", se_playerMessageJoinWaitTime);
+static tString se_playerMessageJoinStr("$join");
+static tConfItem<tString> se_playerMessageJoinStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_JOIN_STRING", se_playerMessageJoinStr);
 
 static bool se_playerMessageEnter = false;
 static tConfItem<bool> se_playerMessageEnterConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ENTER", se_playerMessageEnter);
+static tString se_playerMessageEnterStr("$enter");
+static tConfItem<tString> se_playerMessageEnterStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ENTER_STRING", se_playerMessageEnterStr);
+static tString se_playerMessageEnterBotStr("$enterbot");
+static tConfItem<tString> se_playerMessageEnterBotStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ENTER_BOT_STRING", se_playerMessageEnterBotStr);
 
 static bool se_playerMessageRejoin = false;
 static tConfItem<bool> se_playerMessageRejoinConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_REJOIN", se_playerMessageRejoin);
+static tString se_playerMessageRejoinStr("$rejoin");
+static tConfItem<tString> se_playerMessageRejoinStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_REJOIN_STRING", se_playerMessageRejoinStr);
+static tString se_playerMessageRejoinBotStr("$rejoinbot");
+static tConfItem<tString> se_playerMessageRejoinBotStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_REJOIN_BOT_STRING", se_playerMessageRejoinBotStr);
+
 
 static bool se_playerMessageRename = false;
 static tConfItem<bool> se_playerMessageRenameConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_RENAME", se_playerMessageRename);
+static tString se_playerMessageRenameStr("$rename");
+static tConfItem<tString> se_playerMessageRenameStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_RENAME_STRING", se_playerMessageRenameStr);
 
-static bool se_playerMessageRenameSelf = false;
-static tConfItem<bool> se_playerMessageRenameSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_RENAME_SELF", se_playerMessageRenameSelf);
 
 ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
                                                teamListID(-1),
@@ -7319,6 +7354,11 @@ ePlayerNetID::~ePlayerNetID()
 
 static bool se_playerMessageLeave = false;
 static tConfItem<bool> se_playerMessageLeaveConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LEFT", se_playerMessageLeave);
+static tString se_playerMessageLeaveStr("$left");
+static tConfItem<tString> se_playerMessageLeaveStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LEFT_STRING", se_playerMessageLeaveStr);
+static tString se_playerMessageLeaveBotStr("$leftbot");
+static tConfItem<tString> se_playerMessageLeaveBotStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LEFT_BOT_STRING", se_playerMessageLeaveBotStr);
+
 static void player_removed_from_game_handler(nMessage &m)
 {
     // and the ID of the player that was removed
@@ -7331,7 +7371,7 @@ static void player_removed_from_game_handler(nMessage &m)
         {
             if (se_playerMessageTriggers && se_playerMessageLeave && !p->departedByChatBot)
             {
-                eChatBot::InitiateAction(p, tString( p->IsHuman() ? "$left" : "$leftbot" ), true);
+                eChatBot::InitiateAction(p, tString(p->IsHuman() ? se_playerMessageLeaveStr : se_playerMessageLeaveBotStr), true);
                 p->departedByChatBot = true;
             }
 
@@ -8379,7 +8419,7 @@ void ePlayerNetID::WriteSync(nMessage &m)
     if (nameFirstSync && tSysTimeFloat() - createdTime() >= se_playerMessageJoinWaitTime)
     {
         if (se_playerMessageTriggers && se_playerMessageJoin)
-            eChatBot::InitiateAction(this, tString("$join"), true);
+            eChatBot::InitiateAction(this, se_playerMessageJoinStr, true);
 
         nameFirstSync = false;
     }
@@ -8649,10 +8689,24 @@ static void se_OptionalNameFilters(tString &remoteName, int owner)
 }
 
 static bool se_playerMessageSpecEnter = false;
-static tConfItem<bool> se_playerMessageSpecEnterConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_ENTER_SPEC", se_playerMessageSpecEnter);
+static tConfItem<bool> se_playerMessageSpecEnterConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_SPEC_ENTER", se_playerMessageSpecEnter);
+static tString se_playerMessageSpecEnterStr("$enterspec");
+static tConfItem<tString> se_playerMessageSpecEnterStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_SPEC_ENTER_STRING", se_playerMessageSpecEnterStr);
+static tString se_playerMessageSpecEnterOtherStr("$enterspecother");
+static tConfItem<tString> se_playerMessageSpecEnterOtherStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_SPEC_ENTER_OTHER_STRING", se_playerMessageSpecEnterOtherStr);
+static tString se_playerMessageSpecEnterBotStr("$enterspecbot");
+static tConfItem<tString> se_playerMessageSpecEnterBotStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_SPEC_ENTER_BOT_STRING", se_playerMessageSpecEnterBotStr);
+
 
 static bool se_playerMessageSpecLeft = false;
-static tConfItem<bool> se_playerMessageSpecLeftConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LEFT_SPEC", se_playerMessageSpecLeft);
+static tConfItem<bool> se_playerMessageSpecLeftConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_SPEC_LEFT", se_playerMessageSpecLeft);
+static tString se_playerMessageSpecLeftStr("$leftspec");
+static tConfItem<tString> se_playerMessageSpecLeftStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_SPEC_LEFT_STRING", se_playerMessageSpecLeftStr);
+static tString se_playerMessageSpecLeftOtherStr("$leftspecother");
+static tConfItem<tString> se_playerMessageSpecLeftOtherStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_SPEC_LEFT_OTHER_STRING", se_playerMessageSpecLeftOtherStr);
+static tString se_playerMessageSpecLeftBotStr("$leftspecbot");
+static tConfItem<tString> se_playerMessageSpecLeftBotStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_SPEC_LEFT_BOT_STRING", se_playerMessageSpecLeftBotStr);
+
 
 void ePlayerNetID::ReadSync(nMessage &m)
 {
@@ -8794,18 +8848,38 @@ void ePlayerNetID::ReadSync(nMessage &m)
                     newCurrentTeam->UpdateProperties();
                     lastTeamCreateTime = tSysTimeFloat();
 
-                    if (se_playerMessageTriggers && se_playerMessageSpecLeft && !oldTeam && (tSysTimeFloat() - createdTime()) > se_GameTime()) {
-                        eChatBot::InitiateAction(this, tString(IsHuman() ? "$leftspec" : "$leftspecbot"), true);
+                    if (se_playerMessageTriggers && se_playerMessageSpecLeft && !oldTeam && (tSysTimeFloat() - createdTime()) > se_GameTime())
+                    {
                         acknowledgeLeftSpectatorByChatbot = true;
                         acknowledgeEnterSpectatorByChatbot = false;
+                        eChatBot::InitiateAction(this, tString(IsHuman() ? (isPlayerMessageCandidate() ? se_playerMessageSpecLeftStr : se_playerMessageSpecLeftOtherStr) : se_playerMessageSpecLeftBotStr), true);
+
+                        if (se_playerMessageTriggersContextBuilder)
+                        {
+                            eChatBot &bot = eChatBot::getInstance();
+                            tString context;
+                            context << GetName()
+                                    << " is no longer spectating.";
+                            eChatBot::getInstance().data.StoreContextItem(context);
+                        }
                     }
                 }
                 else
                 {
-                    if (se_playerMessageTriggers && se_playerMessageSpecEnter) {
-                        eChatBot::InitiateAction(this, tString(IsHuman() ? "$enterspec" : "$enterspecbot"), true);
+                    if (se_playerMessageTriggers && se_playerMessageSpecEnter)
+                    {
                         acknowledgeEnterSpectatorByChatbot = true;
                         acknowledgeLeftSpectatorByChatbot = false;
+                        eChatBot::InitiateAction(this, tString(IsHuman() ? (isPlayerMessageCandidate() ? se_playerMessageSpecEnterStr : se_playerMessageSpecEnterOtherStr) : se_playerMessageSpecEnterBotStr), true);
+
+                        if (se_playerMessageTriggersContextBuilder)
+                        {
+                            eChatBot &bot = eChatBot::getInstance();
+                            tString context;
+                            context << GetName()
+                                    << " is now spectating.";
+                            eChatBot::getInstance().data.StoreContextItem(context);
+                        }
                     }
 
                     currentTeam->RemovePlayer(this);
@@ -8872,7 +8946,8 @@ void ePlayerNetID::ReadSync(nMessage &m)
                 {
                     if (se_playerMessageTriggers && se_playerMessageSpecEnter && !acknowledgeEnterSpectatorByChatbot)
                     {
-                        eChatBot::InitiateAction(this, tString("$enterspec"), true);
+                        eChatBot::InitiateAction(this, tString(IsHuman() ? (isPlayerMessageCandidate() ? se_playerMessageSpecEnterStr : se_playerMessageSpecEnterOtherStr) : se_playerMessageSpecEnterBotStr), true);
+
                         acknowledgeEnterSpectatorByChatbot = true;
                         acknowledgeLeftSpectatorByChatbot = false;
 
@@ -8890,7 +8965,8 @@ void ePlayerNetID::ReadSync(nMessage &m)
                 {
                     if (se_playerMessageTriggers && se_playerMessageSpecLeft && !acknowledgeLeftSpectatorByChatbot)
                     {
-                        eChatBot::InitiateAction(this, tString("$leftspec"), true);
+                        eChatBot::InitiateAction(this, tString(IsHuman() ? (isPlayerMessageCandidate() ? se_playerMessageSpecLeftStr : se_playerMessageSpecLeftOtherStr) : se_playerMessageSpecLeftBotStr), true);
+
                         acknowledgeLeftSpectatorByChatbot = true;
                         acknowledgeEnterSpectatorByChatbot = false;
 
@@ -13349,7 +13425,7 @@ void ePlayerNetID::UpdateName(void)
         if (!nameFirstSync)
         {
             if (!isLocal() && sn_GetNetState() == nCLIENT && nameChange && se_playerMessageTriggers && se_playerMessageRename)
-                eChatBot::InitiateAction(this,tString("$rename"),true);
+                eChatBot::InitiateAction(this, se_playerMessageRenameStr, true);
         }
     }
 
@@ -13366,17 +13442,18 @@ void ePlayerNetID::UpdateName(void)
             {
                 if (se_playerStats && se_playerMessageRejoin && ePlayerStats::getStatsForAnalysis(GetName()).seen_this_session)
                 {
-                    eChatBot::InitiateAction(this, tString(IsHuman() ? "$rejoin" : "$rejoinbot"), true);
+                    eChatBot::InitiateAction(this, tString(IsHuman() ? se_playerMessageRejoinStr : se_playerMessageRejoinBotStr), true);
                     rejoin = true;
                 }
                 else if (se_playerMessageEnter)
                 {
                     enter = true;
-                    eChatBot::InitiateAction(this, tString(IsHuman() ? "$enter" : "$enterbot"), true);
+                    eChatBot::InitiateAction(this, tString(IsHuman() ? se_playerMessageEnterStr : se_playerMessageEnterBotStr), true);
                 }
 
                 greetedByChatBot = true;
             }
+
 
             if (se_playerStats)
                 ePlayerStats::playerJoined(this);

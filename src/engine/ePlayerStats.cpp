@@ -23,8 +23,13 @@ static tConfItem<tString> se_playerStatsDataBaseFileConf("PLAYER_STATS_DB_FILE",
 
 bool se_playerMessageTriggersStatsSave = false;
 static tConfItem<bool> se_playerMessageTriggersStatsSaveConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_STATS_SAVED", se_playerMessageTriggersStatsSave);
+static tString se_playerMessageStatsSavedStr("$statssaved");
+static tConfItem<tString> se_playerMessageStatsSavedStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_STATS_SAVED_STRING", se_playerMessageStatsSavedStr);
+
 bool se_playerMessageTriggersStatsLoad = false;
 static tConfItem<bool> se_playerMessageTriggersStatsLoadConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_STATS_LOADED", se_playerMessageTriggersStatsLoad);
+static tString se_playerMessageStatsLoadedStr("$statsloaded");
+static tConfItem<tString> se_playerMessageStatsLoadedStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_STATS_LOADED_STRING", se_playerMessageStatsLoadedStr);
 
 bool se_playerStatsLocalForcedName = false;
 static tConfItem<bool> se_playerStatsLocalForcedNameConf("PLAYER_STATS_LOCAL_FORCED_NAME", se_playerStatsLocalForcedName);
@@ -55,7 +60,7 @@ bool ePlayerStats::loadStatsFromDB()
     sqlite3_close(db);
 
     if (se_playerMessageTriggers && se_playerMessageTriggersStatsLoad)
-        eChatBot::InitiateAction(nullptr, tString("$statsloaded"), true);
+        eChatBot::InitiateAction(nullptr, se_playerMessageStatsLoadedStr, true);
 
     if (!statsLoaded)
         statsDBCreationDate = tDatabaseUtility::GetDatabaseCreationTime(se_playerStatsDataBaseFile);
@@ -66,8 +71,6 @@ bool ePlayerStats::loadStatsFromDB()
 
 bool ePlayerStats::saveStatsToDB()
 {
-    // statsLoadedCheck();
-
     sqlite3 *db = tDatabaseUtility::OpenDatabase(se_playerStatsDataBaseFile);
     if (!db)
         return false;
@@ -84,8 +87,11 @@ bool ePlayerStats::saveStatsToDB()
     sqlite3_close(db);
 
     if (se_playerMessageTriggers && se_playerMessageTriggersStatsSave)
-        eChatBot::InitiateAction(nullptr, tString("$statssaved"), true);
-    return true;
+        eChatBot::InitiateAction(nullptr, se_playerMessageStatsSavedStr, true);
+
+    statsSaved = true;
+
+    return statsSaved;
 }
 
 void ePlayerStats::updateStatsMatchEnd(ePlayerNetID *matchWinner)
@@ -223,7 +229,7 @@ std::vector<std::string> deserializeVector(const std::string &str)
 {
     std::vector<std::string> vec;
 
-    if (str.find(DB_DELIMITER) == std::string::npos)
+    if (str.find(DB_DELIMITER()) == std::string::npos)
     {
         if (!str.empty()) {
             vec.push_back(str);
@@ -233,14 +239,14 @@ std::vector<std::string> deserializeVector(const std::string &str)
 
     std::string::size_type pos = 0;
     std::string::size_type prev = 0;
-    while ((pos = str.find(DB_DELIMITER, prev)) != std::string::npos)
+    while ((pos = str.find(DB_DELIMITER(), prev)) != std::string::npos)
     {
         std::string segment = str.substr(prev, pos - prev);
         if (!segment.empty())
         {
             vec.push_back(segment);
         }
-        prev = pos + DB_DELIMITER.length();
+        prev = pos + DB_DELIMITER().length();
     }
 
     std::string lastSegment = str.substr(prev);
@@ -258,7 +264,7 @@ std::string serializeVector(const std::vector<std::string> &vec)
                            {
                                if (b.empty())
                                  return a;
-                               return a + (a.length() > 0 ? DB_DELIMITER : "") + b;
+                               return a + (a.length() > 0 ? DB_DELIMITER() : "") + b;
                            });
 }
 
@@ -928,7 +934,8 @@ static void se_playerStatsReload(std::istream &s)
 }
 static tConfItemFunc se_playerStatsReload_conf = HelperCommand::tConfItemFunc("PLAYER_STATS_RELOAD", &se_playerStatsReload);
 
-CommandState ePlayerStats::deleteState;
-CommandState ePlayerStats::consolidateState;
-bool         ePlayerStats::statsLoaded = false;
+CommandState ePlayerStats::deleteState,
+             ePlayerStats::consolidateState;
+bool         ePlayerStats::statsLoaded,
+             ePlayerStats::statsSaved = false;
 std::chrono::system_clock::time_point ePlayerStats::statsDBCreationDate = std::chrono::system_clock::time_point{};

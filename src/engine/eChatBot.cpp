@@ -438,7 +438,7 @@ tString statsFunc(tString message)
                 int unseenCount = 0;
                 for (const std::string &note : stats->notifications)
                 {
-                    tArray<tString> parts = tString(note).Split(tString(DB_DELIMITER));
+                    tArray<tString> parts = tString(note).Split(tString(DB_DELIMITER()));
                     if (parts.Len() >= 3)
                     {
                         try
@@ -453,9 +453,16 @@ tString statsFunc(tString message)
                     }
                 }
 
-                entry << label << ": " << stats->notifications.size();
-                if (unseenCount > 0)
-                    entry << " (" << unseenCount << " new)";
+                int validCount = 0;
+                for (const std::string &note : stats->notifications)
+                {
+                    tArray<tString> parts = tString(note).Split(tString(DB_DELIMITER()));
+                    if (parts.Len() >= 3)
+                        validCount++;
+                }
+                entry << label << ": " << validCount;
+
+                entry << " (" << unseenCount << " new)";
             }
 
             segments.push_back(entry);
@@ -1091,7 +1098,7 @@ tString masterFunc(tString message)
         if (tConfItemBase::lastLoadOutput.empty())
             feedback << "Line loaded: '" << message << "'";
         else
-            feedback << tConfItemBase::lastLoadOutput;
+            feedback << tColoredString::RemoveColors(tConfItemBase::lastLoadOutput);
 
 
         if (bot.Messager()->Params().sendingPlayer)
@@ -1416,30 +1423,35 @@ tString whatsTheFunc(tString message)
     else if (target.Contains("commands"))
     {
         eChatBot &bot = eChatBot::getInstance();
-        std::set<tString> uniqueTriggers;
+        std::map<tString, tString> funcToTrigger;
 
         for (const auto &chatTrigger : bot.data.chatTriggers)
         {
+            if (chatTrigger.trigger == "$number" ||
+                chatTrigger.trigger == "$math" ||
+                chatTrigger.trigger == "$repeatedchars")
+                continue;
+
             for (const auto &response : chatTrigger.responses)
             {
                 tString funcName = extractFuncName(response);
                 if (bot.data.functions->functionMap.count(funcName))
                 {
-                    uniqueTriggers.insert(chatTrigger.trigger);
+                    funcToTrigger.insert({funcName, chatTrigger.trigger});
                     break;
                 }
             }
         }
 
-        if (uniqueTriggers.empty())
+        if (funcToTrigger.empty())
         {
             output << "No triggers found for registered commands.\n";
         }
         else
         {
-            output << "Triggers for available commands: ";
+            output << "Triggers: ";
             bool first = true;
-            for (const auto &trigger : uniqueTriggers)
+            for (const auto &[func, trigger] : funcToTrigger)
             {
                 if (!first)
                     output << ", ";
@@ -1472,7 +1484,16 @@ tString whatsTheFunc(tString message)
         }
     }
     else if (target.Contains("ip_address"))
-    {
+    {        
+        eChatBot &bot = eChatBot::getInstance();
+        ePlayerNetID *triggeredByPlayer = bot.Messager()->Params().triggeredBy;
+        
+        if (!triggeredByPlayer || !triggeredByPlayer->encryptVerified )
+        {
+            output << "You are not verified";
+            return output;
+        }
+        
         if (sn_ourRealIPS.empty())
             output << "OUR_REAL_IPS is not set!\n";
         else
@@ -1609,6 +1630,91 @@ tString whatsTheFunc(tString message)
 
         output << "Version: " << sn_programVersion << ", DB Age: " << st_GetFormatTime(ageSeconds, false, false);
     }
+    else
+    { // quick commands
+        eChatBot &bot = eChatBot::getInstance();
+        ePlayerNetID *targetPlayer = nullptr;
+
+        int pos = 0;
+        tString command = message.ExtractNonBlankSubString(pos);
+        tString nameArg = message.SubStr(pos).TrimWhitespace();
+
+        if (!nameArg.empty())
+            targetPlayer = ePlayerNetID::GetPlayerByName(nameArg.SubStr(0, 16), false);
+        else if (nameArg.empty() && bot.Messager()->Params().triggeredBy)
+            targetPlayer = bot.Messager()->Params().triggeredBy;
+
+        if (!targetPlayer)
+        {
+            output << "Player not found.";
+            return output;
+        }
+
+        gCycle *pCycle = dynamic_cast<gCycle *>(targetPlayer->Object());
+
+        output << targetPlayer->GetName() << ": ";
+
+        if (target.StartsWith("player_ping"))
+        {
+            output << "Ping: "
+                   << int(targetPlayer->ping * 1000) << "ms"
+                   << " ("
+                   << targetPlayer->ping
+                   << ")";
+
+            if (pCycle)
+            {
+                output << ", Lag: "
+                       << int(pCycle->Lag()  * 1000) << "ms"
+                       << " ("
+                       << pCycle->Lag()
+                       << ")";
+            }
+        }
+        else if (target.StartsWith("player_info"))
+        {
+            if (!targetPlayer->IsHuman() )
+                output << "Bot, ";
+
+            output << (targetPlayer->CurrentTeam() ? "Playing" : "Spectating")
+                   << ", Ping: " << int(targetPlayer->ping * 1000) << "ms";
+
+            if (targetPlayer->lastTurnTime > 0)
+                output << ", Last Turn: " << st_GetFormatTime(tSysTimeFloat() - targetPlayer->lastTurnTime, false, false);
+
+            output << ", Aliases: " << targetPlayer->nameHistory.Len();
+            if (targetPlayer->nameHistory.Len() > 0)
+            {
+                output << " (";
+                for (int i = 0; i < targetPlayer->nameHistory.Len(); ++i)
+                {
+                    output << tColoredString::RemoveColors(targetPlayer->nameHistory[i]);
+                    if (i + 1 < targetPlayer->nameHistory.Len())
+                        output << ", ";
+                }
+                output << ")";
+            }
+
+            if (targetPlayer->IsChatting() && targetPlayer->ChattingTime() > 0)
+                output << ", Chatting: " << st_GetFormatTime(targetPlayer->ChattingTime(), false, false);
+
+            if (pCycle)
+            {
+                output << ", Lag: "    << (int(pCycle->Lag() * 1000)) << "ms"
+                       << ", Pos: "    << roundeCoord(pCycle->Position())
+                       << ", Dir: "    << roundeCoord(pCycle->Direction())
+                       << ", Speed: "  << pCycle->verletSpeed_
+                       << ", Rubber: " << pCycle->GetRubber() << "/" << sg_rubberCycle;
+
+                if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
+                    output << ", Last Death: " << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, false, false);
+                else
+                    output << ", Alive Time: " << st_GetFormatTime(se_GameTime(), false, false);
+            }
+        }
+
+    }
+
 
     return output;
 }
@@ -2641,52 +2747,6 @@ tString nameHistoryTrackerFunc(tString message)
     return result;
 }
 
-REAL ParseTimeString(const std::string &str, bool &valid)
-{
-    valid = true;
-    if (str.empty())
-    {
-        valid = false;
-        return 0;
-    }
-
-    char suffix = str.back();
-    std::string numberPart = str;
-
-    REAL multiplier = 1;
-    if (suffix == 's' || suffix == 'S')
-    {
-        numberPart.pop_back();
-        multiplier = 1;
-    }
-    else if (suffix == 'm' || suffix == 'M')
-    {
-        numberPart.pop_back();
-        multiplier = 60;
-    }
-    else if (suffix == 'h' || suffix == 'H')
-    {
-        numberPart.pop_back();
-        multiplier = 3600;
-    }
-    else if (!isdigit(suffix))
-    {
-        valid = false;
-        return 0;
-    }
-
-    try
-    {
-        REAL value = std::stof(numberPart);
-        return value * multiplier;
-    }
-    catch (...)
-    {
-        valid = false;
-        return 0;
-    }
-}
-
 tString reminderFunc(tString message)
 {
     tString output;
@@ -2697,7 +2757,7 @@ tString reminderFunc(tString message)
     if (message.empty())
     {
         output << "Usage: '" << bot.Messager()->Params().matchedTrigger
-               << " <delay> <message>' (e.g. 10s, 5m, 2.5h)";
+               << " <delay> <message>' (e.g. 10s, 5m, 2.5h, 1d, 2w, 1mo, 1y)";
         return output;
     }
 
@@ -2708,15 +2768,15 @@ tString reminderFunc(tString message)
     if (secondsStr.empty() || reminderText.empty())
     {
         output << "Usage: '" << bot.Messager()->Params().matchedTrigger
-               << " <delay> <message>' (e.g. 10s, 5m, 2.5h)";
+               << " <delay> <message>' (e.g. 10s, 5m, 2.5h, 1d, 2w, 1mo, 1y)";
         return output;
     }
 
     bool valid = false;
-    REAL delay = ParseTimeString(secondsStr.stdString(), valid);
+    double delay = ParseTimeString(secondsStr.stdString(), valid);
     if (!valid || delay <= 0)
     {
-        output << "Invalid delay. Try formats like 10s, 5m, or 2h.";
+        output << "Invalid delay. Try formats like 10s, 5m, 2h, 1d, 2w, 1mo, 1y.";
         return output;
     }
 
@@ -2736,11 +2796,11 @@ tString reminderFunc(tString message)
     fullCmd << se_playerMessageReminderFuncCommand << " " << prefix << reminderText << secondsElapsed;
     std::string fullCommand = fullCmd.stdString();
 
-    ReminderFunc::AddReminder(id, fullCommand, delay, false);
+    CommandScheduler::AddCommand(id, fullCommand, delay, false);
 
     output << prefix << "Reminder will trigger in " << formatted << ": " << reminderText;
 
-    gHelperUtility::Debug("eChatBot", "ReminderFunc (persistent): " + fullCommand + " in " + std::to_string((int)delay) + "s");
+    gHelperUtility::Debug("eChatBot", "CommandScheduler scheduled: " + fullCommand + " in " + std::to_string((int)delay) + "s");
     return output;
 }
 
@@ -2766,16 +2826,22 @@ tString reminderListFunc(tString message)
         }
     }
 
-    auto sortedReminders = ReminderFunc::reminders;
+    std::vector<CommandScheduler::ScheduledCommand> sortedReminders;
+    for (const auto &r : CommandScheduler::scheduledCommands)
+    {
+        if (r.id.rfind("chat_reminder_", 0) == 0)
+            sortedReminders.push_back(r);
+    }
 
     if (sortedReminders.empty())
         return tString("No upcoming reminders.");
 
     std::sort(sortedReminders.begin(), sortedReminders.end(),
-              [](const ReminderFunc::Reminder &a, const ReminderFunc::Reminder &b)
+              [](const CommandScheduler::ScheduledCommand &a, const CommandScheduler::ScheduledCommand &b)
               {
                   return a.triggerAt < b.triggerAt;
               });
+
 
     double nowWall = std::chrono::duration_cast<std::chrono::seconds>(
                          std::chrono::system_clock::now().time_since_epoch())
@@ -2856,7 +2922,7 @@ tString notifyPlayerFunc(tString message)
     else
         stats = &ePlayerStats::getStatsForAnalysis(targetName);
 
-    if (!stats)
+    if (!stats || stats->name.empty())
     {
         output << "Player not found: " << targetName;
         return output;
@@ -2866,14 +2932,14 @@ tString notifyPlayerFunc(tString message)
     time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     tString formattedNote;
-    formattedNote << senderName << DB_DELIMITER << noteText << DB_DELIMITER << std::to_string(now);
+    formattedNote << senderName << DB_DELIMITER() << noteText << DB_DELIMITER() << std::to_string(now);
     stats->notifications.push_back(formattedNote.stdString());
 
     if (sender)
     {
         PlayerData &senderStats = ePlayerStats::getStats(sender);
         tString sentNote;
-        sentNote << stats->name << DB_DELIMITER << noteText << DB_DELIMITER << std::to_string(now);
+        sentNote << stats->name << DB_DELIMITER() << noteText << DB_DELIMITER() << std::to_string(now);
         senderStats.sent_notifications.push_back(sentNote.stdString());
     }
 
@@ -2899,7 +2965,9 @@ tString notifyPlayerFunc(tString message)
             } });
     }
 
-    output << "Notification sent to " << (targetPlayer ? targetPlayer->GetName() : stats->name) << ".";
+    tString displayName(!targetPlayer || ePlayerStats::shouldEnforceLocalName(targetPlayer) ? (!stats->name.empty() ? stats->name : targetName) : targetName);
+
+    output << "Notification sent to " << displayName << ".";
     return output;
 }
 
@@ -2942,20 +3010,13 @@ tString notificationsListFunc(tString message)
     for (auto it = notes.rbegin(); it != notes.rend(); ++it)
     {
         tString raw(*it);
-        tArray<tString> parts = raw.Split(tString(DB_DELIMITER));
+        tArray<tString> parts = raw.Split(tString(DB_DELIMITER()));
 
         tString line;
         if (parts.Len() >= 3)
         {
-            tString sender = parts[0];
-            tString body;
-
-            for (int i = 1; i < parts.Len() - 1; ++i)
-            {
-                if (i > 1)
-                    body << DB_DELIMITER;
-                body << parts[i];
-            }
+            tString sender = parts[0],
+                    body   = parts[1];
 
             if (se_playerMessageNotificationsListShowTime)
             {
@@ -3084,20 +3145,13 @@ tString sentNotificationsListFunc(tString message)
     for (auto it = notes.rbegin(); it != notes.rend(); ++it)
     {
         tString raw(*it);
-        tArray<tString> parts = raw.Split(tString(DB_DELIMITER));
+        tArray<tString> parts = raw.Split(tString(DB_DELIMITER()));
 
         tString line;
         if (parts.Len() >= 3)
         {
-            tString recipient = parts[0];
-            tString body;
-
-            for (int i = 1; i < parts.Len() - 1; ++i)
-            {
-                if (i > 1)
-                    body << DB_DELIMITER;
-                body << parts[i];
-            }
+            tString recipient = parts[0],
+                    body      = parts[1];
 
             if (se_playerMessageNotificationsListShowTime)
             {
@@ -3202,7 +3256,7 @@ tString viewNotificationsFunc(tString message)
 
     ePlayerNetID *targetPlayer = ePlayerNetID::GetPlayerByName(playerName, false);
     if (targetPlayer)
-        playerName = targetPlayer->GetName(); 
+        playerName = targetPlayer->GetName();
 
     PlayerData *stats = targetPlayer
                             ? &ePlayerStats::getStats(targetPlayer)
@@ -3223,7 +3277,7 @@ tString viewNotificationsFunc(tString message)
     for (auto it = notes.rbegin(); it != notes.rend(); ++it)
     {
         tString raw(*it);
-        tArray<tString> noteParts = raw.Split(tString(DB_DELIMITER));
+        tArray<tString> noteParts = raw.Split(tString(DB_DELIMITER()));
 
         tString line;
         if (noteParts.Len() >= 2)
@@ -4577,13 +4631,16 @@ void eChatBot::LoadChatCommandConfCommands()
 
 void eChatBotData::StoreContextItem(const tString &item)
 {
-    if (!item.empty())
-        contextItems.push_back(item);
+    if (item.empty())
+    {
+        gHelperUtility::Debug("eChatBotData", "Context item is empty. Not storing.");
+        return;
+    }
 
+    contextItems.push_back(item);
 
     if (sg_helperDebug)
         gHelperUtility::Debug("eChatBotData", "Context item stored: ", item);
-
 
     if (se_playerMessageTriggersContextBuilderStore)
     {

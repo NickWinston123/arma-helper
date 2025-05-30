@@ -33,11 +33,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tConfiguration.h"
 #include "tLocale.h"
 
+#include <algorithm>
+#include <cctype>
 #include <chrono>
 double getSteadyTime()
 {
     using namespace std::chrono;
-    static const auto start = steady_clock::now(); 
+    static const auto start = steady_clock::now();
     const auto now = steady_clock::now();
 
     return duration_cast<duration<double>>(now - start).count();
@@ -419,12 +421,12 @@ double tRealSysTimeFloat ()
     return ( timeRealRelative.seconds + timeRealRelative.microseconds*1E-6 ) * st_timeFactor;
 }
 
-time_t convertToTimeT(struct tm date) 
+time_t convertToTimeT(struct tm date)
 {
     return mktime(&date);
 }
 
-time_t getDifferenceInSeconds(struct tm date1, struct tm date2) 
+time_t getDifferenceInSeconds(struct tm date1, struct tm date2)
 {
     time_t t1 = convertToTimeT(date1);
     time_t t2 = convertToTimeT(date2);
@@ -437,7 +439,7 @@ time_t getStartTimeOfDay()
     struct tm newyear;
     double seconds;
 
-    time(&now); 
+    time(&now);
     newyear = *localtime(&now);
 
     newyear.tm_hour = 0;
@@ -541,4 +543,61 @@ std::string getTimeString(bool showTime24hour)
 {
     struct tm thisTime = getCurrentLocalTime();
     return getTimeStringBase(thisTime,showTime24hour);
+}
+
+double ParseTimeString(const std::string &str, bool &valid)
+{
+    valid = true;
+    if (str.empty())
+    {
+        valid = false;
+        return 0;
+    }
+
+    std::string lowerStr = str;
+    std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
+
+    std::string numberPart = lowerStr;
+    double multiplier = 1;
+
+    if (lowerStr.size() >= 2 && lowerStr.substr(lowerStr.size() - 2) == "mo") // months
+    {
+        numberPart = lowerStr.substr(0, lowerStr.size() - 2);
+        multiplier = 30.44 * 86400;
+    }
+    else
+    {
+        char suffix = lowerStr.back();
+        numberPart = lowerStr.substr(0, lowerStr.size() - 1);
+
+        switch (suffix)
+        {
+        case 's': multiplier = 1; break; // seconds
+        case 'm': multiplier = 60; break; // minutes
+        case 'h': multiplier = 3600; break; // hours
+        case 'd': multiplier = 86400; break; // days
+        case 'w': multiplier = 7 * 86400; break; // weeks
+        case 'y': multiplier = 365.25 * 86400; break; // years
+        default:
+            if (!isdigit(suffix))
+            {
+                valid = false;
+                return 0;
+            }
+            numberPart = lowerStr;
+            multiplier = 1;
+            break;
+        }
+    }
+
+    try
+    {
+        double value = std::stod(numberPart);
+        return value * multiplier;
+    }
+    catch (...)
+    {
+        valid = false;
+        return 0;
+    }
 }

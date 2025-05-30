@@ -88,6 +88,8 @@ extern tString se_disableCreateSpecific;
 extern tString forcedChattingPlayers;
 extern bool se_forceJoinTeam;
 
+extern tString se_playerMessageEnabledPlayers;
+
 extern bool se_watchActiveStatus;
 extern int se_watchActiveStatusTime;
 
@@ -192,11 +194,11 @@ public:
     //Smarter bot
     bool sg_smarterBotThink;
     bool sg_smarterBotAutomator;
-    tString sg_smarterBotAutomatorConfigList;  
-    int     sg_smarterBotAutomatorRounds;      
-    REAL    sg_smarterBotAutomatorLastScore;      
-    tString sg_smarterBotAutomatorLogFile;    
-    REAL    sg_smarterBotAutomatorScale; 
+    tString sg_smarterBotAutomatorConfigList;
+    int     sg_smarterBotAutomatorRounds;
+    REAL    sg_smarterBotAutomatorLastScore;
+    tString sg_smarterBotAutomatorLogFile;
+    REAL    sg_smarterBotAutomatorScale;
 
     REAL sg_smarterBotRange;
     REAL sg_smarterBotRandomScale;
@@ -401,6 +403,7 @@ public:
 
     tString lastName = tString("");
     bool isLocal() { return pID != -1; }
+    bool isPlayerMessageCandidate() { return isLocal() && tIsEnabledForPlayer(se_playerMessageEnabledPlayers, pID + 1); }
     ePlayerNetID * lastKilledPlayer;
     ePlayerNetID * lastDiedByPlayer = nullptr;
     ePlayerNetID * lastDiedByPlayerBanFunc = nullptr;

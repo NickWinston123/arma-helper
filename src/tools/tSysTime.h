@@ -38,6 +38,8 @@ std::string getTimeString(bool hudShowTime24hour = false);
 std::string getTimeStringBase(struct tm &thistime, bool hudShowTime24hour = false);
 std::string getTimeZone(const struct tm& timeInfo);
 
+double ParseTimeString(const std::string &str, bool &valid);
+
 struct tm getCurrentLocalTime();
 time_t convertToTimeT(struct tm date);
 time_t getDifferenceInSeconds(struct tm date1, struct tm date2) ;

@@ -7,7 +7,6 @@
 #include <unordered_map>
 #include <numeric>
 
-
 #include "tDatabase.h"
 
 #include "../tron/gHelper/gHelperUtilities.h"
@@ -15,7 +14,7 @@
 #include "eTimer.h"
 #include "eChatBot.h"
 
-const std::string DB_DELIMITER = "-+H4CK3RM@N5-+";
+extern std::string DB_DELIMITER();
 
 extern bool se_playerStats, se_playerStatsLog;
 
@@ -612,7 +611,7 @@ class ePlayerStats
 {
     static CommandState deleteState;
     static CommandState consolidateState;
-    static bool         statsLoaded;
+    static bool         statsLoaded, statsSaved;
     static std::chrono::system_clock::time_point statsDBCreationDate;
     static std::unordered_map<tString, PlayerData> playerStatsMap;
     static int players_record_this_session;
@@ -763,7 +762,7 @@ public:
             time_t latest = 0;
 
             const std::string& lastNote = stats.notifications.back();
-            tArray<tString> parts = tString(lastNote).Split(tString(DB_DELIMITER));
+            tArray<tString> parts = tString(lastNote).Split(tString(DB_DELIMITER()));
 
             if (parts.Len() >= 3)
             {
@@ -772,8 +771,11 @@ public:
                 } catch (...) {}
             }
 
-            if (latest > stats.last_seen_notification_time && player->Owner())
+            if (latest > stats.last_seen_notification_time && player->Owner()) 
+            {
+                gHelperUtility::Debug("ePlayerStats", "Sending notification for player " + player->GetName().stdString());
                 eChatBot::findResponsePlayer(eChatBot::getInstance(), player, se_playerMessageNotificationTrigger, tString(""), tString(""), true);
+            }
         }
     }
 

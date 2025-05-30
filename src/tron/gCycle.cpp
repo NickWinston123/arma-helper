@@ -7181,15 +7181,32 @@ extern REAL sg_cycleBrakeDeplete;
 
 bool sg_playerMessageDeathSelf = false;
 static tConfItem<bool> sg_playerMessageDeathSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_SELF", sg_playerMessageDeathSelf);
+static tString sg_playerMessageDeathSelfStr("$died");
+static tConfItem<tString> sg_playerMessageDeathSelfStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_SELF_STRING", sg_playerMessageDeathSelfStr);
 
 bool sg_playerMessageDeathSelfBotSuicide = false;
 static tConfItem<bool> sg_playerMessageDeathSelfBotSuicideConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_SELF_BOT_SUI", sg_playerMessageDeathSelfBotSuicide);
+static tString sg_playerMessageDeathSelfBotSuicideStr("$diedbotsui");
+static tConfItem<tString> sg_playerMessageDeathSelfBotSuicideStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_SELF_BOT_SUI_STRING", sg_playerMessageDeathSelfBotSuicideStr);
 
 bool sg_playerMessageDeathOther = false;
 static tConfItem<bool> sg_playerMessageDeathOtherConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_OTHER", sg_playerMessageDeathOther);
+static tString sg_playerMessageDeathOtherStr("$diedother");
+static tConfItem<tString> sg_playerMessageDeathOtherStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_OTHER_STRING", sg_playerMessageDeathOtherStr);
 
-bool se_playerMessageTriggersZoneVerify = false;
+bool sg_playerMessageDeathZone = false;
+static tConfItem<bool> sg_playerMessageDeathZoneConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_ZONE", sg_playerMessageDeathZone);
+static tString sg_playerMessageDeathZoneStr("$diedzone");
+static tConfItem<tString> sg_playerMessageDeathZoneStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_ZONE_STRING", sg_playerMessageDeathZoneStr);
+static tString sg_playerMessageDeathZoneOtherStr("$diedzoneother");
+static tConfItem<tString> sg_playerMessageDeathZoneOtherStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_ZONE_OTHER_STRING", sg_playerMessageDeathZoneOtherStr);
+
+REAL sg_playerMessageDeathZoneRecentlyTime = 3;
+static tConfItem<REAL> sg_playerMessageDeathZoneRecentlyTimeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_DEATH_ZONE_SPAWNED_RECENTLY_TIME", sg_playerMessageDeathZoneRecentlyTime);
+
+bool se_playerMessageTriggersZoneVerify = true;
 static tConfItem<bool> se_playerMessageTriggersZoneVerifyConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_ZONE_VERIFY", se_playerMessageTriggersZoneVerify);
+
 void gCycle::ReadSync(nMessage &m)
 {
     // data from sync message
@@ -7362,28 +7379,31 @@ void gCycle::ReadSync(nMessage &m)
             ePlayerStats::addDeath(Player());
         }
 
-        if (se_playerMessageTriggers && (sg_playerMessageDeathSelf || sg_playerMessageDeathOther))
+        if (se_playerMessageTriggers && (sg_playerMessageDeathSelf || sg_playerMessageDeathOther || sg_playerMessageDeathZone))
         {
             bool zoneSpawnedRecently = false;
 
-            if (se_playerMessageTriggersZoneVerify)
+            if (se_playerMessageTriggersZoneVerify || sg_playerMessageDeathZone)
             {
                 gZone *lastCreatedZone = gZone::GetLastCreatedZone();
-                zoneSpawnedRecently = lastCreatedZone && lastCreatedZone->actualCreateTime_ >= tSysTimeFloat() - 5;
+                zoneSpawnedRecently = lastCreatedZone && lastCreatedZone->actualCreateTime_ >= tSysTimeFloat() - sg_playerMessageDeathZoneRecentlyTime;
             }
 
             if (Player())
             {
-                if (Player()->isLocal() && sg_playerMessageDeathSelf && !zoneSpawnedRecently)
+                if (Player()->isPlayerMessageCandidate() && sg_playerMessageDeathSelf && !zoneSpawnedRecently)
                 {
                     if (!smartBotSuicide)
-                        eChatBot::InitiateAction(killer, tString("$died"), true);
+                        eChatBot::InitiateAction(killer, sg_playerMessageDeathSelfStr, true);
                     else if (sg_playerMessageDeathSelfBotSuicide)
-                        eChatBot::InitiateAction(killer, tString("$diedbotsui"), true);
+                        eChatBot::InitiateAction(killer, sg_playerMessageDeathSelfBotSuicideStr, true);
                 }
                 else if (sg_playerMessageDeathOther && !zoneSpawnedRecently)
-                    eChatBot::InitiateAction(killer, tString("$diedother"), true);
+                    eChatBot::InitiateAction(killer, sg_playerMessageDeathOtherStr, true);
+                else if (sg_playerMessageDeathZone && zoneSpawnedRecently && killer)
+                    eChatBot::InitiateAction(nullptr, Player()->isPlayerMessageCandidate() ? sg_playerMessageDeathZoneStr : sg_playerMessageDeathZoneOtherStr, true);
             }
+
         }
 
         Die(lastSyncMessage_.time);

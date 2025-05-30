@@ -736,8 +736,8 @@ int main(int argc, char **argv)
             ePlayerStats::loadStatsFromDB();
 
 
-        ReminderFunc::Load();
-        ReminderFunc::ScheduleAll();
+        CommandScheduler::Load();
+        CommandScheduler::ScheduleAll();
 
         // migrate user configuration from previous versions
         if (sn_configurationSavedInVersion != sn_programVersion)

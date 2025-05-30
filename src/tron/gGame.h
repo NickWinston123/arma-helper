@@ -559,23 +559,29 @@ private:
 extern TaskScheduler gTaskScheduler;
 
 
-class ReminderFunc {
+class CommandScheduler {
 public:
-    struct Reminder {
+    struct ScheduledCommand {
         std::string id;
         std::string command;
-        double triggerAt; 
+        double triggerAt;
         bool repeat;
+        double interval;
+        bool requireInGame;
+        bool runOnStartup;
     };
 
     static void Load();
     static void Save();
-    static void AddReminder(const std::string& id, const std::string& command, REAL interval, bool repeat);
-    static void RemoveReminder(const std::string& id);
+    static void AddCommand(const std::string& id, const std::string& command, double interval, bool repeat, bool requireInGame = true, bool runOnStartup = false);
+    static void RemoveCommand(const std::string& id);
     static void ScheduleAll();
+    static void ProcessPendingInGame();
 
-    static std::vector<Reminder> reminders;
+    static std::vector<ScheduledCommand> scheduledCommands;
+    static std::vector<ScheduledCommand> pendingInGame;
     static const tString fileName;
 };
+
 
 #endif

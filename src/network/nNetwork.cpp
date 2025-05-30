@@ -3591,9 +3591,13 @@ static nConsoleFilter sn_consoleFilter;
 
 static bool sg_playerMessageMatchWinner = false;
 static tConfItem<bool> sg_playerMessageMatchWinnerConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER", sg_playerMessageMatchWinner);
+static tString sg_playerMessageMatchWinnerStr("$matchwinner");
+static tConfItem<tString> sg_playerMessageMatchWinnerStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER_STRING", sg_playerMessageMatchWinnerStr);
 
 static bool sg_playerMessageMatchWinnerSelf = false;
 static tConfItem<bool> sg_playerMessageMatchWinnerSelfConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER_SELF", sg_playerMessageMatchWinnerSelf);
+static tString sg_playerMessageMatchWinnerSelfStr("$matchwinnerself");
+static tConfItem<tString> sg_playerMessageMatchWinnerSelfStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_MATCH_WINNER_SELF_STRING", sg_playerMessageMatchWinnerSelfStr);
 
 bool sg_playerSpamProtectionWatch = false;
 static tConfItem<bool> sg_playerSpamProtectionWatchConf("CHAT_SPAM_PROTECTION_WATCH", sg_playerSpamProtectionWatch);
@@ -3810,13 +3814,14 @@ static void sn_ConsoleOut_handler(nMessage &m)
                 con << s << "\n";
 
                 ePlayerNetID *potentialWinner = ePlayerNetID::HighestScoringPlayer();
-                bool isLocal = sg_playerMessageMatchWinnerSelf && potentialWinner && potentialWinner->isLocal();
+                bool isLocal = sg_playerMessageMatchWinnerSelf && potentialWinner && potentialWinner->isPlayerMessageCandidate();
 
                 if (se_playerStats)
                     ePlayerStats::updateStatsMatchEnd(potentialWinner);
-
+                    
                 if (se_playerMessageTriggers && sg_playerMessageMatchWinner)
-                    eChatBot::InitiateAction(potentialWinner, isLocal ? tString("$matchwinnerself") : tString("$matchwinner"), true);
+                    eChatBot::InitiateAction(potentialWinner, isLocal ? sg_playerMessageMatchWinnerSelfStr : sg_playerMessageMatchWinnerStr, true);
+
             }
         }
     }
@@ -6076,7 +6081,7 @@ void sn_quitAction(bool save, bool quit, tString message)
     if (se_playerMessageTriggers && se_playerMessageTriggersBannedAction) 
         eChatBot::findResponse(eChatBot::getInstance(), tString(""), tString("$bannedaction"), message, tString(""), true);
 
-    if (save)
+    if (save && !quit)
         st_SaveConfig();
 
     if (quit)

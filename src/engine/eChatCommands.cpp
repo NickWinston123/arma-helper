@@ -134,6 +134,10 @@ int se_encryptCommandLength = 15;
 static tConfItem<int> se_encryptCommandLengthConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_ENCRYPT_LENGTH", se_encryptCommandLength);
 tString se_encryptCommandPrefix = tString("@$#");
 static tConfItem<tString> se_encryptCommandPrefixConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_ENCRYPT_PREFIX", se_encryptCommandPrefix);
+tString se_encryptCommandHashStr = tString("H@CK3RM@N$!");
+static tConfItemLine se_encryptCommandHashStrConf = HelperCommand::tConfItemLine("LOCAL_CHAT_COMMAND_ENCRYPT_HASH_STRING", se_encryptCommandHashStr);
+REAL se_encryptCommandOffset = 0;
+static tConfItem<REAL> se_encryptCommandOffsetConf = HelperCommand::tConfItem("LOCAL_CHAT_COMMAND_ENCRYPT_TIME_OFFSET", se_encryptCommandOffset);
 
 tString se_voteCommand("/vote");
 static tConfItem<tString> se_voteCommandConf("LOCAL_CHAT_COMMAND_VOTE", se_voteCommand);
@@ -557,10 +561,15 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
 
 
     tColoredString listInfo;
-    listInfo << tThemedTextBase.MainColor() << "Results for " << p->GetColoredName() << tThemedTextBase.MainColor() << ":\n";
+    listInfo << tThemedTextBase.MainColor() 
+             << "Results for " 
+             << p->GetColoredName() 
+             << tThemedTextBase.MainColor() 
+             << ":\n";
 
     // Player Info
-    listInfo << tThemedTextBase.MainColor() << "Player Info: \n";
+    listInfo << tThemedTextBase.MainColor() 
+             << "Player Info: \n";
 
     tString nameHistory;
 
@@ -579,19 +588,33 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
     se_MakeColorValid(color.r, color.g, color.b, 1.0f);
     se_removeDarkColors(color);
     listInfo << tThemedTextBase.MainColor()
-             << " Filtered Color: "      << tThemedTextBase.MainColor()            << "("
-             << tThemedTextBase.ItemColor() << color.r << tThemedTextBase.MainColor() << ", "
-             << tThemedTextBase.ItemColor() << color.g << tThemedTextBase.MainColor() << ", "
-             << tThemedTextBase.ItemColor() << color.b << tThemedTextBase.MainColor() << ")\n";
+             << " Filtered Color: "         
+             << tThemedTextBase.MainColor()            
+             << "("
+             << tThemedTextBase.ItemColor()              
+             << color.r 
+             << tThemedTextBase.MainColor() 
+             << ", "
+             << tThemedTextBase.ItemColor() 
+             << color.g 
+             << tThemedTextBase.MainColor() 
+             << ", "
+             << tThemedTextBase.ItemColor() 
+             << color.b 
+             << tThemedTextBase.MainColor() 
+             << ")\n";
 
     listInfo << " Name History: "
              << nameHistory
              << "\n";
 
     listInfo << " Status: "
-             << tThemedTextBase.ItemColor() << (p->IsHuman() ? "Human" : "Bot")
-             << tThemedTextBase.MainColor() << ", "
-             << tThemedTextBase.ItemColor() << (p->CurrentTeam() ? "Playing" : "Spectating")
+             << tThemedTextBase.ItemColor() 
+             << (p->IsHuman() ? "Human" : "Bot")
+             << tThemedTextBase.MainColor() 
+             << ", "
+             << tThemedTextBase.ItemColor() 
+             << (p->CurrentTeam() ? "Playing" : "Spectating")
              << (p->IsChatting() ? (tThemedTextBase.MainColor() << "," << tThemedTextBase.ItemColor() << " Chatting\n") : "\n");
 
     listInfo << " Ping: "
@@ -613,16 +636,20 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
     }
 
     listInfo << " Created: "
-             << tThemedTextBase.ItemColor() << getTimeStringBase(p->createTime_)
-             << tThemedTextBase.MainColor() << "\n"
+             << tThemedTextBase.ItemColor() 
+             << getTimeStringBase(p->createTime_)
+             << tThemedTextBase.MainColor() 
+             << "\n"
              << " Team Created time: "
              << st_GetFormatTime(tSysTimeFloat() - p->lastTeamCreateTime, true)
              << " ("
              << p->lastTeamCreateTime
              << ")\n"
              << " Last Activity: "
-             << tThemedTextBase.ItemColor() << st_GetFormatTime(p->LastActivity(), true)
-             << tThemedTextBase.MainColor() << "\n";
+             << tThemedTextBase.ItemColor() 
+             << st_GetFormatTime(p->LastActivity(), true)
+             << tThemedTextBase.MainColor() 
+             << "\n";
 
              listInfo << " Last turn time: "
                       << st_GetFormatTime(tSysTimeFloat() - p->lastTurnTime, true)
@@ -646,52 +673,64 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
     {
         // Only grab this information if the player is an alive object.
         gCycle *pCycle = dynamic_cast<gCycle *>(p->Object());
-
-        listInfo << " Status: "
-                 << tThemedTextBase.ItemColor()
-                 << (pCycle->Alive() ? "Alive" : "Dead")
-                 << '\n'
-                 << tThemedTextBase.MainColor()
-                 << " Lag: "
-                 << tThemedTextBase.ItemColor()
-                 << int(pCycle->Lag()  * 1000)
-                 << tThemedTextBase.MainColor()
-                 << " ("
-                 << tThemedTextBase.ItemColor()
-                 << pCycle->Lag()
-                 << tThemedTextBase.MainColor()
-                 << ")\n";
-
-        if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
-            listInfo << " Last Death: "
-                     << ItemColor() << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, true)
-                     << "\n";
-        else
-            listInfo << " Alive Time: "
-                     << tThemedTextBase.ItemColor() << st_GetFormatTime(se_GameTime(), true)
-                     << "\n";
-
-        if (pCycle->Alive())
+        if (pCycle)
         {
-            listInfo << tThemedTextBase.MainColor()
-                     << " Position: x: "
-                     << tThemedTextBase.ItemColor() << pCycle->Position().x
-                     << tThemedTextBase.MainColor()
-                     << ", y: "
-                     << tThemedTextBase.ItemColor() << pCycle->Position().y
-                     << tThemedTextBase.MainColor() << "\n"
-                     << " Map Direction: x: "
-                     << tThemedTextBase.ItemColor() << pCycle->Direction().x
-                     << tThemedTextBase.MainColor()
-                     << ", y: "
-                     << tThemedTextBase.ItemColor() << pCycle->Direction().y
-                     << tThemedTextBase.MainColor() << '\n'
-                     << " Speed: "
-                     << tThemedTextBase.ItemColor() << pCycle->verletSpeed_
-                     << tThemedTextBase.MainColor() << '\n'
-                     << " Rubber: "
-                     << tThemedTextBase.ItemColor() << pCycle->GetRubber() << "/" << sg_rubberCycle
-                     << tThemedTextBase.MainColor() << '\n';
+            listInfo << " Status: "
+                    << tThemedTextBase.ItemColor()
+                    << (pCycle->Alive() ? "Alive" : "Dead")
+                    << '\n'
+                    << tThemedTextBase.MainColor()
+                    << " Lag: "
+                    << tThemedTextBase.ItemColor()
+                    << int(pCycle->Lag()  * 1000)
+                    << tThemedTextBase.MainColor()
+                    << " ("
+                    << tThemedTextBase.ItemColor()
+                    << pCycle->Lag()
+                    << tThemedTextBase.MainColor()
+                    << ")\n";
+
+            if (!pCycle->Alive() && pCycle->lastDeathTime > 0)
+                listInfo << " Last Death: "
+                         << ItemColor() << st_GetFormatTime(tSysTimeFloat() - pCycle->lastDeathTime, true)
+                         << "\n";
+            else 
+                listInfo << " Alive Time: "
+                         << tThemedTextBase.ItemColor() << st_GetFormatTime(se_GameTime(), true)
+                         << "\n";
+
+            if (pCycle->Alive())
+            {
+                listInfo << tThemedTextBase.MainColor()
+                         << " Position: x: "
+                         << tThemedTextBase.ItemColor() 
+                         << pCycle->Position().x
+                         << tThemedTextBase.MainColor()
+                         << ", y: "
+                         << tThemedTextBase.ItemColor() 
+                         << pCycle->Position().y
+                         << tThemedTextBase.MainColor() 
+                         << "\n"
+                         << " Map Direction: x: "
+                         << tThemedTextBase.ItemColor() 
+                         << pCycle->Direction().x
+                         << tThemedTextBase.MainColor()
+                         << ", y: "
+                         << tThemedTextBase.ItemColor() 
+                         << pCycle->Direction().y
+                         << tThemedTextBase.MainColor() 
+                         << "\n"
+                         << " Speed: "
+                         << tThemedTextBase.ItemColor() 
+                         << pCycle->verletSpeed_
+                         << tThemedTextBase.MainColor() 
+                         << "\n"
+                         << " Rubber: "
+                         << tThemedTextBase.ItemColor() 
+                         << pCycle->GetRubber() << "/" << sg_rubberCycle
+                         << tThemedTextBase.MainColor() 
+                         << "\n";
+            }
         }
     }
     else if (p->CurrentTeam())
@@ -700,7 +739,8 @@ tColoredString listPlayerInfoCommand::gatherPlayerInfo(ePlayerNetID *p)
                  << tThemedTextBase.ItemColor() << "Dead\n";
 
         listInfo << " Last Death: "
-                    << ItemColor() << st_GetFormatTime(tSysTimeFloat() - p->lastCycleDeathTime, true)
+                    << ItemColor() 
+                    << st_GetFormatTime(tSysTimeFloat() - p->lastCycleDeathTime, true)
                     << "\n";
     }
 
@@ -729,10 +769,20 @@ void RgbCommand::se_outputColorInfo(int index, const tString &name, REAL r, REAL
            << tColoredString::ColorString(r/15, g/15, b/15)
            << name << tThemedTextBase.MainColor()
            << " ("
-           << tThemedTextBase.ItemColor() << r << tThemedTextBase.MainColor() << ", "
-           << tThemedTextBase.ItemColor() << g << tThemedTextBase.MainColor() << ", "
-           << tThemedTextBase.ItemColor() << b << tThemedTextBase.MainColor() << ") "
-           << ColorsCommand::cycleColorPreview(r, g, b) << "\n";
+           << tThemedTextBase.ItemColor() 
+           << r 
+           << tThemedTextBase.MainColor() 
+           << ", "
+           << tThemedTextBase.ItemColor() 
+           << g 
+           << tThemedTextBase.MainColor() 
+           << ", "
+           << tThemedTextBase.ItemColor() 
+           << b 
+           << tThemedTextBase.MainColor() 
+           << ") "
+           << ColorsCommand::cycleColorPreview(r, g, b) 
+           << "\n";
 
     con << output;
 }
@@ -1411,6 +1461,7 @@ bool JoinCommand::execute(tString args)
 
     if (helperConfig::sghuk)
     {
+        gHelperUtility::Debug("JoinCommand", "Removing " + std::to_string(local_p->ID() + 1) + " from se_disableCreateSpecific");
         tString id;
         tRemoveFromList(se_disableCreateSpecific, local_p->ID()+1);
         if (se_disableCreate && local_p->spectate)
@@ -2298,25 +2349,37 @@ bool UpdateCommand::execute(tString args)
 
 REAL EncryptCommand::getEncryptLocaltime()
 {
-    return getCurrentLocalTime().tm_sec;
+    return getCurrentLocalTime().tm_sec + se_encryptCommandOffset;
 }
 
 tString EncryptCommand::GenerateHash(double time)
 {
+    time_t rawTime = ::time(nullptr);
+    struct tm* timeInfo = localtime(&rawTime);
+
+    char dateStr[16]; 
+    strftime(dateStr, sizeof(dateStr), "%m-%d-%Y-%H", timeInfo);
+
     std::stringstream ss;
     ss << time;
 
-    std::hash<std::string> hash_fn;
-    size_t hash_value = hash_fn(ss.str());
+    std::string combined = ss.str() + dateStr + se_encryptCommandHashStr.stdString();
 
-    std::ostringstream os;
-    os << hash_value;
+    uint64_t hash = 14695981039346656037ull; 
+    const uint64_t prime = 1099511628211ull; 
 
-    std::string hash = os.str();
+    for (char c : combined)
+    {
+        hash ^= static_cast<unsigned char>(c);
+        hash *= prime;
+    }
 
-    size_t length = (hash.size() > se_encryptCommandLength) ? se_encryptCommandLength : hash.size();
-    return tString(hash.substr(0, length));
+    std::string hashStr = std::to_string(hash);
+    size_t length = std::min(hashStr.size(), static_cast<size_t>(se_encryptCommandLength));
+    return tString(hashStr.substr(0, length));
 }
+
+
 
 bool EncryptCommand::ValidateHash(tString givenHash, double time)
 {
@@ -2532,14 +2595,11 @@ bool LeaveCommand::execute(tString args)
 
 bool QuitCommand::execute(tString args)
 {
-
     int quitTime = se_quitCommandTime;
     int pos = 0;
 
     if (!args.empty())
         quitTime = atoi(args.ExtractNonBlankSubString(pos));
-
-    st_SaveConfig();
 
     con << CommandLabel()
         << "Quiting game in '" << quitTime << "' seconds...\n";

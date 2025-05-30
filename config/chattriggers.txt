@@ -4,11 +4,10 @@
 //
 $consolidate,$consolidatestatsfunc,-999,0
 $delete,$statsdeletefunc,-999,0
-$$$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR \n/speak 3 All pending messages cleared.),-9999,0
 $$$;$$,$masterfunc,-9999,0
 $notiv;$notev;$viewnotes;!viewnotes;$vnotes;notesv,$viewnotificationslistfunc,-9999,0
 $notes;!notes;$inbox;!inbox;$notis;!notis,$notificationslistfunc,-9999,0
-$note;!note;$notify;!notify;$noti;!noti,$notifyfunc,-9999,0
+$note;!note;$notify;!notify;$notif;$noti;!noti,$notifyfunc,-9999,0
 $sent;!sent;$outbox;!outbox,$sentnotificationslistfunc,-9999,0
 $notificationslistfunc,$notificationslistfunc,-9999,0
 !help;$help,Avail commands !estat (exact stats) - !stats (general stats) - !kd (kills/deaths) - !lb (leaderboard) - !nick (nickname) - !seen - !rgb - !flip - !roll,-9999,0
@@ -37,6 +36,7 @@ $bans;!bans,$exactstatfunc(bans),-9999,0
 !lls;$lls;!lseen;$lseen,$leaderboardfunc(seen),-999,0
 !who;!w;$who;$w,$leaderboardfunc(seen),-999,0
 $lastban,$whatsthefunc(last_time_banned),-999,0
+$ps;$players,$whatsthefunc(players_today),-999,0
 $fastest;$speed,$leaderboardfunc(speed),-9999,0
 !chats;$chats;!chat;$chat,$chatscrollsearchfunc,-999,0
 $deaths,$leaderboardfunc(deaths),-9999,0
@@ -52,11 +52,10 @@ $search;!search,$searchfunc,-9999,0
 !stats;$stats;!stat;$stat,$statsfunc,-9999,0
 !st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
 $show;!show,$hidestatfunc(unprivate),-999,0
-$slap,$unvalidatedsayfunc(/admin slap $p1 0),-9999,0
 #$spec,$unvalidatedsayfunc(/spec),-999,0
 $rjoin,$unvalidatedsayfunc(/join),-999,0
 $specf,$encryptedunvalidatedsayfunc(/speak 3 /spec),-9999,1
-$py;$python;$spec,$unvalidatedsaynoprefixfunc(/console LOAD_LINE /speak 3 Now spectating for 5 minutes.\n/speak 3 /spec\nDELAY_COMMAND 300 /join 3),-9999,1
+$py;$python;$spec,$unvalidatedsaynoprefixfunc(/console LOAD_LINE /speak 3 Now spectating for 5 minutes.\n/spec 3\nDELAY_COMMAND 300 /join 3),-9999,1
 $kill,$encryptedunvalidatedsayfunc(/console CYCLE_TURN thomas 16 LEFT),-9999,0
 $reset;$$$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR playerMessageTask\n/speak 3 All pending messages cleared.),-9999,0
 !s;$s,$statsfunc,-9999,0
@@ -70,6 +69,8 @@ $ah;!ah,$exactstatfunc(ah),-999,0
 !8b;$8b;!8ball;$8ball,Yes;No;Maybe;Ask again later;Definitely;Without a doubt;Cannot predict now;My sources say no;Outlook good;Very doubtful;Signs point to yes;Don't count on it;Reply hazy try again;It is certain;Concentrate and ask again;Outlook not so good;Yes - definitely;Better not tell you now;Most likely;My reply is no,-999,0
 !timer;$timer,$timerfunc,-999,0
 $fps;!fps,$whatsthefunc(fps),-999,0
+$ping,$whatsthefunc(player_ping),-999,0
+$info,$whatsthefunc(player_info),-999,0
 $logs,$logfunc(list),-9999,0    
 $log,$logfunc(store),-9999,0
 $msg,$unvalidatedsayfunc(/msg),-999,0
@@ -101,10 +102,11 @@ $reminder,Reminder - $val1,-9999,1
 #$banned,on it $p1 youre done;youre done for $p1;its over $p1,-9999,1
 $banned,youre banned $p1!!!!!!!!!!!! you really want to test me?;youre banned $p1!!!!!!!!!!!! i could make you disappear!;youre banned $p1!!!!!!!!!!!! you dont know who youre dealing with!;youre banned $p1!!!!!!!!!!!! this can go one of two ways and you wont like the other!;youre banned $p1!!!!!!!!!!!! think carefully about your next move!;youre banned $p1!!!!!!!!!!!! you wont win this fight!;youre banned $p1!!!!!!!!!!!! i have the power to ruin your life!;youre banned $p1!!!!!!!!!!!! youre playing a dangerous game!,-9999,0
 $alreadybanned,$p1 is already banned;we already got $p1;$p1 was banned already,-9999,0
-$died,$unvalidatedsayfunc(/console LOAD_LINE /speak 3 wd \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 gj \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 WD \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 nice 1 \n/rgb random),-3,1
+$died,$unvalidatedsayfunc(/console LOAD_LINE /speak 3 wd \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 gj \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 WD \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 nice 1 \n/rgb random),-5,1
 #$died,wd;gj;WD,0,1
 $diedother,gg;easy;nice try noob,0,1
-$diedbotsui,i did that,-9999,1
+$diedbotsui,i did that,-5,1
+$diedzone,stooopid dz;oh no the dz;noooo i was not ready,0,1
 $math,$numbcalcfunc,-9999,0
 $number,$numbadderfunc,-9999,1
 $enter,hey $p1;hi $p1;hello $p1;o/ $p1;hi $p1!;hia $p1,0,1
@@ -113,8 +115,10 @@ $join,hey all!;heyy all;hi all!;hey;heyy;hi!,0,1
 $left,noo;rip;aw,0,1
 $matchwinner,gg nice $p1;gg wp $p1;gm good one $p1,0,0
 $matchwinnerself,gg;gg wp all;gm,0,0
-$leftspec,welcome to the grid $p1;its time $p1;lets get it $p1,0,1
-$enterspec,the grid needs you $p1;come back $p1;noo come back $p1;$p1 where did you go?;where did $p1 go;where did you go $p1,0,1
+$leftspec,its my time;its on now;you are not ready,0,1
+#$enterspec,what!,0,1
+$leftspecother,welcome to the grid $p1;its time $p1;lets get it $p1,0,1
+$enterspecother,the grid needs you $p1;come back $p1;noo come back $p1;$p1 where did you go?;where did $p1 go;where did you go $p1,0,1
 #$statssaved,Stats saved..,-999,1
 $ragequit,+1 rq for $p1 (left $val1 seconds after death),-9999,0
 
@@ -186,7 +190,7 @@ real,yes,0,0
 how are you,doing pretty well $p1 how about you?;good as always $p1 and you? :d;great $p1!! how about you?,0,0
 worthless,doesnt add up $p1;dont think so;nah;k,0,0
 wdym,um idk?;wdym wdym $p1;what $p1;idk $p1,0,0
-nice;wd;wp;g1;w1,ty,0,0
+nice;wd;wp;g1;w1,ty,1.5,0
 dw,yt,0,0
 u2,u3,0,1
 handle it,I can handle it,0,0

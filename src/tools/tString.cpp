@@ -2537,9 +2537,10 @@ bool tRemoveFromList(tString &list, const tString &item)
         }
         else
         {
-            newList += list.SubStr(pos, foundPos - pos + item.Len());
-            pos = foundPos + item.Len();
+            newList += list.SubStr(pos, foundPos - pos + 1); 
+            pos = foundPos + 1;
         }
+
     }
 
     if (itemRemoved)

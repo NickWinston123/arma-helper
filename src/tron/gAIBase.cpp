@@ -1039,7 +1039,7 @@ public:
     {
         Navigator().UpdatePaths();
         gAINavigator::EvaluationManager manager(Navigator().GetPaths());
-        manager.Evaluate(gAINavigator::SuicideEvaluator(*Parent().Object()), 1);
+        manager.Evaluate(gAINavigator::SurviveEvaluator(*Parent().Object()), 1);
         manager.Reset();
         manager.Evaluate(Evaluator(*Parent().Object(), dir_), 1);
         manager.Evaluate(gAINavigator::SpaceEvaluator(*Parent().Object()), .5);
@@ -1071,8 +1071,8 @@ public:
         gCycle &cycle = *Parent().Object();
         Navigator().UpdatePaths();
         gAINavigator::EvaluationManager manager(Navigator().GetPaths());
-        manager.Evaluate(gAINavigator::SuicideEvaluator(cycle), 1);
-        manager.Evaluate(gAINavigator::SuicideEvaluator(cycle, maxStep), 1);
+        manager.Evaluate(gAINavigator::SurviveEvaluator(cycle), 1);
+        manager.Evaluate(gAINavigator::SurviveEvaluator(cycle, maxStep), 1);
         manager.Evaluate(gAINavigator::TrapEvaluator(cycle), 1);
         manager.Reset();
         manager.Evaluate(gAINavigator::CowardEvaluator(cycle), 5);
@@ -2395,12 +2395,12 @@ void gAIPlayer::RightBeforeDeath(int triesLeft) // is called right before the ve
 
     if (triesLeft <= 0)
     {
-        gAINavigator::SuicideEvaluator::SetEmergency(true);
+        gAINavigator::SurviveEvaluator::SetEmergency(true);
     }
 
     Think(0);
 
-    gAINavigator::SuicideEvaluator::SetEmergency(false);
+    gAINavigator::SurviveEvaluator::SetEmergency(false);
 }
 
 gAIPlayer *sg_watchAI = 0;
@@ -2487,7 +2487,7 @@ void gAIPlayer::CreateNavigator()
     gCycle *cycle = Object();
     if (cycle && !navigator_.get())
     {
-        navigator_.reset(tNEW(gAINavigator(cycle)));
+        navigator_.reset(tNEW(gAINavigator(cycle, sg_navigatorDefaultRange)));
     }
 }
 

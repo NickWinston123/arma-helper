@@ -45,11 +45,6 @@ extern REAL sg_cycleBrakeDeplete;
 extern void sg_RubberValues(ePlayerNetID const *player, REAL speed, REAL &max, REAL &effectiveness);
 extern REAL sg_brakeCycle;
 
-gAINavigator::Settings::Settings()
-    : newWallBlindness(-.1), range(1)
-{
-}
-
 gAINavigator::Wish::Wish(gAINavigator const &idler)
     : turn(0), maxDisadvantage(HUGE)
 {
@@ -225,26 +220,27 @@ gAINavigator::CycleController::~CycleController() {}
 
 void gAINavigator::CycleControllerBasic::Turn(gCycle &cycle, int dir)
 {
-    cycle.lastTurnSysTime = tSysTimeFloat();
-    cycle.Turn(dir);
+    // cycle.lastTurnSysTime = tSysTimeFloat();
+    // cycle.Turn(dir);
+    cycle.ActTurnBot(dir);
 }
 
 void gAINavigator::CycleControllerBasic::Brake(gCycle &cycle, bool brake)
 {
-    cycle.Act(&gCycle::s_brake, brake ? 1 : -1);
+    cycle.ActBot(&gCycle::s_brake, brake ? 1 : -1);
 }
 
 gAINavigator::CycleControllerBasic::~CycleControllerBasic() {}
 
 void gAINavigator::CycleControllerAction::Turn(gCycle &cycle, int dir)
 {
-    cycle.lastTurnSysTime = tSysTimeFloat();
-    cycle.Act(dir > 0 ? &gCycle::se_turnRight : &gCycle::se_turnLeft, 1);
+    // cycle.lastTurnSysTime = tSysTimeFloat();
+    cycle.ActBot(dir > 0 ? &gCycle::se_turnRight : &gCycle::se_turnLeft, 1);
 }
 
 void gAINavigator::CycleControllerAction::Brake(gCycle &cycle, bool brake)
 {
-    cycle.Act(&gCycle::s_brake, brake ? 1 : -1);
+    cycle.ActBot(&gCycle::s_brake, brake ? 1 : -1);
 }
 
 gAINavigator::CycleControllerAction::~CycleControllerAction() {}
@@ -303,7 +299,7 @@ void gAINavigator::Path::Fill(gAINavigator const &navigator, Sensor const &left,
 //!@param controller the controller to use for the execution
 //!@param cycle      the cycle to execute the action
 //!@param maxStep    maximal timestep the caller suggests
-REAL gAINavigator::Path::Take(CycleController &controller, gCycle &cycle, REAL maxStep, REAL turnDelay)
+REAL gAINavigator::Path::Take(CycleController &controller, gCycle &cycle, REAL maxStep)
 {
     if (driveOn > 0)
     {
@@ -325,7 +321,7 @@ REAL gAINavigator::Path::Take(CycleController &controller, gCycle &cycle, REAL m
         if (sg_helperDebug && sg_navigatorDebugShowTurn)
             gHelperUtility::Debug("gAINavigator Turn", std::string("Taking turn: ") + (turn == LEFT ? "LEFT" : "RIGHT"), false);
 
-            
+
         controller.Turn(cycle, turn);
     }
 
@@ -363,13 +359,13 @@ gAINavigator::Path const &gAINavigator::PathGroup::GetPath(int id) const
 //!@param cycle      the cycle to execute the action
 //!@param id         the ID of the path, between 0 and GetPathCount()-1
 //!@param maxStep    maximal timestep the caller suggests
-REAL gAINavigator::PathGroup::TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep, REAL turnDelay)
+REAL gAINavigator::PathGroup::TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep)
 {
     // save plan
     last = GetPath(id);
 
     // execute plan
-    REAL ret = last.Take(controller, cycle, maxStep, turnDelay);
+    REAL ret = last.Take(controller, cycle, maxStep);
 
     // clear all paths
     for (int i = GetPathCount() - 1; i >= 0; --i)
@@ -506,7 +502,7 @@ void gAINavigator::TailChaseEvaluator::Evaluate(gAINavigator::Path const &path, 
 
 //!@param path        the path to evaluate
 //!@param evaluation  place to store the result
-void gAINavigator::SuicideEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
+void gAINavigator::SurviveEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
     REAL speed = cycle_.Speed();
     REAL referenceDistance = speed * timeFrame_;
@@ -531,35 +527,45 @@ void gAINavigator::SuicideEvaluator::Evaluate(Path const &path, PathEvaluation &
     }
 }
 
-bool gAINavigator::SuicideEvaluator::emergency_ = false;
+bool gAINavigator::SurviveEvaluator::emergency_ = false;
 
-void gAINavigator::SuicideEvaluator::SetEmergency(bool emergency)
+void gAINavigator::SurviveEvaluator::SetEmergency(bool emergency)
 {
     emergency_ = emergency;
 }
 
-gAINavigator::SuicideEvaluator::SuicideEvaluator(gCycle &cycle) : cycle_(cycle), timeFrame_(cycle.GetTurnDelay()) 
+gAINavigator::SurviveEvaluator::SurviveEvaluator(gCycle &cycle) : cycle_(cycle), timeFrame_(cycle.GetTurnDelay())
 {
-    this->name = "SuicideEvaluator";
+    this->name = "SurviveEvaluator";
 }
-gAINavigator::SuicideEvaluator::SuicideEvaluator(gCycle &cycle, REAL timeFrame) : cycle_(cycle), timeFrame_(timeFrame) 
+gAINavigator::SurviveEvaluator::SurviveEvaluator(gCycle &cycle, REAL timeFrame) : cycle_(cycle), timeFrame_(timeFrame)
 {
-    this->name = "SuicideEvaluator";
+    this->name = "SurviveEvaluator";
 }
-gAINavigator::SuicideEvaluator::~SuicideEvaluator() {}
+gAINavigator::SurviveEvaluator::~SurviveEvaluator() {}
 
 //!@param path        the path to evaluate
 //!@param evaluation  place to store the result
 void gAINavigator::TrapEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
     if (space_ <= 0)
-    {
         return;
-    }
-    evaluation.score = Adjust(path.distance / space_);
+
+    REAL baseScore = Adjust(path.distance / space_);
+
+    REAL normalizedWidth = path.width / space_;
+    normalizedWidth = tMin(tMax(normalizedWidth, 0.0), 1.0);
+
+    evaluation.score = baseScore * normalizedWidth;
+
     REAL trapLength = cycle_.GetTurnDelay() * cycle_.Speed();
-    if (path.distance < space_ && path.left.owner == path.right.owner && path.left.owner &&
-        (path.immediateDistance < trapLength || (path.left.distance < trapLength && path.right.distance < trapLength) || path.left.owner == &cycle_))
+
+    bool sameOwnerWalls = (path.left.owner == path.right.owner && path.left.owner);
+    bool tightDistance = (path.immediateDistance < trapLength ||
+                          (path.left.distance < trapLength && path.right.distance < trapLength) ||
+                          path.left.owner == &cycle_);
+
+    if (path.distance < space_ && sameOwnerWalls && tightDistance)
     {
         evaluation.veto = true;
     }
@@ -573,7 +579,7 @@ gAINavigator::TrapEvaluator::TrapEvaluator(gCycle &cycle)
 }
 
 gAINavigator::TrapEvaluator::TrapEvaluator(gCycle &cycle, REAL space)
-    : cycle_(cycle), space_(space) 
+    : cycle_(cycle), space_(space)
     {
         this->name = "TrapEvaluator";
     }
@@ -593,20 +599,20 @@ void gAINavigator::RandomEvaluator::Evaluate(Path const &path, PathEvaluation &e
     evaluation.score = (randomizer.Get() * 100) + randomDeviation;
 }
 
-gAINavigator::RandomEvaluator::RandomEvaluator(gCycle &cycle) : cycle_(cycle) 
+gAINavigator::RandomEvaluator::RandomEvaluator(gCycle &cycle) : cycle_(cycle)
 {
     this->name = "RandomEvaluator";
 }
-gAINavigator::RandomEvaluator::~RandomEvaluator() 
+gAINavigator::RandomEvaluator::~RandomEvaluator()
 {
     this->name = "RandomEvaluator";
 }
 
-gAINavigator::CowardEvaluator::CowardEvaluator(gCycle &cycle) : cycle_(cycle) 
+gAINavigator::CowardEvaluator::CowardEvaluator(gCycle &cycle) : cycle_(cycle)
 {
     this->name = "CowardEvaluator";
 }
-gAINavigator::CowardEvaluator::~CowardEvaluator() 
+gAINavigator::CowardEvaluator::~CowardEvaluator()
 {
     this->name = "CowardEvaluator";
 }
@@ -634,7 +640,228 @@ void gAINavigator::CowardEvaluator::Evaluate(Path const &path, PathEvaluation &e
     }
 }
 
-gAINavigator::TunnelEvaluator::TunnelEvaluator(gCycle &cycle) : cycle_(cycle) 
+gAINavigator::AvoidEvaluator::AvoidEvaluator(gCycle &cycle) : cycle_(cycle)
+{
+    this->name = "AvoidEvaluator";
+}
+
+gAINavigator::AvoidEvaluator::~AvoidEvaluator()
+{
+    this->name = "AvoidEvaluator";
+}
+
+void gAINavigator::AvoidEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
+{
+    evaluation.score = 100;
+
+    auto enemyThreatPenalty = [&](gCycle *enemy) -> REAL
+    {
+        if (!enemy || !enemy->Alive() || enemy->Team() == cycle_.Team())
+            return 0;
+
+        eCoord toEnemy = enemy->Position() - cycle_.Position();
+        gHelperSensor sensor(&cycle_, cycle_.Position(), toEnemy);
+        sensor.detect(0.98);
+        if (sensor.hit < 0.95)
+            return 0;
+
+        REAL dist = toEnemy.Norm();
+        if (dist > 15.0)
+            return 0;
+
+        REAL distPenalty = (15.0 - dist) * 3.0;
+
+        bool faster = (enemy->Speed() + enemy->Lag()) > (cycle_.Speed() + cycle_.Lag());
+        if (faster)
+            distPenalty += 10.0;
+
+        return distPenalty;
+    };
+
+    REAL penalty = 0;
+    penalty += enemyThreatPenalty(path.left.owner);
+    penalty += enemyThreatPenalty(path.right.owner);
+
+    evaluation.score -= penalty;
+
+    if (evaluation.score < 0)
+        evaluation.score = 0;
+    else if (evaluation.score > 100)
+        evaluation.score = 100;
+}
+
+
+gAINavigator::FlankEvaluator::FlankEvaluator(gCycle &cycle) : cycle_(cycle)
+{
+    this->name = "FlankEvaluator";
+}
+
+gAINavigator::FlankEvaluator::~FlankEvaluator()
+{
+    this->name = "FlankEvaluator";
+}
+
+void gAINavigator::FlankEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
+{
+    evaluation.score = 50;
+
+    gCycle *enemy = gHelperEnemiesData::getClosestEnemy(&cycle_, sg_smarterBotTeam, sg_smarterBotTeamOwner);
+    if (!enemy || !enemy->Alive())
+        return;
+
+    auto canSeeF = [&](eCoord target, REAL minHit = 0.95) -> bool {
+        eCoord dirTo = target - cycle_.Position();
+        gHelperSensor sensor(&cycle_, cycle_.Position(), dirTo);
+        sensor.detect(0.98);
+        return sensor.hit >= minHit;
+    };
+
+    eCoord toEnemy = enemy->Position() - cycle_.Position();
+    REAL distance = toEnemy.Norm();
+    if (distance > 15.0 || !canSeeF(enemy->Position()))
+        return;
+
+    toEnemy.Normalize();
+    eCoord enemyDir = enemy->Direction();
+    enemyDir.Normalize();
+    REAL awareness = fabs(toEnemy * enemyDir);
+
+    if (awareness < 0.3)
+        evaluation.score += 40;
+    else if (awareness < 0.7)
+        evaluation.score += 20;
+    else
+        evaluation.score -= 20;
+
+    eCoord pathDir = path.shortTermDirection;
+    pathDir.Normalize();
+    REAL heading = toEnemy * pathDir;
+
+    if (heading > 0.7)
+        evaluation.score += 10;
+
+    if (evaluation.score > 100.0)
+        evaluation.score = 100.0;
+    else if (evaluation.score < 0.0)
+        evaluation.score = 0.0;
+}
+
+
+gAINavigator::DistanceFromEnemiesEvaluator::DistanceFromEnemiesEvaluator(gCycle &cycle) : cycle_(cycle)
+{
+    this->name = "DistanceFromEnemiesEvaluator";
+}
+
+gAINavigator::DistanceFromEnemiesEvaluator::~DistanceFromEnemiesEvaluator()
+{
+    this->name = "DistanceFromEnemiesEvaluator";
+}
+
+void gAINavigator::DistanceFromEnemiesEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
+{
+    evaluation.score = 50;
+
+    gCycle *closestEnemy = gHelperEnemiesData::getClosestEnemy(&cycle_, sg_smarterBotTeam, sg_smarterBotTeamOwner);
+    if (!closestEnemy || !closestEnemy->Alive())
+        return;
+
+    eCoord toEnemy = closestEnemy->Position() - cycle_.Position();
+    REAL distance = toEnemy.Norm();
+    if (distance < EPS) return;
+
+    toEnemy.Normalize();
+
+    eCoord pathDir = path.shortTermDirection;
+    pathDir.Normalize();
+
+    REAL alignment = pathDir * toEnemy;
+
+    REAL awayFactor = tMax(0.0, -alignment);
+
+    if (distance < 20.0)
+    {
+        REAL proximityFactor = (20.0 - distance) / 20.0;
+        REAL bonus = 50.0 * awayFactor * proximityFactor;
+        evaluation.score += bonus;
+    }
+
+    if (evaluation.score > 100.0)
+        evaluation.score = 100.0;
+    else if (evaluation.score < 0.0)
+        evaluation.score = 0.0;
+}
+
+
+
+gAINavigator::BehindThreatEvaluator::BehindThreatEvaluator(gCycle &cycle) : cycle_(cycle)
+{
+    this->name = "BehindThreatEvaluator";
+}
+
+gAINavigator::BehindThreatEvaluator::~BehindThreatEvaluator()
+{
+    this->name = "BehindThreatEvaluator";
+}
+
+void gAINavigator::BehindThreatEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
+{
+    evaluation.score = 50;
+
+    gCycle *enemy = gHelperEnemiesData::getClosestEnemy(&cycle_, sg_smarterBotTeam, sg_smarterBotTeamOwner);
+    if (!enemy || !enemy->Alive())
+        return;
+
+    eCoord ourPos = cycle_.Position();
+    eCoord ourDir = cycle_.Direction();
+    REAL ourSpeed = cycle_.Speed();
+
+    eCoord enemyPos = enemy->Position();
+    eCoord enemyDir = enemy->Direction();
+    REAL enemySpeed = enemy->Speed();
+
+    eCoord relEnemyPos = enemyPos - ourPos;
+    relEnemyPos = relEnemyPos.Turn(ourDir.Conj()).Turn(LEFT);
+
+    if (relEnemyPos.x < 0)
+        relEnemyPos.x *= -1;
+
+    bool facingFront = directionsAreClose(enemyDir, ourDir.Turn(LEFT).Turn(LEFT), 0.5);
+
+    if (facingFront)
+        relEnemyPos.y *= -1;
+
+    REAL enemyLag = enemy->Lag();
+    REAL enemydist = enemyLag + sg_helperDetectCutReact * enemySpeed;
+    REAL ourdist = sg_helperDetectCutReact * ourSpeed;
+
+    relEnemyPos.y -= ourdist;
+
+    REAL forward = -relEnemyPos.y + 0.01;
+    if (forward < 0)
+        forward = 0;
+    if (forward > enemydist)
+        forward = enemydist;
+
+    relEnemyPos.y += forward;
+    enemydist -= forward;
+    relEnemyPos.x -= enemydist;
+
+    bool canCutUs = relEnemyPos.y * enemySpeed > relEnemyPos.x * ourSpeed;
+
+    if (canCutUs)
+    {
+        eCoord pathDir = path.shortTermDirection;
+        pathDir.Normalize();
+        eCoord ourDirection = ourDir;
+        ourDirection.Normalize();
+
+        REAL sameDir = pathDir * ourDirection;
+        if (sameDir > 0.9)
+            evaluation.score -= 50;
+    }
+}
+
+gAINavigator::TunnelEvaluator::TunnelEvaluator(gCycle &cycle) : cycle_(cycle)
 {
     this->name = "TunnelEvaluator";
 }
@@ -685,82 +912,45 @@ gAINavigator::SpaceEvaluator::~SpaceEvaluator() {}
 //!@param evaluation  place to store the result
 void gAINavigator::PlanEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
-    evaluation.score = Adjust(path.followedSince / 3.0);
+    if (path.distance > 3.0)
+        evaluation.score = Adjust(path.followedSince / 2.0);
+    else
+        evaluation.score = 0;
+
 }
 
 gAINavigator::PlanEvaluator::~PlanEvaluator() {}
 
-//!@param paths the path group to evaluate
-gAINavigator::EvaluationManager::EvaluationManager(PathGroup &paths)
-    : paths_(paths), bestPath_(-1)
-{
-    // evaluations_.reserve( paths.GetPathCount() );
-    for (int i = 0; i < paths.GetPathCount(); ++i)
-    {
-        // evaluations_.push_back( PathEvaluation() );
-
-        // store preliminary 'best' path
-        // if( paths.GetPath( i ).followedSince )
-        // {
-        // bestPath_ = i;
-        // }
-    }
-}
-
-//! evaluate a path.
-void gAINavigator::RubberEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
-{
-    // rubber that is about to get burned
-    REAL burn = rubberLeft_ - path.immediateDistance;
-    if (burn < 0)
-    {
-        burn = 0;
-    }
-    if (burn > maxRubber_)
-    {
-        burn = maxRubber_;
-    }
-    evaluation.score = (1 - burn / maxRubber_) * 100;
-}
 
 gAINavigator::RubberEvaluator::RubberEvaluator(gCycle &cycle)
+    : cycle_(cycle)
 {
-    Init(cycle, cycle.GetTurnDelay());
     this->name = "RubberEvaluator";
 }
 
-gAINavigator::RubberEvaluator::RubberEvaluator(gCycle &cycle, REAL maxTime)
+gAINavigator::RubberEvaluator::~RubberEvaluator() {}
+
+void gAINavigator::RubberEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
-    Init(cycle, maxTime);
-    this->name = "RubberEvaluator";
+    REAL currentSpeed = cycle_.Speed() + cycle_.Lag();
+    if (currentSpeed < EPS)
+        currentSpeed = EPS;
+
+    REAL expectedBurn = path.immediateDistance;
+
+    REAL grantedRubber, effectiveness;
+    sg_RubberValues(cycle_.Player(), currentSpeed, grantedRubber, effectiveness);
+    REAL rubberAvailable = (grantedRubber - cycle_.GetRubber()) * effectiveness;
+
+    REAL maxBurnable = cycle_.GetTurnDelay() * currentSpeed;
+    REAL rubberLeft = rubberAvailable + maxBurnable;
+
+    REAL burn = rubberLeft - expectedBurn;
+    burn = tMin(tMax(burn, 0.0), maxBurnable);
+
+    evaluation.score = (1.0 - burn / maxBurnable) * 100.0;
 }
 
-gAINavigator::RubberEvaluator::~RubberEvaluator()
-{
-}
-
-void gAINavigator::RubberEvaluator::Init(gCycle &cycle, REAL maxTime)
-{
-    // compensate for the addition of rubber in the stored sensor distances
-    REAL rubberGranted, rubberEffectiveness;
-    REAL speed = (cycle.Speed() + cycle.Lag());
-    sg_RubberValues(cycle.Player(), speed, rubberGranted, rubberEffectiveness);
-    REAL rubberLeft = (rubberGranted - cycle.GetRubber()) * rubberEffectiveness;
-    maxRubber_ = maxTime * speed;
-
-    // account for inevitable loss
-    rubberLeft_ = rubberLeft + maxRubber_;
-
-    if (maxRubber_ > rubberLeft)
-    {
-        maxRubber_ = rubberLeft;
-    }
-
-    if (maxRubber_ < EPS)
-    {
-        maxRubber_ = EPS;
-    }
-}
 
 void gAINavigator::FollowEvaluator::followTail()
 {
@@ -778,10 +968,12 @@ gAINavigator::FollowEvaluator::FollowEvaluator(gCycle &cycle)
     : cycle_(cycle), blocker_(0), blockedBySelf_(false)
 {
     this->name = "FollowEvaluator";
-    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle);
+}
 
-    if (!local_p)
-        return;
+void gAINavigator::FollowEvaluator::SolveTurnLogic()
+{
+    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
+    if (!local_p) return;
 
     if (local_p->sg_smarterBotFollowTail)
     {
@@ -789,33 +981,18 @@ gAINavigator::FollowEvaluator::FollowEvaluator(gCycle &cycle)
         return;
     }
 
-    bool foundZoneTarget = false;
-    bool foundDesiredTarget = false;
-    bool foundTeamTarget = false;
+    if (local_p->sg_smarterBotFollowFindZone && targetZone())
+        return;
 
-    if (local_p->sg_smarterBotFollowFindZone)
-    {
-        foundZoneTarget = targetZone();
-    }
+    if (local_p->sg_smarterBotFollowFindTarget && !local_p->sg_smarterBotFollowTarget.empty() && SetDesiredTarget(local_p->sg_smarterBotFollowTarget))
+        return;
 
-    if (!foundZoneTarget)
-    {
-        if (local_p->sg_smarterBotFollowFindTarget && !local_p->sg_smarterBotFollowTarget.empty())
-        {
-            foundDesiredTarget = SetDesiredTarget(local_p->sg_smarterBotFollowTarget);
-        }
-    }
+    if (!local_p->sg_smarterBotFollowTargetTeamList.empty() && FindTeamTarget())
+        return;
 
-    if (!local_p->sg_smarterBotFollowTargetTeamList.empty())
-    {
-        foundTeamTarget = FindTeamTarget();
-    }
-
-    if (!foundDesiredTarget && !foundZoneTarget && !foundTeamTarget)
-    {
-        FindTarget();
-    }
+    FindTarget();
 }
+
 
 gAINavigator::FollowEvaluator::~FollowEvaluator()
 {
@@ -1027,7 +1204,7 @@ void gAINavigator::FollowEvaluator::SetTarget(eGameObject *object)
     // smoothedDirection = smoothedDirection * dampeningFactor + desiredDirection * (1 - dampeningFactor);
     smoothedDirection = object->Direction();
     SetTarget(object->Position(),
-              smoothedDirection * (object->Speed())); // + object->Lag()
+              smoothedDirection * (object->Speed() + object->Lag())); // + object->Lag()
 }
 
 static const int MAX_SEARCH_DEPTH = 3;
@@ -1188,20 +1365,89 @@ void gAINavigator::FollowEvaluator::SetTarget(eCoord const &target, eCoord const
 
 void gAINavigator::FollowEvaluator::Evaluate(gAINavigator::Path const &path, gAINavigator::PathEvaluation &evaluation) const
 {
-    if (toTarget_ == eCoord(0, 0))
+    ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle_);
+    if (!local_p)
     {
         evaluation.score = -100;
         return;
     }
 
-    eCoord pathDir = path.shortTermDirection;
-    REAL f = eCoord::F(toTarget_, pathDir);
-    if (f > 0 && f * f > .5 * pathDir.NormSquared())
+    eCoord targetVec;
+    bool found = false;
+
+    if (local_p->sg_smarterBotFollowTail && cycle_.tailMoving)
     {
-        evaluation.nextThought = turnTime_;
+        targetVec = cycle_.tailPos - cycle_.Position();
+        found = true;
+    }
+    else if (local_p->sg_smarterBotFollowFindZone)
+    {
+        gZone *zone = gZoneHelper::findClosestZone(&cycle_);
+        if (zone && !zone->isInside(&cycle_))
+        {
+            targetVec = zone->Position() - cycle_.Position();
+            found = true;
+        }
+    }
+    else if (local_p->sg_smarterBotFollowFindTarget && !local_p->sg_smarterBotFollowTarget.empty())
+    {
+        ePlayerNetID *player = ePlayerNetID::FindPlayerByName(local_p->sg_smarterBotFollowTarget, nullptr, false);
+        if (player && player->Object())
+        {
+            gCycle *target = dynamic_cast<gCycle *>(player->Object());
+            if (target)
+            {
+                targetVec = target->Position() - cycle_.Position();
+                found = true;
+            }
+        }
+    }
+    else
+    {
+        gCycle *target = gHelperEnemiesData::getClosestEnemy(&cycle_, sg_smarterBotTeam, sg_smarterBotTeamOwner);
+        if (target)
+        {
+            REAL predictionDistance = (target->Speed() + target->Lag()) * local_p->sg_smarterBotFollowPredictionTime;
+            eCoord predicted = target->Position() + target->Direction() * predictionDistance;
+
+            targetVec = predicted - cycle_.Position();
+            found = true;
+        }
     }
 
-    evaluation.score = 50 * f + 50;
+    if (!found)
+    {
+        evaluation.score = -100;
+        return;
+    }
+
+    targetVec.Normalize();
+
+    auto canSeeF = [&](eCoord target, REAL minHit = 0.95) -> bool
+    {
+        eCoord dirTo = target - cycle_.Position();
+        gHelperSensor sensor(&cycle_, cycle_.Position(), dirTo);
+        sensor.detect(0.98);
+        return sensor.hit >= minHit;
+    };
+
+    eCoord pathDir = path.shortTermDirection;
+    pathDir.Normalize();
+
+    REAL f = eCoord::F(targetVec, pathDir);
+    REAL score = 50 * f + 50;
+
+    if (f > 0 && f * f > 0.5 * pathDir.NormSquared())
+        evaluation.nextThought = turnTime_;
+
+    if (path.width < 1.5 && f > 0.8)
+        score -= 40;
+
+    eCoord projected = cycle_.Position() + path.shortTermDirection * 8.0;
+    if (!canSeeF(projected, 0.8))
+        score -= 25;
+
+    evaluation.score = tMin(tMax(score, 0.0), 100.0);
 }
 
 //!@param evaluator  evaluator doing the core work
@@ -1211,10 +1457,9 @@ void gAINavigator::EvaluationManager::Evaluate(PathEvaluator const &evaluator, B
     REAL bestScore = -HUGE;
     REAL bestDistance = HUGE;
 
-
     for (int i = paths_.GetPathCount() - 1; i >= 0; --i)
     {
-        PathEvaluation &store = evaluations_[i]; 
+        PathEvaluation &store = evaluations_[i];
 
         if (store.veto)
         {
@@ -1231,7 +1476,7 @@ void gAINavigator::EvaluationManager::Evaluate(PathEvaluator const &evaluator, B
         evaluation.score = evaluation.score * scale + offset;
         REAL previousScore = store.score;
         REAL delta = 0;
-        
+
         // update stored evaluation
         switch (mode)
         {
@@ -1258,9 +1503,9 @@ void gAINavigator::EvaluationManager::Evaluate(PathEvaluator const &evaluator, B
             }
             break;
         }
-        
+
         if (delta > 0)
-            store.contributionMap[evaluator.name] += delta;        
+            store.contributionMap[evaluator.name] += delta;
 
         if (evaluation.nextThought < store.nextThought)
         {
@@ -1279,30 +1524,48 @@ void gAINavigator::EvaluationManager::Evaluate(PathEvaluator const &evaluator, B
         }
     }
 
-    //     if( bestPath_ < 0 )
-    //     {
-    //         // ePlayer *local_p = ePlayer::gCycleToLocalPlayer(&cycle);
-    // #ifdef DEBUG
-    //         con << "PANIC!\n";
-    // #endif
+    if( sg_navigatorForcePathIfNoBestPath && bestPath_ < 0 )
+    {
+#ifdef DEBUG
+        con << "PANIC!\n";
+#endif
 
-    //         // PANIC. No path ever was not vetoed. Oh well. Take the best anyway and be done.
-    //         for( int i = paths_.GetPathCount()-1; i >= 0 ; --i )
-    //         {
-    //             PathEvaluation & store = evaluations_[i];
-    //             Path const & path = paths_.GetPath(i);
-    //             if ( bestPath_ < 0 || store.score > bestScore || ( store.score == bestScore && path.distance < bestDistance ) )
-    //             {
-    //                 bestPath_ = i;
-    //                 bestScore = store.score;
-    //                 bestDistance = path.distance;
-    //             }
-    //         }
-    //     }
+        // PANIC. No path ever was not vetoed. Oh well. Take the best anyway and be done.
+        for( int i = paths_.GetPathCount()-1; i >= 0 ; --i )
+        {
+            PathEvaluation & store = evaluations_[i];
+            Path const & path = paths_.GetPath(i);
+            if ( bestPath_ < 0 || store.score > bestScore || ( store.score == bestScore && path.distance < bestDistance ) )
+            {
+                bestPath_ = i;
+                bestScore = store.score;
+                bestDistance = path.distance;
+            }
+        }
+    }
 }
 
+
+//!@param paths the path group to evaluate
+gAINavigator::EvaluationManager::EvaluationManager(PathGroup &paths)
+    : paths_(paths), bestPath_(-1)
+{
+    // evaluations_.reserve( paths.GetPathCount() );
+    for (int i = 0; i < paths.GetPathCount(); ++i)
+    {
+        // evaluations_.push_back( PathEvaluation() );
+
+        // store preliminary 'best' path
+        // if( paths.GetPath( i ).followedSince )
+        // {
+        // bestPath_ = i;
+        // }
+    }
+}
+
+
 //! used to separate two batches of evaluation. The first batch is used purely
-//! to check each path for unfavorable conditions and veto certain paths. 
+//! to check each path for unfavorable conditions and veto certain paths.
 //! reset scores, but don't forget veto
 void gAINavigator::EvaluationManager::Reset()
 {
@@ -1315,7 +1578,7 @@ void gAINavigator::EvaluationManager::Reset()
 //!@param controller   controller issuing the commands
 //!@param cycle        cycle getting controlled
 //!@param maxStep      suggestion for next timestep
-REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle &cycle, REAL maxStep, REAL turnDelay)
+REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle &cycle, REAL maxStep)
 {
     if (bestPath_ >= 0)
     {
@@ -1325,12 +1588,12 @@ REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle
         {
             std::vector<std::pair<std::string, REAL>> sortedContribs(
                 chosenEval.contributionMap.begin(), chosenEval.contributionMap.end());
-        
+
             std::sort(sortedContribs.begin(), sortedContribs.end(),
                       [](const auto& a, const auto& b) {
-                          return b.second < a.second; 
+                          return b.second < a.second;
                       });
-        
+
             std::ostringstream contribs;
             bool first = true;
             for (const auto& [name, score] : sortedContribs)
@@ -1338,13 +1601,13 @@ REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle
                 if (!first)
                     contribs << ", ";
                 first = false;
-        
+
                 contribs << name;
                 if (sg_navigatorDebugTrackEvaluationShowScore)
                 {
                     contribs << " (";
                     if (score < 0.1)
-                        contribs << score; 
+                        contribs << score;
                     else if (score < 1.0)
                         contribs << std::fixed << std::setprecision(2) << score;
                     else if (score < 10.0)
@@ -1356,15 +1619,15 @@ REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle
             }
             controller.contributionStr = contribs.str();
             if (sg_helperDebug)
-                gHelperUtility::Debug("gAINavigator Finish", "Contributing evaluators: " + contribs.str());
-        }        
+                gHelperUtility::Debug("EvaluationManagerFinish", "Contributing evaluators: " + contribs.str());
+        }
 
         REAL thisMaxStep = chosenEval.nextThought;
         if (maxStep > thisMaxStep)
         {
             maxStep = thisMaxStep;
         }
-        return paths_.TakePath(controller, cycle, bestPath_, maxStep, turnDelay);
+        return paths_.TakePath(controller, cycle, bestPath_, maxStep);
     }
     else
     {
@@ -1372,10 +1635,9 @@ REAL gAINavigator::EvaluationManager::Finish(CycleController &controller, gCycle
     }
 }
 
-gAINavigator::gAINavigator(gCycle *owner)
-    : lastTurn_(0), nextTurn_(0), turnedRecently_(0), owner_(owner)
-{
-}
+gAINavigator::gAINavigator(gCycle *owner, REAL &rangeRef)
+        : lastTurn_(0), nextTurn_(0), turnedRecently_(0), owner_(owner), settings_(rangeRef)
+    {}
 
 gAINavigator::WallHug::WallHug()
     : owner(NULL), lastTimeSeen(0), distance(HUGE), lr(0)
@@ -1831,6 +2093,7 @@ void displayTurnAct(uActionPlayer *action, int numberOfTurns, std::string reason
 //! does the main thinking at the current time, knowing the next thought can't be sooner than minstep
 REAL gAINavigator::Activate(REAL currentTime, REAL minstep, REAL penalty, Wish *wish)
 {
+    con << "gAINavigator::Activate\n";
     REAL lookahead = settings_.range; // seconds to plan ahead
 
     // cylce data
@@ -1838,7 +2101,9 @@ REAL gAINavigator::Activate(REAL currentTime, REAL minstep, REAL penalty, Wish *
     eCoord dir = owner_->Direction();
     eCoord pos = owner_->Position();
 
-    REAL range = speed * lookahead;
+    REAL lagComp = owner_->Lag();
+    REAL adjustedSpeed = speed + lagComp;
+    REAL range = adjustedSpeed * lookahead;
     eCoord scanDir = dir * range;
 
     REAL frontFactor = .5;
@@ -1880,6 +2145,7 @@ REAL gAINavigator::Activate(REAL currentTime, REAL minstep, REAL penalty, Wish *
         REAL leftOpen = Distance(forwardLeft, backwardLeft);
         REAL rightOpen = Distance(forwardRight, backwardRight);
         REAL rearOpen = Distance(backwardLeft, backwardRight);
+
 
         Sensor self(*this, pos, scanDir.Turn(-1, 0));
         // fake entries
@@ -2184,26 +2450,47 @@ REAL gAINavigator::Activate(REAL currentTime, REAL minstep, REAL penalty, Wish *
     return minTime;
 }
 
-gAINavigator::SpeedEvaluator::SpeedEvaluator(gCycle &cycle) : cycle_(cycle) {}
+gAINavigator::SpeedEvaluator::SpeedEvaluator(gCycle &cycle) : cycle_(cycle)
+{
+    this->name = "SpeedEvaluator";
+}
 
-gAINavigator::SpeedEvaluator::~SpeedEvaluator() {}
+gAINavigator::SpeedEvaluator::~SpeedEvaluator()
+{
+    this->name = "SpeedEvaluator";
+}
 
 void gAINavigator::SpeedEvaluator::Evaluate(Path const &path, PathEvaluation &evaluation) const
 {
     evaluation.score = 0;
-    if (path.left.owner || path.right.owner)
-    {
-        bool closeFactor = cycle_.Speed() * 0.5;
-        // bool isClose = gHelperUtility(cycle_,enemy,)
-        {
-            if (path.left.owner && path.left.owner->Alive() && path.left.owner->Speed() < cycle_.Speed()) // && !onOurTeam(cycle_, path.left.owner)
-            {
-                evaluation.score = 100;
-            }
-            if (path.right.owner && path.right.owner->Alive() && path.right.owner->Speed() < cycle_.Speed())
-            {
-                evaluation.score = 100;
-            }
-        }
-    }
+
+    eCoord pathDir = path.shortTermDirection;
+    pathDir.Normalize();
+
+    REAL widthBonus = tMin(tMax(path.width * 6.0, 0.0), 60.0);
+    evaluation.score += widthBonus;
+
+    if (path.distance > 25)
+        evaluation.score += 10;
+    else if (path.distance > 15)
+        evaluation.score += 5;
+
+    if (path.followedSince >= 3)
+        evaluation.score += 10;
+
+    eCoord forward = cycle_.Direction();
+    forward.Normalize();
+    REAL alignment = forward * pathDir;
+    if (alignment > 0.95)
+        evaluation.score += 10;
+    else if (alignment > 0.85)
+        evaluation.score += 5;
+
+    gHelperSensor sensor(&cycle_, cycle_.Position(), pathDir);
+    sensor.detect(0.98);
+    if (sensor.hit >= 0.95)
+        evaluation.score += 10;
+
+    if (evaluation.score > 100.0)
+        evaluation.score = 100.0;
 }

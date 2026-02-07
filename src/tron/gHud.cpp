@@ -435,6 +435,12 @@ static void display_hud_subby(ePlayer *player)
 
                             if (stats.thisSession().fastest_speed < currentPlayerSpeed)
                                 stats.thisSession().fastest_speed = currentPlayerSpeed;
+
+                            if (stats.slowest_speed > currentPlayerSpeed)
+                                stats.slowest_speed = currentPlayerSpeed;
+
+                            if (stats.thisSession().slowest_speed > currentPlayerSpeed)
+                                stats.thisSession().slowest_speed = currentPlayerSpeed;
                         }
 
 

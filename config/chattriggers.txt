@@ -5,71 +5,85 @@
 $consolidate,$consolidatestatsfunc,-999,0
 $delete,$statsdeletefunc,-999,0
 $$$;$$,$masterfunc,-9999,0
+!chats;$chats;!chat;$chat,$chatscrollsearchfunc,-999,0
 $notiv;$notev;$viewnotes;!viewnotes;$vnotes;notesv,$viewnotificationslistfunc,-9999,0
 $notes;!notes;$inbox;!inbox;$notis;!notis,$notificationslistfunc,-9999,0
-$note;!note;$notify;!notify;$notif;$noti;!noti,$notifyfunc,-9999,0
+$note;!note;$notify;!notify;$notice;$notif;$noti;!noti,$notifyfunc,-9999,0
 $sent;!sent;$outbox;!outbox,$sentnotificationslistfunc,-9999,0
+$score;$scores,$whatsthefunc(player_score),-999,0
+$lag;!lag,$whatsthefunc(player_ping),-999,0
 $notificationslistfunc,$notificationslistfunc,-9999,0
 !help;$help,Avail commands !estat (exact stats) - !stats (general stats) - !kd (kills/deaths) - !lb (leaderboard) - !nick (nickname) - !seen - !rgb - !flip - !roll,-9999,0
-!estat;$estat;!es;$es,$exactstatfunc,-9999,0
+!estatn;$estatn;!esn;$esn,$exactstatfunc(now),-9999,0
+!estatt;$estatt;!est;$est,$exactstatfunc(today),-9999,0
+!estat;$estat;!es;$es,$exactstatfunc(total),-9999,0
 $nameh;!nameh,$namehistorytrackerfunc,-9999,0
-!names;$names,$exactstatfunc(name_history),-999,0
-!pt;$pt;$playt;!playt,$exactstatfunc(play_time),-999,0
-!cks;$cks;!ks;$ks;$killsteak;!killsteak,$leaderboardfunc(kill_streak),-999,0
-!lhks;$lhks;!lmks;$lmks,$leaderboardfunc(max_kill_streak),-999,0
-!hks;$hks;!mks;$mks;$maxkillsteak;!maxkills;!maxkillsteak;$maxkills,$exactstatfunc(max_kill_streak),-999,0
+!names;$names,$exactstatfunc(total name_history),-999,0
+!pt;$pt;$playt;!playt,$exactstatfunc(total play_time),-999,0
+!cks;$cks;!ks;$ks;$killsteak;!killsteak,$leaderboardfunc(all kill_streak),-999,0
+!lhks;$lhks;!lmks;$lmks,$leaderboardfunc(all max_kill_streak),-999,0
+!hks;$hks;!mks;$mks;$maxkillsteak;!maxkills;!maxkillsteak;$maxkills,$exactstatfunc(total max_kill_streak),-999,0
 !dice;$dice;!ro;$ro;!roll;$roll,1;2;3;4;5;6;7;8;9;10,0,0
 !flip;$flip,heads;tails,0,0
-$lbans;!lbans,$leaderboardfunc(bans),-9999,0
-!kills;$kills,$exactstatfunc(kills),-999,0
-!leaderboard;!lb;$lb;$leaderboard,$leaderboardfunc,-9999,0
+$lbans;!lbans,$leaderboardfunc(all bans),-9999,0
+!kills;$kills,$exactstatfunc(total kills),-999,0
+!leaderboardnow;!lbn;$lbn;$leaderboardn,$leaderboardfunc(now),-9999,0
+!leaderboardhere;!lbh;$lbh;$leaderboardh,$leaderboardfunc(here),-9999,0
+!leaderboardtoday;!lbt;$lbt;$leaderboardt,$leaderboardfunc(today),-9999,0
+!leaderboard;!lb;$lb;$leaderboard,$leaderboardfunc(all),-9999,0
+!kdtoday;$kdtoday;!kdt;$kdt,$KDfunc(today),-9999,0
 !kdnow;$kdnow;!kdn;$kdn,$KDfunc(now),-9999,0
 !kd;$kd,$KDfunc(total),-9999,0
-!nicknames;$nicknames;!nicks;$nicks,$leaderboardfunc(nick),-9999,0
+!nicknames;$nicknames;!nicks;$nicks,$leaderboardfunc(all nick),-9999,0
 !nick;$nick,$nicknamefunc,-9999,0
-!rqs;$rqs,$leaderboardfunc(rq),-999,0
-!rq;$rq,$exactstatfunc(rq),-999,0
+!rqs;$rqs,$leaderboardfunc(all rq),-999,0
+!rq;$rq,$exactstatfunc(total rq),-999,0
 !rev;$rev,$revfunc,-9999,0
 $reminds;$reminders,$reminderlistfunc,-9999,0
 $reminder;$remind,$reminderfunc,-9999,0
-$bans;!bans,$exactstatfunc(bans),-9999,0
-!lls;$lls;!lseen;$lseen,$leaderboardfunc(seen),-999,0
-!who;!w;$who;$w,$leaderboardfunc(seen),-999,0
+$bans;!bans,$exactstatfunc(total bans),-9999,0
+!lls;$lls;!lseen;$lseen,$leaderboardfunc(all seen),-999,0
+!who;!w;$who;$w,$leaderboardfunc(all seen),-999,0
 $lastban,$whatsthefunc(last_time_banned),-999,0
 $ps;$players,$whatsthefunc(players_today),-999,0
-$fastest;$speed,$leaderboardfunc(speed),-9999,0
-!chats;$chats;!chat;$chat,$chatscrollsearchfunc,-999,0
-$deaths,$leaderboardfunc(deaths),-9999,0
-$seen;!seen;$ls;!ls;$lastseen;!lastseen,$exactstatfunc(seen),-999,0
-$active;!active;$la;!la;$lastactive;!lastactive,$exactstatfunc(last_active),-999,0
-$lkillswhiledead;$lkwd;!lkillswhiledead;!lkwd,$leaderboardfunc(kills_while_dead),-999,0
-$killswhiledead;$kwd;!killswhiledead;!kwd,$exactstatfunc(kills_while_dead),-999,0
-$lpt;!lpt;$lplayt;!lplayt,$leaderboardfunc(play_time),-999,0
-$bsd;$color;!color;$rgb;!rgb,$exactstatfunc(rgb),-999,0
-$timesjoined;!timesjoined;$tj;!tj,$exactstatfunc(times_joined),-999,0
-$ltimesjoined;!ltimesjoined;$ltj;!ltj,$leaderboardfunc(times_joined),-999,0
+$speed,$exactstatfunc(total speed),-9999,0
+$slowest;$lslow,$leaderboardfunc(all slowest_speed),-9999,0
+$slow,$exactstatfunc(total slowest_speed),-9999,0
+$fast,$exactstatfunc(total speed),-9999,0
+$fastest;$lspeed,$leaderboardfunc(all speed),-9999,0
+$pings;$lpingn,$leaderboardfunc(all ping),-999,0
+$pings;$lpingn,$leaderboardfunc(now ping),-999,0
+$ping,$exactstatfunc(total ping),-999,0
+$deaths,$leaderboardfunc(all deaths),-9999,0
+$seen;!seen;$ls;!ls;$lastseen;!lastseen,$exactstatfunc(total seen),-999,0
+$active;!active;$la;!la;$lastactive;!lastactive,$exactstatfunc(total last_active),-999,0
+$lkillswhiledead;$lkwd;!lkillswhiledead;!lkwd,$leaderboardfunc(all kills_while_dead),-999,0
+$killswhiledead;$kwd;!killswhiledead;!kwd,$exactstatfunc(total kills_while_dead),-999,0
+$lpt;!lpt;$lplayt;!lplayt,$leaderboardfunc(all play_time),-999,0
+$bsd;$color;!color;$rgb;!rgb,$exactstatfunc(total rgb),-999,0
+$timesjoined;!timesjoined;$tj;!tj,$exactstatfunc(total times_joined),-999,0
+$ltimesjoined;!ltimesjoined;$ltj;!ltj,$leaderboardfunc(all times_joined),-999,0
 $search;!search,$searchfunc,-9999,0
 !stats;$stats;!stat;$stat,$statsfunc,-9999,0
-!st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
+!st;$st;$spect;!spect,$exactstatfunc(total spec_time),-999,0
 $show;!show,$hidestatfunc(unprivate),-999,0
-#$spec,$unvalidatedsayfunc(/spec),-999,0
-$rjoin,$unvalidatedsayfunc(/join),-999,0
-$specf,$encryptedunvalidatedsayfunc(/speak 3 /spec),-9999,1
-$py;$python;$spec,$unvalidatedsaynoprefixfunc(/console LOAD_LINE /speak 3 Now spectating for 5 minutes.\n/spec 3\nDELAY_COMMAND 300 /join 3),-9999,1
+#$spec,$unvalidatedsayfunc(/spec),-999,0z
+$rjoin,$unvalidatedsaynoprefixfunc(/join),-999,0
+$specf,$unvalidatedsaynoprefixfunc(/speak 3 /spec),-9999,1
+$py;$python;$spec,$unvalidatedsaynoprefixfunc(/console LOAD_LINE /speak 3 $p1: Now spectating for 3 seconds.\n/spec 3\nDELAY_COMMAND 3 /join 3\nDELAY_COMMAND 3.2 /join 3),-9999,1
 $kill,$encryptedunvalidatedsayfunc(/console CYCLE_TURN thomas 16 LEFT),-9999,0
 $reset;$$$reset,$encryptedunvalidatedsayfunc(/console LOAD_LINE TASK_SCHEDULER_CLEAR playerMessageTask\n/speak 3 All pending messages cleared.),-9999,0
 !s;$s,$statsfunc,-9999,0
-!st;$st;$spect;!spect,$exactstatfunc(spec_time),-999,0
-!hn;!hidden;$hn;$hidden,$exactstatfunc(hide),-999,0
+!st;$st;$spect;!spect,$exactstatfunc(total spec_time),-999,0
+!hn;!hidden;$hn;$hidden,$exactstatfunc(total hide),-999,0
 $pr;!pr;!hide;$hide;$h ;!h ,$hidestatfunc(private),-999,0
 !uh;$uh;!upr;$upr;!unhide;$unhide,$hidestatfunc(unprivate),-999,0
 $rebuild,$unvalidatedsayfunc(/rebuild),-999,0
 $me,$unvalidatedsayfunc(/me),-999,0
-$ah;!ah,$exactstatfunc(ah),-999,0
+$ah;!ah,$exactstatfunc(total ah),-999,0
 !8b;$8b;!8ball;$8ball,Yes;No;Maybe;Ask again later;Definitely;Without a doubt;Cannot predict now;My sources say no;Outlook good;Very doubtful;Signs point to yes;Don't count on it;Reply hazy try again;It is certain;Concentrate and ask again;Outlook not so good;Yes - definitely;Better not tell you now;Most likely;My reply is no,-999,0
 !timer;$timer,$timerfunc,-999,0
 $fps;!fps,$whatsthefunc(fps),-999,0
-$ping,$whatsthefunc(player_ping),-999,0
 $info,$whatsthefunc(player_info),-999,0
 $logs,$logfunc(list),-9999,0    
 $log,$logfunc(store),-9999,0
@@ -83,9 +97,14 @@ $evalweight,$whatsthefunc(automator_weights),-999,0
 $evalscore,$whatsthefunc(automator_score),-999,1
 $eval,$whatsthefunc(smarter_bot_contribution),-999,0
 $ip,$whatsthefunc(ip_address),-999,0
+!!reset,$unvalidatedsaynoprefixfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* reset_history),-9999,1
 $params,$encryptedunvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params ),-9999,0
 $ai,$unvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params toggle_process_player $p2),-9999,1
 $addai,$encryptedunvalidatedsayfunc(/console CHAT_LOG_NO_DATA_INPUT *==settingchange==* params toggle_process_player ),-9999,0
+
+$pcount,$whatsthefunc(player_count),-9999,0
+$f;far,$numbcalcfunc(32+1.8*)f,-9999,0
+$c;$cel,$numbcalcfunc(-32/1.8+0.555555555555*)c,-9999,0
 
 $,$sayfunc,-9999,0
 >,$sayoutloudfunc,-999,0
@@ -94,6 +113,7 @@ $,$sayfunc,-9999,0
 // Events
 //
 $bannedaction,Ban detected.. Reason: $val1,-99999,1
+$lagspikedetected,$p1: Lag detected - $val1,-99999,1
 $automatorweightchange,Applied new weights: $val1,-99999,1
 $automatorweightscore,Last score evaluation: $val1,-9999,1
 $reminder,Reminder - $val1,-9999,1
@@ -102,7 +122,7 @@ $reminder,Reminder - $val1,-9999,1
 #$banned,on it $p1 youre done;youre done for $p1;its over $p1,-9999,1
 $banned,youre banned $p1!!!!!!!!!!!! you really want to test me?;youre banned $p1!!!!!!!!!!!! i could make you disappear!;youre banned $p1!!!!!!!!!!!! you dont know who youre dealing with!;youre banned $p1!!!!!!!!!!!! this can go one of two ways and you wont like the other!;youre banned $p1!!!!!!!!!!!! think carefully about your next move!;youre banned $p1!!!!!!!!!!!! you wont win this fight!;youre banned $p1!!!!!!!!!!!! i have the power to ruin your life!;youre banned $p1!!!!!!!!!!!! youre playing a dangerous game!,-9999,0
 $alreadybanned,$p1 is already banned;we already got $p1;$p1 was banned already,-9999,0
-$died,$unvalidatedsayfunc(/console LOAD_LINE /speak 3 wd \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 gj \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 WD \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 nice 1 \n/rgb random),-5,1
+$died,$unvalidatedsayfunc(/console LOAD_LINE /speak 3 wd \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 gj \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 WD \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 nice 1 \n/rgb random);$unvalidatedsayfunc(/console LOAD_LINE /speak 3 nice \n/rgb random),-5,1
 #$died,wd;gj;WD,0,1
 $diedother,gg;easy;nice try noob,0,1
 $diedbotsui,i did that,-5,1
@@ -128,7 +148,7 @@ $ragequit,+1 rq for $p1 (left $val1 seconds after death),-9999,0
 bans today,$whatsthefunc(times_banned_today),-999,0
 times ban,$whatsthefunc(times_banned),-999,0
 ban time;last ban;time ban,$whatsthefunc(last_time_banned),-999,0
-the time,where i am its $whatsthefunc(time) $p1;$whatsthefunc(time) here $p1;currently $whatsthefunc(time) here $p1,-999,0
+the time,where i am its $whatsthefunc(current_time) $p1;$whatsthefunc(current_time) here $p1;currently $whatsthefunc(current_time) here $p1,-999,0
 game time,game time is $whatsthefunc(game_time);currently $whatsthefunc(game_time) $p1;$whatsthefunc(game_time) is the game time $p1,-999,0
 current server,$whatsthefunc(current_server),-999,0
 srvr,$whatsthefunc(current_server),-999,0
@@ -180,7 +200,7 @@ $p0 train,yes,0,0
 meet,yeah i will be there;im coming;lets go,0,0
 see ya;bb ;g2g ;cu ;gtg ;cya ;bbl ,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu later $p1!,0,0
 bb;g2g;cu;gtg;cya;bbl,bye $p1 ggs!;bye $p1! ggs;bye $p1 ggs!;cu $p1! ggs!;bye cu later $p1!,0,1
- gn;gn ; good night,good night!!,0,0
+# gn;gn ; good night,good night!!,0,0
 gn; good night,good night!!,0,1
 gm;gz;ghz;gg,gg;GG,0,1
 gang,gang fr $p1;gang gang;yeah gang,0,0

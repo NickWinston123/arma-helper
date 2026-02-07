@@ -1408,6 +1408,9 @@ bool uMenu::Message(const tOutput& message, const tOutput& interpretation, REAL 
     con << interpretation << '\n';
 #else
 
+    if (to < 0)
+        return true;
+        
     // reload textures (just in case)
     rITexture::UnloadAll();
 

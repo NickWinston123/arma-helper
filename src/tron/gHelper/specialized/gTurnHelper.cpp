@@ -826,7 +826,7 @@ gTurnData &gTurnHelper::getTurn()
 
 gTurnHelper::gTurnHelper(gHelper &helper, gCycle &owner) : helper_(helper),
                                                            owner_(owner),
-                                                           smarterBot(gSmarterBot::Get(&owner)),
+                                                           smarterBot(gSmarterBot::Get(&owner, ePlayer::NetToLocalPlayer(owner.netPlayer_))),
                                                            turnData(*(new gTurnData()))
 {
 }

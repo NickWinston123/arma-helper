@@ -10,6 +10,7 @@
 #include "tDatabase.h"
 
 #include "../tron/gHelper/gHelperUtilities.h"
+#include "../tron/gGame.h"
 
 #include "eTimer.h"
 #include "eChatBot.h"
@@ -33,10 +34,11 @@ public:
     // Player
     int r,g,b;
     tString name;
-    int total_messages                 = 0;
+    REAL ping                          = 0;
+    int  total_messages                = 0;
     REAL total_play_time               = 0;
     REAL total_spec_time               = 0;
-    int times_joined                   = 0;
+    int  times_joined                  = 0;
     time_t last_seen                   = 0;
     time_t last_seen_notification_time = 0;
     bool is_local                      = false;
@@ -51,15 +53,13 @@ public:
     int bans_given                     = 0;
     int rage_quits                     = 0;
 
+    
     std::vector<std::string> chat_messages;
     std::vector<std::string> privated_stats;
     std::vector<std::string> name_history;
     std::vector<std::string> acheivement_history;
     std::vector<std::string> notifications;
     std::vector<std::string> sent_notifications;
-
-
-
 
     // Cycle
     int kills                       = 0;
@@ -72,6 +72,7 @@ public:
     int matches_played              = 0;
     int total_score                 = 0;
     REAL fastest_speed              = 0;
+    REAL slowest_speed              = 99999;
     int current_kill_streak         = 0;
     int max_kill_streak             = 0;
     bool new_max_kill_streak        = false;
@@ -81,21 +82,26 @@ public:
     // Database
     bool deleted                    = false;
 
+    //Temp
+    time_t todayStatsResetTime = 0;
     void Reset()
     {
         // Player
-        r = 0; g = 0; b = 0;
-        name = "";
-        total_messages = 0;
-        total_play_time = 0.0;
-        total_spec_time = 0.0;
-        times_joined = 0;
-        last_seen = 0;
-        is_local = false;
-        human = true;
-        in_server = false;
-        seen_this_session = false;
-        in_game = false;
+        r                   = 0;
+        g                   = 0;
+        b                   = 0;
+        name                = "";
+        ping                = 0;
+        total_messages      = 0;
+        total_play_time     = 0.0;
+        total_spec_time     = 0.0;
+        times_joined        = 0;
+        last_seen           = 0;
+        is_local            = false;
+        human               = true;
+        in_server           = false;
+        seen_this_session   = false;
+        in_game             = false;
 
         // Clearing vectors
         chat_messages.clear();
@@ -104,23 +110,24 @@ public:
         acheivement_history.clear();
 
         // Cycle
-        kills = 0;
-        deaths = 0;
-        match_wins = 0;
-        match_losses = 0;
-        round_wins = 0;
-        round_losses = 0;
-        rounds_played = 0;
-        matches_played = 0;
-        total_score = 0;
-        fastest_speed = 0.0;
+        kills               = 0;
+        deaths              = 0;
+        match_wins          = 0;
+        match_losses        = 0;
+        round_wins          = 0;
+        round_losses        = 0;
+        rounds_played       = 0;
+        matches_played      = 0;
+        total_score         = 0;
+        fastest_speed       = 0.0;
+        slowest_speed       = 99999;
         current_kill_streak = 0;
-        max_kill_streak = 0;
-        kills_while_dead = 0;
-        alive = false;
+        max_kill_streak     = 0;
+        kills_while_dead    = 0;
+        alive               = false;
 
         // Database
-        deleted = false;
+        deleted             = false;
     }
 
     using StatFunction = std::function<tString(PlayerDataBase *)>;
@@ -305,6 +312,16 @@ public:
         return round ? customRound(fastest_speed, 2) : fastest_speed;
     }
 
+    REAL getSlowestSpeed(bool round = true) const
+    {
+        return round ? customRound(slowest_speed, 2) : slowest_speed;
+    }
+
+    REAL getPing() const
+    {
+        return ping * 1000;
+    }
+
     tString getAnyValue(tString variable)
     {
         auto stat = valueMap.find(variable.stdString());
@@ -352,35 +369,67 @@ class PlayerData : public PlayerDataBase
 {
 public:
     static const std::set<std::string> valueMapdisplayFields;
-    PlayerDataBase stats_this_session;
     PlayerDataBase data_from_db;
+    PlayerDataBase stats_from_today;
+    PlayerDataBase stats_this_session;
 
     PlayerDataBase &thisSession() { return stats_this_session; }
+    PlayerDataBase &todayStats() { return stats_from_today; }
+
+    template <typename T>
+    void applyToAllSessions(T PlayerDataBase::*member, T amount = 1)
+    {
+        (this->*member) += amount;
+        (thisSession().*member) += amount;
+        (stats_from_today.*member) += amount;
+    }
+
+    template <typename T>
+    void setToAllSessions(T PlayerDataBase::*member, T value)
+    {
+        (this->*member) = value;
+        (thisSession().*member) = value;
+        (stats_from_today.*member) = value;
+    }
+
+    void ResetTodayStatsCheck()
+    {
+        time_t startOfDay = getStartTimeOfDay();
+        if (todayStatsResetTime != startOfDay)
+        {
+            stats_from_today.Reset();
+            todayStatsResetTime = startOfDay;
+        }
+    }
 
     void consolidateStats(const std::vector<PlayerDataBase> &playersToConsolidate)
     {
         for (const auto &player : playersToConsolidate)
         {
-            total_messages += player.total_messages;
+            total_messages  += player.total_messages;
             total_play_time += player.total_play_time;
             total_spec_time += player.total_spec_time;
-            times_joined += player.times_joined;
+            times_joined    += player.times_joined;
 
             if (player.last_seen > last_seen)
                 last_seen = player.last_seen;
 
-            kills += player.kills;
-            deaths += player.deaths;
-            match_wins += player.match_wins;
-            match_losses += player.match_losses;
-            round_wins += player.round_wins;
-            round_losses += player.round_losses;
-            rounds_played += player.rounds_played;
-            matches_played += player.matches_played;
-            total_score += player.total_score;
+            kills           += player.kills;
+            deaths          += player.deaths;
+            match_wins      += player.match_wins;
+            match_losses    += player.match_losses;
+            round_wins      += player.round_wins;
+            round_losses    += player.round_losses;
+            rounds_played   += player.rounds_played;
+            matches_played  += player.matches_played;
+            total_score     += player.total_score;
+            ping             = player.ping;
 
             if (player.fastest_speed > fastest_speed)
                 fastest_speed = player.fastest_speed;
+
+            if (player.slowest_speed < slowest_speed)
+                slowest_speed = player.slowest_speed;
 
             current_kill_streak += player.current_kill_streak;
 
@@ -731,50 +780,77 @@ public:
         return getStatsForAnalysis(player->GetName());
     }
 
+    static void trySendNotificationDeferred(ePlayerNetID* player, time_t latestNoteTime, int retries = 10)
+    {
+        if (!player)
+            return;
+
+        if (retries <= 0)
+        {
+            gHelperUtility::Debug("ePlayerStats", "Aborted notification for player " + player->GetName().stdString() + " — max retries exceeded.");
+            return;
+        }
+
+        if (!sg_inGameLoop)
+        {
+            std::string taskId = "deferred_notify_" + player->GetName().Filter().stdString() + "_" + std::to_string(player->pID);
+
+            gTaskScheduler.schedule(
+                taskId,
+                0.5,
+                [player, latestNoteTime, retries]() {
+                    trySendNotificationDeferred(player, latestNoteTime, retries - 1);
+                }
+            );
+            return;
+        }
+
+        PlayerData& stats = ePlayerStats::getStats(player);
+
+        if (latestNoteTime > stats.last_seen_notification_time)
+        {
+            gHelperUtility::Debug("ePlayerStats", "Deferred notification triggered for player " + player->GetName().stdString());
+            eChatBot::findResponsePlayer(eChatBot::getInstance(), player, se_playerMessageNotificationTrigger, tString(""), tString(""), true);
+        }
+    }
+
+
     static void playerInit(PlayerData &stats, ePlayerNetID *player)
     {
-        stats.last_seen = time(NULL);
-        stats.human = player->IsHuman();
-        stats.is_local = player->isLocal();
-        stats.in_server = true;
+        stats.ResetTodayStatsCheck();
+        time_t now = time(NULL);
+
+        stats.setToAllSessions(&PlayerDataBase::last_seen, now);
+        stats.setToAllSessions(&PlayerDataBase::human, player->IsHuman());
+        stats.setToAllSessions(&PlayerDataBase::is_local, player->isLocal());
+        stats.setToAllSessions(&PlayerDataBase::in_server, true);
 
         if (!stats.seen_this_session)
         {
             stats.thisSession().Reset();
-            stats.seen_this_session = true;
+            stats.setToAllSessions(&PlayerDataBase::seen_this_session, true);
             players_record_this_session++;
         }
-        else
-        {
-            stats.thisSession().last_seen = stats.last_seen;
-            stats.thisSession().human = stats.human;
-            stats.thisSession().is_local = stats.is_local;
-            stats.thisSession().in_server = stats.in_server;
-        }
 
-        stats.times_joined++;
-        stats.in_game = player->CurrentTeam() != nullptr;
+        stats.applyToAllSessions(&PlayerDataBase::times_joined);
+        bool isInGame = player->CurrentTeam() != nullptr;
+        stats.setToAllSessions(&PlayerDataBase::in_game, isInGame);
 
         ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::JOINS);
 
         if (!stats.notifications.empty())
         {
-            time_t latest = 0;
-
             const std::string& lastNote = stats.notifications.back();
-            tArray<tString> parts = tString(lastNote).Split(tString(DB_DELIMITER()));
+            tArray<tString> parts = tString(lastNote).Split(se_playerMessageNotificationsDelimiter);
 
             if (parts.Len() >= 3)
             {
                 try {
-                    latest = std::stoll(parts[2].stdString());
-                } catch (...) {}
-            }
-
-            if (latest > stats.last_seen_notification_time && player->Owner()) 
-            {
-                gHelperUtility::Debug("ePlayerStats", "Sending notification for player " + player->GetName().stdString());
-                eChatBot::findResponsePlayer(eChatBot::getInstance(), player, se_playerMessageNotificationTrigger, tString(""), tString(""), true);
+                    time_t latest = std::stoll(parts[2].stdString());
+                    trySendNotificationDeferred(player, latest);
+                } catch (...) {
+                    gHelperUtility::Debug("ePlayerStats", "Failed to parse notification timestamp for " + player->GetName().stdString());
+                }
             }
         }
     }
@@ -830,7 +906,7 @@ public:
 
         if  (lastDeathTime > 0.005 && lastDeathTime < se_playerStatsRageQuitTime)
         {
-            stats.rage_quits++;
+            stats.applyToAllSessions(&PlayerDataBase::rage_quits);
 
             if (se_playerMessageTriggers && se_playerMessageTriggersRageQuits)
             {
@@ -873,52 +949,52 @@ public:
 
     static void playerLeft(PlayerData &stats)
     {
-        stats.last_seen                   = time(NULL);
-        stats.in_server                   = false;
-        stats.current_kill_streak         = 0;
+        stats.setToAllSessions(&PlayerDataBase::last_seen, time(NULL));
+        stats.setToAllSessions(&PlayerDataBase::in_server, false);
+        stats.setToAllSessions(&PlayerDataBase::current_kill_streak, 0);
 
-        stats.thisSession().Reset();
+        stats.thisSession().Reset(); 
     }
 
     static void addKill(ePlayerNetID *player)
     {
         statsLoadedCheck();
-
         PlayerData &stats = getStats(player);
-        PlayerDataBase &statsThisSession = stats.thisSession();
+        stats.ResetTodayStatsCheck();
 
         if (!stats.alive)
-        {
-            stats.kills_while_dead++;
-            statsThisSession.kills_while_dead++;
-        }
+            stats.applyToAllSessions(&PlayerDataBase::kills_while_dead);
 
-        stats.kills++;
-        statsThisSession.kills++;
-
-        stats.current_kill_streak++;
-        statsThisSession.current_kill_streak++;
+        stats.applyToAllSessions(&PlayerDataBase::kills);
+        stats.applyToAllSessions(&PlayerDataBase::current_kill_streak);
 
         if (stats.current_kill_streak > stats.max_kill_streak)
         {
             stats.max_kill_streak = stats.current_kill_streak;
-            statsThisSession.max_kill_streak = std::max(statsThisSession.max_kill_streak, stats.current_kill_streak);
-            stats.new_max_kill_streak = true;
+
+            int newMax = std::max(stats.thisSession().max_kill_streak, stats.current_kill_streak);
+            stats.setToAllSessions(&PlayerDataBase::max_kill_streak, newMax);
+            stats.setToAllSessions(&PlayerDataBase::new_max_kill_streak, true);
         }
         else
         {
-            stats.new_max_kill_streak = false;
+            stats.setToAllSessions(&PlayerDataBase::new_max_kill_streak, false);
         }
 
         ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::KILLS);
 
+        ePlayerNetID *lastKilledPlayer = player->lastKilledPlayer;
         if (se_playerMessageTriggersContextBuilder)
         {
-            eChatBot &bot = eChatBot::getInstance();
             tString context;
             context << player->GetName()
                     << " core dumped "
-                    << (player->lastKilledPlayer ? player->lastKilledPlayer->GetName() : "unknown");
+                    << (lastKilledPlayer ? lastKilledPlayer->GetName() : "unknown");
+
+            if (lastKilledPlayer && lastKilledPlayer->smartBotSuicide)
+                context << " (" << lastKilledPlayer->GetName()
+                        << " suicided on purpose to allow other players to play)";
+
             eChatBot::getInstance().data.StoreContextItem(context);
         }
     }
@@ -926,28 +1002,38 @@ public:
     static void addDeath(ePlayerNetID *player)
     {
         statsLoadedCheck();
-
         PlayerData &stats = getStats(player);
-        PlayerDataBase &statsThisSession = stats.thisSession();
+        stats.ResetTodayStatsCheck();
 
-        stats.deaths++;
-        statsThisSession.deaths++;
+        stats.applyToAllSessions(&PlayerDataBase::deaths);
+        stats.setToAllSessions  (&PlayerDataBase::current_kill_streak, 0);
+        stats.setToAllSessions  (&PlayerDataBase::alive, false);
 
-        stats.current_kill_streak = 0;
-        statsThisSession.current_kill_streak = 0;
+        ePlayerNetID *lastDiedByPlayer = player->lastDiedByPlayer;
 
-        stats.alive = false;
-
-        statsThisSession.alive = false;
         if (se_playerMessageTriggersContextBuilder)
         {
-            eChatBot &bot = eChatBot::getInstance();
             tString context;
             context << player->GetName()
                     << " was core dumped by "
-                    << (player->lastDiedByPlayer ? player->lastDiedByPlayer->GetName() : "unknown");
+                    << (lastDiedByPlayer ? lastDiedByPlayer->GetName() : "unknown");
+
+            if (player && player->smartBotSuicide)
+                context << " (" << player->GetName()
+                        << " suicided on purpose to allow other players to play)";
+
             eChatBot::getInstance().data.StoreContextItem(context);
         }
+    }
+
+    static void setPing(ePlayerNetID *player)
+    {
+        statsLoadedCheck();
+        if (!player) return;
+
+        PlayerData &stats = getStats(player);
+        stats.ResetTodayStatsCheck();
+        stats.setToAllSessions(&PlayerDataBase::ping, player->ping);
     }
 
     static void setColor(ePlayerNetID * player, int r, int g, int b)
@@ -956,17 +1042,13 @@ public:
         name << ((shouldEnforceLocalName(player) ? getEnforcedLocalName(player) : player->GetName().ToLower()));
 
         PlayerData &stats = playerStatsMap[name];
-        stats.r = r;
-        stats.g = g;
-        stats.b = b;
-        stats.name = name;
-
-        PlayerDataBase &statsThisSession = stats.thisSession();
-        statsThisSession.r = stats.r;
-        statsThisSession.g = stats.g;
-        statsThisSession.b = stats.b;
-        statsThisSession.name = stats.name;
+        stats.ResetTodayStatsCheck();
+        stats.setToAllSessions(&PlayerDataBase::r, r);
+        stats.setToAllSessions(&PlayerDataBase::g, g);
+        stats.setToAllSessions(&PlayerDataBase::b, b);
+        stats.setToAllSessions(&PlayerDataBase::name, name);
     }
+
 
     static void setColor(ePlayerNetID * player)
     {
@@ -978,10 +1060,8 @@ public:
         statsLoadedCheck();
 
         PlayerData &stats = getStats(player);
-        PlayerDataBase &statsThisSession = stats.thisSession();
-
-        stats.total_score += score;
-        statsThisSession.total_score += score;
+        stats.ResetTodayStatsCheck();
+        stats.applyToAllSessions(&PlayerDataBase::total_score, score);
     }
 
     static void addMessage(ePlayerNetID * player, tString message)
@@ -989,18 +1069,19 @@ public:
         statsLoadedCheck();
 
         PlayerData &stats = getStats(player);
-        PlayerDataBase &statsThisSession = stats.thisSession();
+        stats.ResetTodayStatsCheck();
 
-        if ( (!player->isLocal() || !tIsEnabledForPlayer(se_playerMessageEnabledPlayers, player->pID+1) ) || se_playerStatsStoreBotMessages)
+        if ((!player->isLocal() || !tIsEnabledForPlayer(se_playerMessageEnabledPlayers, player->pID+1)) || se_playerStatsStoreBotMessages)
         {
             if (!message.empty())
             {
                 stats.chat_messages.push_back(message.stdString());
-                statsThisSession.chat_messages.push_back(message.stdString());
+                stats.thisSession().chat_messages.push_back(message.stdString());
+                stats.stats_from_today.chat_messages.push_back(message.stdString());
             }
         }
-        stats.total_messages++;
-        statsThisSession.total_messages++;
+
+        stats.applyToAllSessions(&PlayerDataBase::total_messages);
         ePlayerStatsAcheivements::performAction(stats, ePlayerStatsAcheivements::AcheivementsTypes::CHATS);
 
         if (se_playerMessageTriggersContextBuilder)
@@ -1255,5 +1336,6 @@ public:
     }
 
 };
+
 
 #endif

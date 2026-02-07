@@ -480,12 +480,38 @@ struct tm getCurrentLocalTime()
     return thisTime;
 }
 
-std::string getTimeZone(const struct tm& timeInfo)
+std::string getTimeZone(const struct tm& timeInfo, bool shortened)
 {
     char timeZone[64];
     strftime(timeZone, sizeof(timeZone), "%Z", &timeInfo);
-    return timeZone;
+    std::string tzStr = timeZone;
+
+    if (shortened) 
+    {
+        static const std::map<std::string, std::string> tzMap = {
+            {"Eastern Daylight Time", "EDT"},
+            {"Eastern Standard Time", "EST"},
+            {"Central Daylight Time", "CDT"},
+            {"Central Standard Time", "CST"},
+            {"Mountain Daylight Time", "MDT"},
+            {"Mountain Standard Time", "MST"},
+            {"Pacific Daylight Time", "PDT"},
+            {"Pacific Standard Time", "PST"},
+            {"Greenwich Mean Time", "GMT"},
+            {"British Summer Time", "BST"},
+            {"Central European Time", "CET"},
+            {"Central European Summer Time", "CEST"},
+            {"Coordinated Universal Time", "UTC"}
+        };
+
+        auto it = tzMap.find(tzStr);
+        if (it != tzMap.end())
+            return it->second;
+    }
+
+    return tzStr;
 }
+
 
 std::string getTimeStringBase(struct tm &thisTime, bool showTime24hour)
 {

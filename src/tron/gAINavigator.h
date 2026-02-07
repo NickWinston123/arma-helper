@@ -35,6 +35,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 class gCycle;
 
+extern REAL sg_navigatorDefaultRange;
+extern bool sg_navigatorForcePathIfNoBestPath;
+
 //! AI helper class that knows the basics of staying alive.
 class gAINavigator
 {
@@ -42,13 +45,13 @@ class gAINavigator
 
 public:
     //! settings used by the idler bot
-    struct Settings
-    {
-        REAL newWallBlindness; //!< number of seconds new walls are invisible to the idler
-        REAL range;            //!< seconds to plan ahead
+    struct Settings {
+        REAL newWallBlindness;
+        REAL &range;
 
-        Settings();
+        Settings(REAL &r) : newWallBlindness(-.1), range(r) {}
     };
+
 
     Settings settings_; // settings to use
 
@@ -151,7 +154,7 @@ public:
     private:
         // fill in relevant data from sensors
         void Fill(gAINavigator const &navigator, Sensor const &left, Sensor const &right, eCoord const &shortDir, eCoord const &longDir, int turn);
-        REAL Take(CycleController &controller, gCycle &cycle, REAL maxStep,REAL turnDelay); //!< take that path. Return value: time to next check
+        REAL Take(CycleController &controller, gCycle &cycle, REAL maxStep); //!< take that path. Return value: time to next check
         ~Path();
         Path();
 
@@ -179,7 +182,7 @@ public:
 
         int GetPathCount() const;                                                                //!< returns the current number of paths
         Path const &GetPath(int id) const;                                                       //!< returns a path
-        REAL TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep,REAL turnDelay); //!< takes a path
+        REAL TakePath(CycleController &controller, gCycle &cycle, int id, REAL maxStep); //!< takes a path
         Path const &GetLastPath() const;                                                         //!< the last path taken, with old info
 
         PathGroup();
@@ -223,22 +226,22 @@ public:
     };
 
     //! simple evaluator: vetoes certain death moves, picks best space move
-    class SuicideEvaluator : public PathEvaluator
+    class SurviveEvaluator : public PathEvaluator
     {
     public:
-        SuicideEvaluator(gCycle &cycle, REAL timeFrame);
-        explicit SuicideEvaluator(gCycle &cycle);
+        SurviveEvaluator(gCycle &cycle, REAL timeFrame);
+        explicit SurviveEvaluator(gCycle &cycle);
 
         //! evaluate a path.
         virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
-        ~SuicideEvaluator();
+        ~SurviveEvaluator();
 
         static void SetEmergency(bool emergency);
 
+        static bool emergency_;
     private:
         gCycle &cycle_;
         REAL timeFrame_;
-        static bool emergency_;
     };
 
     // likes to chase its own tail
@@ -297,6 +300,52 @@ public:
     private:
         gCycle &cycle_;
     };
+
+    class AvoidEvaluator : public PathEvaluator
+    {
+    public:
+        explicit AvoidEvaluator(gCycle &cycle);
+        ~AvoidEvaluator();
+
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
+
+    private:
+        gCycle &cycle_;
+    };
+
+    class FlankEvaluator : public PathEvaluator
+    {
+    public:
+        explicit FlankEvaluator(gCycle &cycle);
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const override;
+        ~FlankEvaluator();
+
+    private:
+        gCycle &cycle_;
+    };
+
+    class DistanceFromEnemiesEvaluator : public PathEvaluator
+    {
+    public:
+        explicit DistanceFromEnemiesEvaluator(gCycle &cycle);
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const override;
+        ~DistanceFromEnemiesEvaluator();
+
+    private:
+        gCycle &cycle_;
+    };
+
+    class BehindThreatEvaluator : public PathEvaluator
+    {
+    public:
+        explicit BehindThreatEvaluator(gCycle &cycle);
+        ~BehindThreatEvaluator();
+        virtual void Evaluate(Path const &path, PathEvaluation &evaluation) const;
+
+    private:
+        gCycle &cycle_;
+    };
+
 
     //! cowardly evaluator: try to move backwards on enemy walls
     class SpeedEvaluator : public PathEvaluator
@@ -361,7 +410,7 @@ public:
         ~RubberEvaluator();
 
     private:
-        void Init(gCycle &cycle, REAL maxTime);
+        gCycle &cycle_;
         REAL rubberLeft_; //!< amount of rubber left to burn with inevitable loss due to turn delay factored in
         REAL maxRubber_;  //!< maximal rubber possible to burn
     };
@@ -372,7 +421,7 @@ public:
     public:
         FollowEvaluator(gCycle &cycle);
         ~FollowEvaluator();
-
+        
         //! return data of SolveTurn
         struct SolveTurnData
         {
@@ -384,6 +433,7 @@ public:
         };
 
         //! determine when we need to turn in order to catch the target.
+        void SolveTurnLogic();
         void SolveTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data);
         void TryTurn(int direction, eCoord const &targetVelocity, eCoord const &targetPosition, SolveTurnData &data, int depth = 0);
         bool FindTarget();
@@ -435,7 +485,7 @@ public:
         void Reset();
 
         //! execute
-        REAL Finish(CycleController &controller, gCycle &cycle, REAL maxStep, REAL turnDelay = 0);
+        REAL Finish(CycleController &controller, gCycle &cycle, REAL maxStep);
 
     private:
         PathGroup &paths_; //!< the path group
@@ -449,7 +499,7 @@ public:
     PathGroup &GetPaths(); //!< returns the paths the navigator knows about
     void UpdatePaths();    //!< updates the paths to the new cycle position
 
-    gAINavigator(gCycle *owner);
+    gAINavigator(gCycle *owner, REAL &rangeRef);
 
     // returns the controlled cycle
 
@@ -487,7 +537,14 @@ class gSmarterBot : public gAINavigator
     ePlayer *local_player;
 
 public:
-    gSmarterBot(gCycle *owner);
+    enum EvaluatorMode
+    {
+        EVAL_ALL,
+        EVAL_NON_VETOABLE,
+        EVAL_VETOABLE
+    };
+
+    gSmarterBot(gCycle *owner, ePlayer *player);
     static void Survive(gCycle *owner);
 
     REAL Think(REAL currentTime, REAL minStep);
@@ -495,8 +552,10 @@ public:
     REAL annoyanceCheck(REAL currentTime);
     bool afkQuitCheck();
     bool chattingSmartDisable();
+    static void EvaluateAllScales(EvaluationManager &manager, gCycle *cycle, ePlayer *local_player, EvaluatorMode mode = EVAL_ALL);
 
-    static gSmarterBot &Get(gCycle *cycle);
+
+    static gSmarterBot &Get(gCycle *cycle, ePlayer *player);
     ~gSmarterBot();
 };
 #endif

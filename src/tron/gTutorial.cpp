@@ -317,9 +317,9 @@ public:
         p.Object()->Timestep(0);
     }
 
-    void AddPath(gAIPlayer &ai, REAL x, REAL y, bool mindless = true)
+    void AddPath(gAIPlayer &ai, REAL x, REAL y)
     {
-        ai.AddToPath(eCoord(x, y) * pow(2, settings_.sizeFactor * .5), mindless);
+        ai.AddToPath(eCoord(x, y) * pow(2, settings_.sizeFactor * .5));
     }
 
     gCycle *HumanCycle()
@@ -1642,7 +1642,7 @@ public:
         AddPath(AIPlayer(), -.1, y - 10);
         AddPath(AIPlayer(), -10, y - 10);
         AddPath(AIPlayer(), -10, y);
-        AddPath(AIPlayer(), .1, y, false);
+        AddPath(AIPlayer(), .1, y);
 
         gTutorialSpeedKillBase::AfterSpawn();
     }
@@ -2030,7 +2030,7 @@ public:
         // AddPath( ai, zoneX+radius, zoneY+radius );
         // radius = 40;
         // AddPath( ai, zoneX+radius, zoneY+radius );
-        AddPath(ai, zoneX + radius, zoneY, false);
+        AddPath(ai, zoneX + radius, zoneY);
 
         // doesn't work here, causes zone trouble.
         // TimeWarp( 10 );

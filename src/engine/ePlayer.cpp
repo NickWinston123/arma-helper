@@ -1473,7 +1473,7 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     // sg_smarterBotAutomatorConfigList
     confname.Clear();
     confname << "SMARTER_BOT_" << id+1 << "_AUTOMATOR_CONFIG_LIST";
-    sg_smarterBotAutomatorConfigList = "SURVIVE,TRAP,FOLLOW,TAIL,SPACE,COWARD,TUNNEL,SPEED";
+    sg_smarterBotAutomatorConfigList = "SURVIVE,TRAP,FOLLOW,TAIL,SPACE,COWARD,TUNNEL,SPEED,FLANK,DISTANCE,BEHIND,AVOID";
     confItems.StoreConfitem(
         HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotAutomatorConfigList, sg_smarterBotAutomatorValueMap)
     );
@@ -1497,7 +1497,7 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     // sg_smarterBotRange
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_RANGE";
-    sg_smarterBotRange = 10;
+    sg_smarterBotRange = 1000;
     confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotRange));
 
     // sg_smarterBotRandomScale
@@ -1505,6 +1505,24 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     confname << "SMARTER_BOT_" << id + 1 << "_RANDOM";
     sg_smarterBotRandomScale = 0;
     confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotRandomScale));
+
+    // sg_smarterBotAvoidScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id + 1 << "_AVOID";
+    sg_smarterBotAvoidScale = 12;
+    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotAvoidScale));
+
+    // sg_smarterBotFlankScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id + 1 << "_FLANK";
+    sg_smarterBotFlankScale = 5;
+    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotFlankScale));
+
+    // sg_smarterBotDistanceScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id + 1 << "_DISTANCE";
+    sg_smarterBotDistanceScale = 3;
+    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotDistanceScale));
 
     // sg_smarterBotRubberScale
     confname.Clear();
@@ -1529,6 +1547,12 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW";
     sg_smarterBotFollowScale = 0.5;
     confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotFollowScale));
+
+    // sg_smarterBotFollowSolveTurnLogic
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id + 1 << "_FOLLOW_SOLVE_TURN_LOGIC";
+    sg_smarterBotFollowSolveTurnLogic = true;
+    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotFollowSolveTurnLogic));
 
     // sg_smarterBotFollowFindTarget
     confname.Clear();
@@ -1629,8 +1653,14 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     // sg_smarterBotSpeedScale
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_SPEED";
-    sg_smarterBotSpeedScale = 0;
+    sg_smarterBotSpeedScale = 6;
     confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotSpeedScale));
+
+    // sg_smarterBotBehindScale
+    confname.Clear();
+    confname << "SMARTER_BOT_" << id + 1 << "_BEHIND";
+    sg_smarterBotBehindScale = 0;
+    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotBehindScale));
 
     // sg_smarterBotNextThinkMult
     confname.Clear();
@@ -1638,19 +1668,11 @@ ePlayer::ePlayer() : updateIteration(0), watchPlayer(nullptr)
     sg_smarterBotNextThinkMult = 1;
     confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotNextThinkMult));
 
-    // sg_smarterBotTurnRandMult
-    confname.Clear();
-    confname << "SMARTER_BOT_" << id + 1 << "_TURN_TIME_RAND_MULT";
-    sg_smarterBotTurnRandMult = 0;
-    confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotTurnRandMult));
-
     // sg_smarterBotState
     confname.Clear();
     confname << "SMARTER_BOT_" << id + 1 << "_STATE";
     sg_smarterBotState = 1;
     confItems.StoreConfitem(HelperCommand::tConfItemPtr(confname.c_str(), sg_smarterBotState, sg_smarterBotStateValueMap));
-
-
 #endif
 
     tRandomizer &randomizer = tRandomizer::GetInstance();
@@ -1937,6 +1959,8 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
         bool encyptedMessage = false;
         bool sentFromTeamMember = false;
 
+        bool chatBotTriggered = false;
+
         ePlayerNetID *ourPlayer;
         bool privateMessage = false;
         tString privateMessageParams;
@@ -2040,7 +2064,7 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             }
 
             if (initiate)
-                eChatBot::InitiateAction(p, params, false, preAppend);
+                chatBotTriggered = eChatBot::InitiateAction(p, params, false, preAppend);
         }
 
         if (p->CurrentTeam())
@@ -2072,7 +2096,9 @@ static void se_DisplayChatLocallyClient(ePlayerNetID *p, const tString &message)
             }
         }
 
-        se_SaveToChatLog(actualMessage);
+        bool filterChatLogNoData =  (encyptedMessage || (chatBotTriggered && se_chatLogNoDataFilterPlayerMessageTriggeredLines));
+
+        se_SaveToChatLog(actualMessage, filterChatLogNoData);
 
         if (se_chatTimeStamp && !sr_consoleTimeStamp)
             actualMessage = st_GetCurrentTime("%H:%M:%S| ") << actualMessage;
@@ -5228,7 +5254,7 @@ bool ePlayerNetID::canChat()
 
 bool ePlayerNetID::canChatCommonPrefix(tString message)
 {
-    return nextSpeakTimePrefix <= getSteadyTime() || !message.StartsWith(nextSpeakTimePrefixCommonPrefix);
+    return nextSpeakTimePrefix <= getSteadyTime() || (nextSpeakTimePrefixCommonPrefix.empty() || !message.StartsWith(nextSpeakTimePrefixCommonPrefix));
 }
 
 bool ePlayerNetID::canChatWithMsg(tString message)
@@ -6864,7 +6890,8 @@ ePlayerNetID::ePlayerNetID(int p, int owner) : nNetObject(owner), listID(-1),
       else
     */
     ping = 0; // hehe! server has no ping.
-
+    lastPingIteration = 0;
+    
     lastSync = tSysTimeFloat();
 
     RequestSync();
@@ -6977,6 +7004,7 @@ ePlayerNetID::ePlayerNetID(nMessage &m) : nNetObject(m),
     chatFlags_ = 0;
 
     r = g = b = 15;
+    lastPingIteration = 0;
 
     overrideColor = false;
 
@@ -8708,6 +8736,23 @@ static tString se_playerMessageSpecLeftBotStr("$leftspecbot");
 static tConfItem<tString> se_playerMessageSpecLeftBotStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_SPEC_LEFT_BOT_STRING", se_playerMessageSpecLeftBotStr);
 
 
+bool sg_playerMessageLagSpikeDetected = false;
+static tConfItem<bool> sg_playerMessageLagSpikeDetectedConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LAG_SPIKE_DETECTED", sg_playerMessageLagSpikeDetected);
+int sg_playerMessageLagSpikeDetectedRequiredChange = 10;
+static tConfItem<int> sg_playerMessageLagSpikeDetectedRequiredChangeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LAG_SPIKE_DETECTED_REQUIRED_CHANGE", sg_playerMessageLagSpikeDetectedRequiredChange);
+static tString sg_playerMessageLagSpikeDetectedStr("$lagspikedetected");
+static tConfItem<tString> sg_playerMessageLagSpikeDetectedStrConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LAG_SPIKE_DETECTED_STRING", sg_playerMessageLagSpikeDetectedStr);
+bool sg_playerMessageLagSpikeDetectedIgnoreLocal = true;
+static tConfItem<bool> sg_playerMessageLagSpikeDetectedIgnoreLocalConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LAG_SPIKE_DETECTED_IGNORE_LOCAL", sg_playerMessageLagSpikeDetectedIgnoreLocal);
+bool sg_playerMessageLagSpikeDetectedIgnoreSpectators = false;
+static tConfItem<bool> sg_playerMessageLagSpikeDetectedIgnoreSpectatorsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LAG_SPIKE_DETECTED_IGNORE_SPECTATORS", sg_playerMessageLagSpikeDetectedIgnoreSpectators);
+int sg_playerMessageLagSpikeDetectedIgnoreFirstSyncs = 0;
+static tConfItem<int> sg_playerMessageLagSpikeDetectedIgnoreFirstSyncsConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LAG_SPIKE_DETECTED_IGNORE_FIRST_AMOUNT_OF_SYNCS", sg_playerMessageLagSpikeDetectedIgnoreFirstSyncs);
+static tString sg_playerMessageLagSpikeDetectedEnabledPlayers("");
+static tConfItem<tString> sg_playerMessageLagSpikeDetectedEnabledPlayersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LAG_SPIKE_DETECTED_ENABLED_PLAYERS", sg_playerMessageLagSpikeDetectedEnabledPlayers);
+static tString sg_playerMessageLagSpikeDetectedIgnoreList("");
+static tConfItem<tString> sg_playerMessageLagSpikeDetectedIgnoreListConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGER_LAG_SPIKE_DETECTED_IGNORE_LIST", sg_playerMessageLagSpikeDetectedIgnoreList);
+
 void ePlayerNetID::ReadSync(nMessage &m)
 {
     // check whether this is the first sync
@@ -8768,6 +8813,7 @@ void ePlayerNetID::ReadSync(nMessage &m)
     m >> p;
     if (sn_GetNetState() != nSERVER)
         ping = p;
+    
 
     //  if (!m.End())
     {
@@ -8923,6 +8969,72 @@ void ePlayerNetID::ReadSync(nMessage &m)
 
     if (!firstSync)
     {
+            
+        if (lastPing != ping)
+        {
+            lastPingIteration++;
+
+            bool isInitialSyncIgnored =
+                lastPingIteration <= sg_playerMessageLagSpikeDetectedIgnoreFirstSyncs;
+
+            bool isNotEnabled =
+                !sg_playerMessageLagSpikeDetectedEnabledPlayers.empty() &&
+                !tIsInList(sg_playerMessageLagSpikeDetectedEnabledPlayers.ToLower(), GetName().ToLower());
+
+            bool isIgnored =
+                !sg_playerMessageLagSpikeDetectedIgnoreList.empty() &&
+                tIsInList(sg_playerMessageLagSpikeDetectedIgnoreList.ToLower(), GetName().ToLower());
+
+            bool isSpectatorAndIgnored =
+                !CurrentTeam() && sg_playerMessageLagSpikeDetectedIgnoreSpectators;
+
+            bool isLocalAndIgnored =
+                isLocal() && sg_playerMessageLagSpikeDetectedIgnoreLocal;
+
+            bool skipDetection =
+                isInitialSyncIgnored || isNotEnabled || isIgnored || isSpectatorAndIgnored || isLocalAndIgnored;
+
+            if (!skipDetection)
+            {
+                bool spikeDetectionEnabled =
+                    se_playerMessageTriggers &&
+                    sg_playerMessageLagSpikeDetected &&
+                    lastPing != 0;
+
+                if (spikeDetectionEnabled)
+                {
+                    int lastPingMs = static_cast<int>(lastPing * 1000);
+                    int currentPingMs = static_cast<int>(ping * 1000);
+                    int pingDiffMs = abs(currentPingMs - lastPingMs);
+
+                    if (pingDiffMs >= sg_playerMessageLagSpikeDetectedRequiredChange)
+                    {
+                        tString pingChangeStr;
+                        pingChangeStr << "Current ping: "   << currentPingMs
+                                    << "ms, Last ping: "  << lastPingMs
+                                    << "ms. Difference: " << pingDiffMs << "ms"
+                                    << ". ("
+                                    << lastPingIteration
+                                    << " ping changes)";
+
+                        eChatBot::findResponsePlayer(
+                            eChatBot::getInstance(),
+                            this,
+                            sg_playerMessageLagSpikeDetectedStr,
+                            pingChangeStr,
+                            tString(""),
+                            true
+                        );
+                    }
+                }
+            }
+
+            lastPing = ping;
+
+            if (se_playerStats)
+                ePlayerStats::setPing(this);
+        }
+
         if (se_playerStats)
         {
             if (score != 0)
@@ -9190,15 +9302,19 @@ void se_SaveToLadderLog(tOutput const &out)
 }
 
 bool se_chatLog = false;
-static bool se_chatLogColors = false;
-static bool se_chatLogNoData = false;
-static bool se_chatLogNoDataClearLocal = false;
-static bool se_chatLogNoDataClearNames = false;
 static tConfItem<bool> se_chatLogConf("CHAT_LOG", se_chatLog);
-static tConfItem<bool> se_chatLogNoDataConf("CHAT_LOG_NO_DATA", se_chatLogNoData);
-static tConfItem<bool> se_chatLogNoDataIgnoreLocalConf("CHAT_LOG_NO_DATA_CLEAR_LOCAL", se_chatLogNoDataClearLocal);
-static tConfItem<bool> se_chatLogNoDataClearNamesConf("CHAT_LOG_NO_DATA_CLEAR_NAMES", se_chatLogNoDataClearNames);
+static bool se_chatLogColors = false;
 static tConfItem<bool> se_chatLogColorsConf("CHAT_LOG_COLORS", se_chatLogColors);
+
+static bool se_chatLogNoData = false;
+static tConfItem<bool> se_chatLogNoDataConf("CHAT_LOG_NO_DATA", se_chatLogNoData);
+static bool se_chatLogNoDataClearLocal = false;
+static tConfItem<bool> se_chatLogNoDataIgnoreLocalConf("CHAT_LOG_NO_DATA_CLEAR_LOCAL", se_chatLogNoDataClearLocal);
+static bool se_chatLogNoDataClearNames = false;
+static tConfItem<bool> se_chatLogNoDataClearNamesConf("CHAT_LOG_NO_DATA_CLEAR_NAMES", se_chatLogNoDataClearNames);
+
+bool se_chatLogNoDataFilterPlayerMessageTriggeredLines = false;
+static tConfItem<bool> se_chatLogNoDataFilterPlayerMessageTriggeredLinesConf("CHAT_LOG_NO_DATA_FILTER_OUT_PLAYER_MESSAGE_TRIGGERED_LINES", se_chatLogNoDataFilterPlayerMessageTriggeredLines);
 
 static eLadderLogWriter se_chatWriter("CHAT", false);
 
@@ -9217,7 +9333,7 @@ void sg_storeChatLogNoDataContent(std::istream &s)
 static tConfItemFunc sg_storeChatLogNoDataContentConf("CHAT_LOG_NO_DATA_INPUT", &sg_storeChatLogNoDataContent);
 
 
-void se_SaveToChatLog(tOutput const &out)
+void se_SaveToChatLog(tOutput const &out, bool filterOutOfNoDataChatLog)
 {
     tString colStr(out);
     // eBannedWords::BadWordTrigger(colStr);
@@ -9238,7 +9354,7 @@ void se_SaveToChatLog(tOutput const &out)
             fileManager.Write(finalLine);
         }
 
-        if (se_chatLogNoData)
+        if (se_chatLogNoData && !filterOutOfNoDataChatLog)
         {
             FileManager fileManager(tString("chatlognodata.txt"), tDirectories::Log());
             std::string finalLine = tColoredString::RemoveColors(tColoredString::RemoveBadColors(colStr)).stdString();
@@ -14936,7 +15052,7 @@ void ePlayerNetID::RequestSyncForce(bool ack)
 
 void ePlayerNetID::RequestSync(bool ack)
 {
-    if ((se_disableCreate || tIsInList(se_disableCreateSpecific, pID + 1) || se_avoidPlayerWatchDisable))
+    if ((se_disableCreate || tIsEnabledForPlayer(se_disableCreateSpecific, pID + 1) || se_avoidPlayerWatchDisable))
     {
         return;
     }

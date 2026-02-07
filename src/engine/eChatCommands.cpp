@@ -1828,7 +1828,7 @@ bool NameSpeakCommand::execute(tString args)
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
         local_p = ePlayer::PlayerConfig(i);
-        if (!bool(local_p->netPlayer.get()) && !tIsInList(se_disableCreateSpecific, i + 1))
+        if (!bool(local_p->netPlayer.get()) && !tIsEnabledForPlayer(se_disableCreateSpecific, i + 1))
         {
             local_p = ePlayer::PlayerConfig(i);
             playerID = i;

@@ -2616,6 +2616,9 @@ static bool sg_NetworkError(const tOutput &title, const tOutput &message, REAL t
     con << message2 << "\n\n";
 #endif
 
+    sg_failedToConnect = true;
+    sg_failedToConnectTime = getSteadyTime();
+    
     if (sn_networkErrorQuit)
     {
         tString reason;
@@ -2760,7 +2763,7 @@ bool ConnectToServerCore(nServerInfoBase *server)
                 [] {
                     for (auto localnetp : se_GetLocalPlayers())
                     {
-                        if (localnetp && !se_disableCreate && !tIsInList(se_disableCreateSpecific, localnetp->pID + 1))
+                        if (localnetp && !se_disableCreate && !tIsEnabledForPlayer(se_disableCreateSpecific, localnetp->pID + 1))
                         {
                             ePlayer *localp = ePlayer::NetToLocalPlayer(localnetp);
                             gCycle * cycle = localnetp->NetPlayerToCycle();
@@ -7621,6 +7624,7 @@ static void sg_CommandScheduler(std::istream &s)
         std::string id, intervalStr, word, command;
         bool repeat = false;
         bool runOnStartup = false;
+        bool requireInGame = true; 
 
         s >> id >> intervalStr;
         while (s >> word)
@@ -7629,6 +7633,8 @@ static void sg_CommandScheduler(std::istream &s)
                 repeat = true;
             else if (word == "--startup")
                 runOnStartup = true;
+            else if (word == "--no-requireInGame")
+                requireInGame = false;
             else
                 command += word + " ";
         }
@@ -7636,7 +7642,7 @@ static void sg_CommandScheduler(std::istream &s)
         command.erase(0, command.find_first_not_of(' '));
         if (id.empty() || intervalStr.empty() || command.empty())
         {
-            con << "Usage: COMMAND_SCHEDULER add <id> <delay> [--repeat] [--startup] <command>\n"
+            con << "Usage: COMMAND_SCHEDULER add <id> <delay> [--repeat] [--startup] [--no-requireInGame] <command>\n"
                 << "Example: COMMAND_SCHEDULER add rgb1 45m --repeat --startup /rgb random\n"
                 << "Supported units: s (sec), m (min), h (hr), d (day), w (week), mo (month), y (year)\n";
             return;
@@ -7650,10 +7656,13 @@ static void sg_CommandScheduler(std::istream &s)
             return;
         }
 
-        CommandScheduler::AddCommand(id, command, delay, repeat, true, runOnStartup);
+        CommandScheduler::AddCommand(id, command, delay, repeat, requireInGame, runOnStartup);
 
         con << "Command scheduled: [" << id << "] ";
-        con << (repeat ? "every " : "in ") << (int)delay << "s\n -> " << command << (runOnStartup ? " (startup)" : "") << "\n";
+        con << (repeat ? "every " : "in ") << (int)delay << "s\n -> " << command;
+        if (runOnStartup) con << " (startup)";
+        if (!requireInGame) con << " (no in-game requirement)";
+        con << "\n";
     }
     else if (subcommand == "delete")
     {
@@ -7706,7 +7715,7 @@ static void sg_CommandScheduler(std::istream &s)
     else
     {
         con << "Usage:\n"
-            << "  COMMAND_SCHEDULER add <id> <delay> [--repeat] [--startup] <command>\n"
+            << "  COMMAND_SCHEDULER add <id> <delay> [--repeat] [--startup] [--no-requireInGame] <command>\n"
             << "  COMMAND_SCHEDULER delete <id>\n"
             << "  COMMAND_SCHEDULER clear\n"
             << "  COMMAND_SCHEDULER list\n"

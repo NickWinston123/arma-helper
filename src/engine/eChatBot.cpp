@@ -40,14 +40,16 @@ static tConfItem<bool> se_playerMessageTriggersSpamProtectionCheckConf = HelperC
 
 bool se_playerMessageTriggersResendSilencedMessages = false;
 static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES", se_playerMessageTriggersResendSilencedMessages);
+bool se_playerMessageTriggersResendSilencedPrefixDuplicatedMessages = false;
+static tConfItem<bool> se_playerMessageTriggersResendSilencedPrefixDuplicatedMessagesConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_PREFIX_DUPLICATED_MESSAGES", se_playerMessageTriggersResendSilencedPrefixDuplicatedMessages);
 bool se_playerMessageTriggersResendSilencedMessagesPrefixAmount = 3;
 static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesPrefixAmountConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES_PREFIX_AMOUNT", se_playerMessageTriggersResendSilencedMessagesPrefixAmount);
 tString se_playerMessageTriggersResendSilencedMessagesPrefixList = tString("!@#$%^&*()_+=-|");
 static tConfItem<tString> se_playerMessageTriggersResendSilencedMessagesPrefixListConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES_PREFIX_LIST", se_playerMessageTriggersResendSilencedMessagesPrefixList);
 bool se_playerMessageTriggersClearOnSilence = true;
 static tConfItem<bool> se_playerMessageTriggersClearOnSilenceConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_CLEAR_ON_SILENCE", se_playerMessageTriggersClearOnSilence);
-bool se_playerMessageTriggersResendSilencedMessagesExtraDelay = 0;
-static tConfItem<bool> se_playerMessageTriggersResendSilencedMessagesExtraDelayConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES_EXTRA_DELAY", se_playerMessageTriggersResendSilencedMessagesExtraDelay);
+REAL se_playerMessageTriggersResendSilencedMessagesExtraDelay = 0;
+static tConfItem<REAL> se_playerMessageTriggersResendSilencedMessagesExtraDelayConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_SILENCED_RESEND_MESSAGES_EXTRA_DELAY", se_playerMessageTriggersResendSilencedMessagesExtraDelay);
 
 
 bool se_playerMessageTriggersContextBuilder = false;
@@ -81,7 +83,7 @@ static tConfItem<tString> se_playerMessageTriggersKillVerifiedTriggersConf = Hel
 static tString se_playerMessageTriggersDiedByVerifiedTriggers("$died");
 static tConfItem<tString> se_playerMessageTriggersDiedByVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_DIED_BY_VERIFIED_TRIGGERS", se_playerMessageTriggersDiedByVerifiedTriggers);
 
-static tString se_playerMessageTriggersJoinedRecentlyVerifiedTriggers("wb");
+static tString se_playerMessageTriggersJoinedRecentlyVerifiedTriggers("wb,welcome");
 static tConfItem<tString> se_playerMessageTriggersJoinedRecentlyVerifiedTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_JOINED_RECENTLY_VERIFIED_TRIGGERS", se_playerMessageTriggersJoinedRecentlyVerifiedTriggers);
 static REAL se_playerMessageTriggersJoinedRecentlyWaitTime = 40;
 static tConfItem<REAL> se_playerMessageTriggersJoinedRecentlyWaitTimeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_JOINED_RECENTLY_WAIT_TIME", se_playerMessageTriggersJoinedRecentlyWaitTime);
@@ -140,10 +142,19 @@ static tConfItem<bool> se_playerMessageNotificationsRestrictViewConf = HelperCom
 static bool se_playerMessageNotificationsListShowTime = false;
 static tConfItem<bool> se_playerMessageNotificationsListShowTimeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_NOTIFICATIONS_SHOW_TIME", se_playerMessageNotificationsListShowTime);
 
+tString se_playerMessageNotificationsDelimiter = tString("+:N0T3D3liM1:-");
+static tConfItem<tString> se_playerMessageNotificationsDelimiterConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_NOTIFICATIONS_DELIMTER", se_playerMessageNotificationsDelimiter);
+
 static tString se_playerMessageTriggersChatChanceTriggers = tString("");
 static tConfItem<tString> se_playerMessageTriggersChatChanceTriggersConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHANCE_COMMANDS", se_playerMessageTriggersChatChanceTriggers);
 static REAL se_playerMessageTriggersChatChanceTriggersThreshhold = 0.5;
 static tConfItem<REAL> se_playerMessageTriggersChatChanceTriggersThreshholdConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_CHANCE_COMMANDS_THRESHOLD", se_playerMessageTriggersChatChanceTriggersThreshhold);
+
+static tString se_playerMessageWhatsTheFuncVersionStr("");
+static tConfItemLine se_playerMessageWhatsTheFuncVersionStrConf = HelperCommand::tConfItemLine("PLAYER_MESSAGE_TRIGGERS_FUNC_WHATS_THE_FUNC_VERSION_STRING", se_playerMessageWhatsTheFuncVersionStr);
+
+static bool se_playerMessageWhatsTheFuncVersionShowDBAge = true;
+static tConfItem<bool> se_playerMessageWhatsTheFuncVersionShowDBAgeConf = HelperCommand::tConfItem("PLAYER_MESSAGE_TRIGGERS_FUNC_WHATS_THE_FUNC_VERSION_SHOW_DB_AGE", se_playerMessageWhatsTheFuncVersionShowDBAge);
 
 
 bool se_playerMessageTriggersRageQuits = false;
@@ -436,32 +447,26 @@ tString statsFunc(tString message)
             else if (key == "Notifications")
             {
                 int unseenCount = 0;
+                int validCount = 0;
+
                 for (const std::string &note : stats->notifications)
                 {
-                    tArray<tString> parts = tString(note).Split(tString(DB_DELIMITER()));
+                    tArray<tString> parts = tString(note).Split(se_playerMessageNotificationsDelimiter);
+
                     if (parts.Len() >= 3)
                     {
+                        validCount++;
                         try
                         {
-                            time_t ts = std::stoll(parts[parts.Len() - 1].stdString());
+                            time_t ts = std::stoll(parts[2].stdString());
                             if (ts > stats->last_seen_notification_time)
                                 unseenCount++;
                         }
-                        catch (...)
-                        {
-                        }
+                        catch (...) {}
                     }
                 }
 
-                int validCount = 0;
-                for (const std::string &note : stats->notifications)
-                {
-                    tArray<tString> parts = tString(note).Split(tString(DB_DELIMITER()));
-                    if (parts.Len() >= 3)
-                        validCount++;
-                }
                 entry << label << ": " << validCount;
-
                 entry << " (" << unseenCount << " new)";
             }
 
@@ -631,15 +636,20 @@ tString playerKDFunc(tString message)
     message = message.TrimWhitespace();
     int pos = 0;
     tString mode(message.ExtractNonBlankSubString(pos));
-    bool current = false;
+
+    bool now    = false;
+    bool today  = false;
+    bool total  = false;
 
     if (mode == "now")
-        current = true;
+        now = true;
+    else if (mode == "today")
+        today = true;
     else if (mode == "total")
-        current = false;
+        total = true;
     else
     {
-        output << "No mode set!";
+        output << "No mode set! Use: 'now', 'today', or 'total'";
         return output;
     }
 
@@ -677,10 +687,18 @@ tString playerKDFunc(tString message)
         else
             stats = &ePlayerStats::getStatsForAnalysis(playerName);
 
-        tString displayName(!statsTargetPlayer || ePlayerStats::shouldEnforceLocalName(statsTargetPlayer) ? (!stats->name.empty() ? stats->name : playerName) : playerName);
-        output << displayName
-               << (current ? " (NOW)" : "")
-                << ": ";
+        PlayerDataBase &sourceStats = today ? stats->todayStats() :
+                                        now   ? stats->thisSession() :
+                                                *static_cast<PlayerDataBase*>(stats);
+        tString displayName(
+            (!statsTargetPlayer || ePlayerStats::shouldEnforceLocalName(statsTargetPlayer))
+            ? (!stats->name.empty() ? stats->name : playerName)
+            : playerName);
+
+        output << displayName;
+        if (now)    output << " (NOW)";
+        if (today)  output << " (TODAY)";
+        output << ": ";
 
         std::vector<tString> orderedKeys =
         {
@@ -715,17 +733,11 @@ tString playerKDFunc(tString message)
 
             if (key == "kd")
                 label = "K/D";
-            else if (key == "rounds_played")
+            else if (key == "rounds_played" || key == "matches_played")
                 label = "Played";
-            else if (key == "round_wins")
+            else if (key == "round_wins" || key == "match_wins")
                 label = "Wins";
-            else if (key == "round_losses")
-                label = "Losses";
-            else if (key == "matches_played")
-                label = "Played";
-            else if (key == "match_wins")
-                label = "Wins";
-            else if (key == "match_losses")
+            else if (key == "round_losses" || key == "match_losses")
                 label = "Losses";
 
             if (i != 0)
@@ -733,22 +745,18 @@ tString playerKDFunc(tString message)
 
             if (stats->isPrivate(realLabel))
             {
-                if (!label.empty())
-                    output << label << ": ?";
-                else
-                    output << "?";
+                output << label << ": ?";
             }
             else
             {
-                if (!label.empty())
-                    output << label << ": ";
-
-                output << (current ? stats->thisSession().getAnyValue(key) : stats->getAnyValue(key));
+                output << label << ": " << sourceStats.getAnyValue(key);
             }
         }
     }
     else
+    {
         output << "Player not found!";
+    }
 
     return output;
 }
@@ -772,23 +780,52 @@ tString leaderboardFunc(tString message)
     int pos = 0;
     message = message.TrimWhitespace();
 
-    tString desiredStat = message.ExtractNonBlankSubString(pos);
+    tString mode = message.ExtractNonBlankSubString(pos);
+    bool now = false;
+    bool today = false;
+    bool current = false;
 
-    if (!desiredStat.empty())
+    if (mode == "here")
+        current = true;
+    else if (mode == "now")
     {
-        desiredStatChoosen = true;
-        statName = desiredStat;
+        current = true;
+        now = true;
+    }
+    else if (mode == "today")
+        today = true;
+    else if (mode == "all")
+    {
+
+    }
+    else
+    {
+        result << "No mode set! Use: 'all', 'here', 'now', or 'today'\n";
+        return result;
     }
 
-    statLabel = PlayerData::getAnyLabel(statName);
+    tString nextArg = message.ExtractNonBlankSubString(pos);
+    if (!nextArg.empty())
+    {
+        if (isdigit(nextArg[0]))
+        {
+            page = atoi(nextArg);
+        }
+        else
+        {
+            desiredStatChoosen = true;
+            statName = nextArg;
 
-    tString pageStr = message.ExtractNonBlankSubString(pos);
-
-    if (!pageStr.empty())
-        page = atoi(pageStr);
+            tString possiblePage = message.ExtractNonBlankSubString(pos);
+            if (!possiblePage.empty() && isdigit(possiblePage[0]))
+                page = atoi(possiblePage);
+        }
+    }
 
     if (page <= 0)
         page = 1;
+
+    statLabel = PlayerData::getAnyLabel(statName);
 
     bool showLabel             = !desiredStatChoosen || se_playerMessageTriggersLeaderboardLabels;
     bool lastSeenStat          = (statLabel == "Last Seen");
@@ -796,42 +833,65 @@ tString leaderboardFunc(tString message)
     bool specTimeStat          = (statLabel == "Spectate Time");
     bool currentKillStreakStat = (statLabel == "Current Kill Streak");
     bool nicknameStat          = (statLabel == "Nickname");
+    bool slowestSpeedStat      = (statLabel == "Slowest Speed");
+    bool pingStat              = (statLabel == "Ping");
+    bool localStat             = (statLabel == "Local");
+    bool aliveStat             = (statLabel == "Alive");
 
-    bool penalizePlayersNotInGame = false;
-    bool ignorePlayersNotInGame = false;
+    bool penalizePlayersNotInGame = (lastSeenStat || nicknameStat);
+    bool ignorePlayersNotInGame = currentKillStreakStat;
 
-    if (lastSeenStat || nicknameStat)
-        penalizePlayersNotInGame = true;
+    time_t startOfDay = getStartTimeOfDay();
 
-    if (currentKillStreakStat)
-        ignorePlayersNotInGame = true;
+    std::vector<std::pair<tString, PlayerData>> sortedPlayers;
+    for (auto &entry : ePlayerStats::GetPlayerStatsMap())
+    {
+        PlayerData &data = entry.second;
 
-    std::vector<std::pair<tString, PlayerData>> sortedPlayers(ePlayerStats::GetPlayerStatsMap().begin(), ePlayerStats::GetPlayerStatsMap().end());
-    auto it = std::remove_if(sortedPlayers.begin(), sortedPlayers.end(),
-                             [ignorePlayersNotInGame, nicknameStat](const std::pair<tString, PlayerData>& player)
-                             {
-                                 return !player.second.human ||
-                                        (ignorePlayersNotInGame && !player.second.in_server) ||
-                                        player.second.deleted ||
-                                        (nicknameStat && player.second.nickname.empty());
-                             });
+        if (!data.human || data.deleted)
+            continue;
+        if (current && !data.in_server)
+            continue;
+        if (ignorePlayersNotInGame && !data.in_server)
+            continue;
+        if (nicknameStat && data.nickname.empty())
+            continue;
+        if (today && data.last_seen < startOfDay)
+            continue;
 
-    sortedPlayers.erase(it, sortedPlayers.end());
+        PlayerDataBase &stats = today ? data.todayStats() :
+                                 now   ? data.thisSession() :
+                                         *static_cast<PlayerDataBase*>(&data);
 
-    if (showLabel)
+        if (slowestSpeedStat && (stats.slowest_speed == 99999.0 || stats.slowest_speed == 0.0))
+            continue;
+
+        if (pingStat && stats.ping == 0)
+            continue;
+
+        sortedPlayers.push_back(entry);
+    }
+
+    if (showLabel && !se_playerMessageTriggersLeaderboardLabels)
     {
         bool fastestStat = !lastSeenStat && (statLabel == "Fastest Speed");
         if (lastSeenStat || fastestStat)
             showLabel = false;
     }
 
-    auto sortUsingGetAnyValue = [&statName, &statLabel, &penalizePlayersNotInGame, &playTimeStat, &specTimeStat](auto &a, auto &b)
+    auto sortUsingGetAnyValue = [&statName, &statLabel, &penalizePlayersNotInGame, &playTimeStat, &specTimeStat, &slowestSpeedStat, &today, &now, &localStat, &aliveStat](auto &a, auto &b)
     {
         bool aPrivate = a.second.isPrivate(statLabel);
         bool bPrivate = b.second.isPrivate(statLabel);
-
         if (aPrivate && !bPrivate) return false;
         if (!aPrivate && bPrivate) return true;
+
+        PlayerDataBase &aStats = today ? a.second.todayStats() :
+                                   now   ? a.second.thisSession() :
+                                           *static_cast<PlayerDataBase*>(&a.second);
+        PlayerDataBase &bStats = today ? b.second.todayStats() :
+                                   now   ? b.second.thisSession() :
+                                           *static_cast<PlayerDataBase*>(&b.second);
 
         if (penalizePlayersNotInGame)
         {
@@ -839,21 +899,22 @@ tString leaderboardFunc(tString message)
                 return a.second.last_seen < b.second.last_seen;
             if (a.second.in_server) return true;
             if (b.second.in_server) return false;
-
             return a.second.last_seen > b.second.last_seen;
         }
         else if (playTimeStat)
-        {
-            return a.second.total_play_time > b.second.total_play_time;
-        }
+            return aStats.total_play_time > bStats.total_play_time;
         else if (specTimeStat)
-        {
-            return a.second.total_spec_time > b.second.total_spec_time;
-        }
+            return aStats.total_spec_time > bStats.total_spec_time;
+        else if (slowestSpeedStat)
+            return aStats.slowest_speed < bStats.slowest_speed;
+        else if (localStat)
+        return aStats.is_local > bStats.is_local;
+        else if (aliveStat)
+            return aStats.alive > bStats.alive;
         else
         {
-            REAL aValue = atof(a.second.getAnyValue(statName).c_str());
-            REAL bValue = atof(b.second.getAnyValue(statName).c_str());
+            REAL aValue = atof(aStats.getAnyValue(statName).c_str());
+            REAL bValue = atof(bStats.getAnyValue(statName).c_str());
             return aValue > bValue;
         }
     };
@@ -865,9 +926,7 @@ tString leaderboardFunc(tString message)
         return PlayerData::getAvailableStatsStr("leaderboardFunc");
 
     int startIdx = (page - 1) * playersPerPage;
-    int endIdx = startIdx + playersPerPage;
-    if (endIdx > sortedPlayers.size())
-        endIdx = sortedPlayers.size();
+    int endIdx = std::min(startIdx + playersPerPage, (int)sortedPlayers.size());
 
     if (startIdx >= sortedPlayers.size())
     {
@@ -881,20 +940,29 @@ tString leaderboardFunc(tString message)
     {
         tString labelToDisplay(statLabel);
         if (nicknameStat)
-            labelToDisplay = "Nickames";
-        result << labelToDisplay << ": ";
+            labelToDisplay = "Nicknames";
+        result << labelToDisplay;
+        if (now || current || today) result << " ";
     }
+
+    if (now) result << "(NOW)";
+    else if (current) result << "(HERE)";
+    else if (today) result << "(TODAY)";
+    result << ": ";
 
     for (int i = startIdx; i < endIdx; ++i)
     {
-        PlayerData &stats = sortedPlayers[i].second;
-        bool showValue = !stats.isPrivate(statLabel);
+        PlayerData &data = sortedPlayers[i].second;
+        PlayerDataBase &stats = today ? data.todayStats() :
+                                     now   ? data.thisSession() :
+                                             *static_cast<PlayerDataBase*>(&data);
+
+        bool showValue = !data.isPrivate(statLabel);
         if (i > startIdx)
-        {
             result << ", ";
-        }
 
         result << (i + 1) << ") " << sortedPlayers[i].first;
+
         tString value;
         if (showValue)
         {
@@ -906,13 +974,12 @@ tString leaderboardFunc(tString message)
                 value << stats.getAnyValue(statName);
         }
         else
-        {
             value << "?";
-        }
+
         result << " (" << value << ")";
     }
-    result << " (" << page << "/" << totalPages << ")\n";
 
+    result << " (" << page << "/" << totalPages << ")";
     return result;
 }
 
@@ -933,10 +1000,21 @@ tString exactStatFunc(tString message)
 
     message = message.TrimWhitespace();
     int pos = 0;
-    stat = message.ExtractNonBlankSubString(pos);
 
-    tString statLabel;
-    statLabel = PlayerData::getAnyLabel(stat);
+    tString mode(message.ExtractNonBlankSubString(pos));
+    bool now = false, today = false;
+    if (mode == "now")
+        now = true;
+    else if (mode == "today")
+        today = true;
+    else if (mode != "total")
+    {
+        output << "No mode set! Use: 'now', 'today', or 'total'\n";
+        return output;
+    }
+
+    stat = message.ExtractNonBlankSubString(pos);
+    tString statLabel = PlayerData::getAnyLabel(stat);
 
     if (statLabel.empty() && stat == "last_active")
         statLabel = "Last Active";
@@ -945,15 +1023,12 @@ tString exactStatFunc(tString message)
     {
         output << "Stat not found! Usage: '"
                << bot.Messager()->Params().matchedTrigger
-               << " "
-               << "stat"
-               << " player' "
+               << " stat player' "
                << PlayerData::getAvailableStatsStr();
         return output;
     }
 
-    playerName = message.SubStr(pos+1).TrimWhitespace();
-
+    playerName = message.SubStr(pos + 1).TrimWhitespace();
     if (playerName.empty())
         statsTargetPlayer = bot.Messager()->Params().triggeredBy;
 
@@ -963,65 +1038,55 @@ tString exactStatFunc(tString message)
     if (statsTargetPlayer)
         playerName = statsTargetPlayer->GetName();
 
-    PlayerData *statsPtr;
-    if (statsTargetPlayer)
-        statsPtr = &ePlayerStats::getStats(statsTargetPlayer);
-    else
-        statsPtr = &ePlayerStats::getStatsForAnalysis(playerName);
+    PlayerData *statsPtr = statsTargetPlayer ? &ePlayerStats::getStats(statsTargetPlayer)
+                                              : &ePlayerStats::getStatsForAnalysis(playerName);
     PlayerData &stats = *statsPtr;
+
+    PlayerDataBase &sourceStats = today ? stats.todayStats() :
+                                now   ? stats.thisSession() :
+                                        *static_cast<PlayerDataBase*>(&stats);
 
     bool showValue = statLabel == "Hidden Stats" || !stats.isPrivate(statLabel);
 
-    tString statValue;
-    tString statAfterValue;
+    tString statValue, statAfterValue, currentSessionStatValue;
     if (showValue)
     {
         bool showCurrentSessionVal = true;
 
-        tString currentSessionStatValue;
         if (statLabel == "Kill Death Ratio")
         {
-            statValue << stats.getKDRatio(false);
-            if (stats.in_server)
-                currentSessionStatValue << stats.thisSession().getKDRatio(false);
+            statValue << sourceStats.getKDRatio(false);
         }
         else if (statLabel == "Fastest Speed")
         {
-            statValue << stats.getSpeed(false);
-            if (stats.in_server)
-                currentSessionStatValue << stats.thisSession().getSpeed(false);
+            statValue << sourceStats.getSpeed(false);
         }
         else if (statLabel == "Last Seen")
         {
-            statValue << stats.getLastSeenAgoStr(true);
+            statValue << stats.getLastSeenAgoStr(false);
+
+            if (stats.last_seen > 0)
+            {
+                struct tm *timeInfo = localtime(&stats.last_seen);
+                char buffer[64];
+                strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo);  // Format: 2024-06-14 13:45:00
+                statValue << " (" << buffer << " " << getTimeZone(*timeInfo, true) << ")";
+            }
+
             if (stats.in_server && statsTargetPlayer)
-                statValue << " | "
-                          << "Last Active: "
-                          << st_GetFormatTime(statsTargetPlayer->LastActivity(), false);
+                statValue << " | Last Active: " << st_GetFormatTime(statsTargetPlayer->LastActivity(), false);
+
+            showCurrentSessionVal = false;
         }
         else if (statLabel == "Times Banned")
         {
-            statValue << stats.times_banned;
-
-            statAfterValue << " - Bans Given: "
-                           << stats.bans_given;
-
-            if (stats.in_server)
-                statAfterValue << " | This session: ("
-                            << stats.thisSession().bans_given
-                            << ")";
+            statValue << sourceStats.times_banned;
+            statAfterValue << " - Bans Given: " << sourceStats.bans_given;
         }
         else if (statLabel == "Bans Given")
         {
-            statValue << stats.bans_given;
-
-            statAfterValue << " - Times Banned: "
-                           << stats.times_banned;
-
-            if (stats.in_server)
-                statAfterValue << " | This session: ("
-                            << stats.thisSession().times_banned
-                            << ")";
+            statValue << sourceStats.bans_given;
+            statAfterValue << " - Times Banned: " << sourceStats.times_banned;
         }
         else if (statLabel == "RGB")
         {
@@ -1030,25 +1095,16 @@ tString exactStatFunc(tString message)
         }
         else if (statLabel == "Last Active")
         {
-            if (statsTargetPlayer)
-                statValue << st_GetFormatTime(statsTargetPlayer->LastActivity(), false);
-            else
-                statValue << "Not here";
+            statValue << (statsTargetPlayer ? st_GetFormatTime(statsTargetPlayer->LastActivity(), false) : "Not here");
+            showCurrentSessionVal = false;
         }
         else
-            statValue << stats.getAnyValue(stat.TrimWhitespace());
-
-        if (showCurrentSessionVal && stats.in_server && stat != "last_active" && stat != "seen")
         {
-            if (currentSessionStatValue.empty())
-                currentSessionStatValue << stats.thisSession().getAnyValue(stat.TrimWhitespace());
-
-            statValue << " | "
-                      << "This session: "
-                      << "("
-                      << currentSessionStatValue
-                      << ")";
+            statValue << sourceStats.getAnyValue(stat.TrimWhitespace());
         }
+
+        if (statLabel == "Slowest Speed" && sourceStats.slowest_speed == 99999.0)
+            statValue = "N/A";
     }
     else
     {
@@ -1057,11 +1113,19 @@ tString exactStatFunc(tString message)
 
     statValue << statAfterValue;
 
-    tString displayName(!statsTargetPlayer || ePlayerStats::shouldEnforceLocalName(statsTargetPlayer) ? (!stats.name.empty() ? stats.name : playerName) : playerName);
-    output << displayName
-            << ": "
-            << statLabel
-            << " - ";
+    tString displayName(!statsTargetPlayer || ePlayerStats::shouldEnforceLocalName(statsTargetPlayer)
+                            ? (!stats.name.empty() ? stats.name : playerName)
+                            : playerName);
+
+    output << displayName;
+
+    if (today)
+        output << " (TODAY)";
+    else if (now)
+        output << " (NOW)";
+
+    output << ": " << statLabel << " - ";
+
 
     if (!statValue.empty() || statLabel == "Chats" || statLabel == "Hidden Stats")
     {
@@ -1375,14 +1439,19 @@ tString whatsTheFunc(tString message)
                << " ago)";
         if (!stats.last_banned_reason.empty())
             output << ". Reason: "
-                << stats.last_banned_reason;
+                   << stats.last_banned_reason;
     }
-    else if (target.Contains("time"))
+    else if (target.Contains("current_time"))
     {
         struct tm now = getCurrentLocalTime();
         output << getTimeStringBase(now)
                << " "
                << getTimeZone(now);
+    }
+    else if (target.Contains("current_date"))
+    {
+        struct tm now = getCurrentLocalTime();
+        output << st_GetCurrentTime("%Y-%m-%d", now);
     }
     else if (target.Contains("my_color"))
     {
@@ -1484,16 +1553,16 @@ tString whatsTheFunc(tString message)
         }
     }
     else if (target.Contains("ip_address"))
-    {        
+    {
         eChatBot &bot = eChatBot::getInstance();
         ePlayerNetID *triggeredByPlayer = bot.Messager()->Params().triggeredBy;
-        
+
         if (!triggeredByPlayer || !triggeredByPlayer->encryptVerified )
         {
             output << "You are not verified";
             return output;
         }
-        
+
         if (sn_ourRealIPS.empty())
             output << "OUR_REAL_IPS is not set!\n";
         else
@@ -1517,7 +1586,8 @@ tString whatsTheFunc(tString message)
         tArray<tString> names;
         for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
         {
-            if (se_PlayerNetIDs[i]) {
+            if (se_PlayerNetIDs[i] && (!se_PlayerNetIDs[i]->isLocal() || !tIsEnabledForPlayer(se_disableCreateSpecific, se_PlayerNetIDs[i]->pID + 1)))
+            {
                 count++;
                 names.Add(se_PlayerNetIDs[i]->GetName());
             }
@@ -1538,7 +1608,8 @@ tString whatsTheFunc(tString message)
         tArray<tString> names;
         for (int i = 0; i < se_PlayerNetIDs.Len(); i++)
         {
-            if (se_PlayerNetIDs[i] && !se_PlayerNetIDs[i]->CurrentTeam()) {
+            if (se_PlayerNetIDs[i] && !se_PlayerNetIDs[i]->CurrentTeam() && (!se_PlayerNetIDs[i]->isLocal() || !tIsEnabledForPlayer(se_disableCreateSpecific, se_PlayerNetIDs[i]->pID + 1)))
+            {
                 count++;
                 names.Add(se_PlayerNetIDs[i]->GetName());
             }
@@ -1628,7 +1699,13 @@ tString whatsTheFunc(tString message)
             std::chrono::system_clock::now() - ePlayerStats::getStatsDBCreationDate()
         ).count();
 
-        output << "Version: " << sn_programVersion << ", DB Age: " << st_GetFormatTime(ageSeconds, false, false);
+        output << "Version: " << sn_programVersion;
+
+        if (se_playerMessageWhatsTheFuncVersionShowDBAge)
+            output << ", DB Age: " << st_GetFormatTime(ageSeconds, false, false);
+
+        if (!se_playerMessageWhatsTheFuncVersionStr.empty())
+            output << ", " << se_playerMessageWhatsTheFuncVersionStr;
     }
     else
     { // quick commands
@@ -1670,6 +1747,8 @@ tString whatsTheFunc(tString message)
                        << pCycle->Lag()
                        << ")";
             }
+
+            output << ", Ping Changes: " << targetPlayer->lastPingIteration;
         }
         else if (target.StartsWith("player_info"))
         {
@@ -1989,12 +2068,33 @@ tString chatScrollSearchFunc(tString message)
     }
 
     message = message.TrimWhitespace();
+
+    int page = 1;
+    int lastSpace = -1;
+    for (int i = message.Len() - 1; i >= 0; --i)
+    {
+        if (isblank(message[i]))
+        {
+            lastSpace = i;
+            break;
+        }
+    }
+
+    if (lastSpace != -1)
+    {
+        tString possiblePage = message.SubStr(lastSpace + 1).TrimWhitespace();
+        if (possiblePage.isNumber())
+        {
+            page = atoi(possiblePage.c_str());
+            message = message.SubStr(0, lastSpace).TrimWhitespace();
+        }
+    }
+
     PlayerData *stats;
     tString playerName = message.ExtractNonBlankSubString(pos);
 
     bool all = playerName.ToLower() == "all";
     std::vector<std::string> chatsToDisplay;
-    int page = 1;
     const size_t pageSize = se_playerMessageTriggersChatSearchMaxResults;
     tString param = message.ExtractNonBlankSubString(pos);
     size_t totalNumOfChats = 0;
@@ -2004,8 +2104,6 @@ tString chatScrollSearchFunc(tString message)
         bool params = !param.empty();
         if (param.isNumber() || !params)
         {
-            if (params)
-                page = atoi(param.c_str());
             chatsToDisplay = getAllPlayerChatsPaginated(pageSize, page, totalNumOfChats, lastMatchedTrigger);
         }
         else
@@ -2916,11 +3014,9 @@ tString notifyPlayerFunc(tString message)
     if (targetPlayer)
         targetName = targetPlayer->GetName();
 
-    PlayerData *stats;
-    if (targetPlayer)
-        stats = &ePlayerStats::getStats(targetPlayer);
-    else
-        stats = &ePlayerStats::getStatsForAnalysis(targetName);
+    PlayerData *stats = targetPlayer
+        ? &ePlayerStats::getStats(targetPlayer)
+        : &ePlayerStats::getStatsForAnalysis(targetName);
 
     if (!stats || stats->name.empty())
     {
@@ -2930,16 +3026,17 @@ tString notifyPlayerFunc(tString message)
 
     std::string senderName = sender ? sender->GetName().stdString() : "Unknown";
     time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    tString delim = se_playerMessageNotificationsDelimiter;
 
     tString formattedNote;
-    formattedNote << senderName << DB_DELIMITER() << noteText << DB_DELIMITER() << std::to_string(now);
+    formattedNote << senderName << delim << noteText << delim << std::to_string(now);
     stats->notifications.push_back(formattedNote.stdString());
 
     if (sender)
     {
         PlayerData &senderStats = ePlayerStats::getStats(sender);
         tString sentNote;
-        sentNote << stats->name << DB_DELIMITER() << noteText << DB_DELIMITER() << std::to_string(now);
+        sentNote << targetName << delim << noteText << delim << std::to_string(now);
         senderStats.sent_notifications.push_back(sentNote.stdString());
     }
 
@@ -2949,7 +3046,7 @@ tString notifyPlayerFunc(tString message)
         time_t capturedNow = now;
 
         gTaskScheduler.schedule("notification", se_playerMessageNotificationsDelay, [capturedTarget, capturedNow]()
-                                {
+        {
             if (capturedTarget)
             {
                 PlayerData& targetStats = ePlayerStats::getStats(capturedTarget);
@@ -2962,46 +3059,20 @@ tString notifyPlayerFunc(tString message)
                     true
                 );
                 targetStats.last_seen_notification_time = capturedNow;
-            } });
+            }
+        });
     }
 
-    tString displayName(!targetPlayer || ePlayerStats::shouldEnforceLocalName(targetPlayer) ? (!stats->name.empty() ? stats->name : targetName) : targetName);
+    tString displayName(!targetPlayer || ePlayerStats::shouldEnforceLocalName(targetPlayer)
+                        ? (!stats->name.empty() ? stats->name : targetName)
+                        : targetName);
 
     output << "Notification sent to " << displayName << ".";
     return output;
 }
 
-tString notificationsListFunc(tString message)
+tString buildPaginatedNotificationList(const std::vector<std::string> &notes, const tString &prefix, bool isSent = false, int page = 1)
 {
-    tString output;
-    eChatBot &bot = eChatBot::getInstance();
-    ePlayerNetID *player = bot.Messager()->Params().triggeredBy;
-    tString trigger = bot.Messager()->Params().matchedTrigger;
-
-    if (!player)
-        return tString("No notifications found.");
-
-    PlayerData *stats = &ePlayerStats::getStats(player);
-    if (!stats)
-        return tString("No notifications found.");
-
-    int page = 1;
-    message = message.TrimWhitespace();
-    if (!message.empty())
-    {
-        if (message.isNumber())
-            page = atoi(message.c_str());
-        else
-        {
-            output << "Usage: '" << trigger << " <page>'";
-            return output;
-        }
-    }
-
-    auto &notes = stats->notifications;
-    if (notes.empty())
-        return tString("You have no notifications.");
-
     std::vector<tString> pages;
     const size_t maxLen = se_SpamMaxLen - 1;
     size_t currentLen = 0;
@@ -3010,34 +3081,35 @@ tString notificationsListFunc(tString message)
     for (auto it = notes.rbegin(); it != notes.rend(); ++it)
     {
         tString raw(*it);
-        tArray<tString> parts = raw.Split(tString(DB_DELIMITER()));
+        tArray<tString> parts = raw.Split(se_playerMessageNotificationsDelimiter);
 
         tString line;
         if (parts.Len() >= 3)
         {
-            tString sender = parts[0],
-                    body   = parts[1];
-
+            tString name = parts[0], body = parts[1];
             if (se_playerMessageNotificationsListShowTime)
             {
                 time_t timestamp = 0;
                 try
                 {
-                    timestamp = std::stoll(parts[parts.Len() - 1].stdString());
+                    timestamp = std::stoll(parts[2].stdString());
                 }
                 catch (...)
                 {
                 }
-
                 struct tm *timeinfo = localtime(&timestamp);
                 std::string timeStr = getTimeStringBase(*timeinfo, false);
-
-                line << "[" << sender << " @ " << timeStr << "] " << body;
+                line << (isSent ? "[To " : "[") << name << " @ " << timeStr << "] " << body;
             }
             else
             {
-                line << "[" << sender << "] " << body;
+                line << (isSent ? "[To " : "[") << name << "] " << body;
             }
+        }
+        else if (parts.Len() >= 2)
+        {
+            tString name = parts[0], body = parts[1];
+            line << (isSent ? "[To " : "[") << name << "] " << body;
         }
         else
         {
@@ -3051,7 +3123,6 @@ tString notificationsListFunc(tString message)
         {
             if (currentLen > 0)
                 pages.push_back(currentPage);
-
             currentPage = line;
             currentLen = len;
         }
@@ -3075,22 +3146,38 @@ tString notificationsListFunc(tString message)
     if (page > (int)pages.size())
         page = (int)pages.size();
 
-    output << player->GetName() << ": Notifications (" << page << "/" << pages.size() << "): " << pages[page - 1];
+    tString output;
+    output << prefix << " (" << page << "/" << pages.size() << "): " << pages[page - 1];
+    return output;
+}
+
+tString notificationsListFunc(tString message)
+{
+    ePlayerNetID *player = eChatBot::getInstance().Messager()->Params().triggeredBy;
+    if (!player) return tString("No notifications found.");
+
+    PlayerData *stats = &ePlayerStats::getStats(player);
+    if (!stats) return tString("No notifications found.");
+
+    int page = 1;
+    message = message.TrimWhitespace();
+    if (!message.empty())
+    {
+        if (message.isNumber()) page = atoi(message.c_str());
+        else return tString("Usage: '<trigger> <page>'");
+    }
+
+    if (stats->notifications.empty())
+        return tString("You have no notifications.");
 
     stats->last_seen_notification_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-
-    return output;
+    return buildPaginatedNotificationList(stats->notifications, player->GetName(), false, page);
 }
 
 tString sentNotificationsListFunc(tString message)
 {
-    tString output;
-    eChatBot &bot = eChatBot::getInstance();
-    ePlayerNetID *sender = bot.Messager()->Params().triggeredBy;
-    tString trigger = bot.Messager()->Params().matchedTrigger;
-
-    if (!sender)
-        return tString("No sender context.");
+    ePlayerNetID *sender = eChatBot::getInstance().Messager()->Params().triggeredBy;
+    if (!sender) return tString("No sender context.");
 
     message = message.TrimWhitespace();
     tString playerName;
@@ -3107,22 +3194,17 @@ tString sentNotificationsListFunc(tString message)
     else if (parts.Len() >= 2)
     {
         playerName = parts[0];
-        if (parts[1].isNumber())
-            page = atoi(parts[1].c_str());
+        if (parts[1].isNumber()) page = atoi(parts[1].c_str());
     }
 
     PlayerData *stats = nullptr;
-
     if (!playerName.empty())
     {
         ePlayerNetID *targetPlayer = ePlayerNetID::GetPlayerByName(playerName, false);
-        if (targetPlayer)
-            playerName = targetPlayer->GetName();
-
-        if (targetPlayer)
-            stats = &ePlayerStats::getStats(targetPlayer);
-        else
-            stats = &ePlayerStats::getStatsForAnalysis(playerName);
+        if (targetPlayer) playerName = targetPlayer->GetName();
+        stats = targetPlayer
+            ? &ePlayerStats::getStats(targetPlayer)
+            : &ePlayerStats::getStatsForAnalysis(playerName);
     }
     else
     {
@@ -3130,103 +3212,20 @@ tString sentNotificationsListFunc(tString message)
         playerName = sender->GetName();
     }
 
-    if (!stats)
-        return tString("Could not locate stats.");
+    if (!stats) return tString("Could not locate stats.");
+    if (stats->sent_notifications.empty()) return tString("No sent notifications found.");
 
-    auto &notes = stats->sent_notifications;
-    if (notes.empty())
-        return tString("No sent notifications found.");
-
-    std::vector<tString> pages;
-    const size_t maxLen = se_SpamMaxLen - 1;
-    size_t currentLen = 0;
-    tString currentPage;
-
-    for (auto it = notes.rbegin(); it != notes.rend(); ++it)
-    {
-        tString raw(*it);
-        tArray<tString> parts = raw.Split(tString(DB_DELIMITER()));
-
-        tString line;
-        if (parts.Len() >= 3)
-        {
-            tString recipient = parts[0],
-                    body      = parts[1];
-
-            if (se_playerMessageNotificationsListShowTime)
-            {
-                time_t timestamp = 0;
-                try
-                {
-                    timestamp = std::stoll(parts[parts.Len() - 1].stdString());
-                }
-                catch (...)
-                {
-                }
-
-                struct tm *timeinfo = localtime(&timestamp);
-                std::string timeStr = getTimeStringBase(*timeinfo, false);
-
-                line << "[To " << recipient << " @ " << timeStr << "] " << body;
-            }
-            else
-            {
-                line << "[To " << recipient << "] " << body;
-            }
-        }
-        else
-        {
-            line = raw;
-        }
-
-        size_t len = line.Len();
-        size_t sep = (currentLen == 0) ? 0 : 2;
-
-        if (currentLen + sep + len > maxLen)
-        {
-            if (currentLen > 0)
-                pages.push_back(currentPage);
-
-            currentPage = line;
-            currentLen = len;
-        }
-        else
-        {
-            if (currentLen > 0)
-            {
-                currentPage << ", ";
-                currentLen += 2;
-            }
-            currentPage << line;
-            currentLen += len;
-        }
-    }
-
-    if (currentLen > 0)
-        pages.push_back(currentPage);
-
-    if (page <= 0)
-        page = 1;
-    if (page > (int)pages.size())
-        page = (int)pages.size();
-
-    output << playerName << ": Sent Notifications (" << page << "/" << pages.size() << "): " << pages[page - 1];
-    return output;
+    return buildPaginatedNotificationList(stats->sent_notifications, playerName, true, page);
 }
 
 tString viewNotificationsFunc(tString message)
 {
-    tString output;
     eChatBot &bot = eChatBot::getInstance();
-    ePlayerNetID *triggeredByPlayer = bot.Messager()->Params().triggeredBy;
-    tString trigger = bot.Messager()->Params().matchedTrigger;
-
-    if (!triggeredByPlayer)
-        return tString("You must be a player to use this command.");
+    ePlayerNetID *player = bot.Messager()->Params().triggeredBy;
+    if (!player) return tString("You must be a player to use this command.");
 
     message = message.TrimWhitespace();
-
-    tString playerName;
+    tString targetName;
     int page = 1;
 
     tArray<tString> parts = message.Split(" ");
@@ -3235,96 +3234,39 @@ tString viewNotificationsFunc(tString message)
         if (parts[0].isNumber())
             page = atoi(parts[0].c_str());
         else
-            playerName = parts[0];
+            targetName = parts[0];
     }
     else if (parts.Len() >= 2)
     {
-        playerName = parts[0];
-        if (parts[1].isNumber())
-            page = atoi(parts[1].c_str());
+        targetName = parts[0];
+        if (parts[1].isNumber()) page = atoi(parts[1].c_str());
     }
 
-    if (playerName.empty())
-        playerName = triggeredByPlayer->GetName();
+    if (targetName.empty())
+        targetName = player->GetName();
 
     if (se_playerMessageNotificationsRestrictView &&
-        playerName != triggeredByPlayer->GetName() &&
-        !triggeredByPlayer->encryptVerified)
+        targetName != player->GetName() &&
+        !player->encryptVerified)
     {
         return tString("You are not verified.");
     }
 
-    ePlayerNetID *targetPlayer = ePlayerNetID::GetPlayerByName(playerName, false);
-    if (targetPlayer)
-        playerName = targetPlayer->GetName();
+    ePlayerNetID *targetPlayer = ePlayerNetID::GetPlayerByName(targetName, false);
+    if (targetPlayer) targetName = targetPlayer->GetName();
 
     PlayerData *stats = targetPlayer
-                            ? &ePlayerStats::getStats(targetPlayer)
-                            : &ePlayerStats::getStatsForAnalysis(playerName);
+        ? &ePlayerStats::getStats(targetPlayer)
+        : &ePlayerStats::getStatsForAnalysis(targetName);
 
-    if (!stats)
-        return tString("Player not found: ") + playerName;
+    if (!stats) return tString("Player not found: ") + targetName;
+    if (stats->notifications.empty())
+        return tString(targetPlayer ? targetName : stats->name) + " has no notifications.";
 
-    auto &notes = stats->notifications;
-    if (notes.empty())
-        return (targetPlayer ? tString(playerName) : stats->name) + " has no notifications.";
-
-    std::vector<tString> pages;
-    const size_t maxLen = se_SpamMaxLen - 1;
-    size_t currentLen = 0;
-    tString currentPage;
-
-    for (auto it = notes.rbegin(); it != notes.rend(); ++it)
-    {
-        tString raw(*it);
-        tArray<tString> noteParts = raw.Split(tString(DB_DELIMITER()));
-
-        tString line;
-        if (noteParts.Len() >= 2)
-        {
-            tString sender = noteParts[0];
-            tString body = noteParts[1];
-            line << "[" << sender << "] " << body;
-        }
-        else
-        {
-            line = raw;
-        }
-
-        size_t len = line.Len();
-        size_t sep = (currentLen == 0) ? 0 : 2;
-
-        if (currentLen + sep + len > maxLen)
-        {
-            if (currentLen > 0)
-                pages.push_back(currentPage);
-
-            currentPage = line;
-            currentLen = len;
-        }
-        else
-        {
-            if (currentLen > 0)
-            {
-                currentPage << ", ";
-                currentLen += 2;
-            }
-            currentPage << line;
-            currentLen += len;
-        }
-    }
-
-    if (currentLen > 0)
-        pages.push_back(currentPage);
-
-    if (page <= 0)
-        page = 1;
-    if (page > (int)pages.size())
-        page = (int)pages.size();
-
-    output << playerName << ": Notifications (" << page << "/" << pages.size() << "): " << pages[page - 1];
-    return output;
+    return buildPaginatedNotificationList(stats->notifications, targetName, false, page);
 }
+
+
 
 void eChatBot::InitChatFunctions()
 {
@@ -3721,6 +3663,7 @@ void eChatBotMessager::FindTriggeredResponse()
             if (lowerMessage.Contains(phrases[i]))
             {
                 gHelperUtility::Debug("eChatBot","Input message contained ignored phrase: " + phrases[i].stdString());
+                Params().abortOutput = true;
                 return;
             }
         }
@@ -3735,6 +3678,7 @@ void eChatBotMessager::FindTriggeredResponse()
             if (lowerMessage.StartsWith(phrases[i]))
             {
                 gHelperUtility::Debug("eChatBot","Input message started with ignored phrase: " + phrases[i].stdString());
+                Params().abortOutput = true;
                 return;
             }
         }
@@ -3749,6 +3693,7 @@ void eChatBotMessager::FindTriggeredResponse()
             if (lowerMessage.EndsWith(phrases[i]))
             {
                 gHelperUtility::Debug("eChatBot","Input message ended with ignored phrase: " + phrases[i].stdString());
+                Params().abortOutput = true;
                 return;
             }
         }
@@ -3843,7 +3788,8 @@ void eChatBotMessager::FindTriggeredResponse()
             if (Params().sendingPlayer == nullptr)
                 continue;
 
-            if (tSysTimeFloat() - Params().sendingPlayer->createdTime() > se_playerMessageTriggersJoinedRecentlyWaitTime)
+            if (tSysTimeFloat() - Params().sendingPlayer->createdTime() > se_playerMessageTriggersJoinedRecentlyWaitTime &&
+                tSysTimeFloat() - Params().sendingPlayer->lastTeamCreateTime > se_playerMessageTriggersJoinedRecentlyWaitTime)
                 continue;
         }
 
@@ -4062,17 +4008,30 @@ void eChatBot::SilencedAction()
     messenger.Params().pentalized_for_last_message_prefix = !ableToChatCommonPrefix;
 
     if (sg_helperDebug)
+    {
         gHelperUtility::Debug("eChatBot", "Clearing all playerMessageTask from the TaskScheduler.");
+        gHelperUtility::Debug("eChatBot", std::string("[SilencedAction] Penalized for message: ") + (messenger.Params().pentalized_for_last_message ? "true" : "false"));
+        gHelperUtility::Debug("eChatBot", std::string("[SilencedAction] Penalized for prefix: ") + (messenger.Params().pentalized_for_last_message_prefix ? "true" : "false"));
+    }
+
+    tString silencedMessage = messenger.Params().currentPartIndex < messenger.Params().messageParts.size()
+        ? messenger.Params().messageParts[messenger.Params().currentPartIndex].message
+        : tString("");
+
     gTaskScheduler.removeTasksWithPrefix("playerMessageTask");
+
     std::vector<eChatBotData::MessagePart> partsToBeResent;
     partsToBeResent.reserve(messenger.Params().messageParts.size());
 
     size_t totalParts = messenger.Params().messageParts.size();
+
     for (size_t i = messenger.Params().currentPartIndex; i < totalParts; ++i)
     {
         auto &part = messenger.Params().messageParts[i];
 
         bool found = false;
+        bool lastWasSilenced = ePlayerMessages.CheckIfSilenced();
+
         for (auto it = ePlayerMessages.incomingMessages.rbegin(); it != ePlayerMessages.incomingMessages.rend(); ++it)
         {
             if (it->StartsWith(part.message))
@@ -4080,6 +4039,19 @@ void eChatBot::SilencedAction()
                 found = true;
                 break;
             }
+        }
+
+        if (sg_helperDebug)
+        {
+            gHelperUtility::Debug("eChatBot", std::string("Checking message part[") + std::to_string(i) + "]: " + part.message.stdString());
+            gHelperUtility::Debug("eChatBot", std::string("Matched incoming: ") + (found ? "true" : "false") + ", Last silenced: " + (lastWasSilenced ? "true" : "false") + ", Equals silencedMessage: " + ((part.message == silencedMessage) ? "true" : "false"));
+        }
+
+        if (found && ((lastWasSilenced && part.message == silencedMessage) || messenger.Params().pentalized_for_last_message_prefix))
+        {
+            if (sg_helperDebug)
+                gHelperUtility::Debug("eChatBot", "Forcing resend due to silenced match or prefix penalty.");
+            found = false;
         }
 
         if (!found)
@@ -4104,14 +4076,26 @@ void eChatBot::SilencedAction()
     {
         auto &p = partsToBeResent[j];
 
-        if (messenger.Params().pentalized_for_last_message_prefix)
+        bool retryingSilencedMessage = se_playerMessageTriggersResendSilencedPrefixDuplicatedMessages && (p.message == silencedMessage);
+
+        if ((retryingSilencedMessage || messenger.Params().pentalized_for_last_message_prefix) && !p.message.StartsWith("/"))
         {
             tString randomPrefix;
             randomPrefix << randomStr(se_playerMessageTriggersResendSilencedMessagesPrefixList.stdString(),
                                       se_playerMessageTriggersResendSilencedMessagesPrefixAmount)
                          << " ";
 
-            p.message = randomPrefix + p.message;
+            if (!messenger.Params().preAppend.empty() && p.message.StartsWith(messenger.Params().preAppend))
+            {
+                p.message = messenger.Params().preAppend + (randomPrefix + p.message.SubStr(messenger.Params().preAppend.Len()));
+            }
+            else
+            {
+                p.message = randomPrefix + p.message;
+            }
+
+            if (sg_helperDebug)
+                gHelperUtility::Debug("eChatBot", std::string("Adding prefix for retry: ") + p.message.stdString());
         }
 
         if (p.delay <= 0)
@@ -4120,14 +4104,12 @@ void eChatBot::SilencedAction()
             p.delay += penaltyDelay + (j * perPartSpacing);
     }
 
-
     messenger.Params().messageParts = partsToBeResent;
     messenger.Params().currentPartIndex = 0;
 
     if (sg_helperDebug)
     {
         tString debugMsg("Parts to be sent: ");
-
         for (size_t j = 0; j < partsToBeResent.size(); ++j)
         {
             if (j > 0)
@@ -4184,10 +4166,10 @@ bool eChatBotMessager::Send()
         return false;
     }
 
+    tString messageToSend = Params().response;
+
     if (Params().isExpedientTrigger)
     {
-        tString messageToSend = Params().response;
-
         if (messageToSend.Len() > se_playerMessageTriggersSpamMaxlen)
             messageToSend = messageToSend.SubStr(0, se_playerMessageTriggersSpamMaxlen);
 
@@ -4200,7 +4182,26 @@ bool eChatBotMessager::Send()
         return true;
     }
 
-    tString messageToSend = Params().response;
+    Params().pentalized_for_last_message_prefix = !ePlayerNetID::canChatCommonPrefix(messageToSend) ||
+                                                ( !ePlayerNetID::nextSpeakTimePrefixCommonPrefix.empty() && messageToSend.StartsWith(ePlayerNetID::nextSpeakTimePrefixCommonPrefix));
+
+    if (!messageToSend.StartsWith("/") && Params().pentalized_for_last_message_prefix)
+    {
+        if (sg_helperDebug)
+        {
+            tString debug;
+            debug << "Message not able to be sent because " << messageToSend << " starts with " << ePlayerNetID::nextSpeakTimePrefixCommonPrefix << " adding prefix";
+            gHelperUtility::Debug("eChatBot", debug.stdString());
+        }
+
+        tString randomPrefix;
+        randomPrefix << randomStr(se_playerMessageTriggersResendSilencedMessagesPrefixList.stdString(),
+                                    se_playerMessageTriggersResendSilencedMessagesPrefixAmount)
+                     << " ";
+
+        messageToSend = randomPrefix + messageToSend;
+    }
+
     bool  forceSpecialDelay = (Params().delay < -5);
 
     if (messageToSend.Len() > se_playerMessageTriggersSpamMaxlen)
@@ -4653,7 +4654,11 @@ void eChatBotData::StoreContextItem(const tString &item)
         {
             struct tm now = getCurrentLocalTime();
             line << "["
+                 << st_GetCurrentTime("%Y-%m-%d", now)
+                 << " "
                  << getTimeStringBase(now)
+                 << " "
+                 << getTimeZone(now)
                  << "] ";
         }
 
@@ -4669,11 +4674,20 @@ tString eChatBotData::ExtractAdditionalContextItems(const char *newLabel, const 
     tString addlContext;
 
     auto store = [this, &addlContext](const char *label, const char *key) {
+        if (!label || !*label || !key || !*key)
+            return;
+
         tString context;
         context << label << ": " << whatsTheFunc(tString(key));
-        if (!context.empty())
-            addlContext << context << " | ";
+
+        if (!context.empty()) {
+            if (!addlContext.empty()) {
+                addlContext << " | ";
+            }
+            addlContext << context;
+        }
     };
+
 
     if (newLabel && *newLabel && newKey && *newKey)
     {
@@ -4681,7 +4695,12 @@ tString eChatBotData::ExtractAdditionalContextItems(const char *newLabel, const 
     }
     else
     {
-        store("Time", "time");
+        if (!se_playerMessageTriggersContextBuilderStoreTimestamp)
+        {
+            store("Date", "current_date");
+            store("Time", "current_time");
+        }
+
         store("Game Time", "game_time");
         store("Current Server", "current_server");
         store("Current Score", "player_score");

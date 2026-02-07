@@ -12,7 +12,8 @@
 #include "tDatabase.h"
 
 extern tString se_playerMessageTriggersFile,
-               se_playerMessageNotificationTrigger;
+               se_playerMessageNotificationTrigger,
+               se_playerMessageNotificationsDelimiter;               
 
 extern bool se_playerMessageTriggers,
             se_playerMessageTriggersReactToSelf,

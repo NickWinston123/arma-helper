@@ -58,9 +58,9 @@ class gAIBot;
 class PlayerStats;
 
 extern tString sg_smarterBotEnabledPlayers;
-extern bool sg_smarterBotTeam, sg_smarterBotTeamOwner, sg_smarterBotAFKCheck, sg_predictDeath;
-extern REAL sg_smarterBotAFKCheckTime;
-extern bool sg_smarterBotAFKCheckIfChatting;
+extern bool sg_smarterBotTeam, sg_smarterBotTeamOwner, sg_smarterBotAnnoyanceCheck, sg_predictDeath;
+extern REAL sg_smarterBotAnnoyanceCheckTime;
+extern bool sg_smarterBotAnnoyanceCheckIfChatting;
 extern bool sg_navigatorDebugTrackEvaluationShowScore,
             sg_navigatorDebugShowTurn,
             sg_navigatorDebugTrackEvaluation;

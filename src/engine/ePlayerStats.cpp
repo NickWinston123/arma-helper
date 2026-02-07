@@ -71,6 +71,8 @@ bool ePlayerStats::loadStatsFromDB()
 
 bool ePlayerStats::saveStatsToDB()
 {
+    statsLoadedCheck();
+
     sqlite3 *db = tDatabaseUtility::OpenDatabase(se_playerStatsDataBaseFile);
     if (!db)
         return false;
@@ -100,37 +102,30 @@ void ePlayerStats::updateStatsMatchEnd(ePlayerNetID *matchWinner)
     {
         ePlayerNetID *currentPlayer = se_PlayerNetIDs[i];
         PlayerData &stats = getStats(currentPlayer);
-        PlayerDataBase &statsThisSession = stats.thisSession();
 
-        stats.in_game = currentPlayer->CurrentTeam() != nullptr;
-        statsThisSession.in_game = stats.in_game;
+        bool isInGame = currentPlayer->CurrentTeam() != nullptr;
+        stats.setToAllSessions(&PlayerDataBase::in_game, isInGame);
 
         if (stats.in_game)
         {
             if (currentPlayer == matchWinner)
-            {
-                stats.match_wins++;
-                statsThisSession.match_wins++;
-            }
+                stats.applyToAllSessions(&PlayerDataBase::match_wins);
             else
-            {
-                stats.match_losses++;
-                statsThisSession.match_losses++;
-            }
-            stats.matches_played++;
-            statsThisSession.matches_played++;
+                stats.applyToAllSessions(&PlayerDataBase::match_losses);
+
+            stats.applyToAllSessions(&PlayerDataBase::matches_played);
         }
     }
 
-        if (se_playerMessageTriggersContextBuilder)
-        {
-            eChatBot &bot = eChatBot::getInstance();
-            tString context;
-            context << matchWinner->GetName()
-                    << " won the match.";
+    if (se_playerMessageTriggersContextBuilder)
+    {
+        eChatBot &bot = eChatBot::getInstance();
+        tString context;
+        context << matchWinner->GetName()
+                << " won the match.";
 
-            eChatBot::getInstance().data.StoreContextItem(context);
-        }
+        eChatBot::getInstance().data.StoreContextItem(context);
+    }
 }
 
 void ePlayerStats::updateStatsRoundEnd()
@@ -139,10 +134,9 @@ void ePlayerStats::updateStatsRoundEnd()
     {
         ePlayerNetID *currentPlayer = se_PlayerNetIDs[i];
         PlayerData &stats = getStats(currentPlayer);
-        PlayerDataBase &statsThisSession = stats.thisSession();
 
-        stats.in_game = currentPlayer->CurrentTeam() != nullptr;
-        statsThisSession.in_game = stats.in_game;
+        bool isInGame = currentPlayer->CurrentTeam() != nullptr;
+        stats.setToAllSessions(&PlayerDataBase::in_game, isInGame);
 
         if (stats.in_game)
         {
@@ -152,8 +146,7 @@ void ePlayerStats::updateStatsRoundEnd()
             {
                 if (cycle && cycle->Alive())
                 {
-                    stats.round_wins++;
-                    statsThisSession.round_wins++;
+                    stats.applyToAllSessions(&PlayerDataBase::round_wins);
 
                     if (se_playerMessageTriggersContextBuilder)
                     {
@@ -165,20 +158,16 @@ void ePlayerStats::updateStatsRoundEnd()
                 }
                 else
                 {
-                    stats.round_losses++;
-                    statsThisSession.round_losses++;
+                    stats.applyToAllSessions(&PlayerDataBase::round_losses);
                 }
-                stats.rounds_played++;
-                statsThisSession.rounds_played++;
+                stats.applyToAllSessions(&PlayerDataBase::rounds_played);
             }
 
-            stats.total_play_time += se_GameTime();
-            statsThisSession.total_play_time += se_GameTime();
+            stats.applyToAllSessions(&PlayerDataBase::total_play_time, se_GameTime());
         }
         else
         {
-            stats.total_spec_time += se_GameTime();
-            statsThisSession.total_spec_time += se_GameTime();
+            stats.applyToAllSessions(&PlayerDataBase::total_spec_time, se_GameTime());
         }
     }
 }
@@ -189,16 +178,14 @@ void ePlayerStats::updateStatsRoundStart()
     {
         ePlayerNetID *currentPlayer = se_PlayerNetIDs[i];
         PlayerData &stats = getStats(currentPlayer);
-        PlayerDataBase &statsThisSession = stats.thisSession();
 
-        stats.in_game = currentPlayer->CurrentTeam() != nullptr;
-        statsThisSession.in_game = stats.in_game;
+        bool isInGame = currentPlayer->CurrentTeam() != nullptr;
+        stats.setToAllSessions(&PlayerDataBase::in_game, isInGame);
 
         if (stats.in_game)
         {
-            stats.alive = true;
-            statsThisSession.alive = true;
-            stats.banned_a_player_this_round = false;
+            stats.setToAllSessions(&PlayerDataBase::alive, true);
+            stats.setToAllSessions(&PlayerDataBase::banned_a_player_this_round, false);
         }
     }
 
@@ -219,6 +206,8 @@ bool ePlayerStats::reloadStatsFromDB()
         loadStatsFromDB();      // reload stats from DB
         return true;
     }
+
+    gHelperUtility::Debug("ePlayerStats", "Failed to reload stats from database.");
 
     return false;
 }
@@ -461,6 +450,24 @@ auto initValueMap = []() {
     });
 
     insertFunction(tempMap,
+    {"slowest", "sl", "slowest_speed"}, "Slowest Speed",
+    [](PlayerDataBase *self)
+    {
+        tString result("");
+        result << self->getSlowestSpeed();
+        return result;
+    });
+
+    insertFunction(tempMap,
+    {"ping", "player_ping"}, "Ping",
+    [](PlayerDataBase *self)
+    {
+        tString result("");
+        result << self->getPing();
+        return result;
+    });
+
+    insertFunction(tempMap,
     {"total_score", "score"}, "Total Score",
     [](PlayerDataBase *self)
     {
@@ -470,7 +477,7 @@ auto initValueMap = []() {
     });
 
     insertFunction(tempMap,
-    {"last_seen", "seen"}, "Last Seen",
+    {"last_seen", "seen", "ls"}, "Last Seen",
     [](PlayerDataBase *self)
     {
         tString result("");
@@ -725,6 +732,18 @@ const std::vector<PlayerDataColumnMapping> ePlayerStatsMappings =
          { sqlite3_bind_double(stmt, col++, stats.fastest_speed); },
          [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
          { stats.fastest_speed = sqlite3_column_double(stmt, col++); }},
+
+        {"slowest_speed", "REAL",
+         [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+         { sqlite3_bind_double(stmt, col++, stats.slowest_speed); },
+         [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+         { stats.slowest_speed = sqlite3_column_double(stmt, col++); }},
+
+         {"ping", "REAL",
+         [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)
+         { sqlite3_bind_double(stmt, col++, stats.ping); },
+         [](sqlite3_stmt *stmt, int &col, PlayerData &stats)
+         { stats.ping = sqlite3_column_double(stmt, col++); }},
 
         {"last_seen", "BIGINT",
          [](sqlite3_stmt *stmt, int &col, const PlayerData &stats)

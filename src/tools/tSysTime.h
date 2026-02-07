@@ -36,7 +36,7 @@ void tDelay( int usecdelay );                 //! delays for the specified numbe
 void tDelayForce( int usecdelay );            //! delays for the specified number of microseconds, even when playing back
 std::string getTimeString(bool hudShowTime24hour = false);
 std::string getTimeStringBase(struct tm &thistime, bool hudShowTime24hour = false);
-std::string getTimeZone(const struct tm& timeInfo);
+std::string getTimeZone(const struct tm& timeInfo, bool shortened = true);
 
 double ParseTimeString(const std::string &str, bool &valid);
 

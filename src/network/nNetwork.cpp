@@ -6093,10 +6093,7 @@ void sn_quitAction(bool save, bool quit, tString message)
                                 });
     }
 
-   sn_statsAlreadySavedForBan = save && quit;
 }
-
-bool sn_statsAlreadySavedForBan = false;
 
 void sn_bannedWatchAction(tString reason)
 {

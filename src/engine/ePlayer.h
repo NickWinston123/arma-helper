@@ -74,7 +74,7 @@ class TempConfItemManager;
 extern tString se_chatHistoryFileName;
 extern std::deque<tString> se_chatHistory;
 
-extern bool se_chatLog, se_chatTimeStamp;
+extern bool se_chatLog, se_chatTimeStamp, se_chatLogNoDataFilterPlayerMessageTriggeredLines;
 
 extern bool se_playerWatchAutoRandomName, forceRandomRename;
 extern REAL se_playerWatchAutoRandomNameRevertTime;
@@ -202,10 +202,15 @@ public:
 
     REAL sg_smarterBotRange;
     REAL sg_smarterBotRandomScale;
+    REAL sg_smarterBotAvoidScale;
+    REAL sg_smarterBotFlankScale;
+    REAL sg_smarterBotDistanceScale;
+    REAL sg_smarterBotBehindScale;
     REAL sg_smarterBotRubberScale;
     REAL sg_smarterBotSurviveScale;
     REAL sg_smarterBotTrapScale;
     REAL sg_smarterBotFollowScale;
+    REAL sg_smarterBotFollowSolveTurnLogic;
     bool sg_smarterBotFollowBlockLogic;
     bool sg_smarterBotFollowCheckLogic;
     REAL sg_smarterBotFollowPredictionTime;
@@ -224,7 +229,6 @@ public:
     REAL sg_smarterBotTunnelScale;
     REAL sg_smarterBotSpeedScale;
     REAL sg_smarterBotNextThinkMult;
-    REAL sg_smarterBotTurnRandMult;
     int sg_smarterBotState;
 
     tString sg_smarterBotContributionStr;
@@ -360,6 +364,8 @@ class ePlayerNetID: public nNetObject, public eAccessLevelHolder{
     friend class tControlledPTR< ePlayerNetID >;
     // access level. lower numeric values are better.
 public:
+
+    bool smartBotSuicide = false;
 
     struct SyncData
     {
@@ -515,6 +521,7 @@ public:
     tString teamname;
     tString teamnameNew, teamnameSync;
     REAL lastTeamName, lastTeamNameSync;
+
     tArray<tString> lastSaid;
     tArray<nTimeRolling> lastSaidTimes;
     //	void SetLastSaid(tString ls);
@@ -526,7 +533,9 @@ public:
     unsigned short pingCharity; // max ping you are willing to take over
 
     REAL ping;
-
+    REAL lastPing;
+    int    lastPingIteration;
+    
     double lastSync;         //!< time of the last sync request
     double lastActivity_;    //!< time of the last activity
 
@@ -814,10 +823,8 @@ extern int    sr_viewportBelongsToPlayer[MAX_VIEWPORTS];
 void se_ChatState( ePlayerNetID::ChatFlags flag, bool cs, ePlayerNetID *player = NULL);
 
 void se_SaveToScoreFile( tOutput const & out );  //!< writes something to scorelog.txt
-void se_SaveToChatLog( tOutput const & out );  //!< writes something to chatlog.txt (if enabled) and/or ladderlog
+void se_SaveToChatLog( tOutput const & out, bool filterOutOfNoDataChatLog = false );  //!< writes something to chatlog.txt (if enabled) and/or ladderlog
 void se_SaveToLadderLog( tOutput const & out );  //!< writes something to ladderlog.txt
-void se_SaveToChatLogC( tOutput const &out ); //!< writes something to chatlog_color.txt
-
 //! create a global instance of this to write stuff to ladderlog.txt
 class eLadderLogWriter {
     static std::list<eLadderLogWriter *> &writers();

@@ -57,5 +57,9 @@ static inline REAL tMax(REAL a, REAL b)
     return a > b ? a : b;
 }
 
+static inline REAL tClamp(REAL value, REAL minVal, REAL maxVal)
+{
+    return tMax(minVal, tMin(value, maxVal));
+}
 
 #endif

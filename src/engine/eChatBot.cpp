@@ -202,7 +202,6 @@ std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers()
     for (int i = 0; i < players.Len(); i++)
     {
         ePlayer *local_p = ePlayer::PlayerConfig(atoi(players[i]) - 1);
-
         if (!local_p)
             continue;
 
@@ -3477,6 +3476,27 @@ tString eChatBot::findResponse(eChatBot &bot, tString playerName, tString trigge
     return bot.Messager()->Params().response;
 }
 
+void eChatBot::findResponse(eChatBot &bot, tString playerName, tString trigger, tString value, bool send)
+{
+    if (!se_playerMessageTriggers)
+        return;
+
+    static const tString valDelim = tString("$val1");
+
+    bot.Messager()->ResetParams();
+    bot.Messager()->Params().triggeredByName = playerName;
+    bot.Messager()->SetInputParams(nullptr, trigger, true);
+    bot.Messager()->FindTriggeredResponse();
+
+    if (!bot.Messager()->Params().response.empty())
+        bot.Messager()->Params().response = bot.Messager()->Params().response.Replace(valDelim, value);
+    else
+        gHelperUtility::Debug("eChatBot", "No trigger set for '" + trigger.stdString() + "' Set one with 'PLAYER_MESSAGE_TRIGGERS_ADD'\n");
+
+    if (send && !bot.Messager()->Params().response.empty())
+        bot.Messager()->Send();
+}
+
 bool eChatBot::InitiateAction(ePlayerNetID *triggeredBy, tString inputMessage, bool eventTrigger, tString preAppend)
 {
     bool initiated;
@@ -3895,7 +3915,6 @@ void eChatBotMessager::FindTriggeredResponse()
 
         if (Params().triggeredBy)
             chosenResponse         = chosenResponse.Replace("$p2", Params().triggeredBy->GetName());
-
         if (Params().sendingPlayer)
         {
             chosenResponse.RecomputeLength();
@@ -4202,6 +4221,7 @@ bool eChatBotMessager::Send()
     }
 
     tString messageToSend = Params().response;
+    bool  forceSpecialDelay = (Params().delay < -5);
 
     if (Params().isExpedientTrigger)
     {

@@ -177,6 +177,7 @@ static void showFollowTailCloseFactor(gHelperData &data, bool active = false)
  *
  * @param data A reference to a gHelperData object that contains information about the cycle and the game state.
  */
+
 void gSmartTurning::followTail(gHelperData &data)
 {
 

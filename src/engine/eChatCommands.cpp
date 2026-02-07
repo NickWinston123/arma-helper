@@ -1153,7 +1153,7 @@ bool ExecuteSpeakCommand(tString args, bool isBot, eChatCommand *cmd)
             return true;
         }
     }
-    else
+    else    
     {
         targetPlayer = ePlayerNetID::FindPlayerByName(playerStr);
     }

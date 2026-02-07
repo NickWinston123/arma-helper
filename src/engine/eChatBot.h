@@ -33,7 +33,6 @@ extern int se_playerMessageTriggersAcheivementsKillsChangeVal,
            se_playerMessageTriggersAcheivementsJoinsChangeVal,
            se_playerMessageTriggersAcheivementsBansChangeVal;
 
-
 extern REAL SpamProtectionDelayForMsg(const tString &msg);
 
 std::vector<ePlayerNetID *> se_GetPlayerMessageEnabledPlayers();

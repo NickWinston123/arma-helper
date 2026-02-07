@@ -1826,7 +1826,8 @@ void st_SaveConfig(bool saveStats)
 {
     if (sg_helperDebug)
         gHelperUtility::Debug("st_SaveConfig","Saving config..");
-    if (se_playerStats && saveStats)
+
+    if (se_playerStats)// && saveStats)
         ePlayerStats::saveStatsToDB();
 
     // don't save while playing back

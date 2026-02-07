@@ -3764,7 +3764,7 @@ bool gCycle::Timestep(REAL currentTime)
 
             if (activateSmarterBotForThisPlayer)
             {
-                gSmarterBot &smarterBot = gSmarterBot::Get(this, ePlayer::NetToLocalPlayer(player));
+                gSmarterBot &smarterBot = gSmarterBot::Get(this);
                 smarterBot.Activate(currentTime);
             }
         }

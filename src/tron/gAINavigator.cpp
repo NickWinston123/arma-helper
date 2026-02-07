@@ -2093,7 +2093,6 @@ void displayTurnAct(uActionPlayer *action, int numberOfTurns, std::string reason
 //! does the main thinking at the current time, knowing the next thought can't be sooner than minstep
 REAL gAINavigator::Activate(REAL currentTime, REAL minstep, REAL penalty, Wish *wish)
 {
-    con << "gAINavigator::Activate\n";
     REAL lookahead = settings_.range; // seconds to plan ahead
 
     // cylce data

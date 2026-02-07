@@ -9308,8 +9308,11 @@ static tConfItem<bool> se_chatLogColorsConf("CHAT_LOG_COLORS", se_chatLogColors)
 
 static bool se_chatLogNoData = false;
 static tConfItem<bool> se_chatLogNoDataConf("CHAT_LOG_NO_DATA", se_chatLogNoData);
-static bool se_chatLogNoDataClearLocal = false;
-static tConfItem<bool> se_chatLogNoDataIgnoreLocalConf("CHAT_LOG_NO_DATA_CLEAR_LOCAL", se_chatLogNoDataClearLocal);
+
+tString se_chatLogNoDataClearLocalEnabledPlayers("");
+static tConfItem<tString> se_chatLogNoDataClearLocalEnabledPlayersConf("CHAT_LOG_NO_DATA_CLEAR_LOCAL_PLAYERS", se_chatLogNoDataClearLocalEnabledPlayers);
+
+
 static bool se_chatLogNoDataClearNames = false;
 static tConfItem<bool> se_chatLogNoDataClearNamesConf("CHAT_LOG_NO_DATA_CLEAR_NAMES", se_chatLogNoDataClearNames);
 
@@ -9336,7 +9339,6 @@ static tConfItemFunc sg_storeChatLogNoDataContentConf("CHAT_LOG_NO_DATA_INPUT", 
 void se_SaveToChatLog(tOutput const &out, bool filterOutOfNoDataChatLog)
 {
     tString colStr(out);
-    // eBannedWords::BadWordTrigger(colStr);
     if (!tRecorder::IsPlayingBack())
     {
         if (sn_GetNetState() != nCLIENT && se_chatWriter.isEnabled())
@@ -9348,7 +9350,6 @@ void se_SaveToChatLog(tOutput const &out, bool filterOutOfNoDataChatLog)
         if (se_chatLog)
         {
             FileManager fileManager(tString("chatlog.txt"), tDirectories::Log());
-
             tString finalLine;
             finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << tColoredString::RemoveColors(colStr);
             fileManager.Write(finalLine);
@@ -9359,16 +9360,17 @@ void se_SaveToChatLog(tOutput const &out, bool filterOutOfNoDataChatLog)
             FileManager fileManager(tString("chatlognodata.txt"), tDirectories::Log());
             std::string finalLine = tColoredString::RemoveColors(tColoredString::RemoveBadColors(colStr)).stdString();
 
-
             if (se_chatLogNoDataClearNames)
             {
                 for (int i = 1; i < se_PlayerNetIDs.Len(); i++)
                 {
-                    std::string nameToReplace = (se_PlayerNetIDs[i]->GetName().stdString() + ": ");
+                    auto p = se_PlayerNetIDs[i];
+                    std::string nameToReplace = (p->GetName().stdString() + ": ");
 
-                    if (!se_PlayerNetIDs[i]->isLocal() || !se_chatLogNoDataClearLocal)
+                    bool isLocalAndEnabled = p->isLocal() && tIsEnabledForPlayer(se_chatLogNoDataClearLocalEnabledPlayers, p->pID + 1);
+
+                    if (!isLocalAndEnabled)
                     {
-
                         size_t startPos = finalLine.find(nameToReplace);
                         while (startPos != std::string::npos)
                         {
@@ -9376,10 +9378,9 @@ void se_SaveToChatLog(tOutput const &out, bool filterOutOfNoDataChatLog)
                             startPos = finalLine.find(nameToReplace);
                         }
                     }
-                    else
+                    else 
                     {
                         size_t startPos = finalLine.find(nameToReplace);
-
                         if (startPos != std::string::npos)
                         {
                             finalLine.clear();
@@ -9388,27 +9389,23 @@ void se_SaveToChatLog(tOutput const &out, bool filterOutOfNoDataChatLog)
                     }
                 }
             }
-            else if (se_chatLogNoDataClearLocal)
+            else 
             {
                 for (auto localNetPlayer : se_GetLocalPlayers())
                 {
-                    std::string nameToReplace = (localNetPlayer->GetName().stdString() + ": ");
-                    std::string msgToReplace  = (localNetPlayer->GetName().stdString() + " --> ");
-
-                    size_t namePos = finalLine.find(nameToReplace);
-                    bool isPrivateMsg = finalLine.find(" --> " + nameToReplace) != std::string::npos;
-
-                    if ((namePos != std::string::npos && !isPrivateMsg) || finalLine.find(msgToReplace) != std::string::npos)
+                    if (tIsEnabledForPlayer(se_chatLogNoDataClearLocalEnabledPlayers, localNetPlayer->pID + 1))
                     {
-                        finalLine.clear();
-                        break;
-                    }
+                        std::string nameToReplace = (localNetPlayer->GetName().stdString() + ": ");
+                        std::string msgToReplace  = (localNetPlayer->GetName().stdString() + " --> ");
 
+                        size_t namePos = finalLine.find(nameToReplace);
+                        bool isPrivateMsg = finalLine.find(" --> " + nameToReplace) != std::string::npos;
 
-                    if (finalLine.find(msgToReplace) != std::string::npos)
-                    {
-                        finalLine.clear();
-                        break;
+                        if ((namePos != std::string::npos && !isPrivateMsg) || finalLine.find(msgToReplace) != std::string::npos)
+                        {
+                            finalLine.clear();
+                            break;
+                        }
                     }
                 }
             }
@@ -9420,14 +9417,12 @@ void se_SaveToChatLog(tOutput const &out, bool filterOutOfNoDataChatLog)
         if (se_chatLogColors)
         {
             FileManager fileManager(tString("chatlog_colors.txt"), tDirectories::Log());
-
             tString finalLine;
             finalLine << st_GetCurrentTime("[%Y/%m/%d-%H:%M:%S] ") << colStr;
             fileManager.Write(finalLine);
         }
     }
 }
-
 
 std::list<eLadderLogWriter *> &eLadderLogWriter::writers()
 {

@@ -60,6 +60,7 @@ $active;!active;$la;!la;$lastactive;!lastactive,$exactstatfunc(total last_active
 $lkillswhiledead;$lkwd;!lkillswhiledead;!lkwd,$leaderboardfunc(all kills_while_dead),-999,0
 $killswhiledead;$kwd;!killswhiledead;!kwd,$exactstatfunc(total kills_while_dead),-999,0
 $lpt;!lpt;$lplayt;!lplayt,$leaderboardfunc(all play_time),-999,0
+!cc;$cc,$unvalidatedsaynoprefixfunc(/rgb),-999,0
 $bsd;$color;!color;$rgb;!rgb,$exactstatfunc(total rgb),-999,0
 $timesjoined;!timesjoined;$tj;!tj,$exactstatfunc(total times_joined),-999,0
 $ltimesjoined;!ltimesjoined;$ltj;!ltj,$leaderboardfunc(all times_joined),-999,0

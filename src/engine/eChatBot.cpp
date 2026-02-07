@@ -1857,17 +1857,17 @@ tString searchFunc(tString message)
 
     message = message.TrimWhitespace();
     int pos = 0;
-    tString statName = message.ExtractNonBlankSubString(pos);
-    tString statLabel = PlayerData::getAnyLabel(statName);
-    bool chatSearch = statLabel == "Chats";
 
-    if (statLabel.empty())
+    tString statName = message.ExtractNonBlankSubString(pos);
+    bool searchAllStats = (statName == "all");
+    tString statLabel = PlayerData::getAnyLabel(statName);
+    bool chatSearch = (statLabel == "Chats");
+
+    if (!searchAllStats && statLabel.empty())
     {
         result << "Stat not found! Usage: '"
                << bot.Messager()->Params().matchedTrigger
-               << " "
-               << "stat"
-               << " search value' "
+               << " stat search value' "
                << PlayerData::getAvailableStatsStr();
         return result;
     }
@@ -1878,7 +1878,6 @@ tString searchFunc(tString message)
     for (auto& statsPair : ePlayerStats::GetPlayerStatsMap())
     {
         auto& playerData = statsPair.second;
-        int playerFoundCount = 0;
 
         if (chatSearch)
         {
@@ -1888,20 +1887,42 @@ tString searchFunc(tString message)
             std::string trigger = toLower(bot.Messager()->Params().matchedTrigger.stdString());
             for (const auto& chatMessage : playerData.chat_messages)
             {
-
                 std::string lowerChatMessage = toLower(chatMessage);
-
                 if (lowerChatMessage.find(trigger) != std::string::npos)
                     continue;
 
                 if (lowerChatMessage.find(lowerSearchPhrase) != std::string::npos)
                 {
                     result << statsPair.first << ": " << chatMessage << "\n";
-                    playerFoundCount++;
                     globalFoundCount++;
 
                     if (globalFoundCount >= max_results)
                         return result;
+                }
+            }
+        }
+        else if (searchAllStats)
+        {
+            for (const auto& stat : PlayerDataBase::valueMap)
+            {
+                tString value = playerData.getAnyValue(tString(stat.first));
+
+                if (value.Contains(searchPhrase))
+                {
+                    if (globalFoundCount == 0)
+                        result << "Matches - ";
+                    else
+                        result << ", ";
+
+                    result << statsPair.first << ": " << stat.second.first << "=" << value;
+                    globalFoundCount++;
+                    break; 
+
+                    if (globalFoundCount >= max_results)
+                    {
+                        result << "\n";
+                        return result;
+                    }
                 }
             }
         }
@@ -1910,17 +1931,31 @@ tString searchFunc(tString message)
             tString statValue = playerData.getAnyValue(statName);
             if (statValue.Contains(searchPhrase))
             {
-                result << statsPair.first << " - " << statLabel << ": " << statValue << "\n";
-                globalFoundCount++;
-                if (globalFoundCount >= max_results)
-                    return result;
+                if (globalFoundCount == 0)
+                    result << statLabel << " - ";
 
+                if (globalFoundCount > 0)
+                    result << ", ";
+
+                result << statsPair.first << ": " << statValue;
+                globalFoundCount++;
+
+                if (globalFoundCount >= max_results)
+                {
+                    result << "\n";
+                    return result;
+                }
             }
         }
     }
 
     if (result.empty() && globalFoundCount == 0)
-        result << "No results found for '" << searchPhrase << "' in " << statName << ".\n";
+    {
+        if (searchAllStats)
+            result << "No results found for '" << searchPhrase << "' across all stats.\n";
+        else
+            result << "No results found for '" << searchPhrase << "' in " << statName << ".\n";
+    }
 
     return result;
 }

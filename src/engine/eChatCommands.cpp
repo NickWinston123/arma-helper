@@ -807,6 +807,7 @@ bool RgbCommand::execute(tString args)
     }
     else
     {
+        args = args.TrimWhitespace();
         tArray<tString> commandArgs = args.Split(" ");
         FileManager fileManager(se_colorVarFile, tDirectories::Var());
         tString command;

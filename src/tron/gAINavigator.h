@@ -544,7 +544,7 @@ public:
         EVAL_VETOABLE
     };
 
-    gSmarterBot(gCycle *owner, ePlayer *player);
+    gSmarterBot(gCycle *owner);
     static void Survive(gCycle *owner);
 
     REAL Think(REAL currentTime, REAL minStep);
@@ -555,7 +555,7 @@ public:
     static void EvaluateAllScales(EvaluationManager &manager, gCycle *cycle, ePlayer *local_player, EvaluatorMode mode = EVAL_ALL);
 
 
-    static gSmarterBot &Get(gCycle *cycle, ePlayer *player);
+    static gSmarterBot &Get(gCycle *cycle);
     ~gSmarterBot();
 };
 #endif
